@@ -8,6 +8,7 @@
 
 #define LBO_EPS 0
 #define LBO_COT 1
+#define LBO_GRAPH 2
 
 // const double PZERO  = 0.00001;
 // const double NZERO  = -0.00001;
@@ -29,8 +30,8 @@ public:
 public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
 	void decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type = LBO_COT);
-	void write(std::string meshPath);
-	void read(std::string meshPath);
+	void write(const std::string& meshPath) const;
+	void read(const std::string& meshPath);
 };
 
 #endif

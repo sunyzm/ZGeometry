@@ -597,12 +597,12 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 //////////////////////////////////////////////////////
 void CMesh::clear()
 {
-	m_nVertex = m_nEdge = m_nFace = 0;
+	m_nVertex = m_nHalfEdge = m_nFace = 0;
 
 	if (m_bIsArrayRepresentationExist)
 	{
 		if(m_pVertex != NULL)	{delete[] m_pVertex; m_pVertex = NULL;}
-		if(m_pEdge != NULL)	{delete[] m_pEdge; m_pEdge = NULL;}
+		if(m_pHalfEdge != NULL)	{delete[] m_pHalfEdge; m_pHalfEdge = NULL;}
 		if(m_pFace != NULL)	{delete[] m_pFace; m_pFace = NULL;}
 	}
 		
@@ -623,8 +623,8 @@ void CMesh::clear()
 }
 
 CMesh::CMesh() : 
-	m_nVertex(0), m_nEdge(0), m_nFace(0), 
-	m_pVertex(NULL), m_pEdge(NULL), m_pFace(NULL),
+	m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
+	m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
 	m_bIsPointerVectorExist(false),
 	m_bIsArrayRepresentationExist(false)
 {
@@ -638,10 +638,10 @@ CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
 	for(int i = 0; i < m_nVertex; i++)
 		m_pVertex[i] = pMesh->m_pVertex[i];
 
-	m_nEdge = pMesh->m_nEdge;					//number of half-edges
-	m_pEdge = new CHalfEdge[m_nEdge]; 				//array of half-edges
-	for(int i = 0; i < m_nEdge; i++)
-		m_pEdge[i] = pMesh->m_pEdge[i];
+	m_nHalfEdge = pMesh->m_nHalfEdge;					//number of half-edges
+	m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 				//array of half-edges
+	for(int i = 0; i < m_nHalfEdge; i++)
+		m_pHalfEdge[i] = pMesh->m_pHalfEdge[i];
 
 	m_nFace = pMesh->m_nFace;	 				//number of mesh faces
 	m_pFace = new CFace[m_nFace];				//array of faces
@@ -749,7 +749,7 @@ bool CMesh::loadFromOBJ(string sFileName)
 		
 	m_nVertex = (int)VertexList.size();
 	m_nFace = (int)FaceList.size() / 3;
-	m_nEdge = 3 * m_nFace;		//number of half-edges
+	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
@@ -833,7 +833,7 @@ bool CMesh::loadFromPLY( string sFileName )
 
 	m_nVertex = vNr;
 	m_nFace = pNr;
-	m_nEdge = 3 * m_nFace;		//number of half-edges
+	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	m_pVertex = new CVertex[m_nVertex];
 	if (m_pVertex == NULL) {clear(); return false;}	//out of memory
@@ -945,7 +945,7 @@ bool CMesh::loadFromVERT(string sFileName)
 	
 	m_nVertex = (int)VertexList.size();
 	m_nFace = (int)FaceList.size()/3;
-	m_nEdge = 3*m_nFace;
+	m_nHalfEdge = 3*m_nFace;
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
@@ -1110,7 +1110,7 @@ bool CMesh::loadFromM(string sFileName)
 
 	m_nVertex = (int)VertexList.size();
 	m_nFace = (int)FaceList.size()/3;
-	m_nEdge = 3 * m_nFace;
+	m_nHalfEdge = 3 * m_nFace;
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
@@ -1235,7 +1235,7 @@ bool CMesh::saveToM(string sFileName)
 		for (int j = 0; j < m_pFace[i].m_nType; j++)
 		{
 			int edge = m_pFace[i].m_piEdge[j];
-			int _vv_j = m_pEdge[edge].m_iVertex[0] + 1;
+			int _vv_j = m_pHalfEdge[edge].m_iVertex[0] + 1;
 			fprintf(fp, " %ld", _vv_j);
 
 		}
@@ -1255,12 +1255,12 @@ void CMesh::findHoles()
 		int vi = i;
 		int eout = m_pVertex[i].m_piEdge[m_pVertex[i].m_nValence - 1];
 		vector<int> v_temp;
-		while(m_pEdge[eout].m_iVertex[1] != i)
+		while(m_pHalfEdge[eout].m_iVertex[1] != i)
 		{
 			v_temp.push_back(vi);
 			m_pVertex[vi].m_mark = 1;
 			clear_list.push_back(vi);
-			vi = m_pEdge[eout].m_iVertex[1];
+			vi = m_pHalfEdge[eout].m_iVertex[1];
 			eout = m_pVertex[vi].m_piEdge[m_pVertex[vi].m_nValence - 1];
 		}
 		if((int)v_temp.size() > MAX_HOLE_SIZE) continue; // boundary	
@@ -1279,21 +1279,18 @@ bool CMesh::construct()
 	if (m_pVertex == NULL || m_pFace == NULL) 
 		return false;	//empty
 
-	if(m_pEdge != NULL)
+	if(m_pHalfEdge != NULL)
 	{
-		delete[] m_pEdge;
-		m_pEdge = NULL;
+		delete[] m_pHalfEdge;
+		m_pHalfEdge = NULL;
 	} //delete old edge list
 
-	if(m_nEdge == 0)		// counting the edge number face by face; not needed actually (already initialized as 3*faceNum)
-		for(int i = 0; i < m_nFace; i++)
-			m_nEdge += m_pFace[i].m_nType;
 
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////	code to construct pointer-vectors	//////////////////
 	m_Vertices.reserve(m_nVertex);
 	m_Faces.reserve(m_nFace);
-	m_HalfEdges.reserve(m_nEdge);
+	m_HalfEdges.reserve(m_nHalfEdge);
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
@@ -1394,8 +1391,6 @@ bool CMesh::construct()
 	gatherStatistics();
 
 	this->m_bIsPointerVectorExist = true;
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 	
 	buildArrayRepresentation();
 	this->m_bIsArrayRepresentationExist = true;
@@ -1430,7 +1425,7 @@ void CMesh::calVertexNormal(int i)
 		return;
 	for(short j = 0; j < valence; j++)
 	{
-		iFace = m_pEdge[m_pVertex[i].m_piEdge[j]].m_iFace;
+		iFace = m_pHalfEdge[m_pVertex[i].m_piEdge[j]].m_iFace;
 		int* fv = m_pFace[iFace].m_piVertex;
 		Vector3D cv = (m_pVertex[fv[0]].m_vPosition + m_pVertex[fv[1]].m_vPosition + m_pVertex[fv[2]].m_vPosition)/3.0;
 		double wt = 1.0/(cv-m_pVertex[i].m_vPosition).length();
@@ -1444,8 +1439,8 @@ void CMesh::calVertexNormal(int i)
 double CMesh::getHalfEdgeLen( int iEdge ) const
 {
 	CVertex* pVertex[2];
-	pVertex[0]=&(m_pVertex[m_pEdge[iEdge].m_iVertex[0]]);
-	pVertex[1]=&(m_pVertex[m_pEdge[iEdge].m_iVertex[1]]);
+	pVertex[0]=&(m_pVertex[m_pHalfEdge[iEdge].m_iVertex[0]]);
+	pVertex[1]=&(m_pVertex[m_pHalfEdge[iEdge].m_iVertex[1]]);
 		
 	//get the vector
 	Vector3D v = pVertex[0]->m_vPosition-pVertex[1]->m_vPosition;
@@ -1463,18 +1458,18 @@ int CMesh::GetEdgeNum(  )
 				twinedgeNum++;
 		}
 		assert(twinedgeNum % 2 == 0);
-		return m_nEdge - twinedgeNum / 2;
+		return m_nHalfEdge - twinedgeNum / 2;
 	}
 
 	if (this->m_bIsArrayRepresentationExist)
 	{
 		int twinedgeNum = 0;
-		for( int i = 0; i < m_nEdge; i++ )
+		for( int i = 0; i < m_nHalfEdge; i++ )
 		{
-			if( m_pEdge[i].m_iTwinEdge != -1 )
+			if( m_pHalfEdge[i].m_iTwinEdge != -1 )
 				twinedgeNum++;
 		}
-		return m_nEdge - twinedgeNum/2;
+		return m_nHalfEdge - twinedgeNum/2;
 	}
 	return -1;
 }
@@ -1505,10 +1500,10 @@ int CMesh::BoundaryNum(  )
 				for( short j=0; j<m_pVertex[currentIndex].m_nValence; j++ )
 				{
 					edgeIndex = m_pVertex[currentIndex].m_piEdge[j];
-					if( m_pEdge[edgeIndex].m_iTwinEdge==-1 )
+					if( m_pHalfEdge[edgeIndex].m_iTwinEdge==-1 )
 						break;
 				}
-				nextIndex = m_pEdge[edgeIndex].m_iVertex[1];
+				nextIndex = m_pHalfEdge[edgeIndex].m_iVertex[1];
 			} while( nextIndex!=i );
 			boundaryNum++;
 		}
@@ -1546,12 +1541,12 @@ int CMesh::getBoundaryVertexNum(  ) const
 int CMesh::EulerNum(  )
 {
 	int twinedgeNum = 0;
-	for( int i=0; i<m_nEdge; i++ )
+	for( int i=0; i<m_nHalfEdge; i++ )
 	{
-		if( m_pEdge[i].m_iTwinEdge!=-1 )
+		if( m_pHalfEdge[i].m_iTwinEdge!=-1 )
 			twinedgeNum++;
 	}
-	int edgeNum = m_nEdge - twinedgeNum/2;
+	int edgeNum = m_nHalfEdge - twinedgeNum/2;
 	return m_nVertex - edgeNum + m_nFace;
 }
 
@@ -1594,8 +1589,8 @@ bool CMesh::calVertexCurvature(int i)
 	for( int j=0; j<m_pVertex[i].m_nValence; j++ ) {
 		// get triangle edges
 		int e0 = m_pVertex[i].m_piEdge[j];
-		int e1 = m_pEdge[e0].m_iNextEdge;
-		int e2 = m_pEdge[e1].m_iNextEdge;
+		int e1 = m_pHalfEdge[e0].m_iNextEdge;
+		int e2 = m_pHalfEdge[e1].m_iNextEdge;
 		// get edge lengths
 		double len0 = getHalfEdgeLen( e0 );
 		double len1 = getHalfEdgeLen( e1 );
@@ -1606,8 +1601,8 @@ bool CMesh::calVertexCurvature(int i)
 		double cota,cotc;
 		amix += calAreaMixed(len0, len1, len2, cota, cotc);
 		int pt1,pt2;
-		pt1 = m_pEdge[e1].m_iVertex[0];
-		pt2 = m_pEdge[e1].m_iVertex[1];
+		pt1 = m_pHalfEdge[e1].m_iVertex[0];
+		pt2 = m_pHalfEdge[e1].m_iVertex[1];
 		kh += (m_pVertex[i].m_vPosition-m_pVertex[pt1].m_vPosition)*cota+(m_pVertex[i].m_vPosition-m_pVertex[pt2].m_vPosition)*cotc;
 	}
 	
@@ -1656,10 +1651,10 @@ bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 	{
 		// get triangle edges
 		int e0 = m_pVertex[i].m_piEdge[j];
-		int e1 = m_pEdge[e0].m_iNextEdge;
-		int e2 = m_pEdge[e1].m_iNextEdge;
-		int vj = m_pEdge[e0].m_iVertex[1];
-		if(m_pVertex[i].m_bIsBoundary && m_pEdge[e2].m_iTwinEdge < 0)   // boundary vertex
+		int e1 = m_pHalfEdge[e0].m_iNextEdge;
+		int e2 = m_pHalfEdge[e1].m_iNextEdge;
+		int vj = m_pHalfEdge[e0].m_iVertex[1];
+		if(m_pVertex[i].m_bIsBoundary && m_pHalfEdge[e2].m_iTwinEdge < 0)   // boundary vertex
 		{
 			bs = e2;
 		}
@@ -1671,11 +1666,11 @@ bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 		amix += calHalfAreaMixed(len0, len1, len2, cota);
 
 		// twin edge
-		e0 = m_pEdge[e0].m_iTwinEdge;
+		e0 = m_pHalfEdge[e0].m_iTwinEdge;
 		if (e0 > -1)
 		{
-			e1 = m_pEdge[e0].m_iNextEdge;
-			e2 = m_pEdge[e1].m_iNextEdge;
+			e1 = m_pHalfEdge[e0].m_iNextEdge;
+			e2 = m_pHalfEdge[e1].m_iNextEdge;
 			// get edge lengths
 			len1 = getHalfEdgeLen( e1 )/m_edge;
 			len2 = getHalfEdgeLen( e2 )/m_edge;
@@ -1696,8 +1691,8 @@ bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 	}
 	if(bs >- 1)
 	{
-		int e1 = m_pEdge[bs].m_iNextEdge;
-		int	e2 = m_pEdge[e1].m_iNextEdge;
+		int e1 = m_pHalfEdge[bs].m_iNextEdge;
+		int	e2 = m_pHalfEdge[e1].m_iNextEdge;
 		// get edge lengths
 		double len0 = getHalfEdgeLen( bs )/m_edge;
 		double len1 = getHalfEdgeLen( e1 )/m_edge;
@@ -1706,7 +1701,7 @@ bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 		double cota;
 		amix += calHalfAreaMixed(len0, len1, len2, cota);
 		cota /= 4.0;
-		int vj = m_pEdge[e2].m_iVertex[1];
+		int vj = m_pHalfEdge[e2].m_iVertex[1];
 		Iv.push_back(i+1);
 		Jv.push_back(vj+1);
 		Sv.push_back(cota);
@@ -1758,7 +1753,7 @@ bool CMesh::VertexNeighborR( int i, int ring, std::vector<int>& nbr ) const
 	for (int j = 0; j < size; j++)
 	{
 		int ee = m_pVertex[i].m_piEdge[j];
-		int endv = m_pEdge[ee].m_iVertex[1];
+		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		m_pVertex[endv].m_mark = i;
 		nbp.push_back(endv);
 		nbr.push_back(endv);
@@ -1773,7 +1768,7 @@ bool CMesh::VertexNeighborR( int i, int ring, std::vector<int>& nbr ) const
 			for (int l = 0; l < m_pVertex[pos].m_nValence; l++)
 			{
 				int ee = m_pVertex[pos].m_piEdge[l];
-				int endv = m_pEdge[ee].m_iVertex[1];
+				int endv = m_pHalfEdge[ee].m_iVertex[1];
 				if (m_pVertex[endv].m_mark == i) 
 					continue;
 				m_pVertex[endv].m_mark = i;
@@ -1854,7 +1849,7 @@ bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
 	for (j=0; j<size; j++)
 	{
 		int ee = notei.m_piEdge[j];
-		int endv = m_pEdge[ee].m_iVertex[1];
+		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		m_pVertex[endv].m_inheap = true;
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[i].m_vPosition;
 		double mgeo = vt.length();
@@ -1865,19 +1860,19 @@ bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
 	for (j=0; j<size; j++)
 	{
 		int e1 = notei.m_piEdge[j];
-		ia = m_pEdge[e1].m_iVertex[1];
-		int e2 = m_pEdge[e1].m_iNextEdge;
-		ib = m_pEdge[e2].m_iVertex[1];
+		ia = m_pHalfEdge[e1].m_iVertex[1];
+		int e2 = m_pHalfEdge[e1].m_iNextEdge;
+		ib = m_pHalfEdge[e2].m_iVertex[1];
 		if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 		{
 			int it = ia;
 			ia = ib;
 			ib = it;
 		}
-		e1 = m_pEdge[e2].m_iTwinEdge;
+		e1 = m_pHalfEdge[e2].m_iTwinEdge;
 		if(e1<0) continue;
-		e2 = m_pEdge[e1].m_iNextEdge;
-		ic = m_pEdge[e2].m_iVertex[1];
+		e2 = m_pHalfEdge[e1].m_iNextEdge;
+		ic = m_pHalfEdge[e2].m_iVertex[1];
 		double mgeo = calLocalGeodesic(ia,ib,ic);
 		m_pVertex[ic].m_LocalGeodesic = mgeo;
 		m_pVertex[ic].m_inheap = true;
@@ -1906,15 +1901,15 @@ bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
 		{
 			ia = sg;
 			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pEdge[e1].m_iVertex[1];
+			ib = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ib].m_mark != i) continue; // unreached point
-			int e2 = m_pEdge[e1].m_iNextEdge;
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				ia = ib;
 				ib = sg;
 			}
-			ic = m_pEdge[e2].m_iVertex[1];
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != i) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -1931,10 +1926,10 @@ bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
 					if(gg<ring) heapqueue.push(GeoNote(ic,gg));
 				}
 			}
-			e2 = m_pEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nEdge) continue;
-			e1 = m_pEdge[e2].m_iNextEdge;
-			ic = m_pEdge[e1].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iTwinEdge;
+			if(e2<0 || e2>=m_nHalfEdge) continue;
+			e1 = m_pHalfEdge[e2].m_iNextEdge;
+			ic = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != i) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -1997,7 +1992,7 @@ double CMesh::CalGeodesic( int s, int t ) const
 	for (j=0; j<size; j++)
 	{
 		int ee = notei.m_piEdge[j];
-		int endv = m_pEdge[ee].m_iVertex[1];
+		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
 		double mgeo = vt.length();
 		
@@ -2012,19 +2007,19 @@ double CMesh::CalGeodesic( int s, int t ) const
 		for (j=0; j<size; j++)
 		{
 			int e1 = notei.m_piEdge[j];
-			ia = m_pEdge[e1].m_iVertex[1];
-			int e2 = m_pEdge[e1].m_iNextEdge;
-			ib = m_pEdge[e2].m_iVertex[1];
+			ia = m_pHalfEdge[e1].m_iVertex[1];
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ib = m_pHalfEdge[e2].m_iVertex[1];
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				int it = ia;
 				ia = ib;
 				ib = it;
 			}
-			e1 = m_pEdge[e2].m_iTwinEdge;
+			e1 = m_pHalfEdge[e2].m_iTwinEdge;
 			if(e1<0) continue;
-			e2 = m_pEdge[e1].m_iNextEdge;
-			ic = m_pEdge[e2].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			double mgeo = calLocalGeodesic(ia,ib,ic);
 			m_pVertex[ic].m_LocalGeodesic = mgeo;
 			m_pVertex[ic].m_inheap = true;
@@ -2059,15 +2054,15 @@ double CMesh::CalGeodesic( int s, int t ) const
 		{
 			ia = sg;
 			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pEdge[e1].m_iVertex[1];
+			ib = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pEdge[e1].m_iNextEdge;
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				ia = ib;
 				ib = sg;
 			}
-			ic = m_pEdge[e2].m_iVertex[1];
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2084,10 +2079,10 @@ double CMesh::CalGeodesic( int s, int t ) const
 					heapqueue.push(GeoNote(ic,gg));
 				}
 			}
-			e2 = m_pEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nEdge) continue;
-			e1 = m_pEdge[e2].m_iNextEdge;
-			ic = m_pEdge[e1].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iTwinEdge;
+			if(e2<0 || e2>=m_nHalfEdge) continue;
+			e1 = m_pHalfEdge[e2].m_iNextEdge;
+			ic = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2148,7 +2143,7 @@ double CMesh::CalGeodesicToBoundary(int s) const
 	for (j = 0; j < size; j++)
 	{
 		int ee = notei.m_piEdge[j];
-		int endv = m_pEdge[ee].m_iVertex[1];
+		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
 		double mgeo = vt.length();
 
@@ -2163,19 +2158,19 @@ double CMesh::CalGeodesicToBoundary(int s) const
 		for (j = 0; j < size; j++)
 		{
 			int e1 = notei.m_piEdge[j];
-			ia = m_pEdge[e1].m_iVertex[1];
-			int e2 = m_pEdge[e1].m_iNextEdge;
-			ib = m_pEdge[e2].m_iVertex[1];
+			ia = m_pHalfEdge[e1].m_iVertex[1];
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ib = m_pHalfEdge[e2].m_iVertex[1];
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				int it = ia;
 				ia = ib;
 				ib = it;
 			}
-			e1 = m_pEdge[e2].m_iTwinEdge;
+			e1 = m_pHalfEdge[e2].m_iTwinEdge;
 			if(e1<0) continue;
-			e2 = m_pEdge[e1].m_iNextEdge;
-			ic = m_pEdge[e2].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			double mgeo = calLocalGeodesic(ia,ib,ic);
 			m_pVertex[ic].m_LocalGeodesic = mgeo;
 			m_pVertex[ic].m_inheap = true;
@@ -2211,15 +2206,15 @@ double CMesh::CalGeodesicToBoundary(int s) const
 		{
 			ia = sg;
 			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pEdge[e1].m_iVertex[1];
+			ib = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pEdge[e1].m_iNextEdge;
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				ia = ib;
 				ib = sg;
 			}
-			ic = m_pEdge[e2].m_iVertex[1];
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2236,10 +2231,10 @@ double CMesh::CalGeodesicToBoundary(int s) const
 					heapqueue.push(GeoNote(ic,gg));
 				}
 			}
-			e2 = m_pEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nEdge) continue;
-			e1 = m_pEdge[e2].m_iNextEdge;
-			ic = m_pEdge[e1].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iTwinEdge;
+			if(e2<0 || e2>=m_nHalfEdge) continue;
+			e1 = m_pHalfEdge[e2].m_iNextEdge;
+			ic = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2301,7 +2296,7 @@ double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 	for (j=0; j<size; j++)
 	{
 		int ee = notei.m_piEdge[j];
-		int endv = m_pEdge[ee].m_iVertex[1];
+		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
 		double mgeo = vt.length();
 
@@ -2316,19 +2311,19 @@ double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		for (j=0; j<size; j++)
 		{
 			int e1 = notei.m_piEdge[j];
-			ia = m_pEdge[e1].m_iVertex[1];
-			int e2 = m_pEdge[e1].m_iNextEdge;
-			ib = m_pEdge[e2].m_iVertex[1];
+			ia = m_pHalfEdge[e1].m_iVertex[1];
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ib = m_pHalfEdge[e2].m_iVertex[1];
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				int it = ia;
 				ia = ib;
 				ib = it;
 			}
-			e1 = m_pEdge[e2].m_iTwinEdge;
+			e1 = m_pHalfEdge[e2].m_iTwinEdge;
 			if(e1<0) continue;
-			e2 = m_pEdge[e1].m_iNextEdge;
-			ic = m_pEdge[e2].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iNextEdge;
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			double mgeo = calLocalGeodesic(ia,ib,ic);
 			m_pVertex[ic].m_LocalGeodesic = mgeo;
 			m_pVertex[ic].m_inheap = true;
@@ -2368,15 +2363,15 @@ double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		{
 			ia = sg;
 			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pEdge[e1].m_iVertex[1];
+			ib = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pEdge[e1].m_iNextEdge;
+			int e2 = m_pHalfEdge[e1].m_iNextEdge;
 			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
 			{
 				ia = ib;
 				ib = sg;
 			}
-			ic = m_pEdge[e2].m_iVertex[1];
+			ic = m_pHalfEdge[e2].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2393,10 +2388,10 @@ double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 					heapqueue.push(GeoNote(ic,gg));
 				}
 			}
-			e2 = m_pEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nEdge) continue;
-			e1 = m_pEdge[e2].m_iNextEdge;
-			ic = m_pEdge[e1].m_iVertex[1];
+			e2 = m_pHalfEdge[e1].m_iTwinEdge;
+			if(e2<0 || e2>=m_nHalfEdge) continue;
+			e1 = m_pHalfEdge[e2].m_iNextEdge;
+			ic = m_pHalfEdge[e1].m_iVertex[1];
 			if(m_pVertex[ic].m_mark != s) 
 			{
 				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
@@ -2503,11 +2498,11 @@ bool CMesh::CalLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 	const double adjustRatio = this->m_edge / tmesh->m_edge;
 	ld.resize(21, 0.0);
 
-	for(int ei = 0; ei < m_nEdge; ei++)
+	for(int ei = 0; ei < m_nHalfEdge; ei++)
 	{
 		//cout << ei << endl;
-		int f1 = m_pEdge[ei].m_iVertex[0];
-		int f2 = m_pEdge[ei].m_iVertex[1];
+		int f1 = m_pHalfEdge[ei].m_iVertex[0];
+		int f2 = m_pHalfEdge[ei].m_iVertex[1];
 		int m1 = m_pVertex[f1].m_vMatched;
 		int m2 = m_pVertex[f2].m_vMatched;
 		
@@ -2521,7 +2516,7 @@ bool CMesh::CalLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 		int ar = int (2.0 * ed + 0.5);
 
 		double d = 0.5;
-		if (m_pEdge[ei].m_iTwinEdge == -1)
+		if (m_pHalfEdge[ei].m_iTwinEdge == -1)
 		{
 			d  = 1.0;
 		}
@@ -2541,19 +2536,19 @@ std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
 	{
 		int iEdge = pV->m_piEdge[i];
 		if (iEdge != -1)
-			faceIndex.push_back(m_pEdge[iEdge].m_iFace);
+			faceIndex.push_back(m_pHalfEdge[iEdge].m_iFace);
 	}
 	return faceIndex;
 }
 
 void CMesh::buildConnectivity()
 {
-	m_HalfEdges.reserve(m_nEdge);
+	m_HalfEdges.reserve(m_nHalfEdge);
 
 	for (int i = 0; i < m_nVertex; ++i)
 		m_Vertices.push_back(&m_pVertex[i]);
-	for (int i = 0; i < m_nEdge; ++i)
-		m_HalfEdges.push_back(&m_pEdge[i]);
+	for (int i = 0; i < m_nHalfEdge; ++i)
+		m_HalfEdges.push_back(&m_pHalfEdge[i]);
 	for (int i = 0; i < m_nFace; ++i)
 		m_Faces.push_back(&m_pFace[i]);
 
@@ -2563,7 +2558,7 @@ void CMesh::buildConnectivity()
 		for (int j = 0; j < ver->m_nValence; ++j)
 			ver->m_HalfEdges.push_back( m_HalfEdges[ver->m_piEdge[j]] );
 	}
-	for (int i = 0; i < m_nEdge; ++i)
+	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
 		CHalfEdge* edg = m_HalfEdges[i];
 		edg->m_Vertices[0] = m_Vertices[edg->m_iVertex[0]];
@@ -2590,11 +2585,11 @@ void CMesh::buildArrayRepresentation()
 	// allocate memory for the half-edge array pointer
 	if (m_pVertex) delete []m_pVertex;
 	if (m_pFace) delete []m_pFace;
-	if (m_pEdge) delete []m_pEdge;
+	if (m_pHalfEdge) delete []m_pHalfEdge;
 
 	m_pVertex = new CVertex[m_nVertex];
 	m_pFace = new CFace[m_nFace];
-	m_pEdge = new CHalfEdge[m_nEdge];
+	m_pHalfEdge = new CHalfEdge[m_nHalfEdge];
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
@@ -2610,10 +2605,10 @@ void CMesh::buildArrayRepresentation()
 		}
 	}
 	
-	for (int i = 0; i < m_nEdge; ++i)
+	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
-		m_pEdge[i] = *m_HalfEdges[i];
-		CHalfEdge& he = m_pEdge[i];
+		m_pHalfEdge[i] = *m_HalfEdges[i];
+		CHalfEdge& he = m_pHalfEdge[i];
 		he.m_iFace = m_HalfEdges[i]->m_Face->m_fIndex;
 		he.m_iTwinEdge = (m_HalfEdges[i]->m_eTwin ? m_HalfEdges[i]->m_eTwin->m_eIndex : -1);
 		he.m_iNextEdge = m_HalfEdges[i]->m_eNext->m_eIndex;
@@ -2653,12 +2648,12 @@ void CMesh::buildArrayRepresentation()
 
 void CMesh::assignElementsIndex()
 {
-	assert(m_nVertex == m_Vertices.size() && m_nEdge == m_HalfEdges.size() && m_nFace == m_Faces.size());
+	assert(m_nVertex == m_Vertices.size() && m_nHalfEdge == m_HalfEdges.size() && m_nFace == m_Faces.size());
 	
 	for (int i = 0; i < m_nVertex; ++i)
 		m_Vertices[i]->m_vIndex = i;
 	
-	for (int i = 0; i < m_nEdge; ++i)
+	for (int i = 0; i < m_nHalfEdge; ++i)
 		m_HalfEdges[i]->m_eIndex = i;
 	
 	for (int i = 0; i < m_nFace; ++i)
@@ -2667,13 +2662,13 @@ void CMesh::assignElementsIndex()
 
 void CMesh::clone( const CMesh& oldMesh )
 {
-	m_pEdge = NULL;
+	m_pHalfEdge = NULL;
 	m_pFace = NULL;
 	m_pVertex = NULL;
 
 	m_nVertex = oldMesh.m_nVertex;
 	m_nFace = oldMesh.m_nFace;
-	m_nEdge = oldMesh.m_nEdge;
+	m_nHalfEdge = oldMesh.m_nHalfEdge;
 
 	m_Center = oldMesh.m_Center;
 	m_bBox = oldMesh.m_bBox;
@@ -2690,7 +2685,7 @@ void CMesh::clone( const CMesh& oldMesh )
 		{
 			this->m_Faces.push_back(new CFace(*oldMesh.m_Faces[i]));
 		}
-		for (int i = 0; i < m_nEdge; ++i)
+		for (int i = 0; i < m_nHalfEdge; ++i)
 		{
 			this->m_HalfEdges.push_back(new CHalfEdge(*oldMesh.m_HalfEdges[i]));
 		}
@@ -2719,7 +2714,7 @@ void CMesh::clone( const CMesh& oldMesh )
 				curF->m_HalfEdges.push_back(this->m_HalfEdges[eidx]);
 			}
 		}
-		for (int i = 0; i < m_nEdge; ++i)
+		for (int i = 0; i < m_nHalfEdge; ++i)
 		{
 			CHalfEdge* curE = this->m_HalfEdges[i];
 			const CHalfEdge* oldE = oldMesh.m_HalfEdges[i];
@@ -2768,13 +2763,13 @@ void CMesh::clone( const CMesh& oldMesh )
 
 void CMesh::clone( const CMesh* oldMesh )
 {
-	this->m_pEdge = NULL;
+	this->m_pHalfEdge = NULL;
 	this->m_pFace = NULL;
 	this->m_pVertex = NULL;
 
 	this->m_nVertex = oldMesh->m_nVertex;
 	this->m_nFace = oldMesh->m_nFace;
-	this->m_nEdge = oldMesh->m_nEdge;
+	this->m_nHalfEdge = oldMesh->m_nHalfEdge;
 
 	this->m_Center = oldMesh->m_Center;
 	this->m_bBox = oldMesh->m_bBox;
@@ -2784,14 +2779,14 @@ void CMesh::clone( const CMesh* oldMesh )
 	if (m_bIsPointerVectorExist)
 	{
 		assert(m_nVertex == oldMesh->m_Vertices.size()
-				&& m_nEdge == oldMesh->m_HalfEdges.size()
+				&& m_nHalfEdge == oldMesh->m_HalfEdges.size()
 				&& m_nFace == oldMesh->m_Faces.size());
 		
 		for (int i = 0; i < m_nVertex; ++i)
 			this->m_Vertices.push_back(new CVertex(*oldMesh->m_Vertices[i]));
 		for (int i = 0; i < m_nFace; ++i)
 			this->m_Faces.push_back(new CFace(*oldMesh->m_Faces[i]));
-		for (int i = 0; i < m_nEdge; ++i)
+		for (int i = 0; i < m_nHalfEdge; ++i)
 			this->m_HalfEdges.push_back(new CHalfEdge(*oldMesh->m_HalfEdges[i]));
 
 		for (int i = 0; i < m_nVertex; ++i)
@@ -2828,7 +2823,7 @@ void CMesh::clone( const CMesh* oldMesh )
 			}
 		}
 
-		for (int i = 0; i < m_nEdge; ++i)
+		for (int i = 0; i < m_nHalfEdge; ++i)
 		{
 			CHalfEdge* curE = this->m_HalfEdges[i];
 			const CHalfEdge* oldE = oldMesh->m_HalfEdges[i];
@@ -2969,7 +2964,7 @@ void CMesh::gatherStatistics()
 	boundBox.y = abs(boundBox.y - center_y);
 	boundBox.z = abs(boundBox.z - center_z);
 
-	for (int i = 0; i < m_nEdge; ++i)
+	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
 		edgeLength += m_HalfEdges[i]->getLength();
 	}
@@ -3022,18 +3017,18 @@ void CMesh::scaleEdgeLenToUnit()
 
 	double length = 0.;
 	int edgeNum = 0;
-	bool *heVisisted = new bool[m_nEdge];
-	for (int i = 0; i < m_nEdge; ++i)
+	bool *heVisisted = new bool[m_nHalfEdge];
+	for (int i = 0; i < m_nHalfEdge; ++i)
 		heVisisted[i] = false;
 
-	for (int i = 0; i < m_nEdge; ++i)
+	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
 		if (heVisisted[i]) continue;
 		
 		edgeNum++;
 		length += m_HalfEdges[i]->getLength();
 
-		int twin = m_pEdge[i].m_iTwinEdge;
+		int twin = m_pHalfEdge[i].m_iTwinEdge;
 		if (twin >= 0) heVisisted[twin] = true;
 	}
 	delete []heVisisted;
@@ -3079,7 +3074,7 @@ std::vector<int> CMesh::getNeighboringVertex( int v, int ring ) const
 			for (int l = 0; l < m_pVertex[idx].m_nValence; ++l)
 			{
 				int et = m_pVertex[idx].m_piEdge[l];
-				int vt = m_pEdge[et].m_iVertex[1];
+				int vt = m_pHalfEdge[et].m_iVertex[1];
 				if (m_pVertex[vt].m_mark == v) continue;
 				else
 				{
@@ -3160,7 +3155,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 
 	m_nVertex = (int)VertexList.size();
 	m_nFace = (int)FaceList.size() / 3;
-	m_nEdge = 3 * m_nFace;		//number of half-edges
+	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];

@@ -14,10 +14,8 @@
 #include "Quat.h"
 #include "../util/util.h"
 
-#define MAX_VERTEX_PER_FACE 20
-#define MAX_RING_NUMBER		15
-
-
+const int MAX_VERTEX_PER_FACE = 20;
+const int MAX_RING_NUMBER = 15;
 const int MAX_HOLE_SIZE = 20;
 
 class MyNote{
@@ -32,10 +30,7 @@ public:
 
 class NoteCompare {
 public:
-	bool operator()(const MyNote& Left, const MyNote& Right) const 
-	{
-		return ( Left.m_score < Right.m_score );
-	}
+	bool operator()(const MyNote& Left, const MyNote& Right) const { return ( Left.m_score < Right.m_score ); }
 };
 
 typedef std::priority_queue<MyNote, std::vector<MyNote>, NoteCompare> NoteQueue;
@@ -46,14 +41,12 @@ public:
 	double m_geodesic;
 public:
 	GeoNote(int mid, double geo) {m_id = mid; m_geodesic = geo;}
-	GeoNote& operator = (const GeoNote& note) {m_id=note.m_id;m_geodesic=note.m_geodesic;return(*this);}
+	GeoNote& operator = (const GeoNote& note) { m_id=note.m_id; m_geodesic = note.m_geodesic; return(*this); }
 };
 
 class GeoCompare {
 public:
-	bool operator()(const GeoNote& Left, const GeoNote& Right) const {
-		return ( Left.m_geodesic > Right.m_geodesic );
-	}
+	bool operator()(const GeoNote& Left, const GeoNote& Right) const { return ( Left.m_geodesic > Right.m_geodesic ); }
 };
 
 typedef std::priority_queue<GeoNote, std::vector<GeoNote>, GeoCompare> GeoQueue;
@@ -64,13 +57,6 @@ public:
 	HKParam& operator =(const HKParam& hkp);
 	double m_votes;
 	virtual void clear();
-};
-
-struct MatchCandidate
-{
-	int v_idx;		//index in original mesh
-	double score;
-	MatchCandidate(int idx, double s) { v_idx = idx; score = s; } 
 };
 
 class CFace;
@@ -106,7 +92,6 @@ public:
 	
 	int			 m_vMatched;
 	double       m_matchScore;
-	std::vector<MatchCandidate> m_vMatchVertices;
 
 	HKParam		 m_vParam;			// this is VectorND + votes, likely to be HKC norm
 	double		 m_LocalGeodesic;	// geodesic from local vertex
@@ -234,8 +219,8 @@ private:
 public:
 	int		    m_nVertex;				// number of vertices
 	CVertex*	m_pVertex;				// array pointer of vertices
-	int		    m_nEdge;				// number of half-edges
-	CHalfEdge*	m_pEdge; 				// array pointer of half-edges
+	int		    m_nHalfEdge;				// number of half-edges
+	CHalfEdge*	m_pHalfEdge; 				// array pointer of half-edges
 	int			m_nFace;	 			// number of faces
 	CFace*		m_pFace;				// array pointer of faces
 

@@ -103,7 +103,7 @@ void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 	cout << "--Decomposition time: " << tt << endl;
 }
 
-void ManifoldHarmonics::write( std::string meshPath )
+void ManifoldHarmonics::write( const std::string& meshPath ) const
 {
 	ofstream ofs(meshPath.c_str(), ios::trunc);
 	ofs << m_nEigFunc << endl;
@@ -119,7 +119,7 @@ void ManifoldHarmonics::write( std::string meshPath )
 	cout << "MHB saved to " << meshPath << endl;
 }
 
-void ManifoldHarmonics::read( std::string meshPath )
+void ManifoldHarmonics::read( const std::string& meshPath )
 {
 	// 	FILE* file = NULL;
 	// 	fopen_s(&file, meshPath.c_str(), "rb");
