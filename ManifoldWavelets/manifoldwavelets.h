@@ -4,15 +4,16 @@
 #include <QtGui/QMainWindow>
 #include "ui_manifoldwavelets.h"
 
-class ManifoldWavelets : public QMainWindow
+class QManifoldWavelets : public QMainWindow
 {
 	Q_OBJECT
 
 public:
-	ManifoldWavelets(QWidget *parent = 0, Qt::WFlags flags = 0);
-	~ManifoldWavelets();
+	QManifoldWavelets(QWidget *parent = 0, Qt::WFlags flags = 0);
+	~QManifoldWavelets();
 
 private:
+	QString statusBarMsg;
 	Ui::ManifoldWaveletsClass ui;
 };
 
