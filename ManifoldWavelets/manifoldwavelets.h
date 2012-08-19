@@ -2,8 +2,9 @@
 #define MANIFOLDWAVELETS_H
 
 #include <QtGui/QMainWindow>
+#include <util/OutputHelper.h>
 #include "ui_manifoldwavelets.h"
-#include "OutputHelper.h"
+
 
 class QManifoldWavelets : public QMainWindow
 {

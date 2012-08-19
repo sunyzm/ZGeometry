@@ -15,8 +15,9 @@ QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
-	qout.output("Welcome!", OUT2CONSOLE);
-	qout.output("For computation and visualization of manifold wavelet", OUT2STATUS);
+	qout.output("Welcome!", OUT_CONSOLE);
+	qout.outputDateTime(OUT_CONSOLE);
+	qout.output("For computation and visualization of manifold wavelet", OUT_STATUS);
 }
 
 QManifoldWavelets::~QManifoldWavelets()

@@ -74,7 +74,10 @@
     <ClCompile Include="GeneratedFiles\Release\moc_glmeshwidget.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="OutputHelper.cpp">
+    <ClCompile Include="..\src\util\color.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\util\OutputHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -117,7 +120,7 @@
     <ClInclude Include="..\src\util\color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="OutputHelper.h">
+    <ClInclude Include="..\src\util\OutputHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

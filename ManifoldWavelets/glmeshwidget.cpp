@@ -1,5 +1,5 @@
 #include "glmeshwidget.h"
-#include "OutputHelper.h"
+#include <util/OutputHelper.h>
 
 static OutputHelper qout;
 
@@ -74,4 +74,6 @@ void GLMeshWidget::draw()
 		}
 		glEnd();
 	}
+
+	qout.output("Welcome from GLMesh!", OUT_CONSOLE);
 }
