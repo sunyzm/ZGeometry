@@ -1,6 +1,5 @@
 #include "Arcball.h"
 
-using namespace std;
 
 CArcball::CArcball( int win_width, int win_height, int ox, int oy )
 {
@@ -22,7 +21,7 @@ void CArcball::_plane2sphere( const Vector2D & p, Vector3D & q )
   double l = sqrt( f*f );
 
   if( l > 1.0 ){
-      q=Vector3D( f.x/l, f.y/l,0);
+      q = Vector3D( f.x/l, f.y/l,0);
       return;
   }
 

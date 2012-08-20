@@ -157,4 +157,9 @@ public:
 	friend Vector3D operator*(const Matrix3& mat1, const Vector3D& vec);
 };
 
+/////////////////////////////////////////////////////////////
+// Helper functions
+/////////////////////////////////////////////////////////////
+Vector3D triArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+
 #endif 

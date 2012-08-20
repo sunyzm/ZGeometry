@@ -537,3 +537,9 @@ VectorND operator-( const VectorND& v1, const VectorND& v2 )
 	}
 	return v;
 }
+
+Vector3D triArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3 )
+{
+	Vector3D v12 = v2 - v1, v23 = v3 - v2;
+	return (v12 ^ v23);
+}

@@ -6,7 +6,7 @@
 
 using namespace std;
 
-OutputHelper qout;
+extern OutputHelper qout;
 const char* g_meshListName = "meshfiles.cfg";
 
 QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
@@ -38,20 +38,29 @@ bool QManifoldWavelets::initialize()
 		qout.output("Cannot open " + QString(g_meshListName), OUT_MSGBOX);
 		return false;
 	}
-	vector<string> meshFileList;
+	vector<string> vMeshFiles;
 	while (!meshfiles.eof())
 	{
 		string meshFileName;
 		getline(meshfiles, meshFileName);
 		if (meshFileName == "") continue;
 		if (meshFileName[0] == '#') continue;
-		else meshFileList.push_back(meshFileName);
+		else vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
 	
-	mesh1.Load()
+	if (!mesh1.Load(vMeshFiles.front()))
+	{
+		qout.output("Cannot open " + vMeshFiles.front(), OUT_MSGBOX);
+		return false;
+	}	
+	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 
-	qout.output(QString(meshFileList.front().c_str()));
+	mesh1.scaleEdgeLenToUnit();
+	mesh1.gatherStatistics();
+
+	ui.glMeshWidget->setMesh(&mesh1, 0);
+	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
 
 	return true;
 }

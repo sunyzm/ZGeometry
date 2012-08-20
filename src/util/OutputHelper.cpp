@@ -3,11 +3,12 @@
 #include <QDateTime>
 #include <Qtgui/QMessageBox>
 
+OutputHelper qout;
+
 OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL)
 {
 
 }
-
 
 OutputHelper::~OutputHelper(void)
 {
@@ -24,6 +25,11 @@ void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout
 	{
 		QMessageBox::information(NULL, "Important!", msg, QMessageBox::Ok);
 	}
+}
+
+void OutputHelper::output( std::string& msg, int venue /*= OUT_CONSOLE*/, double timeout /*= 0.0*/ )
+{
+	output(QString(msg.c_str()), venue, timeout);
 }
 
 

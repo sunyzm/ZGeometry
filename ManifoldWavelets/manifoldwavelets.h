@@ -1,11 +1,10 @@
 #ifndef MANIFOLDWAVELETS_H
 #define MANIFOLDWAVELETS_H
 
+#include "ui_manifoldwavelets.h"
 #include <QtGui/QMainWindow>
 #include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
-#include "ui_manifoldwavelets.h"
-
 
 class QManifoldWavelets : public QMainWindow
 {
@@ -23,6 +22,7 @@ private:
 //	QString statusBarMsg;
 
 	CMesh mesh1;
+	void drawMesh();
 };
 
 #endif // MANIFOLDWAVELETS_H

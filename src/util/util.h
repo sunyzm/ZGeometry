@@ -3,7 +3,8 @@
 #include <sstream>
 #include <cmath>
 #include "color.h"
-#define PI 3.14159265358979323846
+
+const double PI = 3.14159265358979323846;
 
 inline std::string Int2String(int i)
 {

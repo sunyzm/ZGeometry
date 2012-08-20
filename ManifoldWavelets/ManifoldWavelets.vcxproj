@@ -131,6 +131,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\mesh\arcball.cpp" />
     <ClCompile Include="..\src\mesh\Geometry.cpp" />
     <ClCompile Include="..\src\mesh\Laplacian.cpp" />
     <ClCompile Include="..\src\mesh\Mesh.cpp" />
@@ -167,6 +168,7 @@
     <ClCompile Include="glmeshwidget.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="manifoldwavelets.cpp" />
+    <ClCompile Include="MeshProcessor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="manifoldwavelets.h">
@@ -210,6 +212,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\mesh\arcball.h" />
     <ClInclude Include="..\src\mesh\Geometry.h" />
     <ClInclude Include="..\src\mesh\Laplacian.h" />
     <ClInclude Include="..\src\mesh\Mesh.h" />
@@ -219,6 +222,7 @@
     <ClInclude Include="..\src\util\timer.h" />
     <ClInclude Include="..\src\util\util.h" />
     <ClInclude Include="GeneratedFiles\ui_manifoldwavelets.h" />
+    <ClInclude Include="MeshProcessor.h" />
     <CustomBuild Include="glmeshwidget.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing glmeshwidget.h...</Message>
