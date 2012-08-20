@@ -64,7 +64,6 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = 0;
-
 }
 
 CVertex::CVertex( const CVertex& v )

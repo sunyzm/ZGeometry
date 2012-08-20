@@ -7,6 +7,7 @@ extern OutputHelper qout;
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
 QString qformat;
+Qt::MouseButton gButton;
 
 GLMeshWidget::GLMeshWidget(QWidget *parent)
 	: QGLWidget(parent)
@@ -19,11 +20,112 @@ GLMeshWidget::GLMeshWidget(QWidget *parent)
 	g_myNear = 1.0;
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
+
+	objSelect = -1;
 }
 
 GLMeshWidget::~GLMeshWidget()
 {
 
+}
+
+void GLMeshWidget::mousePressEvent(QMouseEvent *event)
+{
+	if (event->button() == Qt::LeftButton)
+	{
+		gButton = Qt::LeftButton;
+		g_arcball = CArcball(width(), height(), event->x() - width()/2, height()/2 - event->y());
+	}
+	else if (event->button() == Qt::MidButton)
+	{
+		gButton = Qt::MidButton;
+		g_startx = event->x();
+		g_starty = event->y();
+	}
+	else if (event->button() == Qt::RightButton)
+	{
+		gButton = Qt::RightButton;
+		g_startx = event->x();
+		g_starty = event->y();
+	}
+}
+
+void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
+{
+	Vector3D trans;
+	CQrot    rot;
+
+	int win_width = this->width(), win_height = this->height();
+	int x = event->x(), y = event->y();
+
+	if (gButton == Qt::LeftButton ) 
+	{
+		rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
+		if (objSelect == 0) 
+			ObjRot1 = rot * ObjRot1;
+		else if (objSelect == 1) 
+			ObjRot2 = rot * ObjRot2;
+		else 
+		{
+			ObjRot1 = rot * ObjRot1; 
+			ObjRot2 = rot * ObjRot2;
+		}
+	}
+	else if (gButton == Qt::MidButton) 
+	{
+		float scale = 3.0 * mp[0].mesh->m_bBox.x / win_height;
+		trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
+		g_startx = x;
+		g_starty = y;
+		if (objSelect == 0) 
+			ObjTrans1 = ObjTrans1 + trans;
+		else if (objSelect == 1) 
+			ObjTrans2 = ObjTrans2 + trans;
+		else 
+		{
+			ObjTrans1 = ObjTrans1 + trans; 
+			ObjTrans2 = ObjTrans2 + trans;
+		}
+	}
+	else if (gButton == Qt::RightButton ) 
+	{
+		float scale = 5.0 * mp[0].mesh->m_bBox.y / win_height;
+		trans =  Vector3D(0, 0, scale * (g_starty - y));
+		g_startx = x;
+		g_starty = y;
+		if(objSelect == 0) 
+			ObjTrans1 = ObjTrans1 + trans;
+		else if(objSelect == 1) 
+			ObjTrans2 = ObjTrans2 + trans;
+		else 
+		{
+			ObjTrans1 = ObjTrans1 + trans; 
+			ObjTrans2 = ObjTrans2 + trans;
+		}
+	}
+
+	updateGL();
+}
+
+void GLMeshWidget::wheelEvent(QWheelEvent *event)
+{
+	if (event->modifiers() & Qt::ControlModifier)
+	{
+		int numSteps = event->delta();
+		float scale = 3.0 * mp[0].mesh->m_bBox.x / this->height();
+		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
+		
+		if(objSelect == 0) 
+			ObjTrans1 = ObjTrans1 + trans;
+		else if(objSelect == 1) 
+			ObjTrans2 = ObjTrans2 + trans;
+		else 
+		{
+			ObjTrans1 = ObjTrans1 + trans; 
+			ObjTrans2 = ObjTrans2 + trans;
+		}
+	}
+	updateGL();
 }
 
 void GLMeshWidget::initializeGL()

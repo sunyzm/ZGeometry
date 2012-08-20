@@ -18,12 +18,15 @@ protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
 	void paintGL();
+	void mousePressEvent(QMouseEvent *event);
+	void mouseMoveEvent(QMouseEvent *event);
+	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
-
 private:
 	void draw();
 	
+	int objSelect;
 	MeshProcessor   mp[2];
 
 	CArcball		g_arcball;
@@ -35,8 +38,9 @@ private:
 	GLdouble		g_myNear;
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
-
-//	int				g_startx, g_starty;
+	
+//	QPoint          lastPos;
+	int				g_startx, g_starty;
 };
 
 #endif // GLMESHWIDGET_H
