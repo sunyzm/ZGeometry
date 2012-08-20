@@ -2,6 +2,7 @@
 #define MANIFOLDWAVELETS_H
 
 #include <QtGui/QMainWindow>
+#include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
 #include "ui_manifoldwavelets.h"
 
@@ -15,11 +16,13 @@ public:
 	QManifoldWavelets(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~QManifoldWavelets();
 
+	bool initialize();
+
 private:
-	QString statusBarMsg;
 	Ui::ManifoldWaveletsClass ui;
-	
-	void InfoOutput(const QString& msg, int venue = 1); //1: console, 2: status bar
+//	QString statusBarMsg;
+
+	CMesh mesh1;
 };
 
 #endif // MANIFOLDWAVELETS_H

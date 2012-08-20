@@ -1263,7 +1263,8 @@ void CMesh::findHoles()
 			vi = m_pHalfEdge[eout].m_iVertex[1];
 			eout = m_pVertex[vi].m_piEdge[m_pVertex[vi].m_nValence - 1];
 		}
-		if((int)v_temp.size() > MAX_HOLE_SIZE) continue; // boundary	
+		if((int)v_temp.size() > MAX_HOLE_SIZE) 
+			continue; // boundary	
 		for(vector<int>::iterator it_v = v_temp.begin(); it_v != v_temp.end(); it_v++) 
 			m_pVertex[*it_v].m_bIsHole = true;
 	}

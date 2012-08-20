@@ -1,6 +1,13 @@
+#include <fstream>
+#include <string>
+#include <vector>
+#include <QtGui/QMessageBox>
 #include "manifoldwavelets.h"
 
+using namespace std;
+
 OutputHelper qout;
+const char* g_meshListName = "meshfiles.cfg";
 
 QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -8,8 +15,6 @@ QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	ui.setupUi(this);
 
 	ui.centralWidget->setLayout(ui.mainLayout);
-	statusBarMsg = "For computation and visualization of manifold wavelet";
-	ui.statusBar->showMessage(statusBarMsg);
 
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	
@@ -22,4 +27,31 @@ QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 
 QManifoldWavelets::~QManifoldWavelets()
 {
+}
+
+bool QManifoldWavelets::initialize()
+{
+	//// load meshes ////
+	ifstream meshfiles(g_meshListName);
+	if (!meshfiles)
+	{
+		qout.output("Cannot open " + QString(g_meshListName), OUT_MSGBOX);
+		return false;
+	}
+	vector<string> meshFileList;
+	while (!meshfiles.eof())
+	{
+		string meshFileName;
+		getline(meshfiles, meshFileName);
+		if (meshFileName == "") continue;
+		if (meshFileName[0] == '#') continue;
+		else meshFileList.push_back(meshFileName);
+	}
+	meshfiles.close();
+	
+	mesh1.Load()
+
+	qout.output(QString(meshFileList.front().c_str()));
+
+	return true;
 }

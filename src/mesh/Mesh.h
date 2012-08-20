@@ -1,5 +1,6 @@
 #ifndef _MESH_H_
 #define _MESH_H_
+
 #include <cstdio>
 #include <cmath>
 #include <list>
@@ -10,13 +11,13 @@
 #include <queue>
 #include <string>
 #include <algorithm>
+#include <util/util.h>
 #include "Geometry.h"
 #include "Quat.h"
-#include "../util/util.h"
 
-const int MAX_VERTEX_PER_FACE = 20;
-const int MAX_RING_NUMBER = 15;
-const int MAX_HOLE_SIZE = 20;
+#define MAX_VERTEX_PER_FACE 20
+#define MAX_RING_NUMBER 15
+#define MAX_HOLE_SIZE 20
 
 class MyNote{
 public:
