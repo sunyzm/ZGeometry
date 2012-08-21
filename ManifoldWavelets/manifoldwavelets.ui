@@ -147,6 +147,11 @@
            <verstretch>3</verstretch>
           </sizepolicy>
          </property>
+         <property name="font">
+          <font>
+           <family>Consolas</family>
+          </font>
+         </property>
         </widget>
         <widget class="QPlainTextEdit" name="consoleInput">
          <property name="sizePolicy">
@@ -187,6 +192,7 @@
     <property name="title">
      <string>Display</string>
     </property>
+    <addaction name="actionEigenfunction"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -201,6 +207,11 @@
   <action name="actionCompute_Laplacian">
    <property name="text">
     <string>Compute Laplacian</string>
+   </property>
+  </action>
+  <action name="actionEigenfunction">
+   <property name="text">
+    <string>Eigenfunction</string>
    </property>
   </action>
  </widget>

@@ -3,19 +3,25 @@
 #include <util/util.h>
 #include <gl/glu.h>
 
-extern OutputHelper qout;
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
+
+extern OutputHelper qout;
 extern QString qformat;
+extern int g_objSelect;
 Qt::MouseButton gButton;
 
 
+void glFalseColor(float v, float p)
+{
+	int floor = v * 255.0;
+	glColor4f(FalseColorMap::RedMap[floor], FalseColorMap::GreenMap[floor], FalseColorMap::BlueMap[floor], p);
+}
 
 GLMeshWidget::GLMeshWidget(QWidget *parent)
 	: QGLWidget(parent)
 {
-	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
-
+//	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
 	g_EyeZ = 10.0;
 	ObjRot1 = ObjRot2 = CQrot(1,0,0,0);
 	ObjTrans1 = ObjTrans2 = Vector3D(0,0,0);
@@ -23,7 +29,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	objSelect = 0;
+	FalseColorMap::BuildLUT();
 }
 
 GLMeshWidget::~GLMeshWidget()
@@ -69,11 +75,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	if (gButton == Qt::LeftButton ) 
 	{
 		rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-		if (objSelect == 0) 
+		if (g_objSelect == 0) 
 			ObjRot1 = rot * ObjRot1;
-		else if (objSelect == 1) 
+		else if (g_objSelect == 1) 
 			ObjRot2 = rot * ObjRot2;
-		else 
+		else if(g_objSelect == -1)
 		{
 			ObjRot1 = rot * ObjRot1; 
 			ObjRot2 = rot * ObjRot2;
@@ -85,11 +91,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 		g_startx = x;
 		g_starty = y;
-		if (objSelect == 0) 
+		if (g_objSelect == 0) 
 			ObjTrans1 = ObjTrans1 + trans;
-		else if (objSelect == 1) 
+		else if (g_objSelect == 1) 
 			ObjTrans2 = ObjTrans2 + trans;
-		else 
+		else if(g_objSelect == -1)
 		{
 			ObjTrans1 = ObjTrans1 + trans; 
 			ObjTrans2 = ObjTrans2 + trans;
@@ -101,11 +107,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		trans =  Vector3D(0, 0, scale * (g_starty - y));
 		g_startx = x;
 		g_starty = y;
-		if(objSelect == 0) 
+		if(g_objSelect == 0) 
 			ObjTrans1 = ObjTrans1 + trans;
-		else if(objSelect == 1) 
+		else if(g_objSelect == 1) 
 			ObjTrans2 = ObjTrans2 + trans;
-		else 
+		else if(g_objSelect == -1)
 		{
 			ObjTrans1 = ObjTrans1 + trans; 
 			ObjTrans2 = ObjTrans2 + trans;
@@ -123,11 +129,11 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		if(objSelect == 0) 
+		if(g_objSelect == 0) 
 			ObjTrans1 = ObjTrans1 + trans;
-		else if(objSelect == 1) 
+		else if(g_objSelect == 1) 
 			ObjTrans2 = ObjTrans2 + trans;
-		else 
+		else if(g_objSelect == -1)
 		{
 			ObjTrans1 = ObjTrans1 + trans; 
 			ObjTrans2 = ObjTrans2 + trans;
@@ -213,7 +219,13 @@ void GLMeshWidget::draw()
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 	
-	drawMesh(vpMP[0]->mesh, ObjRot1, ObjTrans1, color1);
+// 	if (vSettings[0].displayType == DisplaySettings::Mesh)
+// 		drawMesh(vpMP[0]->mesh, ObjRot1, ObjTrans1, color1);
+	
+	if (vSettings[0].displayType == DisplaySettings::Mesh || vSettings[0].displayType == DisplaySettings::Signature)
+	{
+		drawMeshExt(0);
+	}
 }
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
@@ -288,4 +300,98 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 	}
 	
 	glPopMatrix();
+}
+
+void GLMeshWidget::drawMeshExt( int obj )
+{
+	CMesh* tmesh = vpMP[obj]->mesh;
+	CQrot rot = (obj == 0) ? ObjRot1 : ObjRot2;
+	Vector3D trans = (obj == 0) ? ObjTrans1 : ObjTrans2;
+	const GLfloat *color = (obj == 0) ? color1 : color2;
+	if(!tmesh) return;
+
+	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
+	//  glMateriali(GL_FRONT, GL_SHININESS, 96);
+
+	glPushMatrix();
+	setupObject(rot, trans);
+
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1.0, 1.0);
+	
+	if (vSettings[obj].displayType == DisplaySettings::Mesh || vpMP[obj]->vDisplaySignature.empty())
+	{	// just display mesh in single color
+		glBegin(GL_TRIANGLES);
+		for (int i = 0; i < tmesh->m_nFace; i++)
+		{
+			if(!tmesh->m_pFace[i].m_piEdge) continue;
+			for (int j = 0; j < 3; j++)
+			{
+				int pi = tmesh->m_pFace[i].m_piVertex[j];
+				glColor4f(color[0], color[1], color[2], color[3]); 
+				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+				glNormal3f(norm.x, norm.y, norm.z);
+				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+				//vt -= tmesh->m_Center;
+				glVertex3f(vt.x, vt.y, vt.z);
+			}
+		}
+		glEnd();
+	}
+	else 
+	{	
+		//display signature value in false color
+	 	glBegin(GL_TRIANGLES);
+	 	for (int i = 0; i < tmesh->m_nFace; i++)
+	 	{
+	 		if(!tmesh->m_pFace[i].m_piEdge) continue;
+	 		for (int j = 0; j < 3; j++)
+	 		{
+	 			int pi = tmesh->m_pFace[i].m_piVertex[j];
+	 			float scaleVal = vpMP[obj]->vDisplaySignature[pi];
+	 			glFalseColor(scaleVal, 1.0f);	 				
+	 			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+	 			glNormal3f(norm.x, norm.y, norm.z);	 				
+	 			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+	 			//vt -= tmesh->m_Center;
+	 			glVertex3f(vt.x, vt.y, vt.z);
+	 		}
+	 	}
+	 	glEnd();
+	}
+	
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
+
+	if (tmesh->hasBounary())   //highlight boundary edge 
+	{
+		glDisable(GL_LIGHTING);
+		glBegin(GL_LINES);	
+		for(int i = 0; i < tmesh->m_nHalfEdge; i++)
+		{
+			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
+			{
+				int p1 = tmesh->m_pHalfEdge[i].m_iVertex[0];
+				int p2 = tmesh->m_pHalfEdge[i].m_iVertex[1];
+				glLineWidth(2.0);
+				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+				if(tmesh->m_pVertex[p1].m_bIsHole) 
+				{
+					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+				}
+				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
+				//v1 -= tmesh->m_Center;
+				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
+				//v2 -= tmesh->m_Center;
+				glVertex3d(v1.x, v1.y, v1.z);
+				glVertex3d(v2.x, v2.y, v2.z);
+			}
+		}
+		glEnd();
+		glEnable(GL_LIGHTING);
+	}
+
+	glPopMatrix();
+
 }

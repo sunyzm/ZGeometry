@@ -5,8 +5,11 @@ using namespace std;
 
 MeshProcessor::MeshProcessor(void)
 {
+	ep = NULL;
 	mesh = NULL;
 	isMHBuilt = false;
+	pRef = -1;
+	m_size = 0;
 }
 
 
@@ -17,7 +20,8 @@ MeshProcessor::~MeshProcessor(void)
 
 void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
-	mhb.decompLaplacian(this->ep, this->mesh, nEigFunc, LBO_COT);
+	if (mhb.decompLaplacian(this->ep, this->mesh, nEigFunc, LBO_COT))
+		this->isMHBuilt = true;
 }
 
 void MeshProcessor::readMHB( std::string path )
@@ -59,3 +63,18 @@ void MeshProcessor::writeMHB(std::string path)
 	}
 	ofs.close();	
 }
+
+void MeshProcessor::normalizeFrom(const std::vector<double>& vFrom)
+{
+	if (vFrom.empty()) return;	
+	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
+	vector<double>::const_iterator iMin = iResult.first, iMax = iResult.second;
+	double sMin = *iMin, sMax = *iMax;
+
+	this->vDisplaySignature.clear();
+	for (vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
+	{
+		vDisplaySignature.push_back((*iter - sMin)/(sMax - sMin));
+	}
+}
+

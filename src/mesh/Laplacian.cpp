@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type /*= LBO_COT*/ )
+bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type /*= LBO_COT*/ )
 {
 	m_func.clear();
 
@@ -88,6 +88,7 @@ void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 	mxDestroyArray(SS);
 	mxDestroyArray(Numv);
 
+	return true;
 }
 
 void ManifoldHarmonics::write( const std::string& meshPath ) const

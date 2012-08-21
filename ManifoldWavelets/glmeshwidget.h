@@ -36,11 +36,10 @@ protected:
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
+	void drawMeshExt(int obj);
 private:
 	void draw();
 	
-	int objSelect;	// -1 means all objects
-
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;
 	CQrot			ObjRot1;

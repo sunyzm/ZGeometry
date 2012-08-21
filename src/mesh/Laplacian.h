@@ -29,7 +29,7 @@ public:
 	int m_nEigFunc; // number of basis
 public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
-	void decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type = LBO_COT);
+	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type = LBO_COT);
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
 };

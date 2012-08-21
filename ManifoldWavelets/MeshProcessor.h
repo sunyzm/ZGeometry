@@ -3,6 +3,7 @@
 #include <engine.h>
 #include <mesh/Laplacian.h>
 #include <string>
+#include <vector>
 
 class MeshProcessor
 {
@@ -12,12 +13,14 @@ public:
 	void decomposeLaplacian(int nEigFunc);
 	void readMHB(std::string path);
 	void writeMHB(std::string path);
+	void normalizeFrom(const std::vector<double>& vFrom);
 
 	CMesh* mesh;
 	Engine *ep;
 	ManifoldHarmonics mhb;
-
+	std::vector<double> vDisplaySignature;
+	int pRef;
 	bool isMHBuilt;
-	int size;
+	int m_size;
 };
 

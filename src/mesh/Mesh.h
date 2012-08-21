@@ -117,10 +117,10 @@ public:
 	Vector3D			getNormal() const { return m_vNormal; }
 	void				calcNormal();
 	std::vector<CFace*> getAdjacentFaces();
-	const Vector3D&		getPos() const {return m_vPosition;} 
+	const Vector3D&		getPos() const { return m_vPosition; } 
 	bool				judgeOnBoundary();
-	bool				isValid() const {return m_bIsValid;}
-	void				invalidate(bool flag) {m_bIsValid = flag;}
+	bool				isValid() const { return m_bIsValid; }
+	void				invalidate(bool flag) { m_bIsValid = flag; }
 	void				translateAndScale(Vector3D translation, double s);
 
 public:

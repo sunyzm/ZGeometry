@@ -19,10 +19,10 @@ public:
 	~QManifoldWavelets();
 
 	bool initialize();
-
 private slots:
 	void computeLaplace();
-
+	void displayEigenfunction();
+	void makeConnections();
 private:
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;
@@ -32,7 +32,6 @@ private:
 	Engine *m_ep;
 	CMesh mesh1;
 	MeshProcessor vMP[2];
-	void drawMesh();
 };
 
 #endif // MANIFOLDWAVELETS_H
