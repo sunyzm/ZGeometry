@@ -4,6 +4,15 @@
 #include <QGLWidget>
 #include <mesh/arcball.h>
 #include "MeshProcessor.h"
+#include <vector>
+
+struct DisplaySettings
+{
+	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false) {}
+	enum {PointCloud, Mesh, Signature} displayType;
+	bool showFeatures;
+	bool showRefPoint;
+};
 
 class GLMeshWidget : public QGLWidget
 {
@@ -13,7 +22,11 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
-	void setMesh(CMesh* cm, int i = 0);
+
+	std::vector<MeshProcessor*> vpMP;
+	std::vector<DisplaySettings> vSettings;
+	
+	void addMesh(MeshProcessor* pmp);
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -26,8 +39,7 @@ protected:
 private:
 	void draw();
 	
-	int objSelect;
-	MeshProcessor   mp[2];
+	int objSelect;	// -1 means all objects
 
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;
@@ -39,7 +51,6 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	
-//	QPoint          lastPos;
 	int				g_startx, g_starty;
 };
 

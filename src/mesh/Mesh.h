@@ -217,6 +217,7 @@ private:
 
 	bool m_bIsPointerVectorExist;		// whether vertex, HalfEdge, Face data is local
 	bool m_bIsArrayRepresentationExist;
+	int  m_nBoundaryEdgeNum;
 public:
 	int		    m_nVertex;				// number of vertices
 	CVertex*	m_pVertex;				// array pointer of vertices
@@ -256,7 +257,8 @@ public:
 	int			getFaceNum() {return m_nFace;}
 	double		getAvgEdgeLength() const { return m_edge; }
 	int			GetEdgeNum(  );		// get number of edges ( not half-edge! )
-	int			BoundaryNum(  );    // get number of boundaries
+	int			getBoundaryNum( ) const;    // get number of boundaries
+	bool        hasBounary() const;
 	int			getBoundaryVertexNum(  ) const; // get number of boundary vertices
 	int			EulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			Genus( );			// get mesh genus

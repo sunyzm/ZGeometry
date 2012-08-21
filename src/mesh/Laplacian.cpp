@@ -9,15 +9,12 @@ using namespace std;
 
 void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type /*= LBO_COT*/ )
 {
-	clock_t start, end;
-	start = clock();
-
 	m_func.clear();
 
 	const int nVertex = tmesh->getVerticesNum();
 	m_size = nVertex;
 	m_nEigFunc = std::min(m_size, nEigFunc);
-	
+
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *Numv;
 	AA = mxCreateDoubleMatrix(nVertex, 1, mxREAL);
 	double *aa = mxGetPr(AA);
@@ -53,16 +50,9 @@ void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 	double *ii = mxGetPr(II);
 	double *jj = mxGetPr(JJ);
 	double *ss = mxGetPr(SS);
-
-	for(int k = 0; k < nVertex; k++)
-	{
-		IIv[k] = ii[k];
-		JJv[k] = jj[k];
-		SSv[k] = ss[k];
-	}
-//	std::copy(IIv.begin(), IIv.end(), ii);
-//	std::copy(JJv.begin(), JJv.end(), jj);
-//	std::copy(SSv.begin(), SSv.end(), ss);
+	std::copy(IIv.begin(), IIv.end(), ii);
+	std::copy(JJv.begin(), JJv.end(), jj);
+	std::copy(SSv.begin(), SSv.end(), ss);
 
 	engPutVariable(ep, "II", II);
 	engPutVariable(ep, "JJ", JJ);
@@ -98,9 +88,6 @@ void ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 	mxDestroyArray(SS);
 	mxDestroyArray(Numv);
 
-	end = clock();
-	double tt = double(end-start) / CLOCKS_PER_SEC;
-	cout << "--Decomposition time: " << tt << endl;
 }
 
 void ManifoldHarmonics::write( const std::string& meshPath ) const

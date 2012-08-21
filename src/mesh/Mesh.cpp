@@ -1468,7 +1468,7 @@ int CMesh::GetEdgeNum(  )
 	return -1;
 }
 
-int CMesh::BoundaryNum(  )
+int CMesh::getBoundaryNum() const
 {
 	int boundaryNum = 0;
 
@@ -1546,7 +1546,7 @@ int CMesh::EulerNum(  )
 
 int CMesh::Genus(  )
 {
-	int b = BoundaryNum();
+	int b = getBoundaryNum();
 	int euler_number = EulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
@@ -2967,7 +2967,7 @@ void CMesh::gatherStatistics()
 	this->m_edge = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
-
+	this->m_nBoundaryEdgeNum = getBoundaryNum();
 	//cout << "VertexNum: " << m_Vertices.size() << "    FaceNum: " << m_Faces.size() << endl;
 	//cout << "EdgeNum: " << m_HalfEdges.size() 
 	// 	 << "  AvgEdgLen: " << edgeLength << endl;
@@ -3228,6 +3228,11 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 
 		vFeatures.push_back(j);
 	}
+}
+
+bool CMesh::hasBounary() const
+{
+	return m_nBoundaryEdgeNum > 0;
 }
 
 void HKParam::clear()

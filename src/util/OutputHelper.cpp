@@ -4,6 +4,7 @@
 #include <Qtgui/QMessageBox>
 
 OutputHelper qout;
+QString qformat;
 
 OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL)
 {

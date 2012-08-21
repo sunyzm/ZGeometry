@@ -6,8 +6,10 @@
 extern OutputHelper qout;
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
-QString qformat;
+extern QString qformat;
 Qt::MouseButton gButton;
+
+
 
 GLMeshWidget::GLMeshWidget(QWidget *parent)
 	: QGLWidget(parent)
@@ -21,12 +23,18 @@ GLMeshWidget::GLMeshWidget(QWidget *parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	objSelect = -1;
+	objSelect = 0;
 }
 
 GLMeshWidget::~GLMeshWidget()
 {
 
+}
+
+void GLMeshWidget::addMesh(MeshProcessor* pmp)
+{
+	vpMP.push_back(pmp);
+	vSettings.push_back(DisplaySettings());
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -73,7 +81,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if (gButton == Qt::MidButton) 
 	{
-		float scale = 3.0 * mp[0].mesh->m_bBox.x / win_height;
+		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / win_height;
 		trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 		g_startx = x;
 		g_starty = y;
@@ -89,7 +97,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	}
 	else if (gButton == Qt::RightButton ) 
 	{
-		float scale = 5.0 * mp[0].mesh->m_bBox.y / win_height;
+		float scale = 5.0 * vpMP[0]->mesh->m_bBox.y / win_height;
 		trans =  Vector3D(0, 0, scale * (g_starty - y));
 		g_startx = x;
 		g_starty = y;
@@ -112,7 +120,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 3.0 * mp[0].mesh->m_bBox.x / this->height();
+		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
 		if(objSelect == 0) 
@@ -204,12 +212,8 @@ void GLMeshWidget::draw()
 {
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-	drawMesh(mp[0].mesh, ObjRot1, ObjTrans1, color1);
-}
-
-void GLMeshWidget::setMesh( CMesh* cm, int i/* = 0*/ )
-{
-	mp[i].mesh = cm;
+	
+	drawMesh(vpMP[0]->mesh, ObjRot1, ObjTrans1, color1);
 }
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
@@ -254,6 +258,34 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
-//	glEnable(GL_LIGHTING);
+
+	if (tmesh->hasBounary())   //highlight boundary edge 
+	{
+		glDisable(GL_LIGHTING);
+		glBegin(GL_LINES);	
+		for(int i = 0; i < tmesh->m_nHalfEdge; i++)
+		{
+			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
+			{
+				int p1 = tmesh->m_pHalfEdge[i].m_iVertex[0];
+				int p2 = tmesh->m_pHalfEdge[i].m_iVertex[1];
+				glLineWidth(2.0);
+				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+				if(tmesh->m_pVertex[p1].m_bIsHole) 
+				{
+					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+				}
+				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
+				//v1 -= tmesh->m_Center;
+				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
+				//v2 -= tmesh->m_Center;
+				glVertex3d(v1.x, v1.y, v1.z);
+				glVertex3d(v2.x, v2.y, v2.z);
+			}
+		}
+		glEnd();
+		glEnable(GL_LIGHTING);
+	}
+	
 	glPopMatrix();
 }

@@ -5,6 +5,9 @@
 #include <QtGui/QMainWindow>
 #include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
+#include <engine.h>
+#include "MeshProcessor.h"
+#include <vector>
 
 class QManifoldWavelets : public QMainWindow
 {
@@ -17,11 +20,18 @@ public:
 
 	bool initialize();
 
+private slots:
+	void computeLaplace();
+
 private:
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;
+	int totalShapeNum;
+	int objSelect;
 
+	Engine *m_ep;
 	CMesh mesh1;
+	MeshProcessor vMP[2];
 	void drawMesh();
 };
 
