@@ -18,6 +18,14 @@ MeshProcessor::~MeshProcessor(void)
 
 }
 
+void MeshProcessor::init(CMesh* tm, Engine* e)
+{
+	mesh = tm;
+	ep = e;
+	m_size = mesh->getVerticesNum();
+	pRef = 0;
+}
+
 void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 	if (mhb.decompLaplacian(this->ep, this->mesh, nEigFunc, LBO_COT))

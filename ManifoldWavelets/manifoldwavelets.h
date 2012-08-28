@@ -23,6 +23,7 @@ private slots:
 	void computeLaplace();
 	void displayEigenfunction();
 	void makeConnections();
+	void selectVertex1(int vn);
 private:
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;

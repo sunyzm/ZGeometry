@@ -10,6 +10,7 @@ class MeshProcessor
 public:
 	MeshProcessor(void);
 	~MeshProcessor(void);
+	void init(CMesh* tm, Engine* e);
 	void decomposeLaplacian(int nEigFunc);
 	void readMHB(std::string path);
 	void writeMHB(std::string path);

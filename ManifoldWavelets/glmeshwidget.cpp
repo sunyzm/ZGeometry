@@ -362,11 +362,11 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 	
 	glDisable(GL_POLYGON_OFFSET_FILL);
-
-
+	
+	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
-		glDisable(GL_LIGHTING);
+
 		glBegin(GL_LINES);	
 		for(int i = 0; i < tmesh->m_nHalfEdge; i++)
 		{
@@ -389,7 +389,19 @@ void GLMeshWidget::drawMeshExt( int obj )
 			}
 		}
 		glEnd();
-		glEnable(GL_LIGHTING);
+	}
+	glEnable(GL_LIGHTING);
+
+	if (vpMP[0]->pRef >= 0)
+	{
+		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
+		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+		GLUquadric* quadric = gluNewQuadric();
+		gluQuadricDrawStyle(quadric, GLU_FILL);
+		glPushMatrix();
+		glTranslated(vt.x, vt.y, vt.z);
+		gluSphere(quadric, vpMP[0]->mesh->m_edge*2, 8, 8);
+		glPopMatrix();
 	}
 
 	glPopMatrix();

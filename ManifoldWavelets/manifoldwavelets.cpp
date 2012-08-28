@@ -44,7 +44,11 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionCompute_Laplacian, SIGNAL(triggered()), this, SLOT(computeLaplace()));
 ////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
-	
+	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.horizontalSlider1, SLOT(setValue(int)));
+	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
+	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
+	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
+
 }
 
 bool QManifoldWavelets::initialize()
@@ -55,6 +59,7 @@ bool QManifoldWavelets::initialize()
 		return false;
 	}
 	else qout.output("Matlab engine opened!", OUT_CONSOLE);
+//	engEvalString(m_ep, "addpath('./MATLAB')");   //need to figure out
 
 ////////    load meshes    ////////
 	ifstream meshfiles(g_meshListName);
@@ -83,13 +88,16 @@ bool QManifoldWavelets::initialize()
 	mesh1.scaleEdgeLenToUnit();
 	mesh1.gatherStatistics();
 	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
-
-	vMP[0].mesh = &mesh1;
-	vMP[0].ep = m_ep;
-	vMP[0].m_size = mesh1.getVerticesNum();
+	vMP[0].init(&mesh1, m_ep);
 	ui.glMeshWidget->addMesh(&vMP[0]);
 	
 	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
+
+	ui.spinBox1->setMinimum(0);
+	ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
+	ui.horizontalSlider1->setMinimum(0);
+	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
+	ui.spinBox1->setValue(0);
 	return true;
 }
 
@@ -134,4 +142,10 @@ void QManifoldWavelets::displayEigenfunction()
 	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
 	ui.glMeshWidget->updateGL();
 	qout.output("Show eigenfunction 1");
+}
+
+void QManifoldWavelets::selectVertex1( int vn )
+{
+	vMP[0].pRef = vn;
+	ui.glMeshWidget->updateGL();
 }
