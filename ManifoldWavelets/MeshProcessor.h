@@ -15,7 +15,8 @@ public:
 	void readMHB(std::string path);
 	void writeMHB(std::string path);
 	void normalizeFrom(const std::vector<double>& vFrom);
-
+	void computeMexicanHatWavelet(std::vector<double>& vMHW, int scale, int wtype = 1);
+	void computeExperimentalWavelet(std::vector<double>& vExp, int scale);
 	CMesh* mesh;
 	Engine *ep;
 	ManifoldHarmonics mhb;

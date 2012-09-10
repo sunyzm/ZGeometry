@@ -29,6 +29,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
+	bShowRefPoint = false;
 	FalseColorMap::BuildLUT();
 }
 
@@ -392,7 +393,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 	glEnable(GL_LIGHTING);
 
-	if (vpMP[0]->pRef >= 0)
+	if (vpMP[0]->pRef >= 0 && bShowRefPoint)
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);

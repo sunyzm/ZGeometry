@@ -13,18 +13,24 @@ class QManifoldWavelets : public QMainWindow
 {
 	Q_OBJECT
 
-public:
+public:	// methods
 	friend OutputHelper;
 	QManifoldWavelets(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~QManifoldWavelets();
-
 	bool initialize();
+
 private slots:
 	void computeLaplace();
 	void displayEigenfunction();
-	void makeConnections();
+	void displayMexicanHatWavelet1();
+	void displayMexicanHatWavelet2();
+	void experimental();
 	void selectVertex1(int vn);
-private:
+
+private:	// methods
+	void makeConnections();
+
+private:	// attributes
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;
 	int totalShapeNum;

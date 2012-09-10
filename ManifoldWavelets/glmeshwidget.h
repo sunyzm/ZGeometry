@@ -50,6 +50,7 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	
+	bool            bShowRefPoint;
 	int				g_startx, g_starty;
 };
 

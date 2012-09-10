@@ -193,6 +193,10 @@
      <string>Display</string>
     </property>
     <addaction name="actionEigenfunction"/>
+    <addaction name="actionMexicanHatWavelet1"/>
+    <addaction name="actionMexicanHatWavelet2"/>
+    <addaction name="separator"/>
+    <addaction name="actionExperimental"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -212,6 +216,21 @@
   <action name="actionEigenfunction">
    <property name="text">
     <string>Eigenfunction</string>
+   </property>
+  </action>
+  <action name="actionMexicanHatWavelet1">
+   <property name="text">
+    <string>Mexican-hat Wavelet 1</string>
+   </property>
+  </action>
+  <action name="actionMexicanHatWavelet2">
+   <property name="text">
+    <string>Mexican-hat Wavelet 2</string>
+   </property>
+  </action>
+  <action name="actionExperimental">
+   <property name="text">
+    <string>Experimental</string>
    </property>
   </action>
  </widget>
