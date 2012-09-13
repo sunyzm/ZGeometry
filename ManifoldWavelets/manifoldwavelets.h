@@ -26,7 +26,7 @@ private slots:
 	void displayMexicanHatWavelet2();
 	void experimental();
 	void selectVertex1(int vn);
-
+	void setShowRefPoint(/*bool checked*/);
 private:	// methods
 	void makeConnections();
 

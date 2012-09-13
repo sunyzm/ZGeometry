@@ -197,6 +197,8 @@
     <addaction name="actionMexicanHatWavelet2"/>
     <addaction name="separator"/>
     <addaction name="actionExperimental"/>
+    <addaction name="separator"/>
+    <addaction name="actionShowRefPoint"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -234,6 +236,20 @@
   <action name="actionExperimental">
    <property name="text">
     <string>Experimental</string>
+   </property>
+  </action>
+  <action name="actionShowRefPoint">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="enabled">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show reference point</string>
    </property>
   </action>
  </widget>

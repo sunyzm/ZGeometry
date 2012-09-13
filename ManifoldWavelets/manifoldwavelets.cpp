@@ -52,6 +52,8 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(experimental()));
+//	QObject::connect(ui.actionShowRefPoint, SIGNAL(toggled(bool checked)), this, SLOT(setShowRefPoint(bool checked)));
+	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -201,4 +203,12 @@ void QManifoldWavelets::experimental()
 	ui.glMeshWidget->updateGL();
 	qout.output("Show MHW from point " + QString::number(mp.pRef));
 
+}
+
+void QManifoldWavelets::setShowRefPoint(/*bool checked*/)
+{
+	bool bChecked = ui.actionShowRefPoint->isChecked();
+	ui.glMeshWidget->bShowRefPoint = bChecked;
+	ui.actionShowRefPoint->setChecked(bChecked);
+	ui.glMeshWidget->updateGL();
 }

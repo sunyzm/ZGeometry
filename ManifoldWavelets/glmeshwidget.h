@@ -25,7 +25,7 @@ public:
 
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
-	
+	bool bShowRefPoint;	
 	void addMesh(MeshProcessor* pmp);
 protected:
 	void initializeGL();
@@ -50,7 +50,6 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	
-	bool            bShowRefPoint;
 	int				g_startx, g_starty;
 };
 
