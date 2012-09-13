@@ -41,7 +41,7 @@ void QManifoldWavelets::makeConnections()
 {	
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 ////////	Compute	////////
-	QObject::connect(ui.actionCompute_Laplacian, SIGNAL(triggered()), this, SLOT(computeLaplace()));
+	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplace()));
 
 ////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
@@ -101,6 +101,9 @@ bool QManifoldWavelets::initialize()
 	ui.horizontalSlider1->setMinimum(0);
 	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
 	ui.spinBox1->setValue(0);
+
+	this->computeLaplace();
+
 	return true;
 }
 
@@ -131,6 +134,8 @@ void QManifoldWavelets::computeLaplace()
 		}
 		ofs.close();
 	}
+
+	ui.actionComputeLaplacian->setChecked(true);
 	
 	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + "sec");
 	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[0].mhb.m_func.front().m_val, vMP[0].mhb.m_func.back().m_val));

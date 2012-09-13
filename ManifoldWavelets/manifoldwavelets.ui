@@ -186,7 +186,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionCompute_Laplacian"/>
+    <addaction name="actionComputeLaplacian"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -208,7 +208,10 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionCompute_Laplacian">
+  <action name="actionComputeLaplacian">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Compute Laplacian</string>
    </property>
