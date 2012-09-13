@@ -13,12 +13,13 @@
 *.la
 *.a
 *.lib
-
+q
 # visual studio related
 *.opensdf
 *.sdf
 *.suo
 *.ipch
+*.user
 
 # project specific
 bin/
