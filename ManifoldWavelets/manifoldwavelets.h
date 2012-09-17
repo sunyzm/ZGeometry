@@ -24,6 +24,8 @@ private slots:
 	void displayEigenfunction();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
+	void displayCurvatureMean();
+	void displayCurvatureGauss();
 	void experimental();
 	void selectVertex1(int vn);
 	void setShowRefPoint(/*bool checked*/);

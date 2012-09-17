@@ -72,22 +72,6 @@ void MeshProcessor::writeMHB(std::string path)
 	ofs.close();	
 }
 
-void MeshProcessor::normalizeFrom(const std::vector<double>& vFrom)
-{
-	if (vFrom.empty()) return;	
-	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
-	vector<double>::const_iterator iMin = iResult.first, iMax = iResult.second;
-	double sMin = *iMin, sMax = *iMax;
-
-	this->vDisplaySignature.clear();
-	for (vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
-	{
-		vDisplaySignature.push_back((*iter - sMin)/(sMax - sMin));
-	}
-}
-
-
-
 void MeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, int scale, int wtype /*= 1*/ )
 {
 	vMHW.resize(m_size);
@@ -148,5 +132,75 @@ void MeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, int s
 	}
 	fout << "\n";
 	fout.close();
+}
+
+void MeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
+{
+	vCurvature.resize(m_size);
+	if (curvatureType == 0)
+	{
+		for (int i = 0; i < m_size; ++i)
+		{
+//			mesh->calVertexCurvature(i);
+			vCurvature[i] = mesh->getVertex(i)->m_vMeanCurvature;
+		}
+	}
+	else if (curvatureType == 1)
+	{
+		for (int i = 0; i < m_size; ++i)
+			vCurvature[i] = mesh->getVertex(i)->m_vGaussCurvature;
+	}
+	
+}
+
+void MeshProcessor::normalizeFrom(const std::vector<double>& vFrom)
+{
+	if (vFrom.empty()) return;	
+	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
+	double sMin = *iResult.first, sMax = *iResult.second;
+
+	this->vDisplaySignature.clear();
+	for (vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
+	{
+		vDisplaySignature.push_back((*iter - sMin)/(sMax - sMin));
+	}
+}
+
+void MeshProcessor::logNormalizeFrom( const std::vector<double>& vFrom )
+{
+	if (vFrom.empty()) return;	
+
+	std::vector<double> vLog;
+	vLog.reserve(vFrom.size());
+	for (std::vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
+	{
+		vLog.push_back(std::log(*iter + 1));
+	}
+
+	auto iResult = minmax_element(vLog.begin(), vLog.end());
+	double sMin = *iResult.first, sMax = *iResult.second;
+
+	this->vDisplaySignature.clear();
+	this->vDisplaySignature.reserve(vLog.size());
+	for (std::vector<double>::const_iterator iter = vLog.begin(); iter != vLog.end(); ++iter)
+	{
+		vDisplaySignature.push_back((*iter - sMin)/(sMax - sMin));
+	}
+}
+
+void MeshProcessor::bandCurveFrom( const std::vector<double>& vFrom, double lowend, double highend )
+{
+	assert(lowend < highend);
+	this->vDisplaySignature.clear();
+	this->vDisplaySignature.reserve(vFrom.size());
+	for (std::vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
+	{
+		if (*iter <= lowend)
+			vDisplaySignature.push_back(0.0);
+		else if (*iter >=highend)
+			vDisplaySignature.push_back(1.0);
+		else 
+			vDisplaySignature.push_back((*iter - lowend)/(highend - lowend));
+	}
 }
 

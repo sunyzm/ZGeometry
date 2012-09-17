@@ -32,7 +32,7 @@ bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 		for(int i = 0; i < nVertex; i++)	//for each vertex
 		{
 			double Av;
-			tmesh->CalVertexLBO(i, IIv, JJv, SSv, Av, diagW);
+			tmesh->calVertexLBO(i, IIv, JJv, SSv, Av, diagW);
 			aa[i] = Av;		//mixed area
 		}
 	}

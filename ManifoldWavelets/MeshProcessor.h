@@ -14,9 +14,13 @@ public:
 	void decomposeLaplacian(int nEigFunc);
 	void readMHB(std::string path);
 	void writeMHB(std::string path);
-	void normalizeFrom(const std::vector<double>& vFrom);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, int scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, int scale);
+	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
+
+	void normalizeFrom(const std::vector<double>& vFrom);
+	void logNormalizeFrom(const std::vector<double>& vFrom);
+	void bandCurveFrom(const std::vector<double>& vFrom, double lowend, double highend);
 	CMesh* mesh;
 	Engine *ep;
 	ManifoldHarmonics mhb;

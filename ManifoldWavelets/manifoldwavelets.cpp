@@ -52,8 +52,9 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(experimental()));
-//	QObject::connect(ui.actionShowRefPoint, SIGNAL(toggled(bool checked)), this, SLOT(setShowRefPoint(bool checked)));
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
+	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
+	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -153,7 +154,7 @@ void QManifoldWavelets::displayEigenfunction()
 {
 	MeshProcessor& mp = vMP[g_objSelect];
 	
-	mp.normalizeFrom(mp.mhb.m_func[8].m_vec);
+	mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
 	
 	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
 	ui.glMeshWidget->updateGL();
@@ -211,4 +212,38 @@ void QManifoldWavelets::setShowRefPoint(/*bool checked*/)
 	ui.glMeshWidget->bShowRefPoint = bChecked;
 	ui.actionShowRefPoint->setChecked(bChecked);
 	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::displayCurvatureMean()
+{
+	MeshProcessor& mp = vMP[g_objSelect];
+
+	vector<double> vCurvature;
+	mp.computeCurvature(vCurvature, 0);
+
+	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
+
+	mp.bandCurveFrom(vCurvature, 0, 1);
+
+	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->updateGL();
+	qout.output("Show Mean Curvature");
+}
+
+void QManifoldWavelets::displayCurvatureGauss()
+{
+	MeshProcessor& mp = vMP[g_objSelect];
+
+	vector<double> vCurvature;
+	mp.computeCurvature(vCurvature, 1);
+
+	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
+
+	mp.bandCurveFrom(vCurvature, -1, 1);
+
+	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->updateGL();
+	qout.output("Show Mean Curvature");
 }

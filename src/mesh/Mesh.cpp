@@ -1441,7 +1441,7 @@ double CMesh::getHalfEdgeLen( int iEdge ) const
 	return v.length();
 }
 
-int CMesh::GetEdgeNum(  )
+int CMesh::getEdgeNum(  )
 {
 	if (this->m_bIsPointerVectorExist)
 	{
@@ -1532,7 +1532,7 @@ int CMesh::getBoundaryVertexNum(  ) const
 	return -1;
 }
 
-int CMesh::EulerNum(  )
+int CMesh::getEulerNum(  )
 {
 	int twinedgeNum = 0;
 	for( int i=0; i<m_nHalfEdge; i++ )
@@ -1544,10 +1544,10 @@ int CMesh::EulerNum(  )
 	return m_nVertex - edgeNum + m_nFace;
 }
 
-int CMesh::Genus(  )
+int CMesh::getMeshGenus(  )
 {
 	int b = getBoundaryNum();
-	int euler_number = EulerNum();
+	int euler_number = getEulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
 
@@ -1574,15 +1574,15 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	}
 }
 
-bool CMesh::calVertexCurvature(int i)
+bool CMesh::calVertexCurvature(int vi)
 {
-	double pi = 3.14159265358979323846;
+	const double pi = 3.14159265358979323846;
 	double sum = 0.0;		// sum of attaching corner's angle
 	double amix = 0.0;
 	Vector3D kh;
-	for( int j=0; j<m_pVertex[i].m_nValence; j++ ) {
+	for( int j = 0; j < m_pVertex[vi].m_nValence; j++ ) {
 		// get triangle edges
-		int e0 = m_pVertex[i].m_piEdge[j];
+		int e0 = m_pVertex[vi].m_piEdge[j];
 		int e1 = m_pHalfEdge[e0].m_iNextEdge;
 		int e2 = m_pHalfEdge[e1].m_iNextEdge;
 		// get edge lengths
@@ -1590,26 +1590,26 @@ bool CMesh::calVertexCurvature(int i)
 		double len1 = getHalfEdgeLen( e1 );
 		double len2 = getHalfEdgeLen( e2 );
 		// compute corner angle by cosine law 
-		double corner = acos((len0*len0+len2*len2-len1*len1)/(2.0*len0*len2));
+		double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
 		sum += corner;
 		double cota,cotc;
 		amix += calAreaMixed(len0, len1, len2, cota, cotc);
 		int pt1,pt2;
 		pt1 = m_pHalfEdge[e1].m_iVertex[0];
 		pt2 = m_pHalfEdge[e1].m_iVertex[1];
-		kh += (m_pVertex[i].m_vPosition-m_pVertex[pt1].m_vPosition)*cota+(m_pVertex[i].m_vPosition-m_pVertex[pt2].m_vPosition)*cotc;
+		kh += (m_pVertex[vi].m_vPosition - m_pVertex[pt1].m_vPosition) * cota + (m_pVertex[vi].m_vPosition - m_pVertex[pt2].m_vPosition) * cotc;
 	}
 	
-	if( m_pVertex[i].m_bIsBoundary )	// boundary vertex
+	if( m_pVertex[vi].m_bIsBoundary )	// boundary vertex has zero curvature
 	{	
-		m_pVertex[i].m_vGaussCurvature = 0.0;//(pi - sum)/amix;
-		m_pVertex[i].m_vMeanCurvature = 0.0;
+		m_pVertex[vi].m_vGaussCurvature = 0.0;	//(pi - sum)/amix;
+		m_pVertex[vi].m_vMeanCurvature = 0.0;
 	}
 	else								// inner vertex
 	{
-		m_pVertex[i].m_vGaussCurvature = (2*pi - sum)/amix;
-		kh = kh/(2*amix);
-		m_pVertex[i].m_vMeanCurvature = kh.length()/2.0;
+		m_pVertex[vi].m_vGaussCurvature = (2*pi - sum) / amix;
+		kh = kh / (2*amix);
+		m_pVertex[vi].m_vMeanCurvature = kh.length() / 2.0;
 	}
 	return true;
 }
@@ -1635,7 +1635,7 @@ double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a ) 
 	}
 }
 
-bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>& Sv, double& Av, vector<double>& tw) const
+bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>& Sv, double& Av, vector<double>& tw) const
 {
 	if( i < 0 || i >= m_nVertex) return false;
 	double sum = 0.0;		// sum of attaching corner's angle
@@ -1710,7 +1710,7 @@ bool CMesh::CalVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 	return true;
 }
 
-bool CMesh::CalVertexArea(vector<double>& Av)
+bool CMesh::calVertexArea(vector<double>& Av)
 {
 	Av.resize(m_nVertex,0.0);
 	for(int f = 0; f < m_nFace; f++)
@@ -1964,7 +1964,7 @@ bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
 	return flag;
 }
 
-double CMesh::CalGeodesic( int s, int t ) const
+double CMesh::getGeodesic( int s, int t ) const
 {
 	if(s==t) return 0.0;
 
@@ -2117,7 +2117,7 @@ double CMesh::CalGeodesic( int s, int t ) const
 	return geo;
 }
 
-double CMesh::CalGeodesicToBoundary(int s) const
+double CMesh::getGeodesicToBoundary(int s) const
 {
 	GeoQueue heapqueue;
 
@@ -2270,7 +2270,7 @@ double CMesh::CalGeodesicToBoundary(int s) const
 	return geo;
 }
 
-double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
+double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 {
 	GeoQueue heapqueue;
 	if(!nbg.empty()) nbg.clear();
@@ -2427,7 +2427,7 @@ double CMesh::CalGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 	return geo;
 }
 
-double CMesh::CalGaussianCurvatureIntegration()
+double CMesh::calGaussianCurvatureIntegration()
 {
 	double sum = 0.0;
 	for( int i=0; i<m_nVertex; i++ ) {
@@ -2436,7 +2436,7 @@ double CMesh::CalGaussianCurvatureIntegration()
 	return sum;
 }
 
-double CMesh::CalVolume()
+double CMesh::getVolume()
 {
 	double vol=0.0;
 	for(int fi=0; fi<m_nFace; fi++)
@@ -2451,7 +2451,7 @@ double CMesh::CalVolume()
 	return vol;
 }
 
-bool CMesh::CalAreaRatio(CMesh* tmesh, vector<int>& var)
+bool CMesh::calAreaRatio(CMesh* tmesh, vector<int>& var)
 {
 	if(!var.empty()) var.clear();
 
@@ -2486,7 +2486,7 @@ bool CMesh::CalAreaRatio(CMesh* tmesh, vector<int>& var)
 	return true;
 }
 
-bool CMesh::CalLengthDifference(const CMesh* tmesh, vector<double>& ld) const
+bool CMesh::calLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 {
 	if(!ld.empty()) ld.clear();
 	const double adjustRatio = this->m_edge / tmesh->m_edge;
@@ -2917,13 +2917,14 @@ void CMesh::scaleAreaToVertexNum()
 
 void CMesh::gatherStatistics()
 {
-	// collect statistics
+	// collect/compute statistics
 	// 0. face area and normal
 	// 1. m_edge (avg edge length)
 	// 2. boundingBox
 	// 3. center
 	// 4. boundary vertex number
 	// 5. individual vertex normal
+	// 6. individual vertex curvature value
 	// necessary stat: m_edge(avg edge length), 
 	
 	for (int i = 0; i < m_nFace; ++i)
@@ -2968,6 +2969,9 @@ void CMesh::gatherStatistics()
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
 	this->m_nBoundaryEdgeNum = getBoundaryNum();
+
+	for (int i = 0; i < m_nVertex; ++i)
+		this->calVertexCurvature(i);
 	//cout << "VertexNum: " << m_Vertices.size() << "    FaceNum: " << m_Faces.size() << endl;
 	//cout << "EdgeNum: " << m_HalfEdges.size() 
 	// 	 << "  AvgEdgLen: " << edgeLength << endl;
@@ -2985,7 +2989,7 @@ void CMesh::move( Vector3D translation )
 	}
 }
 
-void CMesh::ClearVertexMark()
+void CMesh::clearVertexMark()
 {
 	for (int i = 0; i < m_nVertex; i++) 
 		m_pVertex[i].m_mark = -1;
@@ -3179,8 +3183,6 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	return flag;
 }
 
-
-
 #define STATE_IDLE		0
 #define STATE_MIN		-1
 #define STATE_MAX		1
@@ -3235,20 +3237,4 @@ bool CMesh::hasBounary() const
 	return m_nBoundaryEdgeNum > 0;
 }
 
-void HKParam::clear()
-{
-	m_size = 0; 
-	m_votes = 0.0; 
-	if(!empty()) 
-		delete m_vec; 
-	m_vec = NULL;
-}
 
-HKParam& HKParam::operator=( const HKParam& hkp )
-{
-	reserve(hkp.m_size);
-	for (int i = 0; i < m_size; ++i)
-		m_vec[i] = hkp.m_vec[i];
-	m_votes = hkp.m_votes;
-	return *this;
-}

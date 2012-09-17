@@ -19,23 +19,6 @@
 #define MAX_RING_NUMBER 15
 #define MAX_HOLE_SIZE 20
 
-class MyNote{
-public:
-	int m_idx1, m_idx2;			//here id is vertex index on a particular level
-	double m_score;
-public:
-	MyNote(int mid, double s) { m_idx1 = mid; m_score = s; }
-	MyNote(int mid1, int mid2, double s) { m_idx1 = mid1; m_idx2 = mid2; m_score = s; }
-	MyNote& operator = (const MyNote& note) { m_idx1 = note.m_idx1; m_idx2 = note.m_idx2; m_score = note.m_score; return(*this); }
-};
-
-class NoteCompare {
-public:
-	bool operator()(const MyNote& Left, const MyNote& Right) const { return ( Left.m_score < Right.m_score ); }
-};
-
-typedef std::priority_queue<MyNote, std::vector<MyNote>, NoteCompare> NoteQueue;
-
 class GeoNote{
 public:
 	int m_id;
@@ -52,19 +35,12 @@ public:
 
 typedef std::priority_queue<GeoNote, std::vector<GeoNote>, GeoCompare> GeoQueue;
 
-class HKParam : public VectorND
-{
-public:
-	HKParam& operator =(const HKParam& hkp);
-	double m_votes;
-	virtual void clear();
-};
-
 class CFace;
 class CHalfEdge;
 class CMesh;
 
 typedef int VID;
+
 //////////////////////////////////////////////////////
 //						CVertex  					//
 //////////////////////////////////////////////////////
@@ -94,7 +70,6 @@ public:
 	int			 m_vMatched;
 	double       m_matchScore;
 
-	HKParam		 m_vParam;			// this is VectorND + votes, likely to be HKC norm
 	double		 m_LocalGeodesic;	// geodesic from local vertex
 	bool		 m_inheap;			// in heap or not
 
@@ -221,8 +196,8 @@ private:
 public:
 	int		    m_nVertex;				// number of vertices
 	CVertex*	m_pVertex;				// array pointer of vertices
-	int		    m_nHalfEdge;				// number of half-edges
-	CHalfEdge*	m_pHalfEdge; 				// array pointer of half-edges
+	int		    m_nHalfEdge;			// number of half-edges
+	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	int			m_nFace;	 			// number of faces
 	CFace*		m_pFace;				// array pointer of faces
 
@@ -249,34 +224,34 @@ public:
 	void        scaleEdgeLenToUnit();
 	void	    gatherStatistics();
 
-	CVertex*	getVertex(int i) { return m_Vertices[i]; }
+	CVertex*	getVertex(int i) { return &m_pVertex[i]; }
 	CFace*		getFace(int i) { return &m_pFace[i]; }
 	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int			getVerticesNum() const { return m_nVertex; }
 	int			getMatchedVerticesNum() const;
 	int			getFaceNum() {return m_nFace;}
 	double		getAvgEdgeLength() const { return m_edge; }
-	int			GetEdgeNum(  );		// get number of edges ( not half-edge! )
-	int			getBoundaryNum( ) const;    // get number of boundaries
+	int			getEdgeNum();		// get number of edges ( not half-edge! )
+	int			getBoundaryNum() const;    // get number of boundaries
 	bool        hasBounary() const;
-	int			getBoundaryVertexNum(  ) const; // get number of boundary vertices
-	int			EulerNum();			// get Euler number of mesh: Euler# = v - e + f
-	int			Genus( );			// get mesh genus
-	double		CalGaussianCurvatureIntegration(  );	// compute the integration of Gaussian curvature over all vertices
-	bool		CalVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
+	int			getBoundaryVertexNum() const; // get number of boundary vertices
+	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
+	int			getMeshGenus();			// get mesh genus
+	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
+	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 //  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
-	bool		CalVertexArea(std::vector<double>& Av);
+	bool		calVertexArea(std::vector<double>& Av);
 	bool		VertexNeighborG(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 	bool		VertexNeighborR(int i, int ring, std::vector<int>& nbr) const;
 	bool		isInNeighborR(int ref, int query, int ring) const;
-	double		CalGeodesic(int s, int t) const;
-	double		CalGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
-	double		CalGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
-	double		CalVolume();	// calculate volume (area) of a surface
-	bool		CalAreaRatio(CMesh* tmesh, std::vector<int>& ar); // for registration
-	bool		CalLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	void		ClearVertexMark();
-	void		buildArrayRepresentation();	//already have the pointer-vector representation; fill in the array represenatation
+	double		getGeodesic(int s, int t) const;
+	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
+	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
+	double		getVolume();	// calculate volume (area) of a surface
+	bool		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
+	bool		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
+	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
+	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	std::vector<int> getOriginalVertexIndex() const;
 	std::vector<int> getNeighboringVertex(int v, int ring) const;
@@ -295,13 +270,13 @@ private:
 
 	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
 	void	calVertexNormal(int i);					// compute i-th vertex's normal
-	bool	calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
 	double	calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	double  calHalfAreaMixed(double a, double b, double c, double& cotan_a) const;
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 
 	void	buildConnectivity();		//construct vectors of pointers based on array representations
+	void	buildArrayRepresentation();	// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 };	//CMesh
