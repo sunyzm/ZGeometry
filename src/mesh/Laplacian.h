@@ -14,6 +14,21 @@
 // const double NZERO  = -0.00001;
 // const int HOLE_SIZE = 10;
 
+class ManifoldHarmonics;
+
+class Laplacian
+{
+public:
+	int size;
+	std::vector<double> vWeights;
+	std::vector<int> vII, vJJ;
+	std::vector<double> vSS;
+
+	enum LaplacianType {Graph, CotFormula};
+	void computeLaplacian(const CMesh* tmesh, LaplacianType laplacianType = CotFormula);
+	void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+};
+
 class ManifoldBasis
 {
 public:
@@ -26,7 +41,7 @@ class ManifoldHarmonics
 public:
 	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
 	int m_size;	    // shape size
-	int m_nEigFunc; // number of basis
+	int m_nEigFunc; // number of basis < shape size
 public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
 	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type = LBO_COT);

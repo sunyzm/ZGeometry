@@ -28,11 +28,12 @@ void MeshProcessor::init(CMesh* tm, Engine* e)
 
 void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
-	if (mhb.decompLaplacian(this->ep, this->mesh, nEigFunc, LBO_COT))
-		this->isMHBuilt = true;
+	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
+	mLaplacian.decompose(mhb, nEigFunc, ep);
+	this->isMHBuilt = true;
 }
 
-void MeshProcessor::readMHB( std::string path )
+void MeshProcessor::readMHB( const std::string& path )
 {
 	ifstream ifs(path, ios::binary);
 	ifs.seekg (0, ios::end);

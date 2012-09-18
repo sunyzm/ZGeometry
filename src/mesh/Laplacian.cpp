@@ -156,3 +156,96 @@ void ManifoldHarmonics::read( const std::string& meshPath )
 */
 	cout << "MHB loaded from " << meshPath << endl;
 }
+
+void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )
+{
+	size = tmesh->getVerticesNum();
+	
+	vector<double> diagW;
+	diagW.resize(size, 0);
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+	vWeights.clear();
+
+	if(laplacianType == CotFormula)
+	{
+		for(int i = 0; i < size; i++)	//for each vertex
+		{
+			double Av;
+			tmesh->calVertexLBO(i, vII, vJJ, vSS, Av, diagW);
+			vWeights.push_back(Av);		//mixed area
+		}
+		for(int i = 0; i < size; i++)
+		{
+			vII.push_back(i+1);
+			vJJ.push_back(i+1);
+			vSS.push_back(diagW[i]);
+		}
+	}
+}
+
+void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
+{
+	assert(nEig >= 0);
+
+	mhb.m_func.clear();
+	mhb.m_size = this->size;
+	mhb.m_nEigFunc = std::min(mhb.m_size, nEig);
+
+	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
+	
+	AA = mxCreateDoubleMatrix(size, 1, mxREAL);
+	double *aa = mxGetPr(AA);
+	assert((int)vWeights.size() == size);
+	std::copy(vWeights.begin(), vWeights.end(), aa);
+
+	NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);
+	double *numv = mxGetPr(NUMV);	
+	numv[0] = mhb.m_nEigFunc;			// number of eigen vectors to be computed
+
+	int ns = (int) vII.size();
+	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	double *ii = mxGetPr(II);
+	double *jj = mxGetPr(JJ);
+	double *ss = mxGetPr(SS);
+	std::copy(vII.begin(), vII.end(), ii);
+	std::copy(vJJ.begin(), vJJ.end(), jj);
+	std::copy(vSS.begin(), vSS.end(), ss);
+
+	engPutVariable(ep, "II", II);
+	engPutVariable(ep, "JJ", JJ);
+	engPutVariable(ep, "SS", SS);
+	engPutVariable(ep, "AA", AA);
+	engPutVariable(ep, "Numv", NUMV);
+
+	engEvalString(ep, "[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
+
+	evecs = engGetVariable(ep, "evecs");		
+	double *evec = mxGetPr(evecs);				//eigenvectors
+	evals = engGetVariable(ep, "evals");		
+	double *eval = mxGetPr(evals);				//eigenvalues
+
+	mhb.m_func.reserve(mhb.m_nEigFunc);
+	for(int i = 0; i < mhb.m_nEigFunc; i++)
+	{
+		mhb.m_func.push_back(ManifoldBasis());
+		mhb.m_func[i].m_vec.reserve(size);
+		for(int j = 0; j < size; j++)
+		{
+			mhb.m_func[i].m_vec.push_back(evec[i*size+j]);
+		}
+		mhb.m_func[i].m_val = std::fabs(eval[i]);		// always non-negative
+	}
+
+	mxDestroyArray(evecs);
+	mxDestroyArray(evals);
+	mxDestroyArray(AA);
+	mxDestroyArray(II);
+	mxDestroyArray(JJ);
+	mxDestroyArray(SS);
+	mxDestroyArray(NUMV);
+}

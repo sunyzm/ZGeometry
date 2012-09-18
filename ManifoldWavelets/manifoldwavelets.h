@@ -20,7 +20,7 @@ public:	// methods
 	bool initialize();
 
 private slots:
-	void computeLaplace();
+	void computeLaplacian();
 	void displayEigenfunction();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();

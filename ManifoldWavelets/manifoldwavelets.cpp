@@ -4,7 +4,9 @@
 #include <QtGui/QMessageBox>
 #include <QTime>
 #include "manifoldwavelets.h"
+
 #define DEFAULT_EIGEN_SIZE 300
+#define LOAD_MHB_CACHE 1
 
 using namespace std;
 
@@ -41,7 +43,7 @@ void QManifoldWavelets::makeConnections()
 {	
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 ////////	Compute	////////
-	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplace()));
+	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
 
 ////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
@@ -106,27 +108,27 @@ bool QManifoldWavelets::initialize()
 	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
 
 
-	this->computeLaplace();
+	this->computeLaplacian();
 
 	return true;
 }
 
-void QManifoldWavelets::computeLaplace()
+void QManifoldWavelets::computeLaplacian()
 {
 	QTime timer;
 	timer.start();
 
 	string pathMHB = "output/" + vMP[0].mesh->m_meshName + ".mhb";
+	
 	ifstream ifs(pathMHB.c_str());
-	if (ifs)
+	if (ifs && LOAD_MHB_CACHE)
 	{
-		ifs.close();
 		vMP[0].readMHB(pathMHB);
 	}
 	else 
 	{
-		ifs.close();
 		vMP[0].decomposeLaplacian(DEFAULT_EIGEN_SIZE);
+//		vMP[0].decomposeLaplacian(vMP[0].m_size);
 		vMP[0].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
 
@@ -138,7 +140,7 @@ void QManifoldWavelets::computeLaplace()
 		}
 		ofs.close();
 	}
-
+	ifs.close();
 	ui.actionComputeLaplacian->setChecked(true);
 	
 	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + "sec");
