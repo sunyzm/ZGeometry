@@ -51,7 +51,7 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
-	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(experimental()));
+	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
@@ -97,13 +97,14 @@ bool QManifoldWavelets::initialize()
 	vMP[0].init(&mesh1, m_ep);
 	ui.glMeshWidget->addMesh(&vMP[0]);
 	
-	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
-
 	ui.spinBox1->setMinimum(0);
 	ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
 	ui.horizontalSlider1->setMinimum(0);
 	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
 	ui.spinBox1->setValue(0);
+
+	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
+
 
 	this->computeLaplace();
 
@@ -129,7 +130,7 @@ void QManifoldWavelets::computeLaplace()
 		vMP[0].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
 
-		string pathEVL = "output/" + vMP[0].mesh->m_meshName + ".evl";	//eigen values
+		string pathEVL = "output/" + vMP[0].mesh->m_meshName + ".evl";	//eigenvalues
 		ofstream ofs(pathEVL.c_str(), ios::trunc);
 		for (vector<ManifoldBasis>::iterator iter = vMP[0].mhb.m_func.begin(); iter != vMP[0].mhb.m_func.end(); ++iter)
 		{
@@ -163,7 +164,7 @@ void QManifoldWavelets::displayEigenfunction()
 
 void QManifoldWavelets::displayMexicanHatWavelet1()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	ManifoldMeshProcessor& mp = vMP[g_objSelect];
 
 	vector<double> vMHW;
 	mp.computeMexicanHatWavelet(vMHW, 30, 1);
@@ -178,7 +179,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 
 void QManifoldWavelets::displayMexicanHatWavelet2()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	ManifoldMeshProcessor& mp = vMP[g_objSelect];
 
 	vector<double> vMHW;
 	mp.computeMexicanHatWavelet(vMHW, 30, 2);
@@ -191,9 +192,9 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 
 }
 
-void QManifoldWavelets::experimental()
+void QManifoldWavelets::displayExperimental()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	ManifoldMeshProcessor& mp = vMP[g_objSelect];
 
 	vector<double> vExp;
 	mp.computeExperimentalWavelet(vExp, 30);

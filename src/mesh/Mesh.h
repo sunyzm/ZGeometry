@@ -239,6 +239,7 @@ public:
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
+	
 //  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
 	bool		calVertexArea(std::vector<double>& Av);
 	bool		VertexNeighborG(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor

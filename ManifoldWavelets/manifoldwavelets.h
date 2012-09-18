@@ -6,7 +6,7 @@
 #include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
 #include <engine.h>
-#include "MeshProcessor.h"
+#include "ManifoldMeshProcessor.h"
 #include <vector>
 
 class QManifoldWavelets : public QMainWindow
@@ -26,9 +26,10 @@ private slots:
 	void displayMexicanHatWavelet2();
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
-	void experimental();
+	void displayExperimental();
 	void selectVertex1(int vn);
-	void setShowRefPoint(/*bool checked*/);
+	void setShowRefPoint();
+
 private:	// methods
 	void makeConnections();
 
@@ -40,7 +41,7 @@ private:	// attributes
 
 	Engine *m_ep;
 	CMesh mesh1;
-	MeshProcessor vMP[2];
+	ManifoldMeshProcessor vMP[2];
 };
 
 #endif // MANIFOLDWAVELETS_H

@@ -401,7 +401,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, vpMP[0]->mesh->m_edge*2, 8, 8);
+		gluSphere(quadric, vpMP[0]->mesh->m_edge, 8, 8);
 		glPopMatrix();
 	}
 

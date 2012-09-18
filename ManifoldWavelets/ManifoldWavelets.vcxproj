@@ -169,6 +169,7 @@
     </ClCompile>
     <ClCompile Include="glmeshwidget.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="ManifoldMeshProcessor.cpp" />
     <ClCompile Include="manifoldwavelets.cpp" />
     <ClCompile Include="MeshProcessor.cpp" />
   </ItemGroup>
@@ -224,6 +225,7 @@
     <ClInclude Include="..\src\util\timer.h" />
     <ClInclude Include="..\src\util\util.h" />
     <ClInclude Include="GeneratedFiles\ui_manifoldwavelets.h" />
+    <ClInclude Include="ManifoldMeshProcessor.h" />
     <ClInclude Include="MeshProcessor.h" />
     <CustomBuild Include="glmeshwidget.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
