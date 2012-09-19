@@ -65,6 +65,7 @@ void ManifoldMeshProcessor::computeExperimentalWavelet( std::vector<double>& vEx
 	fout.close();
 }
 
+
 inline double TransferFunc1(double x)
 {
 	if (x < 1) return x;
@@ -76,26 +77,27 @@ void ManifoldMeshProcessor::calGeometryDWT()
 {
 // output: 1. x-coordinates of all vertices
 //         2. wavelets coefficients of the x-coordinates
-	ofstream ofs1("output/coord.dat");
-	for (int i = 0; i < m_size; ++i)
-		ofs1 << mesh->getVertex(i)->getPos().x << ' ';
-	for (int i = 0; i < m_size; ++i)
-		ofs1 << mesh->getVertex(i)->getPos().y << ' ';
-	for (int i = 0; i < m_size; ++i)
-		ofs1 << mesh->getVertex(i)->getPos().z << ' ';
-	
 
-	ofstream ofs("output/wavelets.txt");
+	ofstream ofs("output/coord.dat");
+	for (int i = 0; i < m_size; ++i)
+		ofs << mesh->getVertex(i)->getPos().x << ' ';
+	for (int i = 0; i < m_size; ++i)
+		ofs << mesh->getVertex(i)->getPos().y << ' ';
+	for (int i = 0; i < m_size; ++i)
+		ofs << mesh->getVertex(i)->getPos().z << ' ';
+	ofs.close();
 
+	int totalScales = 1;
 	double lambdaMax = mhb.m_func.back().m_val;
-	double lambdaMin = lambdaMax / 27;
+	double lambdaMin = lambdaMax / pow(3.0, totalScales-1);
 	vector<double> vScales;
 	vScales.push_back(2.0/lambdaMin);
-	int totalScales = 1;
 	for (int l = 1; l < totalScales; ++l)
 	{
 		vScales.push_back(vScales.back()/3);
 	}
+
+	ofs.open("output/wavelets.txt");
 
 	for (int x = 0; x < m_size; ++x)
 	{
@@ -104,8 +106,8 @@ void ManifoldMeshProcessor::calGeometryDWT()
 			double itemSum = 0;
 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
 			{
-				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 			}
 			ofs << itemSum << ' ';
 		}
@@ -118,8 +120,8 @@ void ManifoldMeshProcessor::calGeometryDWT()
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					itemSum += pow(mhb.m_func[k].m_val * vScales[l], 2) * exp(-pow(mhb.m_func[k].m_val * vScales[l],2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 //					itemSum += TransferFunc1(mhb.m_func[k].m_val * vScales[l]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					itemSum += pow(mhb.m_func[k].m_val * vScales[l], 2) * exp(-pow(mhb.m_func[k].m_val * vScales[l],2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
 				ofs << itemSum << ' ';
 			}
