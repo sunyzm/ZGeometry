@@ -64,3 +64,44 @@ void ManifoldMeshProcessor::computeExperimentalWavelet( std::vector<double>& vEx
 	fout << "\n";
 	fout.close();
 }
+
+void ManifoldMeshProcessor::calGeometryDWT()
+{
+// output: 1. x-coordinates of all vertices
+//         2. wavelets coefficients of the x-coordinates
+	ofstream ofs("output/coordinates.txt");
+	for (int i = 0; i < m_size; ++i)
+	{
+		ofs << mesh->getVertex(i)->getPos().x << ' ';
+	}
+	ofs.close();
+
+	ofs.open("output/wavelets.txt");
+
+	double scale = 10;
+	for (int x = 0; x < m_size; ++x)
+	{
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				itemSum += pow(mhb.m_func[k].m_val * scale, 2) * exp(-pow(mhb.m_func[k].m_val * scale,2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+			}
+			ofs << itemSum << ' ';
+		}
+		ofs << endl;
+
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val * scale / 3, 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+			}
+			ofs << itemSum << ' ';
+		}
+		ofs << endl;
+
+	}
+}

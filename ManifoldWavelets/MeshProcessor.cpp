@@ -24,11 +24,12 @@ void MeshProcessor::init(CMesh* tm, Engine* e)
 	ep = e;
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
+	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 }
 
 void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
-	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
+//	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	mLaplacian.decompose(mhb, nEigFunc, ep);
 	this->isMHBuilt = true;
 }

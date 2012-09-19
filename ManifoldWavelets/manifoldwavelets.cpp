@@ -143,7 +143,7 @@ void QManifoldWavelets::computeLaplacian()
 	ifs.close();
 	ui.actionComputeLaplacian->setChecked(true);
 	
-	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + "sec");
+	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
 	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[0].mhb.m_func.front().m_val, vMP[0].mhb.m_func.back().m_val));
 }
 
@@ -198,15 +198,20 @@ void QManifoldWavelets::displayExperimental()
 {
 	ManifoldMeshProcessor& mp = vMP[g_objSelect];
 
-	vector<double> vExp;
-	mp.computeExperimentalWavelet(vExp, 30);
-
-	mp.normalizeFrom(vExp);
-
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
-	ui.glMeshWidget->updateGL();
-	qout.output("Show MHW from point " + QString::number(mp.pRef));
-
+// 	vector<double> vExp;
+// 	mp.computeExperimentalWavelet(vExp, 30);
+// 
+// 	mp.normalizeFrom(vExp);
+// 
+// 	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+// 	ui.glMeshWidget->updateGL();
+// 	qout.output("Show MHW from point " + QString::number(mp.pRef));
+	
+	qout.output("Start calculating wavelet of geometry...");
+	QTime timer;
+	timer.start();
+	mp.calGeometryDWT();
+	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
 void QManifoldWavelets::setShowRefPoint(/*bool checked*/)

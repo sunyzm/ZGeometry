@@ -159,7 +159,7 @@ void ManifoldHarmonics::read( const std::string& meshPath )
 
 void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	size = tmesh->getVerticesNum();
+	this->size = tmesh->getVerticesNum();
 	
 	vector<double> diagW;
 	diagW.resize(size, 0);
@@ -248,4 +248,16 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 	mxDestroyArray(JJ);
 	mxDestroyArray(SS);
 	mxDestroyArray(NUMV);
+}
+
+double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
+{
+	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->size);
+
+	double sum = 0;
+	for (int i = 0; i < size; ++i)
+	{
+		sum += vf[i] * vWeights[i] * vg[i];
+	}
+	return sum;
 }

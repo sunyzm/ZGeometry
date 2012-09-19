@@ -2,9 +2,11 @@
 #include <QtGui/QStatusBar>
 #include <QtGui/QPlainTextEdit>
 #include <string>
-#define OUT_CONSOLE 1
-#define OUT_STATUS  2
-#define OUT_MSGBOX  3
+//#define OUT_CONSOLE 1
+//#define OUT_STATUS  2
+//#define OUT_MSGBOX  3
+
+enum OutputVenue {OUT_CONSOLE = 1, OUT_STATUS = 2, OUT_MSGBOX = 3};
 
 class OutputHelper
 {

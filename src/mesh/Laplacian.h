@@ -27,6 +27,7 @@ public:
 	enum LaplacianType {Graph, CotFormula};
 	void computeLaplacian(const CMesh* tmesh, LaplacianType laplacianType = CotFormula);
 	void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
 };
 
 class ManifoldBasis
