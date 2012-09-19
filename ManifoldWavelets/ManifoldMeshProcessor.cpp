@@ -76,25 +76,27 @@ void ManifoldMeshProcessor::calGeometryDWT()
 {
 // output: 1. x-coordinates of all vertices
 //         2. wavelets coefficients of the x-coordinates
-	ofstream ofs("output/coordinates.txt");
+	ofstream ofs1("output/coord.dat");
 	for (int i = 0; i < m_size; ++i)
-	{
-		ofs << mesh->getVertex(i)->getPos().x << ' ';
-	}
-	ofs.close();
+		ofs1 << mesh->getVertex(i)->getPos().x << ' ';
+	for (int i = 0; i < m_size; ++i)
+		ofs1 << mesh->getVertex(i)->getPos().y << ' ';
+	for (int i = 0; i < m_size; ++i)
+		ofs1 << mesh->getVertex(i)->getPos().z << ' ';
+	
 
-	ofs.open("output/wavelets.txt");
+	ofstream ofs("output/wavelets.txt");
 
 	double lambdaMax = mhb.m_func.back().m_val;
 	double lambdaMin = lambdaMax / 27;
 	vector<double> vScales;
 	vScales.push_back(2.0/lambdaMin);
-	for (int l = 1; l < 4; ++l)
+	int totalScales = 1;
+	for (int l = 1; l < totalScales; ++l)
 	{
 		vScales.push_back(vScales.back()/3);
 	}
 
-	double scale = 10;
 	for (int x = 0; x < m_size; ++x)
 	{
 		for (int y = 0; y < m_size; ++y)
@@ -102,22 +104,22 @@ void ManifoldMeshProcessor::calGeometryDWT()
 			double itemSum = 0;
 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
 			{
-				//				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 			}
 			ofs << itemSum << ' ';
 		}
 		ofs << endl;
 
-		for (int l = 0; l < 4; ++l)
+		for (int l = 0; l < totalScales; ++l)
 		{
 			for (int y = 0; y < m_size; ++y)
 			{
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					//				itemSum += pow(mhb.m_func[k].m_val * scale, 2) * exp(-pow(mhb.m_func[k].m_val * scale,2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-					itemSum += TransferFunc1(mhb.m_func[k].m_val * vScales[l]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					itemSum += pow(mhb.m_func[k].m_val * vScales[l], 2) * exp(-pow(mhb.m_func[k].m_val * vScales[l],2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//					itemSum += TransferFunc1(mhb.m_func[k].m_val * vScales[l]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
 				ofs << itemSum << ' ';
 			}
