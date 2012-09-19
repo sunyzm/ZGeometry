@@ -64,3 +64,64 @@ void ManifoldMeshProcessor::computeExperimentalWavelet( std::vector<double>& vEx
 	fout << "\n";
 	fout.close();
 }
+
+inline double TransferFunc1(double x)
+{
+	if (x < 1) return x;
+	else if (1 <= x && x <= 2) return (-5 + 11*x - 6*x*x + x*x*x);
+	else return 2/x;
+}
+
+void ManifoldMeshProcessor::calGeometryDWT()
+{
+// output: 1. x-coordinates of all vertices
+//         2. wavelets coefficients of the x-coordinates
+	ofstream ofs("output/coordinates.txt");
+	for (int i = 0; i < m_size; ++i)
+	{
+		ofs << mesh->getVertex(i)->getPos().x << ' ';
+	}
+	ofs.close();
+
+	ofs.open("output/wavelets.txt");
+
+	double lambdaMax = mhb.m_func.back().m_val;
+	double lambdaMin = lambdaMax / 27;
+	vector<double> vScales;
+	vScales.push_back(2.0/lambdaMin);
+	for (int l = 1; l < 4; ++l)
+	{
+		vScales.push_back(vScales.back()/3);
+	}
+
+	double scale = 10;
+	for (int x = 0; x < m_size; ++x)
+	{
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				//				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6 * lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+			}
+			ofs << itemSum << ' ';
+		}
+		ofs << endl;
+
+		for (int l = 0; l < 4; ++l)
+		{
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					//				itemSum += pow(mhb.m_func[k].m_val * scale, 2) * exp(-pow(mhb.m_func[k].m_val * scale,2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					itemSum += TransferFunc1(mhb.m_func[k].m_val * vScales[l]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				ofs << itemSum << ' ';
+			}
+			ofs << endl;
+		}
+	}
+}

@@ -1,5 +1,4 @@
-#ifndef _LAPLACIAN_H_
-#define _LAPLACIAN_H_
+#pragma once
 #include <complex>
 #include <vector>
 #include <string>
@@ -27,6 +26,7 @@ public:
 	enum LaplacianType {Graph, CotFormula};
 	void computeLaplacian(const CMesh* tmesh, LaplacianType laplacianType = CotFormula);
 	void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
 };
 
 class ManifoldBasis
@@ -48,5 +48,3 @@ public:
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
 };
-
-#endif
