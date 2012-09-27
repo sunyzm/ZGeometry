@@ -1733,10 +1733,9 @@ bool CMesh::calVertexArea(vector<double>& Av)
 	return true;
 }
 
-bool CMesh::VertexNeighborR( int i, int ring, std::vector<int>& nbr ) const
+void CMesh::VertexNeighborRing( int i, int ring, std::vector<int>& nbr ) const
 {	
-	if(!nbr.empty()) 
-		nbr.clear();
+	if(!nbr.empty()) nbr.clear();
 	
 	CVertex& notei = m_pVertex[i];
 	notei.m_mark = i;
@@ -1784,8 +1783,6 @@ bool CMesh::VertexNeighborR( int i, int ring, std::vector<int>& nbr ) const
 		int loc = nbr[j];
 		m_pVertex[loc].m_mark = -1;    
 	}
-
-	return true;
 }
 
 double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
@@ -1824,7 +1821,7 @@ double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
 	return tc;
 }
 
-bool CMesh::VertexNeighborG(int i, double ring, vector<GeoNote>& nbg)
+bool CMesh::VertexNeighborGeo(int i, double ring, vector<GeoNote>& nbg)
 {
 	GeoQueue heapqueue;
 
@@ -3099,14 +3096,14 @@ std::vector<int> CMesh::getNeighboringVertex( int v, int ring ) const
 	return vn;
 }
 
-bool CMesh::isInNeighborR( int ref, int query, int ring ) const
+bool CMesh::isInNeighborRing( int ref, int query, int ring ) const
 {
 	if (ref == query) return true;
 	assert(ring >= 0);
 	if (ring == 0) return ref == query;
 	
 	vector<int> iNeighbor;
-	VertexNeighborR(ref, ring, iNeighbor);
+	VertexNeighborRing(ref, ring, iNeighbor);
 	return (find(iNeighbor.begin(), iNeighbor.end(), query) != iNeighbor.end());
 }
 
@@ -3209,7 +3206,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 		if (vSigVal[j] < lowThresh)				//too small hks discarded
 			continue;
 
-		VertexNeighborR(j, ring, nb);	//ring == 2
+		VertexNeighborRing(j, ring, nb);	//ring == 2
 		for (int k = 0; k < nb.size(); k++)		//for each neighbor 
 		{
 			int ev = nb[k];

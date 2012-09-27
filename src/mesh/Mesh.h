@@ -225,6 +225,7 @@ public:
 	void	    gatherStatistics();
 
 	CVertex*	getVertex(int i) { return &m_pVertex[i]; }
+	const CVertex* getVertex_const(int i) const { return &m_pVertex[i]; }
 	CFace*		getFace(int i) { return &m_pFace[i]; }
 	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int			getVerticesNum() const { return m_nVertex; }
@@ -242,9 +243,9 @@ public:
 	
 //  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
 	bool		calVertexArea(std::vector<double>& Av);
-	bool		VertexNeighborG(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
-	bool		VertexNeighborR(int i, int ring, std::vector<int>& nbr) const;
-	bool		isInNeighborR(int ref, int query, int ring) const;
+	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
+	void		VertexNeighborRing(int i, int ring, std::vector<int>& nbr) const;
+	bool		isInNeighborRing(int ref, int query, int ring) const;
 	double		getGeodesic(int s, int t) const;
 	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);

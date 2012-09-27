@@ -139,6 +139,7 @@
     <ClCompile Include="..\src\mesh\Mesh.cpp" />
     <ClCompile Include="..\src\mesh\Quat.cpp" />
     <ClCompile Include="..\src\util\color.cpp" />
+    <ClCompile Include="..\src\util\output.cpp" />
     <ClCompile Include="..\src\util\OutputHelper.cpp" />
     <ClCompile Include="..\src\util\timer.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_glmeshwidget.cpp">
@@ -221,6 +222,7 @@
     <ClInclude Include="..\src\mesh\Mesh.h" />
     <ClInclude Include="..\src\mesh\Quat.h" />
     <ClInclude Include="..\src\util\color.h" />
+    <ClInclude Include="..\src\util\output.h" />
     <ClInclude Include="..\src\util\OutputHelper.h" />
     <ClInclude Include="..\src\util\timer.h" />
     <ClInclude Include="..\src\util\util.h" />
