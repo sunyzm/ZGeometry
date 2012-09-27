@@ -167,6 +167,13 @@ void CVertex::translateAndScale( Vector3D translation, double s )
 	m_vPosition *= s;
 }
 
+void CVertex::setPos( double x, double y, double z )
+{
+	m_vPosition.x = x;
+	m_vPosition.y = y;
+	m_vPosition.z = z;
+}
+
 //////////////////////////////////////////////////////
 //						CHalfEdge					//
 //////////////////////////////////////////////////////

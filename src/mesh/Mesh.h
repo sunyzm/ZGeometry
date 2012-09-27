@@ -97,7 +97,7 @@ public:
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
 	void				translateAndScale(Vector3D translation, double s);
-
+	void                setPos( double x, double y, double z );
 public:
 	std::list<int>	m_lEdgeList;      // temporary list of constructing m_piEdge
 };

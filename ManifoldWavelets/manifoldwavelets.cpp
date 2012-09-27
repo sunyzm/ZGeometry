@@ -92,8 +92,19 @@ bool QManifoldWavelets::initialize()
 	{
 		qout.output("Cannot open " + vMeshFiles.front(), OUT_MSGBOX);
 		return false;
-	}	
+	}
 	mesh1.scaleEdgeLenToUnit();
+/*	
+	ifstream ifcoord("output/coordtrans4.dat");
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		double x(0),y(0),z(0);
+		ifcoord >> x >> y >> z;
+		if (i < 5) 
+			qout.output("vertex: " + QString::number(x) + "," + QString::number(y) + "," + QString::number(z));
+		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
+	}
+//*/	
 	mesh1.gatherStatistics();
 	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 	vMP[0].init(&mesh1, m_ep);

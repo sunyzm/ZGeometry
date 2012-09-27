@@ -81,13 +81,15 @@ void ManifoldMeshProcessor::calGeometryDWT()
 	ofstream ofs("output/coord.dat");
 	for (int i = 0; i < m_size; ++i)
 		ofs << mesh->getVertex(i)->getPos().x << ' ';
+	ofs << endl;
 	for (int i = 0; i < m_size; ++i)
 		ofs << mesh->getVertex(i)->getPos().y << ' ';
+	ofs << endl;
 	for (int i = 0; i < m_size; ++i)
 		ofs << mesh->getVertex(i)->getPos().z << ' ';
 	ofs.close();
 
-	int totalScales = 1;
+	int totalScales = 4;
 	double lambdaMax = mhb.m_func.back().m_val;
 	double lambdaMin = lambdaMax / pow(3.0, totalScales-1);
 	vector<double> vScales;
