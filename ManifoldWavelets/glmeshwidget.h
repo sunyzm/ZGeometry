@@ -8,10 +8,11 @@
 
 struct DisplaySettings
 {
-	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false) {}
+	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), selected(false) {}
 	enum {PointCloud, Mesh, Signature} displayType;
 	bool showFeatures;
 	bool showRefPoint;
+	bool selected;
 };
 
 class GLMeshWidget : public QGLWidget

@@ -25,7 +25,7 @@ CVertex::CVertex()
 	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 }
 
 CVertex::CVertex( double x, double y, double z )
@@ -37,7 +37,7 @@ CVertex::CVertex( double x, double y, double z )
 	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 }
 
 CVertex::CVertex( const Vector3D& v )
@@ -49,7 +49,7 @@ CVertex::CVertex( const Vector3D& v )
 	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 }
 
 CVertex::CVertex( double x, double y, double z, float r, float g, float b )
@@ -62,7 +62,7 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 }
 
 CVertex::CVertex( const CVertex& v )
@@ -81,7 +81,7 @@ CVertex::CVertex( const CVertex& v )
 
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 
 	if (v.m_piEdge != NULL)
 	{
@@ -107,7 +107,7 @@ CVertex& CVertex::operator = (CVertex& v)
 
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
-	m_inheap = 0;
+	m_inheap = false;
 
 	if (v.m_piEdge != NULL)
 	{
@@ -598,7 +598,7 @@ void CMesh::clear()
 {
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
 
-	if (m_bIsArrayRepresentationExist)
+	if (m_bIsIndexArrayExist)
 	{
 		if(m_pVertex != NULL)	{delete[] m_pVertex; m_pVertex = NULL;}
 		if(m_pHalfEdge != NULL)	{delete[] m_pHalfEdge; m_pHalfEdge = NULL;}
@@ -618,14 +618,14 @@ void CMesh::clear()
 		m_Faces.clear();
 	}
 
-	m_bIsArrayRepresentationExist = m_bIsPointerVectorExist = false;
+	m_bIsIndexArrayExist = m_bIsPointerVectorExist = false;
 }
 
 CMesh::CMesh() : 
 	m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
 	m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
 	m_bIsPointerVectorExist(false),
-	m_bIsArrayRepresentationExist(false)
+	m_bIsIndexArrayExist(false)
 {
 
 }
@@ -656,7 +656,7 @@ CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
 
 CMesh::CMesh( const CMesh& oldMesh )
 {
-	clone(oldMesh);
+	cloneFrom(oldMesh);
 }
 
 CMesh::~CMesh()
@@ -1392,8 +1392,8 @@ bool CMesh::construct()
 
 	this->m_bIsPointerVectorExist = true;
 	
-	buildArrayRepresentation();
-	this->m_bIsArrayRepresentationExist = true;
+	buildIndexArrays();
+	this->m_bIsIndexArrayExist = true;
 	//findHoles();
 
 	return true;
@@ -1461,7 +1461,7 @@ int CMesh::getEdgeNum(  )
 		return m_nHalfEdge - twinedgeNum / 2;
 	}
 
-	if (this->m_bIsArrayRepresentationExist)
+	if (this->m_bIsIndexArrayExist)
 	{
 		int twinedgeNum = 0;
 		for( int i = 0; i < m_nHalfEdge; i++ )
@@ -1525,7 +1525,7 @@ int CMesh::getBoundaryVertexNum(  ) const
 		return bNum;
 	}
 
-	if (m_bIsArrayRepresentationExist)
+	if (m_bIsIndexArrayExist)
 	{
 		int bNum = 0;
 		for( int i = 0; i < m_nVertex; i++ )
@@ -2540,7 +2540,7 @@ std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
 	return faceIndex;
 }
 
-void CMesh::buildConnectivity()
+void CMesh::buildPointerVectors()
 {
 	m_HalfEdges.reserve(m_nHalfEdge);
 
@@ -2577,9 +2577,10 @@ void CMesh::buildConnectivity()
 		}
 	}
 
+	m_bIsPointerVectorExist = true;
 }
 
-void CMesh::buildArrayRepresentation()
+void CMesh::buildIndexArrays()
 {
 	// allocate memory for the half-edge array pointer
 	if (m_pVertex) delete []m_pVertex;
@@ -2641,7 +2642,7 @@ void CMesh::buildArrayRepresentation()
 		}
 	}
 
-	m_bIsArrayRepresentationExist = true;
+	m_bIsIndexArrayExist = true;
 
 }
 
@@ -2659,11 +2660,13 @@ void CMesh::assignElementsIndex()
 		m_Faces[i]->m_fIndex = i;
 }
 
-void CMesh::clone( const CMesh& oldMesh )
+void CMesh::cloneFrom( const CMesh& oldMesh )
 {
 	m_pHalfEdge = NULL;
 	m_pFace = NULL;
 	m_pVertex = NULL;
+
+	m_meshName = oldMesh.m_meshName + "_clone";
 
 	m_nVertex = oldMesh.m_nVertex;
 	m_nFace = oldMesh.m_nFace;
@@ -2674,7 +2677,26 @@ void CMesh::clone( const CMesh& oldMesh )
 	m_edge = oldMesh.m_edge;
 
 	m_bIsPointerVectorExist = oldMesh.m_bIsPointerVectorExist;
-	if (m_bIsPointerVectorExist)
+	m_bIsIndexArrayExist = oldMesh.m_bIsIndexArrayExist;
+
+	if (m_bIsIndexArrayExist)
+	{
+		m_pVertex = new CVertex[m_nVertex];			//array of vertices
+		for(int i = 0; i < m_nVertex; i++)
+			m_pVertex[i] = oldMesh.m_pVertex[i];
+
+		m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 			//array of half-edges
+		for(int i = 0; i < m_nHalfEdge; i++)
+			m_pHalfEdge[i] = oldMesh.m_pHalfEdge[i];
+
+		m_pFace = new CFace[m_nFace];				//array of faces
+		for(int i = 0; i < m_nFace; i++)
+			m_pFace[i] = oldMesh.m_pFace[i];
+		
+		buildPointerVectors();
+	}
+
+	else if (m_bIsPointerVectorExist)
 	{
 		for (int i = 0; i < m_nVertex; ++i)
 		{
@@ -2737,29 +2759,12 @@ void CMesh::clone( const CMesh& oldMesh )
 			}
 			else curE->m_eTwin = NULL;
 		}
+		
+		buildIndexArrays();
 	}
-
-	m_bIsArrayRepresentationExist = false;
-	/*
-	m_bIsArrayRepresentationExist = oldMesh.m_bIsArrayRepresentationExist;
-		if (m_bIsArrayRepresentationExist)
-	{
-		m_pVertex = new CVertex[m_nVertex];			//array of vertices
-		for(int i = 0; i < m_nVertex; i++)
-			m_pVertex[i] = oldMesh.m_pVertex[i];
-
-		m_pEdge = new CHalfEdge[m_nEdge]; 			//array of half-edges
-		for(int i = 0; i < m_nEdge; i++)
-			m_pEdge[i] = oldMesh.m_pEdge[i];
-
-		m_pFace = new CFace[m_nFace];				//array of faces
-		for(int i = 0; i < m_nFace; i++)
-			m_pFace[i] = oldMesh.m_pFace[i];
-	}
-	*/
-
 }
 
+/*
 void CMesh::clone( const CMesh* oldMesh )
 {
 	this->m_pHalfEdge = NULL;
@@ -2853,6 +2858,7 @@ void CMesh::clone( const CMesh* oldMesh )
 
 	m_bIsArrayRepresentationExist = false;
 }
+*/
 
 bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 {

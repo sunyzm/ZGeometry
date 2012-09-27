@@ -20,7 +20,7 @@ public:	// methods
 	bool initialize();
 
 private slots:
-	void computeLaplacian();
+	void computeLaplacian(int obj = 0);
 	void displayEigenfunction();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
@@ -29,7 +29,8 @@ private slots:
 	void displayExperimental();
 	void selectVertex1(int vn);
 	void setShowRefPoint();
-
+	void selectObject(int index);
+	void reconstruct();
 private:	// methods
 	void makeConnections();
 
@@ -40,7 +41,8 @@ private:	// attributes
 	int objSelect;
 
 	Engine *m_ep;
-	CMesh mesh1;
+	CMesh mesh1, mesh2;
+	bool selected[2];
 	ManifoldMeshProcessor vMP[2];
 };
 

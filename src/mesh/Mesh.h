@@ -58,7 +58,7 @@ private:
 	bool					m_bIsValid;
 public:
 	Vector3D	m_vPosition;		// vertex coordinates
-	int			m_nValence;			// vertex valence
+	int			m_nValence;			// out valence
 	int*		m_piEdge;			// half edge indices start from this vertex
 
 	bool		 m_bIsBoundary;     // if boundary vertex
@@ -68,7 +68,6 @@ public:
 	double		 m_vGaussCurvature;	// Gauss curvature
 	
 	int			 m_vMatched;
-	double       m_matchScore;
 
 	double		 m_LocalGeodesic;	// geodesic from local vertex
 	bool		 m_inheap;			// in heap or not
@@ -190,8 +189,8 @@ private:
 	std::vector<CHalfEdge*> m_HalfEdges;
 	std::vector<CFace*>		m_Faces;
 
-	bool m_bIsPointerVectorExist;		// whether vertex, HalfEdge, Face data is local
-	bool m_bIsArrayRepresentationExist;
+	bool m_bIsPointerVectorExist;		// pointer vectors representation
+	bool m_bIsIndexArrayExist; // index array representation
 	int  m_nBoundaryEdgeNum;
 public:
 	int		    m_nVertex;				// number of vertices
@@ -212,8 +211,8 @@ public:
 	CMesh(const CMesh* pMesh);
 	CMesh(const CMesh& oldMesh);
 	virtual ~CMesh();
-	void        clone(const CMesh& oldMesh);
-	void        clone(const CMesh* oldMesh);
+	void        cloneFrom(const CMesh& oldMesh);
+//	void        clone(const CMesh* oldMesh);
 
 //operations
 	bool	    Load(std::string sFileName);			// load from file
@@ -258,7 +257,7 @@ public:
 	std::vector<int> getOriginalVertexIndex() const;
 	std::vector<int> getNeighboringVertex(int v, int ring) const;
 	std::vector<int> getVertexAdjacentFacesIndex(int vIdx);
-
+	void         getVertexCoordinates(int dim, std::vector<double>& vCoord) const;
 private:
 	void	clear();
 	bool	construct();	// construct connectivity
@@ -277,8 +276,8 @@ private:
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 
-	void	buildConnectivity();		//construct vectors of pointers based on array representations
-	void	buildArrayRepresentation();	// already have the pointer-vector representation; fill in the array represenatation
+	void	buildPointerVectors();		//construct vectors of pointers based on array representations
+	void	buildIndexArrays();	// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 };	//CMesh

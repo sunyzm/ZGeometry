@@ -13,7 +13,7 @@
 *.la
 *.a
 *.lib
-q
+
 # visual studio related
 *.opensdf
 *.sdf

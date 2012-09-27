@@ -13,7 +13,7 @@ using namespace std;
 extern OutputHelper qout;
 extern QString qformat;
 const char* g_meshListName = "meshfiles.cfg";
-int g_objSelect = 0;	//-1 means all object; -2 means no object
+//int g_objSelect = 0;	//-1 means all object; -2 means no object
 
 QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -57,6 +57,8 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
+	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
+	QObject::connect(ui.actionReconstruct, SIGNAL(triggered()), this, SLOT(reconstruct()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -94,6 +96,8 @@ bool QManifoldWavelets::initialize()
 		return false;
 	}
 	mesh1.scaleEdgeLenToUnit();
+	mesh1.gatherStatistics();
+	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 /*	
 	ifstream ifcoord("output/coordtrans4.dat");
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
@@ -105,47 +109,47 @@ bool QManifoldWavelets::initialize()
 		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
 	}
 //*/	
-	mesh1.gatherStatistics();
-	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
+	
 	vMP[0].init(&mesh1, m_ep);
 	ui.glMeshWidget->addMesh(&vMP[0]);
-	
+	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
+
 	ui.spinBox1->setMinimum(0);
 	ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
 	ui.horizontalSlider1->setMinimum(0);
 	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
-	ui.spinBox1->setValue(0);
+	ui.spinBox1->setValue(0);	
 
-	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
+	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
+	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
 
-
-	this->computeLaplacian();
-
+	this->computeLaplacian(0);
+	
 	return true;
 }
 
-void QManifoldWavelets::computeLaplacian()
+void QManifoldWavelets::computeLaplacian( int obj /*= 0*/ )
 {
 	QTime timer;
 	timer.start();
 
-	string pathMHB = "output/" + vMP[0].mesh->m_meshName + ".mhb";
+	string pathMHB = "output/" + vMP[obj].mesh->m_meshName + ".mhb";
 	
 	ifstream ifs(pathMHB.c_str());
 	if (ifs && LOAD_MHB_CACHE)
 	{
-		vMP[0].readMHB(pathMHB);
+		vMP[obj].readMHB(pathMHB);
 	}
 	else 
 	{
-		vMP[0].decomposeLaplacian(DEFAULT_EIGEN_SIZE);
-//		vMP[0].decomposeLaplacian(vMP[0].m_size);
-		vMP[0].writeMHB(pathMHB);
+		vMP[obj].decomposeLaplacian(DEFAULT_EIGEN_SIZE);
+//		vMP[obj].decomposeLaplacian(vMP[obj].m_size);
+		vMP[obj].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
 
-		string pathEVL = "output/" + vMP[0].mesh->m_meshName + ".evl";	//eigenvalues
+		string pathEVL = "output/" + vMP[obj].mesh->m_meshName + ".evl";	//eigenvalues
 		ofstream ofs(pathEVL.c_str(), ios::trunc);
-		for (vector<ManifoldBasis>::iterator iter = vMP[0].mhb.m_func.begin(); iter != vMP[0].mhb.m_func.end(); ++iter)
+		for (vector<ManifoldBasis>::iterator iter = vMP[obj].mhb.m_func.begin(); iter != vMP[obj].mhb.m_func.end(); ++iter)
 		{
 			ofs << iter->m_val << endl;
 		}
@@ -155,7 +159,7 @@ void QManifoldWavelets::computeLaplacian()
 	ui.actionComputeLaplacian->setChecked(true);
 	
 	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[0].mhb.m_func.front().m_val, vMP[0].mhb.m_func.back().m_val));
+	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
 void QManifoldWavelets::selectVertex1( int vn )
@@ -166,48 +170,81 @@ void QManifoldWavelets::selectVertex1( int vn )
 
 void QManifoldWavelets::displayEigenfunction()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	if (selected[0])
+	{
+		MeshProcessor& mp = vMP[0];
+		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
+		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+	}
+
+	if (selected[1] && vMP[1].mesh)
+	{
+		MeshProcessor& mp = vMP[1];		
+		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
+		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
+	}
 	
-	mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
-	
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
 	ui.glMeshWidget->updateGL();
 	qout.output("Show eigenfunction 1");
 }
 
 void QManifoldWavelets::displayMexicanHatWavelet1()
 {
-	ManifoldMeshProcessor& mp = vMP[g_objSelect];
+	if (selected[0])
+	{
+		ManifoldMeshProcessor& mp = vMP[0];
 
-	vector<double> vMHW;
-	mp.computeMexicanHatWavelet(vMHW, 30, 1);
+		vector<double> vMHW;
+		mp.computeMexicanHatWavelet(vMHW, 30, 1);
+		mp.normalizeFrom(vMHW);
 
-	mp.normalizeFrom(vMHW);
+		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+	}
 
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	if (selected[1] && vMP[1].mesh)
+	{
+		ManifoldMeshProcessor& mp = vMP[1];		
+
+		vector<double> vMHW;
+		mp.computeMexicanHatWavelet(vMHW, 30, 1);
+		mp.normalizeFrom(vMHW);
+
+		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
+	}
+
 	ui.glMeshWidget->updateGL();
-	qout.output("Show MHW from point " + QString::number(mp.pRef));
-
 }
 
 void QManifoldWavelets::displayMexicanHatWavelet2()
 {
-	ManifoldMeshProcessor& mp = vMP[g_objSelect];
+	if (selected[0])
+	{
+		ManifoldMeshProcessor& mp = vMP[0];
 
-	vector<double> vMHW;
-	mp.computeMexicanHatWavelet(vMHW, 30, 2);
+		vector<double> vMHW;
+		mp.computeMexicanHatWavelet(vMHW, 30, 2);
+		mp.normalizeFrom(vMHW);
 
-	mp.normalizeFrom(vMHW);
+		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+	}
 
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	if (selected[1] && vMP[1].mesh)
+	{
+		ManifoldMeshProcessor& mp = vMP[1];		
+
+		vector<double> vMHW;
+		mp.computeMexicanHatWavelet(vMHW, 30, 2);
+		mp.normalizeFrom(vMHW);
+
+		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
+	}
+
 	ui.glMeshWidget->updateGL();
-	qout.output("Show MHW from point " + QString::number(mp.pRef));
-
 }
 
 void QManifoldWavelets::displayExperimental()
 {
-	ManifoldMeshProcessor& mp = vMP[g_objSelect];
+	ManifoldMeshProcessor& mp = vMP[0];
 
 // 	vector<double> vExp;
 // 	mp.computeExperimentalWavelet(vExp, 30);
@@ -225,7 +262,7 @@ void QManifoldWavelets::displayExperimental()
 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
-void QManifoldWavelets::setShowRefPoint(/*bool checked*/)
+void QManifoldWavelets::setShowRefPoint()
 {
 	bool bChecked = ui.actionShowRefPoint->isChecked();
 	ui.glMeshWidget->bShowRefPoint = bChecked;
@@ -235,7 +272,7 @@ void QManifoldWavelets::setShowRefPoint(/*bool checked*/)
 
 void QManifoldWavelets::displayCurvatureMean()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	MeshProcessor& mp = vMP[0];
 
 	vector<double> vCurvature;
 	mp.computeCurvature(vCurvature, 0);
@@ -245,14 +282,16 @@ void QManifoldWavelets::displayCurvatureMean()
 
 	mp.bandCurveFrom(vCurvature, 0, 1);
 
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+
+
 	ui.glMeshWidget->updateGL();
 	qout.output("Show Mean Curvature");
 }
 
 void QManifoldWavelets::displayCurvatureGauss()
 {
-	MeshProcessor& mp = vMP[g_objSelect];
+	MeshProcessor& mp = vMP[0];
 
 	vector<double> vCurvature;
 	mp.computeCurvature(vCurvature, 1);
@@ -262,7 +301,51 @@ void QManifoldWavelets::displayCurvatureGauss()
 
 	mp.bandCurveFrom(vCurvature, -1, 1);
 
-	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
 	ui.glMeshWidget->updateGL();
 	qout.output("Show Mean Curvature");
+}
+
+void QManifoldWavelets::selectObject( int index )
+{
+	QString text = ui.objSelectBox->itemText(index);
+	qout.output("Selected object(s): " + text);
+	if (text == "1") 
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+	}
+	else if (text == "2")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+	}
+	else if (text == "All")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+	}
+	else if (text == "None")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+	}
+}
+
+void QManifoldWavelets::reconstruct()
+{
+	mesh2.cloneFrom(mesh1);
+	mesh2.gatherStatistics();
+
+	vMP[1].init(&mesh2, m_ep);
+	ui.glMeshWidget->addMesh(&vMP[1]);
+	qout.output("Mesh " + QString(mesh2.m_meshName.c_str()) + " constructed! Size: " + QString::number(mesh2.getVerticesNum()));
+	
+	ui.spinBox2->setMinimum(0);
+	ui.spinBox2->setMaximum(mesh2.getVerticesNum()-1);
+	ui.horizontalSlider2->setMinimum(0);
+	ui.horizontalSlider2->setMaximum(mesh1.getVerticesNum()-2);
+	ui.spinBox2->setValue(0);
+
+	ui.glMeshWidget->updateGL();
 }

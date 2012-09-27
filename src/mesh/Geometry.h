@@ -67,15 +67,15 @@ public :
 	double x, y, z;
 
 	// constructions
-	Vector3D()									{ x = 0;	y = 0;	z = 0;	}
-	Vector3D(double xx, double yy, double zz)	{ x = xx; y = yy; z = zz;	}
-	Vector3D(const Vector3D& v)					{ x = v.x;	y = v.y;	z = v.z;	}
+	Vector3D()									{ x = 0;	y = 0;		z = 0;	}
+	Vector3D(double xx, double yy, double zz)	{ x = xx;	y = yy;		z = zz; }
+	Vector3D(const Vector3D& v)					{ x = v.x;	y = v.y;	z = v.z;}
 
 	// operator
 	double	  length()		{	return std::sqrt(x*x + y*y + z*z);	}
 	double	  length2()		{	return x*x + y*y + z*z;	}
 	Vector3D  normalize();
-	double	  distantFrom( Vector3D v )  { return std::sqrt( (x-v.x)*(x-v.x)+(y-v.y)*(y-v.y)+(z-v.z)*(z-v.z) ); }
+	double	  distantFrom( const Vector3D& v )  { return std::sqrt( (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z) ); }
 	Vector3D& operator =(const Vector3D& v);
 	Vector3D& operator +=(const Vector3D& v);
 	Vector3D& operator -=(const Vector3D& v);
@@ -94,7 +94,6 @@ public :
 	friend Vector3D operator^(const Vector3D& lv, const Vector3D& rv);
 	friend Vector3D operator*(const Vector3D& vec, const Matrix3& mat1);
 	friend Vector3D operator*(const Matrix3& mat1, const Vector3D& vec);
-	friend Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
 };
 
 double dotProduct3D(const Vector3D& v1, const Vector3D& v2);

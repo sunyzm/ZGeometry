@@ -8,7 +8,7 @@ const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
 
 extern OutputHelper qout;
 extern QString qformat;
-extern int g_objSelect;
+//extern int g_objSelect;
 Qt::MouseButton gButton;
 
 
@@ -18,8 +18,7 @@ void glFalseColor(float v, float p)
 	glColor4f(FalseColorMap::RedMap[floor], FalseColorMap::GreenMap[floor], FalseColorMap::BlueMap[floor], p);
 }
 
-GLMeshWidget::GLMeshWidget(QWidget *parent)
-	: QGLWidget(parent)
+GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 {
 //	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
 	g_EyeZ = 10.0;
@@ -31,6 +30,8 @@ GLMeshWidget::GLMeshWidget(QWidget *parent)
 
 	bShowRefPoint = false;
 	FalseColorMap::BuildLUT();
+
+	vSettings.resize(2, DisplaySettings());
 }
 
 GLMeshWidget::~GLMeshWidget()
@@ -41,7 +42,6 @@ GLMeshWidget::~GLMeshWidget()
 void GLMeshWidget::addMesh(MeshProcessor* pmp)
 {
 	vpMP.push_back(pmp);
-	vSettings.push_back(DisplaySettings());
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -76,15 +76,10 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	if (gButton == Qt::LeftButton ) 
 	{
 		rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-		if (g_objSelect == 0) 
+		if (vSettings[0].selected) 
 			ObjRot1 = rot * ObjRot1;
-		else if (g_objSelect == 1) 
+		if (vSettings[1].selected) 
 			ObjRot2 = rot * ObjRot2;
-		else if(g_objSelect == -1)
-		{
-			ObjRot1 = rot * ObjRot1; 
-			ObjRot2 = rot * ObjRot2;
-		}
 	}
 	else if (gButton == Qt::MidButton) 
 	{
@@ -92,15 +87,10 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 		g_startx = x;
 		g_starty = y;
-		if (g_objSelect == 0) 
+		if (vSettings[0].selected) 
 			ObjTrans1 = ObjTrans1 + trans;
-		else if (g_objSelect == 1) 
+		if (vSettings[1].selected) 
 			ObjTrans2 = ObjTrans2 + trans;
-		else if(g_objSelect == -1)
-		{
-			ObjTrans1 = ObjTrans1 + trans; 
-			ObjTrans2 = ObjTrans2 + trans;
-		}
 	}
 	else if (gButton == Qt::RightButton ) 
 	{
@@ -108,15 +98,10 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		trans =  Vector3D(0, 0, scale * (g_starty - y));
 		g_startx = x;
 		g_starty = y;
-		if(g_objSelect == 0) 
+		if (vSettings[0].selected)
 			ObjTrans1 = ObjTrans1 + trans;
-		else if(g_objSelect == 1) 
+		if (vSettings[1].selected) 
 			ObjTrans2 = ObjTrans2 + trans;
-		else if(g_objSelect == -1)
-		{
-			ObjTrans1 = ObjTrans1 + trans; 
-			ObjTrans2 = ObjTrans2 + trans;
-		}
 	}
 
 	updateGL();
@@ -130,16 +115,12 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		if(g_objSelect == 0) 
+		if (vSettings[0].selected) 
 			ObjTrans1 = ObjTrans1 + trans;
-		else if(g_objSelect == 1) 
-			ObjTrans2 = ObjTrans2 + trans;
-		else if(g_objSelect == -1)
-		{
-			ObjTrans1 = ObjTrans1 + trans; 
-			ObjTrans2 = ObjTrans2 + trans;
-		}
+		if (vSettings[1].selected)
+			ObjTrans2 = ObjTrans2 + trans;		
 	}
+
 	updateGL();
 }
 
@@ -211,7 +192,6 @@ void GLMeshWidget::resizeGL( int width, int height )
 void GLMeshWidget::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//	glClearColor(1,1,1,0);
 	draw();
 }
 
@@ -226,6 +206,7 @@ void GLMeshWidget::draw()
 	if (vSettings[0].displayType == DisplaySettings::Mesh || vSettings[0].displayType == DisplaySettings::Signature)
 	{
 		drawMeshExt(0);
+		drawMeshExt(1);
 	}
 }
 
@@ -305,15 +286,20 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 
 void GLMeshWidget::drawMeshExt( int obj )
 {
+	if (obj >= vpMP.size() || obj < 0) return;	
+	if(!vpMP[obj]->mesh) return;
+
 	CMesh* tmesh = vpMP[obj]->mesh;
 	CQrot rot = (obj == 0) ? ObjRot1 : ObjRot2;
 	Vector3D trans = (obj == 0) ? ObjTrans1 : ObjTrans2;
-	const GLfloat *color = (obj == 0) ? color1 : color2;
-	if(!tmesh) return;
+	const GLfloat *color = (obj == 0) ? color1 : color2;	
 
 	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-	//  glMateriali(GL_FRONT, GL_SHININESS, 96);
+//  glMateriali(GL_FRONT, GL_SHININESS, 96);
+
+	Vector3D shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+	if (obj > 0) shift.x = -shift.x;
 
 	glPushMatrix();
 	setupObject(rot, trans);
@@ -334,7 +320,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);
 				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-				//vt -= tmesh->m_Center;
+				vt -= shift;
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
@@ -355,7 +341,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	 			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
 	 			glNormal3f(norm.x, norm.y, norm.z);	 				
 	 			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-	 			//vt -= tmesh->m_Center;
+	 			vt -= shift;
 	 			glVertex3f(vt.x, vt.y, vt.z);
 	 		}
 	 	}
@@ -382,9 +368,9 @@ void GLMeshWidget::drawMeshExt( int obj )
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
 				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
-				//v1 -= tmesh->m_Center;
+				v1 -= shift;
 				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
-				//v2 -= tmesh->m_Center;
+				v2 -= shift;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
 			}
@@ -396,6 +382,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	if (vpMP[0]->pRef >= 0 && bShowRefPoint)
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
+		vt -= shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();
 		gluQuadricDrawStyle(quadric, GLU_FILL);
