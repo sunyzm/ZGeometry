@@ -33,7 +33,7 @@ private slots:
 	void reconstruct();
 private:	// methods
 	void makeConnections();
-
+	void keyPressEvent(QKeyEvent *event);
 private:	// attributes
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;

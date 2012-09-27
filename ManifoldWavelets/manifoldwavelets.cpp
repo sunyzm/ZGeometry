@@ -349,3 +349,31 @@ void QManifoldWavelets::reconstruct()
 
 	ui.glMeshWidget->updateGL();
 }
+
+void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
+{
+	switch (event->key())
+	{
+	case Qt::Key_1:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("1"));
+			selectObject(ui.objSelectBox->findText("1"));
+		}
+		break;
+	case Qt::Key_2:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("2"));
+			selectObject(ui.objSelectBox->findText("2"));
+		}
+		break;
+	case Qt::Key_0:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("All"));
+			selectObject(ui.objSelectBox->findText("All"));
+		}
+		break;
+	}
+}
