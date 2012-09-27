@@ -7,7 +7,7 @@
 
 using namespace std;
 
-bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, short lbo_type /*= LBO_COT*/ )
+bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type /*= Laplacian::CotFormula*/ )
 {
 	m_func.clear();
 
@@ -27,7 +27,7 @@ bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 	vector<double> diagW;
 	diagW.resize(nVertex, 0);
 
-	if(lbo_type == LBO_COT)
+	if(lbo_type == Laplacian::CotFormula)
 	{
 		for(int i = 0; i < nVertex; i++)	//for each vertex
 		{
@@ -184,10 +184,35 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 			vSS.push_back(diagW[i]);
 		}
 	}
+	else if (laplacianType == Umbrella)
+	{
+		vWeights.resize(size, 1.0);
+
+		for (int i = 0; i < size; ++i)
+		{
+			const CVertex* vi = tmesh->getVertex_const(i);
+			vector<int> vNeighbors;
+			tmesh->VertexNeighborRing(i, 1, vNeighbors);
+			int valence = vNeighbors.size();
+
+			for (int j = 0; j < valence; ++j)
+			{
+				vII.push_back(i+1);
+				vJJ.push_back(vNeighbors[j]+1);
+				vSS.push_back(-1.0);
+			}
+			vII.push_back(i+1);
+			vJJ.push_back(i+1);
+			vSS.push_back(valence);
+		}
+	}
+
+	isBuilt = true;
 }
 
 void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {
+	assert(isBuilt);
 	assert(nEig >= 0);
 
 	mhb.m_func.clear();

@@ -2,6 +2,7 @@
 #include <ctime>
 #include <QDateTime>
 #include <Qtgui/QMessageBox>
+#include <fstream>
 
 OutputHelper qout;
 QString qformat;
@@ -28,9 +29,14 @@ void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout
 	}
 }
 
-void OutputHelper::output( std::string& msg, int venue /*= OUT_CONSOLE*/, double timeout /*= 0.0*/ )
+void OutputHelper::output( const std::string& msg, int venue /*= OUT_CONSOLE*/, double timeout /*= 0.0*/ )
 {
 	output(QString(msg.c_str()), venue, timeout);
+}
+
+void OutputHelper::output( const char* msg, int venue /*= OUT_CONSOLE*/, double timeout /*= 0.0*/ )
+{
+	output(QString(msg), venue, timeout);
 }
 
 
@@ -47,3 +53,4 @@ void OutputHelper::outputDateTime( int venue /*= 1*/ )
 		consoleOutput->insertPlainText("Time stamp: " + QDateTime::currentDateTime().toString("hh:mm:ss  MMM d yyyy\n"));
 	}
 }
+
