@@ -344,8 +344,31 @@ void QManifoldWavelets::reconstruct()
 	ui.spinBox2->setMinimum(0);
 	ui.spinBox2->setMaximum(mesh2.getVerticesNum()-1);
 	ui.horizontalSlider2->setMinimum(0);
-	ui.horizontalSlider2->setMaximum(mesh1.getVerticesNum()-2);
+	ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
 	ui.spinBox2->setValue(0);
+
+/*  to prove the effect of scalar product   
+
+	ofstream ofs1("output/dotproduct.dat"), ofs2("output/scalarproduct.dat");
+	for (int i = 0; i < vMP[0].mhb.m_nEigFunc; ++i)
+	{
+		for (int j = 0; j < vMP[0].mhb.m_nEigFunc; ++j)
+		{
+			const vector<double> &ef1 = vMP[0].mhb.m_func[i].m_vec, 
+				                 &ef2 = vMP[0].mhb.m_func[j].m_vec;
+			const vector<double> &sc = vMP[0].mLaplacian.getVerticesWeight();
+
+			ofs1 << VectorDotProduct(ef1, ef2) << ' ';
+			ofs2 << VectorScalarProduct(ef1, ef2, sc) << ' ';
+		}
+		ofs1 << endl;
+		ofs2 << endl;
+		if (i % 10 == 0)
+			qout.output("Row " + QString::number(i) + " finished!"); 
+	}
+	ofs1.close();
+	ofs2.close();
+*/
 
 	ui.glMeshWidget->updateGL();
 }

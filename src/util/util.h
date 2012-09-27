@@ -4,8 +4,8 @@
 #include <cmath>
 #include "color.h"
 #include "output.h"
+#include "arithmetic.h"
 
-const double PI = 3.14159265358979323846;
 
 inline std::string Int2String(int i)
 {
@@ -21,11 +21,7 @@ inline std::string Double2String(double f)
 	return ostr.str();
 }
 
-inline double sinc(double x)
-{
-	if (fabs(x)<1e-8) return 1.0;
-	else return std::sin(PI*x) / (PI*x);
-}
+
 
 class MyNote
 {

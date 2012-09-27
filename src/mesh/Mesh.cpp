@@ -3248,4 +3248,24 @@ bool CMesh::hasBounary() const
 	return m_nBoundaryEdgeNum > 0;
 }
 
+void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
+{
+	vCoord.resize(m_nVertex);
+	if (dim == 0)
+	{
+		for (int i = 0; i < m_nVertex; ++i)
+			vCoord[i] = m_pVertex[i].m_vPosition.x;
+	}
+	else if (dim == 1)
+	{
+		for (int i = 0; i < m_nVertex; ++i)
+			vCoord[i] = m_pVertex[i].m_vPosition.y;
+	}
+	else if (dim == 2)
+	{
+		for (int i = 0; i < m_nVertex; ++i)
+			vCoord[i] = m_pVertex[i].m_vPosition.z;
+	}
+}
+
 
