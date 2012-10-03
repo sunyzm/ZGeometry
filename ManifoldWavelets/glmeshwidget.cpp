@@ -234,7 +234,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 
 	{	// just display mesh in single color
 		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->m_nFace; i++)
+		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
 			if(!tmesh->m_pFace[i].m_piEdge) continue;
 			for (int j = 0; j < 3; j++)
@@ -257,7 +257,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 	{
 		glDisable(GL_LIGHTING);
 		glBegin(GL_LINES);	
-		for(int i = 0; i < tmesh->m_nHalfEdge; i++)
+		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
 		{
 			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
 			{
@@ -310,7 +310,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	if (vSettings[obj].displayType == DisplaySettings::Mesh || vpMP[obj]->vDisplaySignature.empty())
 	{	// just display mesh in single color
 		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->m_nFace; i++)
+		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
 			if(!tmesh->m_pFace[i].m_piEdge) continue;
 			for (int j = 0; j < 3; j++)
@@ -330,7 +330,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	{	
 		//display signature value in false color
 	 	glBegin(GL_TRIANGLES);
-	 	for (int i = 0; i < tmesh->m_nFace; i++)
+	 	for (int i = 0; i < tmesh->getFaceNum(); i++)
 	 	{
 	 		if(!tmesh->m_pFace[i].m_piEdge) continue;
 	 		for (int j = 0; j < 3; j++)
@@ -355,7 +355,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	{
 
 		glBegin(GL_LINES);	
-		for(int i = 0; i < tmesh->m_nHalfEdge; i++)
+		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
 		{
 			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
 			{

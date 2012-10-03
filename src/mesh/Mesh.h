@@ -185,19 +185,20 @@ class CMesh
 	friend class MeshPyramid;
 //attributes
 private:
-	std::vector<CVertex*>	m_Vertices;
-	std::vector<CHalfEdge*> m_HalfEdges;
-	std::vector<CFace*>		m_Faces;
+	std::vector<CVertex*>	m_vVertices;
+	std::vector<CHalfEdge*> m_vHalfEdges;
+	std::vector<CFace*>		m_vFaces;
 
 	bool m_bIsPointerVectorExist;		// pointer vectors representation
 	bool m_bIsIndexArrayExist; // index array representation
 	int  m_nBoundaryEdgeNum;
-public:
+
 	int		    m_nVertex;				// number of vertices
-	CVertex*	m_pVertex;				// array pointer of vertices
 	int		    m_nHalfEdge;			// number of half-edges
-	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	int			m_nFace;	 			// number of faces
+public:
+	CVertex*	m_pVertex;				// array pointer of vertices
+	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	CFace*		m_pFace;				// array pointer of faces
 
 	Vector3D    m_Center;
@@ -228,6 +229,8 @@ public:
 	CFace*		getFace(int i) { return &m_pFace[i]; }
 	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int			getVerticesNum() const { return m_nVertex; }
+	int			getFaceNum() const { return m_nFace; }
+	int         getHalfEdgeNum() const { return m_nHalfEdge; }
 	int			getMatchedVerticesNum() const;
 	int			getFaceNum() {return m_nFace;}
 	double		getAvgEdgeLength() const { return m_edge; }

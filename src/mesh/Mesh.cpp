@@ -607,15 +607,15 @@ void CMesh::clear()
 		
 	if (m_bIsPointerVectorExist)
 	{
-		for (unsigned int i = 0; i < m_Vertices.size(); ++i)
-			delete m_Vertices[i];
-		for (unsigned int i = 0; i < m_HalfEdges.size(); ++i)
-			delete m_HalfEdges[i];
-		for (unsigned int i = 0; i < m_Faces.size(); ++i)
-			delete m_Faces[i];
-		m_Vertices.clear();
-		m_HalfEdges.clear();
-		m_Faces.clear();
+		for (unsigned int i = 0; i < m_vVertices.size(); ++i)
+			delete m_vVertices[i];
+		for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
+			delete m_vHalfEdges[i];
+		for (unsigned int i = 0; i < m_vFaces.size(); ++i)
+			delete m_vFaces[i];
+		m_vVertices.clear();
+		m_vHalfEdges.clear();
+		m_vFaces.clear();
 	}
 
 	m_bIsIndexArrayExist = m_bIsPointerVectorExist = false;
@@ -1288,9 +1288,9 @@ bool CMesh::construct()
 
 ///////////////////////////////////////////////////////////////////////////////
 ////////////////////	code to construct pointer-vectors	//////////////////
-	m_Vertices.reserve(m_nVertex);
-	m_Faces.reserve(m_nFace);
-	m_HalfEdges.reserve(m_nHalfEdge);
+	m_vVertices.reserve(m_nVertex);
+	m_vFaces.reserve(m_nFace);
+	m_vHalfEdges.reserve(m_nHalfEdge);
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
@@ -1298,18 +1298,18 @@ bool CMesh::construct()
 		newVertex->m_bIsValid = true;
 		newVertex->m_nValence = 0;
 		newVertex->m_HalfEdges.clear();
-		this->m_Vertices.push_back(newVertex);
+		this->m_vVertices.push_back(newVertex);
 	}
 
 	for (int i = 0; i < m_nFace; ++i)
 	{
 		CFace* newFace = new CFace(m_pFace[i]);
-		this->m_Faces.push_back(newFace);
+		this->m_vFaces.push_back(newFace);
 		newFace->m_nType = 3;
 		newFace->m_bIsValid = true;
 
 		for (int j = 0; j < 3; ++j)
-			newFace->m_Vertices.push_back( this->m_Vertices[m_pFace[i].m_piVertex[j]] );
+			newFace->m_Vertices.push_back( this->m_vVertices[m_pFace[i].m_piVertex[j]] );
 
 		newFace->calcNormalAndArea();
 		
@@ -1331,7 +1331,7 @@ bool CMesh::construct()
 			newFace->m_Vertices[j]->m_HalfEdges.push_back(heInFace[j]);
 			newFace->m_Vertices[j]->m_nValence++;
 
-			this->m_HalfEdges.push_back(heInFace[j]); 
+			this->m_vHalfEdges.push_back(heInFace[j]); 
 		}
 		
 		he1->m_Vertices[0] = newFace->m_Vertices[0];
@@ -1371,7 +1371,7 @@ bool CMesh::construct()
 
 	}//for each face
 
-	for (vector<CVertex*>::iterator iter = m_Vertices.begin(); iter != m_Vertices.end();)		//--re-arrange each vertex's half-edges clockwise--
+	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		//--re-arrange each vertex's half-edges clockwise--
 	{
 		CVertex* pV = *iter;
 		
@@ -1379,7 +1379,7 @@ bool CMesh::construct()
 		if (pV->m_nValence == 0)
 		{
 			delete pV;
-			iter = m_Vertices.erase(iter);
+			iter = m_vVertices.erase(iter);
 			continue;
 		}
 		
@@ -1452,7 +1452,7 @@ int CMesh::getEdgeNum(  )
 	if (this->m_bIsPointerVectorExist)
 	{
 		int twinedgeNum = 0;
-		for (vector<CHalfEdge*>::iterator iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter)
+		for (vector<CHalfEdge*>::iterator iter = m_vHalfEdges.begin(); iter != m_vHalfEdges.end(); ++iter)
 		{
 			if ((*iter)->m_eTwin && (*iter)->m_eTwin->m_bIsValid)
 				twinedgeNum++;
@@ -1516,7 +1516,7 @@ int CMesh::getBoundaryVertexNum(  ) const
 	if (m_bIsPointerVectorExist)
 	{
 		int bNum = 0;
-		for(vector<CVertex*>::const_iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
+		for(vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
 		{
 			//(*iter)->judgeOnBoundary();
 			if( (*iter)->m_bIsBoundary )
@@ -2542,38 +2542,38 @@ std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
 
 void CMesh::buildPointerVectors()
 {
-	m_HalfEdges.reserve(m_nHalfEdge);
+	m_vHalfEdges.reserve(m_nHalfEdge);
 
 	for (int i = 0; i < m_nVertex; ++i)
-		m_Vertices.push_back(&m_pVertex[i]);
+		m_vVertices.push_back(&m_pVertex[i]);
 	for (int i = 0; i < m_nHalfEdge; ++i)
-		m_HalfEdges.push_back(&m_pHalfEdge[i]);
+		m_vHalfEdges.push_back(&m_pHalfEdge[i]);
 	for (int i = 0; i < m_nFace; ++i)
-		m_Faces.push_back(&m_pFace[i]);
+		m_vFaces.push_back(&m_pFace[i]);
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{	
-		CVertex* ver = m_Vertices[i];
+		CVertex* ver = m_vVertices[i];
 		for (int j = 0; j < ver->m_nValence; ++j)
-			ver->m_HalfEdges.push_back( m_HalfEdges[ver->m_piEdge[j]] );
+			ver->m_HalfEdges.push_back( m_vHalfEdges[ver->m_piEdge[j]] );
 	}
 	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
-		CHalfEdge* edg = m_HalfEdges[i];
-		edg->m_Vertices[0] = m_Vertices[edg->m_iVertex[0]];
-		edg->m_Vertices[1] = m_Vertices[edg->m_iVertex[1]];
+		CHalfEdge* edg = m_vHalfEdges[i];
+		edg->m_Vertices[0] = m_vVertices[edg->m_iVertex[0]];
+		edg->m_Vertices[1] = m_vVertices[edg->m_iVertex[1]];
 		if (edg->m_iTwinEdge >= 0)
-			edg->m_eTwin = m_HalfEdges[edg->m_iTwinEdge];
-		edg->m_eNext = m_HalfEdges[edg->m_iNextEdge];
-		edg->m_Face = m_Faces[edg->m_iFace];
+			edg->m_eTwin = m_vHalfEdges[edg->m_iTwinEdge];
+		edg->m_eNext = m_vHalfEdges[edg->m_iNextEdge];
+		edg->m_Face = m_vFaces[edg->m_iFace];
 	}
 	for (int i = 0; i < m_nFace; ++i)
 	{
-		CFace* fac = m_Faces[i];
+		CFace* fac = m_vFaces[i];
 		for (int j = 0; j < fac->m_nType; ++j)
 		{
-			fac->m_Vertices.push_back( m_Vertices[fac->m_piVertex[j]] );
-			fac->m_HalfEdges.push_back( m_HalfEdges[fac->m_piEdge[j]] );
+			fac->m_Vertices.push_back( m_vVertices[fac->m_piVertex[j]] );
+			fac->m_HalfEdges.push_back( m_vHalfEdges[fac->m_piEdge[j]] );
 		}
 	}
 
@@ -2593,7 +2593,7 @@ void CMesh::buildIndexArrays()
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_pVertex[i] = *m_Vertices[i];
+		m_pVertex[i] = *m_vVertices[i];
 
 		if (m_pVertex[i].m_piEdge)
 			delete []m_pVertex[i].m_piEdge;
@@ -2601,30 +2601,30 @@ void CMesh::buildIndexArrays()
 		m_pVertex[i].m_piEdge = new int[m_pVertex[i].m_nValence];
 		for (int j = 0; j < m_pVertex[i].m_nValence; ++j)
 		{
-			m_pVertex[i].m_piEdge[j] = m_Vertices[i]->m_HalfEdges[j]->m_eIndex;
+			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_eIndex;
 		}
 	}
 	
 	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
-		m_pHalfEdge[i] = *m_HalfEdges[i];
+		m_pHalfEdge[i] = *m_vHalfEdges[i];
 		CHalfEdge& he = m_pHalfEdge[i];
-		he.m_iFace = m_HalfEdges[i]->m_Face->m_fIndex;
-		he.m_iTwinEdge = (m_HalfEdges[i]->m_eTwin ? m_HalfEdges[i]->m_eTwin->m_eIndex : -1);
-		he.m_iNextEdge = m_HalfEdges[i]->m_eNext->m_eIndex;
-		he.m_iPrevEdge = m_HalfEdges[i]->m_ePrev->m_eIndex;
-		int i1 = m_HalfEdges[i]->m_Vertices[0]->m_vIndex;
-		int i2 = m_HalfEdges[i]->m_Vertices[1]->m_vIndex;
+		he.m_iFace = m_vHalfEdges[i]->m_Face->m_fIndex;
+		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_eIndex : -1);
+		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_eIndex;
+		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_eIndex;
+		int i1 = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
+		int i2 = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
 		
 		assert(i1 >= 0 && i1 < m_nVertex && i2 >= 0 && i2 < m_nVertex);
 		
-		he.m_iVertex[0] = m_HalfEdges[i]->m_Vertices[0]->m_vIndex;
-		he.m_iVertex[1] = m_HalfEdges[i]->m_Vertices[1]->m_vIndex;
+		he.m_iVertex[0] = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
+		he.m_iVertex[1] = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
 	}
 
 	for (int i = 0; i < m_nFace; ++i)
 	{
-		m_pFace[i] = *m_Faces[i];
+		m_pFace[i] = *m_vFaces[i];
 		CFace& face = m_pFace[i];
 		if (face.m_piEdge) delete []face.m_piEdge;
 		if (face.m_piVertex) delete []face.m_piVertex;
@@ -2633,12 +2633,12 @@ void CMesh::buildIndexArrays()
 		face.m_piVertex = new int[face.m_nType];
 		for (int j = 0; j < face.m_nType; ++j)
 		{
-			int idx = m_Faces[i]->m_Vertices[j]->m_vIndex;
+			int idx = m_vFaces[i]->m_Vertices[j]->m_vIndex;
 			
 			assert(idx >= 0 && idx < m_nVertex);
 			
-			face.m_piVertex[j] = m_Faces[i]->m_Vertices[j]->m_vIndex;
-			face.m_piEdge[j] = m_Faces[i]->m_HalfEdges[j]->m_eIndex;
+			face.m_piVertex[j] = m_vFaces[i]->m_Vertices[j]->m_vIndex;
+			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_eIndex;
 		}
 	}
 
@@ -2648,16 +2648,16 @@ void CMesh::buildIndexArrays()
 
 void CMesh::assignElementsIndex()
 {
-	assert(m_nVertex == m_Vertices.size() && m_nHalfEdge == m_HalfEdges.size() && m_nFace == m_Faces.size());
+	assert(m_nVertex == m_vVertices.size() && m_nHalfEdge == m_vHalfEdges.size() && m_nFace == m_vFaces.size());
 	
 	for (int i = 0; i < m_nVertex; ++i)
-		m_Vertices[i]->m_vIndex = i;
+		m_vVertices[i]->m_vIndex = i;
 	
 	for (int i = 0; i < m_nHalfEdge; ++i)
-		m_HalfEdges[i]->m_eIndex = i;
+		m_vHalfEdges[i]->m_eIndex = i;
 	
 	for (int i = 0; i < m_nFace; ++i)
-		m_Faces[i]->m_fIndex = i;
+		m_vFaces[i]->m_fIndex = i;
 }
 
 void CMesh::cloneFrom( const CMesh& oldMesh )
@@ -2700,30 +2700,30 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 	{
 		for (int i = 0; i < m_nVertex; ++i)
 		{
-			this->m_Vertices.push_back(new CVertex(*oldMesh.m_Vertices[i]));
+			this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 		}
 		for (int i = 0; i < m_nFace; ++i)
 		{
-			this->m_Faces.push_back(new CFace(*oldMesh.m_Faces[i]));
+			this->m_vFaces.push_back(new CFace(*oldMesh.m_vFaces[i]));
 		}
 		for (int i = 0; i < m_nHalfEdge; ++i)
 		{
-			this->m_HalfEdges.push_back(new CHalfEdge(*oldMesh.m_HalfEdges[i]));
+			this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh.m_vHalfEdges[i]));
 		}
 		for (int i = 0; i < m_nVertex; ++i)
 		{
-			CVertex* curV = this->m_Vertices[i];
-			const CVertex* oldV = oldMesh.m_Vertices[i];
+			CVertex* curV = this->m_vVertices[i];
+			const CVertex* oldV = oldMesh.m_vVertices[i];
 			for (int j = 0; j < oldV->m_nValence; ++j)
 			{
 				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
-				curV->m_HalfEdges.push_back(this->m_HalfEdges[eidx]);
+				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
 		for (int i = 0; i < m_nFace; ++i)
 		{
-			CFace* curF = this->m_Faces[i];
-			const CFace* oldF = oldMesh.m_Faces[i];
+			CFace* curF = this->m_vFaces[i];
+			const CFace* oldF = oldMesh.m_vFaces[i];
 			for (int j = 0; j < oldF->m_nType; ++j)
 			{
 				int vidx = oldF->m_Vertices[j]->m_vIndex;
@@ -2731,14 +2731,14 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 
 				assert(vidx >= 0 && vidx < m_nVertex);
 
-				curF->m_Vertices.push_back(this->m_Vertices[vidx]);
-				curF->m_HalfEdges.push_back(this->m_HalfEdges[eidx]);
+				curF->m_Vertices.push_back(this->m_vVertices[vidx]);
+				curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
 		for (int i = 0; i < m_nHalfEdge; ++i)
 		{
-			CHalfEdge* curE = this->m_HalfEdges[i];
-			const CHalfEdge* oldE = oldMesh.m_HalfEdges[i];
+			CHalfEdge* curE = this->m_vHalfEdges[i];
+			const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
 			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
 				vidx1 = oldE->m_Vertices[1]->m_vIndex,
 				neidx = oldE->m_eNext->m_eIndex,
@@ -2747,15 +2747,15 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			
 			assert(vidx0 >= 0 && vidx0 < m_nVertex && vidx1 >= 0 && vidx1 < m_nVertex);
 
-			curE->m_Vertices[0] = this->m_Vertices[vidx0];
-			curE->m_Vertices[1] = this->m_Vertices[vidx1];
-			curE->m_eNext = this->m_HalfEdges[neidx];
-			curE->m_ePrev = this->m_HalfEdges[peidx];
-			curE->m_Face = this->m_Faces[fidx];
+			curE->m_Vertices[0] = this->m_vVertices[vidx0];
+			curE->m_Vertices[1] = this->m_vVertices[vidx1];
+			curE->m_eNext = this->m_vHalfEdges[neidx];
+			curE->m_ePrev = this->m_vHalfEdges[peidx];
+			curE->m_Face = this->m_vFaces[fidx];
 			if (oldE->m_eTwin != NULL)
 			{
 				int teidx = oldE->m_eTwin->m_eIndex;
-				curE->m_eTwin = this->m_HalfEdges[teidx];
+				curE->m_eTwin = this->m_vHalfEdges[teidx];
 			}
 			else curE->m_eTwin = NULL;
 		}
@@ -2908,12 +2908,12 @@ void CMesh::scaleAreaToVertexNum()
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_Vertices[i]->getPos();
+		center += m_pVertex[i].getPos();
 	center /= m_nVertex;
 
 	double totalSufaceArea(0);
 	for (int i = 0; i < m_nFace; ++i)
-		totalSufaceArea += m_Faces[i]->getArea();
+		totalSufaceArea += m_pFace[i].getArea();
 	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
 
 	cout << "center: (" << center.x << ", " << center.y << ", " << center.z << ")"
@@ -2921,7 +2921,7 @@ void CMesh::scaleAreaToVertexNum()
 	
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_Vertices[i]->translateAndScale(-center, scale);
+		m_vVertices[i]->translateAndScale(-center, scale);
 		m_pVertex[i].translateAndScale(-center, scale);
 	}
 }
@@ -2939,7 +2939,7 @@ void CMesh::gatherStatistics()
 	// necessary stat: m_edge(avg edge length), 
 	
 	for (int i = 0; i < m_nFace; ++i)
-		m_Faces[i]->calcNormalAndArea();
+		m_vFaces[i]->calcNormalAndArea();
 
 	int boundaryCount(0);
 	double edgeLength = 0;
@@ -2950,16 +2950,16 @@ void CMesh::gatherStatistics()
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_Vertices[i]->calcNormal();		//calculate vertex normal
+		m_vVertices[i]->calcNormal();		//calculate vertex normal
 		center_x += m_pVertex[i].m_vPosition.x;
 		center_y += m_pVertex[i].m_vPosition.y;
 		center_z += m_pVertex[i].m_vPosition.z;
 
-		boundBox.x = (abs(m_Vertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_Vertices[i]->m_vPosition.x : boundBox.x;
-		boundBox.y = (abs(m_Vertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_Vertices[i]->m_vPosition.y : boundBox.y;
-		boundBox.z = (abs(m_Vertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_Vertices[i]->m_vPosition.z : boundBox.z;
+		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
+		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
+		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
 
-		if (m_Vertices[i]->m_bIsBoundary) 
+		if (m_vVertices[i]->m_bIsBoundary) 
 			boundaryCount++;
 	}
 	center_x = center_x / m_nVertex;
@@ -2972,9 +2972,9 @@ void CMesh::gatherStatistics()
 
 	for (int i = 0; i < m_nHalfEdge; ++i)
 	{
-		edgeLength += m_HalfEdges[i]->getLength();
+		edgeLength += m_vHalfEdges[i]->getLength();
 	}
-	edgeLength /= m_HalfEdges.size();
+	edgeLength /= m_vHalfEdges.size();
 
 	this->m_edge = edgeLength;		//necessary
 	this->m_bBox = boundBox;
@@ -2995,7 +2995,7 @@ void CMesh::move( Vector3D translation )
 {
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_Vertices[i]->translateAndScale(translation, 1.0);
+		m_vVertices[i]->translateAndScale(translation, 1.0);
 		m_pVertex[i].translateAndScale(translation, 1.0);
 	}
 }
@@ -3021,7 +3021,7 @@ void CMesh::scaleEdgeLenToUnit()
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_Vertices[i]->getPos();
+		center += m_vVertices[i]->getPos();
 	center /= m_nVertex;
 
 	double length = 0.;
@@ -3035,7 +3035,7 @@ void CMesh::scaleEdgeLenToUnit()
 		if (heVisisted[i]) continue;
 		
 		edgeNum++;
-		length += m_HalfEdges[i]->getLength();
+		length += m_vHalfEdges[i]->getLength();
 
 		int twin = m_pHalfEdge[i].m_iTwinEdge;
 		if (twin >= 0) heVisisted[twin] = true;
@@ -3050,7 +3050,7 @@ void CMesh::scaleEdgeLenToUnit()
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_Vertices[i]->translateAndScale(-center, scale);
+		m_vVertices[i]->translateAndScale(-center, scale);
 		m_pVertex[i].translateAndScale(-center, scale);
 	}
 
@@ -3059,7 +3059,7 @@ void CMesh::scaleEdgeLenToUnit()
 std::vector<int> CMesh::getOriginalVertexIndex() const
 {
 	vector<int> vret;
-	for (vector<CVertex*>::const_iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
+	for (vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
 		vret.push_back((*iter)->m_vid - 1);
 	return vret;
 }
