@@ -607,12 +607,15 @@ void CMesh::clear()
 		
 	if (m_bIsPointerVectorExist)
 	{
-		for (unsigned int i = 0; i < m_vVertices.size(); ++i)
-			delete m_vVertices[i];
-		for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
-			delete m_vHalfEdges[i];
-		for (unsigned int i = 0; i < m_vFaces.size(); ++i)
-			delete m_vFaces[i];
+		if (m_bSeperateStorage)
+		{
+			for (unsigned int i = 0; i < m_vVertices.size(); ++i)
+				delete m_vVertices[i];
+			for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
+				delete m_vHalfEdges[i];
+			for (unsigned int i = 0; i < m_vFaces.size(); ++i)
+				delete m_vFaces[i];
+		}		
 		m_vVertices.clear();
 		m_vHalfEdges.clear();
 		m_vFaces.clear();
@@ -2578,6 +2581,7 @@ void CMesh::buildPointerVectors()
 	}
 
 	m_bIsPointerVectorExist = true;
+	m_bSeperateStorage = false;
 }
 
 void CMesh::buildIndexArrays()
@@ -2643,7 +2647,7 @@ void CMesh::buildIndexArrays()
 	}
 
 	m_bIsIndexArrayExist = true;
-
+	m_bSeperateStorage = true;
 }
 
 void CMesh::assignElementsIndex()

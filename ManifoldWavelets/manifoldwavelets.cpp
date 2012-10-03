@@ -89,7 +89,6 @@ bool QManifoldWavelets::initialize()
 	}
 	meshfiles.close();
 
-////////    load meshes    ////////
 	if (!mesh1.Load(vMeshFiles.front()))
 	{
 		qout.output("Cannot open " + vMeshFiles.front(), OUT_MSGBOX);
@@ -98,6 +97,7 @@ bool QManifoldWavelets::initialize()
 	mesh1.scaleEdgeLenToUnit();
 	mesh1.gatherStatistics();
 	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
+
 /*	
 	ifstream ifcoord("output/coordtrans4.dat");
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)

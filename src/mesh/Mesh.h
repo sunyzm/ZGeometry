@@ -183,19 +183,23 @@ public:
 class CMesh 
 {
 	friend class MeshPyramid;
-//attributes
+
+////////////////    attributes    ////////////////
 private:
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
 
 	bool m_bIsPointerVectorExist;		// pointer vectors representation
-	bool m_bIsIndexArrayExist; // index array representation
+	bool m_bIsIndexArrayExist;			// index array representation
+	bool m_bSeperateStorage;		
 	int  m_nBoundaryEdgeNum;
 
 	int		    m_nVertex;				// number of vertices
 	int		    m_nHalfEdge;			// number of half-edges
 	int			m_nFace;	 			// number of faces
+
+
 public:
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
@@ -206,6 +210,8 @@ public:
 	double		m_edge;					// average edge length
 	std::string m_meshName;				// name of the mesh
 
+
+////////////////    methods    ////////////////
 public:
 //constructors
 	CMesh();
