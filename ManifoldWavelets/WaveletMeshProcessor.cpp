@@ -1,9 +1,9 @@
-#include "ManifoldMeshProcessor.h"
+#include "WaveletMeshProcessor.h"
 #include <fstream>
 
 using namespace std;
 
-void ManifoldMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, int scale, int wtype /*= 1*/ )
+void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, int scale, int wtype /*= 1*/ )
 {
 	vMHW.resize(m_size);
 
@@ -35,7 +35,7 @@ void ManifoldMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW,
 	}
 }
 
-void ManifoldMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, int scale )
+void WaveletMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, int scale )
 {
 	vExp.resize(m_size);
 
@@ -73,9 +73,9 @@ inline double TransferFunc1(double x)
 	else return 2/x;
 }
 
-void ManifoldMeshProcessor::calGeometryDWT()
+void WaveletMeshProcessor::calGeometryDWT()
 {
-// output: 1. x-coordinates of all vertices
+// output: 1. coordinates of all vertices
 //         2. wavelets coefficients of the x-coordinates
 
 	ofstream ofs("output/coord.dat");

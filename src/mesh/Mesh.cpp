@@ -3272,4 +3272,17 @@ void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
 	}
 }
 
+void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
+{
+	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
+
+	for (int i = 0; i < m_nVertex; ++i)
+	{
+		m_pVertex[i].setPos(vxCoord[i], vyCoord[i], vzCoord[i]);
+		
+		if (m_bIsPointerVectorExist)
+			m_vVertices[i]->setPos(vxCoord[i], vyCoord[i], vzCoord[i]);
+	}
+}
+
 

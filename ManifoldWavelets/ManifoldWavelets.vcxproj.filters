@@ -86,13 +86,13 @@
     <ClCompile Include="MeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ManifoldMeshProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\util\output.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\util\arithmetic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="WaveletMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -144,13 +144,13 @@
     <ClInclude Include="MeshProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ManifoldMeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\util\output.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\src\util\arithmetic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="WaveletMeshProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

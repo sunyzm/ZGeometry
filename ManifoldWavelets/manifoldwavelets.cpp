@@ -192,7 +192,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 {
 	if (selected[0])
 	{
-		ManifoldMeshProcessor& mp = vMP[0];
+		WaveletMeshProcessor& mp = vMP[0];
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
@@ -203,7 +203,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 
 	if (selected[1] && vMP[1].mesh)
 	{
-		ManifoldMeshProcessor& mp = vMP[1];		
+		WaveletMeshProcessor& mp = vMP[1];		
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
@@ -219,7 +219,7 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 {
 	if (selected[0])
 	{
-		ManifoldMeshProcessor& mp = vMP[0];
+		WaveletMeshProcessor& mp = vMP[0];
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
@@ -230,7 +230,7 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 
 	if (selected[1] && vMP[1].mesh)
 	{
-		ManifoldMeshProcessor& mp = vMP[1];		
+		WaveletMeshProcessor& mp = vMP[1];		
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
@@ -244,7 +244,7 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 
 void QManifoldWavelets::displayExperimental()
 {
-	ManifoldMeshProcessor& mp = vMP[0];
+	WaveletMeshProcessor& mp = vMP[0];
 
 // 	vector<double> vExp;
 // 	mp.computeExperimentalWavelet(vExp, 30);
@@ -346,6 +346,8 @@ void QManifoldWavelets::reconstruct()
 	ui.horizontalSlider2->setMinimum(0);
 	ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
 	ui.spinBox2->setValue(0);
+
+
 
 /*  to prove the effect of scalar product   
 

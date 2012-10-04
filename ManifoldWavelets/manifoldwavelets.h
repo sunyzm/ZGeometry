@@ -6,7 +6,7 @@
 #include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
 #include <engine.h>
-#include "ManifoldMeshProcessor.h"
+#include "WaveletMeshProcessor.h"
 #include <vector>
 
 class QManifoldWavelets : public QMainWindow
@@ -43,7 +43,7 @@ private:	// attributes
 	Engine *m_ep;
 	CMesh mesh1, mesh2;
 	bool selected[2];
-	ManifoldMeshProcessor vMP[2];
+	WaveletMeshProcessor vMP[2];
 };
 
 #endif // MANIFOLDWAVELETS_H

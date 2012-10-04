@@ -8,7 +8,7 @@ public:
 	
 };
 
-class ManifoldMeshProcessor : public MeshProcessor
+class WaveletMeshProcessor : public MeshProcessor
 {
 public:
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, int scale, int wtype = 1);

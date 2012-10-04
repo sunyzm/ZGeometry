@@ -267,6 +267,7 @@ public:
 	std::vector<int> getNeighboringVertex(int v, int ring) const;
 	std::vector<int> getVertexAdjacentFacesIndex(int vIdx);
 	void         getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+	void         setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 private:
 	void	clear();
 	bool	construct();	// construct connectivity
