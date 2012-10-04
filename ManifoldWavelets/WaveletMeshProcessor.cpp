@@ -131,3 +131,17 @@ void WaveletMeshProcessor::calGeometryDWT()
 		}
 	}
 }
+
+void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
+{
+	vx.resize(m_size);
+	vy.resize(m_size);
+	vz.resize(m_size);
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		vx[i] = mesh->getVertex(i)->getPos().x;
+		vy[i] = mesh->getVertex(i)->getPos().y;
+		vz[i] = mesh->getVertex(i)->getPos().z;
+	}
+}

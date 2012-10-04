@@ -347,7 +347,9 @@ void QManifoldWavelets::reconstruct()
 	ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
 	ui.spinBox2->setValue(0);
 
-
+	vector<double> vx, vy, vz;
+	vMP[1].reconstructExperimental1(vx, vy, vz);
+	mesh2.setVertexCoordinates(vx, vy, vz);
 
 /*  to prove the effect of scalar product   
 
