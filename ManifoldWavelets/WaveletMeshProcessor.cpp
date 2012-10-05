@@ -138,10 +138,24 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	vy.resize(m_size);
 	vz.resize(m_size);
 
+	vector<double> vxcoord0, vycoord0, vzcoord0;
+	mesh->getCoordinateFunction(0, vxcoord0);
+	mesh->getCoordinateFunction(1, vycoord0);
+	mesh->getCoordinateFunction(2, vzcoord0);
+
+	int scales = 1;
+	vector<ManifoldFunction> SGW;
+
 	for (int i = 0; i < m_size; ++i)
 	{
-		vx[i] = mesh->getVertex(i)->getPos().x;
-		vy[i] = mesh->getVertex(i)->getPos().y;
-		vz[i] = mesh->getVertex(i)->getPos().z;
+		SGW.push_back(ManifoldFunction(m_size));
+
 	}
+	for (int k = 0; k < scales; ++k)
+	{
+	}
+
+	vx = vxcoord0;
+	vy = vycoord0;
+	vz = vzcoord0;
 }

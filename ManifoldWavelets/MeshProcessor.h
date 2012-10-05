@@ -5,6 +5,25 @@
 #include <string>
 #include <vector>
 
+
+class ManifoldFunction
+{
+public:
+	int m_size;
+	std::vector<double> m_function;
+	
+	ManifoldFunction() : m_size(0) {}
+	ManifoldFunction(int s) : m_size(s) {}
+};
+
+class SparseManifoldFunction
+{
+public:
+	int size;
+	std::vector<int> m_funcIdx;
+	std::vector<double> m_funcVal;
+};
+
 class MeshProcessor
 {
 public:

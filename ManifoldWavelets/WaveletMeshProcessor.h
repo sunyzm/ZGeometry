@@ -2,12 +2,6 @@
 
 #include "MeshProcessor.h"
 
-class WaveletCoefficients
-{
-public:
-	
-};
-
 class WaveletMeshProcessor : public MeshProcessor
 {
 public:
