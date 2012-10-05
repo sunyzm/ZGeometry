@@ -144,15 +144,45 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	mesh->getCoordinateFunction(2, vzcoord0);
 
 	int scales = 1;
+	double t_scales[4] = {80, 40, 20, 10};
 	vector<ManifoldFunction> SGW;
-
-	for (int i = 0; i < m_size; ++i)
+	
+	// scaling function
+	for (int x = 0; x < m_size; ++x)
 	{
 		SGW.push_back(ManifoldFunction(m_size));
 
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+			}
+			SGW[x].m_function[y] = itemSum;
+		}
 	}
-	for (int k = 0; k < scales; ++k)
+
+	// wavelet functions
+	for (int s = 0; s < scales; ++s)
 	{
+		for (int x = 0; x < m_size; ++x)
+		{
+			SGW.push_back(ManifoldFunction(m_size));
+
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					itemSum += mhb.m_func[k].m_val * t_scales[s] * exp(-mhb.m_func[k].m_val * t_scales[s]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				SGW[x].m_function[y] = itemSum;
+			}
+
+		}
 	}
 
 	vx = vxcoord0;
