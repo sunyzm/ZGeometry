@@ -27,3 +27,13 @@ double VectorScalarProduct( const std::vector<double>& v1, const std::vector<dou
 
 	return sum;
 }
+
+void VectorPointwiseProduct( const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v )
+{
+	assert(v1.size() == v2.size());
+	v.resize(v1.size());
+	for (int i = 0; i < v1.size(); ++i)
+	{
+		v[i] = v1[i] * v2[i];
+	}
+}

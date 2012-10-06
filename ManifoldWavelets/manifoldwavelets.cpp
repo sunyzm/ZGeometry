@@ -246,20 +246,20 @@ void QManifoldWavelets::displayExperimental()
 {
 	WaveletMeshProcessor& mp = vMP[0];
 
-// 	vector<double> vExp;
-// 	mp.computeExperimentalWavelet(vExp, 30);
-// 
-// 	mp.normalizeFrom(vExp);
-// 
-// 	ui.glMeshWidget->vSettings[g_objSelect].displayType = DisplaySettings::Signature;
-// 	ui.glMeshWidget->updateGL();
-// 	qout.output("Show MHW from point " + QString::number(mp.pRef));
+ 	vector<double> vExp;
+ 	mp.computeExperimentalWavelet(vExp, 30);
+ 
+ 	mp.normalizeFrom(vExp);
+ 
+ 	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+ 	ui.glMeshWidget->updateGL();
+ 	qout.output("Show MHW from point " + QString::number(mp.pRef));
 	
-	qout.output("Start calculating wavelet of geometry...");
-	QTime timer;
-	timer.start();
-	mp.calGeometryDWT();
-	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
+// 	qout.output("Start calculating wavelet of geometry...");
+// 	QTime timer;
+// 	timer.start();
+// 	mp.calGeometryDWT();
+// 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
 void QManifoldWavelets::setShowRefPoint()
@@ -348,7 +348,8 @@ void QManifoldWavelets::reconstruct()
 	ui.spinBox2->setValue(0);
 
 	vector<double> vx, vy, vz;
-	vMP[1].reconstructExperimental1(vx, vy, vz);
+//	vMP[0].reconstructByMHB(300, vx, vy, vz);
+	vMP[0].reconstructExperimental1(vx, vy, vz);
 	mesh2.setVertexCoordinates(vx, vy, vz);
 
 /*  to prove the effect of scalar product   

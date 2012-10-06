@@ -3,7 +3,7 @@
 
 using namespace std;
 
-void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, int scale, int wtype /*= 1*/ )
+void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
 {
 	vMHW.resize(m_size);
 
@@ -35,30 +35,27 @@ void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, 
 	}
 }
 
-void WaveletMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, int scale )
+
+
+void WaveletMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, double scale )
 {
 	vExp.resize(m_size);
-
+	
 	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
 		for (int k = 0; k < mhb.m_nEigFunc; ++k)
 		{
 			double coef = mhb.m_func[k].m_val * scale;
-			////mexican hat
-			sum += mhb.m_func[k].m_val  * exp(-mhb.m_func[k].m_val * scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
-			//// haar
-			//sum += pow(1.0-exp(-mhb.m_func[k].m_val * scale), 2.0) / (mhb.m_func[k].m_val * scale) *  mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
-			//// Hermitian 1,2
-			//sum += coef * exp(-coef * coef) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
+			sum += mhb.m_func[k].m_val * scale * exp(-mhb.m_func[k].m_val * scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
 		}
 		vExp[i] = sum;
 	}
 
-	ofstream fout("output/frequency.txt", ios::app);
+	ofstream fout("output/frequency.txt", ios::trunc);
 	for (int k = 0; k < mhb.m_nEigFunc; ++k)
 	{
-		double coef = pow(mhb.m_func[k].m_val * scale, 2.0);
+		double coef = pow(mhb.m_func[k].m_val * scale, 1.0);
 		fout << coef * exp(-coef) /* * mhb.m_func[k].m_vec[pRef]*/ << " ";
 	}
 	fout << "\n";
@@ -143,49 +140,94 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 
-	int scales = 1;
-	double t_scales[4] = {80, 40, 20, 10};
-	vector<ManifoldFunction> SGW;
-	
-	// scaling function
-	for (int x = 0; x < m_size; ++x)
-	{
-		SGW.push_back(ManifoldFunction(m_size));
+ 	int scales = 1;
+ 	double t_scales[4] = {80, 40, 20, 10};
+ 	vector<ManifoldFunction> SGW;
+ 	
+ 	// scaling function
+ 	for (int x = 0; x < m_size; ++x)
+ 	{
+ 		SGW.push_back(ManifoldFunction(m_size));
+ 
+ 		for (int y = 0; y < m_size; ++y)
+ 		{
+ 			double itemSum = 0;
+ 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 			{
+ //				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ //				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ 				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ 			}
+ 			SGW[x].m_function[y] = itemSum;
+ 		}
+ 	}
+ 
+ 	// wavelet functions
+ 	for (int s = 0; s < scales; ++s)
+ 	{
+ 		for (int x = 0; x < m_size; ++x)
+ 		{
+ 			SGW.push_back(ManifoldFunction(m_size));
+ 
+ 			for (int y = 0; y < m_size; ++y)
+ 			{
+ 				double itemSum = 0;
+ 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 				{
+ 					itemSum += mhb.m_func[k].m_val * t_scales[s] * exp(-mhb.m_func[k].m_val * t_scales[s]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ 				}
+ 				SGW[x].m_function[y] = itemSum;
+ 			}
+ 		}
+ 	}
+ 
+ 	vector<double> vWeight = mLaplacian.getVerticesWeight();
+ 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
+ 	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
+	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
+	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
 
-		for (int y = 0; y < m_size; ++y)
-		{
-			double itemSum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
-			{
-//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-//				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-			}
-			SGW[x].m_function[y] = itemSum;
-		}
+
+}
+
+void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
+{
+	vx.resize(m_size);
+	vy.resize(m_size);
+	vz.resize(m_size);
+
+	vector<double> vxcoord0, vycoord0, vzcoord0;
+	mesh->getCoordinateFunction(0, vxcoord0);
+	mesh->getCoordinateFunction(1, vycoord0);
+	mesh->getCoordinateFunction(2, vzcoord0);
+
+	vector<double> vWeight = mLaplacian.getVerticesWeight();
+	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
+	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
+	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
+	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
+
+	vector<double> xCoeff, yCoeff, zCoeff;
+	int approxN = std::min(aN, mhb.m_nEigFunc);
+	for (int k = 0; k < approxN; ++k)
+	{
+		xCoeff.push_back(VectorDotProduct(xWeightedCoord, mhb.m_func[k].m_vec));
+		yCoeff.push_back(VectorDotProduct(yWeightedCoord, mhb.m_func[k].m_vec));
+		zCoeff.push_back(VectorDotProduct(zWeightedCoord, mhb.m_func[k].m_vec));
 	}
 
-	// wavelet functions
-	for (int s = 0; s < scales; ++s)
+	for (int i = 0; i < m_size; ++i)
 	{
-		for (int x = 0; x < m_size; ++x)
+		double sumX(0), sumY(0), sumZ(0);
+		for (int k = 0; k < approxN; ++k)
 		{
-			SGW.push_back(ManifoldFunction(m_size));
-
-			for (int y = 0; y < m_size; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
-				{
-					itemSum += mhb.m_func[k].m_val * t_scales[s] * exp(-mhb.m_func[k].m_val * t_scales[s]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				}
-				SGW[x].m_function[y] = itemSum;
-			}
-
+			sumX += xCoeff[k] * mhb.m_func[k].m_vec[i];
+			sumY += yCoeff[k] * mhb.m_func[k].m_vec[i];
+			sumZ += zCoeff[k] * mhb.m_func[k].m_vec[i];
 		}
+		vx[i] = sumX; 
+		vy[i] = sumY;
+		vz[i] = sumZ;
 	}
 
-	vx = vxcoord0;
-	vy = vycoord0;
-	vz = vzcoord0;
 }
