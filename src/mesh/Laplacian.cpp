@@ -213,7 +213,7 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {
 	assert(isBuilt);
-	assert(nEig >= 0);
+	assert(nEig > 0);
 
 	mhb.m_func.clear();
 	mhb.m_size = this->size;
@@ -285,4 +285,28 @@ double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector
 		sum += vf[i] * vWeights[i] * vg[i];
 	}
 	return sum;
+}
+
+void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
+{
+	assert(func.size() == size);
+	
+	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
+
+	int ns = (int) vII.size();
+	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	double *ii = mxGetPr(II);
+	double *jj = mxGetPr(JJ);
+	double *ss = mxGetPr(SS);
+	std::copy(vII.begin(), vII.end(), ii);
+	std::copy(vJJ.begin(), vJJ.end(), jj);
+	std::copy(vSS.begin(), vSS.end(), ss);
+
+	engPutVariable(ep, "II", II);
+	engPutVariable(ep, "JJ", JJ);
+	engPutVariable(ep, "SS", SS);
+
+
 }

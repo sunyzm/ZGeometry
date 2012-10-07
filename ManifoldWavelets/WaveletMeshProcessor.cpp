@@ -139,6 +139,14 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	mesh->getCoordinateFunction(0, vxcoord0);
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
+	
+	vector<double> vWeight = mLaplacian.getVerticesWeight();
+	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
+	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
+	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
+	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
+
+
 
  	int scales = 1;
  	double t_scales[4] = {80, 40, 20, 10};
@@ -174,18 +182,15 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
  				double itemSum = 0;
  				for (int k = 0; k < mhb.m_nEigFunc; ++k)
  				{
- 					itemSum += mhb.m_func[k].m_val * t_scales[s] * exp(-mhb.m_func[k].m_val * t_scales[s]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					double coef = mhb.m_func[k].m_val * t_scales[s];
+ 					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  				}
  				SGW[x].m_function[y] = itemSum;
  			}
  		}
  	}
  
- 	vector<double> vWeight = mLaplacian.getVerticesWeight();
- 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
- 	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
-	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
-	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
+ 	
 
 
 }
@@ -230,4 +235,21 @@ void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, st
 		vz[i] = sumZ;
 	}
 
+}
+
+void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
+{
+	vx.resize(m_size);
+	vy.resize(m_size);
+	vz.resize(m_size);
+
+	vector<double> vxCoord0, vyCoord0, vzCoord0;
+	mesh->getCoordinateFunction(0, vxCoord0);
+	mesh->getCoordinateFunction(1, vyCoord0);
+	mesh->getCoordinateFunction(2, vzCoord0);
+	
+	vector<double> vxDiffCoord, vyDiffCoord, vzDiffCoord;
+	mLaplacian.multiply(ep, vxCoord0, vxDiffCoord);
+	mLaplacian.multiply(ep, vyCoord0, vyDiffCoord);
+	mLaplacian.multiply(ep, vzCoord0, vzDiffCoord);
 }

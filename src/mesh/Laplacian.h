@@ -23,6 +23,7 @@ public:
 	void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
 	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
 	const std::vector<double>& getVerticesWeight() const { return vWeights; };
+	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
 	Laplacian() : isBuilt(false), size(0) {}
 private:
 	int size;

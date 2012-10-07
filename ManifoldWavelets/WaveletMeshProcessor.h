@@ -11,4 +11,5 @@ public:
 	void calGeometryDWT();
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
+	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 };
