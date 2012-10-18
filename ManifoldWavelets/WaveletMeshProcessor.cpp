@@ -252,4 +252,6 @@ void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, s
 	mLaplacian.multiply(ep, vxCoord0, vxDiffCoord);
 	mLaplacian.multiply(ep, vyCoord0, vyDiffCoord);
 	mLaplacian.multiply(ep, vzCoord0, vzDiffCoord);
+
+	//TODO: to finish
 }
