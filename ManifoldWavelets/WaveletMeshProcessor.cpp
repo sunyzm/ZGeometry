@@ -146,8 +146,6 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
 	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
 
-
-
  	int scales = 1;
  	double t_scales[4] = {80, 40, 20, 10};
  	vector<ManifoldFunction> SGW;
@@ -166,7 +164,7 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
  //				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  			}
- 			SGW[x].m_function[y] = itemSum;
+ 			SGW.back().m_function[y] = itemSum;
  		}
  	}
  
@@ -185,14 +183,32 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 					double coef = mhb.m_func[k].m_val * t_scales[s];
  					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  				}
- 				SGW[x].m_function[y] = itemSum;
+ 				SGW.back().m_function[y] = itemSum;
  			}
  		}
  	}
  
- 	
+	int sizeCoeff = (scales + 1) * m_size;
+ 	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	vxCoeff.resize(sizeCoeff);
+	vyCoeff.resize(sizeCoeff);
+	vzCoeff.resize(sizeCoeff);
 
+	for (int i = 0; i < sizeCoeff; ++i)
+	{
+		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
+		for (int j = 0; j < m_size; ++j)
+		{
+				itemSumX += SGW[i].m_function[j] * xWeightedCoord[j];
+				itemSumY += SGW[i].m_function[j] * yWeightedCoord[j];
+				itemSumZ += SGW[i].m_function[j] * zWeightedCoord[j];
+		}
+		vxCoeff[i] = itemSumX;
+		vyCoeff[i] = itemSumY;
+		vzCoeff[i] = itemSumZ;
+	}
 
+	//matlab_cg(SGW, vxCoeff, vx)
 }
 
 void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
