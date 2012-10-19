@@ -46,6 +46,49 @@ void matlab_cgls(Engine* ep, const vector<ManifoldFunction>& SGW, const vector<d
 	mxDestroyArray(BB);
 }
 
+void matlab_cgls(Engine* ep, const vector<vector<double> >& SGW, const vector<double>& b, vector<double>& sol)
+{
+	//solve A*sol = B
+
+	assert(SGW.size() == b.size());
+
+	int sizeA = SGW.size(), sizeF = SGW[0].size();
+	sol.resize(sizeF);
+
+	mxArray *AA, *BB;
+	AA = mxCreateDoubleMatrix(sizeA, sizeF, mxREAL);
+	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
+	double *pAA = mxGetPr(AA), *pBB = mxGetPr(BB);
+
+	for (int i = 0; i < sizeA; ++i)
+	{
+		for (int j = 0; j < sizeF; ++j)
+		{
+			pAA[i + j*sizeA] = SGW[i][j];
+		}
+	}
+
+	for (int j = 0; j < sizeA; ++j)
+	{
+		pBB[j] = b[j];
+	}
+
+	engPutVariable(ep, "A", AA);
+	engPutVariable(ep, "b", BB);
+
+	engEvalString(ep, "evals = cgls(A, b);");
+
+	mxArray *SS = engGetVariable(ep, "evals");
+	double *pSS = mxGetPr(SS);
+	for (int j = 0; j < sizeF; ++j)
+	{
+		sol[j] = pSS[j];
+	}
+
+	mxDestroyArray(AA);
+	mxDestroyArray(BB);
+}
+
 void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
 {
 	vMHW.resize(m_size);
@@ -189,15 +232,15 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
 	VectorPointwiseProduct(vzcoord0, vWeight, zWeightedCoord);
 
- 	int scales = 4;
+ 	int scales = 3;
  	double t_scales[4] = {80, 40, 20, 10};
- 	vector<ManifoldFunction> SGW;
+ 	vector<vector<double> > SGW;
  	
 //	scaling function
  	for (int x = 0; x < m_size; ++x)
  	{
- 		SGW.push_back(ManifoldFunction());
-		SGW.back().setSize(m_size);
+ 		SGW.push_back(vector<double>());
+		SGW.back().resize(m_size);
  
  		for (int y = 0; y < m_size; ++y)
  		{
@@ -208,7 +251,7 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
  //				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  			}
- 			SGW.back().m_function[y] = itemSum;
+ 			SGW.back().at(y) = itemSum;
  		}
  	}
  
@@ -217,8 +260,8 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
  	{
  		for (int x = 0; x < m_size; ++x)
  		{
-			SGW.push_back(ManifoldFunction());
-			SGW.back().setSize(m_size);
+			SGW.push_back(vector<double>());
+			SGW.back().resize(m_size);
  
  			for (int y = 0; y < m_size; ++y)
  			{
@@ -228,7 +271,7 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 					double coef = mhb.m_func[k].m_val * t_scales[s];
  					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
  				}
- 				SGW.back().m_function[y] = itemSum;
+ 				SGW.back().at(y) = itemSum;
  			}
  		}
  	}
@@ -246,13 +289,13 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
 		for (int j = 0; j < m_size; ++j)
 		{
-// 				itemSumX += SGW[i].m_function[j] * xWeightedCoord[j];
-// 				itemSumY += SGW[i].m_function[j] * yWeightedCoord[j];
-// 				itemSumZ += SGW[i].m_function[j] * zWeightedCoord[j];
+// 				itemSumX += SGW[i][j] * xWeightedCoord[j];
+// 				itemSumY += SGW[i][j] * yWeightedCoord[j];
+// 				itemSumZ += SGW[i][j] * zWeightedCoord[j];
 
-				itemSumX += SGW[i].m_function[j] * vxcoord0[j];
-				itemSumY += SGW[i].m_function[j] * vycoord0[j];
-				itemSumZ += SGW[i].m_function[j] * vzcoord0[j];
+				itemSumX += SGW[i][j] * vxcoord0[j];
+				itemSumY += SGW[i][j] * vycoord0[j];
+				itemSumZ += SGW[i][j] * vzcoord0[j];
 		}
 		vxCoeff[i] = itemSumX;
 		vyCoeff[i] = itemSumY;
