@@ -60,6 +60,7 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
 	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
 	QObject::connect(ui.actionReconstruct, SIGNAL(triggered()), this, SLOT(reconstruct()));
+	QObject::connect(ui.actionDeformExperimental, SIGNAL(triggered()), this, SLOT(deformExperimental()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -443,5 +444,15 @@ void QManifoldWavelets::updateReferenceMove()
 	vMP[0].posRef.y = originalPos.y + unitMove * refMove.yMove;
 	vMP[0].posRef.z = originalPos.z + unitMove * refMove.zMove;
 
+	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::deformExperimental()
+{
+	vector<double> vx, vy, vz;
+//	vMP[0].reconstructByMHB(300, vx, vy, vz);
+//	vMP[0].reconstructByDifferential(vx, vy, vz);
+	vMP[0].reconstructExperimental1(vx, vy, vz, true);
+	mesh2.setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->updateGL();
 }

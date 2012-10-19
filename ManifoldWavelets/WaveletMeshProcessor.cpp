@@ -215,7 +215,7 @@ void WaveletMeshProcessor::calGeometryDWT()
 	}
 }
 
-void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
+void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
 {
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -301,6 +301,20 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 		vyCoeff[i] = itemSumY;
 		vzCoeff[i] = itemSumZ;
 	}
+
+	double weightI = 1.0;
+	if (withConstraint)
+	{
+		SGW.push_back(vector<double>());
+		SGW.back().resize(m_size, 0.0);
+		SGW.back().at(pRef) = weightI;
+		
+		vxCoeff.push_back(posRef.x * weightI);
+		vyCoeff.push_back(posRef.y * weightI);
+		vzCoeff.push_back(posRef.z * weightI);
+	}
+
+	
 
 /*
 	ofstream of1("output/sgw.dat"), of2("output/coeff.dat");

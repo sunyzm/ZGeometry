@@ -191,6 +191,7 @@
     </property>
     <addaction name="actionComputeLaplacian"/>
     <addaction name="actionReconstruct"/>
+    <addaction name="actionDeformExperimental"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -277,6 +278,11 @@
   <action name="actionReconstruct">
    <property name="text">
     <string>Reconstruct</string>
+   </property>
+  </action>
+  <action name="actionDeformExperimental">
+   <property name="text">
+    <string>Deform Experimental</string>
    </property>
   </action>
  </widget>

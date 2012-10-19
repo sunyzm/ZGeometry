@@ -31,6 +31,7 @@ private slots:
 	void setShowRefPoint();
 	void selectObject(int index);
 	void reconstruct();
+	void deformExperimental();
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
