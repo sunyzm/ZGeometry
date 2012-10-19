@@ -19,6 +19,8 @@
 #define MAX_RING_NUMBER 15
 #define MAX_HOLE_SIZE 20
 
+typedef std::vector<int> VectorInt;
+
 class GeoNote{
 public:
 	int m_id;
@@ -244,6 +246,7 @@ public:
 	int			getBoundaryNum() const;    // get number of boundaries
 	bool        hasBounary() const;
 	int			getBoundaryVertexNum() const; // get number of boundary vertices
+	Vector3D	getBoundingBox() const { return m_bBox; }
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
@@ -263,11 +266,11 @@ public:
 	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
-	std::vector<int> getOriginalVertexIndex() const;
-	std::vector<int> getNeighboringVertex(int v, int ring) const;
-	std::vector<int> getVertexAdjacentFacesIndex(int vIdx);
-	void         getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
-	void         setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+	VectorInt	getOriginalVertexIndex() const;
+	VectorInt	getNeighboringVertex(int v, int ring) const;
+	VectorInt	getVertexAdjacentFacesIndex(int vIdx);
+	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 private:
 	void	clear();
 	bool	construct();	// construct connectivity

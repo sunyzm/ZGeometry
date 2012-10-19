@@ -34,6 +34,7 @@ private slots:
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
+	void updateReferenceMove();
 private:	// attributes
 	Ui::ManifoldWaveletsClass ui;
 //	QString statusBarMsg;
@@ -44,6 +45,8 @@ private:	// attributes
 	CMesh mesh1, mesh2;
 	bool selected[2];
 	WaveletMeshProcessor vMP[2];
+
+	struct {int xMove, yMove, zMove; } refMove;
 };
 
 #endif // MANIFOLDWAVELETS_H

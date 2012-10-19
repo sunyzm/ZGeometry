@@ -24,6 +24,7 @@ void MeshProcessor::init(CMesh* tm, Engine* e)
 	m_ep = e;
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
+	posRef = mesh->getVertex(0)->getPos();
 	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
 }

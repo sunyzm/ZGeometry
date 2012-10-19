@@ -39,15 +39,16 @@ public:
 	void normalizeFrom(const std::vector<double>& vFrom);
 	void logNormalizeFrom(const std::vector<double>& vFrom);
 	void bandCurveFrom(const std::vector<double>& vFrom, double lowend, double highend);
-	
-	
+		
 	CMesh* mesh;
 	Engine *m_ep;
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
 	std::vector<double> vDisplaySignature;
 	int pRef;
+	Vector3D posRef;
 	bool isMHBuilt;
 	int m_size;
+	
 };
 

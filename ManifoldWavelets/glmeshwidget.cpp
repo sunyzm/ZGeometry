@@ -379,16 +379,19 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 	glEnable(GL_LIGHTING);
 
-	if (vpMP[0]->pRef >= 0 && bShowRefPoint)
+//	control display of reference point
+	if (vpMP[0]->pRef >= 0 && bShowRefPoint && obj == 0)
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
+		if (obj == 0)
+			vt = vpMP[0]->posRef;
 		vt -= shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, vpMP[0]->mesh->m_edge, 8, 8);
+		gluSphere(quadric, vpMP[obj]->mesh->m_edge, 8, 8);
 		glPopMatrix();
 	}
 

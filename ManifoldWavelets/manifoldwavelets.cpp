@@ -32,6 +32,7 @@ QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	qout.outputDateTime(OUT_CONSOLE);
 	qout.output("For computation and visualization of manifold wavelet", OUT_STATUS);
 
+	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
 QManifoldWavelets::~QManifoldWavelets()
@@ -165,6 +166,8 @@ void QManifoldWavelets::computeLaplacian( int obj /*= 0*/ )
 void QManifoldWavelets::selectVertex1( int vn )
 {
 	vMP[0].pRef = vn;
+	refMove.xMove = refMove.yMove = refMove.zMove = 0;
+	updateReferenceMove();
 	ui.glMeshWidget->updateGL();
 }
 
@@ -390,6 +393,7 @@ void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
 			selectObject(ui.objSelectBox->findText("1"));
 		}
 		break;
+
 	case Qt::Key_2:
 		if (event->modifiers() & Qt::ControlModifier)
 		{
@@ -397,6 +401,7 @@ void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
 			selectObject(ui.objSelectBox->findText("2"));
 		}
 		break;
+
 	case Qt::Key_0:
 		if (event->modifiers() & Qt::ControlModifier)
 		{
@@ -404,5 +409,39 @@ void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
 			selectObject(ui.objSelectBox->findText("All"));
 		}
 		break;
+	
+	case Qt::Key_X:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.xMove--;
+		else refMove.xMove++;
+		updateReferenceMove();
+		break;
+	
+	case Qt::Key_Y:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.yMove--;
+		else refMove.yMove++;
+		updateReferenceMove();
+		break;
+	
+	case Qt::Key_Z:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.zMove--;
+		else refMove.zMove++;
+		updateReferenceMove();
+		break;
+
+	default: QWidget::keyPressEvent(event);
 	}
+}
+
+void QManifoldWavelets::updateReferenceMove()
+{
+	double unitMove = (mesh1.getBoundingBox().x + mesh1.getBoundingBox().y + mesh1.getBoundingBox().z)/300.0;
+	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPos();
+	vMP[0].posRef.x = originalPos.x + unitMove * refMove.xMove;
+	vMP[0].posRef.y = originalPos.y + unitMove * refMove.yMove;
+	vMP[0].posRef.z = originalPos.z + unitMove * refMove.zMove;
+
+	ui.glMeshWidget->updateGL();
 }
