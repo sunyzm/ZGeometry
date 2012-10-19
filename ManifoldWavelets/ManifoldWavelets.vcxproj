@@ -224,6 +224,7 @@
     <ClInclude Include="..\src\mesh\Quat.h" />
     <ClInclude Include="..\src\util\arithmetic.h" />
     <ClInclude Include="..\src\util\color.h" />
+    <ClInclude Include="..\src\util\matlab_wrapper.h" />
     <ClInclude Include="..\src\util\output.h" />
     <ClInclude Include="..\src\util\OutputHelper.h" />
     <ClInclude Include="..\src\util\timer.h" />

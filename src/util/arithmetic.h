@@ -10,7 +10,6 @@ inline double sinc(double x)
 }
 
 double VectorDotProduct(const std::vector<double>& v1, const std::vector<double>& v2);
-
 double VectorScalarProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::vector<double>& s);
-
 void VectorPointwiseProduct(const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v);
+void VectorPointwiseDivide(const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v);

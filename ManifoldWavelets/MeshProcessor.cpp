@@ -5,7 +5,7 @@ using namespace std;
 
 MeshProcessor::MeshProcessor(void)
 {
-	ep = NULL;
+	m_ep = NULL;
 	mesh = NULL;
 	isMHBuilt = false;
 	pRef = -1;
@@ -21,7 +21,7 @@ MeshProcessor::~MeshProcessor(void)
 void MeshProcessor::init(CMesh* tm, Engine* e)
 {
 	mesh = tm;
-	ep = e;
+	m_ep = e;
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
 	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
@@ -31,7 +31,7 @@ void MeshProcessor::init(CMesh* tm, Engine* e)
 void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 //	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
-	mLaplacian.decompose(mhb, nEigFunc, ep);
+	mLaplacian.decompose(mhb, nEigFunc, m_ep);
 	this->isMHBuilt = true;
 }
 

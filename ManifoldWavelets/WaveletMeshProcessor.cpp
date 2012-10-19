@@ -3,6 +3,49 @@
 
 using namespace std;
 
+void matlab_cgls(Engine* ep, const vector<ManifoldFunction>& SGW, const vector<double>& b, vector<double>& sol)
+{
+	//solve A*sol = B
+
+ 	assert(SGW.size() == b.size());
+
+	int sizeA = SGW.size(), sizeF = SGW[0].m_size;
+	sol.resize(sizeF);
+
+	mxArray *AA, *BB;
+	AA = mxCreateDoubleMatrix(sizeA, sizeF, mxREAL);
+	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
+	double *pAA = mxGetPr(AA), *pBB = mxGetPr(BB);
+
+	for (int i = 0; i < sizeA; ++i)
+	{
+		for (int j = 0; j < sizeF; ++j)
+		{
+			pAA[i + j*sizeA] = SGW[i].m_function[j];
+		}
+	}
+
+	for (int j = 0; j < sizeA; ++j)
+	{
+		pBB[j] = b[j];
+	}
+
+	engPutVariable(ep, "A", AA);
+	engPutVariable(ep, "b", BB);
+	
+	engEvalString(ep, "evals = cgls(A, b);");
+
+	mxArray *SS = engGetVariable(ep, "evals");
+	double *pSS = mxGetPr(SS);
+	for (int j = 0; j < sizeF; ++j)
+	{
+		sol[j] = pSS[j];
+	}
+
+	mxDestroyArray(AA);
+	mxDestroyArray(BB);
+}
+
 void WaveletMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
 {
 	vMHW.resize(m_size);
@@ -142,18 +185,19 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	
 	vector<double> vWeight = mLaplacian.getVerticesWeight();
 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
-	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
-	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
-	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
+	VectorPointwiseProduct(vxcoord0, vWeight, xWeightedCoord);
+	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
+	VectorPointwiseProduct(vzcoord0, vWeight, zWeightedCoord);
 
- 	int scales = 1;
+ 	int scales = 4;
  	double t_scales[4] = {80, 40, 20, 10};
  	vector<ManifoldFunction> SGW;
  	
- 	// scaling function
+//	scaling function
  	for (int x = 0; x < m_size; ++x)
  	{
- 		SGW.push_back(ManifoldFunction(m_size));
+ 		SGW.push_back(ManifoldFunction());
+		SGW.back().setSize(m_size);
  
  		for (int y = 0; y < m_size; ++y)
  		{
@@ -168,12 +212,13 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
  		}
  	}
  
- 	// wavelet functions
+//	wavelet functions
  	for (int s = 0; s < scales; ++s)
  	{
  		for (int x = 0; x < m_size; ++x)
  		{
- 			SGW.push_back(ManifoldFunction(m_size));
+			SGW.push_back(ManifoldFunction());
+			SGW.back().setSize(m_size);
  
  			for (int y = 0; y < m_size; ++y)
  			{
@@ -194,21 +239,54 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	vyCoeff.resize(sizeCoeff);
 	vzCoeff.resize(sizeCoeff);
 
+	assert(SGW.size() == sizeCoeff);
+
 	for (int i = 0; i < sizeCoeff; ++i)
 	{
 		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
 		for (int j = 0; j < m_size; ++j)
 		{
-				itemSumX += SGW[i].m_function[j] * xWeightedCoord[j];
-				itemSumY += SGW[i].m_function[j] * yWeightedCoord[j];
-				itemSumZ += SGW[i].m_function[j] * zWeightedCoord[j];
+// 				itemSumX += SGW[i].m_function[j] * xWeightedCoord[j];
+// 				itemSumY += SGW[i].m_function[j] * yWeightedCoord[j];
+// 				itemSumZ += SGW[i].m_function[j] * zWeightedCoord[j];
+
+				itemSumX += SGW[i].m_function[j] * vxcoord0[j];
+				itemSumY += SGW[i].m_function[j] * vycoord0[j];
+				itemSumZ += SGW[i].m_function[j] * vzcoord0[j];
 		}
 		vxCoeff[i] = itemSumX;
 		vyCoeff[i] = itemSumY;
 		vzCoeff[i] = itemSumZ;
 	}
 
-	//matlab_cg(SGW, vxCoeff, vx)
+/*
+	ofstream of1("output/sgw.dat"), of2("output/coeff.dat");
+	for (int i = 0; i < sizeCoeff; ++i)
+	{
+		for (int j = 0; j < m_size; ++j)
+		{
+			of1 << SGW[i].m_function[j] << ' ';
+		}
+		of1 << endl;
+	}
+
+	for (int i = 0; i < sizeCoeff; ++i)
+	{
+		of2 << vxCoeff[i] << endl;
+	}
+
+	VectorPointwiseDivide(xWeightedCoord, vWeight, vx);
+	VectorPointwiseDivide(yWeightedCoord, vWeight, vy);
+	VectorPointwiseDivide(zWeightedCoord, vWeight, vz);
+*/
+
+ 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
+ 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
+ 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+ 
+//  	VectorPointwiseDivide(vx, vWeight, vx);
+//  	VectorPointwiseDivide(vy, vWeight, vy);
+//  	VectorPointwiseDivide(vz, vWeight, vz);
 }
 
 void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
@@ -250,7 +328,7 @@ void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, st
 		vy[i] = sumY;
 		vz[i] = sumZ;
 	}
-
+	
 }
 
 void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
@@ -265,9 +343,9 @@ void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, s
 	mesh->getCoordinateFunction(2, vzCoord0);
 	
 	vector<double> vxDiffCoord, vyDiffCoord, vzDiffCoord;
-	mLaplacian.multiply(ep, vxCoord0, vxDiffCoord);
-	mLaplacian.multiply(ep, vyCoord0, vyDiffCoord);
-	mLaplacian.multiply(ep, vzCoord0, vzDiffCoord);
+	mLaplacian.multiply(m_ep, vxCoord0, vxDiffCoord);
+	mLaplacian.multiply(m_ep, vyCoord0, vyDiffCoord);
+	mLaplacian.multiply(m_ep, vzCoord0, vzDiffCoord);
 
 	//TODO: to finish
 }

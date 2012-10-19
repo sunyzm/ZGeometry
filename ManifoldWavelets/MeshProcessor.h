@@ -13,7 +13,8 @@ public:
 	std::vector<double> m_function;
 	
 	ManifoldFunction() : m_size(0) {}
-	ManifoldFunction(int s) : m_size(s) {}
+	ManifoldFunction(int s) : m_size(s) {m_function.resize(s); }
+	void setSize(int s) { m_size = s; m_function.resize(s); }
 };
 
 class SparseManifoldFunction
@@ -41,7 +42,7 @@ public:
 	
 	
 	CMesh* mesh;
-	Engine *ep;
+	Engine *m_ep;
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
 	std::vector<double> vDisplaySignature;

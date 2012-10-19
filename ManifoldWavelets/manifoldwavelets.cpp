@@ -349,8 +349,8 @@ void QManifoldWavelets::reconstruct()
 
 	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
-	vMP[0].reconstructByDifferential(vx, vy, vz);
-//	vMP[0].reconstructExperimental1(vx, vy, vz);
+//	vMP[0].reconstructByDifferential(vx, vy, vz);
+	vMP[0].reconstructExperimental1(vx, vy, vz);
 	mesh2.setVertexCoordinates(vx, vy, vz);
 
 /*  to prove the effect of scalar product   
