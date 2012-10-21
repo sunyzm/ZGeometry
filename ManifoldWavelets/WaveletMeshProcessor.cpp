@@ -3,54 +3,11 @@
 
 using namespace std;
 
-void matlab_cgls(Engine* ep, const vector<ManifoldFunction>& SGW, const vector<double>& b, vector<double>& sol)
-{
-	//solve A*sol = B
-
- 	assert(SGW.size() == b.size());
-
-	int sizeA = SGW.size(), sizeF = SGW[0].m_size;
-	sol.resize(sizeF);
-
-	mxArray *AA, *BB;
-	AA = mxCreateDoubleMatrix(sizeA, sizeF, mxREAL);
-	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
-	double *pAA = mxGetPr(AA), *pBB = mxGetPr(BB);
-
-	for (int i = 0; i < sizeA; ++i)
-	{
-		for (int j = 0; j < sizeF; ++j)
-		{
-			pAA[i + j*sizeA] = SGW[i].m_function[j];
-		}
-	}
-
-	for (int j = 0; j < sizeA; ++j)
-	{
-		pBB[j] = b[j];
-	}
-
-	engPutVariable(ep, "A", AA);
-	engPutVariable(ep, "b", BB);
-	
-	engEvalString(ep, "evals = cgls(A, b);");
-
-	mxArray *SS = engGetVariable(ep, "evals");
-	double *pSS = mxGetPr(SS);
-	for (int j = 0; j < sizeF; ++j)
-	{
-		sol[j] = pSS[j];
-	}
-
-	mxDestroyArray(AA);
-	mxDestroyArray(BB);
-}
-
 void matlab_cgls(Engine* ep, const vector<vector<double> >& SGW, const vector<double>& b, vector<double>& sol)
 {
 	//solve A*sol = B
 
-	assert(SGW.size() == b.size());
+ 	assert(SGW.size() == b.size());
 
 	int sizeA = SGW.size(), sizeF = SGW[0].size();
 	sol.resize(sizeF);
@@ -75,7 +32,7 @@ void matlab_cgls(Engine* ep, const vector<vector<double> >& SGW, const vector<do
 
 	engPutVariable(ep, "A", AA);
 	engPutVariable(ep, "b", BB);
-
+	
 	engEvalString(ep, "evals = cgls(A, b);");
 
 	mxArray *SS = engGetVariable(ep, "evals");
@@ -86,6 +43,80 @@ void matlab_cgls(Engine* ep, const vector<vector<double> >& SGW, const vector<do
 	}
 
 	mxDestroyArray(AA);
+	mxDestroyArray(BB);
+}
+
+void matlab_scgls(Engine* ep, const vector<vector<double> >& SGW, const vector<double>& b, vector<double>& sol)
+{
+	//solve A*sol = B
+
+	assert(SGW.size() == b.size());
+
+	int sizeA = SGW.size(), sizeF = SGW[0].size();
+	sol.resize(sizeF);
+
+	const double sEpsilon = 1e-5;
+	vector<double> vII, vJJ, vSS;
+	for (int i = 0; i < sizeA; ++i)
+	{
+		for (int j = 0; j < sizeF; ++j)
+		{
+			if ( fabs(SGW[i][j]) > sEpsilon )
+			{
+				vII.push_back(i+1);
+				vJJ.push_back(j+1);
+				vSS.push_back(SGW[i][j]);
+			}
+		}
+	}
+
+	int sizeS = vSS.size();
+	mxArray *II, *JJ, *SS, *BB, *DimM, *DimN;
+	II = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
+	JJ = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
+	SS = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
+	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
+	DimM = mxCreateDoubleMatrix(1, 1, mxREAL);
+	DimN = mxCreateDoubleMatrix(1, 1, mxREAL);
+	double *pII = mxGetPr(II), *pJJ = mxGetPr(JJ), 
+		   *pSS = mxGetPr(SS), *pBB = mxGetPr(BB),
+		   *pDimM = mxGetPr(DimM), *pDimN = mxGetPr(DimN);
+	
+	pDimM[0] = sizeA; pDimN[0] = sizeF;
+
+	for (int n = 0; n < sizeS; ++n)
+	{
+		pII[n] = vII.at(n);
+		pJJ[n] = vJJ.at(n);
+		pSS[n] = vSS.at(n);
+	}
+
+	for (int j = 0; j < sizeA; ++j)
+	{
+		pBB[j] = b[j];
+	}
+
+	engPutVariable(ep, "II", II);
+	engPutVariable(ep, "JJ", JJ);
+	engPutVariable(ep, "SS", SS);
+	engPutVariable(ep, "DimM", DimM);
+	engPutVariable(ep, "DimN", DimN);
+	engPutVariable(ep, "BB", BB);
+
+	engEvalString(ep, "evals = scgls(II, JJ, SS, DimM, DimN, BB);");
+
+	mxArray *evals = engGetVariable(ep, "evals");
+	double *pEvals = mxGetPr(evals);
+	for (int j = 0; j < sizeF; ++j)
+	{
+		sol[j] = pEvals[j];
+	}
+
+	mxDestroyArray(II);
+	mxDestroyArray(JJ);
+	mxDestroyArray(SS);
+	mxDestroyArray(DimM);
+	mxDestroyArray(DimN);
 	mxDestroyArray(BB);
 }
 
@@ -232,7 +263,7 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
 	VectorPointwiseProduct(vzcoord0, vWeight, zWeightedCoord);
 
- 	int scales = 3;
+ 	int scales = 1;
  	double t_scales[4] = {80, 40, 20, 10};
  	vector<vector<double> > SGW;
  	
@@ -302,7 +333,7 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 		vzCoeff[i] = itemSumZ;
 	}
 
-	double weightI = 1.0;
+	double weightI = 0.1;
 	if (withConstraint)
 	{
 		SGW.push_back(vector<double>());
@@ -337,9 +368,13 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	VectorPointwiseDivide(zWeightedCoord, vWeight, vz);
 */
 
- 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
- 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
- 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+	matlab_cgls(m_ep, SGW, vxCoeff, vx);
+	matlab_cgls(m_ep, SGW, vyCoeff, vy);
+	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+
+// 	matlab_scgls(m_ep, SGW, vxCoeff, vx);
+// 	matlab_scgls(m_ep, SGW, vyCoeff, vy);
+// 	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
  
 //  	VectorPointwiseDivide(vx, vWeight, vx);
 //  	VectorPointwiseDivide(vy, vWeight, vy);
