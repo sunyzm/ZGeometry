@@ -27,6 +27,9 @@ private slots:
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
+	void displayPointCloud();
+	void displayWireframe();
+	void displayMesh();
 	void selectVertex1(int vn);
 	void setShowRefPoint();
 	void selectObject(int index);

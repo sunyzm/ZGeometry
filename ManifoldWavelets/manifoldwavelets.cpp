@@ -61,6 +61,9 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
 	QObject::connect(ui.actionReconstruct, SIGNAL(triggered()), this, SLOT(reconstruct()));
 	QObject::connect(ui.actionDeformExperimental, SIGNAL(triggered()), this, SLOT(deformExperimental()));
+	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(displayPointCloud()));
+	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(displayWireframe()));
+	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(displayMesh()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -178,15 +181,15 @@ void QManifoldWavelets::displayEigenfunction()
 	{
 		MeshProcessor& mp = vMP[0];
 		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
-		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	}
 
-	if (selected[1] && vMP[1].mesh)
-	{
-		MeshProcessor& mp = vMP[1];		
-		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
-		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
-	}
+// 	if (selected[1] && vMP[1].mesh)
+// 	{
+// 		MeshProcessor& mp = vMP[1];		
+// 		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
+// 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
+// 	}
 	
 	ui.glMeshWidget->updateGL();
 	qout.output("Show eigenfunction 1");
@@ -202,7 +205,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
 		mp.normalizeFrom(vMHW);
 
-		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	}
 
 	if (selected[1] && vMP[1].mesh)
@@ -213,7 +216,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
 		mp.normalizeFrom(vMHW);
 
-		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
+		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 	}
 
 	ui.glMeshWidget->updateGL();
@@ -229,19 +232,19 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
 		mp.normalizeFrom(vMHW);
 
-		ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	}
 
-	if (selected[1] && vMP[1].mesh)
-	{
-		WaveletMeshProcessor& mp = vMP[1];		
-
-		vector<double> vMHW;
-		mp.computeMexicanHatWavelet(vMHW, 30, 2);
-		mp.normalizeFrom(vMHW);
-
-		ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Signature;
-	}
+// 	if (selected[1] && vMP[1].mesh)
+// 	{
+// 		WaveletMeshProcessor& mp = vMP[1];		
+// 
+// 		vector<double> vMHW;
+// 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
+// 		mp.normalizeFrom(vMHW);
+// 
+// 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
+// 	}
 
 	ui.glMeshWidget->updateGL();
 }
@@ -255,7 +258,7 @@ void QManifoldWavelets::displayExperimental()
  
  	mp.normalizeFrom(vExp);
  
- 	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+ 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
  	ui.glMeshWidget->updateGL();
  	qout.output("Show MHW from point " + QString::number(mp.pRef));
 	
@@ -286,7 +289,7 @@ void QManifoldWavelets::displayCurvatureMean()
 
 	mp.bandCurveFrom(vCurvature, 0, 1);
 
-	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 
 
 	ui.glMeshWidget->updateGL();
@@ -305,7 +308,7 @@ void QManifoldWavelets::displayCurvatureGauss()
 
 	mp.bandCurveFrom(vCurvature, -1, 1);
 
-	ui.glMeshWidget->vSettings[0].displayType = DisplaySettings::Signature;
+	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.glMeshWidget->updateGL();
 	qout.output("Show Mean Curvature");
 }
@@ -351,11 +354,11 @@ void QManifoldWavelets::reconstruct()
 	ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
 	ui.spinBox2->setValue(0);
 
-	vector<double> vx, vy, vz;
+//	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
 //	vMP[0].reconstructByDifferential(vx, vy, vz);
-	vMP[0].reconstructExperimental1(vx, vy, vz);
-	mesh2.setVertexCoordinates(vx, vy, vz);
+//	vMP[0].reconstructExperimental1(vx, vy, vz);
+//	mesh2.setVertexCoordinates(vx, vy, vz);
 
 /*  to prove the effect of scalar product   
 
@@ -455,4 +458,36 @@ void QManifoldWavelets::deformExperimental()
 	vMP[0].reconstructExperimental1(vx, vy, vz, true);
 	mesh2.setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::displayPointCloud()
+{
+	ui.actionDisplayPointCloud->setChecked(true);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(false);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
+	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::displayWireframe()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(true);
+	ui.actionDisplayMesh->setChecked(false);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
+	ui.glMeshWidget->updateGL();
+
+}
+
+void QManifoldWavelets::displayMesh()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(true);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
+	ui.glMeshWidget->updateGL();
+
 }

@@ -204,6 +204,14 @@
      <addaction name="actionMeanCurvature"/>
      <addaction name="actionGaussCurvature"/>
     </widget>
+    <widget class="QMenu" name="menuDisplay_Type">
+     <property name="title">
+      <string>Display Type</string>
+     </property>
+     <addaction name="actionDisplayPointCloud"/>
+     <addaction name="actionDisplayWireframe"/>
+     <addaction name="actionDisplayMesh"/>
+    </widget>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionMexicanHatWavelet1"/>
     <addaction name="actionMexicanHatWavelet2"/>
@@ -212,6 +220,7 @@
     <addaction name="separator"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="menuCurvature"/>
+    <addaction name="menuDisplay_Type"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -283,6 +292,33 @@
   <action name="actionDeformExperimental">
    <property name="text">
     <string>Deform Experimental</string>
+   </property>
+  </action>
+  <action name="actionDisplayPointCloud">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Point Cloud</string>
+   </property>
+  </action>
+  <action name="actionDisplayWireframe">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Wireframe</string>
+   </property>
+  </action>
+  <action name="actionDisplayMesh">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Mesh</string>
    </property>
   </action>
  </widget>

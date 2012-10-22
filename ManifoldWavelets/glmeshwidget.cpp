@@ -203,11 +203,10 @@ void GLMeshWidget::draw()
 // 	if (vSettings[0].displayType == DisplaySettings::Mesh)
 // 		drawMesh(vpMP[0]->mesh, ObjRot1, ObjTrans1, color1);
 	
-	if (vSettings[0].displayType == DisplaySettings::Mesh || vSettings[0].displayType == DisplaySettings::Signature)
-	{
+	if (vSettings[0].displayType != DisplaySettings::None)
 		drawMeshExt(0);
+	if (vSettings[1].displayType != DisplaySettings::None)
 		drawMeshExt(1);
-	}
 }
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
@@ -299,57 +298,78 @@ void GLMeshWidget::drawMeshExt( int obj )
 //  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
 	Vector3D shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
-	if (obj > 0) shift.x = -shift.x;
+	if (obj == 1) shift.x = -shift.x;
+
+	bool showSignature = vSettings[obj].showColorSignature && !vpMP[obj]->vDisplaySignature.empty();
 
 	glPushMatrix();
 	setupObject(rot, trans);
+		
+	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
+	{
+		glColor4f(color[0], color[1], color[2], color[3]);
+		glPointSize(2.0);
+		glBegin(GL_POINTS);
+		for (int i = 0; i < tmesh->getVerticesNum(); ++i)
+		{
+			Vector3D norm = tmesh->getVertex(i)->getNormal();
+			Vector3D vt = tmesh->getVertex(i)->m_vPosition;
+			vt -= shift;
+			if (showSignature) 
+				glFalseColor(vpMP[obj]->vDisplaySignature[i], 1.0);
+			glVertex3f(vt.x, vt.y, vt.z);
+		}
+		glEnd();
+	}
+	else if (vSettings[obj].displayType == DisplaySettings::Wireframe)
+	{
+		for (int i = 0; i < tmesh->getFaceNum(); ++i)
+		{
+			if(!tmesh->m_pFace[i].m_piEdge) continue;
+			glColor4f(color[0], color[1], color[2], color[3]); 
+			glLineWidth(1.0);
+			glBegin(GL_LINE_LOOP);
+			for (int j = 0; j < 3; j++)
+			{
+				int pi = tmesh->m_pFace[i].m_piVertex[j];
+				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+				glNormal3f(norm.x, norm.y, norm.z);
+				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+				vt -= shift;
+				if (showSignature) 
+					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
+				glVertex3f(vt.x, vt.y, vt.z);
+			}
+			glEnd();
+		}
+	}
+	else if (vSettings[obj].displayType == DisplaySettings::Mesh)	//colored mesh
+	{
+		glEnable(GL_POLYGON_OFFSET_FILL);
+		glPolygonOffset(1.0, 1.0);
 
-	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(1.0, 1.0);
-	
-	if (vSettings[obj].displayType == DisplaySettings::Mesh || vpMP[obj]->vDisplaySignature.empty())
-	{	// just display mesh in single color
+		glColor4f(color[0], color[1], color[2], color[3]); 
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
 			if(!tmesh->m_pFace[i].m_piEdge) continue;
 			for (int j = 0; j < 3; j++)
 			{
-				int pi = tmesh->m_pFace[i].m_piVertex[j];
-				glColor4f(color[0], color[1], color[2], color[3]); 
+				int pi = tmesh->m_pFace[i].m_piVertex[j];					 				
 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-				glNormal3f(norm.x, norm.y, norm.z);
+				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
 				vt -= shift;
+				if (showSignature) 
+					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
 		glEnd();
+
+		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
-	else 
-	{	
-		//display signature value in false color
-	 	glBegin(GL_TRIANGLES);
-	 	for (int i = 0; i < tmesh->getFaceNum(); i++)
-	 	{
-	 		if(!tmesh->m_pFace[i].m_piEdge) continue;
-	 		for (int j = 0; j < 3; j++)
-	 		{
-	 			int pi = tmesh->m_pFace[i].m_piVertex[j];
-	 			float scaleVal = vpMP[obj]->vDisplaySignature[pi];
-	 			glFalseColor(scaleVal, 1.0f);	 				
-	 			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-	 			glNormal3f(norm.x, norm.y, norm.z);	 				
-	 			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-	 			vt -= shift;
-	 			glVertex3f(vt.x, vt.y, vt.z);
-	 		}
-	 	}
-	 	glEnd();
-	}
-	
-	glDisable(GL_POLYGON_OFFSET_FILL);
-	
+		
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{

@@ -8,10 +8,11 @@
 
 struct DisplaySettings
 {
-	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), selected(false) {}
-	enum {PointCloud, Mesh, Signature} displayType;
+	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), showColorSignature(false), selected(false) {}
+	enum {PointCloud, Wireframe, Mesh, None} displayType;
 	bool showFeatures;
 	bool showRefPoint;
+	bool showColorSignature;
 	bool selected;
 };
 
