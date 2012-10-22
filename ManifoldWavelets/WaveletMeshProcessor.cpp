@@ -368,17 +368,17 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 	VectorPointwiseDivide(zWeightedCoord, vWeight, vz);
 */
 
-	matlab_cgls(m_ep, SGW, vxCoeff, vx);
-	matlab_cgls(m_ep, SGW, vyCoeff, vy);
-	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+// 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
+// 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
+// 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
 
-// 	matlab_scgls(m_ep, SGW, vxCoeff, vx);
-// 	matlab_scgls(m_ep, SGW, vyCoeff, vy);
-// 	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
+	matlab_scgls(m_ep, SGW, vxCoeff, vx);
+	matlab_scgls(m_ep, SGW, vyCoeff, vy);
+	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
  
-//  	VectorPointwiseDivide(vx, vWeight, vx);
-//  	VectorPointwiseDivide(vy, vWeight, vy);
-//  	VectorPointwiseDivide(vz, vWeight, vz);
+//  VectorPointwiseDivide(vx, vWeight, vx);
+//  VectorPointwiseDivide(vy, vWeight, vy);
+//  VectorPointwiseDivide(vz, vWeight, vz);
 }
 
 void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
