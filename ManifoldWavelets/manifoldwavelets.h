@@ -29,8 +29,8 @@ private slots:
 	void displayExperimental();
 	void displayPointCloud();
 	void displayWireframe();
-	void showSignature();
 	void displayMesh();
+	void showSignature();
 	void selectVertex1(int vn);
 	void setShowRefPoint();
 	void selectObject(int index);

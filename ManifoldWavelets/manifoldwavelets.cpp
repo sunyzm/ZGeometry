@@ -264,6 +264,7 @@ void QManifoldWavelets::displayExperimental()
  
  	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
+
  	ui.glMeshWidget->updateGL();
  	qout.output("Show MHW from point " + QString::number(mp.pRef));
 	
@@ -316,7 +317,7 @@ void QManifoldWavelets::displayCurvatureGauss()
 
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
-	
+
 	ui.glMeshWidget->updateGL();
 	qout.output("Show Mean Curvature");
 }
