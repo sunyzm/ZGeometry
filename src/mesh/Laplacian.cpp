@@ -310,3 +310,10 @@ void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vect
 
 	//TODO: to finish
 }
+
+void Laplacian::getSparseLaplacian( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const
+{
+	II = vII; 
+	JJ = vJJ;
+	SS = vSS;
+}

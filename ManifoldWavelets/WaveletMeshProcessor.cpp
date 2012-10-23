@@ -344,16 +344,14 @@ void WaveletMeshProcessor::reconstructExperimental1( std::vector<double>& vx, st
 		vyCoeff.push_back(posRef.y * weightI);
 		vzCoeff.push_back(posRef.z * weightI);
 	}
-
 	
-
 /*
 	ofstream of1("output/sgw.dat"), of2("output/coeff.dat");
 	for (int i = 0; i < sizeCoeff; ++i)
 	{
 		for (int j = 0; j < m_size; ++j)
 		{
-			of1 << SGW[i].m_function[j] << ' ';
+			of1 << SGW[i].at[j] << ' ';
 		}
 		of1 << endl;
 	}
@@ -423,21 +421,163 @@ void WaveletMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, st
 	
 }
 
-void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
+void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /* =false */ ) const
 {
 	vx.resize(m_size);
 	vy.resize(m_size);
 	vz.resize(m_size);
 
-	vector<double> vxCoord0, vyCoord0, vzCoord0;
-	mesh->getCoordinateFunction(0, vxCoord0);
-	mesh->getCoordinateFunction(1, vyCoord0);
-	mesh->getCoordinateFunction(2, vzCoord0);
+	vector<double> vxcoord0, vycoord0, vzcoord0;
+	mesh->getCoordinateFunction(0, vxcoord0);
+	mesh->getCoordinateFunction(1, vycoord0);
+	mesh->getCoordinateFunction(2, vzcoord0);
 	
-	vector<double> vxDiffCoord, vyDiffCoord, vzDiffCoord;
-	mLaplacian.multiply(m_ep, vxCoord0, vxDiffCoord);
-	mLaplacian.multiply(m_ep, vyCoord0, vyDiffCoord);
-	mLaplacian.multiply(m_ep, vzCoord0, vzDiffCoord);
+ 	vector<vector<double> > sysM;
+ 	
+	for (int i = 0; i < m_size; ++i)
+	{
+		sysM.push_back(vector<double>());
+		sysM.back().resize(m_size, 0.0);
+	}
 
-	//TODO: to finish
+	vector<int> vII, vJJ;
+	vector<double> vSS;
+	mLaplacian.getSparseLaplacian(vII, vJJ, vSS);
+
+	int sparseLapSize = vII.size();
+	for (int n = 0; n < sparseLapSize; ++n)
+	{
+		sysM.at(vII[n]-1).at(vJJ[n]-1) += vSS[n];
+	}
+
+	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	vxCoeff.resize(m_size);
+	vyCoeff.resize(m_size);
+	vzCoeff.resize(m_size);
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
+		for (int j = 0; j < m_size; ++j)
+		{
+				itemSumX += sysM[i][j] * vxcoord0[j];
+				itemSumY += sysM[i][j] * vycoord0[j];
+				itemSumZ += sysM[i][j] * vzcoord0[j];
+		}
+		vxCoeff[i] = itemSumX;
+		vyCoeff[i] = itemSumY;
+		vzCoeff[i] = itemSumZ;
+	}
+
+	if (withConstraint)
+	{
+		double weightI = 1.0;
+		sysM.push_back(vector<double>());
+		sysM.back().resize(m_size, 0.0);
+		sysM.back().at(pRef) = weightI;
+		
+		vxCoeff.push_back(posRef.x * weightI);
+		vyCoeff.push_back(posRef.y * weightI);
+		vzCoeff.push_back(posRef.z * weightI);
+	}
+	
+	matlab_scgls(m_ep, sysM, vxCoeff, vx);
+	matlab_scgls(m_ep, sysM, vyCoeff, vy);
+	matlab_scgls(m_ep, sysM, vzCoeff, vz);	
+}
+
+void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
+{
+	vx.resize(m_size);
+	vy.resize(m_size);
+	vz.resize(m_size);
+
+	vector<double> vxcoord0, vycoord0, vzcoord0;
+	mesh->getCoordinateFunction(0, vxcoord0);
+	mesh->getCoordinateFunction(1, vycoord0);
+	mesh->getCoordinateFunction(2, vzcoord0);
+	
+ 	int scales = 1;
+ 	double t_scales[4] = {80, 40, 20, 10};
+ 	vector<vector<double> > SGW;
+ 	
+//	scaling function
+ 	for (int x = 0; x < m_size; ++x)
+ 	{
+ 		SGW.push_back(vector<double>());
+		SGW.back().resize(m_size);
+ 
+ 		for (int y = 0; y < m_size; ++y)
+ 		{
+ 			double itemSum = 0;
+ 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 			{
+ 				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ 			}
+ 			SGW.back().at(y) = itemSum;
+ 		}
+ 	}
+ 
+//	wavelet functions
+ 	for (int s = 0; s < scales; ++s)
+ 	{
+ 		for (int x = 0; x < m_size; ++x)
+ 		{
+			SGW.push_back(vector<double>());
+			SGW.back().resize(m_size);
+ 
+ 			for (int y = 0; y < m_size; ++y)
+ 			{
+ 				double itemSum = 0;
+ 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 				{
+					double coef = mhb.m_func[k].m_val * t_scales[s];
+ 					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ 				}
+ 				SGW.back().at(y) = itemSum;
+ 			}
+ 		}
+ 	}
+ 
+	int sizeCoeff = (scales + 1) * m_size;
+ 	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	vxCoeff.resize(sizeCoeff);
+	vyCoeff.resize(sizeCoeff);
+	vzCoeff.resize(sizeCoeff);
+
+	assert(SGW.size() == sizeCoeff);
+
+	for (int i = 0; i < sizeCoeff; ++i)
+	{
+		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
+		for (int j = 0; j < m_size; ++j)
+		{
+				itemSumX += SGW[i][j] * vxcoord0[j];
+				itemSumY += SGW[i][j] * vycoord0[j];
+				itemSumZ += SGW[i][j] * vzcoord0[j];
+		}
+		vxCoeff[i] = itemSumX;
+		vyCoeff[i] = itemSumY;
+		vzCoeff[i] = itemSumZ;
+	}
+
+	double weightI = 0.1;
+	if (withConstraint)
+	{
+		SGW.push_back(vector<double>());
+		SGW.back().resize(m_size, 0.0);
+		SGW.back().at(pRef) = weightI;
+		
+		vxCoeff.push_back(posRef.x * weightI);
+		vyCoeff.push_back(posRef.y * weightI);
+		vzCoeff.push_back(posRef.z * weightI);
+	}
+
+// 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
+// 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
+// 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+
+	matlab_scgls(m_ep, SGW, vxCoeff, vx);
+	matlab_scgls(m_ep, SGW, vyCoeff, vy);
+	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
 }

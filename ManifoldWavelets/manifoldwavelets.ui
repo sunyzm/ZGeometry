@@ -221,7 +221,7 @@
     <addaction name="separator"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowSignature"/>
-        <addaction name="menuDisplay_Type"/>
+    <addaction name="menuDisplay_Type"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>

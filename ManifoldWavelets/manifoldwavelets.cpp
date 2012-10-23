@@ -463,8 +463,9 @@ void QManifoldWavelets::deformExperimental()
 {
 	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
-//	vMP[0].reconstructByDifferential(vx, vy, vz);
-	vMP[0].reconstructExperimental1(vx, vy, vz, true);
+//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
+	vMP[0].reconstructBySGW(vx, vy, vz, true);
+//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
 	mesh2.setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->updateGL();
 }

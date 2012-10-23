@@ -25,6 +25,7 @@ public:
 	const std::vector<double>& getVerticesWeight() const { return vWeights; };
 	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
 	Laplacian() : isBuilt(false), size(0) {}
+	void getSparseLaplacian(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
 private:
 	int size;
 	std::vector<double> vWeights;
