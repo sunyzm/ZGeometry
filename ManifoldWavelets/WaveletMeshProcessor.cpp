@@ -486,7 +486,7 @@ void WaveletMeshProcessor::reconstructByDifferential( std::vector<double>& vx, s
 	matlab_scgls(m_ep, sysM, vzCoeff, vz);	
 }
 
-void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
+void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ )
 {
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -497,48 +497,19 @@ void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vecto
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
- 	int scales = 1;
- 	double t_scales[4] = {80, 40, 20, 10};
- 	vector<vector<double> > SGW;
+	if (m_vSGW.empty())
+	{
+		vector<double> t_scales;
+		t_scales.push_back(80);
+// 		t_scales.push_back(40);
+// 		t_scales.push_back(20);
+// 		t_scales.push_back(10);
+		computeSGW(t_scales);
+	}
  	
-//	scaling function
- 	for (int x = 0; x < m_size; ++x)
- 	{
- 		SGW.push_back(vector<double>());
-		SGW.back().resize(m_size);
- 
- 		for (int y = 0; y < m_size; ++y)
- 		{
- 			double itemSum = 0;
- 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
- 			{
- 				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
- 			}
- 			SGW.back().at(y) = itemSum;
- 		}
- 	}
- 
-//	wavelet functions
- 	for (int s = 0; s < scales; ++s)
- 	{
- 		for (int x = 0; x < m_size; ++x)
- 		{
-			SGW.push_back(vector<double>());
-			SGW.back().resize(m_size);
- 
- 			for (int y = 0; y < m_size; ++y)
- 			{
- 				double itemSum = 0;
- 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
- 				{
-					double coef = mhb.m_func[k].m_val * t_scales[s];
- 					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
- 				}
- 				SGW.back().at(y) = itemSum;
- 			}
- 		}
- 	}
- 
+ 	vector<vector<double> > SGW = m_vSGW;
+	int scales = m_vTimescales.size();
+
 	int sizeCoeff = (scales + 1) * m_size;
  	vector<double> vxCoeff, vyCoeff, vzCoeff;
 	vxCoeff.resize(sizeCoeff);
@@ -561,7 +532,7 @@ void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vecto
 		vzCoeff[i] = itemSumZ;
 	}
 
-	double weightI = 0.1;
+	double weightI = 1;
 	if (withConstraint)
 	{
 		SGW.push_back(vector<double>());
@@ -580,4 +551,49 @@ void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vecto
 	matlab_scgls(m_ep, SGW, vxCoeff, vx);
 	matlab_scgls(m_ep, SGW, vyCoeff, vy);
 	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
+}
+
+void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
+{
+	m_vTimescales = timescales;
+	int nScales = m_vTimescales.size();
+
+	//	scaling function
+	for (int x = 0; x < m_size; ++x)
+	{
+		m_vSGW.push_back(vector<double>());
+		m_vSGW.back().resize(m_size);
+
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+			}
+			m_vSGW.back().at(y) = itemSum;
+		}
+	}
+
+	//	wavelet functions
+	for (int s = 0; s < nScales; ++s)
+	{
+		for (int x = 0; x < m_size; ++x)
+		{
+			m_vSGW.push_back(vector<double>());
+			m_vSGW.back().resize(m_size);
+
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					double coef = mhb.m_func[k].m_val * m_vTimescales[s];
+//					double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
+					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				m_vSGW.back().at(y) = itemSum;
+			}
+		}
+	}
 }
