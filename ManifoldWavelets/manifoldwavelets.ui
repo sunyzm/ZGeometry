@@ -189,8 +189,7 @@
     <property name="title">
      <string>Edit</string>
     </property>
-    <addaction name="actionComputeLaplacian"/>
-    <addaction name="actionReconstruct"/>
+    <addaction name="actionClone"/>
     <addaction name="actionDeformExperimental"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
@@ -206,25 +205,35 @@
     </widget>
     <widget class="QMenu" name="menuDisplay_Type">
      <property name="title">
-      <string>Display Type</string>
+      <string>Display type</string>
      </property>
      <addaction name="actionDisplayPointCloud"/>
      <addaction name="actionDisplayWireframe"/>
      <addaction name="actionDisplayMesh"/>
     </widget>
+    <addaction name="menuCurvature"/>
     <addaction name="actionEigenfunction"/>
+    <addaction name="actionHKS"/>
+    <addaction name="actionSGWS"/>
+    <addaction name="separator"/>
     <addaction name="actionMexicanHatWavelet1"/>
     <addaction name="actionMexicanHatWavelet2"/>
-    <addaction name="menuCurvature"/>
-    <addaction name="separator"/>
     <addaction name="actionExperimental"/>
     <addaction name="separator"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowSignature"/>
     <addaction name="menuDisplay_Type"/>
    </widget>
+   <widget class="QMenu" name="menuCompute">
+    <property name="title">
+     <string>Compute</string>
+    </property>
+    <addaction name="actionComputeLaplacian"/>
+    <addaction name="actionSGWSFeatures"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuCompute"/>
    <addaction name="menuDisplay"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -238,7 +247,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Compute Laplacian</string>
+    <string>Laplacian + MHB</string>
    </property>
   </action>
   <action name="actionEigenfunction">
@@ -285,9 +294,9 @@
     <string>Gauss Curvature</string>
    </property>
   </action>
-  <action name="actionReconstruct">
+  <action name="actionClone">
    <property name="text">
-    <string>Reconstruct</string>
+    <string>Clone</string>
    </property>
   </action>
   <action name="actionDeformExperimental">
@@ -328,6 +337,24 @@
    </property>
    <property name="text">
     <string>Show signature</string>
+   </property>
+  </action>
+  <action name="actionSGWSFeatures">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>SGWS Features</string>
+   </property>
+  </action>
+  <action name="actionHKS">
+   <property name="text">
+    <string>HKS</string>
+   </property>
+  </action>
+  <action name="actionSGWS">
+   <property name="text">
+    <string>SGWS</string>
    </property>
   </action>
  </widget>

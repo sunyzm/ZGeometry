@@ -501,23 +501,23 @@ void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vecto
 	{
 		vector<double> t_scales;
 		t_scales.push_back(80);
-// 		t_scales.push_back(40);
-// 		t_scales.push_back(20);
-// 		t_scales.push_back(10);
+ 		t_scales.push_back(40);
+ 		t_scales.push_back(20);
+ 		t_scales.push_back(10);
 		computeSGW(t_scales);
 	}
  	
  	vector<vector<double> > SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
-	int sizeCoeff = (scales + 1) * m_size;
- 	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	int sizeCoeff = scales * m_size;
+	assert(SGW.size() == sizeCoeff);
+
+	vector<double> vxCoeff, vyCoeff, vzCoeff;
 	vxCoeff.resize(sizeCoeff);
 	vyCoeff.resize(sizeCoeff);
 	vzCoeff.resize(sizeCoeff);
-
-	assert(SGW.size() == sizeCoeff);
-
+	
 	for (int i = 0; i < sizeCoeff; ++i)
 	{
 		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
@@ -559,21 +559,24 @@ void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
 	int nScales = m_vTimescales.size();
 
 	//	scaling function
-	for (int x = 0; x < m_size; ++x)
+	if (false)	//no scaling for now
 	{
-		m_vSGW.push_back(vector<double>());
-		m_vSGW.back().resize(m_size);
-
-		for (int y = 0; y < m_size; ++y)
+		for (int x = 0; x < m_size; ++x)
 		{
-			double itemSum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			m_vSGW.push_back(vector<double>());
+			m_vSGW.back().resize(m_size);
+
+			for (int y = 0; y < m_size; ++y)
 			{
-				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				m_vSGW.back().at(y) = itemSum;
 			}
-			m_vSGW.back().at(y) = itemSum;
 		}
-	}
+	}	
 
 	//	wavelet functions
 	for (int s = 0; s < nScales; ++s)
@@ -595,5 +598,21 @@ void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
 				m_vSGW.back().at(y) = itemSum;
 			}
 		}
+	}
+}
+
+void WaveletMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const
+{
+	values.resize(m_size);
+
+	for (int y = 0; y < m_size; ++y)
+	{
+		double itemSum = 0;
+		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		{
+			double coef = mhb.m_func[k].m_val * timescale;
+			itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[y] * mhb.m_func[k].m_vec[y];
+		}
+		values[y] = itemSum;
 	}
 }

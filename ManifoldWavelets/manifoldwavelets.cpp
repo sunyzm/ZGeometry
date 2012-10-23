@@ -59,12 +59,13 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
 	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
-	QObject::connect(ui.actionReconstruct, SIGNAL(triggered()), this, SLOT(reconstruct()));
+	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionDeformExperimental, SIGNAL(triggered()), this, SLOT(deformExperimental()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(displayPointCloud()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(displayWireframe()));
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(displayMesh()));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(showSignature()));
+	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -348,7 +349,7 @@ void QManifoldWavelets::selectObject( int index )
 	}
 }
 
-void QManifoldWavelets::reconstruct()
+void QManifoldWavelets::clone()
 {
 	mesh2.cloneFrom(mesh1);
 	mesh2.gatherStatistics();
@@ -507,5 +508,25 @@ void QManifoldWavelets::showSignature()
 	bool bToShow = ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
 	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
+	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::computeSGWSFeatures()
+{
+	vMP[0].vFeatures.clear();
+	double timescales[4] = {5, 10, 20, 40};
+	for (int s = 0; s < 4; ++s)
+	{
+		vector<double> vSig;
+		vector<int> vFeatures;
+		vMP[0].getSGWSignature(timescales[s], vSig);
+		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
+		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
+		{
+			vMP[0].vFeatures.push_back(ManifoldFeature(*iter, s));
+		}
+	}
+
+	ui.glMeshWidget->vSettings[0].showFeatures = true;
 	ui.glMeshWidget->updateGL();
 }

@@ -25,6 +25,16 @@ public:
 	std::vector<double> m_funcVal;
 };
 
+class ManifoldFeature
+{
+public:
+	int index;
+	int scale;
+	double value;
+	int featureType;
+	ManifoldFeature(int i, int s) : index(i), scale(s), featureType(0){}
+};
+
 class MeshProcessor
 {
 public:
@@ -45,6 +55,7 @@ public:
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
 	std::vector<double> vDisplaySignature;
+	std::vector<ManifoldFeature> vFeatures;
 	int pRef;
 	Vector3D posRef;
 	bool isMHBuilt;

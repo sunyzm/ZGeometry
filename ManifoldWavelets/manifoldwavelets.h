@@ -21,6 +21,7 @@ public:	// methods
 
 private slots:
 	void computeLaplacian(int obj = 0);
+	void computeSGWSFeatures();
 	void displayEigenfunction();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
@@ -34,7 +35,7 @@ private slots:
 	void selectVertex1(int vn);
 	void setShowRefPoint();
 	void selectObject(int index);
-	void reconstruct();
+	void clone();
 	void deformExperimental();
 private:	// methods
 	void makeConnections();

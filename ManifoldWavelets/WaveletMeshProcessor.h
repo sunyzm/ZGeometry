@@ -17,4 +17,5 @@ public:
 	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	void computeSGW(const std::vector<double>& timescales);
+	void getSGWSignature(double timescale, std::vector<double>& values) const;
 };

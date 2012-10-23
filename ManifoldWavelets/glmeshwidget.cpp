@@ -2,10 +2,16 @@
 #include <util/OutputHelper.h>
 #include <util/util.h>
 #include <gl/glu.h>
+#include <vector>
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
-
+const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0}, 
+                                    {0.0, 1.0, 0.0, 1.0}, 
+                                    {0.0, 0.0, 1.0, 0.0},
+                                    {1.0, 1.0, 0.0, 1.0}, 
+                                    {1.0, 0.0, 1.0, 1.0},
+                                    {0.0, 1.0, 1.0, 1.0}};
 extern OutputHelper qout;
 extern QString qformat;
 //extern int g_objSelect;
@@ -288,7 +294,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	if (obj >= vpMP.size() || obj < 0) return;	
 	if(!vpMP[obj]->mesh) return;
 
-	CMesh* tmesh = vpMP[obj]->mesh;
+	const CMesh* tmesh = vpMP[obj]->mesh;
 	CQrot rot = (obj == 0) ? ObjRot1 : ObjRot2;
 	Vector3D trans = (obj == 0) ? ObjTrans1 : ObjTrans2;
 	const GLfloat *color = (obj == 0) ? color1 : color2;	
@@ -312,8 +318,8 @@ void GLMeshWidget::drawMeshExt( int obj )
 		glBegin(GL_POINTS);
 		for (int i = 0; i < tmesh->getVerticesNum(); ++i)
 		{
-			Vector3D norm = tmesh->getVertex(i)->getNormal();
-			Vector3D vt = tmesh->getVertex(i)->m_vPosition;
+			Vector3D norm = tmesh->getVertex_const(i)->getNormal();
+			Vector3D vt = tmesh->getVertex_const(i)->m_vPosition;
 			vt -= shift;
 			if (showSignature) 
 				glFalseColor(vpMP[obj]->vDisplaySignature[i], 1.0);
@@ -415,6 +421,21 @@ void GLMeshWidget::drawMeshExt( int obj )
 		glPopMatrix();
 	}
 
+// control display of feature points
+	if (obj == 0 && vSettings[0].showFeatures)
+	{
+		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
+		{
+			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
+			vt -= shift;
+			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
+			GLUquadric* quadric = gluNewQuadric();
+			gluQuadricDrawStyle(quadric, GLU_FILL);
+			glPushMatrix();
+			glTranslated(vt.x, vt.y, vt.z);
+			gluSphere(quadric, vpMP[obj]->mesh->m_edge/2, 8, 8);
+			glPopMatrix();
+		}
+	}
 	glPopMatrix();
-
 }
