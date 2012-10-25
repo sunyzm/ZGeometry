@@ -37,7 +37,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 
 	FalseColorMap::BuildLUT();
 
-	showLegend = false;
+	m_bShowLegend = false;
 	vSettings.resize(2, DisplaySettings());
 
 	setAutoFillBackground(false);
@@ -438,10 +438,21 @@ void GLMeshWidget::drawMeshExt( int obj )
 
 void GLMeshWidget::drawLegend(QPainter* painter)
 {
-//	painter->setRenderHint(QPainter::Antialiasing);
-	painter->setPen(QPen(Qt::black, 12, Qt::DashDotDotLine, Qt::RoundCap));
-	painter->setBrush(QBrush(Qt::green, Qt::SolidPattern));
-	painter->drawEllipse(80, 80, 400, 240);
+	painter->setRenderHint(QPainter::Antialiasing);
+	
+	int xBegin = width()/2 - 128;
+
+	for (int i = 0; i < 255; i++)
+	{
+		QColor col(255*FalseColorMap::RedMap[i], 255*FalseColorMap::GreenMap[i], 255*FalseColorMap::BlueMap[i], 255);
+//		painter->setBrush(QBrush(col, Qt::SolidPattern));
+//		painter->drawRect(xBegin + i*2, height()-50, 2, 25);
+		painter->setPen(QPen(col, 1, Qt::SolidLine));
+		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
+	}
+	painter->setPen(QPen(Qt::black, Qt::SolidLine));
+	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(vpMP[0]->sigMin));
+	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(vpMP[0]->sigMax));
 }
 
 // void GLMeshWidget::showEvent( QShowEvent *event )
@@ -469,6 +480,8 @@ void GLMeshWidget::setupViewport( int width, int height )
 void GLMeshWidget::paintEvent( QPaintEvent *event )
 {
 	QPainter painter(this);
-	drawGL(); 	
+	drawGL();
+
+	if (m_bShowLegend && !vpMP[0]->vDisplaySignature.empty())
  	drawLegend(&painter);
 }

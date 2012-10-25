@@ -212,6 +212,11 @@
      <addaction name="actionDisplayWireframe"/>
      <addaction name="actionDisplayMesh"/>
     </widget>
+    <addaction name="menuDisplay_Type"/>
+    <addaction name="actionShowRefPoint"/>
+    <addaction name="actionShowSignature"/>
+    <addaction name="actionColorLegend"/>
+    <addaction name="separator"/>
     <addaction name="menuCurvature"/>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionHKS"/>
@@ -221,11 +226,6 @@
     <addaction name="actionMexicanHatWavelet1"/>
     <addaction name="actionMexicanHatWavelet2"/>
     <addaction name="actionExperimental"/>
-    <addaction name="separator"/>
-    <addaction name="actionShowRefPoint"/>
-    <addaction name="actionShowSignature"/>
-    <addaction name="menuDisplay_Type"/>
-    <addaction name="actionColorLegend"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -381,7 +381,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Color legend</string>
+    <string>Show color legend</string>
    </property>
   </action>
  </widget>

@@ -32,9 +32,11 @@ private slots:
 	void displayWireframe();
 	void displayMesh();
 	void displayDiffPosition();
-	void showSignature();
 	void selectVertex1(int vn);
+	void setShowSignature();
 	void setShowRefPoint();
+	void setShowColorLegend();
+	void setShowFeatures();
 	void selectObject(int index);
 	void clone();
 	void deformExperimental();

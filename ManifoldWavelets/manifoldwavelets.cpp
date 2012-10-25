@@ -64,10 +64,11 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(displayPointCloud()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(displayWireframe()));
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(displayMesh()));
-	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(showSignature()));
+	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(setShowSignature()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionFilterExperimental, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
+	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(setShowColorLegend()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -505,7 +506,7 @@ void QManifoldWavelets::displayMesh()
 
 }
 
-void QManifoldWavelets::showSignature()
+void QManifoldWavelets::setShowSignature()
 {
 	bool bToShow = ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
@@ -565,4 +566,18 @@ void QManifoldWavelets::displayDiffPosition()
 	vMP[0].normalizeFrom(vDiff);
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.glMeshWidget->update();
+}
+
+void QManifoldWavelets::setShowColorLegend()
+{
+	bool bChecked = ui.actionColorLegend->isChecked();
+	ui.glMeshWidget->m_bShowLegend = bChecked;
+	ui.actionColorLegend->setChecked(bChecked);
+
+	ui.glMeshWidget->update();
+}
+
+void QManifoldWavelets::setShowFeatures()
+{
+	// TODO
 }

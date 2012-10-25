@@ -27,7 +27,7 @@ public:
 
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
-	bool showLegend;	
+	bool m_bShowLegend;	
 	void addMesh(MeshProcessor* pmp);
 protected:
 	void initializeGL();
