@@ -27,18 +27,21 @@ public:
 
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
-	bool bShowRefPoint;	
+	bool showLegend;	
 	void addMesh(MeshProcessor* pmp);
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
 	void paintGL();
+//	void paintEvent(QPaintEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans);
+	void drawLegend();
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(int obj);
+	
 private:
 	void draw();
 	

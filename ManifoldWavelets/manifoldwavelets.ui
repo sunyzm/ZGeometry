@@ -191,6 +191,7 @@
     </property>
     <addaction name="actionClone"/>
     <addaction name="actionDeformExperimental"/>
+    <addaction name="actionFilterExperimental"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -215,6 +216,7 @@
     <addaction name="actionEigenfunction"/>
     <addaction name="actionHKS"/>
     <addaction name="actionSGWS"/>
+    <addaction name="actionDiffPosition"/>
     <addaction name="separator"/>
     <addaction name="actionMexicanHatWavelet1"/>
     <addaction name="actionMexicanHatWavelet2"/>
@@ -223,6 +225,7 @@
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowSignature"/>
     <addaction name="menuDisplay_Type"/>
+    <addaction name="actionColorLegend"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -230,6 +233,7 @@
     </property>
     <addaction name="actionComputeLaplacian"/>
     <addaction name="actionSGWSFeatures"/>
+    <addaction name="actionSGW"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -355,6 +359,29 @@
   <action name="actionSGWS">
    <property name="text">
     <string>SGWS</string>
+   </property>
+  </action>
+  <action name="actionFilterExperimental">
+   <property name="text">
+    <string>Filter Expreimental</string>
+   </property>
+  </action>
+  <action name="actionSGW">
+   <property name="text">
+    <string>SGW</string>
+   </property>
+  </action>
+  <action name="actionDiffPosition">
+   <property name="text">
+    <string>Diff Position</string>
+   </property>
+  </action>
+  <action name="actionColorLegend">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Color legend</string>
    </property>
   </action>
  </widget>

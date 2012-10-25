@@ -14,6 +14,7 @@ public:
 	void calGeometryDWT();
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void reconstructBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false);
+	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	void computeSGW(const std::vector<double>& timescales);

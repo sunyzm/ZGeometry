@@ -34,10 +34,12 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	bShowRefPoint = false;
 	FalseColorMap::BuildLUT();
 
+	showLegend = false;
 	vSettings.resize(2, DisplaySettings());
+
+	setAutoFillBackground(false);
 }
 
 GLMeshWidget::~GLMeshWidget()
@@ -199,6 +201,7 @@ void GLMeshWidget::paintGL()
 {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	draw();
+//	drawLegend();
 }
 
 void GLMeshWidget::draw()
@@ -406,7 +409,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glEnable(GL_LIGHTING);
 
 //	control display of reference point
-	if (vpMP[0]->pRef >= 0 && bShowRefPoint && obj == 0)
+	if (vpMP[0]->pRef >= 0 && vSettings[0].showRefPoint && obj == 0)
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
 		if (obj == 0)
@@ -417,7 +420,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, vpMP[obj]->mesh->m_edge, 8, 8);
+		gluSphere(quadric, vpMP[obj]->mesh->m_edge/2.0, 8, 8);
 		glPopMatrix();
 	}
 
@@ -438,4 +441,15 @@ void GLMeshWidget::drawMeshExt( int obj )
 		}
 	}
 	glPopMatrix();
+}
+
+void GLMeshWidget::drawLegend()
+{
+	QPainter* painter = new QPainter(this);
+	QRect rect(QPoint(width()/4.,height()/4.), 
+	           QPoint(3.*width()/4., 3.*height()/4.));
+	painter->setPen(QColor(255, 239, 239));
+	painter->setBrush(QColor(255, 0, 0, 31));
+	painter->drawRect(rect);
+	delete painter;
 }

@@ -66,6 +66,8 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(displayMesh()));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(showSignature()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
+	QObject::connect(ui.actionFilterExperimental, SIGNAL(triggered()), this, SLOT(filterExperimental()));
+	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
 }
 
 bool QManifoldWavelets::initialize()
@@ -279,7 +281,7 @@ void QManifoldWavelets::displayExperimental()
 void QManifoldWavelets::setShowRefPoint()
 {
 	bool bChecked = ui.actionShowRefPoint->isChecked();
-	ui.glMeshWidget->bShowRefPoint = bChecked;
+	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
 	ui.actionShowRefPoint->setChecked(bChecked);
 	
 	ui.glMeshWidget->updateGL();
@@ -528,5 +530,39 @@ void QManifoldWavelets::computeSGWSFeatures()
 	}
 
 	ui.glMeshWidget->vSettings[0].showFeatures = true;
+	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::filterExperimental()
+{
+	vector<double> vx, vy, vz;
+	vMP[0].filterBySGW(vx, vy, vz);
+	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	double errorSum(0);
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+	}
+	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	qout.output("Average position error: " + QString::number(errorSum));
+
+	ui.glMeshWidget->updateGL();
+}
+
+void QManifoldWavelets::displayDiffPosition()
+{
+	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
+	int size = mesh1.getVerticesNum();
+	vector<double> vDiff;
+	vDiff.resize(size);
+	
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		vDiff[i] = (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length() / mesh1.getAvgEdgeLength();
+	}
+
+	vMP[0].normalizeFrom(vDiff);
+	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.glMeshWidget->updateGL();
 }

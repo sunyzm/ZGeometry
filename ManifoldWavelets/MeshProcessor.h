@@ -55,6 +55,7 @@ public:
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
 	std::vector<double> vDisplaySignature;
+	double sigMin, sigMax;
 	std::vector<ManifoldFeature> vFeatures;
 	int pRef;
 	Vector3D posRef;

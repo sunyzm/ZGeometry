@@ -510,8 +510,7 @@ void WaveletMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vecto
  	vector<vector<double> > SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
-	int sizeCoeff = scales * m_size;
-	assert(SGW.size() == sizeCoeff);
+	int sizeCoeff = SGW.size();
 
 	vector<double> vxCoeff, vyCoeff, vzCoeff;
 	vxCoeff.resize(sizeCoeff);
@@ -558,8 +557,9 @@ void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
 	m_vTimescales = timescales;
 	int nScales = m_vTimescales.size();
 
+	m_vSGW.clear();
 	//	scaling function
-	if (false)	//no scaling for now
+	if (true)	// must use scaling functions
 	{
 		for (int x = 0; x < m_size; ++x)
 		{
@@ -571,7 +571,7 @@ void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					itemSum += /*exp(-1.0) * */ exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
 				m_vSGW.back().at(y) = itemSum;
 			}
@@ -591,8 +591,8 @@ void WaveletMeshProcessor::computeSGW( const std::vector<double>& timescales )
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					double coef = mhb.m_func[k].m_val * m_vTimescales[s];
-//					double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
+//					double coef = mhb.m_func[k].m_val * m_vTimescales[s];
+					double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
 					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
 				m_vSGW.back().at(y) = itemSum;
@@ -615,4 +615,61 @@ void WaveletMeshProcessor::getSGWSignature( double timescale, vector<double>& va
 		}
 		values[y] = itemSum;
 	}
+}
+
+void WaveletMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz )
+{
+	vx.resize(m_size);
+	vy.resize(m_size);
+	vz.resize(m_size);
+
+	vector<double> vxcoord0, vycoord0, vzcoord0;
+	mesh->getCoordinateFunction(0, vxcoord0);
+	mesh->getCoordinateFunction(1, vycoord0);
+	mesh->getCoordinateFunction(2, vzcoord0);
+
+	if (m_vSGW.empty())
+	{
+		vector<double> t_scales;
+		t_scales.push_back(80);
+		t_scales.push_back(40);
+		t_scales.push_back(20);
+		t_scales.push_back(10);
+		computeSGW(t_scales);
+	}
+
+	vector<vector<double> > SGW = m_vSGW;
+	int nScales = m_vTimescales.size();
+	int sizeCoeff = SGW.size();
+
+	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	vxCoeff.resize(sizeCoeff);
+	vyCoeff.resize(sizeCoeff);
+	vzCoeff.resize(sizeCoeff);
+
+	for (int i = 0; i < sizeCoeff; ++i)
+	{
+		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
+		for (int j = 0; j < m_size; ++j)
+		{
+			itemSumX += SGW[i][j] * vxcoord0[j];
+			itemSumY += SGW[i][j] * vycoord0[j];
+			itemSumZ += SGW[i][j] * vzcoord0[j];
+		}
+		vxCoeff[i] = itemSumX;
+		vyCoeff[i] = itemSumY;
+		vzCoeff[i] = itemSumZ;
+
+//		if ( i >= m_size && i < m_size * 2)
+// 		if ( i >= sizeCoeff - m_size)
+// 		{
+// 			vxCoeff[i] *= 0.5;
+// 			vyCoeff[i] *= 0.5;
+// 			vzCoeff[i] *= 0.5;
+// 		}
+ 	}
+
+	matlab_scgls(m_ep, SGW, vxCoeff, vx);
+	matlab_scgls(m_ep, SGW, vyCoeff, vy);
+	matlab_scgls(m_ep, SGW, vzCoeff, vz);
 }

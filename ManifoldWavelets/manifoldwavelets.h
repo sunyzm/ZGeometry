@@ -31,12 +31,14 @@ private slots:
 	void displayPointCloud();
 	void displayWireframe();
 	void displayMesh();
+	void displayDiffPosition();
 	void showSignature();
 	void selectVertex1(int vn);
 	void setShowRefPoint();
 	void selectObject(int index);
 	void clone();
 	void deformExperimental();
+	void filterExperimental();
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);

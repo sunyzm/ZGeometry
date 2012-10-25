@@ -98,8 +98,12 @@ void MeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curva
 void MeshProcessor::normalizeFrom(const std::vector<double>& vFrom)
 {
 	if (vFrom.empty()) return;	
+	assert(vFrom.size() == m_size);
+
 	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
 	double sMin = *iResult.first, sMax = *iResult.second;
+
+	sigMin = sMin, sigMax = sMax;
 
 	this->vDisplaySignature.clear();
 	for (vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
@@ -111,6 +115,7 @@ void MeshProcessor::normalizeFrom(const std::vector<double>& vFrom)
 void MeshProcessor::logNormalizeFrom( const std::vector<double>& vFrom )
 {
 	if (vFrom.empty()) return;	
+	assert(vFrom.size() == m_size);
 
 	std::vector<double> vLog;
 	vLog.reserve(vFrom.size());
@@ -121,6 +126,7 @@ void MeshProcessor::logNormalizeFrom( const std::vector<double>& vFrom )
 
 	auto iResult = minmax_element(vLog.begin(), vLog.end());
 	double sMin = *iResult.first, sMax = *iResult.second;
+	sigMin = sMin, sMax = sMax;
 
 	this->vDisplaySignature.clear();
 	this->vDisplaySignature.reserve(vLog.size());
@@ -133,6 +139,10 @@ void MeshProcessor::logNormalizeFrom( const std::vector<double>& vFrom )
 void MeshProcessor::bandCurveFrom( const std::vector<double>& vFrom, double lowend, double highend )
 {
 	assert(lowend < highend);
+	assert(vFrom.size() == m_size);
+
+	sigMin = lowend, sigMax = highend;
+
 	this->vDisplaySignature.clear();
 	this->vDisplaySignature.reserve(vFrom.size());
 	for (std::vector<double>::const_iterator iter = vFrom.begin(); iter != vFrom.end(); ++iter)
