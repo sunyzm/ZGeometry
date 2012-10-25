@@ -1,7 +1,8 @@
 #include "glmeshwidget.h"
 #include <util/OutputHelper.h>
 #include <util/util.h>
-#include <gl/glu.h>
+#include <gl/GL.h>
+#include <gl/GLU.h>
 #include <vector>
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
@@ -112,7 +113,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			ObjTrans2 = ObjTrans2 + trans;
 	}
 
-	updateGL();
+	update();
 }
 
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
@@ -129,43 +130,11 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 			ObjTrans2 = ObjTrans2 + trans;		
 	}
 
-	updateGL();
+	update();
 }
 
 void GLMeshWidget::initializeGL()
 {
-	GLfloat diffuse[] = {1, 1, 1, 1};
-	GLfloat global_ambient[] = {.2, .2, .2, 1};
-	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat position[] = {.0,  .0, 1, 0.0};
-
-	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CCW);      
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(1,1,1,0);
-	glShadeModel(GL_SMOOTH);
-	glEnable(GL_LINE_SMOOTH);
-	glEnable (GL_POLYGON_SMOOTH);
-	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-
-	glPolygonMode(GL_FRONT, GL_FILL);
-	glEnable (GL_BLEND); 
-	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	//glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
-	//glDisable(GL_DEPTH_TEST);
-
-	glEnable(GL_LIGHT1);
-	glEnable(GL_LIGHTING);
-	glEnable(GL_NORMALIZE);
-	glEnable(GL_COLOR_MATERIAL);
-
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
-
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
-	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-
-	glLightfv(GL_LIGHT1, GL_POSITION, position);
 }
 
 void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
@@ -182,40 +151,63 @@ void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
 
 void GLMeshWidget::resizeGL( int width, int height )
 {
-	GLdouble ar = GLdouble(width) / height;
-
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-//	glFrustum(-ar, ar, -1.0, 1.0, 4.0, 15.0);
-
-// 	GLdouble clipX = g_myNear * tan(g_myAngle/2.0/180.0 * PI), 
-// 		     clipY = clipX / ar;
-// 	glFrustum(-clipX, -clipY, clipX, clipY, g_myNear, g_myFar);
-	gluPerspective(g_myAngle, ar, g_myNear, g_myFar);
-	glMatrixMode(GL_MODELVIEW);
+	setupViewport(width, height);
 }
 
-void GLMeshWidget::paintGL()
+// void GLMeshWidget::paintGL()
+// {
+// }
+
+void GLMeshWidget::drawGL()
 {
+	makeCurrent();
+ 	glPushAttrib(GL_ALL_ATTRIB_BITS);
+ 	glMatrixMode(GL_MODELVIEW);
+ 	glPushMatrix();
+	
+	GLfloat diffuse[] = {1, 1, 1, 1};
+	GLfloat global_ambient[] = {.2, .2, .2, 1};
+	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+	GLfloat position[] = {.0,  .0, 1, 0.0};
+
+	glEnable(GL_CULL_FACE);
+	glFrontFace(GL_CCW);      
+	glEnable(GL_DEPTH_TEST);
+	glClearColor(1,1,1,0);
+	glShadeModel(GL_SMOOTH);
+	glEnable(GL_LINE_SMOOTH);
+	glEnable (GL_POLYGON_SMOOTH);
+	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
+	glPolygonMode(GL_FRONT, GL_FILL);
+	glEnable (GL_BLEND); 
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
+//	glDisable(GL_DEPTH_TEST);
+
+	glEnable(GL_LIGHT1);
+	glEnable(GL_LIGHTING);
+	glEnable(GL_NORMALIZE);
+	glEnable(GL_COLOR_MATERIAL);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
+	glLightfv(GL_LIGHT1, GL_POSITION, position);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+
+	setupViewport(width(), height());
+
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	draw();
-//	drawLegend();
-}
-
-void GLMeshWidget::draw()
-{
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-	
-// 	if (vSettings[0].displayType == DisplaySettings::Mesh)
-// 		drawMesh(vpMP[0]->mesh, ObjRot1, ObjTrans1, color1);
-	
+
 	if (vSettings[0].displayType != DisplaySettings::None)
 		drawMeshExt(0);
 	if (vSettings[1].displayType != DisplaySettings::None)
 		drawMeshExt(1);
+
+ 	glMatrixMode(GL_MODELVIEW);
+ 	glPopMatrix();
+ 	glPopAttrib();
 }
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
@@ -440,16 +432,43 @@ void GLMeshWidget::drawMeshExt( int obj )
 			glPopMatrix();
 		}
 	}
+
 	glPopMatrix();
 }
 
-void GLMeshWidget::drawLegend()
+void GLMeshWidget::drawLegend(QPainter* painter)
 {
-	QPainter* painter = new QPainter(this);
-	QRect rect(QPoint(width()/4.,height()/4.), 
-	           QPoint(3.*width()/4., 3.*height()/4.));
-	painter->setPen(QColor(255, 239, 239));
-	painter->setBrush(QColor(255, 0, 0, 31));
-	painter->drawRect(rect);
-	delete painter;
+//	painter->setRenderHint(QPainter::Antialiasing);
+	painter->setPen(QPen(Qt::black, 12, Qt::DashDotDotLine, Qt::RoundCap));
+	painter->setBrush(QBrush(Qt::green, Qt::SolidPattern));
+	painter->drawEllipse(80, 80, 400, 240);
+}
+
+// void GLMeshWidget::showEvent( QShowEvent *event )
+// {
+// 	Q_UNUSED(event);
+// }
+
+void GLMeshWidget::setupViewport( int width, int height )
+{
+	GLdouble ar = GLdouble(width) / height;
+
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+//	glFrustum(-ar, ar, -1.0, 1.0, 4.0, 15.0);
+// 	GLdouble clipX = g_myNear * tan(g_myAngle/2.0/180.0 * PI), 
+// 		     clipY = clipX / ar;
+// 	glFrustum(-clipX, -clipY, clipX, clipY, g_myNear, g_myFar);
+
+	gluPerspective(g_myAngle, ar, g_myNear, g_myFar);
+	glMatrixMode(GL_MODELVIEW);
+}
+
+void GLMeshWidget::paintEvent( QPaintEvent *event )
+{
+	QPainter painter(this);
+	drawGL(); 	
+ 	drawLegend(&painter);
 }

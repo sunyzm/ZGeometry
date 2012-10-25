@@ -176,7 +176,7 @@ void QManifoldWavelets::selectVertex1( int vn )
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove();
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayEigenfunction()
@@ -196,7 +196,7 @@ void QManifoldWavelets::displayEigenfunction()
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
 	
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 	qout.output("Show eigenfunction 1");
 }
 
@@ -225,7 +225,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayMexicanHatWavelet2()
@@ -253,7 +253,7 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayExperimental()
@@ -268,7 +268,7 @@ void QManifoldWavelets::displayExperimental()
  	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
 
- 	ui.glMeshWidget->updateGL();
+ 	ui.glMeshWidget->update();
  	qout.output("Show MHW from point " + QString::number(mp.pRef));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
@@ -284,7 +284,7 @@ void QManifoldWavelets::setShowRefPoint()
 	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
 	ui.actionShowRefPoint->setChecked(bChecked);
 	
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayCurvatureMean()
@@ -302,7 +302,7 @@ void QManifoldWavelets::displayCurvatureMean()
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 	qout.output("Show Mean Curvature");
 }
 
@@ -321,7 +321,7 @@ void QManifoldWavelets::displayCurvatureGauss()
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 	qout.output("Show Mean Curvature");
 }
 
@@ -395,7 +395,7 @@ void QManifoldWavelets::clone()
 	ofs2.close();
 */
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
@@ -459,7 +459,7 @@ void QManifoldWavelets::updateReferenceMove()
 	vMP[0].posRef.y = originalPos.y + unitMove * refMove.yMove;
 	vMP[0].posRef.z = originalPos.z + unitMove * refMove.zMove;
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::deformExperimental()
@@ -470,7 +470,7 @@ void QManifoldWavelets::deformExperimental()
 	vMP[0].reconstructBySGW(vx, vy, vz, true);
 //	vMP[0].reconstructExperimental1(vx, vy, vz, true);
 	mesh2.setVertexCoordinates(vx, vy, vz);
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayPointCloud()
@@ -480,7 +480,7 @@ void QManifoldWavelets::displayPointCloud()
 	ui.actionDisplayMesh->setChecked(false);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayWireframe()
@@ -490,7 +490,7 @@ void QManifoldWavelets::displayWireframe()
 	ui.actionDisplayMesh->setChecked(false);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 
 }
 
@@ -501,7 +501,7 @@ void QManifoldWavelets::displayMesh()
 	ui.actionDisplayMesh->setChecked(true);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 
 }
 
@@ -510,7 +510,7 @@ void QManifoldWavelets::showSignature()
 	bool bToShow = ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
 	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::computeSGWSFeatures()
@@ -530,7 +530,7 @@ void QManifoldWavelets::computeSGWSFeatures()
 	}
 
 	ui.glMeshWidget->vSettings[0].showFeatures = true;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::filterExperimental()
@@ -547,7 +547,7 @@ void QManifoldWavelets::filterExperimental()
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }
 
 void QManifoldWavelets::displayDiffPosition()
@@ -564,5 +564,5 @@ void QManifoldWavelets::displayDiffPosition()
 
 	vMP[0].normalizeFrom(vDiff);
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
-	ui.glMeshWidget->updateGL();
+	ui.glMeshWidget->update();
 }

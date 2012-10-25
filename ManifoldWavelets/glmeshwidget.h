@@ -32,19 +32,21 @@ public:
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
-	void paintGL();
-//	void paintEvent(QPaintEvent *event);
+//	void paintGL();
+	void paintEvent(QPaintEvent *event);
+//	void showEvent(QShowEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans);
-	void drawLegend();
+	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(int obj);
 	
 private:
-	void draw();
-	
+	void drawGL();
+	void setupViewport(int width, int height);
+
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;
 	CQrot			ObjRot1;
