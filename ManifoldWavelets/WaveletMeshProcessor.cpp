@@ -632,9 +632,9 @@ void WaveletMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<dou
 	{
 		vector<double> t_scales;
 		t_scales.push_back(80);
-		t_scales.push_back(40);
-		t_scales.push_back(20);
-		t_scales.push_back(10);
+//		t_scales.push_back(40);
+//		t_scales.push_back(20);
+//		t_scales.push_back(10);
 		computeSGW(t_scales);
 	}
 
@@ -661,12 +661,12 @@ void WaveletMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<dou
 		vzCoeff[i] = itemSumZ;
 
 //		if ( i >= m_size && i < m_size * 2)
-// 		if ( i >= sizeCoeff - m_size)
-// 		{
-// 			vxCoeff[i] *= 0.5;
-// 			vyCoeff[i] *= 0.5;
-// 			vzCoeff[i] *= 0.5;
-// 		}
+ 		if ( i >= sizeCoeff - m_size )
+ 		{
+ 			vxCoeff[i] *= 0.5;
+ 			vyCoeff[i] *= 0.5;
+ 			vzCoeff[i] *= 0.5;
+ 		}
  	}
 
 	matlab_scgls(m_ep, SGW, vxCoeff, vx);
