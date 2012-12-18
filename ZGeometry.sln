@@ -1,18 +1,24 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ManifoldWavelets", "ManifoldWavelets\ManifoldWavelets.vcxproj", "{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZGeometry", "ZGeometry\ZGeometry.vcxproj", "{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
+		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Debug|Win32.ActiveCfg = Debug|Win32
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Debug|Win32.Build.0 = Debug|Win32
+		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Debug|x64.ActiveCfg = Debug|x64
+		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Debug|x64.Build.0 = Debug|x64
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|Win32.ActiveCfg = Release|Win32
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|Win32.Build.0 = Release|Win32
+		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|x64.ActiveCfg = Release|x64
+		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

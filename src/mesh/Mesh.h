@@ -1,4 +1,4 @@
-#ifndef _MESH_H_
+ï»¿#ifndef _MESH_H_
 #define _MESH_H_
 
 #include <cstdio>
@@ -120,7 +120,7 @@ private:
 	int			m_eIndex;		//half-edge id
 	bool		m_bIsValid;
 public:
-	int	m_iVertex[2];		// starting and ending vertex index Vertex0 ­> Vertex1
+	int	m_iVertex[2];		// starting and ending vertex index Vertex0 ? Vertex1
 	int	m_iTwinEdge;		// reverse half-edge index, -1 if boundary half edge
 	int	m_iNextEdge;		// next half-edge index ( counter-clock wise )
 	int m_iPrevEdge;

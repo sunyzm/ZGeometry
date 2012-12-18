@@ -24,9 +24,9 @@
 # project specific
 bin/
 data/
-ManifoldWavelets/immediate/
-ManifoldWavelets/GeneratedFiles/
-ManifoldWavelets/output/
+ZGeometry/immediate/
+ZGeometry/GeneratedFiles/
+ZGeometry/output/
 
 # misc
 *.bak
