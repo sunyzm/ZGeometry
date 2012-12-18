@@ -3,7 +3,7 @@
 #include <vector>
 #include <QtGui/QMessageBox>
 #include <QTime>
-#include "manifoldwavelets.h"
+#include "QZGeometry.h"
 
 #define DEFAULT_EIGEN_SIZE 300
 #define LOAD_MHB_CACHE 1
@@ -15,7 +15,7 @@ extern QString qformat;
 const char* g_meshListName = "meshfiles.cfg";
 //int g_objSelect = 0;	//-1 means all object; -2 means no object
 
-QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
+QZGeometry::QZGeometry(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
@@ -35,12 +35,12 @@ QManifoldWavelets::QManifoldWavelets(QWidget *parent, Qt::WFlags flags)
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
-QManifoldWavelets::~QManifoldWavelets()
+QZGeometry::~QZGeometry()
 {
 	engClose(m_ep);
 }
 
-void QManifoldWavelets::makeConnections()
+void QZGeometry::makeConnections()
 {	
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 ////////	Compute	////////
@@ -71,7 +71,7 @@ void QManifoldWavelets::makeConnections()
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(setShowColorLegend()));
 }
 
-bool QManifoldWavelets::initialize()
+bool QZGeometry::initialize()
 {
 	if (!(m_ep = engOpen("\0")))
 	{
@@ -138,7 +138,7 @@ bool QManifoldWavelets::initialize()
 	return true;
 }
 
-void QManifoldWavelets::computeLaplacian( int obj /*= 0*/ )
+void QZGeometry::computeLaplacian( int obj /*= 0*/ )
 {
 	QTime timer;
 	timer.start();
@@ -172,7 +172,7 @@ void QManifoldWavelets::computeLaplacian( int obj /*= 0*/ )
 	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
-void QManifoldWavelets::selectVertex1( int vn )
+void QZGeometry::selectVertex1( int vn )
 {
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
@@ -180,7 +180,7 @@ void QManifoldWavelets::selectVertex1( int vn )
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayEigenfunction()
+void QZGeometry::displayEigenfunction()
 {
 	if (selected[0])
 	{
@@ -201,7 +201,7 @@ void QManifoldWavelets::displayEigenfunction()
 	qout.output("Show eigenfunction 1");
 }
 
-void QManifoldWavelets::displayMexicanHatWavelet1()
+void QZGeometry::displayMexicanHatWavelet1()
 {
 	if (selected[0])
 	{
@@ -229,7 +229,7 @@ void QManifoldWavelets::displayMexicanHatWavelet1()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayMexicanHatWavelet2()
+void QZGeometry::displayMexicanHatWavelet2()
 {
 	if (selected[0])
 	{
@@ -257,7 +257,7 @@ void QManifoldWavelets::displayMexicanHatWavelet2()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayExperimental()
+void QZGeometry::displayExperimental()
 {
 	WaveletMeshProcessor& mp = vMP[0];
 
@@ -279,7 +279,7 @@ void QManifoldWavelets::displayExperimental()
 // 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
-void QManifoldWavelets::setShowRefPoint()
+void QZGeometry::setShowRefPoint()
 {
 	bool bChecked = ui.actionShowRefPoint->isChecked();
 	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
@@ -288,7 +288,7 @@ void QManifoldWavelets::setShowRefPoint()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayCurvatureMean()
+void QZGeometry::displayCurvatureMean()
 {
 	MeshProcessor& mp = vMP[0];
 
@@ -307,7 +307,7 @@ void QManifoldWavelets::displayCurvatureMean()
 	qout.output("Show Mean Curvature");
 }
 
-void QManifoldWavelets::displayCurvatureGauss()
+void QZGeometry::displayCurvatureGauss()
 {
 	MeshProcessor& mp = vMP[0];
 
@@ -326,7 +326,7 @@ void QManifoldWavelets::displayCurvatureGauss()
 	qout.output("Show Mean Curvature");
 }
 
-void QManifoldWavelets::selectObject( int index )
+void QZGeometry::selectObject( int index )
 {
 	QString text = ui.objSelectBox->itemText(index);
 	qout.output("Selected object(s): " + text);
@@ -352,7 +352,7 @@ void QManifoldWavelets::selectObject( int index )
 	}
 }
 
-void QManifoldWavelets::clone()
+void QZGeometry::clone()
 {
 	mesh2.cloneFrom(mesh1);
 	mesh2.gatherStatistics();
@@ -399,7 +399,7 @@ void QManifoldWavelets::clone()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
+void QZGeometry::keyPressEvent( QKeyEvent *event )
 {
 	switch (event->key())
 	{
@@ -452,7 +452,7 @@ void QManifoldWavelets::keyPressEvent( QKeyEvent *event )
 	}
 }
 
-void QManifoldWavelets::updateReferenceMove()
+void QZGeometry::updateReferenceMove()
 {
 	double unitMove = (mesh1.getBoundingBox().x + mesh1.getBoundingBox().y + mesh1.getBoundingBox().z)/300.0;
 	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPos();
@@ -463,7 +463,7 @@ void QManifoldWavelets::updateReferenceMove()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::deformExperimental()
+void QZGeometry::deformExperimental()
 {
 	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -474,7 +474,7 @@ void QManifoldWavelets::deformExperimental()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayPointCloud()
+void QZGeometry::displayPointCloud()
 {
 	ui.actionDisplayPointCloud->setChecked(true);
 	ui.actionDisplayWireframe->setChecked(false);
@@ -484,7 +484,7 @@ void QManifoldWavelets::displayPointCloud()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayWireframe()
+void QZGeometry::displayWireframe()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(true);
@@ -495,7 +495,7 @@ void QManifoldWavelets::displayWireframe()
 
 }
 
-void QManifoldWavelets::displayMesh()
+void QZGeometry::displayMesh()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(false);
@@ -506,7 +506,7 @@ void QManifoldWavelets::displayMesh()
 
 }
 
-void QManifoldWavelets::setShowSignature()
+void QZGeometry::setShowSignature()
 {
 	bool bToShow = ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
@@ -514,7 +514,7 @@ void QManifoldWavelets::setShowSignature()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::computeSGWSFeatures()
+void QZGeometry::computeSGWSFeatures()
 {
 	vMP[0].vFeatures.clear();
 	double timescales[4] = {5, 10, 20, 40};
@@ -534,7 +534,7 @@ void QManifoldWavelets::computeSGWSFeatures()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::filterExperimental()
+void QZGeometry::filterExperimental()
 {
 	vector<double> vx, vy, vz;
 	vMP[0].filterBySGW(vx, vy, vz);
@@ -551,7 +551,7 @@ void QManifoldWavelets::filterExperimental()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::displayDiffPosition()
+void QZGeometry::displayDiffPosition()
 {
 	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
 	int size = mesh1.getVerticesNum();
@@ -568,7 +568,7 @@ void QManifoldWavelets::displayDiffPosition()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::setShowColorLegend()
+void QZGeometry::setShowColorLegend()
 {
 	bool bChecked = ui.actionColorLegend->isChecked();
 	ui.glMeshWidget->m_bShowLegend = bChecked;
@@ -577,7 +577,7 @@ void QManifoldWavelets::setShowColorLegend()
 	ui.glMeshWidget->update();
 }
 
-void QManifoldWavelets::setShowFeatures()
+void QZGeometry::setShowFeatures()
 {
 	// TODO
 }

@@ -38,18 +38,6 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="manifoldwavelets.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_manifoldwavelets.cpp">
-      <Filter>Generated Files\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_manifoldwavelets.cpp">
-      <Filter>Generated Files\Release</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\qrc_manifoldwavelets.cpp">
-      <Filter>Generated Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\src\mesh\Geometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -95,25 +83,31 @@
     <ClCompile Include="WaveletMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_QZGeometry.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_QZGeometry.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
+    <ClCompile Include="QZGeometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="manifoldwavelets.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="manifoldwavelets.ui">
-      <Filter>Form Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="manifoldwavelets.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
     <CustomBuild Include="glmeshwidget.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="ZGeometry.ui">
+      <Filter>Form Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="QZGeometry.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="GeneratedFiles\ui_manifoldwavelets.h">
-      <Filter>Generated Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\src\mesh\Geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -155,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="..\src\util\matlab_wrapper.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GeneratedFiles\ui_ZGeometry.h">
+      <Filter>Generated Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

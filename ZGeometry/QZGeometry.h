@@ -1,7 +1,7 @@
-#ifndef MANIFOLDWAVELETS_H
-#define MANIFOLDWAVELETS_H
+#ifndef QZGEOMETRY_H
+#define QZGEOMETRY_H
 
-#include "ui_manifoldwavelets.h"
+#include "ui_ZGeometry.h"
 #include <QtGui/QMainWindow>
 #include <mesh/Mesh.h>
 #include <util/OutputHelper.h>
@@ -9,14 +9,14 @@
 #include "WaveletMeshProcessor.h"
 #include <vector>
 
-class QManifoldWavelets : public QMainWindow
+class QZGeometry : public QMainWindow
 {
 	Q_OBJECT
 
 public:	// methods
 	friend OutputHelper;
-	QManifoldWavelets(QWidget *parent = 0, Qt::WFlags flags = 0);
-	~QManifoldWavelets();
+	QZGeometry(QWidget *parent = 0, Qt::WFlags flags = 0);
+	~QZGeometry();
 	bool initialize();
 
 private slots:
@@ -46,7 +46,7 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void updateReferenceMove();
 private:	// attributes
-	Ui::ManifoldWaveletsClass ui;
+	Ui::ZGeometryClass ui;
 //	QString statusBarMsg;
 	int totalShapeNum;
 	int objSelect;

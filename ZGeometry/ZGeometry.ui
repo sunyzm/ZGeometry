@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>ManifoldWaveletsClass</class>
- <widget class="QMainWindow" name="ManifoldWaveletsClass">
+ <class>ZGeometryClass</class>
+ <widget class="QMainWindow" name="ZGeometryClass">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -20,7 +20,7 @@
    <enum>Qt::StrongFocus</enum>
   </property>
   <property name="windowTitle">
-   <string>ManifoldWavelets</string>
+   <string>ZGeometry</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <property name="sizePolicy">
@@ -395,7 +395,7 @@
   </customwidget>
  </customwidgets>
  <resources>
-  <include location="manifoldwavelets.qrc"/>
+  <include location="QGeometry.qrc"/>
  </resources>
  <connections/>
 </ui>
