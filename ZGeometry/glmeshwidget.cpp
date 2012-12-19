@@ -17,12 +17,12 @@ extern OutputHelper qout;
 extern QString qformat;
 //extern int g_objSelect;
 Qt::MouseButton gButton;
-
+FalseColorMap falseColorMap;
 
 void glFalseColor(float v, float p)
 {
 	int floor = v * 255.0;
-	glColor4f(FalseColorMap::RedMap[floor], FalseColorMap::GreenMap[floor], FalseColorMap::BlueMap[floor], p);
+	glColor4f(falseColorMap.RedMap[floor], falseColorMap.GreenMap[floor], falseColorMap.BlueMap[floor], p);
 }
 
 GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
@@ -34,8 +34,6 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myNear = 1.0;
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
-
-	FalseColorMap::BuildLUT();
 
 	m_bShowLegend = false;
 	vSettings.resize(2, DisplaySettings());
@@ -444,7 +442,7 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 
 	for (int i = 0; i < 255; i++)
 	{
-		QColor col(255*FalseColorMap::RedMap[i], 255*FalseColorMap::GreenMap[i], 255*FalseColorMap::BlueMap[i], 255);
+		QColor col(255*falseColorMap.RedMap[i], 255*falseColorMap.GreenMap[i], 255*falseColorMap.BlueMap[i], 255);
 //		painter->setBrush(QBrush(col, Qt::SolidPattern));
 //		painter->drawRect(xBegin + i*2, height()-50, 2, 25);
 		painter->setPen(QPen(col, 1, Qt::SolidLine));

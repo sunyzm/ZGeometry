@@ -1,9 +1,6 @@
-#ifndef _ARCBALL_H_
-#define _ARCBALL_H_
-
+#pragma once
 #include "geometry.h"
 #include "quat.h"
-
 
 class CArcball
 {
@@ -21,6 +18,3 @@ private:
   double   m_radius;
   Vector2D m_center;
 };
-
-
-#endif

@@ -15,7 +15,7 @@ extern QString qformat;
 const char* g_meshListName = "meshfiles.cfg";
 //int g_objSelect = 0;	//-1 means all object; -2 means no object
 
-QZGeometry::QZGeometry(QWidget *parent, Qt::WFlags flags)
+QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
@@ -35,12 +35,12 @@ QZGeometry::QZGeometry(QWidget *parent, Qt::WFlags flags)
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
-QZGeometry::~QZGeometry()
+QZGeometryWindow::~QZGeometryWindow()
 {
 	engClose(m_ep);
 }
 
-void QZGeometry::makeConnections()
+void QZGeometryWindow::makeConnections()
 {	
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 ////////	Compute	////////
@@ -71,7 +71,7 @@ void QZGeometry::makeConnections()
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(setShowColorLegend()));
 }
 
-bool QZGeometry::initialize()
+bool QZGeometryWindow::initialize()
 {
 	if (!(m_ep = engOpen("\0")))
 	{
@@ -138,7 +138,7 @@ bool QZGeometry::initialize()
 	return true;
 }
 
-void QZGeometry::computeLaplacian( int obj /*= 0*/ )
+void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 {
 	QTime timer;
 	timer.start();
@@ -172,7 +172,7 @@ void QZGeometry::computeLaplacian( int obj /*= 0*/ )
 	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
-void QZGeometry::selectVertex1( int vn )
+void QZGeometryWindow::selectVertex1( int vn )
 {
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
@@ -180,7 +180,7 @@ void QZGeometry::selectVertex1( int vn )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayEigenfunction()
+void QZGeometryWindow::displayEigenfunction()
 {
 	if (selected[0])
 	{
@@ -201,7 +201,7 @@ void QZGeometry::displayEigenfunction()
 	qout.output("Show eigenfunction 1");
 }
 
-void QZGeometry::displayMexicanHatWavelet1()
+void QZGeometryWindow::displayMexicanHatWavelet1()
 {
 	if (selected[0])
 	{
@@ -229,7 +229,7 @@ void QZGeometry::displayMexicanHatWavelet1()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayMexicanHatWavelet2()
+void QZGeometryWindow::displayMexicanHatWavelet2()
 {
 	if (selected[0])
 	{
@@ -257,7 +257,7 @@ void QZGeometry::displayMexicanHatWavelet2()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayExperimental()
+void QZGeometryWindow::displayExperimental()
 {
 	WaveletMeshProcessor& mp = vMP[0];
 
@@ -279,7 +279,7 @@ void QZGeometry::displayExperimental()
 // 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
-void QZGeometry::setShowRefPoint()
+void QZGeometryWindow::setShowRefPoint()
 {
 	bool bChecked = ui.actionShowRefPoint->isChecked();
 	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
@@ -288,7 +288,7 @@ void QZGeometry::setShowRefPoint()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayCurvatureMean()
+void QZGeometryWindow::displayCurvatureMean()
 {
 	MeshProcessor& mp = vMP[0];
 
@@ -307,7 +307,7 @@ void QZGeometry::displayCurvatureMean()
 	qout.output("Show Mean Curvature");
 }
 
-void QZGeometry::displayCurvatureGauss()
+void QZGeometryWindow::displayCurvatureGauss()
 {
 	MeshProcessor& mp = vMP[0];
 
@@ -326,7 +326,7 @@ void QZGeometry::displayCurvatureGauss()
 	qout.output("Show Mean Curvature");
 }
 
-void QZGeometry::selectObject( int index )
+void QZGeometryWindow::selectObject( int index )
 {
 	QString text = ui.objSelectBox->itemText(index);
 	qout.output("Selected object(s): " + text);
@@ -352,7 +352,7 @@ void QZGeometry::selectObject( int index )
 	}
 }
 
-void QZGeometry::clone()
+void QZGeometryWindow::clone()
 {
 	mesh2.cloneFrom(mesh1);
 	mesh2.gatherStatistics();
@@ -399,7 +399,7 @@ void QZGeometry::clone()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::keyPressEvent( QKeyEvent *event )
+void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 {
 	switch (event->key())
 	{
@@ -452,7 +452,7 @@ void QZGeometry::keyPressEvent( QKeyEvent *event )
 	}
 }
 
-void QZGeometry::updateReferenceMove()
+void QZGeometryWindow::updateReferenceMove()
 {
 	double unitMove = (mesh1.getBoundingBox().x + mesh1.getBoundingBox().y + mesh1.getBoundingBox().z)/300.0;
 	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPos();
@@ -463,7 +463,7 @@ void QZGeometry::updateReferenceMove()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::deformExperimental()
+void QZGeometryWindow::deformExperimental()
 {
 	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -474,7 +474,7 @@ void QZGeometry::deformExperimental()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayPointCloud()
+void QZGeometryWindow::displayPointCloud()
 {
 	ui.actionDisplayPointCloud->setChecked(true);
 	ui.actionDisplayWireframe->setChecked(false);
@@ -484,7 +484,7 @@ void QZGeometry::displayPointCloud()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayWireframe()
+void QZGeometryWindow::displayWireframe()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(true);
@@ -495,7 +495,7 @@ void QZGeometry::displayWireframe()
 
 }
 
-void QZGeometry::displayMesh()
+void QZGeometryWindow::displayMesh()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(false);
@@ -506,7 +506,7 @@ void QZGeometry::displayMesh()
 
 }
 
-void QZGeometry::setShowSignature()
+void QZGeometryWindow::setShowSignature()
 {
 	bool bToShow = ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
@@ -514,7 +514,7 @@ void QZGeometry::setShowSignature()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::computeSGWSFeatures()
+void QZGeometryWindow::computeSGWSFeatures()
 {
 	vMP[0].vFeatures.clear();
 	double timescales[4] = {5, 10, 20, 40};
@@ -534,7 +534,7 @@ void QZGeometry::computeSGWSFeatures()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::filterExperimental()
+void QZGeometryWindow::filterExperimental()
 {
 	vector<double> vx, vy, vz;
 	vMP[0].filterBySGW(vx, vy, vz);
@@ -551,7 +551,7 @@ void QZGeometry::filterExperimental()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::displayDiffPosition()
+void QZGeometryWindow::displayDiffPosition()
 {
 	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
 	int size = mesh1.getVerticesNum();
@@ -568,7 +568,7 @@ void QZGeometry::displayDiffPosition()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::setShowColorLegend()
+void QZGeometryWindow::setShowColorLegend()
 {
 	bool bChecked = ui.actionColorLegend->isChecked();
 	ui.glMeshWidget->m_bShowLegend = bChecked;
@@ -577,7 +577,7 @@ void QZGeometry::setShowColorLegend()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometry::setShowFeatures()
+void QZGeometryWindow::setShowFeatures()
 {
 	// TODO
 }

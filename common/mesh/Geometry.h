@@ -1,14 +1,11 @@
 // Geometry.h: classes of 2D vector and 3D vector
 //
 //////////////////////////////////////////////////////////////////////
-#ifndef _GEOMETRY_H_
-#define _GEOMETRY_H_
-
+#pragma once
 #include <cmath>
 #include <cstdio>
 #define DOUBLE_EPS 1e-16
 #define	EQUALZERO(x)	(std::fabs((x)) < DOUBLE_EPS)
-
 
 /////////////////////////////////////////////////////////////
 // Vector2D : 2D vector
@@ -160,5 +157,3 @@ public:
 // Helper functions
 /////////////////////////////////////////////////////////////
 Vector3D triArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
-
-#endif 

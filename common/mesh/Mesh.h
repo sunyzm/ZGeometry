@@ -1,6 +1,4 @@
-﻿#ifndef _MESH_H_
-#define _MESH_H_
-
+﻿#pragma once
 #include <cstdio>
 #include <cmath>
 #include <list>
@@ -294,6 +292,3 @@ private:
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 };	//CMesh
-
-
-#endif

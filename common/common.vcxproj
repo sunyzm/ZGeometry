@@ -78,6 +78,10 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <Lib>
+      <Verbose>true</Verbose>
+      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
@@ -101,7 +105,6 @@
     <ClInclude Include="mesh\Quat.h" />
     <ClInclude Include="util\arithmetic.h" />
     <ClInclude Include="util\color.h" />
-    <ClInclude Include="util\matlab_wrapper.h" />
     <ClInclude Include="util\output.h" />
     <ClInclude Include="util\timer.h" />
     <ClInclude Include="util\misc.h" />

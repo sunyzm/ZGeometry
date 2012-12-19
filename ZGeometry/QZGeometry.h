@@ -1,6 +1,4 @@
-#ifndef _QZGEOMETRY_H_
-#define _QZGEOMETRY_H_
-
+#pragma once
 #include "ui_ZGeometry.h"
 #include <QtGui/QMainWindow>
 #include <ZMesh.h>
@@ -9,15 +7,14 @@
 #include "OutputHelper.h"
 #include "WaveletMeshProcessor.h"
 
-
-class QZGeometry : public QMainWindow
+class QZGeometryWindow : public QMainWindow
 {
 	Q_OBJECT
 
 public:	// methods
 	friend OutputHelper;
-	QZGeometry(QWidget *parent = 0, Qt::WFlags flags = 0);
-	~QZGeometry();
+	QZGeometryWindow(QWidget *parent = 0, Qt::WFlags flags = 0);
+	~QZGeometryWindow();
 	bool initialize();
 
 private slots:
@@ -60,4 +57,3 @@ private:	// attributes
 	struct {int xMove, yMove, zMove; } refMove;
 };
 
-#endif // MANIFOLDWAVELETS_H

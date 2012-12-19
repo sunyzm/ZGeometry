@@ -1,10 +1,8 @@
 #pragma once
-#include <mesh/Mesh.h>
 #include <engine.h>
-#include <mesh/Laplacian.h>
+#include <ZMesh.h>
 #include <string>
 #include <vector>
-
 
 class ManifoldFunction
 {

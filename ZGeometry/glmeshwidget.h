@@ -1,6 +1,4 @@
-#ifndef _GLMESHWIDGET_H_
-#define _GLMESHWIDGET_H_
-
+#pragma once
 #include <QGLWidget>
 #include <ZMesh.h>
 #include <vector>
@@ -60,4 +58,3 @@ private:
 	int				g_startx, g_starty;
 };
 
-#endif // GLMESHWIDGET_H

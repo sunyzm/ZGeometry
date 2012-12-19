@@ -1,7 +1,5 @@
 #include "color.h"
 
-double FalseColorMap::RedMap[256], FalseColorMap::GreenMap[256], FalseColorMap::BlueMap[256];
-
 void FalseColorMap::BuildLUT()
 {
 	//initialize false color map

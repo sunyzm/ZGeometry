@@ -1,5 +1,4 @@
-#ifndef _COLOR_H_
-#define _COLOR_H_
+#pragma once
 
 class RGBf 
 {
@@ -23,9 +22,6 @@ class FalseColorMap
 {
 public:
 	FalseColorMap();
-	static double RedMap[256], GreenMap[256], BlueMap[256];
-	static void BuildLUT();
+	double RedMap[256], GreenMap[256], BlueMap[256];
+	void BuildLUT();
 };
-
-
-#endif
