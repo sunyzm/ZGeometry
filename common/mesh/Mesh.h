@@ -11,7 +11,7 @@
 #include <queue>
 #include <string>
 #include <algorithm>
-#include <util/util.h>
+#include <util/misc.h>
 #include "Geometry.h"
 #include "Quat.h"
 

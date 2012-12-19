@@ -290,7 +290,7 @@ double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector
 void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
 {
 	assert(func.size() == size);
-	
+/*	
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
 
 	int ns = (int) vII.size();
@@ -308,7 +308,8 @@ void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vect
 	engPutVariable(ep, "JJ", JJ);
 	engPutVariable(ep, "SS", SS);
 
-	//TODO: to finish
+	//TODO: to finish the multiplication
+*/
 }
 
 void Laplacian::getSparseLaplacian( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const

@@ -1766,7 +1766,7 @@ void CMesh::VertexNeighborRing( int i, int ring, std::vector<int>& nbr ) const
 	/* find neighbors of outer rings */ 
 	for (int r = 1; r < ring; r++)
 	{
-		for (int k = 0; k < nbp.size(); k++)
+		for (size_t k = 0; k < nbp.size(); k++)
 		{
 			int pos = nbp.at(k);
 			for (int l = 0; l < m_pVertex[pos].m_nValence; l++)
@@ -1788,7 +1788,7 @@ void CMesh::VertexNeighborRing( int i, int ring, std::vector<int>& nbr ) const
 	notei.m_mark = -1;
 
 	/* clear the mark */
-	for (int j = 0; j < nbr.size(); j++)
+	for (size_t j = 0; j < nbr.size(); j++)
 	{
 		int loc = nbr[j];
 		m_pVertex[loc].m_mark = -1;    
@@ -1951,7 +1951,7 @@ bool CMesh::VertexNeighborGeo(int i, double ring, vector<GeoNote>& nbg)
 		}
 	}
 
-	for (int ni=0; ni<nbg.size(); ni++)
+	for (size_t ni=0; ni<nbg.size(); ni++)
 	{
 		int pos = nbg[ni].m_id;
 		m_pVertex[pos].m_mark = -1;
@@ -2104,7 +2104,7 @@ double CMesh::getGeodesic( int s, int t ) const
 		}
 	}
 
-	for (int ni=0; ni<nbg.size(); ni++)
+	for (size_t ni=0; ni<nbg.size(); ni++)
 	{
 		int pos = nbg[ni].m_id;
 		m_pVertex[pos].m_mark = -1;
@@ -2256,7 +2256,7 @@ double CMesh::getGeodesicToBoundary(int s) const
 		}
 	}
 
-	for (int ni=0; ni<nbg.size(); ni++)
+	for (size_t ni=0; ni<nbg.size(); ni++)
 	{
 		int pos = nbg[ni].m_id;
 		m_pVertex[pos].m_mark = -1;
@@ -2413,7 +2413,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		}
 	}
 
-	for (int ni=0; ni<nbg.size(); ni++)
+	for (size_t ni=0; ni<nbg.size(); ni++)
 	{
 		int pos = nbg[ni].m_id;
 		m_pVertex[pos].m_mark = -1;
@@ -3224,7 +3224,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 			continue;
 
 		VertexNeighborRing(j, ring, nb);	//ring == 2
-		for (int k = 0; k < nb.size(); k++)		//for each neighbor 
+		for (size_t k = 0; k < nb.size(); k++)		//for each neighbor 
 		{
 			int ev = nb[k];
 			state_c = STATE_IDLE;

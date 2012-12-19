@@ -2,6 +2,7 @@
 *.slo
 *.lo
 *.o
+*.obj
 *.exe
 
 # Compiled Dynamic libraries
@@ -24,7 +25,9 @@
 # project specific
 bin/
 data/
-ZGeometry/immediate/
+lib/
+common/intermediate/
+ZGeometry/intermediate/
 ZGeometry/GeneratedFiles/
 ZGeometry/output/
 

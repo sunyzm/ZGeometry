@@ -1,10 +1,10 @@
-#ifndef GLMESHWIDGET_H
-#define GLMESHWIDGET_H
+#ifndef _GLMESHWIDGET_H_
+#define _GLMESHWIDGET_H_
 
 #include <QGLWidget>
-#include <mesh/arcball.h>
-#include "MeshProcessor.h"
+#include <ZMesh.h>
 #include <vector>
+#include "MeshProcessor.h"
 
 struct DisplaySettings
 {

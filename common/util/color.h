@@ -22,6 +22,7 @@ public :
 class FalseColorMap
 {
 public:
+	FalseColorMap();
 	static double RedMap[256], GreenMap[256], BlueMap[256];
 	static void BuildLUT();
 };

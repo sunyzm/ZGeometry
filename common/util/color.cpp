@@ -13,3 +13,8 @@ void FalseColorMap::BuildLUT()
 		BlueMap[i] = 1.0 - i / 255.0;
 	}
 }
+
+FalseColorMap::FalseColorMap()
+{
+	BuildLUT();
+}

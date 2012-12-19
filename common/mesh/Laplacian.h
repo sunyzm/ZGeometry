@@ -1,4 +1,6 @@
-#pragma once
+#ifndef _LAPLACIAN_H_
+#define _LAPLACIAN_H_
+
 #include <complex>
 #include <vector>
 #include <string>
@@ -53,3 +55,5 @@ public:
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
 };
+
+#endif

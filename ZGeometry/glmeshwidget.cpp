@@ -1,6 +1,6 @@
 #include "glmeshwidget.h"
-#include <util/OutputHelper.h>
-#include <util/util.h>
+#include "OutputHelper.h"
+#include <ZUtil.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <vector>

@@ -1,12 +1,11 @@
 #include "arithmetic.h"
-#include <util/OutputHelper.h>
 #include <cassert>
-extern OutputHelper qout;
+#include <stdexcept>
 
 double VectorDotProduct( const std::vector<double>& v1, const std::vector<double>& v2 )
 {
 	if(v1.size() != v2.size())
-		qout.output("incompatible eigenfunctions!", OUT_MSGBOX);
+		throw std::logic_error("incompatible eigenfunctions!");
 
 	double sum(0);
 	int size = v1.size();
@@ -32,7 +31,7 @@ void VectorPointwiseProduct( const std::vector<double>& v1, const std::vector<do
 {
 	assert(v1.size() == v2.size());
 	v.resize(v1.size());
-	for (int i = 0; i < v1.size(); ++i)
+	for (size_t i = 0; i < v1.size(); ++i)
 	{
 		v[i] = v1[i] * v2[i];
 	}
@@ -42,7 +41,7 @@ void VectorPointwiseDivide( const std::vector<double>& v1, const std::vector<dou
 {
 	assert(v1.size() == v2.size());
 	v.resize(v1.size());
-	for (int i = 0; i < v1.size(); ++i)
+	for (size_t i = 0; i < v1.size(); ++i)
 	{
 		v[i] = v1[i] / v2[i];
 	}

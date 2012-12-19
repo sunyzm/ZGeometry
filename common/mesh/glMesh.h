@@ -3,6 +3,7 @@
 
 #include <string>
 #include <gl/glut.h>
+#include <util/color.h>
 #include "Mesh.h"
 
 void setupObject(const CQrot& qrot, const Vector3D& trans);
@@ -22,12 +23,5 @@ void glColorCoded(float v, float pf);
 void glBlueCoded(float v, float p);
 void glGreenCoded(float v, float p);
 void glFalseColor(float v, float p);
-
-class FalseColorMap
-{
-public:
-	double redMap[256], greenMap[256], blueMap[256];
-	FalseColorMap();
-};
 
 #endif

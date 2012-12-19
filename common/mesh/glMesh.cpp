@@ -4,18 +4,6 @@
 
 using namespace std;
 
-FalseColorMap::FalseColorMap()
-{
-	//initialize false color map
-	for (int i = 0; i < 256; i++)
-	{
-		redMap[i] = i / 255.0;
-		if (i < 128) greenMap[i] = i / 128.0;
-		else greenMap[i] = 1.0 - (i-128.0) / 127.0;
-		blueMap[i] = 1.0 - i / 255.0;
-	}
-}
-
 FalseColorMap g_fcm;
 
 void glDrawText(GLint x, GLint y, string s, GLfloat r, GLfloat g, GLfloat b)
@@ -73,7 +61,7 @@ void glColorCoded(float v, float pf)
 void glFalseColor(float v, float p)
 {
 	int floor = v * 255.0;
-	glColor4f(g_fcm.redMap[floor], g_fcm.greenMap[floor], g_fcm.blueMap[floor], p);
+	glColor4f(g_fcm.RedMap[floor], g_fcm.GreenMap[floor], g_fcm.BlueMap[floor], p);
 }
 
 void glBlueCoded(float v, float p)

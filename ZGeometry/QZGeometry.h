@@ -1,13 +1,14 @@
-#ifndef QZGEOMETRY_H
-#define QZGEOMETRY_H
+#ifndef _QZGEOMETRY_H_
+#define _QZGEOMETRY_H_
 
 #include "ui_ZGeometry.h"
 #include <QtGui/QMainWindow>
-#include <mesh/Mesh.h>
-#include <util/OutputHelper.h>
+#include <ZMesh.h>
 #include <engine.h>
-#include "WaveletMeshProcessor.h"
 #include <vector>
+#include "OutputHelper.h"
+#include "WaveletMeshProcessor.h"
+
 
 class QZGeometry : public QMainWindow
 {
