@@ -168,19 +168,21 @@ void GLMeshWidget::drawGL()
 	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
 	GLfloat position[] = {.0,  .0, 1, 0.0};
 
+	glClearColor(1., 1., 1., 0.);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+	glFrontFace(GL_CCW);
+	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CCW);      
-	glEnable(GL_DEPTH_TEST);
-	glClearColor(1,1,1,0);
+    glEnable(GL_DEPTH_TEST);
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable (GL_POLYGON_SMOOTH);
 	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-	glPolygonMode(GL_FRONT, GL_FILL);
 	glEnable (GL_BLEND); 
 	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 //	glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
-//	glDisable(GL_DEPTH_TEST);
 
 	glEnable(GL_LIGHT1);
 	glEnable(GL_LIGHTING);
@@ -194,7 +196,6 @@ void GLMeshWidget::drawGL()
 
 	setupViewport(width(), height());
 
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
@@ -303,46 +304,52 @@ void GLMeshWidget::drawMeshExt( int obj )
 
 	glPushMatrix();
 	setupObject(rot, trans);
-		
-	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
-	{
-		glColor4f(color[0], color[1], color[2], color[3]);
-		glPointSize(2.0);
-		glBegin(GL_POINTS);
-		for (int i = 0; i < tmesh->getVerticesNum(); ++i)
-		{
-			Vector3D norm = tmesh->getVertex_const(i)->getNormal();
-			Vector3D vt = tmesh->getVertex_const(i)->m_vPosition;
-			vt -= shift;
-			if (showSignature) 
-				glFalseColor(vpMP[obj]->vDisplaySignature[i], 1.0);
-			glVertex3f(vt.x, vt.y, vt.z);
-		}
-		glEnd();
-	}
-	else if (vSettings[obj].displayType == DisplaySettings::Wireframe)
-	{
-		for (int i = 0; i < tmesh->getFaceNum(); ++i)
-		{
-			if(!tmesh->m_pFace[i].m_piEdge) continue;
-			glColor4f(color[0], color[1], color[2], color[3]); 
-			glLineWidth(1.0);
-			glBegin(GL_LINE_LOOP);
-			for (int j = 0; j < 3; j++)
-			{
-				int pi = tmesh->m_pFace[i].m_piVertex[j];
-				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-				glNormal3f(norm.x, norm.y, norm.z);
-				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-				vt -= shift;
-				if (showSignature) 
-					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
-				glVertex3f(vt.x, vt.y, vt.z);
-			}
-			glEnd();
-		}
-	}
-	else if (vSettings[obj].displayType == DisplaySettings::Mesh)	//colored mesh
+	
+	GLint curPolygonMode;
+	glGetIntegerv(GL_POLYGON_MODE, &curPolygonMode);
+
+	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
+	glPointSize(2.0);
+
+// 	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
+// 	{
+// 		glColor4f(color[0], color[1], color[2], color[3]);
+// 		glPointSize(2.0);
+// 		glBegin(GL_POINTS);
+// 		for (int i = 0; i < tmesh->getVerticesNum(); ++i)
+// 		{
+// 			Vector3D norm = tmesh->getVertex_const(i)->getNormal();
+// 			Vector3D vt = tmesh->getVertex_const(i)->m_vPosition;
+// 			vt -= shift;
+// 			if (showSignature) 
+// 				glFalseColor(vpMP[obj]->vDisplaySignature[i], 1.0);
+// 			glVertex3f(vt.x, vt.y, vt.z);
+// 		}
+// 		glEnd();
+// 	}
+// 	else if (vSettings[obj].displayType == DisplaySettings::Wireframe)
+// 	{
+// 		for (int i = 0; i < tmesh->getFaceNum(); ++i)
+// 		{
+// 			if(!tmesh->m_pFace[i].m_piEdge) continue;
+// 			glColor4f(color[0], color[1], color[2], color[3]); 
+// 			glLineWidth(1.0);
+// 			glBegin(GL_LINE_LOOP);
+// 			for (int j = 0; j < 3; j++)
+// 			{
+// 				int pi = tmesh->m_pFace[i].m_piVertex[j];
+// 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+// 				glNormal3f(norm.x, norm.y, norm.z);
+// 				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+// 				vt -= shift;
+// 				if (showSignature) 
+// 					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
+// 				glVertex3f(vt.x, vt.y, vt.z);
+// 			}
+// 			glEnd();
+// 		}
+// 	}
+// 	else if (vSettings[obj].displayType == DisplaySettings::Mesh)	//colored mesh
 	{
 		glEnable(GL_POLYGON_OFFSET_FILL);
 		glPolygonOffset(1.0, 1.0);
@@ -368,7 +375,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 
 		glDisable(GL_POLYGON_OFFSET_FILL);
 	}
-		
+	
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
@@ -431,6 +438,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		}
 	}
 
+	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);
 	glPopMatrix();
 }
 

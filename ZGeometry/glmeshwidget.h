@@ -6,8 +6,10 @@
 
 struct DisplaySettings
 {
-	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), showColorSignature(false), selected(false) {}
+	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), showColorSignature(false), selected(false), glPolygonMode(GL_FILL) {}
+
 	enum {PointCloud, Wireframe, Mesh, None} displayType;
+	GLenum glPolygonMode;
 	bool showFeatures;
 	bool showRefPoint;
 	bool showColorSignature;

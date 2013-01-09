@@ -481,6 +481,7 @@ void QZGeometryWindow::displayPointCloud()
 	ui.actionDisplayMesh->setChecked(false);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_POINT;
 	ui.glMeshWidget->update();
 }
 
@@ -491,6 +492,7 @@ void QZGeometryWindow::displayWireframe()
 	ui.actionDisplayMesh->setChecked(false);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_LINE;
 	ui.glMeshWidget->update();
 
 }
@@ -502,6 +504,7 @@ void QZGeometryWindow::displayMesh()
 	ui.actionDisplayMesh->setChecked(true);
 
 	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_FILL;
 	ui.glMeshWidget->update();
 
 }
