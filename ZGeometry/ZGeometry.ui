@@ -206,7 +206,7 @@
     </widget>
     <widget class="QMenu" name="menuDisplay_Type">
      <property name="title">
-      <string>Display type</string>
+      <string>Display mode</string>
      </property>
      <addaction name="actionDisplayPointCloud"/>
      <addaction name="actionDisplayWireframe"/>
@@ -394,8 +394,6 @@
    <container>1</container>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="QGeometry.qrc"/>
- </resources>
+ <resources/>
  <connections/>
 </ui>

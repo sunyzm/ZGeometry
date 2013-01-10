@@ -160,9 +160,9 @@ void GLMeshWidget::drawGL()
 {
 	makeCurrent();
  	glPushAttrib(GL_ALL_ATTRIB_BITS);
- 	glMatrixMode(GL_MODELVIEW);
+	glMatrixMode(GL_MODELVIEW);
  	glPushMatrix();
-	
+
 	GLfloat diffuse[] = {1, 1, 1, 1};
 	GLfloat global_ambient[] = {.2, .2, .2, 1};
 	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
@@ -175,14 +175,17 @@ void GLMeshWidget::drawGL()
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
     glEnable(GL_DEPTH_TEST);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+//	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glShadeModel(GL_SMOOTH);
+//	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+//	glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
+	glEnable (GL_BLEND); 
+	glEnable(GL_POINT_SMOOTH);
 	glEnable(GL_LINE_SMOOTH);
 	glEnable (GL_POLYGON_SMOOTH);
-	glHint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
-	glEnable (GL_BLEND); 
-	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-//	glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
+	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
 
 	glEnable(GL_LIGHT1);
 	glEnable(GL_LIGHTING);
@@ -195,7 +198,8 @@ void GLMeshWidget::drawGL()
 	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
 	setupViewport(width(), height());
-
+	
+	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
@@ -307,8 +311,9 @@ void GLMeshWidget::drawMeshExt( int obj )
 	
 	GLint curPolygonMode;
 	glGetIntegerv(GL_POLYGON_MODE, &curPolygonMode);
-
 	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
+
+//	if (vSettings[obj].glPolygonMode == GL_LINE) glDisable(GL_DEPTH_TEST);
 	glPointSize(2.0);
 
 // 	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
@@ -365,7 +370,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-				vt -= shift;
+				vt -= shift;	//add some offset to separate object 1 and 2
 				if (showSignature) 
 					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
 				glVertex3f(vt.x, vt.y, vt.z);
@@ -417,7 +422,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, vpMP[obj]->mesh->m_edge/2.0, 8, 8);
+		gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
 		glPopMatrix();
 	}
 
@@ -433,7 +438,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, vpMP[obj]->mesh->m_edge/2, 8, 8);
+			gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
 			glPopMatrix();
 		}
 	}
@@ -485,6 +490,8 @@ void GLMeshWidget::setupViewport( int width, int height )
 
 void GLMeshWidget::paintEvent( QPaintEvent *event )
 {
+	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
+
 	QPainter painter(this);
 	drawGL();
 

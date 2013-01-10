@@ -3,13 +3,13 @@
 
 
 double CStopWatch::LIToSecs( LARGE_INTEGER & L) {
-	return ((double)L.QuadPart /(double)frequency.QuadPart) ;
+	return (double)L.QuadPart / (double)frequency.QuadPart;
 }
 
 CStopWatch::CStopWatch(){
 	timer.start.QuadPart=0;
 	timer.stop.QuadPart=0; 
-	QueryPerformanceFrequency( &frequency ) ;
+	QueryPerformanceFrequency(&frequency) ;
 }
 
 void CStopWatch::startTimer( ) {
@@ -23,5 +23,5 @@ void CStopWatch::stopTimer( ) {
 double CStopWatch::getElapsedTime() {
 	LARGE_INTEGER time;
 	time.QuadPart = timer.stop.QuadPart - timer.start.QuadPart;
-	return LIToSecs( time) ;
+	return LIToSecs(time) ;
 }
