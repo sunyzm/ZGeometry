@@ -218,7 +218,7 @@ void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
 	glTranslated(trans.x, trans.y, trans.z);
 	double rot[16];
 	qrot.convert( rot );
-	glMultMatrixd(( GLdouble*)  rot );
+	glMultMatrixd(( GLdouble*)rot );
 }
 
 void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color)
@@ -410,7 +410,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 	glEnable(GL_LIGHTING);
 
-//	control display of reference point
+	//	control display of reference point
 	if (vpMP[0]->pRef >= 0 && vSettings[0].showRefPoint && obj == 0)
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
@@ -418,29 +418,46 @@ void GLMeshWidget::drawMeshExt( int obj )
 			vt = vpMP[0]->posRef;
 		vt -= shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
-		GLUquadric* quadric = gluNewQuadric();
-		gluQuadricDrawStyle(quadric, GLU_FILL);
-		glPushMatrix();
-		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
-		glPopMatrix();
+		glPointSize(10.0);
+		glBegin(GL_POINTS);
+		glVertex3d(vt.x, vt.y, vt.z);
+		glEnd();
+		glPointSize(2.0);
+// 		GLUquadric* quadric = gluNewQuadric();
+// 		gluQuadricDrawStyle(quadric, GLU_FILL);
+// 		glPushMatrix();
+// 		glTranslated(vt.x, vt.y, vt.z);
+// 		gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
+// 		glPopMatrix();
 	}
 
-// control display of feature points
+	// control display of feature points
 	if (obj == 0 && vSettings[0].showFeatures)
 	{
+		glPointSize(10.0);
+		glBegin(GL_POINTS);
 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 		{
 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
 			vt -= shift;
 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
-			GLUquadric* quadric = gluNewQuadric();
-			gluQuadricDrawStyle(quadric, GLU_FILL);
-			glPushMatrix();
-			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
-			glPopMatrix();
+			glVertex3d(vt.x, vt.y, vt.z);
 		}
+		glEnd();
+		glPointSize(2.0);
+
+// 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
+// 		{
+// 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
+// 			vt -= shift;
+// 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
+// 			GLUquadric* quadric = gluNewQuadric();
+//   		gluQuadricDrawStyle(quadric, GLU_FILL);
+//   		glPushMatrix();
+//   		glTranslated(vt.x, vt.y, vt.z);
+//   		gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
+//   		glPopMatrix();
+// 		}
 	}
 
 	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);
