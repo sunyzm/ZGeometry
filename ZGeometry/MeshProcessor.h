@@ -58,7 +58,6 @@ public:
 	int pRef;
 	Vector3D posRef;
 	bool isMHBuilt;
-	int m_size;
-	
+	int m_size;	
 };
 

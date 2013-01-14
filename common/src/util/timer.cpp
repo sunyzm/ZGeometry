@@ -1,5 +1,5 @@
 //#include <windows.h>
-#include "timer.h"
+#include <util/timer.h>
 
 
 double CStopWatch::LIToSecs( LARGE_INTEGER & L) {
