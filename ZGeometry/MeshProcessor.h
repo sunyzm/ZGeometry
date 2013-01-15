@@ -44,9 +44,9 @@ public:
 	void writeMHB(std::string path);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 
-	void normalizeFrom(const std::vector<double>& vFrom);
-	void logNormalizeFrom(const std::vector<double>& vFrom);
-	void bandCurveFrom(const std::vector<double>& vFrom, double lowend, double highend);
+	void normalizeSignatureFrom(const std::vector<double>& vFrom);
+	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
+	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
 		
 	CMesh* mesh;
 	Engine *m_ep;
@@ -58,7 +58,6 @@ public:
 	int pRef;
 	Vector3D posRef;
 	bool isMHBuilt;
-	int m_size;
-	
+	int m_size;	
 };
 

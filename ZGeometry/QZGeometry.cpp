@@ -185,7 +185,7 @@ void QZGeometryWindow::displayEigenfunction()
 	if (selected[0])
 	{
 		MeshProcessor& mp = vMP[0];
-		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
+		mp.normalizeSignatureFrom(mp.mhb.m_func[1].m_vec);
 		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 		ui.actionShowSignature->setChecked(true);
 	}
@@ -209,7 +209,7 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
-		mp.normalizeFrom(vMHW);
+		mp.normalizeSignatureFrom(vMHW);
 
 		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 		ui.actionShowSignature->setChecked(true);
@@ -237,7 +237,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
-		mp.normalizeFrom(vMHW);
+		mp.normalizeSignatureFrom(vMHW);
 
 		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 		ui.actionShowSignature->setChecked(true);
@@ -262,10 +262,10 @@ void QZGeometryWindow::displayExperimental()
 	WaveletMeshProcessor& mp = vMP[0];
 
  	vector<double> vExp;
- 	mp.computeExperimentalWavelet(vExp, 30);
- 
- 	mp.normalizeFrom(vExp);
-  
+ 	mp.computeExperimentalWavelet(vExp, 30); 
+
+ 	mp.normalizeSignatureFrom(vExp);
+
  	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
 
@@ -298,7 +298,7 @@ void QZGeometryWindow::displayCurvatureMean()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	mp.bandCurveFrom(vCurvature, 0, 1);
+	mp.bandCurveSignatureFrom(vCurvature, 0, 1);
 
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
@@ -317,7 +317,7 @@ void QZGeometryWindow::displayCurvatureGauss()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	mp.bandCurveFrom(vCurvature, -1, 1);
+	mp.bandCurveSignatureFrom(vCurvature, -1, 1);
 
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
@@ -566,7 +566,7 @@ void QZGeometryWindow::displayDiffPosition()
 		vDiff[i] = (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length() / mesh1.getAvgEdgeLength();
 	}
 
-	vMP[0].normalizeFrom(vDiff);
+	vMP[0].normalizeSignatureFrom(vDiff);
 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.glMeshWidget->update();
 }

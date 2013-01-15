@@ -1,4 +1,4 @@
-#include "Arcball.h"
+#include <mesh/arcball.h>
 
 
 CArcball::CArcball( int win_width, int win_height, int ox, int oy )

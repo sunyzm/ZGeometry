@@ -4,7 +4,7 @@
 #include <cassert>
 #include <memory>
 #include <queue>
-#include "Geometry.h"
+#include <mesh/Geometry.h>
 
 using namespace std;
 //////////////////////////////////////////////////////////////////////

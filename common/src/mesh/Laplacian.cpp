@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
-#include "Laplacian.h"
+#include <mesh/Laplacian.h>
 
 using namespace std;
 
