@@ -265,7 +265,7 @@ void QZGeometryWindow::displayExperimental()
  	mp.computeExperimentalWavelet(vExp, 30);
  
  	mp.normalizeFrom(vExp);
- 
+  
  	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.actionShowSignature->setChecked(true);
 
