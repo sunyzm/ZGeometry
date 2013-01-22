@@ -1,4 +1,5 @@
 #pragma once
+#include <GL/glew.h>
 #include <QGLWidget>
 #include <ZMesh.h>
 #include <vector>
