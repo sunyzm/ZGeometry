@@ -1,8 +1,10 @@
 #include <fstream>
 #include <string>
+#include <sstream>
 #include <vector>
 #include <QtGui/QMessageBox>
 #include <QTime>
+#include <GL/glew.h>
 #include "QZGeometry.h"
 
 #define DEFAULT_EIGEN_SIZE 300
@@ -28,6 +30,22 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
+	
+	// initialize GLEW
+//	if(glewInit() != GLEW_OK)
+	//	throw std::runtime_error("glewInit failed");
+	// print out some info about the graphics drivers
+
+// 	ostringstream oss;
+// 	oss << "OpenGL version: " << glGetString(GL_VERSION) << std::endl;
+// 	oss << "GLSL version: " << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+// 	oss << "Vendor: " << glGetString(GL_VENDOR) << std::endl;
+// 	oss << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
+//	qout.output(oss.str(), OUT_CONSOLE);
+	// make sure OpenGL version 3.2 API is available
+// 	if(!GLEW_VERSION_3_2)
+// 		throw std::runtime_error("OpenGL 3.2 API is not available.");
+	
 	qout.output("******** Welcome! ********", OUT_CONSOLE);
 	qout.outputDateTime(OUT_CONSOLE);
 	qout.output("For computation and visualization of manifold wavelet", OUT_STATUS);

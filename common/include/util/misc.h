@@ -20,8 +20,6 @@ inline std::string Double2String(double f)
 	return ostr.str();
 }
 
-
-
 class MyNote
 {
 public:

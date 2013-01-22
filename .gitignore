@@ -3,17 +3,17 @@
 *.lo
 *.o
 *.obj
-*.exe
+#*.exe
 
 # Compiled Dynamic libraries
 *.so
-*.dll
+#*.dll
 
 # Compiled Static libraries
 *.lai
 *.la
 *.a
-*.lib
+#*.lib
 
 # visual studio related
 *.opensdf
@@ -27,9 +27,11 @@ bin/
 data/
 lib/
 common/intermediate/
-ZGeometry/intermediate/
 ZGeometry/GeneratedFiles/
+ZGeometry/intermediate/
 ZGeometry/output/
+ZMeshViewer/GeneratedFiles/
+ZMeshViewer/intermediate
 
 # misc
 *.bak

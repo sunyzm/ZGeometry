@@ -1,4 +1,4 @@
-// Geometry.h: classes of 2D vector and 3D vector
+// Geometry.h: classes of 2D vector and 3D vector and matrix3
 //
 //////////////////////////////////////////////////////////////////////
 #pragma once

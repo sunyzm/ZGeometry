@@ -24,12 +24,12 @@
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
     <Filter Include="Generated Files\Debug">
-      <UniqueIdentifier>{ce11b4b8-791b-4e22-9a8e-be3c30b80e44}</UniqueIdentifier>
+      <UniqueIdentifier>{467cf0bb-17df-45d3-a5a7-b260db193c3e}</UniqueIdentifier>
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
     <Filter Include="Generated Files\Release">
-      <UniqueIdentifier>{f08777c3-c4e5-4c83-8900-de1daed64383}</UniqueIdentifier>
+      <UniqueIdentifier>{ff1bdfe4-bdc1-400a-b780-a437de5a490a}</UniqueIdentifier>
       <Extensions>cpp;moc</Extensions>
       <SourceControlFiles>False</SourceControlFiles>
     </Filter>
@@ -38,68 +38,33 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="glmeshwidget.cpp">
+    <ClCompile Include="zmeshviewer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_glmeshwidget.cpp">
+    <ClCompile Include="GeneratedFiles\Debug\moc_zmeshviewer.cpp">
       <Filter>Generated Files\Debug</Filter>
     </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_glmeshwidget.cpp">
+    <ClCompile Include="GeneratedFiles\Release\moc_zmeshviewer.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="MeshProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="WaveletMeshProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_QZGeometry.cpp">
-      <Filter>Generated Files\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_QZGeometry.cpp">
-      <Filter>Generated Files\Release</Filter>
-    </ClCompile>
-    <ClCompile Include="QZGeometry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="OutputHelper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\qrc_zgeometry.cpp">
+    <ClCompile Include="GeneratedFiles\qrc_zmeshviewer.cpp">
       <Filter>Generated Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <CustomBuild Include="glmeshwidget.h">
+    <CustomBuild Include="zmeshviewer.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="ZGeometry.ui">
+    <CustomBuild Include="zmeshviewer.ui">
       <Filter>Form Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="QZGeometry.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="zgeometry.qrc">
+    <CustomBuild Include="zmeshviewer.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="WaveletMeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GeneratedFiles\ui_ZGeometry.h">
+    <ClInclude Include="GeneratedFiles\ui_zmeshviewer.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="OutputHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="meshfiles.cfg">
-      <Filter>Resource Files</Filter>
-    </None>
   </ItemGroup>
 </Project>

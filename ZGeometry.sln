@@ -5,6 +5,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZGeometry", "ZGeometry\ZGeo
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "common\common.vcxproj", "{4498E894-5F1B-4F5C-8F79-361D8352B125}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZMeshViewer", "ZMeshViewer\ZMeshViewer.vcxproj", "{34B4303E-665D-4138-A128-54B7435208BD}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -27,6 +29,12 @@ Global
 		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|Win32.ActiveCfg = Release|Win32
 		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|Win32.Build.0 = Release|Win32
 		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|x64.ActiveCfg = Release|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|Win32.Build.0 = Debug|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|x64.ActiveCfg = Debug|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Release|Win32.ActiveCfg = Release|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Release|Win32.Build.0 = Release|Win32
+		{34B4303E-665D-4138-A128-54B7435208BD}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
