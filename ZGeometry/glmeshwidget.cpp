@@ -1,9 +1,12 @@
+#include <cstdlib>
 #include "glmeshwidget.h"
 #include "OutputHelper.h"
+#include <fstream>
 #include <ZUtil.h>
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <vector>
+#include <QFile>
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
@@ -144,7 +147,15 @@ void GLMeshWidget::initializeGL()
 	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_CONSOLE);
 	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_CONSOLE);
 	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_CONSOLE);
-	
+
+#define MORE_DEBUG
+#ifdef MORE_DEBUG	
+	std::string strExt = std::string((char*)glGetString(GL_EXTENSIONS));
+	std::ofstream ofs("output/glExt.txt");
+	ofs << strExt;
+	ofs.close();
+//	std::system("python python/sp2ln.py output/glExt.txt");
+#endif
 	// make sure OpenGL version 3.2 API is available
 	if(!GLEW_VERSION_3_2)
 		qout.output("OpenGL 3.2 API is not available.", OUT_CONSOLE);
