@@ -148,7 +148,7 @@ void GLMeshWidget::initializeGL()
 	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_CONSOLE);
 	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_CONSOLE);
 
-#define MORE_DEBUG
+//#define MORE_DEBUG
 #ifdef MORE_DEBUG	
 	std::string strExt = std::string((char*)glGetString(GL_EXTENSIONS));
 	std::ofstream ofs("output/glExt.txt");
@@ -178,10 +178,6 @@ void GLMeshWidget::resizeGL( int width, int height )
 {
 	setupViewport(width, height);
 }
-
-// void GLMeshWidget::paintGL()
-// {
-// }
 
 void GLMeshWidget::drawGL()
 {
