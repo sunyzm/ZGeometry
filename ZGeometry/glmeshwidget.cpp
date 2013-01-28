@@ -56,6 +56,60 @@ void GLMeshWidget::addMesh(MeshProcessor* pmp)
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
+	if (event->button() == Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+	{
+		/// for picking up a handle point
+		int win_width = this->width(), win_height = this->height();
+		const int x = event->x(), y = event->y();
+
+		Vector3D p;
+		GLdouble  modelview[16], projection[16];
+		GLint     viewport[4];
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
+		CQrot rot = ObjRot1;
+		Vector3D trans = ObjTrans1;
+		setupObject(rot, trans);
+
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		glGetDoublev(GL_PROJECTION_MATRIX, projection);
+		glGetIntegerv(GL_VIEWPORT, viewport);
+
+		// read depth buffer value at (x, y_new)
+		float  z;
+		int    y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
+		glReadPixels(x, y_new, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z );
+
+		// reverse projection to get 3D point
+		double pos[3];
+		gluUnProject(x, y_new, z, modelview, projection, viewport, &pos[0], &pos[1], &pos[2]);
+		
+		glPopMatrix();
+
+		if (z != 1.0f)
+		{
+			p = Vector3D(pos[0], pos[1], pos[2]);
+			double dmin = 1e10;
+			int hIdx = -1;
+			for (int vi = 0; vi < this->vpMP[0]->mesh->getVerticesNum(); ++vi)
+			{
+				double d = p.distantFrom(this->vpMP[0]->mesh->getVertex_const(vi)->getPos());
+				if (d < dmin) 
+				{
+					dmin = d;
+					hIdx = vi;
+				}
+			}
+			this->vpMP[0]->pRef = hIdx;
+			qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
+			qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
+		}
+		// else, no point picked up
+	}
+
 	if (event->button() == Qt::LeftButton)
 	{
 		gButton = Qt::LeftButton;
@@ -73,10 +127,14 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		g_startx = event->x();
 		g_starty = event->y();
 	}
+
+	update();
 }
 
 void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
+	if (event->modifiers() & Qt::ControlModifier) return;
+
 	Vector3D trans;
 	CQrot    rot;
 
@@ -324,7 +382,8 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
 //  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
-	Vector3D shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+//	Vector3D shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+	Vector3D shift = Vector3D(0, 0, 0);
 	if (obj == 1) shift.x = -shift.x;
 
 	bool showSignature = vSettings[obj].showColorSignature && !vpMP[obj]->vDisplaySignature.empty();
@@ -336,7 +395,6 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glGetIntegerv(GL_POLYGON_MODE, &curPolygonMode);
 	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
 
-//	if (vSettings[obj].glPolygonMode == GL_LINE) glDisable(GL_DEPTH_TEST);
 	glPointSize(2.0);
 
 // 	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
@@ -513,7 +571,7 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 
 void GLMeshWidget::setupViewport( int width, int height )
 {
-	GLdouble ar = GLdouble(width) / height;
+	GLdouble ar = GLdouble(width) / height;	//aspect ratio
 
 	glViewport(0, 0, width, height);
 	glMatrixMode(GL_PROJECTION);
@@ -525,7 +583,7 @@ void GLMeshWidget::setupViewport( int width, int height )
 // 	glFrustum(-clipX, -clipY, clipX, clipY, g_myNear, g_myFar);
 
 	gluPerspective(g_myAngle, ar, g_myNear, g_myFar);
-	glMatrixMode(GL_MODELVIEW);
+//	glMatrixMode(GL_MODELVIEW);
 }
 
 void GLMeshWidget::paintEvent( QPaintEvent *event )

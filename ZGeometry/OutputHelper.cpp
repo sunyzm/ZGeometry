@@ -2,6 +2,7 @@
 #include <ctime>
 #include <QDateTime>
 #include <Qtgui/QMessageBox>
+#include <QScrollBar>
 #include <fstream>
 
 OutputHelper qout;
@@ -20,7 +21,11 @@ OutputHelper::~OutputHelper(void)
 void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout /*= 0.0*/ )
 {
 	if (venue == OUT_CONSOLE && consoleOutput)
+	{
 		consoleOutput->insertPlainText(msg + "\n");
+		QScrollBar *vScrollBar = consoleOutput->verticalScrollBar();
+		vScrollBar->triggerAction(QScrollBar::SliderToMaximum);
+	}
 	else if (venue == OUT_STATUS && statusBar)
 		statusBar->showMessage(msg, timeout);
 	else if (venue == OUT_MSGBOX)
