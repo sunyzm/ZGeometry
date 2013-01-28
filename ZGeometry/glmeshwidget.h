@@ -43,7 +43,8 @@ protected:
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(int obj);
-	
+signals:
+	void vertexPicked(int pRef);
 private:
 	void drawGL();
 	void setupViewport(int width, int height);

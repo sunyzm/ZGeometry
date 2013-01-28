@@ -16,7 +16,8 @@ public:	// methods
 	QZGeometryWindow(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~QZGeometryWindow();
 	bool initialize();
-
+signals:
+	void refPoint1Changed(int n);
 private slots:
 	void computeLaplacian(int obj = 0);
 	void computeSGWSFeatures();
@@ -30,7 +31,7 @@ private slots:
 	void displayWireframe();
 	void displayMesh();
 	void displayDiffPosition();
-	void selectVertex1(int vn);
+	void setRefPoint1(int vn);
 	void setShowSignature();
 	void setShowRefPoint();
 	void setShowColorLegend();

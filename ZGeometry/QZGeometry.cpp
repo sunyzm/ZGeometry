@@ -46,17 +46,24 @@ QZGeometryWindow::~QZGeometryWindow()
 void QZGeometryWindow::makeConnections()
 {	
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
-////////	Compute	////////
+	
+	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
+	
+	////////    control ////////
+	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.horizontalSlider1, SLOT(setValue(int)));
+	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
+	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.horizontalSlider1, SLOT(setValue(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.spinBox1, SLOT(setValue(int)));
 
-////////	Display	////////
+	////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
-	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.horizontalSlider1, SLOT(setValue(int)));
-	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
-	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
-	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(selectVertex1(int)));
+
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
@@ -175,7 +182,7 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
-void QZGeometryWindow::selectVertex1( int vn )
+void QZGeometryWindow::setRefPoint1( int vn )
 {
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;

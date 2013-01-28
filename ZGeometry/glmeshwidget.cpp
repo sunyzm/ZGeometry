@@ -58,7 +58,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
 	if (event->button() == Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
 	{
-		/// for picking up a handle point
+		/// for picking up a vertex
 		int win_width = this->width(), win_height = this->height();
 		const int x = event->x(), y = event->y();
 
@@ -70,8 +70,8 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		glPushMatrix();
 		glLoadIdentity();
 		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-		CQrot rot = ObjRot1;
-		Vector3D trans = ObjTrans1;
+		CQrot& rot = ObjRot1;
+		Vector3D& trans = ObjTrans1;
 		setupObject(rot, trans);
 
 		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
@@ -103,7 +103,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 					hIdx = vi;
 				}
 			}
-			this->vpMP[0]->pRef = hIdx;
+			emit vertexPicked(hIdx);
 			qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
 			qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
 		}
@@ -382,12 +382,12 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
 //  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
-//	Vector3D shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
 	Vector3D shift = Vector3D(0, 0, 0);
-	if (obj == 1) shift.x = -shift.x;
+	if (obj == 1) shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
 
 	bool showSignature = vSettings[obj].showColorSignature && !vpMP[obj]->vDisplaySignature.empty();
 
+	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	setupObject(rot, trans);
 	
@@ -541,7 +541,8 @@ void GLMeshWidget::drawMeshExt( int obj )
 // 		}
 	}
 
-	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);
+	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
+	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
 
