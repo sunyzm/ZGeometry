@@ -40,6 +40,7 @@ protected:
 //	void showEvent(QShowEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
+	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans);
 	void drawLegend(QPainter* painter);
@@ -65,5 +66,6 @@ private:
 	GLdouble		g_myAngle;
 	
 	int				g_startx, g_starty;
+	int             active_handle;
 };
 

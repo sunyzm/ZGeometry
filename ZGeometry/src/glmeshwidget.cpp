@@ -41,6 +41,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 
 	m_bShowLegend = false;
 	vSettings.resize(2, DisplaySettings());
+	active_handle = -1;
 
 	setAutoFillBackground(false);
 }
@@ -57,18 +58,21 @@ void GLMeshWidget::addMesh(MeshProcessor* pmp)
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
+	const int win_width = this->width(), win_height = this->height();
+	const int x = event->x(), y = event->y();
+
 	if (editMode == QZ_MOVE)
 	{
 		if (event->button() == Qt::LeftButton)
 		{
 			gButton = Qt::LeftButton;
-			g_arcball = CArcball(width(), height(), event->x() - width()/2, height()/2 - event->y());
+			g_arcball = CArcball(width(), height(), x - win_width/2, win_height/2 - y);
 		}
 		else if (event->button() == Qt::MidButton)
 		{
 			gButton = Qt::MidButton;
-			g_startx = event->x();
-			g_starty = event->y();
+			g_startx = x;
+			g_starty = y;
 		}
 		else if (event->button() == Qt::RightButton)
 		{
@@ -83,8 +87,6 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		if (event->button() == Qt::LeftButton)
 		{
 			/// for picking up a vertex
-			int win_width = this->width(), win_height = this->height();
-			const int x = event->x(), y = event->y();
 			Vector3D p;
 
 			if (glPick(x, y, p))
@@ -115,52 +117,108 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			// else, no point picked up
 		}
 	}
+	else if (editMode == QZ_DRAG)
+	{
+		if (!vpMP[0]->mHandles.empty())
+		{
+			Vector3D p;
+			if (glPick(x, y, p))
+			{
+				// find closest handle
+				int imin(-1);
+				double d, dmin(1e10);
+				for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
+				{
+					d = iter->second.distantFrom(p);
+					if (d < dmin) { dmin = d; imin = iter->first; }
+				}
+				active_handle = imin;
+			}
+		}
+	}
 
 	update();
 }
 
 void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
+	const int win_width = this->width(), win_height = this->height();
+	const int x = event->x(), y = event->y();
+	
 	if (editMode == QZ_PICK) return;
-
-	Vector3D trans;
-	CQrot    rot;
-
-	int win_width = this->width(), win_height = this->height();
-	int x = event->x(), y = event->y();
-
-	if (gButton == Qt::LeftButton) 
-	{
-		rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-		if (vSettings[0].selected) 
-			ObjRot1 = rot * ObjRot1;
-		if (vSettings[1].selected) 
-			ObjRot2 = rot * ObjRot2;
+	else if (editMode == QZ_MOVE)
+	{	
+		Vector3D trans;
+		CQrot    rot;
+		
+		if (gButton == Qt::LeftButton) 
+		{
+			rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
+			if (vSettings[0].selected) 
+				ObjRot1 = rot * ObjRot1;
+			if (vSettings[1].selected) 
+				ObjRot2 = rot * ObjRot2;
+		}
+		else if (gButton == Qt::MidButton) 
+		{
+			float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / win_height;
+			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
+			g_startx = x;
+			g_starty = y;
+			if (vSettings[0].selected) 
+				ObjTrans1 = ObjTrans1 + trans;
+			if (vSettings[1].selected) 
+				ObjTrans2 = ObjTrans2 + trans;
+		}
+		else if (gButton == Qt::RightButton ) 
+		{
+			float scale = 5.0 * vpMP[0]->mesh->m_bBox.y / win_height;
+			trans =  Vector3D(0, 0, scale * (g_starty - y));
+			g_startx = x;
+			g_starty = y;
+			if (vSettings[0].selected)
+				ObjTrans1 = ObjTrans1 + trans;
+			if (vSettings[1].selected) 
+				ObjTrans2 = ObjTrans2 + trans;
+		}
 	}
-	else if (gButton == Qt::MidButton) 
+	else if (editMode == QZ_DRAG && active_handle != -1 && vpMP[0]->mHandles.find(active_handle) != vpMP[0]->mHandles.end())
 	{
-		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / win_height;
-		trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
-		g_startx = x;
-		g_starty = y;
-		if (vSettings[0].selected) 
-			ObjTrans1 = ObjTrans1 + trans;
-		if (vSettings[1].selected) 
-			ObjTrans2 = ObjTrans2 + trans;
-	}
-	else if (gButton == Qt::RightButton ) 
-	{
-		float scale = 5.0 * vpMP[0]->mesh->m_bBox.y / win_height;
-		trans =  Vector3D(0, 0, scale * (g_starty - y));
-		g_startx = x;
-		g_starty = y;
-		if (vSettings[0].selected)
-			ObjTrans1 = ObjTrans1 + trans;
-		if (vSettings[1].selected) 
-			ObjTrans2 = ObjTrans2 + trans;
+		
+		GLdouble  modelview[16], projection[16];
+		GLint     viewport[4];
+
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		glLoadIdentity();
+		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
+		CQrot& rot = ObjRot1;
+		Vector3D& trans = ObjTrans1;
+		setupObject(rot, trans);
+
+		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+		glGetDoublev(GL_PROJECTION_MATRIX, projection);
+		glGetIntegerv(GL_VIEWPORT, viewport);
+
+		const Vector3D& handlePos = vpMP[0]->mHandles[active_handle];
+		int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
+		GLdouble ox, oy, oz, wx, wy, wz;
+		gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
+		gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
+		vpMP[0]->mHandles[active_handle] = Vector3D(ox, oy, oz);
+
+		glPopMatrix();		
 	}
 
 	update();
+}
+
+void GLMeshWidget::mouseReleaseEvent( QMouseEvent *event )
+{
+	if (editMode == QZ_DRAG)
+	{
+		active_handle = -1;
+	}
 }
 
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
@@ -602,3 +660,5 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p )
 	return false;
 
 }
+
+

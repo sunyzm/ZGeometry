@@ -30,9 +30,9 @@ private slots:
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
-	void displayPointCloud();
-	void displayWireframe();
-	void displayMesh();
+	void setDisplayPointCloud();
+	void setDisplayWireframe();
+	void setDisplayMesh();
 	void displayDiffPosition();
 	void setRefPoint1(int vn);
 	void setShowSignature();

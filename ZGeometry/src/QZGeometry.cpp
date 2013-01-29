@@ -30,11 +30,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
-	qout.output("******** Welcome ********", OUT_CONSOLE);
-	qout.outputDateTime(OUT_CONSOLE);
 	
-	setEditModeMove();
-
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
@@ -73,9 +69,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionDeformExperimental, SIGNAL(triggered()), this, SLOT(deformExperimental()));
-	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(displayPointCloud()));
-	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(displayWireframe()));
-	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(displayMesh()));
+	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
+	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
+	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(setShowSignature()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionFilterExperimental, SIGNAL(triggered()), this, SLOT(filterExperimental()));
@@ -85,13 +81,18 @@ void QZGeometryWindow::makeConnections()
 
 bool QZGeometryWindow::initialize()
 {
+	qout.output("******** Welcome ********", OUT_CONSOLE);
+	qout.outputDateTime(OUT_CONSOLE);
+
 	if (!(m_ep = engOpen("\0")))
 	{
-		qout.output("Can't start MATLAB engine", OUT_MSGBOX);
+		qout.output("Can't start MATLAB engine!", OUT_MSGBOX);
 		return false;
 	}
-	else qout.output("Matlab engine opened!", OUT_CONSOLE);
-//	engEvalString(m_ep, "addpath('./MATLAB')");   //need to figure out
+	else qout.output("Matlab engine initialized!", OUT_CONSOLE);
+
+	setDisplayMesh();
+	setEditModeMove();
 
 ////////    load meshes    ////////
 	ifstream meshfiles(g_meshListName);
@@ -438,7 +439,15 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 			selectObject(ui.objSelectBox->findText("All"));
 		}
 		break;
-	
+
+	case Qt::Key_S:
+		setDisplayMesh();
+		break;
+
+	case Qt::Key_W:
+		setDisplayWireframe();
+		break;
+
 	case Qt::Key_M:
 		setEditModeMove();
 		break;
@@ -498,7 +507,7 @@ void QZGeometryWindow::deformExperimental()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayPointCloud()
+void QZGeometryWindow::setDisplayPointCloud()
 {
 	ui.actionDisplayPointCloud->setChecked(true);
 	ui.actionDisplayWireframe->setChecked(false);
@@ -509,7 +518,7 @@ void QZGeometryWindow::displayPointCloud()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayWireframe()
+void QZGeometryWindow::setDisplayWireframe()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(true);
@@ -521,7 +530,7 @@ void QZGeometryWindow::displayWireframe()
 
 }
 
-void QZGeometryWindow::displayMesh()
+void QZGeometryWindow::setDisplayMesh()
 {
 	ui.actionDisplayPointCloud->setChecked(false);
 	ui.actionDisplayWireframe->setChecked(false);
