@@ -22,14 +22,16 @@ class GLMeshWidget : public QGLWidget
 	Q_OBJECT
 
 public:
-	GLMeshWidget(QWidget *parent = 0);
-	~GLMeshWidget();
-	void fieldView(const Vector3D &center, const Vector3D &bbox);
-
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
 	bool m_bShowLegend;	
+	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
+
+	GLMeshWidget(QWidget *parent = 0);
+	~GLMeshWidget();
+	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void addMesh(MeshProcessor* pmp);
+
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -43,8 +45,10 @@ protected:
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(int obj);
+
 signals:
 	void vertexPicked(int pRef);
+
 private:
 	void drawGL();
 	void setupViewport(int width, int height);

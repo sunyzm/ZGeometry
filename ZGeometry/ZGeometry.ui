@@ -189,9 +189,18 @@
     <property name="title">
      <string>Edit</string>
     </property>
+    <widget class="QMenu" name="menuEdit_Mode">
+     <property name="title">
+      <string>Edit Mode</string>
+     </property>
+     <addaction name="actionEditMove"/>
+     <addaction name="actionEditPick"/>
+     <addaction name="actionEditDrag"/>
+    </widget>
     <addaction name="actionClone"/>
     <addaction name="actionDeformExperimental"/>
     <addaction name="actionFilterExperimental"/>
+    <addaction name="menuEdit_Mode"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -382,6 +391,33 @@
    </property>
    <property name="text">
     <string>Show color legend</string>
+   </property>
+  </action>
+  <action name="actionEditMove">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Move</string>
+   </property>
+  </action>
+  <action name="actionEditPick">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Pick</string>
+   </property>
+  </action>
+  <action name="actionEditDrag">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Drag</string>
    </property>
   </action>
  </widget>

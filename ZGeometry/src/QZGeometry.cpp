@@ -27,13 +27,13 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	ui.centralWidget->setLayout(ui.mainLayout);
 
 	this->makeConnections();
-
+	
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
-	
-	qout.output("******** Welcome! ********", OUT_CONSOLE);
+	qout.output("******** Welcome ********", OUT_CONSOLE);
 	qout.outputDateTime(OUT_CONSOLE);
-	qout.output("For computation and visualization of manifold wavelet", OUT_STATUS);
+	
+	setEditModeMove();
 
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
@@ -59,6 +59,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.horizontalSlider1, SLOT(setValue(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.spinBox1, SLOT(setValue(int)));
 	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
+	QObject::connect(ui.actionEditMove, SIGNAL(triggered()), this, SLOT(setEditModeMove()));
+	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
+	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
 	////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
@@ -436,6 +439,18 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		}
 		break;
 	
+	case Qt::Key_M:
+		setEditModeMove();
+		break;
+
+	case Qt::Key_P:
+		setEditModePick();
+		break;
+	
+	case Qt::Key_D:
+		setEditModeDrag();
+		break;
+
 	case Qt::Key_X:
 		if (event->modifiers() & Qt::ShiftModifier)
 			refMove.xMove--;
@@ -592,4 +607,34 @@ void QZGeometryWindow::setShowColorLegend()
 void QZGeometryWindow::setShowFeatures()
 {
 	// TODO
+}
+
+void QZGeometryWindow::setEditModeMove()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_MOVE;
+	ui.actionEditMove->setChecked(true);
+	ui.actionEditDrag->setChecked(false);
+	ui.actionEditPick->setCheckable(false);
+
+	qout.output("Edit Mode: Move", OUT_STATUS);
+}
+
+void QZGeometryWindow::setEditModePick()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_PICK;
+	ui.actionEditMove->setChecked(false);
+	ui.actionEditDrag->setChecked(false);
+	ui.actionEditPick->setCheckable(true);
+
+	qout.output("Edit Mode: Pick", OUT_STATUS);
+}
+
+void QZGeometryWindow::setEditModeDrag()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_DRAG;
+	ui.actionEditMove->setChecked(false);
+	ui.actionEditDrag->setChecked(true);
+	ui.actionEditPick->setCheckable(false);
+
+	qout.output("Edit Mode: Drag", OUT_STATUS);
 }

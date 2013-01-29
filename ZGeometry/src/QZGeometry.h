@@ -19,6 +19,9 @@ public:	// methods
 signals:
 	void refPoint1Changed(int n);
 private slots:
+	void setEditModeMove();
+	void setEditModePick();
+	void setEditModeDrag();
 	void computeLaplacian(int obj = 0);
 	void computeSGWSFeatures();
 	void displayEigenfunction();

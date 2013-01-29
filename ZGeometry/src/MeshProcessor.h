@@ -3,6 +3,7 @@
 #include <ZMesh.h>
 #include <string>
 #include <vector>
+#include <map>
 
 class ManifoldFunction
 {
@@ -33,6 +34,15 @@ public:
 	ManifoldFeature(int i, int s) : index(i), scale(s), featureType(0){}
 };
 
+class MeshHandle
+{
+public:
+	int index;
+	Vector3D position;
+	MeshHandle(int i, double vx, double vy, double vz) : index(i) { position = Vector3D(vx, vy, vz); }
+	MeshHandle(int i, const Vector3D& pos) : index(i), position(pos) {}
+};
+
 class MeshProcessor
 {
 public:
@@ -49,15 +59,21 @@ public:
 	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
 		
 	CMesh* mesh;
+	int m_size;	
 	Engine *m_ep;
+	
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
+	bool isMHBBuilt;
+
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
-	std::vector<ManifoldFeature> vFeatures;
+
 	int pRef;
 	Vector3D posRef;
-	bool isMHBuilt;
-	int m_size;	
+
+	std::map<int, Vector3D> mHandles;
+	std::vector<ManifoldFeature> vFeatures;	
+	void addNewHandle(int hIdx);
 };
 

@@ -10,6 +10,7 @@
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
+const GLfloat color_handle[4] = {0.5, 0.5, 0.5, 1};
 const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0}, 
                                     {0.0, 1.0, 0.0, 1.0}, 
                                     {0.0, 0.0, 1.0, 0.0},
@@ -56,50 +57,63 @@ void GLMeshWidget::addMesh(MeshProcessor* pmp)
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
-	if (event->button() == Qt::LeftButton && event->modifiers() & Qt::ControlModifier)
+	if (editMode == QZ_MOVE)
 	{
-		/// for picking up a vertex
-		int win_width = this->width(), win_height = this->height();
-		const int x = event->x(), y = event->y();
-		Vector3D p;
-		
-		if (glPick(x, y, p))
+		if (event->button() == Qt::LeftButton)
 		{
-			double dmin = 1e10;
-			int hIdx = -1;
-			for (int vi = 0; vi < this->vpMP[0]->mesh->getVerticesNum(); ++vi)
-			{
-				double d = p.distantFrom(this->vpMP[0]->mesh->getVertex_const(vi)->getPos());
-				if (d < dmin) 
-				{
-					dmin = d;
-					hIdx = vi;
-				}
-			}
-			emit vertexPicked(hIdx);
-			qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
-			qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
-
+			gButton = Qt::LeftButton;
+			g_arcball = CArcball(width(), height(), event->x() - width()/2, height()/2 - event->y());
 		}
-		// else, no point picked up
+		else if (event->button() == Qt::MidButton)
+		{
+			gButton = Qt::MidButton;
+			g_startx = event->x();
+			g_starty = event->y();
+		}
+		else if (event->button() == Qt::RightButton)
+		{
+			gButton = Qt::RightButton;
+			g_startx = event->x();
+			g_starty = event->y();
+		}
 	}
+	
+	else if (editMode == QZ_PICK)
+	{
+		if (event->button() == Qt::LeftButton)
+		{
+			/// for picking up a vertex
+			int win_width = this->width(), win_height = this->height();
+			const int x = event->x(), y = event->y();
+			Vector3D p;
 
-	if (event->button() == Qt::LeftButton)
-	{
-		gButton = Qt::LeftButton;
-		g_arcball = CArcball(width(), height(), event->x() - width()/2, height()/2 - event->y());
-	}
-	else if (event->button() == Qt::MidButton)
-	{
-		gButton = Qt::MidButton;
-		g_startx = event->x();
-		g_starty = event->y();
-	}
-	else if (event->button() == Qt::RightButton)
-	{
-		gButton = Qt::RightButton;
-		g_startx = event->x();
-		g_starty = event->y();
+			if (glPick(x, y, p))
+			{
+				double dmin = 1e10;
+				int hIdx = -1;
+				for (int vi = 0; vi < this->vpMP[0]->mesh->getVerticesNum(); ++vi)
+				{
+					double d = p.distantFrom(this->vpMP[0]->mesh->getVertex_const(vi)->getPos());
+					if (d < dmin) 
+					{
+						dmin = d;
+						hIdx = vi;
+					}
+				}
+				qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
+				qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
+
+				if (event->modifiers() & Qt::ControlModifier)
+				{
+					emit vertexPicked(hIdx);	// change reference point
+				}
+				else 
+				{
+					vpMP[0]->addNewHandle(hIdx);	// change handle set
+				}				
+			}
+			// else, no point picked up
+		}
 	}
 
 	update();
@@ -107,7 +121,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 
 void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
-	if (event->modifiers() & Qt::ControlModifier) return;
+	if (editMode == QZ_PICK) return;
 
 	Vector3D trans;
 	CQrot    rot;
@@ -365,77 +379,39 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glPushMatrix();
 	setupObject(rot, trans);
 	
+
+	/// draw the mesh
 	GLint curPolygonMode;
 	glGetIntegerv(GL_POLYGON_MODE, &curPolygonMode);
 	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
-
-	glPointSize(2.0);
-
-// 	if (vSettings[obj].displayType == DisplaySettings::PointCloud)
-// 	{
-// 		glColor4f(color[0], color[1], color[2], color[3]);
-// 		glPointSize(2.0);
-// 		glBegin(GL_POINTS);
-// 		for (int i = 0; i < tmesh->getVerticesNum(); ++i)
-// 		{
-// 			Vector3D norm = tmesh->getVertex_const(i)->getNormal();
-// 			Vector3D vt = tmesh->getVertex_const(i)->m_vPosition;
-// 			vt -= shift;
-// 			if (showSignature) 
-// 				glFalseColor(vpMP[obj]->vDisplaySignature[i], 1.0);
-// 			glVertex3f(vt.x, vt.y, vt.z);
-// 		}
-// 		glEnd();
-// 	}
-// 	else if (vSettings[obj].displayType == DisplaySettings::Wireframe)
-// 	{
-// 		for (int i = 0; i < tmesh->getFaceNum(); ++i)
-// 		{
-// 			if(!tmesh->m_pFace[i].m_piEdge) continue;
-// 			glColor4f(color[0], color[1], color[2], color[3]); 
-// 			glLineWidth(1.0);
-// 			glBegin(GL_LINE_LOOP);
-// 			for (int j = 0; j < 3; j++)
-// 			{
-// 				int pi = tmesh->m_pFace[i].m_piVertex[j];
-// 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-// 				glNormal3f(norm.x, norm.y, norm.z);
-// 				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-// 				vt -= shift;
-// 				if (showSignature) 
-// 					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
-// 				glVertex3f(vt.x, vt.y, vt.z);
-// 			}
-// 			glEnd();
-// 		}
-// 	}
-// 	else if (vSettings[obj].displayType == DisplaySettings::Mesh)	//colored mesh
-	{
-		glEnable(GL_POLYGON_OFFSET_FILL);
-		glPolygonOffset(1.0, 1.0);
-
-		glColor4f(color[0], color[1], color[2], color[3]); 
-		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->getFaceNum(); i++)
-		{
-			if(!tmesh->m_pFace[i].m_piEdge) continue;
-			for (int j = 0; j < 3; j++)
-			{
-				int pi = tmesh->m_pFace[i].m_piVertex[j];					 				
-				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-				glNormal3f(norm.x, norm.y, norm.z);	 				
-				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-				vt -= shift;	//add some offset to separate object 1 and 2
-				if (showSignature) 
-					glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
-				glVertex3f(vt.x, vt.y, vt.z);
-			}
-		}
-		glEnd();
-
-		glDisable(GL_POLYGON_OFFSET_FILL);
-	}
 	
+	glPointSize(2.0);
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1.0, 1.0);
+	glColor4f(color[0], color[1], color[2], color[3]); 
+	
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < tmesh->getFaceNum(); i++)
+	{
+		if(!tmesh->m_pFace[i].m_piEdge) continue;
+		for (int j = 0; j < 3; j++)
+		{
+			int pi = tmesh->m_pFace[i].m_piVertex[j];					 				
+			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+			glNormal3f(norm.x, norm.y, norm.z);	 				
+			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+			vt -= shift;	//add some offset to separate object 1 and 2
+			if (showSignature) 
+				glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
+			glVertex3f(vt.x, vt.y, vt.z);
+		}
+	}
+	glEnd();
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
+	
+	/// draw boundary edge
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
@@ -465,28 +441,45 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 	glEnable(GL_LIGHTING);
 
-	//	control display of reference point
-	if (vpMP[0]->pRef >= 0 && vSettings[0].showRefPoint && obj == 0)
+	///	draw reference point
+	if ( obj == 0 && vSettings[0].showRefPoint && vpMP[0]->pRef >= 0 )
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
 		if (obj == 0)
 			vt = vpMP[0]->posRef;
 		vt -= shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
-		glPointSize(10.0);
-		glBegin(GL_POINTS);
-		glVertex3d(vt.x, vt.y, vt.z);
-		glEnd();
-		glPointSize(2.0);
-// 		GLUquadric* quadric = gluNewQuadric();
-// 		gluQuadricDrawStyle(quadric, GLU_FILL);
-// 		glPushMatrix();
-// 		glTranslated(vt.x, vt.y, vt.z);
-// 		gluSphere(quadric, vpMP[obj]->mesh->m_edge/4.0, 16, 8);
-// 		glPopMatrix();
+// 		glPointSize(10.0);
+// 		glBegin(GL_POINTS);
+// 		glVertex3d(vt.x, vt.y, vt.z);
+// 		glEnd();
+// 		glPointSize(2.0);
+ 		GLUquadric* quadric = gluNewQuadric();
+ 		gluQuadricDrawStyle(quadric, GLU_FILL);
+ 		glPushMatrix();
+ 		glTranslated(vt.x, vt.y, vt.z);
+ 		gluSphere(quadric, vpMP[obj]->mesh->m_edge/8.0, 16, 8);
+ 		glPopMatrix();
 	}
 
-	// control display of feature points
+	/// draw handle points
+	if (obj == 0)
+	{
+		for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
+		{
+		 	Vector3D vt = iter->second;
+		 	vt -= shift;
+		 	glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
+		 	GLUquadric* quadric = gluNewQuadric();
+		   	gluQuadricDrawStyle(quadric, GLU_FILL);
+		   	glPushMatrix();
+		   	glTranslated(vt.x, vt.y, vt.z);
+		   	gluSphere(quadric, vpMP[obj]->mesh->m_edge/8.0, 16, 8);
+		   	glPopMatrix();
+		}
+	}
+
+	/// draw feature points
 	if (obj == 0 && vSettings[0].showFeatures)
 	{
 		glPointSize(10.0);
@@ -515,7 +508,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 // 		}
 	}
 
-	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
+// 	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }

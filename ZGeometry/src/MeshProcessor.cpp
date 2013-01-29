@@ -7,7 +7,7 @@ MeshProcessor::MeshProcessor(void)
 {
 	m_ep = NULL;
 	mesh = NULL;
-	isMHBuilt = false;
+	isMHBBuilt = false;
 	pRef = -1;
 	m_size = 0;
 }
@@ -33,7 +33,7 @@ void MeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 //	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	mLaplacian.decompose(mhb, nEigFunc, m_ep);
-	this->isMHBuilt = true;
+	this->isMHBBuilt = true;
 }
 
 void MeshProcessor::readMHB( const std::string& path )
@@ -154,5 +154,15 @@ void MeshProcessor::bandCurveSignatureFrom( const std::vector<double>& vFrom, do
 		else 
 			vDisplaySignature.push_back((*iter - lowend)/(highend - lowend));
 	}
+}
+
+void MeshProcessor::addNewHandle( int hIdx )
+{
+	auto iter = mHandles.find(hIdx);
+	if (iter != mHandles.end())
+		mHandles.erase(iter);
+	else
+		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPos();
+	 
 }
 
