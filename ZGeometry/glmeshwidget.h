@@ -48,6 +48,7 @@ signals:
 private:
 	void drawGL();
 	void setupViewport(int width, int height);
+	bool glPick(int x, int y, Vector3D& _p);
 
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;

@@ -61,37 +61,10 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		/// for picking up a vertex
 		int win_width = this->width(), win_height = this->height();
 		const int x = event->x(), y = event->y();
-
 		Vector3D p;
-		GLdouble  modelview[16], projection[16];
-		GLint     viewport[4];
-
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glLoadIdentity();
-		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-		CQrot& rot = ObjRot1;
-		Vector3D& trans = ObjTrans1;
-		setupObject(rot, trans);
-
-		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-		glGetDoublev(GL_PROJECTION_MATRIX, projection);
-		glGetIntegerv(GL_VIEWPORT, viewport);
-
-		// read depth buffer value at (x, y_new)
-		float  z;
-		int    y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
-		glReadPixels(x, y_new, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z );
-
-		// reverse projection to get 3D point
-		double pos[3];
-		gluUnProject(x, y_new, z, modelview, projection, viewport, &pos[0], &pos[1], &pos[2]);
 		
-		glPopMatrix();
-
-		if (z != 1.0f)
+		if (glPick(x, y, p))
 		{
-			p = Vector3D(pos[0], pos[1], pos[2]);
 			double dmin = 1e10;
 			int hIdx = -1;
 			for (int vi = 0; vi < this->vpMP[0]->mesh->getVerticesNum(); ++vi)
@@ -106,6 +79,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			emit vertexPicked(hIdx);
 			qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
 			qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
+
 		}
 		// else, no point picked up
 	}
@@ -141,7 +115,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	int win_width = this->width(), win_height = this->height();
 	int x = event->x(), y = event->y();
 
-	if (gButton == Qt::LeftButton ) 
+	if (gButton == Qt::LeftButton) 
 	{
 		rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
 		if (vSettings[0].selected) 
@@ -596,4 +570,42 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 
 	if (m_bShowLegend && !vpMP[0]->vDisplaySignature.empty())
  	drawLegend(&painter);
+}
+
+bool GLMeshWidget::glPick( int x, int y, Vector3D& _p )
+{
+	GLdouble  modelview[16], projection[16];
+	GLint     viewport[4];
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	glLoadIdentity();
+	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
+	CQrot& rot = ObjRot1;
+	Vector3D& trans = ObjTrans1;
+	setupObject(rot, trans);
+
+	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+	glGetDoublev(GL_PROJECTION_MATRIX, projection);
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	// read depth buffer value at (x, y_new)
+	float  z;
+	int    y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
+	glReadPixels(x, y_new, 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &z );
+
+	// reverse projection to get 3D point
+	double pos[3];
+	gluUnProject(x, y_new, z, modelview, projection, viewport, &pos[0], &pos[1], &pos[2]);
+
+	glPopMatrix();
+
+	if (z != 1.0f)
+	{
+		_p = Vector3D(pos[0], pos[1], pos[2]);
+		return true;
+	}
+
+	return false;
+
 }
