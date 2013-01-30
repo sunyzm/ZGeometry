@@ -41,7 +41,6 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 
 	m_bShowLegend = false;
 	vSettings.resize(2, DisplaySettings());
-	active_handle = -1;
 
 	setAutoFillBackground(false);
 }
@@ -132,7 +131,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 					d = iter->second.distantFrom(p);
 					if (d < dmin) { dmin = d; imin = iter->first; }
 				}
-				active_handle = imin;
+				vpMP[0]->active_handle = imin;
 			}
 		}
 	}
@@ -182,7 +181,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 				ObjTrans2 = ObjTrans2 + trans;
 		}
 	}
-	else if (editMode == QZ_DRAG && active_handle != -1 && vpMP[0]->mHandles.find(active_handle) != vpMP[0]->mHandles.end())
+	else if (editMode == QZ_DRAG && vpMP[0]->active_handle != -1 && vpMP[0]->mHandles.find(vpMP[0]->active_handle) != vpMP[0]->mHandles.end())
 	{
 		
 		GLdouble  modelview[16], projection[16];
@@ -200,12 +199,12 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		glGetDoublev(GL_PROJECTION_MATRIX, projection);
 		glGetIntegerv(GL_VIEWPORT, viewport);
 
-		const Vector3D& handlePos = vpMP[0]->mHandles[active_handle];
+		const Vector3D& handlePos = vpMP[0]->mHandles[vpMP[0]->active_handle];
 		int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
 		GLdouble ox, oy, oz, wx, wy, wz;
 		gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
 		gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
-		vpMP[0]->mHandles[active_handle] = Vector3D(ox, oy, oz);
+		vpMP[0]->mHandles[vpMP[0]->active_handle] = Vector3D(ox, oy, oz);
 
 		glPopMatrix();		
 	}

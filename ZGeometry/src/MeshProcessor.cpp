@@ -10,6 +10,7 @@ MeshProcessor::MeshProcessor(void)
 	isMHBBuilt = false;
 	pRef = -1;
 	m_size = 0;
+	active_handle = -1;
 }
 
 

@@ -73,6 +73,7 @@ public:
 	Vector3D posRef;
 
 	std::map<int, Vector3D> mHandles;
+	int active_handle;
 	std::vector<ManifoldFeature> vFeatures;	
 	void addNewHandle(int hIdx);
 };

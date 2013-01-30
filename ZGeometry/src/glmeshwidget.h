@@ -24,7 +24,7 @@ class GLMeshWidget : public QGLWidget
 public:
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
-	int             active_handle;
+//	int active_handle;
 
 	bool m_bShowLegend;	
 	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
