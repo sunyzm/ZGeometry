@@ -1,6 +1,8 @@
 #pragma once
 #include "MeshProcessor.h"
 
+enum DeformType {Simple, Shell, Differential};
+
 class WaveletMeshProcessor : public MeshProcessor
 {
 private:
@@ -18,4 +20,6 @@ public:
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	void computeSGW(const std::vector<double>& timescales);
 	void getSGWSignature(double timescale, std::vector<double>& values) const;
+
+	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 };

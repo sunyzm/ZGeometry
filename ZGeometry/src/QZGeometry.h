@@ -41,7 +41,7 @@ private slots:
 	void setShowFeatures();
 	void selectObject(int index);
 	void clone();
-	void deformExperimental();
+	void deformSimple();
 	void filterExperimental();
 private:	// methods
 	void makeConnections();

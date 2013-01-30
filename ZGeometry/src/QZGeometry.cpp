@@ -45,8 +45,9 @@ void QZGeometryWindow::makeConnections()
 	
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
-	
-	////////    control ////////
+	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
+
+	////////    Control	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.horizontalSlider1, SLOT(setValue(int)));
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(setRefPoint1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
@@ -59,6 +60,12 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
+	////////	Edit	////////
+	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
+	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
+	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
+
+
 	////////	Display	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
@@ -67,14 +74,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
-	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
-	QObject::connect(ui.actionDeformExperimental, SIGNAL(triggered()), this, SLOT(deformExperimental()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(setShowSignature()));
-	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
-	QObject::connect(ui.actionFilterExperimental, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(setShowColorLegend()));
 }
@@ -496,14 +499,17 @@ void QZGeometryWindow::updateReferenceMove()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::deformExperimental()
+void QZGeometryWindow::deformSimple()
 {
-	vector<double> vx, vy, vz;
+//	vector<double> vx, vy, vz;
 //	vMP[0].reconstructByMHB(300, vx, vy, vz);
 //	vMP[0].reconstructByDifferential(vx, vy, vz, true);
-	vMP[0].reconstructBySGW(vx, vy, vz, true);
+//	vMP[0].reconstructBySGW(vx, vy, vz, true);
 //	vMP[0].reconstructExperimental1(vx, vy, vz, true);
-	mesh2.setVertexCoordinates(vx, vy, vz);
+//	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	
+
 	ui.glMeshWidget->update();
 }
 

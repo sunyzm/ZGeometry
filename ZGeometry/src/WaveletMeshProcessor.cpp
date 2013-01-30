@@ -673,3 +673,12 @@ void WaveletMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<dou
 	matlab_scgls(m_ep, SGW, vyCoeff, vy);
 	matlab_scgls(m_ep, SGW, vzCoeff, vz);
 }
+
+void WaveletMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
+{
+	if (dfType == Simple)
+	{
+
+	}
+
+}
