@@ -24,6 +24,8 @@ class GLMeshWidget : public QGLWidget
 public:
 	std::vector<MeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
+	int             active_handle;
+
 	bool m_bShowLegend;	
 	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
 
@@ -31,7 +33,6 @@ public:
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void addMesh(MeshProcessor* pmp);
-
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -66,6 +67,5 @@ private:
 	GLdouble		g_myAngle;
 	
 	int				g_startx, g_starty;
-	int             active_handle;
 };
 

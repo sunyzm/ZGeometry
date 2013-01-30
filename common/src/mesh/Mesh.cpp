@@ -3286,3 +3286,17 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 }
 
 
+void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos)
+{
+	assert(vDeformedIdx.size() == vNewPos.size());
+
+	int vsize = vDeformedIdx.size();
+	for (int i = 0; i < vsize; ++i)
+	{
+		m_pVertex[vDeformedIdx[i]].setPos(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+		
+		if (m_bIsPointerVectorExist)
+			m_vVertices[vDeformedIdx[i]]->setPos(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+
+	}
+}

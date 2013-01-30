@@ -269,6 +269,7 @@ public:
 	VectorInt	getVertexAdjacentFacesIndex(int vIdx);
 	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+	void		setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 private:
 	void	clear();
 	bool	construct();	// construct connectivity

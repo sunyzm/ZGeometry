@@ -676,9 +676,30 @@ void WaveletMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<dou
 
 void WaveletMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
 {
+	vDeformedPos.clear();
+
 	if (dfType == Simple)
 	{
+		int hIdx = vHandleIdx[0];
+		Vector3D handleTrans = vHandelPos[0] - mesh->getVertex_const(hIdx)->getPos();
+		
+		int nFreeVertices = vFreeIdx.size();
+		vector<double> vDist2Handle;
+		double distMax = 0;
+		for (int i = 0; i < nFreeVertices; ++i)
+		{
+			double dist = mesh->getGeodesic(hIdx, vFreeIdx[i]);
+			vDist2Handle.push_back(dist);
+			if (dist > distMax) distMax = dist;
+		}
 
+		
+		for (int i = 0; i < nFreeVertices; ++i)
+		{
+			Vector3D newPos = mesh->getVertex_const(vFreeIdx[i])->getPos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+			vDeformedPos.push_back(newPos);
+		}
+		
 	}
 
 }

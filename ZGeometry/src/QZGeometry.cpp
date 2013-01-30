@@ -508,7 +508,17 @@ void QZGeometryWindow::deformSimple()
 //	vMP[0].reconstructExperimental1(vx, vy, vz, true);
 //	mesh2.setVertexCoordinates(vx, vy, vz);
 
-	
+	int activeHandle = ui.glMeshWidget->active_handle; 
+	vector<int> vHandle;
+	vHandle.push_back(activeHandle);
+	vector<Vector3D> vHandlePos;
+	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
+	vector<int> vFree = vMP[0].mesh->getNeighboringVertex(ui.glMeshWidget->active_handle, 5);
+	vector<Vector3D> vNewPos;
+
+	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
+	mesh2.setVertexCoordinates(vFree, vNewPos);
+	mesh2.setVertexCoordinates(vHandle, vHandlePos);
 
 	ui.glMeshWidget->update();
 }
