@@ -4,6 +4,7 @@
 #include <cassert>
 #include <memory>
 #include <queue>
+#include <functional>
 #include <mesh/Geometry.h>
 
 using namespace std;
