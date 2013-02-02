@@ -22,7 +22,7 @@ class GLMeshWidget : public QGLWidget
 	Q_OBJECT
 
 public:
-	std::vector<MeshProcessor*> vpMP;
+	std::vector<DifferentialMeshProcessor*> vpMP;
 	std::vector<DisplaySettings> vSettings;
 //	int active_handle;
 
@@ -32,7 +32,7 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
-	void addMesh(MeshProcessor* pmp);
+	void addMesh(DifferentialMeshProcessor* pmp);
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);

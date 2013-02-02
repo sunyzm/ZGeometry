@@ -50,7 +50,7 @@ GLMeshWidget::~GLMeshWidget()
 
 }
 
-void GLMeshWidget::addMesh(MeshProcessor* pmp)
+void GLMeshWidget::addMesh(DifferentialMeshProcessor* pmp)
 {
 	vpMP.push_back(pmp);
 }

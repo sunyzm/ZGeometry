@@ -45,6 +45,7 @@ void QZGeometryWindow::makeConnections()
 	
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
+	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 
 	////////    Control	////////
@@ -200,7 +201,7 @@ void QZGeometryWindow::displayEigenfunction()
 {
 	if (selected[0])
 	{
-		MeshProcessor& mp = vMP[0];
+		DifferentialMeshProcessor& mp = vMP[0];
 		mp.normalizeSignatureFrom(mp.mhb.m_func[1].m_vec);
 		ui.glMeshWidget->vSettings[0].showColorSignature = true;
 		ui.actionShowSignature->setChecked(true);
@@ -306,7 +307,7 @@ void QZGeometryWindow::setShowRefPoint()
 
 void QZGeometryWindow::displayCurvatureMean()
 {
-	MeshProcessor& mp = vMP[0];
+	DifferentialMeshProcessor& mp = vMP[0];
 
 	vector<double> vCurvature;
 	mp.computeCurvature(vCurvature, 0);
@@ -325,7 +326,7 @@ void QZGeometryWindow::displayCurvatureMean()
 
 void QZGeometryWindow::displayCurvatureGauss()
 {
-	MeshProcessor& mp = vMP[0];
+	DifferentialMeshProcessor& mp = vMP[0];
 
 	vector<double> vCurvature;
 	mp.computeCurvature(vCurvature, 1);
@@ -578,7 +579,7 @@ void QZGeometryWindow::computeSGWSFeatures()
 		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
 		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
 		{
-			vMP[0].vFeatures.push_back(ManifoldFeature(*iter, s));
+			vMP[0].vFeatures.push_back(MeshFeature(*iter, s));
 		}
 	}
 
@@ -662,4 +663,9 @@ void QZGeometryWindow::setEditModeDrag()
 	ui.actionEditPick->setCheckable(false);
 
 	qout.output("Edit Mode: Drag", OUT_STATUS);
+}
+
+void QZGeometryWindow::computeSGW()
+{
+
 }

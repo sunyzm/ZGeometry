@@ -115,6 +115,7 @@
       <AdditionalLibraryDirectories>$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)lib;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalDependencies>glew32s.lib;ZCommon.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;QtCore4.lib;QtGui4.lib;QtOpenGL4.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -162,8 +163,9 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
     <ClCompile Include="src\glmeshwidget.cpp" />
+    <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\MeshProcessor.cpp" />
+    <ClCompile Include="src\DifferentialMeshProcessor.cpp" />
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
     <ClCompile Include="src\WaveletMeshProcessor.cpp" />
@@ -191,7 +193,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_ZGeometry.h" />
-    <ClInclude Include="src\MeshProcessor.h" />
+    <ClInclude Include="src\DifferentialMeshProcessor.h" />
+    <ClInclude Include="src\Laplacian.h" />
     <ClInclude Include="src\OutputHelper.h" />
     <ClInclude Include="src\WaveletMeshProcessor.h" />
     <CustomBuild Include="src\QZGeometry.h">

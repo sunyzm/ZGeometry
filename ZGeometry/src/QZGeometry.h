@@ -23,6 +23,7 @@ private slots:
 	void setEditModePick();
 	void setEditModeDrag();
 	void computeLaplacian(int obj = 0);
+	void computeSGW();
 	void computeSGWSFeatures();
 	void displayEigenfunction();
 	void displayMexicanHatWavelet1();

@@ -50,9 +50,6 @@
     <ClCompile Include="src\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\MeshProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\OutputHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -66,6 +63,12 @@
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
     <ClCompile Include="src\WaveletMeshProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\DifferentialMeshProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Laplacian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -87,13 +90,16 @@
     <ClInclude Include="GeneratedFiles\ui_ZGeometry.h">
       <Filter>Generated Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\MeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\OutputHelper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\WaveletMeshProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\DifferentialMeshProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Laplacian.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

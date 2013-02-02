@@ -3,7 +3,7 @@
 
 enum DeformType {Simple, Shell, Differential};
 
-class WaveletMeshProcessor : public MeshProcessor
+class WaveletMeshProcessor : public DifferentialMeshProcessor
 {
 private:
 	std::vector<double> m_vTimescales;

@@ -1,9 +1,10 @@
-#include "MeshProcessor.h"
+#include "DifferentialMeshProcessor.h"
 #include <fstream>
+#include <stdexcept>
 
 using namespace std;
 
-MeshProcessor::MeshProcessor(void)
+DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
 	mesh = NULL;
@@ -14,12 +15,12 @@ MeshProcessor::MeshProcessor(void)
 }
 
 
-MeshProcessor::~MeshProcessor(void)
+DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
 {
 
 }
 
-void MeshProcessor::init(CMesh* tm, Engine* e)
+void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 {
 	mesh = tm;
 	m_ep = e;
@@ -30,14 +31,14 @@ void MeshProcessor::init(CMesh* tm, Engine* e)
 	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
 }
 
-void MeshProcessor::decomposeLaplacian(int nEigFunc)
+void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 //	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	mLaplacian.decompose(mhb, nEigFunc, m_ep);
 	this->isMHBBuilt = true;
 }
 
-void MeshProcessor::readMHB( const std::string& path )
+void DifferentialMeshProcessor::readMHB( const std::string& path )
 {
 	ifstream ifs(path, ios::binary);
 	ifs.seekg (0, ios::end);
@@ -62,7 +63,7 @@ void MeshProcessor::readMHB( const std::string& path )
 
 }
 
-void MeshProcessor::writeMHB(std::string path)
+void DifferentialMeshProcessor::writeMHB(std::string path)
 {
 	ofstream ofs(path.c_str(), ios::trunc);
 	ofs << mhb.m_nEigFunc << endl;
@@ -77,7 +78,7 @@ void MeshProcessor::writeMHB(std::string path)
 	ofs.close();	
 }
 
-void MeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
+void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
 {
 	vCurvature.resize(m_size);
 	if (curvatureType == 0)
@@ -96,7 +97,7 @@ void MeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curva
 	
 }
 
-void MeshProcessor::normalizeSignatureFrom( const std::vector<double>& vFrom )
+void DifferentialMeshProcessor::normalizeSignatureFrom( const std::vector<double>& vFrom )
 {
 	if (vFrom.empty()) return;	
 	assert(vFrom.size() == m_size);
@@ -113,7 +114,7 @@ void MeshProcessor::normalizeSignatureFrom( const std::vector<double>& vFrom )
 	}
 }
 
-void MeshProcessor::logNormalizeSignatureFrom( const std::vector<double>& vFrom )
+void DifferentialMeshProcessor::logNormalizeSignatureFrom( const std::vector<double>& vFrom )
 {
 	if (vFrom.empty()) return;	
 	assert(vFrom.size() == m_size);
@@ -137,7 +138,7 @@ void MeshProcessor::logNormalizeSignatureFrom( const std::vector<double>& vFrom 
 	}
 }
 
-void MeshProcessor::bandCurveSignatureFrom( const std::vector<double>& vFrom, double lowend, double highend )
+void DifferentialMeshProcessor::bandCurveSignatureFrom( const std::vector<double>& vFrom, double lowend, double highend )
 {
 	assert(lowend < highend);
 	assert(vFrom.size() == m_size);
@@ -157,7 +158,7 @@ void MeshProcessor::bandCurveSignatureFrom( const std::vector<double>& vFrom, do
 	}
 }
 
-void MeshProcessor::addNewHandle( int hIdx )
+void DifferentialMeshProcessor::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end())
@@ -167,3 +168,23 @@ void MeshProcessor::addNewHandle( int hIdx )
 	 
 }
 
+
+double ManifoldFunction::InnerProduct( const ManifoldFunction& f1, const ManifoldFunction& f2 )
+{
+	if (f1.m_size != f2.m_size)
+		throw runtime_error("Inner product of incompatible manifold function");
+
+	int dim = f1.m_size;
+	double retval = 0.0;
+	for (int i = 0; i < dim; ++i)
+	{
+		retval += f1.m_function[i] * f2.m_function[i];
+	}
+
+	return retval;
+}
+
+double ManifoldFunction::norm() const
+{
+	return ManifoldFunction::InnerProduct(*this, *this);
+}

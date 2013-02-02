@@ -30,9 +30,6 @@
     <ClInclude Include="include\mesh\Geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\mesh\Laplacian.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\mesh\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -54,15 +51,15 @@
     <ClInclude Include="include\util\timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\mesh\MeshProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\mesh\arcball.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\mesh\Geometry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\mesh\Laplacian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\mesh\Mesh.cpp">
@@ -81,6 +78,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\util\timer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\mesh\MeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

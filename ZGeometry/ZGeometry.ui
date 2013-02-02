@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1066</width>
+    <width>1071</width>
     <height>850</height>
    </rect>
   </property>
@@ -175,8 +175,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1066</width>
-     <height>21</height>
+     <width>1071</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -260,8 +260,8 @@
      <string>Compute</string>
     </property>
     <addaction name="actionComputeLaplacian"/>
+    <addaction name="actionComputeSGW"/>
     <addaction name="actionSGWSFeatures"/>
-    <addaction name="actionSGW"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -379,7 +379,7 @@
     <string>SGWS</string>
    </property>
   </action>
-  <action name="actionSGW">
+  <action name="actionComputeSGW">
    <property name="text">
     <string>SGW</string>
    </property>
