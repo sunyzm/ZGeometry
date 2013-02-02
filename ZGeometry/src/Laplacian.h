@@ -44,12 +44,13 @@ public:
 class ManifoldHarmonics
 {
 public:
-	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
-	int m_size;	    // shape size
-	int m_nEigFunc; // number of basis < shape size
-public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
 	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type = Laplacian::CotFormula);
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
+	MeshFunction getManifoldHarmonic(int k) const;
+public:
+	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
+	int m_size;	    // shape size
+	int m_nEigFunc; // number of basis < shape size
 };

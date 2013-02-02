@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <fstream>
 #include <sstream>
+#include <stdexcept>
 #include "Laplacian.h"
 
 using namespace std;
@@ -155,6 +156,18 @@ void ManifoldHarmonics::read( const std::string& meshPath )
 	}
 */
 	cout << "MHB loaded from " << meshPath << endl;
+}
+
+MeshFunction ManifoldHarmonics::getManifoldHarmonic( int k ) const
+{
+	if (k > m_nEigFunc)
+		throw runtime_error("Invalid request for manifold harmonic");
+	MeshFunction mf(m_size);
+	for (int i = 0; i < m_size; ++i)
+	{
+		mf[i] = m_func[k].m_vec[i];
+	}
+	return mf;
 }
 
 void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )

@@ -60,7 +60,7 @@ protected:
 	std::vector<double> m_function;
 };
 
-class SparseManifoldFunction : public MeshProperty
+class SparseMeshFunction : public MeshProperty
 {
 public:
 	std::vector<int> m_funcIdx;
@@ -69,6 +69,10 @@ public:
 
 class MeshKernel : public MeshProperty
 {
+public:
+	std::vector<int> m_II;
+	std::vector<int> m_JJ;
+	std::vector<int> m_VV;
 
 };
 
