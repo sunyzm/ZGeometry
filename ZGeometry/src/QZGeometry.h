@@ -5,7 +5,7 @@
 #include <engine.h>
 #include <vector>
 #include "OutputHelper.h"
-#include "WaveletMeshProcessor.h"
+#include "DifferentialMeshProcessor.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -57,7 +57,7 @@ private:	// attributes
 	Engine *m_ep;
 	CMesh mesh1, mesh2;
 	bool selected[2];
-	WaveletMeshProcessor vMP[2];
+	DifferentialMeshProcessor vMP[2];
 
 	struct {int xMove, yMove, zMove; } refMove;
 };

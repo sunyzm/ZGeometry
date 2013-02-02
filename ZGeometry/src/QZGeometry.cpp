@@ -160,7 +160,7 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	QTime timer;
 	timer.start();
 
-	string pathMHB = "output/" + vMP[obj].mesh->m_meshName + ".mhb";
+	string pathMHB = "output/" + vMP[obj].getMesh()->m_meshName + ".mhb";
 	
 	ifstream ifs(pathMHB.c_str());
 	if (ifs && LOAD_MHB_CACHE)
@@ -174,7 +174,7 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 		vMP[obj].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
 
-		string pathEVL = "output/" + vMP[obj].mesh->m_meshName + ".evl";	//eigenvalues
+		std::string pathEVL = "output/" + vMP[obj].getMesh()->m_meshName + ".evl";	//eigenvalues
 		ofstream ofs(pathEVL.c_str(), ios::trunc);
 		for (vector<ManifoldBasis>::iterator iter = vMP[obj].mhb.m_func.begin(); iter != vMP[obj].mhb.m_func.end(); ++iter)
 		{
@@ -222,7 +222,7 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 {
 	if (selected[0])
 	{
-		WaveletMeshProcessor& mp = vMP[0];
+		DifferentialMeshProcessor& mp = vMP[0];
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
@@ -234,7 +234,7 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 
 // 	if (selected[1] && vMP[1].mesh)
 // 	{
-// 		WaveletMeshProcessor& mp = vMP[1];		
+// 		DifferentialMeshProcessor& mp = vMP[1];		
 // 
 // 		vector<double> vMHW;
 // 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
@@ -250,7 +250,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 {
 	if (selected[0])
 	{
-		WaveletMeshProcessor& mp = vMP[0];
+		DifferentialMeshProcessor& mp = vMP[0];
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
@@ -262,7 +262,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 
 // 	if (selected[1] && vMP[1].mesh)
 // 	{
-// 		WaveletMeshProcessor& mp = vMP[1];		
+// 		DifferentialMeshProcessor& mp = vMP[1];		
 // 
 // 		vector<double> vMHW;
 // 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
@@ -276,7 +276,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 
 void QZGeometryWindow::displayExperimental()
 {
-	WaveletMeshProcessor& mp = vMP[0];
+	DifferentialMeshProcessor& mp = vMP[0];
 
  	vector<double> vExp;
  	mp.computeExperimentalWavelet(vExp, 30); 
@@ -514,7 +514,7 @@ void QZGeometryWindow::deformSimple()
 	vHandle.push_back(activeHandle);
 	vector<Vector3D> vHandlePos;
 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	vector<int> vFree = vMP[0].mesh->getNeighboringVertex(activeHandle, 5);
+	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, 5);
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);

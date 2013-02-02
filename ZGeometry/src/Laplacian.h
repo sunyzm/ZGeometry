@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <engine.h>
-#include "Mesh.h"
+#include <ZMesh.h>
 
 #define LBO_EPS 0
 #define LBO_COT 1

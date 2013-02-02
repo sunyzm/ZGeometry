@@ -3,7 +3,7 @@
 #include <QGLWidget>
 #include <ZMesh.h>
 #include <vector>
-#include "MeshProcessor.h"
+#include "DifferentialMeshProcessor.h"
 
 struct DisplaySettings
 {

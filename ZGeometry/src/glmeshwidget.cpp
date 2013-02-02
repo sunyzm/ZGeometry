@@ -92,9 +92,9 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			{
 				double dmin = 1e10;
 				int hIdx = -1;
-				for (int vi = 0; vi < this->vpMP[0]->mesh->getVerticesNum(); ++vi)
+				for (int vi = 0; vi < this->vpMP[0]->getMesh()->getVerticesNum(); ++vi)
 				{
-					double d = p.distantFrom(this->vpMP[0]->mesh->getVertex_const(vi)->getPos());
+					double d = p.distantFrom(this->vpMP[0]->getMesh()->getVertex_const(vi)->getPos());
 					if (d < dmin) 
 					{
 						dmin = d;
@@ -160,7 +160,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::MidButton) 
 		{
-			float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / win_height;
+			float scale = 3.0 * vpMP[0]->getMesh()->m_bBox.x / win_height;
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
@@ -171,7 +171,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::RightButton ) 
 		{
-			float scale = 5.0 * vpMP[0]->mesh->m_bBox.y / win_height;
+			float scale = 5.0 * vpMP[0]->getMesh()->m_bBox.y / win_height;
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
@@ -225,7 +225,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 3.0 * vpMP[0]->mesh->m_bBox.x / this->height();
+		float scale = 3.0 * vpMP[0]->getMesh()->m_bBox.x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
 		if (vSettings[0].selected) 
@@ -416,9 +416,9 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 void GLMeshWidget::drawMeshExt( int obj )
 {
 	if (obj >= vpMP.size() || obj < 0) return;	
-	if(!vpMP[obj]->mesh) return;
+	if(!vpMP[obj]->getMesh()) return;
 
-	const CMesh* tmesh = vpMP[obj]->mesh;
+	const CMesh* tmesh = vpMP[obj]->getMesh();
 	CQrot rot = (obj == 0) ? ObjRot1 : ObjRot2;
 	Vector3D trans = (obj == 0) ? ObjTrans1 : ObjTrans2;
 	const GLfloat *color = (obj == 0) ? color1 : color2;	
@@ -515,7 +515,7 @@ void GLMeshWidget::drawMeshExt( int obj )
  		gluQuadricDrawStyle(quadric, GLU_FILL);
  		glPushMatrix();
  		glTranslated(vt.x, vt.y, vt.z);
- 		gluSphere(quadric, vpMP[obj]->mesh->m_edge/8.0, 16, 8);
+ 		gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/8.0, 16, 8);
  		glPopMatrix();
 	}
 
@@ -531,7 +531,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		   	gluQuadricDrawStyle(quadric, GLU_FILL);
 		   	glPushMatrix();
 		   	glTranslated(vt.x, vt.y, vt.z);
-		   	gluSphere(quadric, vpMP[obj]->mesh->m_edge/8.0, 16, 8);
+		   	gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/8.0, 16, 8);
 		   	glPopMatrix();
 		}
 	}

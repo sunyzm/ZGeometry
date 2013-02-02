@@ -62,9 +62,6 @@
     <ClCompile Include="GeneratedFiles\Release\moc_QZGeometry.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="src\WaveletMeshProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\DifferentialMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -91,9 +88,6 @@
       <Filter>Generated Files</Filter>
     </ClInclude>
     <ClInclude Include="src\OutputHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\WaveletMeshProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\DifferentialMeshProcessor.h">
