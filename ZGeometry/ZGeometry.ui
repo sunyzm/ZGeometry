@@ -46,7 +46,7 @@
       </property>
       <layout class="QHBoxLayout" name="layoutOptions">
        <item>
-        <widget class="QComboBox" name="objSelectBox">
+        <widget class="QComboBox" name="boxObjSelect">
          <property name="editable">
           <bool>false</bool>
          </property>
@@ -96,10 +96,10 @@
         </spacer>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox2"/>
+        <widget class="QSpinBox" name="spinBoxParameter"/>
        </item>
        <item>
-        <widget class="QSlider" name="horizontalSlider2">
+        <widget class="QSlider" name="horizontalSliderParamter">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -176,7 +176,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -208,6 +208,7 @@
       <string>Reconstruct</string>
      </property>
      <addaction name="actionReconstructSGW"/>
+     <addaction name="actionReconstructMHB"/>
     </widget>
     <widget class="QMenu" name="menuFilter">
      <property name="title">
@@ -443,6 +444,11 @@
   <action name="actionReconstructSGW">
    <property name="text">
     <string>SGW</string>
+   </property>
+  </action>
+  <action name="actionReconstructMHB">
+   <property name="text">
+    <string>MHB</string>
    </property>
   </action>
  </widget>

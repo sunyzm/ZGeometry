@@ -1601,7 +1601,7 @@ bool CMesh::calVertexCurvature(int vi)
 		// compute corner angle by cosine law 
 		double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
 		sum += corner;
-		double cota,cotc;
+		double cota, cotc;
 		amix += calAreaMixed(len0, len1, len2, cota, cotc);
 		int pt1,pt2;
 		pt1 = m_pHalfEdge[e1].m_iVertex[0];

@@ -188,7 +188,7 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 		{
 			double Av;
 			tmesh->calVertexLBO(i, vII, vJJ, vSS, Av, diagW);
-			vWeights.push_back(Av);		//mixed area
+			vWeights.push_back(Av);		//mixed area as weight of each vertex
 		}
 		for(int i = 0; i < size; i++)
 		{

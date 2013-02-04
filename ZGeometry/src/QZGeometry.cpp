@@ -4,7 +4,6 @@
 #include <vector>
 #include <QtGui/QMessageBox>
 #include <QTime>
-//#include <GL/glew.h>
 #include "QZGeometry.h"
 
 #define DEFAULT_EIGEN_SIZE 300
@@ -31,6 +30,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
 	
+	commonPara = 50;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
@@ -53,10 +53,14 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), this, SLOT(setRefPoint1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.spinBox1, SLOT(setValue(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.spinBoxParameter, SIGNAL(valueChanged(int)), ui.horizontalSliderParamter, SLOT(setValue(int)));
+	QObject::connect(ui.spinBoxParameter, SIGNAL(valueChanged(int)), this, SLOT(setCommonParameter(int)));
+	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), ui.spinBoxParameter, SLOT(setValue(int)));
+	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), this, SLOT(setCommonParameter(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), this, SLOT(setRefPoint1(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.horizontalSlider1, SLOT(setValue(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.spinBox1, SLOT(setValue(int)));
-	QObject::connect(ui.objSelectBox, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
+	QObject::connect(ui.boxObjSelect, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
 	QObject::connect(ui.actionEditMove, SIGNAL(triggered()), this, SLOT(setEditModeMove()));
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
@@ -64,6 +68,8 @@ void QZGeometryWindow::makeConnections()
 	////////	Edit	////////
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
+	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructByMHB()));
+	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructBySGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 
 
@@ -151,12 +157,98 @@ bool QZGeometryWindow::initialize()
 	ui.horizontalSlider1->setMinimum(0);
 	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
 	ui.spinBox1->setValue(0);	
+	ui.spinBoxParameter->setMinimum(0);
+	ui.spinBoxParameter->setMaximum(100);
+	ui.horizontalSliderParamter->setMinimum(0);
+	ui.horizontalSliderParamter->setMaximum(100);
+	ui.spinBoxParameter->setValue(50);
 
 	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
 	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
 
 	this->computeLaplacian(0);	
 	return true;
+}
+
+void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
+{
+	switch (event->key())
+	{
+	case Qt::Key_1:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("1"));
+			selectObject(ui.boxObjSelect->findText("1"));
+		}
+		break;
+
+	case Qt::Key_2:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("2"));
+			selectObject(ui.boxObjSelect->findText("2"));
+		}
+		break;
+
+	case Qt::Key_0:
+		if (event->modifiers() & Qt::ControlModifier)
+		{
+			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("All"));
+			selectObject(ui.boxObjSelect->findText("All"));
+		}
+		break;
+
+	case Qt::Key_C:
+		clone();
+		break;
+
+	case Qt::Key_S:
+		setDisplayMesh();
+		break;
+
+	case Qt::Key_W:
+		setDisplayWireframe();
+		break;
+
+	case Qt::Key_M:
+		setEditModeMove();
+		break;
+
+	case Qt::Key_P:
+		setEditModePick();
+		break;
+
+	case Qt::Key_D:
+		setEditModeDrag();
+		break;
+
+	case Qt::Key_E:
+		deformSimple();
+		break;
+
+	case Qt::Key_X:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.xMove--;
+		else refMove.xMove++;
+		updateReferenceMove();
+		break;
+
+	case Qt::Key_Y:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.yMove--;
+		else refMove.yMove++;
+		updateReferenceMove();
+		break;
+
+	case Qt::Key_Z:
+		if (event->modifiers() & Qt::ShiftModifier)
+			refMove.zMove--;
+		else refMove.zMove++;
+		updateReferenceMove();
+		break;
+
+	default: QWidget::keyPressEvent(event);
+	}
 }
 
 void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
@@ -193,12 +285,164 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	qout.output(qformat.sprintf("Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
+void QZGeometryWindow::computeSGWSFeatures()
+{
+	vMP[0].vFeatures.clear();
+	double timescales[4] = {5, 10, 20, 40};
+	for (int s = 0; s < 4; ++s)
+	{
+		vector<double> vSig;
+		vector<int> vFeatures;
+		vMP[0].getSGWSignature(timescales[s], vSig);
+		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
+		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
+		{
+			vMP[0].vFeatures.push_back(MeshFeature(*iter, s));
+		}
+	}
+
+	ui.glMeshWidget->vSettings[0].showFeatures = true;
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::computeSGW()
+{
+
+}
+
+void QZGeometryWindow::selectObject( int index )
+{
+	QString text = ui.boxObjSelect->itemText(index);
+	qout.output("Selected object(s): " + text);
+	if (text == "1") 
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+	}
+	else if (text == "2")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+	}
+	else if (text == "All")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+	}
+	else if (text == "None")
+	{
+		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
+		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+	}
+}
+
 void QZGeometryWindow::setRefPoint1( int vn )
 {
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove();
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setCommonParameter( int p )
+{
+	commonPara = p;
+}
+
+void QZGeometryWindow::setEditModeMove()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_MOVE;
+	ui.actionEditMove->setChecked(true);
+	ui.actionEditDrag->setChecked(false);
+	ui.actionEditPick->setCheckable(false);
+
+	qout.output("Edit Mode: Move", OUT_STATUS);
+}
+
+void QZGeometryWindow::setEditModePick()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_PICK;
+	ui.actionEditMove->setChecked(false);
+	ui.actionEditDrag->setChecked(false);
+	ui.actionEditPick->setCheckable(true);
+
+	qout.output("Edit Mode: Pick", OUT_STATUS);
+}
+
+void QZGeometryWindow::setEditModeDrag()
+{
+	ui.glMeshWidget->editMode = GLMeshWidget::QZ_DRAG;
+	ui.actionEditMove->setChecked(false);
+	ui.actionEditDrag->setChecked(true);
+	ui.actionEditPick->setCheckable(false);
+
+	qout.output("Edit Mode: Drag", OUT_STATUS);
+}
+
+void QZGeometryWindow::setShowRefPoint()
+{
+	bool bChecked = ui.actionShowRefPoint->isChecked();
+	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
+	ui.actionShowRefPoint->setChecked(bChecked);
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setShowColorLegend()
+{
+	bool bChecked = ui.actionColorLegend->isChecked();
+	ui.glMeshWidget->m_bShowLegend = bChecked;
+	ui.actionColorLegend->setChecked(bChecked);
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setShowFeatures()
+{
+	// TODO
+}
+
+void QZGeometryWindow::setShowSignature()
+{
+	bool bToShow = ui.actionShowSignature->isChecked();
+	ui.actionShowSignature->setChecked(bToShow);
+	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setDisplayPointCloud()
+{
+	ui.actionDisplayPointCloud->setChecked(true);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(false);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_POINT;
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setDisplayWireframe()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(true);
+	ui.actionDisplayMesh->setChecked(false);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_LINE;
+	ui.glMeshWidget->update();
+
+}
+
+void QZGeometryWindow::setDisplayMesh()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(true);
+
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
+	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_FILL;
+	ui.glMeshWidget->update();
+
 }
 
 void QZGeometryWindow::displayEigenfunction()
@@ -291,22 +535,13 @@ void QZGeometryWindow::displayExperimental()
 	ui.actionShowSignature->setChecked(true);
 
  	ui.glMeshWidget->update();
- 	qout.output("Show MHW from point " + QString::number(mp.pRef));
+	qout.output("Show MHW from vertex #" + QString::number(mp.pRef));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
 // 	QTime timer;
 // 	timer.start();
 // 	mp.calGeometryDWT();
 // 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
-}
-
-void QZGeometryWindow::setShowRefPoint()
-{
-	bool bChecked = ui.actionShowRefPoint->isChecked();
-	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
-	ui.actionShowRefPoint->setChecked(bChecked);
-	
-	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::displayCurvatureMean()
@@ -347,158 +582,21 @@ void QZGeometryWindow::displayCurvatureGauss()
 	qout.output("Show Mean Curvature");
 }
 
-void QZGeometryWindow::selectObject( int index )
+void QZGeometryWindow::displayDiffPosition()
 {
-	QString text = ui.objSelectBox->itemText(index);
-	qout.output("Selected object(s): " + text);
-	if (text == "1") 
+	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
+	int size = mesh1.getVerticesNum();
+	vector<double> vDiff;
+	vDiff.resize(size);
+
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
 	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+		vDiff[i] = (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length() / mesh1.getAvgEdgeLength();
 	}
-	else if (text == "2")
-	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
-	}
-	else if (text == "All")
-	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
-	}
-	else if (text == "None")
-	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
-	}
-}
 
-void QZGeometryWindow::clone()
-{
-	mesh2.cloneFrom(mesh1);
-	mesh2.gatherStatistics();
-
-	vMP[1].init(&mesh2, m_ep);
-	ui.glMeshWidget->addMesh(&vMP[1]);
-	qout.output("Mesh " + QString(mesh2.m_meshName.c_str()) + " constructed! Size: " + QString::number(mesh2.getVerticesNum()));
-	
-	ui.spinBox2->setMinimum(0);
-	ui.spinBox2->setMaximum(mesh2.getVerticesNum()-1);
-	ui.horizontalSlider2->setMinimum(0);
-	ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
-	ui.spinBox2->setValue(0);
-
-//	vector<double> vx, vy, vz;
-//	vMP[0].reconstructByMHB(300, vx, vy, vz);
-//	vMP[0].reconstructByDifferential(vx, vy, vz);
-//	vMP[0].reconstructExperimental1(vx, vy, vz);
-//	mesh2.setVertexCoordinates(vx, vy, vz);
-
-/*  to prove the effect of scalar product   
-
-	ofstream ofs1("output/dotproduct.dat"), ofs2("output/scalarproduct.dat");
-	for (int i = 0; i < vMP[0].mhb.m_nEigFunc; ++i)
-	{
-		for (int j = 0; j < vMP[0].mhb.m_nEigFunc; ++j)
-		{
-			const vector<double> &ef1 = vMP[0].mhb.m_func[i].m_vec, 
-				                 &ef2 = vMP[0].mhb.m_func[j].m_vec;
-			const vector<double> &sc = vMP[0].mLaplacian.getVerticesWeight();
-
-			ofs1 << VectorDotProduct(ef1, ef2) << ' ';
-			ofs2 << VectorScalarProduct(ef1, ef2, sc) << ' ';
-		}
-		ofs1 << endl;
-		ofs2 << endl;
-		if (i % 10 == 0)
-			qout.output("Row " + QString::number(i) + " finished!"); 
-	}
-	ofs1.close();
-	ofs2.close();
-*/
-
+	vMP[0].normalizeSignatureFrom(vDiff);
+	ui.glMeshWidget->vSettings[0].showColorSignature = true;
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
-{
-	switch (event->key())
-	{
-	case Qt::Key_1:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
-			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("1"));
-			selectObject(ui.objSelectBox->findText("1"));
-		}
-		break;
-
-	case Qt::Key_2:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
-			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("2"));
-			selectObject(ui.objSelectBox->findText("2"));
-		}
-		break;
-
-	case Qt::Key_0:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
-			ui.objSelectBox->setCurrentIndex(ui.objSelectBox->findText("All"));
-			selectObject(ui.objSelectBox->findText("All"));
-		}
-		break;
-
-	case Qt::Key_C:
-		clone();
-		break;
-
-	case Qt::Key_S:
-		setDisplayMesh();
-		break;
-
-	case Qt::Key_W:
-		setDisplayWireframe();
-		break;
-
-	case Qt::Key_M:
-		setEditModeMove();
-		break;
-
-	case Qt::Key_P:
-		setEditModePick();
-		break;
-	
-	case Qt::Key_D:
-		setEditModeDrag();
-		break;
-
-	case Qt::Key_E:
-		deformSimple();
-		break;
-
-	case Qt::Key_X:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.xMove--;
-		else refMove.xMove++;
-		updateReferenceMove();
-		break;
-	
-	case Qt::Key_Y:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.yMove--;
-		else refMove.yMove++;
-		updateReferenceMove();
-		break;
-	
-	case Qt::Key_Z:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.zMove--;
-		else refMove.zMove++;
-		updateReferenceMove();
-		break;
-
-	default: QWidget::keyPressEvent(event);
-	}
 }
 
 void QZGeometryWindow::updateReferenceMove()
@@ -512,14 +610,93 @@ void QZGeometryWindow::updateReferenceMove()
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::clone()
+{
+	mesh2.cloneFrom(mesh1);
+	mesh2.gatherStatistics();
+
+	vMP[1].init(&mesh2, m_ep);
+	ui.glMeshWidget->addMesh(&vMP[1]);
+	qout.output("Mesh " + QString(mesh2.m_meshName.c_str()) + " constructed! Size: " + QString::number(mesh2.getVerticesNum()));
+
+	//	vector<double> vx, vy, vz;
+	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
+	//	vMP[0].reconstructByDifferential(vx, vy, vz);
+	//	vMP[0].reconstructExperimental1(vx, vy, vz);
+	//	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	/*  to prove the effect of scalar product   
+
+	ofstream ofs1("output/dotproduct.dat"), ofs2("output/scalarproduct.dat");
+	for (int i = 0; i < vMP[0].mhb.m_nEigFunc; ++i)
+	{
+	for (int j = 0; j < vMP[0].mhb.m_nEigFunc; ++j)
+	{
+	const vector<double> &ef1 = vMP[0].mhb.m_func[i].m_vec, 
+	&ef2 = vMP[0].mhb.m_func[j].m_vec;
+	const vector<double> &sc = vMP[0].mLaplacian.getVerticesWeight();
+
+	ofs1 << VectorDotProduct(ef1, ef2) << ' ';
+	ofs2 << VectorScalarProduct(ef1, ef2, sc) << ' ';
+	}
+	ofs1 << endl;
+	ofs2 << endl;
+	if (i % 10 == 0)
+	qout.output("Row " + QString::number(i) + " finished!"); 
+	}
+	ofs1.close();
+	ofs2.close();
+	*/
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::reconstructByMHB()
+{
+	assert(vMP[1].mesh);
+
+	int nEig = vMP[0].mhb.m_nEigFunc;
+	vector<double> vx, vy, vz;
+	vMP[0].reconstructByMHB(nEig, vx, vy, vz);
+	mesh2.setVertexCoordinates(vx, vy, vz);
+	ui.glMeshWidget->update();
+
+	double errorSum(0);
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+	}
+	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
+	qout.output("Average position error: " + QString::number(errorSum));
+}
+
+void QZGeometryWindow::reconstructBySGW()
+{
+	assert(vMP[1].mesh);
+
+	vector<double> vx, vy, vz;
+	vMP[0].reconstructBySGW(vx, vy, vz, false);
+	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	double errorSum(0);
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+	}
+	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	qout.output("SGW reconstruction.");
+	qout.output("Average position error: " + QString::number(errorSum));
+}
+
 void QZGeometryWindow::deformSimple()
 {
-//	vector<double> vx, vy, vz;
-//	vMP[0].reconstructByMHB(300, vx, vy, vz);
-//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
-//	vMP[0].reconstructBySGW(vx, vy, vz, true);
-//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
-//	mesh2.setVertexCoordinates(vx, vy, vz);
+	//	vector<double> vx, vy, vz;
+	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
+	//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
+	//	vMP[0].reconstructBySGW(vx, vy, vz, true);
+	//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
+	//	mesh2.setVertexCoordinates(vx, vy, vz);
 
 	int activeHandle = vMP[0].active_handle; 
 	vector<int> vHandle;
@@ -533,69 +710,6 @@ void QZGeometryWindow::deformSimple()
 	mesh2.setVertexCoordinates(vFree, vNewPos);
 	mesh2.setVertexCoordinates(vHandle, vHandlePos);
 
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setDisplayPointCloud()
-{
-	ui.actionDisplayPointCloud->setChecked(true);
-	ui.actionDisplayWireframe->setChecked(false);
-	ui.actionDisplayMesh->setChecked(false);
-
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_POINT;
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setDisplayWireframe()
-{
-	ui.actionDisplayPointCloud->setChecked(false);
-	ui.actionDisplayWireframe->setChecked(true);
-	ui.actionDisplayMesh->setChecked(false);
-
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_LINE;
-	ui.glMeshWidget->update();
-
-}
-
-void QZGeometryWindow::setDisplayMesh()
-{
-	ui.actionDisplayPointCloud->setChecked(false);
-	ui.actionDisplayWireframe->setChecked(false);
-	ui.actionDisplayMesh->setChecked(true);
-
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_FILL;
-	ui.glMeshWidget->update();
-
-}
-
-void QZGeometryWindow::setShowSignature()
-{
-	bool bToShow = ui.actionShowSignature->isChecked();
-	ui.actionShowSignature->setChecked(bToShow);
-	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::computeSGWSFeatures()
-{
-	vMP[0].vFeatures.clear();
-	double timescales[4] = {5, 10, 20, 40};
-	for (int s = 0; s < 4; ++s)
-	{
-		vector<double> vSig;
-		vector<int> vFeatures;
-		vMP[0].getSGWSignature(timescales[s], vSig);
-		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
-		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
-		{
-			vMP[0].vFeatures.push_back(MeshFeature(*iter, s));
-		}
-	}
-
-	ui.glMeshWidget->vSettings[0].showFeatures = true;
 	ui.glMeshWidget->update();
 }
 
@@ -614,70 +728,4 @@ void QZGeometryWindow::filterExperimental()
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::displayDiffPosition()
-{
-	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
-	int size = mesh1.getVerticesNum();
-	vector<double> vDiff;
-	vDiff.resize(size);
-	
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
-	{
-		vDiff[i] = (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length() / mesh1.getAvgEdgeLength();
-	}
-
-	vMP[0].normalizeSignatureFrom(vDiff);
-	ui.glMeshWidget->vSettings[0].showColorSignature = true;
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setShowColorLegend()
-{
-	bool bChecked = ui.actionColorLegend->isChecked();
-	ui.glMeshWidget->m_bShowLegend = bChecked;
-	ui.actionColorLegend->setChecked(bChecked);
-
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setShowFeatures()
-{
-	// TODO
-}
-
-void QZGeometryWindow::setEditModeMove()
-{
-	ui.glMeshWidget->editMode = GLMeshWidget::QZ_MOVE;
-	ui.actionEditMove->setChecked(true);
-	ui.actionEditDrag->setChecked(false);
-	ui.actionEditPick->setCheckable(false);
-
-	qout.output("Edit Mode: Move", OUT_STATUS);
-}
-
-void QZGeometryWindow::setEditModePick()
-{
-	ui.glMeshWidget->editMode = GLMeshWidget::QZ_PICK;
-	ui.actionEditMove->setChecked(false);
-	ui.actionEditDrag->setChecked(false);
-	ui.actionEditPick->setCheckable(true);
-
-	qout.output("Edit Mode: Pick", OUT_STATUS);
-}
-
-void QZGeometryWindow::setEditModeDrag()
-{
-	ui.glMeshWidget->editMode = GLMeshWidget::QZ_DRAG;
-	ui.actionEditMove->setChecked(false);
-	ui.actionEditDrag->setChecked(true);
-	ui.actionEditPick->setCheckable(false);
-
-	qout.output("Edit Mode: Drag", OUT_STATUS);
-}
-
-void QZGeometryWindow::computeSGW()
-{
-
 }

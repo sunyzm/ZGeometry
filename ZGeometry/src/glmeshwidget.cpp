@@ -343,6 +343,7 @@ void GLMeshWidget::drawGL()
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
 {
+	//prerequisite: glMatrixMode(GL_MODELVIEW)
 	glTranslated(trans.x, trans.y, trans.z);
 	double rot[16];
 	qrot.convert( rot );
@@ -508,11 +509,6 @@ void GLMeshWidget::drawMeshExt( int obj )
 			vt = vpMP[0]->posRef;
 		vt += shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
-// 		glPointSize(10.0);
-// 		glBegin(GL_POINTS);
-// 		glVertex3d(vt.x, vt.y, vt.z);
-// 		glEnd();
-// 		glPointSize(2.0);
  		GLUquadric* quadric = gluNewQuadric();
  		gluQuadricDrawStyle(quadric, GLU_FILL);
  		glPushMatrix();

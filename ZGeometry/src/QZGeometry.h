@@ -36,6 +36,7 @@ private slots:
 	void setDisplayMesh();
 	void displayDiffPosition();
 	void setRefPoint1(int vn);
+	void setCommonParameter(int p);
 	void setShowSignature();
 	void setShowRefPoint();
 	void setShowColorLegend();
@@ -43,6 +44,8 @@ private slots:
 	void selectObject(int index);
 	void clone();
 	void deformSimple();
+	void reconstructByMHB();
+	void reconstructBySGW();
 	void filterExperimental();
 private:	// methods
 	void makeConnections();
@@ -60,5 +63,6 @@ private:	// attributes
 	DifferentialMeshProcessor vMP[2];
 
 	struct {int xMove, yMove, zMove; } refMove;
+	int commonPara;
 };
 
