@@ -261,7 +261,7 @@ Vector3D operator/(const Vector3D& lv, const double u)
 	return rel;
 }
 
-double   operator*(const Vector3D& lv, const Vector3D& rv)
+double operator*(const Vector3D& lv, const Vector3D& rv)
 {
 	return lv.x*rv.x + lv.y*rv.y + lv.z*rv.z;
 }

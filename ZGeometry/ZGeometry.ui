@@ -176,7 +176,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>26</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -207,7 +207,7 @@
      <property name="title">
       <string>Reconstruct</string>
      </property>
-     <addaction name="actionClone"/>
+     <addaction name="actionReconstructSGW"/>
     </widget>
     <widget class="QMenu" name="menuFilter">
      <property name="title">
@@ -217,6 +217,7 @@
     </widget>
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
+    <addaction name="actionClone"/>
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
     <addaction name="menuDeform"/>
@@ -437,6 +438,11 @@
   <action name="actionFilter_1">
    <property name="text">
     <string>Filter #1</string>
+   </property>
+  </action>
+  <action name="actionReconstructSGW">
+   <property name="text">
+    <string>SGW</string>
    </property>
   </action>
  </widget>

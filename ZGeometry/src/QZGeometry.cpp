@@ -444,6 +444,10 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		}
 		break;
 
+	case Qt::Key_C:
+		clone();
+		break;
+
 	case Qt::Key_S:
 		setDisplayMesh();
 		break;
@@ -462,6 +466,10 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	
 	case Qt::Key_D:
 		setEditModeDrag();
+		break;
+
+	case Qt::Key_E:
+		deformSimple();
 		break;
 
 	case Qt::Key_X:
