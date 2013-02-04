@@ -94,11 +94,12 @@ bool QZGeometryWindow::initialize()
 		return false;
 	}
 	else qout.output("Matlab engine initialized!", OUT_CONSOLE);
-
+	qout.output('*', 24);
+	
 	setDisplayMesh();
 	setEditModeMove();
 
-////////    load meshes    ////////
+	/// load meshes    
 	ifstream meshfiles(g_meshListName);
 	if (!meshfiles)
 	{
@@ -124,6 +125,9 @@ bool QZGeometryWindow::initialize()
 	mesh1.scaleEdgeLenToUnit();
 	mesh1.gatherStatistics();
 	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
+	
+	Vector3D center1 = mesh1.m_Center, bbox1 = mesh1.m_bBox;
+	qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
 
 /*	
 	ifstream ifcoord("output/coordtrans4.dat");
@@ -137,9 +141,10 @@ bool QZGeometryWindow::initialize()
 	}
 //*/	
 	
+	/// update ui
 	vMP[0].init(&mesh1, m_ep);
 	ui.glMeshWidget->addMesh(&vMP[0]);
-	ui.glMeshWidget->fieldView(mesh1.m_Center, mesh1.m_bBox);
+	ui.glMeshWidget->fieldView(center1, bbox1);
 
 	ui.spinBox1->setMinimum(0);
 	ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
@@ -150,8 +155,7 @@ bool QZGeometryWindow::initialize()
 	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
 	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
 
-	this->computeLaplacian(0);
-	
+	this->computeLaplacian(0);	
 	return true;
 }
 
@@ -186,7 +190,7 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	ui.actionComputeLaplacian->setChecked(true);
 	
 	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-	qout.output(qformat.sprintf("--Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
+	qout.output(qformat.sprintf("Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
 }
 
 void QZGeometryWindow::setRefPoint1( int vn )

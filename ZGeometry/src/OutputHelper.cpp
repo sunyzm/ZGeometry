@@ -44,6 +44,15 @@ void OutputHelper::output( const char* msg, int venue /*= OUT_CONSOLE*/, double 
 	output(QString(msg), venue, timeout);
 }
 
+void OutputHelper::output( char c, int repeat )
+{
+	char *str = new char[repeat+1];
+	for (int i = 0; i < repeat; ++i)
+		str[i] = c;
+	str[repeat] = '\0';
+	output(QString(str), OUT_CONSOLE);
+}
+
 
 void OutputHelper::clearOutput( int venue /*= 1*/ )
 {

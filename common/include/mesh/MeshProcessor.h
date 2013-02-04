@@ -46,7 +46,6 @@ public:
 
 class MeshFunction : public MeshProperty
 {
-	int m_size;		// vertex number of the mesh
 public:
 	MeshFunction() { m_size = 0; }
 	MeshFunction(int s) { m_size = 0; m_function.resize(s); }
@@ -57,6 +56,7 @@ public:
 
 	double& operator[](int idx);
 protected:
+	int m_size;		// vertex number of the mesh
 	std::vector<double> m_function;
 };
 
@@ -69,11 +69,12 @@ public:
 
 class MeshKernel : public MeshProperty
 {
-public:
+protected:
+	int m_size;
+	int m_nonzeros;
 	std::vector<int> m_II;
 	std::vector<int> m_JJ;
 	std::vector<int> m_VV;
-
 };
 
 class MeshProcessor

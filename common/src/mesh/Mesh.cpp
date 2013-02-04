@@ -347,7 +347,7 @@ void CFace::calcNormalAndArea()
 	v[0] = m_Vertices[2]->getPos() - m_Vertices[0]->getPos();
 	v[1] = m_Vertices[2]->getPos() - m_Vertices[1]->getPos();
 	m_vNormal = v[0] ^ v[1];
-	m_faceArea = m_vNormal.length()/2;
+	m_faceArea = m_vNormal.length() / 2;
 	m_vNormal.normalize();
 	
 }
@@ -2933,7 +2933,7 @@ void CMesh::scaleAreaToVertexNum()
 void CMesh::gatherStatistics()
 {
 	// collect/compute statistics
-	// 0. face area and normal
+	// 0. individual face area and normal
 	// 1. m_edge (avg edge length)
 	// 2. boundingBox
 	// 3. center

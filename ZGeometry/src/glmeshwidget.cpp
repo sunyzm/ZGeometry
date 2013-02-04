@@ -270,11 +270,13 @@ void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
 	g_EyeZ = 15.0 * (float)bbox.y;
 	g_myFar = 100.0 * (float)bbox.y;
 	g_myNear = 0.01 * g_myFar;
-	float len = (bbox.y > bbox.x) ? (float)bbox.y : (float)bbox.x;
-	g_myAngle = 2.0 * atan2(len, g_EyeZ);
-	g_myAngle = (g_myAngle * 180.0) / PI + 5.0;
 
-	qout.output(qformat.sprintf("(%f,%f,%f) - (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z));
+	float len = bbox.x;
+	if (bbox.y > len) len = bbox.y;
+	if (bbox.z > len) len = bbox.z;
+
+	g_myAngle = 2.0 * atan2(len, g_EyeZ);
+	g_myAngle = (g_myAngle * 180.0) / PI + 2.0;
 }
 
 void GLMeshWidget::resizeGL( int width, int height )
@@ -457,7 +459,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
 			glNormal3f(norm.x, norm.y, norm.z);	 				
 			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
-			vt -= shift;	//add some offset to separate object 1 and 2
+			vt += shift;	//add some offset to separate object 1 and 2
 			if (showSignature) 
 				glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
 			glVertex3f(vt.x, vt.y, vt.z);
@@ -487,9 +489,9 @@ void GLMeshWidget::drawMeshExt( int obj )
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
 				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
-				v1 -= shift;
+				v1 += shift;
 				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
-				v2 -= shift;
+				v2 += shift;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
 			}
@@ -504,7 +506,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
 		if (obj == 0)
 			vt = vpMP[0]->posRef;
-		vt -= shift;
+		vt += shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 // 		glPointSize(10.0);
 // 		glBegin(GL_POINTS);
@@ -525,7 +527,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
 		{
 		 	Vector3D vt = iter->second;
-		 	vt -= shift;
+		 	vt += shift;
 		 	glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
 		 	GLUquadric* quadric = gluNewQuadric();
 		   	gluQuadricDrawStyle(quadric, GLU_FILL);
@@ -544,7 +546,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 		{
 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
-			vt -= shift;
+			vt += shift;
 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
 			glVertex3d(vt.x, vt.y, vt.z);
 		}
@@ -554,7 +556,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 // 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 // 		{
 // 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
-// 			vt -= shift;
+// 			vt += shift;
 // 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
 // 			GLUquadric* quadric = gluNewQuadric();
 //   		gluQuadricDrawStyle(quadric, GLU_FILL);
