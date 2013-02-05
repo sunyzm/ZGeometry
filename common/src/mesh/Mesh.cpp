@@ -3,7 +3,8 @@
 #include <cstdlib>
 #include <set>
 #include <mesh/Mesh.h>
-
+#include <stdexcept>
+#include <algorithm>
 using namespace std;
 
 
@@ -3070,6 +3071,9 @@ std::vector<int> CMesh::getOriginalVertexIndex() const
 
 std::vector<int> CMesh::getNeighboringVertex( int v, int ring ) const
 {
+	if (ring < 0)
+		throw runtime_error("Error: getNeighboringVertex with ring < 0");
+
 	list<int> vNeighbor;
 	
 	m_pVertex[v].m_mark = v;
@@ -3100,7 +3104,7 @@ std::vector<int> CMesh::getNeighboringVertex( int v, int ring ) const
 		nb1 = nb2;
 	}
 
-	vNeighbor.pop_front();
+	vNeighbor.pop_front();	// pop the original vertex
 	m_pVertex[v].m_mark = -1;
 	vector<int> vn;
 	for (list<int>::iterator iter = vNeighbor.begin(); iter != vNeighbor.end(); ++iter)
@@ -3299,4 +3303,20 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 			m_vVertices[vDeformedIdx[i]]->setPos(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 
 	}
+}
+
+VectorInt CMesh::getRingVertex( int v, int ring ) const
+{
+	if (ring < 1) 
+		throw logic_error("Error: getRingVertex with ring < 1");
+	std::vector<int> v1 = getNeighboringVertex(v, ring-1), v2 = getNeighboringVertex(v, ring); 
+
+	std::vector<int> v3;
+	for (auto iter = v2.begin(); iter != v2.end(); ++iter)
+	{
+		if (find(v1.begin(), v1.end(), *iter) == v1.end())
+			v3.push_back(*iter);
+	}
+
+	return v3;
 }

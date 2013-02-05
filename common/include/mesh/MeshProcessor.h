@@ -34,7 +34,8 @@ public:
 	int index;
 	int scale;
 	double value;
-	MeshFeature(int i, int s) : index(i), scale(s) {}
+	MeshFeature(int i, int s) : index(i), scale(s), value(0.) {}
+	MeshFeature(int i) : index(i), scale(0), value(0.) {}
 };
 
 class MeshFeatureList : public MeshProperty
@@ -81,6 +82,7 @@ class MeshProcessor
 {
 public:
 	MeshProcessor();
+	~MeshProcessor();
 	void setMesh(CMesh* newMesh);
 	bool addProperty(MeshProperty* newProperty);
 	MeshProperty* retrievePropertyByID(int rid);

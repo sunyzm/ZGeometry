@@ -234,6 +234,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="doc\manual.txt" />
     <None Include="meshfiles.cfg" />
     <CustomBuild Include="zgeometry.qrc">
       <FileType>Document</FileType>

@@ -31,16 +31,17 @@ private slots:
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
+	void displayNeighborVertices();
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
 	void setDisplayMesh();
 	void displayDiffPosition();
 	void setRefPoint1(int vn);
 	void setCommonParameter(int p);
-	void setShowSignature();
-	void setShowRefPoint();
-	void setShowColorLegend();
-	void setShowFeatures();
+	void toggleShowSignature();
+	void toggleShowRefPoint();
+	void toggleShowColorLegend();
+	void toggleShowFeatures();
 	void selectObject(int index);
 	void clone();
 	void deformSimple();
@@ -63,6 +64,6 @@ private:	// attributes
 	DifferentialMeshProcessor vMP[2];
 
 	struct {int xMove, yMove, zMove; } refMove;
-	int commonPara;
+	int m_commonParameter;
 };
 

@@ -29,6 +29,7 @@ double MeshFunction::norm() const
 bool MeshProcessor::addProperty( MeshProperty* newProperty )
 {
 	vProperties.push_back(newProperty);
+	return true;
 }
 
 MeshProcessor::MeshProcessor()
@@ -82,5 +83,13 @@ void MeshProcessor::removePropertyByName( const std::string& rn )
 			vProperties.erase(iter);
 			break;
 		}
+	}
+}
+
+MeshProcessor::~MeshProcessor()
+{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
+	{
+		delete *iter;
 	}
 }

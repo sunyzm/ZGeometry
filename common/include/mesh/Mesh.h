@@ -266,6 +266,7 @@ public:
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	VectorInt	getOriginalVertexIndex() const;
 	VectorInt	getNeighboringVertex(int v, int ring) const;
+	VectorInt   getRingVertex(int v, int ring) const;
 	VectorInt	getVertexAdjacentFacesIndex(int vIdx);
 	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);

@@ -30,7 +30,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
 	
-	commonPara = 50;
+	m_commonParameter = 50;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
@@ -72,21 +72,23 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructBySGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 
-
+	 
 	////////	Display	////////
+	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
+	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
+	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
+	QObject::connect(ui.actionDisplayNeighbors, SIGNAL(triggered()), this, SLOT(displayNeighborVertices()));
+	QObject::connect(ui.actionShowFeatures, SIGNAL(triggered()), this, SLOT(toggleShowFeatures()));
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
-	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(setShowRefPoint()));
+	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(toggleShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
-	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
-	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
-	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
-	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(setShowSignature()));
+	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(toggleShowSignature()));
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
-	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(setShowColorLegend()));
+	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(toggleShowColorLegend()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -202,14 +204,28 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		clone();
 		break;
 
+	case Qt::Key_F:
+		toggleShowFeatures();
+		break;
+
+	case Qt::Key_R:
+		toggleShowRefPoint();
+		break;
+
 	case Qt::Key_S:
-		setDisplayMesh();
+		toggleShowSignature();
 		break;
 
-	case Qt::Key_W:
-		setDisplayWireframe();
+	case Qt::Key_W:	// switch between display mode
+	{
+		if (ui.glMeshWidget->vSettings[0].displayType == DisplaySettings::Mesh)
+			setDisplayWireframe();
+		else if (ui.glMeshWidget->vSettings[0].displayType == DisplaySettings::Wireframe)
+			setDisplayPointCloud();
+		else setDisplayMesh();
 		break;
-
+	}	
+		
 	case Qt::Key_M:
 		setEditModeMove();
 		break;
@@ -301,7 +317,8 @@ void QZGeometryWindow::computeSGWSFeatures()
 		}
 	}
 
-	ui.glMeshWidget->vSettings[0].showFeatures = true;
+	if (!ui.actionShowFeatures->isChecked())
+		toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
 
@@ -346,7 +363,7 @@ void QZGeometryWindow::setRefPoint1( int vn )
 
 void QZGeometryWindow::setCommonParameter( int p )
 {
-	commonPara = p;
+	m_commonParameter = p;
 }
 
 void QZGeometryWindow::setEditModeMove()
@@ -379,32 +396,36 @@ void QZGeometryWindow::setEditModeDrag()
 	qout.output("Edit Mode: Drag", OUT_STATUS);
 }
 
-void QZGeometryWindow::setShowRefPoint()
+void QZGeometryWindow::toggleShowRefPoint()
 {
-	bool bChecked = ui.actionShowRefPoint->isChecked();
+	bool bChecked = !ui.actionShowRefPoint->isChecked();
 	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
 	ui.actionShowRefPoint->setChecked(bChecked);
 
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setShowColorLegend()
+void QZGeometryWindow::toggleShowColorLegend()
 {
-	bool bChecked = ui.actionColorLegend->isChecked();
+	bool bChecked = !ui.actionColorLegend->isChecked();
 	ui.glMeshWidget->m_bShowLegend = bChecked;
 	ui.actionColorLegend->setChecked(bChecked);
 
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setShowFeatures()
+void QZGeometryWindow::toggleShowFeatures()
 {
-	// TODO
+	bool bChecked = !ui.actionShowFeatures->isChecked();
+	ui.glMeshWidget->vSettings[0].showFeatures = bChecked;
+	ui.actionShowFeatures->setChecked(bChecked);
+
+	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setShowSignature()
+void QZGeometryWindow::toggleShowSignature()
 {
-	bool bToShow = ui.actionShowSignature->isChecked();
+	bool bToShow = !ui.actionShowSignature->isChecked();
 	ui.actionShowSignature->setChecked(bToShow);
 	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
 	ui.glMeshWidget->update();
@@ -727,5 +748,27 @@ void QZGeometryWindow::filterExperimental()
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayNeighborVertices()
+{
+	int ring = (m_commonParameter > 45) ? (m_commonParameter-45) : 1;
+
+	int ref = vMP[0].pRef;
+	std::vector<int> vn = vMP[0].getMesh()->getNeighboringVertex(ref, ring);
+//	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
+	MeshFeatureList *mfl = new MeshFeatureList;
+	for (auto iter = vn.begin(); iter != vn.end(); ++iter)
+	{
+		mfl->m_vFeatures.push_back(MeshFeature(*iter));
+		mfl->setIDandName(1, "Neighbors");
+	}
+	vMP[0].addProperty(mfl);
+
+	vMP[0].vFeatures = mfl->m_vFeatures;
+	
+	if (!ui.actionShowFeatures->isChecked())
+		toggleShowFeatures();
 	ui.glMeshWidget->update();
 }

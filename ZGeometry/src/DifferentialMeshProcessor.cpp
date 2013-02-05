@@ -672,7 +672,7 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 		computeSGW(t_scales);
 	}
  	
- 	vector<vector<double> > SGW = m_vSGW;
+ 	const vector<vector<double> >& SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
 	int sizeCoeff = SGW.size();
@@ -696,25 +696,25 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 		vzCoeff[i] = itemSumZ;
 	}
 
-	double weightI = 1;
-	if (withConstraint)
-	{
-		SGW.push_back(vector<double>());
-		SGW.back().resize(m_size, 0.0);
-		SGW.back().at(pRef) = weightI;
-		
-		vxCoeff.push_back(posRef.x * weightI);
-		vyCoeff.push_back(posRef.y * weightI);
-		vzCoeff.push_back(posRef.z * weightI);
-	}
+// 	double weightI = 1;
+// 	if (withConstraint)
+// 	{
+// 		SGW.push_back(vector<double>());
+// 		SGW.back().resize(m_size, 0.0);
+// 		SGW.back().at(pRef) = weightI;
+// 		
+// 		vxCoeff.push_back(posRef.x * weightI);
+// 		vyCoeff.push_back(posRef.y * weightI);
+// 		vzCoeff.push_back(posRef.z * weightI);
+// 	}
 
-// 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
-// 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
-// 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+ 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
+ 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
+ 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
 
-	matlab_scgls(m_ep, SGW, vxCoeff, vx);
-	matlab_scgls(m_ep, SGW, vyCoeff, vy);
-	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
+//	matlab_scgls(m_ep, SGW, vxCoeff, vx);
+//	matlab_scgls(m_ep, SGW, vyCoeff, vy);
+//	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
 }
 
 void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescales )
@@ -724,7 +724,7 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 
 	m_vSGW.clear();
 	//	scaling function
-	if (true)	// must use scaling functions
+	if (true)	
 	{
 		for (int x = 0; x < m_size; ++x)
 		{
