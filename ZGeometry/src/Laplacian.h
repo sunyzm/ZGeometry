@@ -26,6 +26,8 @@ public:
 	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
 	Laplacian() : isBuilt(false), m_size(0) {}
 	void getSparseLaplacian(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
+	int getNonzeroNum() const { return vSS.size(); }
+	void dumpLaplacian(const std::string& path) const;
 private:
 	int m_size;
 	std::vector<double> vWeights;

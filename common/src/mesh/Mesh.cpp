@@ -1626,7 +1626,7 @@ bool CMesh::calVertexCurvature(int vi)
 
 double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a ) const
 {
-	double cosa = (b*b+c*c-a*a)/(2.0*b*c);
+	double cosa = (b*b+c*c-a*a) / (2.0*b*c);
 	cotan_a = cosa / sqrt(1-cosa*cosa);
 
 	if ( a*a + c*c < b*b )
@@ -1636,12 +1636,12 @@ double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a ) 
 	}
 	else if ( a*a + b*b < c*c || b*b + c*c < a*a)
 	{
-		double s = (a+b+c)/2.0;
-		return sqrt(s*(s-a)*(s-b)*(s-c))/8.0;
+		double s = (a+b+c) / 2.0;
+		return sqrt(s*(s-a)*(s-b)*(s-c)) / 8.0;
 	}
 	else 
 	{
-		return (a*a*cotan_a)/8.0;
+		return (a*a*cotan_a) / 8.0;
 	}
 }
 
@@ -1692,6 +1692,7 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 		Sv.push_back(cota);
 		tw[vj] -= cota;
 	}
+
 	if(bs >- 1)
 	{
 		int e1 = m_pHalfEdge[bs].m_iNextEdge;
@@ -1720,6 +1721,86 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 
 	Av = amix;
 	return true;
+}
+
+bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw ) const
+{
+	if( i < 0 || i >= m_nVertex) return false;
+
+	double amix = 0.0;		// mixed area
+	int bs = -1;
+	for( int j = 0; j < m_pVertex[i].m_nValence; j++ ) 
+	{
+		// get triangle edges
+		int e0 = m_pVertex[i].m_piEdge[j];
+		int e1 = m_pHalfEdge[e0].m_iNextEdge;
+		int e2 = m_pHalfEdge[e1].m_iNextEdge;
+		int vj = m_pHalfEdge[e0].m_iVertex[1];
+		if (m_pVertex[i].m_bIsBoundary && m_pHalfEdge[e2].m_iTwinEdge < 0)   // boundary vertex
+		{
+			bs = e2;
+		}
+		// get edge lengths
+		double len0 = getHalfEdgeLen(e0) / m_edge;
+		double len1 = getHalfEdgeLen(e1) / m_edge;
+		double len2 = getHalfEdgeLen(e2) / m_edge;
+		double cota, cota1 = 0, cota2 = 0;
+		amix += calHalfAreaMixed(len0, len1, len2, cota1);
+
+		// twin edge
+		e0 = m_pHalfEdge[e0].m_iTwinEdge;
+		if (e0 > -1)
+		{
+			e1 = m_pHalfEdge[e0].m_iNextEdge;
+			e2 = m_pHalfEdge[e1].m_iNextEdge;
+			// get edge lengths
+			len1 = getHalfEdgeLen(e1) / m_edge;
+			len2 = getHalfEdgeLen(e2) / m_edge;
+			// compute corner angle by cotangent law 
+			amix += calHalfAreaMixed(len0, len1, len2, cota2);
+		}
+		cota = (cota1 + cota2 ) / 2.0;
+
+		Iv.push_back(i+1);
+		Jv.push_back(vj+1);
+		Sv.push_back(cota);
+		tw[i] -= cota;
+
+// 		Iv.push_back(vj+1);
+// 		Jv.push_back(i+1);
+// 		Sv.push_back(cota);
+// 		tw[vj] -= cota;
+	}
+
+	if(bs >- 1)
+	{
+		int e1 = m_pHalfEdge[bs].m_iNextEdge;
+		int	e2 = m_pHalfEdge[e1].m_iNextEdge;
+		int vj = m_pHalfEdge[e2].m_iVertex[1];
+		assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
+		// get edge lengths
+		double len0 = getHalfEdgeLen(bs) / m_edge;
+		double len1 = getHalfEdgeLen(e1) / m_edge;
+		double len2 = getHalfEdgeLen(e2) / m_edge;
+		// compute corner angle by cotangent law 
+		double cota2;
+		amix += calHalfAreaMixed(len0, len1, len2, cota2);
+		double cota = cota2 / 2.0;		
+
+		Iv.push_back(i+1);
+		Jv.push_back(vj+1);
+		Sv.push_back(cota);
+		tw[i] -= cota;
+
+// 		Iv.push_back(vj+1);
+// 		Jv.push_back(i+1);
+// 		Sv.push_back(cota);		
+// 		tw[vj] -= cota;
+	}
+
+	Av = amix;
+	return true;
+
 }
 
 bool CMesh::calVertexArea(vector<double>& Av)

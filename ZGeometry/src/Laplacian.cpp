@@ -184,17 +184,17 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 
 	if(laplacianType == CotFormula)
 	{
-		for(int i = 0; i < m_size; i++)	//for each vertex
+		for(int k = 0; k < m_size; k++)	//for each vertex
 		{
 			double Av;
-			tmesh->calVertexLBO(i, vII, vJJ, vSS, Av, diagW);
+			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
 			vWeights.push_back(Av);		//mixed area as weight of each vertex
 		}
-		for(int i = 0; i < m_size; i++)
+		for(int k = 0; k < m_size; k++)
 		{
-			vII.push_back(i+1);
-			vJJ.push_back(i+1);
-			vSS.push_back(diagW[i]);
+			vII.push_back(k+1);
+			vJJ.push_back(k+1);
+			vSS.push_back(diagW[k]);
 		}
 	}
 	else if (laplacianType == Umbrella)
@@ -331,4 +331,15 @@ void Laplacian::getSparseLaplacian( std::vector<int>& II, std::vector<int>& JJ, 
 	II = vII; 
 	JJ = vJJ;
 	SS = vSS;
+}
+
+void Laplacian::dumpLaplacian( const std::string& path ) const
+{
+	int nz = vII.size();
+	ofstream lout(path.c_str());
+	for (int i = 0; i < nz; ++i)
+	{
+		lout << vII[i] << ',' << vJJ[i] << ',' << vSS[i] << '\n';
+	}
+	lout.close();
 }

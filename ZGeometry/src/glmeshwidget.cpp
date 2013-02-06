@@ -513,7 +513,7 @@ void GLMeshWidget::drawMeshExt( int obj )
  		gluQuadricDrawStyle(quadric, GLU_FILL);
  		glPushMatrix();
  		glTranslated(vt.x, vt.y, vt.z);
- 		gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/8.0, 16, 8);
+ 		gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/4.0, 16, 8);
  		glPopMatrix();
 	}
 
@@ -529,7 +529,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		   	gluQuadricDrawStyle(quadric, GLU_FILL);
 		   	glPushMatrix();
 		   	glTranslated(vt.x, vt.y, vt.z);
-		   	gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/8.0, 16, 8);
+		   	gluSphere(quadric, vpMP[obj]->getMesh()->m_edge/4.0, 16, 8);
 		   	glPopMatrix();
 		}
 	}

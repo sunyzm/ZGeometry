@@ -213,7 +213,7 @@ public:
 
 ////////////////    methods    ////////////////
 public:
-//constructors
+// constructors
 	CMesh();
 	CMesh(const CMesh* pMesh);
 	CMesh(const CMesh& oldMesh);
@@ -221,7 +221,7 @@ public:
 	void        cloneFrom(const CMesh& oldMesh);
 //	void        clone(const CMesh* oldMesh);
 
-//operations
+// operations
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	
@@ -249,7 +249,7 @@ public:
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
-	
+	bool		calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 //  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
 	bool		calVertexArea(std::vector<double>& Av);
 	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor

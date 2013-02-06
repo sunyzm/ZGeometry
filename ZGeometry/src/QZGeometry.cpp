@@ -169,6 +169,9 @@ bool QZGeometryWindow::initialize()
 	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
 
 	this->computeLaplacian(0);	
+	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
+	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
+
 	return true;
 }
 
@@ -674,7 +677,7 @@ void QZGeometryWindow::clone()
 
 void QZGeometryWindow::reconstructByMHB()
 {
-	assert(vMP[1].mesh);
+//	assert(vMP[1].mesh);
 
 	int nEig = vMP[0].mhb.m_nEigFunc;
 	vector<double> vx, vy, vz;
@@ -694,7 +697,7 @@ void QZGeometryWindow::reconstructByMHB()
 
 void QZGeometryWindow::reconstructBySGW()
 {
-	assert(vMP[1].mesh);
+//	assert(vMP[1].mesh);
 
 	vector<double> vx, vy, vz;
 	vMP[0].reconstructBySGW(vx, vy, vz, false);
