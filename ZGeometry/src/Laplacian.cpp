@@ -172,10 +172,10 @@ MeshFunction ManifoldHarmonics::getManifoldHarmonic( int k ) const
 
 void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	this->size = tmesh->getVerticesNum();
+	this->m_size = tmesh->getVerticesNum();
 	
 	vector<double> diagW;
-	diagW.resize(size, 0);
+	diagW.resize(m_size, 0);
 
 	vII.clear();
 	vJJ.clear();
@@ -184,13 +184,13 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 
 	if(laplacianType == CotFormula)
 	{
-		for(int i = 0; i < size; i++)	//for each vertex
+		for(int i = 0; i < m_size; i++)	//for each vertex
 		{
 			double Av;
 			tmesh->calVertexLBO(i, vII, vJJ, vSS, Av, diagW);
 			vWeights.push_back(Av);		//mixed area as weight of each vertex
 		}
-		for(int i = 0; i < size; i++)
+		for(int i = 0; i < m_size; i++)
 		{
 			vII.push_back(i+1);
 			vJJ.push_back(i+1);
@@ -199,9 +199,9 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 	}
 	else if (laplacianType == Umbrella)
 	{
-		vWeights.resize(size, 1.0);
+		vWeights.resize(m_size, 1.0);
 
-		for (int i = 0; i < size; ++i)
+		for (int i = 0; i < m_size; ++i)
 		{
 			const CVertex* vi = tmesh->getVertex_const(i);
 			vector<int> vNeighbors;
@@ -229,14 +229,14 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 	assert(nEig > 0);
 
 	mhb.m_func.clear();
-	mhb.m_size = this->size;
+	mhb.m_size = this->m_size;
 	mhb.m_nEigFunc = std::min(mhb.m_size, nEig);
 
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
 	
-	AA = mxCreateDoubleMatrix(size, 1, mxREAL);
+	AA = mxCreateDoubleMatrix(m_size, 1, mxREAL);
 	double *aa = mxGetPr(AA);
-	assert((int)vWeights.size() == size);
+	assert((int)vWeights.size() == m_size);
 	std::copy(vWeights.begin(), vWeights.end(), aa);
 
 	NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);
@@ -271,10 +271,10 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 	for(int i = 0; i < mhb.m_nEigFunc; i++)
 	{
 		mhb.m_func.push_back(ManifoldBasis());
-		mhb.m_func[i].m_vec.reserve(size);
-		for(int j = 0; j < size; j++)
+		mhb.m_func[i].m_vec.reserve(m_size);
+		for(int j = 0; j < m_size; j++)
 		{
-			mhb.m_func[i].m_vec.push_back(evec[i*size+j]);
+			mhb.m_func[i].m_vec.push_back(evec[i*m_size+j]);
 		}
 		mhb.m_func[i].m_val = std::fabs(eval[i]);		// always non-negative
 	}
@@ -291,10 +291,10 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 //: computer inner product of two manifold functions induced by the Laplacian matrix
 double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
 {
-	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->size);
+	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->m_size);
 
 	double sum = 0;
-	for (int i = 0; i < size; ++i)
+	for (int i = 0; i < m_size; ++i)
 	{
 		sum += vf[i] * vWeights[i] * vg[i];
 	}
@@ -303,7 +303,7 @@ double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector
 
 void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
 {
-	assert(func.size() == size);
+	assert(func.size() == m_size);
 /*	
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
 
