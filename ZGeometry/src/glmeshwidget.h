@@ -26,7 +26,10 @@ public:
 	std::vector<DisplaySettings> vSettings;
 //	int active_handle;
 
-	bool m_bShowLegend;	
+	bool m_bShowLegend;
+	bool m_bShowFeatures;
+	bool m_bShowSignature;
+	bool m_bShowRefPoint;
 	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
 
 	GLMeshWidget(QWidget *parent = 0);

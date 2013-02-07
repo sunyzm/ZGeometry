@@ -2,12 +2,14 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <algorithm>
 #include <QtGui/QMessageBox>
 #include <QTime>
 #include "QZGeometry.h"
 
-#define DEFAULT_EIGEN_SIZE 300
+#define DEFAULT_EIGEN_SIZE 500
 #define LOAD_MHB_CACHE 1
+
 
 using namespace std;
 
@@ -284,7 +286,10 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	}
 	else 
 	{
-		vMP[obj].decomposeLaplacian(DEFAULT_EIGEN_SIZE);
+		int nEig = DEFAULT_EIGEN_SIZE;
+		if (nEig > mesh1.getVerticesNum()-1)
+			nEig = mesh1.getVerticesNum() - 1;
+		vMP[obj].decomposeLaplacian(nEig);
 //		vMP[obj].decomposeLaplacian(vMP[obj].m_size);
 		vMP[obj].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
@@ -401,8 +406,8 @@ void QZGeometryWindow::setEditModeDrag()
 
 void QZGeometryWindow::toggleShowRefPoint()
 {
-	bool bChecked = !ui.actionShowRefPoint->isChecked();
-	ui.glMeshWidget->vSettings[0].showRefPoint = bChecked;
+	bool bChecked = !ui.glMeshWidget->m_bShowRefPoint;
+	ui.glMeshWidget->m_bShowRefPoint = bChecked;
 	ui.actionShowRefPoint->setChecked(bChecked);
 
 	ui.glMeshWidget->update();
@@ -410,7 +415,7 @@ void QZGeometryWindow::toggleShowRefPoint()
 
 void QZGeometryWindow::toggleShowColorLegend()
 {
-	bool bChecked = !ui.actionColorLegend->isChecked();
+	bool bChecked = !ui.glMeshWidget->m_bShowLegend;
 	ui.glMeshWidget->m_bShowLegend = bChecked;
 	ui.actionColorLegend->setChecked(bChecked);
 
@@ -419,8 +424,8 @@ void QZGeometryWindow::toggleShowColorLegend()
 
 void QZGeometryWindow::toggleShowFeatures()
 {
-	bool bChecked = !ui.actionShowFeatures->isChecked();
-	ui.glMeshWidget->vSettings[0].showFeatures = bChecked;
+	bool bChecked = !ui.glMeshWidget->m_bShowFeatures;
+	ui.glMeshWidget->m_bShowFeatures = bChecked;
 	ui.actionShowFeatures->setChecked(bChecked);
 
 	ui.glMeshWidget->update();
@@ -428,9 +433,10 @@ void QZGeometryWindow::toggleShowFeatures()
 
 void QZGeometryWindow::toggleShowSignature()
 {
-	bool bToShow = !ui.actionShowSignature->isChecked();
+	bool bToShow = !ui.glMeshWidget->m_bShowSignature;
+	ui.glMeshWidget->m_bShowSignature = bToShow;
 	ui.actionShowSignature->setChecked(bToShow);
-	ui.glMeshWidget->vSettings[0].showColorSignature = bToShow;
+	
 	ui.glMeshWidget->update();
 }
 
@@ -471,12 +477,12 @@ void QZGeometryWindow::setDisplayMesh()
 
 void QZGeometryWindow::displayEigenfunction()
 {
+	int select_eig = (m_commonParameter - 49 > 1) ? (m_commonParameter - 49) : 1;
+
 	if (selected[0])
 	{
 		DifferentialMeshProcessor& mp = vMP[0];
-		mp.normalizeSignatureFrom(mp.mhb.m_func[1].m_vec);
-		ui.glMeshWidget->vSettings[0].showColorSignature = true;
-		ui.actionShowSignature->setChecked(true);
+		mp.normalizeSignatureFrom(mp.mhb.m_func[select_eig].m_vec);
 	}
 
 // 	if (selected[1] && vMP[1].mesh)
@@ -485,9 +491,12 @@ void QZGeometryWindow::displayEigenfunction()
 // 		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
-	
+
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
 	ui.glMeshWidget->update();
-	qout.output("Show eigenfunction 1");
+	qout.output("Show eigenfunction" + Int2String(select_eig));
 }
 
 void QZGeometryWindow::displayMexicanHatWavelet1()
@@ -500,8 +509,6 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
 		mp.normalizeSignatureFrom(vMHW);
 
-		ui.glMeshWidget->vSettings[0].showColorSignature = true;
-		ui.actionShowSignature->setChecked(true);
 	}
 
 // 	if (selected[1] && vMP[1].mesh)
@@ -515,6 +522,9 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
 
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
 	ui.glMeshWidget->update();
 }
 
@@ -527,9 +537,6 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
 		mp.normalizeSignatureFrom(vMHW);
-
-		ui.glMeshWidget->vSettings[0].showColorSignature = true;
-		ui.actionShowSignature->setChecked(true);
 	}
 
 // 	if (selected[1] && vMP[1].mesh)
@@ -543,6 +550,9 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 // 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
 // 	}
 
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
 	ui.glMeshWidget->update();
 }
 
@@ -555,10 +565,10 @@ void QZGeometryWindow::displayExperimental()
 
  	mp.normalizeSignatureFrom(vExp);
 
- 	ui.glMeshWidget->vSettings[0].showColorSignature = true;
-	ui.actionShowSignature->setChecked(true);
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
 
- 	ui.glMeshWidget->update();
+	ui.glMeshWidget->update();
 	qout.output("Show MHW from vertex #" + QString::number(mp.pRef));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
@@ -580,8 +590,8 @@ void QZGeometryWindow::displayCurvatureMean()
 
 	mp.bandCurveSignatureFrom(vCurvature, 0, 1);
 
-	ui.glMeshWidget->vSettings[0].showColorSignature = true;
-	ui.actionShowSignature->setChecked(true);
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
 
 	ui.glMeshWidget->update();
 	qout.output("Show Mean Curvature");
@@ -599,8 +609,8 @@ void QZGeometryWindow::displayCurvatureGauss()
 
 	mp.bandCurveSignatureFrom(vCurvature, -1, 1);
 
-	ui.glMeshWidget->vSettings[0].showColorSignature = true;
-	ui.actionShowSignature->setChecked(true);
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
 
 	ui.glMeshWidget->update();
 	qout.output("Show Mean Curvature");
@@ -619,7 +629,10 @@ void QZGeometryWindow::displayDiffPosition()
 	}
 
 	vMP[0].normalizeSignatureFrom(vDiff);
-	ui.glMeshWidget->vSettings[0].showColorSignature = true;
+	
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+	
 	ui.glMeshWidget->update();
 }
 
@@ -678,8 +691,10 @@ void QZGeometryWindow::clone()
 void QZGeometryWindow::reconstructByMHB()
 {
 //	assert(vMP[1].mesh);
+	
+	double ratio = min((double)m_commonParameter/50.0, 1.0);
+	int nEig = vMP[0].mhb.m_nEigFunc * ratio;
 
-	int nEig = vMP[0].mhb.m_nEigFunc;
 	vector<double> vx, vy, vz;
 	vMP[0].reconstructByMHB(nEig, vx, vy, vz);
 	mesh2.setVertexCoordinates(vx, vy, vz);

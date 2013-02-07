@@ -19,7 +19,6 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},
                                     {0.0, 1.0, 1.0, 1.0}};
 extern OutputHelper qout;
 extern QString qformat;
-//extern int g_objSelect;
 Qt::MouseButton gButton;
 FalseColorMap falseColorMap;
 
@@ -40,6 +39,10 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myAngle = 40.0;
 
 	m_bShowLegend = false;
+	m_bShowFeatures = false;
+	m_bShowSignature = false;
+	m_bShowRefPoint = false;
+
 	vSettings.resize(2, DisplaySettings());
 
 	setAutoFillBackground(false);
@@ -433,7 +436,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	Vector3D shift = Vector3D(0, 0, 0);
 	if (obj == 1) shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
 
-	bool showSignature = vSettings[obj].showColorSignature && !vpMP[obj]->vDisplaySignature.empty();
+	bool showSignature = m_bShowSignature && !vpMP[obj]->vDisplaySignature.empty();
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -502,7 +505,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glEnable(GL_LIGHTING);
 
 	///	draw reference point
-	if ( obj == 0 && vSettings[0].showRefPoint && vpMP[0]->pRef >= 0 )
+	if ( obj == 0 && m_bShowRefPoint && vpMP[0]->pRef >= 0 )
 	{
 		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
 		if (obj == 0)
@@ -535,7 +538,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	}
 
 	/// draw feature points
-	if (obj == 0 && vSettings[0].showFeatures)
+	if (obj == 0 && m_bShowFeatures)
 	{
 		glPointSize(10.0);
 		glBegin(GL_POINTS);
