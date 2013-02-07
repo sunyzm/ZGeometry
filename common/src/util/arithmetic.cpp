@@ -46,3 +46,11 @@ void VectorPointwiseDivide( const std::vector<double>& v1, const std::vector<dou
 		v[i] = v1[i] / v2[i];
 	}
 }
+
+void triangleCotan( double a, double b, double c, double &cotan_a, double &cotan_c )
+{
+	double cosa = (b*b+c*c-a*a)/(2.0*b*c);
+	double cosc = (b*b+a*a-c*c)/(2.0*b*a);
+	cotan_a = cosa / std::sqrt(1-cosa*cosa);
+	cotan_c = cosc / std::sqrt(1-cosc*cosc);
+}

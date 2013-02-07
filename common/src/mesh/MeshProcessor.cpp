@@ -51,6 +51,7 @@ MeshProperty* MeshProcessor::retrievePropertyByID( int rid )
 		if ((*iter)->id == rid)
 			return *iter;
 	}
+	return NULL;
 }
 
 MeshProperty* MeshProcessor::retrievePropertyByName( const std::string& rn )
@@ -60,6 +61,7 @@ MeshProperty* MeshProcessor::retrievePropertyByName( const std::string& rn )
 		if ((*iter)->name == rn)
 			return *iter;
 	}
+	return NULL;
 }
 
 void MeshProcessor::removePropertyByID( int rid )

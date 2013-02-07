@@ -80,17 +80,17 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
 	QObject::connect(ui.actionDisplayNeighbors, SIGNAL(triggered()), this, SLOT(displayNeighborVertices()));
-	QObject::connect(ui.actionShowFeatures, SIGNAL(triggered()), this, SLOT(toggleShowFeatures()));
+	QObject::connect(ui.actionShowFeatures, SIGNAL(triggered(bool)), this, SLOT(toggleShowFeatures(bool)));
+	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
+	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
+	QObject::connect(ui.actionColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
-	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered()), this, SLOT(toggleShowRefPoint()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
-	QObject::connect(ui.actionShowSignature, SIGNAL(triggered()), this, SLOT(toggleShowSignature()));
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
-	QObject::connect(ui.actionColorLegend, SIGNAL(triggered()), this, SLOT(toggleShowColorLegend()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -404,7 +404,7 @@ void QZGeometryWindow::setEditModeDrag()
 	qout.output("Edit Mode: Drag", OUT_STATUS);
 }
 
-void QZGeometryWindow::toggleShowRefPoint()
+void QZGeometryWindow::toggleShowRefPoint(bool x)
 {
 	bool bChecked = !ui.glMeshWidget->m_bShowRefPoint;
 	ui.glMeshWidget->m_bShowRefPoint = bChecked;
@@ -413,7 +413,7 @@ void QZGeometryWindow::toggleShowRefPoint()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::toggleShowColorLegend()
+void QZGeometryWindow::toggleShowColorLegend( bool show /*= false*/ )
 {
 	bool bChecked = !ui.glMeshWidget->m_bShowLegend;
 	ui.glMeshWidget->m_bShowLegend = bChecked;
@@ -422,7 +422,7 @@ void QZGeometryWindow::toggleShowColorLegend()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::toggleShowFeatures()
+void QZGeometryWindow::toggleShowFeatures( bool show /*= false*/ )
 {
 	bool bChecked = !ui.glMeshWidget->m_bShowFeatures;
 	ui.glMeshWidget->m_bShowFeatures = bChecked;
@@ -431,7 +431,7 @@ void QZGeometryWindow::toggleShowFeatures()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::toggleShowSignature()
+void QZGeometryWindow::toggleShowSignature( bool show /*= false*/ )
 {
 	bool bToShow = !ui.glMeshWidget->m_bShowSignature;
 	ui.glMeshWidget->m_bShowSignature = bToShow;

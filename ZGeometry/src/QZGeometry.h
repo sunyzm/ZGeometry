@@ -38,10 +38,10 @@ private slots:
 	void displayDiffPosition();
 	void setRefPoint1(int vn);
 	void setCommonParameter(int p);
-	void toggleShowSignature();
-	void toggleShowRefPoint();
-	void toggleShowColorLegend();
-	void toggleShowFeatures();
+	void toggleShowSignature(bool show = false);
+	void toggleShowRefPoint(bool show = false);
+	void toggleShowColorLegend(bool show = false);
+	void toggleShowFeatures(bool show = false);
 	void selectObject(int index);
 	void clone();
 	void deformSimple();

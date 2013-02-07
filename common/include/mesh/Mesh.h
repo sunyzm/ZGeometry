@@ -251,6 +251,7 @@ public:
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 	bool		calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 //  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
+	void calLBO(std::vector<int>& vII, std::vector<int>& vJJ, std::vector<double>& vSS, std::vector<double>& vArea) const;
 	bool		calVertexArea(std::vector<double>& Av);
 	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 	void		VertexNeighborRing(int i, int ring, std::vector<int>& nbr) const;
@@ -271,6 +272,10 @@ public:
 	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+
+	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
+	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
+
 private:
 	void	clear();
 	bool	construct();	// construct connectivity
@@ -284,8 +289,6 @@ private:
 
 	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
 	void	calVertexNormal(int i);					// compute i-th vertex's normal
-	double	calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
-	double  calHalfAreaMixed(double a, double b, double c, double& cotan_a) const;
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 

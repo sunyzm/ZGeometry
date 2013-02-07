@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <cmath>
 
 const double PI = 3.14159265358979323846;
 
@@ -13,3 +14,5 @@ double VectorDotProduct(const std::vector<double>& v1, const std::vector<double>
 double VectorScalarProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::vector<double>& s);
 void VectorPointwiseProduct(const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v);
 void VectorPointwiseDivide(const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v);
+
+void triangleCotan(double a, double b, double c, double &cotan_a, double &cotan_c);

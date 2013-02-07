@@ -184,18 +184,20 @@ void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianTyp
 
 	if(laplacianType == CotFormula)
 	{
-		for(int k = 0; k < m_size; k++)	//for each vertex
-		{
-			double Av;
-			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
-			vWeights.push_back(Av);		//mixed area as weight of each vertex
-		}
-		for(int k = 0; k < m_size; k++)
-		{
-			vII.push_back(k+1);
-			vJJ.push_back(k+1);
-			vSS.push_back(diagW[k]);
-		}
+// 		for(int k = 0; k < m_size; k++)	//for each vertex
+// 		{
+// 			double Av;
+// 			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
+// 			vWeights.push_back(Av);		//mixed area as weight of each vertex
+// 		}
+// 		for(int k = 0; k < m_size; k++)
+// 		{
+// 			vII.push_back(k+1);
+// 			vJJ.push_back(k+1);
+// 			vSS.push_back(diagW[k]);
+// 		}
+
+		tmesh->calLBO(vII, vJJ, vSS, vWeights);
 	}
 	else if (laplacianType == Umbrella)
 	{
