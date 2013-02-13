@@ -2,7 +2,7 @@
 #include <util/timer.h>
 
 
-double CStopWatch::LIToSecs( LARGE_INTEGER & L) {
+double CStopWatch::LIToSecs( LARGE_INTEGER & L) const {
 	return (double)L.QuadPart / (double)frequency.QuadPart;
 }
 
@@ -20,7 +20,7 @@ void CStopWatch::stopTimer( ) {
 	QueryPerformanceCounter(&timer.stop) ;
 }
 
-double CStopWatch::getElapsedTime() {
+double CStopWatch::getElapsedTime() const {
 	LARGE_INTEGER time;
 	time.QuadPart = timer.stop.QuadPart - timer.start.QuadPart;
 	return LIToSecs(time) ;

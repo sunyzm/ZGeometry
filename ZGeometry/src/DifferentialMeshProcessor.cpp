@@ -1,7 +1,7 @@
 #include "DifferentialMeshProcessor.h"
 #include <fstream>
 #include <stdexcept>
-
+#include <algorithm>
 using namespace std;
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
@@ -12,6 +12,8 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	pRef = -1;
 	m_size = 0;
 	active_handle = -1;
+
+	isComputedSGW = false;
 }
 
 
@@ -764,6 +766,8 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 			}
 		}
 	}
+
+	isComputedSGW = true;
 }
 
 void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const
@@ -839,14 +843,17 @@ void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vecto
 	matlab_scgls(m_ep, SGW, vzCoeff, vz);
 }
 
-void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
+void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
 {
+	if (vHandleIdx.size() != vHandlePos.size())
+		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
+	
 	vDeformedPos.clear();
 
 	if (dfType == Simple)
 	{
 		int hIdx = vHandleIdx[0];
-		Vector3D handleTrans = vHandelPos[0] - mesh->getVertex_const(hIdx)->getPos();
+		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex_const(hIdx)->getPos();
 		
 		int nFreeVertices = vFreeIdx.size();
 		vector<double> vDist2Handle;
@@ -866,6 +873,15 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 		}
 		
 	}
-
+	else if (dfType == SGW)
+	{
+		if (!isComputedSGW)
+		{
+			double timescales[4] = {5, 10, 20, 40};
+			vector<double> vTimes;
+			std::copy(timescales, timescales + 4, vTimes.begin());
+			computeSGW(vTimes);
+		}
+	}
 
 }

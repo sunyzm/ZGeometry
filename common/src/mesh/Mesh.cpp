@@ -1379,7 +1379,9 @@ bool CMesh::construct()
 	{
 		CVertex* pV = *iter;
 		
-		assert(pV->m_nValence == pV->m_HalfEdges.size());
+		if(pV->m_nValence != pV->m_HalfEdges.size())
+			throw logic_error("Error: CMesh::construct; pV->m_nValence != pV->m_HalfEdges.size()");
+
 		if (pV->m_nValence == 0)
 		{
 			delete pV;
@@ -1461,7 +1463,9 @@ int CMesh::getEdgeNum(  )
 			if ((*iter)->m_eTwin && (*iter)->m_eTwin->m_bIsValid)
 				twinedgeNum++;
 		}
-		assert(twinedgeNum % 2 == 0);
+
+		if(twinedgeNum % 2 != 0)
+			throw logic_error("Error: CMesh::getEdgeNum; twinedgeNum must be even number");
 		return m_nHalfEdge - twinedgeNum / 2;
 	}
 
@@ -3372,7 +3376,8 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 
 void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos)
 {
-	assert(vDeformedIdx.size() == vNewPos.size());
+	if(vDeformedIdx.size() != vNewPos.size())
+		throw std::logic_error("Error: CMesh::setVertexCoordinates; incompatible parameters");
 
 	int vsize = vDeformedIdx.size();
 	for (int i = 0; i < vsize; ++i)

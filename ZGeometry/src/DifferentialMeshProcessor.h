@@ -6,7 +6,7 @@
 #include <map>
 #include "Laplacian.h"
 
-enum DeformType {Simple, Shell, Differential};
+enum DeformType {Simple, Shell, Differential, SGW};
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -44,10 +44,13 @@ public:
 	void addNewHandle(int hIdx);
 	
 	/// spectral wavelet transform related
+public:
+	bool isComputedSGW;
 private:
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
 public:
+	void computeSGW(const std::vector<double>& timescales);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
@@ -57,7 +60,6 @@ public:
 	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
-	void computeSGW(const std::vector<double>& timescales);
 	void getSGWSignature(double timescale, std::vector<double>& values) const;
 };
 

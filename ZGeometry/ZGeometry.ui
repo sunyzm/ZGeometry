@@ -176,7 +176,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -202,6 +202,7 @@
       <string>Deform</string>
      </property>
      <addaction name="actionDeformSimple"/>
+     <addaction name="actionDeformSGW"/>
     </widget>
     <widget class="QMenu" name="menuReconstruct">
      <property name="title">
@@ -464,6 +465,11 @@
    </property>
    <property name="text">
     <string>Show features</string>
+   </property>
+  </action>
+  <action name="actionDeformSGW">
+   <property name="text">
+    <string>SGW</string>
    </property>
   </action>
  </widget>

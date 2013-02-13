@@ -6,8 +6,10 @@
 #include <QtGui/QMessageBox>
 #include <QTime>
 #include "QZGeometry.h"
+#include <ZUtil.h>
 
 #define DEFAULT_EIGEN_SIZE 500
+#define DEFAULT_DEFORM_RING 5 
 #define LOAD_MHB_CACHE 1
 
 
@@ -73,7 +75,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructByMHB()));
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructBySGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
-
+	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	 
 	////////	Display	////////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -280,7 +282,7 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	string pathMHB = "output/" + vMP[obj].getMesh()->m_meshName + ".mhb";
 	
 	ifstream ifs(pathMHB.c_str());
-	if (ifs && LOAD_MHB_CACHE)
+	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
 	{
 		vMP[obj].readMHB(pathMHB);
 	}
@@ -332,7 +334,17 @@ void QZGeometryWindow::computeSGWSFeatures()
 
 void QZGeometryWindow::computeSGW()
 {
+	CStopWatch timer;
+	timer.startTimer();
 
+	double timescales[4] = {5, 10, 20, 40};
+	vector<double> vTimes;
+	std::copy(timescales, timescales + 4, vTimes.begin());
+
+	vMP[0].computeSGW(vTimes);
+
+	timer.stopTimer();
+	qout.output(QString("Time for compute SGW: ") + QString::number(timer.getElapsedTime()));
 }
 
 void QZGeometryWindow::selectObject( int index )
@@ -742,7 +754,7 @@ void QZGeometryWindow::deformSimple()
 	vHandle.push_back(activeHandle);
 	vector<Vector3D> vHandlePos;
 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, 5);
+	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
@@ -788,5 +800,22 @@ void QZGeometryWindow::displayNeighborVertices()
 	
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::deformSGW()
+{
+	int activeHandle = vMP[0].active_handle; 
+	vector<int> vHandle;
+	vHandle.push_back(activeHandle);
+	vector<Vector3D> vHandlePos;
+	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
+	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, 5);
+	vector<Vector3D> vNewPos;
+
+	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
+	mesh2.setVertexCoordinates(vFree, vNewPos);
+	mesh2.setVertexCoordinates(vHandle, vHandlePos);
+
 	ui.glMeshWidget->update();
 }

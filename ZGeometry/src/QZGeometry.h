@@ -45,6 +45,7 @@ private slots:
 	void selectObject(int index);
 	void clone();
 	void deformSimple();
+	void deformSGW();
 	void reconstructByMHB();
 	void reconstructBySGW();
 	void filterExperimental();
