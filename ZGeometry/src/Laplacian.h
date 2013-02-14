@@ -28,7 +28,7 @@ public:
 	void getSparseLaplacian(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
 	int getNonzeroNum() const { return vSS.size(); }
 	void dumpLaplacian(const std::string& path) const;
-private:
+
 	int m_size;
 	std::vector<double> vWeights;
 	std::vector<int> vII, vJJ;

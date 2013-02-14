@@ -5,8 +5,9 @@
 #include <vector>
 #include <map>
 #include "Laplacian.h"
+#include "MatlabWrapper.h"
 
-enum DeformType {Simple, Shell, Differential, SGW};
+enum DeformType {Simple, Shell, Laplace, SGW};
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -26,6 +27,7 @@ public:
 public:
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 
+	MatlabWrapper matlabWrapper;
 	Engine *m_ep;
 	
 	Laplacian mLaplacian;

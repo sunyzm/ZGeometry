@@ -167,6 +167,7 @@
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\DifferentialMeshProcessor.cpp" />
+    <ClCompile Include="src\MatlabWrapper.cpp" />
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
   </ItemGroup>
@@ -195,6 +196,7 @@
     <ClInclude Include="GeneratedFiles\ui_ZGeometry.h" />
     <ClInclude Include="src\DifferentialMeshProcessor.h" />
     <ClInclude Include="src\Laplacian.h" />
+    <ClInclude Include="src\MatlabWrapper.h" />
     <ClInclude Include="src\OutputHelper.h" />
     <CustomBuild Include="src\QZGeometry.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>

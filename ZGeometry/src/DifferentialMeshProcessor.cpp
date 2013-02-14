@@ -1,6 +1,7 @@
 #include "DifferentialMeshProcessor.h"
 #include <fstream>
 #include <stdexcept>
+#include <set>
 #include <algorithm>
 using namespace std;
 
@@ -26,6 +27,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 {
 	mesh = tm;
 	m_ep = e;
+	matlabWrapper.setEngine(e);
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
 	posRef = mesh->getVertex(0)->getPos();
@@ -35,7 +37,6 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 
 void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
 {
-//	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	mLaplacian.decompose(mhb, nEigFunc, m_ep);
 	this->isMHBBuilt = true;
 }
@@ -168,123 +169,6 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else
 		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPos();
 	 
-}
-
-void matlab_cgls(Engine* ep, const vector<vector<double> >& SGW, const vector<double>& b, vector<double>& sol)
-{
-	//solve A*sol = B
-
- 	assert(SGW.size() == b.size());
-
-	int sizeA = SGW.size(), sizeF = SGW[0].size();
-	sol.resize(sizeF);
-
-	mxArray *AA, *BB;
-	AA = mxCreateDoubleMatrix(sizeA, sizeF, mxREAL);
-	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
-	double *pAA = mxGetPr(AA), *pBB = mxGetPr(BB);
-
-	for (int i = 0; i < sizeA; ++i)
-	{
-		for (int j = 0; j < sizeF; ++j)
-		{
-			pAA[i + j*sizeA] = SGW[i][j];
-		}
-	}
-
-	for (int j = 0; j < sizeA; ++j)
-	{
-		pBB[j] = b[j];
-	}
-
-	engPutVariable(ep, "A", AA);
-	engPutVariable(ep, "b", BB);
-	
-	engEvalString(ep, "evals = cgls(A, b);");
-
-	mxArray *SS = engGetVariable(ep, "evals");
-	double *pSS = mxGetPr(SS);
-	for (int j = 0; j < sizeF; ++j)
-	{
-		sol[j] = pSS[j];
-	}
-
-	mxDestroyArray(AA);
-	mxDestroyArray(BB);
-}
-
-void matlab_scgls(Engine* ep, const vector<vector<double> >& SGW, const vector<double>& b, vector<double>& sol)
-{
-	//solve A*sol = B
-
-	assert(SGW.size() == b.size());
-
-	int sizeA = SGW.size(), sizeF = SGW[0].size();
-	sol.resize(sizeF);
-
-	const double sEpsilon = 1e-5;
-	vector<double> vII, vJJ, vSS;
-	for (int i = 0; i < sizeA; ++i)
-	{
-		for (int j = 0; j < sizeF; ++j)
-		{
-			if ( fabs(SGW[i][j]) > sEpsilon )
-			{
-				vII.push_back(i+1);
-				vJJ.push_back(j+1);
-				vSS.push_back(SGW[i][j]);
-			}
-		}
-	}
-
-	int sizeS = vSS.size();
-	mxArray *II, *JJ, *SS, *BB, *DimM, *DimN;
-	II = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
-	JJ = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
-	SS = mxCreateDoubleMatrix(sizeS, 1, mxREAL);
-	BB = mxCreateDoubleMatrix(sizeA, 1, mxREAL);
-	DimM = mxCreateDoubleMatrix(1, 1, mxREAL);
-	DimN = mxCreateDoubleMatrix(1, 1, mxREAL);
-	double *pII = mxGetPr(II), *pJJ = mxGetPr(JJ), 
-		   *pSS = mxGetPr(SS), *pBB = mxGetPr(BB),
-		   *pDimM = mxGetPr(DimM), *pDimN = mxGetPr(DimN);
-	
-	pDimM[0] = sizeA; pDimN[0] = sizeF;
-
-	for (int n = 0; n < sizeS; ++n)
-	{
-		pII[n] = vII.at(n);
-		pJJ[n] = vJJ.at(n);
-		pSS[n] = vSS.at(n);
-	}
-
-	for (int j = 0; j < sizeA; ++j)
-	{
-		pBB[j] = b[j];
-	}
-
-	engPutVariable(ep, "II", II);
-	engPutVariable(ep, "JJ", JJ);
-	engPutVariable(ep, "SS", SS);
-	engPutVariable(ep, "DimM", DimM);
-	engPutVariable(ep, "DimN", DimN);
-	engPutVariable(ep, "BB", BB);
-
-	engEvalString(ep, "evals = scgls(II, JJ, SS, DimM, DimN, BB);");
-
-	mxArray *evals = engGetVariable(ep, "evals");
-	double *pEvals = mxGetPr(evals);
-	for (int j = 0; j < sizeF; ++j)
-	{
-		sol[j] = pEvals[j];
-	}
-
-	mxDestroyArray(II);
-	mxDestroyArray(JJ);
-	mxDestroyArray(SS);
-	mxDestroyArray(DimM);
-	mxDestroyArray(DimN);
-	mxDestroyArray(BB);
 }
 
 void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
@@ -698,9 +582,18 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 		vzCoeff[i] = itemSumZ;
 	}
 
-// 	double weightI = 1;
-// 	if (withConstraint)
-// 	{
+	double weightI = 1;
+	if (withConstraint)
+	{
+		for (auto iter = mHandles.begin(); iter != mHandles.end(); ++iter)
+		{
+			vector<double> newRow;
+			newRow.resize(m_size, 0.0);
+			newRow[iter->first] = weightI;
+			vxCoeff.push_back(iter->second.x * weightI);
+			vxCoeff.push_back(iter->second.y * weightI);
+			vzCoeff.push_back(iter->second.z * weightI);
+		}
 // 		SGW.push_back(vector<double>());
 // 		SGW.back().resize(m_size, 0.0);
 // 		SGW.back().at(pRef) = weightI;
@@ -708,11 +601,11 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 // 		vxCoeff.push_back(posRef.x * weightI);
 // 		vyCoeff.push_back(posRef.y * weightI);
 // 		vzCoeff.push_back(posRef.z * weightI);
-// 	}
+	}
 
- 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
- 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
- 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
+ 	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
+	matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vy);
+	matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vz);
 
 //	matlab_scgls(m_ep, SGW, vxCoeff, vx);
 //	matlab_scgls(m_ep, SGW, vyCoeff, vy);
@@ -849,10 +742,20 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
 	
 	vDeformedPos.clear();
-
+	set<int> idxDeform;
+	
+	for (auto iter = vHandleIdx.begin(); iter != vHandleIdx.end(); ++iter)
+	{
+		idxDeform.insert(*iter);
+	}
+	for (auto iter = vFreeIdx.begin(); iter != vFreeIdx.end(); ++iter)
+	{
+		idxDeform.insert(*iter);
+	}
+	
 	if (dfType == Simple)
 	{
-		int hIdx = vHandleIdx[0];
+		int hIdx = vHandleIdx[0];		// only use the first handle to deform
 		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex_const(hIdx)->getPos();
 		
 		int nFreeVertices = vFreeIdx.size();
@@ -864,14 +767,58 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			vDist2Handle.push_back(dist);
 			if (dist > distMax) distMax = dist;
 		}
-
-		
+				
 		for (int i = 0; i < nFreeVertices; ++i)
 		{
 			Vector3D newPos = mesh->getVertex_const(vFreeIdx[i])->getPos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 			vDeformedPos.push_back(newPos);
 		}
 		
+	}
+	else if (dfType == Laplace)
+	{
+		vector<int> vI, vJ;
+		vector<double> vS, vBX, vBY, vBZ;
+		vector<double> vRX, vRY, vRZ;
+		int nFree = vFreeIdx.size();
+		int n = this->m_size, //m = n * 2 - nFree;
+			m = n + vHandleIdx.size();
+				
+		int nz_laplacian = vI.size();
+		vI = mLaplacian.vII;
+		vJ = mLaplacian.vJJ;
+		vS = mLaplacian.vSS;
+		
+		vector<double> xCoord, yCoord, zCoord;
+		mesh->getCoordinateFunction(0, xCoord);
+		mesh->getCoordinateFunction(1, yCoord);
+		mesh->getCoordinateFunction(2, zCoord);
+		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, xCoord, vBX);
+		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, yCoord, vBY);
+		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, zCoord, vBZ);
+
+		int posII = n;
+		for (int h = 0; h < vHandleIdx.size(); ++h)
+		{
+			vI.push_back(posII);
+			vJ.push_back(vHandleIdx[h]);
+			vS.push_back(1);
+			vBX.push_back(vHandlePos[h].x);
+			vBY.push_back(vHandlePos[h].y);
+			vBZ.push_back(vHandlePos[h].z);
+			posII += 1;
+		}
+
+		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBX, vRX);		//A*R=B
+		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBY, vRY);
+		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBZ, vRZ);
+
+		for (int i = 0; i < vFreeIdx.size(); ++i)
+		{
+			Vector3D newPos = Vector3D(vRX[vFreeIdx[i]], vRY[vFreeIdx[i]], vRZ[vFreeIdx[i]]);
+			vDeformedPos.push_back(newPos);
+		}
+
 	}
 	else if (dfType == SGW)
 	{

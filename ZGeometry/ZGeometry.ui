@@ -203,6 +203,7 @@
      </property>
      <addaction name="actionDeformSimple"/>
      <addaction name="actionDeformSGW"/>
+     <addaction name="actionDeformLaplace"/>
     </widget>
     <widget class="QMenu" name="menuReconstruct">
      <property name="title">
@@ -470,6 +471,11 @@
   <action name="actionDeformSGW">
    <property name="text">
     <string>SGW</string>
+   </property>
+  </action>
+  <action name="actionDeformLaplace">
+   <property name="text">
+    <string>Laplace</string>
    </property>
   </action>
  </widget>

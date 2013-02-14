@@ -71,6 +71,9 @@
     <ClCompile Include="src\Laplacian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\MatlabWrapper.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -97,6 +100,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Laplacian.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MatlabWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
