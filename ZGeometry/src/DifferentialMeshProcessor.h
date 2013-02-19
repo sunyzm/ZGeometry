@@ -4,10 +4,15 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cmath>
 #include "Laplacian.h"
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
+
+double transferScalingFunc1(double lambda);
+
+double transferFunc1(double lambda, double t);
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -52,7 +57,7 @@ private:
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
 public:
-	void computeSGW(const std::vector<double>& timescales);
+	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);

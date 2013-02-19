@@ -54,8 +54,10 @@ private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
 	void updateReferenceMove();
+
 private:	// attributes
 	Ui::ZGeometryClass ui;
+	DeformType deformType;
 //	QString statusBarMsg;
 	int totalShapeNum;
 	int objSelect;

@@ -238,6 +238,17 @@ inline double TransferFunc1(double x)
 	else return 2/x;
 }
 
+double transferScalingFunc1( double lambda )
+{
+	return std::exp(-std::pow(lambda, 2.0));
+}
+
+double transferFunc1( double lambda, double t )
+{
+	double coeff = std::pow(lambda * t, 2.0);
+	return coeff * std::exp(-coeff);
+}
+
 void DifferentialMeshProcessor::calGeometryDWT()
 {
 // output: 1. coordinates of all vertices
@@ -612,73 +623,6 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 //	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
 }
 
-void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescales )
-{
-	m_vTimescales = timescales;
-	int nScales = m_vTimescales.size();
-
-	m_vSGW.clear();
-	//	scaling function
-	if (true)	
-	{
-		for (int x = 0; x < m_size; ++x)
-		{
-			m_vSGW.push_back(vector<double>());
-			m_vSGW.back().resize(m_size);
-
-			for (int y = 0; y < m_size; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
-				{
-					itemSum += /*exp(-1.0) * */ exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				}
-				m_vSGW.back().at(y) = itemSum;
-			}
-		}
-	}	
-
-	//	wavelet functions
-	for (int s = 0; s < nScales; ++s)
-	{
-		for (int x = 0; x < m_size; ++x)
-		{
-			m_vSGW.push_back(vector<double>());
-			m_vSGW.back().resize(m_size);
-
-			for (int y = 0; y < m_size; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
-				{
-//					double coef = mhb.m_func[k].m_val * m_vTimescales[s];
-					double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
-					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				}
-				m_vSGW.back().at(y) = itemSum;
-			}
-		}
-	}
-
-	isComputedSGW = true;
-}
-
-void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const
-{
-	values.resize(m_size);
-
-	for (int y = 0; y < m_size; ++y)
-	{
-		double itemSum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
-		{
-			double coef = mhb.m_func[k].m_val * timescale;
-			itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[y] * mhb.m_func[k].m_vec[y];
-		}
-		values[y] = itemSum;
-	}
-}
-
 void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz )
 {
 	vx.resize(m_size);
@@ -828,7 +772,76 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			vector<double> vTimes;
 			std::copy(timescales, timescales + 4, vTimes.begin());
 			computeSGW(vTimes);
+		}		
+	}
+}
+
+void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescales, double (*transferWavelet)(double, double) /*= &transferFunc1*/, bool withScaling /*= false*/, double (*transferScaling)(double) /*= &transferScalingFunc1*/ )
+{
+	m_vTimescales = timescales;
+	int nScales = m_vTimescales.size();
+
+	m_vSGW.clear();
+
+	//	scaling function
+	if (withScaling)	
+	{
+		for (int x = 0; x < m_size; ++x)
+		{
+			m_vSGW.push_back(vector<double>());
+			m_vSGW.back().resize(m_size);
+
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					itemSum += (*transferScaling)(mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				m_vSGW.back().at(y) = itemSum;
+			}
 		}
+	}	
+
+	//	wavelet functions
+	for (int s = 0; s < nScales; ++s)
+	{
+		for (int x = 0; x < m_size; ++x)
+		{
+			m_vSGW.push_back(vector<double>());
+			m_vSGW.back().resize(m_size);
+
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				{
+					//	double coef = mhb.m_func[k].m_val * m_vTimescales[s];
+					//	double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
+					double transfer = (*transferWavelet)(mhb.m_func[k].m_val, m_vTimescales[s]);
+					itemSum += transfer * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+				}
+				m_vSGW.back().at(y) = itemSum;
+			}
+		}
+	}
+
+	isComputedSGW = true;
+}
+
+void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const
+{
+	values.resize(m_size);
+
+	for (int y = 0; y < m_size; ++y)
+	{
+		double itemSum = 0;
+		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		{
+			double coef = mhb.m_func[k].m_val * timescale;
+			itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[y] * mhb.m_func[k].m_vec[y];
+		}
+		values[y] = itemSum;
 	}
 
 }
