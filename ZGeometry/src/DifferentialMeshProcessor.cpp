@@ -33,6 +33,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	m_size = 0;
 	active_handle = -1;
 
+	constrain_weight = 0.1;
 	isComputedSGW = false;
 }
 
@@ -557,16 +558,9 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
-	if (m_vSGW.empty())
-	{
-		vector<double> t_scales;
-//		t_scales.push_back(80);
- 		t_scales.push_back(40);
-//		t_scales.push_back(20);
-// 		t_scales.push_back(10);
-		computeSGW(t_scales, &transferFunc1, true, &transferScalingFunc1);
-	}
- 	
+	if (!isComputedSGW)
+		throw logic_error("SGW not computed!");
+	 	
  	vector<vector<double> > SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
@@ -591,7 +585,7 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 		vzCoeff[i] = itemSumZ;
 	}
 
-	double weightI = 1;
+	double weightI = constrain_weight;
 	if (withConstraint)
 	{
 		for (auto iter = mHandles.begin(); iter != mHandles.end(); ++iter)
@@ -748,14 +742,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	else if (dfType == SGW)
 	{
 		if (!isComputedSGW)
-		{
-			double timescales[] = {20}; //{5, 10, 20, 40};
-			int nScales = sizeof (timescales) / sizeof(double);
-			vector<double> vTimes;
-			vTimes.resize(nScales);
-			std::copy(timescales, timescales + nScales, vTimes.begin());
-			this->computeSGW(vTimes, &transferFunc1);
-		}		
+			throw logic_error("Error: SGW not computed!");
 
 		vector<double> vRX, vRY, vRZ;
 
@@ -792,7 +779,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			vzCoeff[i] = itemSumZ;
 		}
 
-		double weightI = 1;
+		double weightI = constrain_weight;
 		int nHandleSize = vHandleIdx.size();
 		for (int i = 0; i < nHandleSize; ++i)
 		{

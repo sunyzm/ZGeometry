@@ -47,8 +47,8 @@ private slots:
 	void deformSimple();
 	void deformLaplace();
 	void deformSGW();
-	void reconstructByMHB();
-	void reconstructBySGW();
+	void reconstructMHB();
+	void reconstructSGW();
 	void filterExperimental();
 private:	// methods
 	void makeConnections();

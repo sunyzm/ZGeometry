@@ -49,6 +49,7 @@ public:
 	std::map<int, Vector3D> mHandles;
 	int active_handle;
 	std::vector<MeshFeature> vFeatures;	
+	double constrain_weight;
 	void addNewHandle(int hIdx);
 	
 	/// spectral wavelet transform related

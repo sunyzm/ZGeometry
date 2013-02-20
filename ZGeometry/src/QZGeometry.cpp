@@ -78,8 +78,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
-	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructByMHB()));
-	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructBySGW()));
+	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
+	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 	 
 	////////	Display	////////
@@ -259,6 +259,20 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 			deformLaplace();
 		break;
 
+	case Qt::Key_G:
+		this->reconstructSGW();
+		break;
+
+	case Qt::Key_Minus:
+		this->vMP[0].constrain_weight /= 2;
+		qout.output("Constrain weight: " + QString::number(vMP[0].constrain_weight));
+		break;
+
+	case Qt::Key_Equal:
+		this->vMP[0].constrain_weight *= 2;
+		qout.output("Constrain weight: " + QString::number(vMP[0].constrain_weight));
+		break;
+
 	case Qt::Key_X:
 		if (event->modifiers() & Qt::ShiftModifier)
 			refMove.xMove--;
@@ -347,7 +361,7 @@ void QZGeometryWindow::computeSGW()
 	CStopWatch timer;
 	timer.startTimer();
 
-	double timescales[] = {20}; //{5, 10, 20, 40};
+	double timescales[] = {40}; //{5, 10, 20, 40};
 	int nScales = sizeof (timescales) / sizeof(double);
 	vector<double> vTimes;
 	vTimes.resize(nScales);
@@ -427,15 +441,13 @@ void QZGeometryWindow::deformLaplace()
 
 void QZGeometryWindow::deformSGW()
 {
+	if (!vMP[0].isComputedSGW)
+		this->computeSGW();
+
 	vector<Vector3D> vHandlePos;
 	vector<int> vHandle;
 	vector<Vector3D> vNewPos;
 	vector<int> vFree;
-
-	// 	int activeHandle = vMP[0].active_handle; 
-	// 	vHandle.push_back(activeHandle);
-	// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	// 	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
 
 	std::set<int> sFreeIdx;
 	for (auto iter = vMP[0].mHandles.begin(); iter!= vMP[0].mHandles.end(); ++iter)
@@ -817,7 +829,7 @@ void QZGeometryWindow::clone()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::reconstructByMHB()
+void QZGeometryWindow::reconstructMHB()
 {
 //	assert(vMP[1].mesh);
 	
@@ -837,12 +849,16 @@ void QZGeometryWindow::reconstructByMHB()
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
 	qout.output("Average position error: " + QString::number(errorSum));
+
+	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::reconstructBySGW()
+void QZGeometryWindow::reconstructSGW()
 {
-	vector<double> vx, vy, vz;
+	if (!vMP[0].isComputedSGW)
+		this->computeSGW();
 	
+	vector<double> vx, vy, vz;
 	CStopWatch timer;
 	timer.startTimer();
 	try
@@ -863,7 +879,7 @@ void QZGeometryWindow::reconstructBySGW()
 		int debugIdx = (*vMP[0].mHandles.begin()).first;
 		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPos()));
 		qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
-		qout.output("Defored pos: " + std::string(mesh2.getVertex(debugIdx)->getPos()));
+		qout.output("Deformed pos: " + std::string(mesh2.getVertex(debugIdx)->getPos()));
 	}
 
 	double errorSum(0);
@@ -874,6 +890,8 @@ void QZGeometryWindow::reconstructBySGW()
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("SGW reconstruction.");
 	qout.output("Average position error: " + QString::number(errorSum));
+
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::filterExperimental()
