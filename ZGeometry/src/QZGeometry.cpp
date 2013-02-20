@@ -871,14 +871,15 @@ void QZGeometryWindow::reconstructSGW()
 		return;
 	}
 	timer.stopTimer();
-	qout.output(QString("Reconstruct time: ") + QString::number(timer.getElapsedTime()));
+	qout.output(QString("SGW reconstruct time: ") + QString::number(timer.getElapsedTime()));
 
 	mesh2.setVertexCoordinates(vx, vy, vz);
 
 	{
 		int debugIdx = (*vMP[0].mHandles.begin()).first;
 		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPos()));
-		qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
+		if (!vMP[0].mHandles.empty())
+			qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
 		qout.output("Deformed pos: " + std::string(mesh2.getVertex(debugIdx)->getPos()));
 	}
 
@@ -888,7 +889,6 @@ void QZGeometryWindow::reconstructSGW()
 		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
 	}
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
-	qout.output("SGW reconstruction.");
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
