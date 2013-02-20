@@ -2,6 +2,7 @@
 //
 //////////////////////////////////////////////////////////////////////
 #include <cassert>
+#include <cstdio>
 #include <memory>
 #include <queue>
 #include <functional>
@@ -48,6 +49,12 @@ Vector2D operator+(const Vector2D& lv, const Vector2D& rv)
 	return rel;
 }
 
+Vector3D::operator std::string() const
+{
+	char buffer[50];
+	sprintf_s(buffer, 50, "(%f,%f,%f)", x, y, z);
+	return std::string(buffer);
+}
 
 Vector2D operator-(const Vector2D& lv, const Vector2D& rv)
 {

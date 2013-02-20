@@ -4,6 +4,7 @@
 #pragma once
 #include <cmath>
 #include <cstdio>
+#include <string>
 #define DOUBLE_EPS 1e-16
 #define	EQUALZERO(x)	(std::fabs((x)) < DOUBLE_EPS)
 
@@ -80,7 +81,8 @@ public :
 	Vector3D& operator /=(double u);
 	Vector3D& operator ^=(const Vector3D& v);
 	double& operator[](int i);
-	
+	operator std::string() const;
+
 	friend Vector3D operator-(const Vector3D& v);
 	friend Vector3D operator+(const Vector3D& lv, const Vector3D& rv);
 	friend Vector3D operator-(const Vector3D& lv, const Vector3D& rv);

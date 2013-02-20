@@ -347,16 +347,121 @@ void QZGeometryWindow::computeSGW()
 	CStopWatch timer;
 	timer.startTimer();
 
-	double timescales[] = {5, 10, 20, 40};
+	double timescales[] = {20}; //{5, 10, 20, 40};
 	int nScales = sizeof (timescales) / sizeof(double);
 	vector<double> vTimes;
 	vTimes.resize(nScales);
 	std::copy(timescales, timescales + nScales, vTimes.begin());
 
-	vMP[0].computeSGW(vTimes, &transferFunc1);
+	vMP[0].computeSGW(vTimes, &transferFunc1, true, &transferScalingFunc1);
 
 	timer.stopTimer();
 	qout.output(QString("Time for compute SGW: ") + QString::number(timer.getElapsedTime()));
+}
+
+void QZGeometryWindow::deformSimple()
+{
+	//	vector<double> vx, vy, vz;
+	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
+	//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
+	//	vMP[0].reconstructBySGW(vx, vy, vz, true);
+	//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
+	//	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	int activeHandle = vMP[0].active_handle; 
+	vector<int> vHandle;
+	vHandle.push_back(activeHandle);
+	vector<Vector3D> vHandlePos;
+	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
+	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
+	vector<Vector3D> vNewPos;
+
+	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
+	mesh2.setVertexCoordinates(vFree, vNewPos);
+	mesh2.setVertexCoordinates(vHandle, vHandlePos);
+
+	deformType = Simple;
+	ui.glMeshWidget->update();
+	setEditModeMove();
+}
+
+void QZGeometryWindow::deformLaplace()
+{
+	vector<int> vHandle;
+	vector<Vector3D> vHandlePos;
+	vector<int> vFree;
+	vector<Vector3D> vNewPos;
+
+	// 	int activeHandle = vMP[0].active_handle; 	
+	// 	vHandle.push_back(activeHandle);	
+	// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
+	//	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
+
+	std::set<int> sFreeIdx;
+	for (auto iter = vMP[0].mHandles.begin(); iter!= vMP[0].mHandles.end(); ++iter)
+	{
+		vHandle.push_back(iter->first);
+		vHandlePos.push_back(iter->second);
+
+		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
+	}
+	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
+
+	try
+	{
+		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
+		mesh2.setVertexCoordinates(vFree, vNewPos);
+		mesh2.setVertexCoordinates(vHandle, vHandlePos);
+	}
+	catch (runtime_error* e)
+	{
+		qout.output(e->what(), OUT_MSGBOX);
+	}
+
+
+	deformType = Laplace;
+	ui.glMeshWidget->update();
+	setEditModeMove();
+}
+
+void QZGeometryWindow::deformSGW()
+{
+	vector<Vector3D> vHandlePos;
+	vector<int> vHandle;
+	vector<Vector3D> vNewPos;
+	vector<int> vFree;
+
+	// 	int activeHandle = vMP[0].active_handle; 
+	// 	vHandle.push_back(activeHandle);
+	// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
+	// 	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
+
+	std::set<int> sFreeIdx;
+	for (auto iter = vMP[0].mHandles.begin(); iter!= vMP[0].mHandles.end(); ++iter)
+	{
+		vHandle.push_back(iter->first);
+		vHandlePos.push_back(iter->second);
+
+		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
+	}
+	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());	
+
+	try
+	{
+		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
+		mesh2.setVertexCoordinates(vFree, vNewPos);
+		mesh2.setVertexCoordinates(vHandle, vHandlePos);
+	}
+	catch (runtime_error* e)
+	{
+		qout.output(e->what(), OUT_MSGBOX);
+	}
+
+	deformType = SGW;
+	ui.glMeshWidget->update();
+	setEditModeMove();
 }
 
 void QZGeometryWindow::selectObject( int index )
@@ -736,11 +841,30 @@ void QZGeometryWindow::reconstructByMHB()
 
 void QZGeometryWindow::reconstructBySGW()
 {
-//	assert(vMP[1].mesh);
-
 	vector<double> vx, vy, vz;
-	vMP[0].reconstructBySGW(vx, vy, vz, true);
+	
+	CStopWatch timer;
+	timer.startTimer();
+	try
+	{
+		vMP[0].reconstructBySGW(vx, vy, vz, true);
+	}
+	catch (logic_error* e)
+	{
+		qout.output(e->what(), OUT_MSGBOX);
+		return;
+	}
+	timer.stopTimer();
+	qout.output(QString("Reconstruct time: ") + QString::number(timer.getElapsedTime()));
+
 	mesh2.setVertexCoordinates(vx, vy, vz);
+
+	{
+		int debugIdx = (*vMP[0].mHandles.begin()).first;
+		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPos()));
+		qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
+		qout.output("Defored pos: " + std::string(mesh2.getVertex(debugIdx)->getPos()));
+	}
 
 	double errorSum(0);
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
@@ -750,32 +874,6 @@ void QZGeometryWindow::reconstructBySGW()
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("SGW reconstruction.");
 	qout.output("Average position error: " + QString::number(errorSum));
-}
-
-void QZGeometryWindow::deformSimple()
-{
-	//	vector<double> vx, vy, vz;
-	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
-	//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
-	//	vMP[0].reconstructBySGW(vx, vy, vz, true);
-	//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
-	//	mesh2.setVertexCoordinates(vx, vy, vz);
-
-	int activeHandle = vMP[0].active_handle; 
-	vector<int> vHandle;
-	vHandle.push_back(activeHandle);
-	vector<Vector3D> vHandlePos;
-	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
-	vector<Vector3D> vNewPos;
-
-	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
-	mesh2.setVertexCoordinates(vFree, vNewPos);
-	mesh2.setVertexCoordinates(vHandle, vHandlePos);
-
-	deformType = Simple;
-	ui.glMeshWidget->update();
-	setEditModeMove();
 }
 
 void QZGeometryWindow::filterExperimental()
@@ -815,82 +913,4 @@ void QZGeometryWindow::displayNeighborVertices()
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::deformSGW()
-{
-	vector<Vector3D> vHandlePos;
-	vector<int> vHandle;
-	vector<Vector3D> vNewPos;
-	vector<int> vFree;
-
-// 	int activeHandle = vMP[0].active_handle; 
-// 	vHandle.push_back(activeHandle);
-// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-// 	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
-	
-	std::set<int> sFreeIdx;
-	for (auto iter = vMP[0].mHandles.begin(); iter!= vMP[0].mHandles.end(); ++iter)
-	{
-		vHandle.push_back(iter->first);
-		vHandlePos.push_back(iter->second);
-
-		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
-		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
-	}
-	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());	
-	
-	try{
-		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
-		mesh2.setVertexCoordinates(vFree, vNewPos);
-		mesh2.setVertexCoordinates(vHandle, vHandlePos);
-	}
-	catch (runtime_error* e)
-	{
-		qout.output(e->what(), OUT_MSGBOX);
-	}
-	
-	deformType = SGW;
-	ui.glMeshWidget->update();
-	setEditModeMove();
-}
-
-void QZGeometryWindow::deformLaplace()
-{
-	vector<int> vHandle;
-	vector<Vector3D> vHandlePos;
-	vector<int> vFree;
-	vector<Vector3D> vNewPos;
-
-// 	int activeHandle = vMP[0].active_handle; 	
-// 	vHandle.push_back(activeHandle);	
-// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-//	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
-	
-	std::set<int> sFreeIdx;
-	for (auto iter = vMP[0].mHandles.begin(); iter!= vMP[0].mHandles.end(); ++iter)
-	{
-		vHandle.push_back(iter->first);
-		vHandlePos.push_back(iter->second);
-
-		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
-		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
-	}
-	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
-
-	try
-	{
-		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
-		mesh2.setVertexCoordinates(vFree, vNewPos);
-		mesh2.setVertexCoordinates(vHandle, vHandlePos);
-	}
-	catch (runtime_error* e)
-	{
-		qout.output(e->what(), OUT_MSGBOX);
-	}
-
-
-	deformType = Laplace;
-	ui.glMeshWidget->update();
-	setEditModeMove();
 }

@@ -12,7 +12,8 @@ enum DeformType {Simple, Shell, Laplace, SGW};
 
 double transferScalingFunc1(double lambda);
 
-double transferFunc1(double lambda, double t);
+double transferFunc1(double lambda, double t);	// mexican-hat square
+double transferFunc2(double lambda, double t);	// mexican-hat
 
 class DifferentialMeshProcessor : public MeshProcessor
 {

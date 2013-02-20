@@ -3,7 +3,26 @@
 #include <stdexcept>
 #include <set>
 #include <algorithm>
+
 using namespace std;
+
+double transferScalingFunc1( double lambda )
+{
+	return std::exp(-std::pow(lambda, 2.0));
+}
+
+
+double transferFunc1( double lambda, double t )
+{
+	double coeff = std::pow(lambda * t, 2.0);
+	return coeff * std::exp(-coeff);
+}
+
+double transferFunc2(double lambda, double t)
+{
+	double coeff = lambda * t;
+	return coeff * std::exp(-coeff);
+}
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
@@ -203,8 +222,6 @@ void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& v
 	}
 }
 
-
-
 void DifferentialMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, double scale )
 {
 	vExp.resize(m_size);
@@ -228,25 +245,6 @@ void DifferentialMeshProcessor::computeExperimentalWavelet( std::vector<double>&
 	}
 	fout << "\n";
 	fout.close();
-}
-
-
-inline double TransferFunc1(double x)
-{
-	if (x < 1) return x;
-	else if (1 <= x && x <= 2) return (-5 + 11*x - 6*x*x + x*x*x);
-	else return 2/x;
-}
-
-double transferScalingFunc1( double lambda )
-{
-	return std::exp(-std::pow(lambda, 2.0));
-}
-
-double transferFunc1( double lambda, double t )
-{
-	double coeff = std::pow(lambda * t, 2.0);
-	return coeff * std::exp(-coeff);
 }
 
 void DifferentialMeshProcessor::calGeometryDWT()
@@ -562,14 +560,14 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	if (m_vSGW.empty())
 	{
 		vector<double> t_scales;
-		t_scales.push_back(80);
+//		t_scales.push_back(80);
  		t_scales.push_back(40);
- 		t_scales.push_back(20);
- 		t_scales.push_back(10);
-		computeSGW(t_scales);
+//		t_scales.push_back(20);
+// 		t_scales.push_back(10);
+		computeSGW(t_scales, &transferFunc1, true, &transferScalingFunc1);
 	}
  	
- 	const vector<vector<double> >& SGW = m_vSGW;
+ 	vector<vector<double> > SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
 	int sizeCoeff = SGW.size();
@@ -598,20 +596,13 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	{
 		for (auto iter = mHandles.begin(); iter != mHandles.end(); ++iter)
 		{
-			vector<double> newRow;
-			newRow.resize(m_size, 0.0);
-			newRow[iter->first] = weightI;
+			SGW.push_back(vector<double>());
+			SGW.back().resize(m_size, 0.0);
+			SGW.back().at(iter->first) = weightI;
 			vxCoeff.push_back(iter->second.x * weightI);
-			vxCoeff.push_back(iter->second.y * weightI);
+			vyCoeff.push_back(iter->second.y * weightI);
 			vzCoeff.push_back(iter->second.z * weightI);
 		}
-// 		SGW.push_back(vector<double>());
-// 		SGW.back().resize(m_size, 0.0);
-// 		SGW.back().at(pRef) = weightI;
-// 		
-// 		vxCoeff.push_back(posRef.x * weightI);
-// 		vyCoeff.push_back(posRef.y * weightI);
-// 		vzCoeff.push_back(posRef.z * weightI);
 	}
 
  	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
@@ -686,16 +677,6 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
 	
 	vDeformedPos.clear();
-	set<int> idxDeform;
-	
-	for (auto iter = vHandleIdx.begin(); iter != vHandleIdx.end(); ++iter)
-	{
-		idxDeform.insert(*iter);
-	}
-	for (auto iter = vFreeIdx.begin(); iter != vFreeIdx.end(); ++iter)
-	{
-		idxDeform.insert(*iter);
-	}
 	
 	if (dfType == Simple)
 	{
@@ -768,11 +749,71 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	{
 		if (!isComputedSGW)
 		{
-			double timescales[4] = {5, 10, 20, 40};
+			double timescales[] = {20}; //{5, 10, 20, 40};
+			int nScales = sizeof (timescales) / sizeof(double);
 			vector<double> vTimes;
-			std::copy(timescales, timescales + 4, vTimes.begin());
-			computeSGW(vTimes);
+			vTimes.resize(nScales);
+			std::copy(timescales, timescales + nScales, vTimes.begin());
+			this->computeSGW(vTimes, &transferFunc1);
 		}		
+
+		vector<double> vRX, vRY, vRZ;
+
+		vRX.resize(m_size);
+		vRY.resize(m_size);
+		vRZ.resize(m_size);
+
+		vector<double> vxcoord0, vycoord0, vzcoord0;
+		mesh->getCoordinateFunction(0, vxcoord0);
+		mesh->getCoordinateFunction(1, vycoord0);
+		mesh->getCoordinateFunction(2, vzcoord0);
+
+		vector<vector<double> > SGW = m_vSGW;
+		int scales = m_vTimescales.size();
+
+		int sizeCoeff = SGW.size();
+
+		vector<double> vxCoeff, vyCoeff, vzCoeff;
+		vxCoeff.resize(sizeCoeff);
+		vyCoeff.resize(sizeCoeff);
+		vzCoeff.resize(sizeCoeff);
+
+		for (int i = 0; i < sizeCoeff; ++i)
+		{
+			double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
+			for (int j = 0; j < m_size; ++j)
+			{
+				itemSumX += SGW[i][j] * vxcoord0[j];
+				itemSumY += SGW[i][j] * vycoord0[j];
+				itemSumZ += SGW[i][j] * vzcoord0[j];
+			}
+			vxCoeff[i] = itemSumX;
+			vyCoeff[i] = itemSumY;
+			vzCoeff[i] = itemSumZ;
+		}
+
+		double weightI = 1;
+		int nHandleSize = vHandleIdx.size();
+		for (int i = 0; i < nHandleSize; ++i)
+		{
+			SGW.push_back(vector<double>());
+			SGW.back().resize(m_size, 0.0);
+			SGW.back().at(vHandleIdx[i]) = weightI;
+
+			vxCoeff.push_back(vHandlePos[i].x * weightI);
+			vyCoeff.push_back(vHandlePos[i].y * weightI);
+			vzCoeff.push_back(vHandlePos[i].z * weightI);
+		}
+
+		matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vRX);
+		matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vRY);
+		matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vRZ);
+
+		for (int i = 0; i < vFreeIdx.size(); ++i)
+		{
+			Vector3D newPos = Vector3D(vRX[vFreeIdx[i]], vRY[vFreeIdx[i]], vRZ[vFreeIdx[i]]);
+			vDeformedPos.push_back(newPos);
+		}
 	}
 }
 
@@ -790,38 +831,44 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 		{
 			m_vSGW.push_back(vector<double>());
 			m_vSGW.back().resize(m_size);
-
-			for (int y = 0; y < m_size; ++y)
+		}
+		for (int x = 0; x < m_size; ++x)
+		{
+			for (int y = 0; y <= x; ++y)
 			{
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					itemSum += (*transferScaling)(mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					double transfer = (*transferScaling)(mhb.m_func[k].m_val);
+					itemSum +=  transfer * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
-				m_vSGW.back().at(y) = itemSum;
+				m_vSGW[x][y] = m_vSGW[y][x] = itemSum;
 			}
 		}
 	}	
 
-	//	wavelet functions
+	//	wavelet functions: nm * m
 	for (int s = 0; s < nScales; ++s)
 	{
-		for (int x = 0; x < m_size; ++x)
+		int offset = withScaling ? m_size * (s+1) : m_size * s;
+		
+		for (int i = 0; i < m_size; ++i)
 		{
 			m_vSGW.push_back(vector<double>());
 			m_vSGW.back().resize(m_size);
+		}
 
-			for (int y = 0; y < m_size; ++y)
+		for (int x = 0; x < m_size; ++x)
+		{
+			for (int y = 0; y <= x; ++y)
 			{
 				double itemSum = 0;
 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
 				{
-					//	double coef = mhb.m_func[k].m_val * m_vTimescales[s];
-					//	double coef = pow(mhb.m_func[k].m_val * m_vTimescales[s], 2.0);
 					double transfer = (*transferWavelet)(mhb.m_func[k].m_val, m_vTimescales[s]);
 					itemSum += transfer * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
 				}
-				m_vSGW.back().at(y) = itemSum;
+				m_vSGW[offset + x][y] = m_vSGW[offset + y][x] = itemSum;
 			}
 		}
 	}
