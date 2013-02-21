@@ -11,7 +11,6 @@ double transferScalingFunc1( double lambda )
 	return std::exp(-std::pow(lambda, 2.0));
 }
 
-
 double transferFunc1( double lambda, double t )
 {
 	double coeff = std::pow(lambda * t, 2.0);
@@ -37,7 +36,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	isComputedSGW = false;
 }
 
-
 DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
 {
 
@@ -50,7 +48,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	matlabWrapper.setEngine(e);
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
-	posRef = mesh->getVertex(0)->getPos();
+	posRef = mesh->getVertex(0)->getPosition();
 	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
 }
@@ -187,7 +185,7 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	if (iter != mHandles.end())
 		mHandles.erase(iter);
 	else
-		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPos();
+		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPosition();
 	 
 }
 
@@ -255,13 +253,13 @@ void DifferentialMeshProcessor::calGeometryDWT()
 
 	ofstream ofs("output/coord.dat");
 	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPos().x << ' ';
+		ofs << mesh->getVertex(i)->getPosition().x << ' ';
 	ofs << endl;
 	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPos().y << ' ';
+		ofs << mesh->getVertex(i)->getPosition().y << ' ';
 	ofs << endl;
 	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPos().z << ' ';
+		ofs << mesh->getVertex(i)->getPosition().z << ' ';
 	ofs.close();
 
 	int totalScales = 4;
@@ -675,7 +673,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	if (dfType == Simple)
 	{
 		int hIdx = vHandleIdx[0];		// only use the first handle to deform
-		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex_const(hIdx)->getPos();
+		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex_const(hIdx)->getPosition();
 		
 		int nFreeVertices = vFreeIdx.size();
 		vector<double> vDist2Handle;
@@ -689,7 +687,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 				
 		for (int i = 0; i < nFreeVertices; ++i)
 		{
-			Vector3D newPos = mesh->getVertex_const(vFreeIdx[i])->getPos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+			Vector3D newPos = mesh->getVertex_const(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 			vDeformedPos.push_back(newPos);
 		}
 		

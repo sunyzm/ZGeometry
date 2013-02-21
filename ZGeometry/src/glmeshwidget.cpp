@@ -97,7 +97,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int hIdx = -1;
 				for (int vi = 0; vi < this->vpMP[0]->getMesh()->getVerticesNum(); ++vi)
 				{
-					double d = p.distantFrom(this->vpMP[0]->getMesh()->getVertex_const(vi)->getPos());
+					double d = p.distantFrom(this->vpMP[0]->getMesh()->getVertex_const(vi)->getPosition());
 					if (d < dmin) 
 					{
 						dmin = d;
@@ -378,7 +378,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 				int pi = tmesh->m_pFace[i].m_piVertex[j];
 				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);
-				Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+				Vector3D vt = tmesh->m_pVertex[pi].getPosition();
 				//vt -= tmesh->m_Center;
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
@@ -404,9 +404,9 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 				{
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
-				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
+				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
 				//v1 -= tmesh->m_Center;
-				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
+				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
 				//v2 -= tmesh->m_Center;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
@@ -460,9 +460,9 @@ void GLMeshWidget::drawMeshExt( int obj )
 		for (int j = 0; j < 3; j++)
 		{
 			int pi = tmesh->m_pFace[i].m_piVertex[j];					 				
-			Vector3D norm = tmesh->m_pVertex[pi].getNormal();
+			Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
 			glNormal3f(norm.x, norm.y, norm.z);	 				
-			Vector3D vt = tmesh->m_pVertex[pi].m_vPosition;
+			Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
 			vt += shift;	//add some offset to separate object 1 and 2
 			if (showSignature) 
 				glFalseColor(vpMP[obj]->vDisplaySignature[pi], 1.0);
@@ -492,9 +492,9 @@ void GLMeshWidget::drawMeshExt( int obj )
 				{
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
-				Vector3D v1 = tmesh->m_pVertex[p1].m_vPosition;
+				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
 				v1 += shift;
-				Vector3D v2 = tmesh->m_pVertex[p2].m_vPosition;
+				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
 				v2 += shift;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
@@ -507,7 +507,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	///	draw reference point
 	if ( obj == 0 && m_bShowRefPoint && vpMP[0]->pRef >= 0 )
 	{
-		Vector3D vt = tmesh->m_pVertex[vpMP[0]->pRef].m_vPosition;
+		Vector3D vt = tmesh->getVertex_const(vpMP[0]->pRef)->getPosition();
 		if (obj == 0)
 			vt = vpMP[0]->posRef;
 		vt += shift;
@@ -544,7 +544,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		glBegin(GL_POINTS);
 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 		{
-			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
+			Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
 			vt += shift;
 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
 			glVertex3d(vt.x, vt.y, vt.z);

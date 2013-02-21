@@ -92,6 +92,7 @@
     <ClInclude Include="include\mesh\Geometry.h" />
     <ClInclude Include="include\mesh\Mesh.h" />
     <ClInclude Include="include\mesh\MeshProcessor.h" />
+    <ClInclude Include="include\mesh\MeshPyramid.h" />
     <ClInclude Include="include\mesh\Quat.h" />
     <ClInclude Include="include\util\arithmetic.h" />
     <ClInclude Include="include\util\color.h" />
@@ -106,6 +107,7 @@
     <ClCompile Include="src\mesh\Geometry.cpp" />
     <ClCompile Include="src\mesh\Mesh.cpp" />
     <ClCompile Include="src\mesh\MeshProcessor.cpp" />
+    <ClCompile Include="src\mesh\MeshPyramid.cpp" />
     <ClCompile Include="src\mesh\Quat.cpp" />
     <ClCompile Include="src\util\arithmetic.cpp" />
     <ClCompile Include="src\util\color.cpp" />

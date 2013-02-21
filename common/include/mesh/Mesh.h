@@ -19,7 +19,8 @@
 
 typedef std::vector<int> VectorInt;
 
-class GeoNote{
+class GeoNote
+{
 public:
 	int m_id;
 	double m_geodesic;
@@ -28,7 +29,8 @@ public:
 	GeoNote& operator = (const GeoNote& note) { m_id=note.m_id; m_geodesic = note.m_geodesic; return(*this); }
 };
 
-class GeoCompare {
+class GeoCompare 
+{
 public:
 	bool operator()(const GeoNote& Left, const GeoNote& Right) const { return ( Left.m_geodesic > Right.m_geodesic ); }
 };
@@ -39,40 +41,37 @@ class CFace;
 class CHalfEdge;
 class CMesh;
 
-typedef int VID;
-
 //////////////////////////////////////////////////////
 //						CVertex  					//
 //////////////////////////////////////////////////////
 class CVertex
 {
 public:
+	friend class CHalfEdge;
+	friend class CFace;
 	friend class CMesh;
-	friend class MeshPyramid;
+	friend class CMeshPyramid;
 
 private:
-	VID						m_vid;
 	int						m_vIndex;
 	std::vector<CHalfEdge*> m_HalfEdges;
-	Vector3D				m_vNormal;         // vertex normal
+	int*					m_piEdge;			// half edge indices start from this vertex
+	int						m_nValence;		    // out valence
+	Vector3D				m_vPosition;		// vertex coordinates
+	Vector3D				m_vNormal;          // vertex normal
+	RGBf					m_vColor;			// vertex color
 	bool					m_bIsValid;
 public:
-	Vector3D	m_vPosition;		// vertex coordinates
-	int			m_nValence;			// out valence
-	int*		m_piEdge;			// half edge indices start from this vertex
 
 	bool		 m_bIsBoundary;     // if boundary vertex
 	bool		 m_bIsHole;
-	RGBf		 m_vColor;			// vertex color
 	double		 m_vMeanCurvature;	// mean curvature
 	double		 m_vGaussCurvature;	// Gauss curvature
-	
-	int			 m_vMatched;
 
 	double		 m_LocalGeodesic;	// geodesic from local vertex
 	bool		 m_inheap;			// in heap or not
-
-	int m_mark;
+	int			 m_vMatched;
+	int			 m_mark;
 
 public:
 	//constructors
@@ -86,17 +85,16 @@ public:
 	virtual ~CVertex();
 	
 	//operations
-	int					getVID() const { return m_vid; }
 	int					getIndex() const { return m_vIndex; }
 	Vector3D			getNormal() const { return m_vNormal; }
 	void				calcNormal();
 	std::vector<CFace*> getAdjacentFaces();
-	const Vector3D&		getPos() const { return m_vPosition; } 
+	const Vector3D&		getPosition() const { return m_vPosition; } 
 	bool				judgeOnBoundary();
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
 	void				translateAndScale(Vector3D translation, double s);
-	void                setPos( double x, double y, double z );
+	void                setPosition( double x, double y, double z );
 public:
 	std::list<int>	m_lEdgeList;      // temporary list of constructing m_piEdge
 };
@@ -173,7 +171,7 @@ public:
 	double getArea();
 	void calcNormalAndArea();
 	Vector3D getNormal() { return m_vNormal; }
-	bool hasVertex(int vid);
+	bool hasVertex(int vidx);
 	double distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 };
 
@@ -250,7 +248,6 @@ public:
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 	bool		calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
-//  bool	    CalVertexLBOs(int i, double h, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, std::vector<double>& Av, std::vector<double>& tw);
 	void		calLBO(std::vector<int>& vII, std::vector<int>& vJJ, std::vector<double>& vSS, std::vector<double>& vArea) const;
 	bool		calVertexArea(std::vector<double>& Av);
 	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor

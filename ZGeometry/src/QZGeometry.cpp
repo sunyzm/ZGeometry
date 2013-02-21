@@ -361,7 +361,7 @@ void QZGeometryWindow::computeSGW()
 	CStopWatch timer;
 	timer.startTimer();
 
-	double timescales[] = {40}; //{5, 10, 20, 40};
+	double timescales[] = {20}; //{5, 10, 20, 40};
 	int nScales = sizeof (timescales) / sizeof(double);
 	vector<double> vTimes;
 	vTimes.resize(nScales);
@@ -375,13 +375,6 @@ void QZGeometryWindow::computeSGW()
 
 void QZGeometryWindow::deformSimple()
 {
-	//	vector<double> vx, vy, vz;
-	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
-	//	vMP[0].reconstructByDifferential(vx, vy, vz, true);
-	//	vMP[0].reconstructBySGW(vx, vy, vz, true);
-	//	vMP[0].reconstructExperimental1(vx, vy, vz, true);
-	//	mesh2.setVertexCoordinates(vx, vy, vz);
-
 	int activeHandle = vMP[0].active_handle; 
 	vector<int> vHandle;
 	vHandle.push_back(activeHandle);
@@ -766,7 +759,7 @@ void QZGeometryWindow::displayDiffPosition()
 
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
 	{
-		vDiff[i] = (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length() / mesh1.getAvgEdgeLength();
+		vDiff[i] = (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length() / mesh1.getAvgEdgeLength();
 	}
 
 	vMP[0].normalizeSignatureFrom(vDiff);
@@ -780,7 +773,7 @@ void QZGeometryWindow::displayDiffPosition()
 void QZGeometryWindow::updateReferenceMove()
 {
 	double unitMove = (mesh1.getBoundingBox().x + mesh1.getBoundingBox().y + mesh1.getBoundingBox().z)/300.0;
-	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPos();
+	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPosition();
 	vMP[0].posRef.x = originalPos.x + unitMove * refMove.xMove;
 	vMP[0].posRef.y = originalPos.y + unitMove * refMove.yMove;
 	vMP[0].posRef.z = originalPos.z + unitMove * refMove.zMove;
@@ -844,7 +837,7 @@ void QZGeometryWindow::reconstructMHB()
 	double errorSum(0);
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
 	}
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
@@ -877,16 +870,16 @@ void QZGeometryWindow::reconstructSGW()
 
 	{
 		int debugIdx = (*vMP[0].mHandles.begin()).first;
-		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPos()));
+		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPosition()));
 		if (!vMP[0].mHandles.empty())
 			qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
-		qout.output("Deformed pos: " + std::string(mesh2.getVertex(debugIdx)->getPos()));
+		qout.output("Deformed pos: " + std::string(mesh2.getVertex(debugIdx)->getPosition()));
 	}
 
 	double errorSum(0);
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
 	}
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
@@ -903,7 +896,7 @@ void QZGeometryWindow::filterExperimental()
 	double errorSum(0);
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPos() - mesh2.getVertex_const(i)->getPos()).length();
+		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
 	}
 	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));

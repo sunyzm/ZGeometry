@@ -1,4 +1,5 @@
 #include <util/color.h>
+#include <cassert>
 
 void FalseColorMap::BuildLUT()
 {
@@ -15,4 +16,14 @@ void FalseColorMap::BuildLUT()
 FalseColorMap::FalseColorMap()
 {
 	BuildLUT();
+}
+
+RGBf::RGBf( float grayscale )
+{
+	assert(0 <= grayscale && grayscale <= 1);
+
+	r = grayscale;
+	if ( grayscale < 0.5) g = grayscale * 2.0f;
+	else g = 2.0f * (1.0f - grayscale);
+	b = 1.0f - grayscale;
 }

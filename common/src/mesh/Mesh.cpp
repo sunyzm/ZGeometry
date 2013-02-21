@@ -68,7 +68,6 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 
 CVertex::CVertex( const CVertex& v )
 {	
-	m_vid			  = v.m_vid;
 	m_vIndex		  = v.m_vIndex;
 
 	m_vPosition		  = v.m_vPosition;
@@ -95,7 +94,6 @@ CVertex::CVertex( const CVertex& v )
 
 CVertex& CVertex::operator = (CVertex& v)
 {
-	m_vid			  = v.m_vid;
 	m_vIndex		  = v.m_vIndex;
 	m_vPosition		  = v.m_vPosition;
 	m_nValence		  = v.m_nValence;
@@ -140,7 +138,7 @@ void CVertex::calcNormal()
 	for (int j = 0; j < m_nValence; ++j)
 	{
 		CFace* pF = m_HalfEdges[j]->getAttachedFace();
-		Vector3D cv = (pF->getVertex(0)->getPos() + pF->getVertex(1)->getPos() + pF->getVertex(2)->getPos()) / 3.0;
+		Vector3D cv = (pF->getVertex(0)->getPosition() + pF->getVertex(1)->getPosition() + pF->getVertex(2)->getPosition()) / 3.0;
 		double wt = 1.0 / (cv - m_vPosition).length();
 		v += pF->getNormal() * wt;
 	}
@@ -168,7 +166,7 @@ void CVertex::translateAndScale( Vector3D translation, double s )
 	m_vPosition *= s;
 }
 
-void CVertex::setPos( double x, double y, double z )
+void CVertex::setPosition( double x, double y, double z )
 {
 	m_vPosition.x = x;
 	m_vPosition.y = y;
@@ -240,7 +238,7 @@ CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 
 double CHalfEdge::getLength()
 {
-	Vector3D v = m_Vertices[0]->getPos() - m_Vertices[1]->getPos();
+	Vector3D v = m_Vertices[0]->getPosition() - m_Vertices[1]->getPosition();
 	return v.length();
 }
 
@@ -330,7 +328,7 @@ std::vector<double> CFace::getPlaneFunction()
 	para[0] = m_vNormal[0];
 	para[1] = m_vNormal[1];
 	para[2] = m_vNormal[2];
-	double d = m_vNormal * m_Vertices[0]->getPos();
+	double d = m_vNormal * m_Vertices[0]->getPosition();
 	para[3] = -d;
 	return para;
 }
@@ -345,19 +343,19 @@ void CFace::calcNormalAndArea()
 	Vector3D v[2];
 
 	//get the vector
-	v[0] = m_Vertices[2]->getPos() - m_Vertices[0]->getPos();
-	v[1] = m_Vertices[2]->getPos() - m_Vertices[1]->getPos();
+	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
+	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
 	m_vNormal = v[0] ^ v[1];
 	m_faceArea = m_vNormal.length() / 2;
 	m_vNormal.normalize();
 	
 }
 
-bool CFace::hasVertex( int vid )
+bool CFace::hasVertex( int vidx )
 {
 	for (vector<CVertex*>::iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
 	{
-		if ((*iter)->getVID() == vid)
+		if ((*iter)->getIndex() == vidx)
 			return true;
 	}
 	return false;
@@ -368,8 +366,8 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	//baryCoord.resize(3, 0);
 	
 	/**** adapted from WildMagic ****/
-	Vector3D V[3] = {m_Vertices[0]->getPos(), m_Vertices[1]->getPos(), m_Vertices[2]->getPos()};
-	Vector3D p = vp->getPos();
+	Vector3D V[3] = {m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()};
+	Vector3D p = vp->getPosition();
 
 	Vector3D diff = V[0] - p;
 	Vector3D edge0 = V[1] - V[0];
@@ -696,8 +694,8 @@ bool CMesh::Load(string sFileName)
 	return false;
 }
 
-bool CMesh::loadFromOBJ(string sFileName)
-// -----  format: smf,obj,dat -----
+bool CMesh::loadFromOBJ(std::string sFileName)
+// -----  format: smf, obj, dat -----
 //vertex:
 //      v x y z,
 //face(triangle):
@@ -767,7 +765,7 @@ bool CMesh::loadFromOBJ(string sFileName)
 	for(i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vid = i+1;
+		m_pVertex[i].m_vIndex = i;
 	}
 
 	for(i = 0; i < m_nFace; i++)
@@ -851,7 +849,7 @@ bool CMesh::loadFromPLY( string sFileName )
 		while (fgetc(f) != '\n'); // Read till end of the line
 		// to skip texture/color values
 
-		m_pVertex[i].m_vid = i + 1;
+		m_pVertex[i].m_vIndex = i;
 		m_pVertex[i].m_vPosition = Vector3D(x, y, z);
 
 	}
@@ -963,7 +961,7 @@ bool CMesh::loadFromVERT(string sFileName)
 	for(i=0; i<m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vid = i + 1;
+		m_pVertex[i].m_vIndex = i;
 	}
 	short j;
 	for(i=0; i<m_nFace; i++)
@@ -1126,7 +1124,7 @@ bool CMesh::loadFromM(string sFileName)
 	for(i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition= VertexList[i];  
-		m_pVertex[i].m_vid = i + 1;			//VertexIDList[i];
+		m_pVertex[i].m_vIndex = i;
 
 		m_pVertex[i].m_vColor.r = VertexColorList[3*i];
 		m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
@@ -2997,7 +2995,7 @@ void CMesh::scaleAreaToVertexNum()
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_pVertex[i].getPos();
+		center += m_pVertex[i].getPosition();
 	center /= m_nVertex;
 
 	double totalSufaceArea(0);
@@ -3110,7 +3108,7 @@ void CMesh::scaleEdgeLenToUnit()
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_vVertices[i]->getPos();
+		center += m_vVertices[i]->getPosition();
 	center /= m_nVertex;
 
 	double length = 0.;
@@ -3149,7 +3147,7 @@ std::vector<int> CMesh::getOriginalVertexIndex() const
 {
 	vector<int> vret;
 	for (vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
-		vret.push_back((*iter)->m_vid - 1);
+		vret.push_back((*iter)->m_vIndex);
 	return vret;
 }
 
@@ -3270,7 +3268,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	for(int i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vid = i+1;
+		m_pVertex[i].m_vIndex = i;
 	}
 
 	for(int i = 0; i < m_nFace; i++)
@@ -3366,10 +3364,10 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 
 	for (int i = 0; i < m_nVertex; ++i)
 	{
-		m_pVertex[i].setPos(vxCoord[i], vyCoord[i], vzCoord[i]);
+		m_pVertex[i].setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 		
 		if (m_bIsPointerVectorExist)
-			m_vVertices[i]->setPos(vxCoord[i], vyCoord[i], vzCoord[i]);
+			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
 }
 
@@ -3382,10 +3380,10 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	int vsize = vDeformedIdx.size();
 	for (int i = 0; i < vsize; ++i)
 	{
-		m_pVertex[vDeformedIdx[i]].setPos(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+		m_pVertex[vDeformedIdx[i]].setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 		
 		if (m_bIsPointerVectorExist)
-			m_vVertices[vDeformedIdx[i]]->setPos(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+			m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 
 	}
 }
