@@ -333,7 +333,7 @@ std::vector<double> CFace::getPlaneFunction()
 	return para;
 }
 
-double CFace::getArea()
+double CFace::getArea() const
 {
 	return m_faceArea;
 }
@@ -351,9 +351,9 @@ void CFace::calcNormalAndArea()
 	
 }
 
-bool CFace::hasVertex( int vidx )
+bool CFace::hasVertex( int vidx ) const
 {
-	for (vector<CVertex*>::iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
+	for (vector<CVertex*>::const_iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
 	{
 		if ((*iter)->getIndex() == vidx)
 			return true;

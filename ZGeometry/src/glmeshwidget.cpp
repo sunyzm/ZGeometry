@@ -353,6 +353,7 @@ void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans)
 	glMultMatrixd(( GLdouble*)rot );
 }
 
+/*
 void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color)
 {
 	if(!tmesh) return;
@@ -371,7 +372,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
-			if(!tmesh->m_pFace[i].m_piEdge) continue;
+			if(NULL == tmesh->m_pFace[i].m_piEdge) continue;
 			for (int j = 0; j < 3; j++)
 			{
 				glColor4f(color[0], color[1], color[2], color[3]); 
@@ -418,6 +419,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 	
 	glPopMatrix();
 }
+*/
 
 void GLMeshWidget::drawMeshExt( int obj )
 {
@@ -456,10 +458,10 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glBegin(GL_TRIANGLES);
 	for (int i = 0; i < tmesh->getFaceNum(); i++)
 	{
-		if(!tmesh->m_pFace[i].m_piEdge) continue;
+		if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
 		for (int j = 0; j < 3; j++)
 		{
-			int pi = tmesh->m_pFace[i].m_piVertex[j];					 				
+			int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
 			Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
 			glNormal3f(norm.x, norm.y, norm.z);	 				
 			Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
@@ -478,14 +480,13 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
-
 		glBegin(GL_LINES);	
 		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
 		{
-			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
+			if(!tmesh->m_pHalfEdge[i].isBoundaryEdge()) 
 			{
-				int p1 = tmesh->m_pHalfEdge[i].m_iVertex[0];
-				int p2 = tmesh->m_pHalfEdge[i].m_iVertex[1];
+				int p1 = tmesh->m_pHalfEdge[i].getVertexIndex(0);
+				int p2 = tmesh->m_pHalfEdge[i].getVertexIndex(1);
 				glLineWidth(2.0);
 				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
 				if(tmesh->m_pVertex[p1].m_bIsHole) 
@@ -540,6 +541,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	/// draw feature points
 	if (obj == 0 && m_bShowFeatures)
 	{
+		// ---- draw as glPoint ---- //
 		glPointSize(10.0);
 		glBegin(GL_POINTS);
 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
@@ -552,6 +554,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 		glEnd();
 		glPointSize(2.0);
 
+		// ---- draw as gluSphere ---- //
 // 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 // 		{
 // 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
