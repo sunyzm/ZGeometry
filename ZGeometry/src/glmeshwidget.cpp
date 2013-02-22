@@ -22,6 +22,8 @@ extern QString qformat;
 Qt::MouseButton gButton;
 FalseColorMap falseColorMap;
 
+#define MORE_DRAWING
+
 void glFalseColor(float v, float p)
 {
 	int floor = v * 255.0;
@@ -335,8 +337,10 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (vSettings[0].displayType != DisplaySettings::None)
+//		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, 0);
 		drawMeshExt(0);
 	if (vSettings[1].displayType != DisplaySettings::None)
+//		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
 		drawMeshExt(1);
 
  	glMatrixMode(GL_MODELVIEW);
@@ -442,18 +446,15 @@ void GLMeshWidget::drawMeshExt( int obj )
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	setupObject(rot, trans);
-	
+	setupObject(rot, trans);	
 
 	/// draw the mesh
-	GLint curPolygonMode;
-	glGetIntegerv(GL_POLYGON_MODE, &curPolygonMode);
-	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
+ 	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj].glPolygonMode);
 	
 	glPointSize(2.0);
+	glColor4f(color[0], color[1], color[2], color[3]); 
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
-	glColor4f(color[0], color[1], color[2], color[3]); 
 	
 	glBegin(GL_TRIANGLES);
 	for (int i = 0; i < tmesh->getFaceNum(); i++)
@@ -472,38 +473,38 @@ void GLMeshWidget::drawMeshExt( int obj )
 		}
 	}
 	glEnd();
-
-	glDisable(GL_POLYGON_OFFSET_FILL);
-	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
 	
+	glDisable(GL_POLYGON_OFFSET_FILL);
+	
+#ifdef MORE_DRAWING
 	/// draw boundary edge
-	glDisable(GL_LIGHTING);
-	if (tmesh->hasBounary())   //highlight boundary edge 
-	{
-		glBegin(GL_LINES);	
-		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
-		{
-			if(!tmesh->m_pHalfEdge[i].isBoundaryEdge()) 
-			{
-				int p1 = tmesh->m_pHalfEdge[i].getVertexIndex(0);
-				int p2 = tmesh->m_pHalfEdge[i].getVertexIndex(1);
-				glLineWidth(2.0);
-				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-				if(tmesh->m_pVertex[p1].m_bIsHole) 
-				{
-					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
-				}
-				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
-				v1 += shift;
-				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
-				v2 += shift;
-				glVertex3d(v1.x, v1.y, v1.z);
-				glVertex3d(v2.x, v2.y, v2.z);
-			}
-		}
-		glEnd();
-	}
-	glEnable(GL_LIGHTING);
+//  	glDisable(GL_LIGHTING);
+//   	if (tmesh->hasBounary())   //highlight boundary edge 
+//   	{
+//   		glBegin(GL_LINES);	
+//   		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
+//   		{
+//   			if(!tmesh->m_pHalfEdge[i].isBoundaryEdge()) 
+//   			{
+//   				int p1 = tmesh->m_pHalfEdge[i].getVertexIndex(0);
+//   				int p2 = tmesh->m_pHalfEdge[i].getVertexIndex(1);
+//   				glLineWidth(2.0);
+//   				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+//   				if(tmesh->getVertex_const(p1)->isHole()) 
+//   				{
+//   					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+//   				}
+//   				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
+//   				v1 += shift;
+//   				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
+//   				v2 += shift;
+//   				glVertex3d(v1.x, v1.y, v1.z);
+//   				glVertex3d(v2.x, v2.y, v2.z);
+//   			}
+//   		}
+//   		glEnd();
+//   	}
+//  	glEnable(GL_LIGHTING);
 
 	///	draw reference point
 	if ( obj == 0 && m_bShowRefPoint && vpMP[0]->pRef >= 0 )
@@ -569,7 +570,153 @@ void GLMeshWidget::drawMeshExt( int obj )
 // 		}
 	}
 
-// 	glPolygonMode(GL_FRONT_AND_BACK, curPolygonMode);	// restore PolygonMode
+#endif
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+}
+
+void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vector3D& trans, const CQrot& rot, int obj_index )
+{
+	if(!pMP->getMesh()) return;
+	const CMesh* tmesh = pMP->getMesh();
+
+	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
+	//  glMateriali(GL_FRONT, GL_SHININESS, 96);
+
+	Vector3D shift = Vector3D(0, 0, 0);
+	if (obj_index == 1) shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+	const GLfloat *color = (obj_index == 0) ? color1 : color2;	
+
+	bool showSignature = m_bShowSignature && !pMP->vDisplaySignature.empty();
+
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+	setupObject(rot, trans);	
+
+	/// draw the mesh
+	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj_index].glPolygonMode);
+
+	glPointSize(2.0);
+	glColor4f(color[0], color[1], color[2], color[3]); 
+	glEnable(GL_POLYGON_OFFSET_FILL);
+	glPolygonOffset(1.0, 1.0);
+
+	glBegin(GL_TRIANGLES);
+	for (int i = 0; i < tmesh->getFaceNum(); i++)
+	{
+		if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
+		for (int j = 0; j < 3; j++)
+		{
+			int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
+			Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
+			glNormal3f(norm.x, norm.y, norm.z);	 				
+			Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
+			vt += shift;	//add some offset to separate object 1 and 2
+			if (showSignature) 
+				glFalseColor(pMP->vDisplaySignature[pi], 1.0);
+			glVertex3f(vt.x, vt.y, vt.z);
+		}
+	}
+	glEnd();
+
+	glDisable(GL_POLYGON_OFFSET_FILL);
+
+#ifdef MORE_DRAWING
+	/// draw boundary edge
+	//  	glDisable(GL_LIGHTING);
+	//   	if (tmesh->hasBounary())   //highlight boundary edge 
+	//   	{
+	//   		glBegin(GL_LINES);	
+	//   		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
+	//   		{
+	//   			if(!tmesh->m_pHalfEdge[i].isBoundaryEdge()) 
+	//   			{
+	//   				int p1 = tmesh->m_pHalfEdge[i].getVertexIndex(0);
+	//   				int p2 = tmesh->m_pHalfEdge[i].getVertexIndex(1);
+	//   				glLineWidth(2.0);
+	//   				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+	//   				if(tmesh->getVertex_const(p1)->isHole()) 
+	//   				{
+	//   					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+	//   				}
+	//   				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
+	//   				v1 += shift;
+	//   				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
+	//   				v2 += shift;
+	//   				glVertex3d(v1.x, v1.y, v1.z);
+	//   				glVertex3d(v2.x, v2.y, v2.z);
+	//   			}
+	//   		}
+	//   		glEnd();
+	//   	}
+	//  	glEnable(GL_LIGHTING);
+
+	///	draw reference point
+	if ( obj_index == 0 && m_bShowRefPoint && vpMP[0]->pRef >= 0 )
+	{
+		Vector3D vt = tmesh->getVertex_const(vpMP[0]->pRef)->getPosition();
+		if (obj_index == 0)
+			vt = vpMP[0]->posRef;
+		vt += shift;
+		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+		GLUquadric* quadric = gluNewQuadric();
+		gluQuadricDrawStyle(quadric, GLU_FILL);
+		glPushMatrix();
+		glTranslated(vt.x, vt.y, vt.z);
+		gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+		glPopMatrix();
+	}
+
+	/// draw handle points
+	if (obj_index == 0)
+	{
+		for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
+		{
+			Vector3D vt = iter->second;
+			vt += shift;
+			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
+			GLUquadric* quadric = gluNewQuadric();
+			gluQuadricDrawStyle(quadric, GLU_FILL);
+			glPushMatrix();
+			glTranslated(vt.x, vt.y, vt.z);
+			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+			glPopMatrix();
+		}
+	}
+
+	/// draw feature points
+	if (obj_index == 0 && m_bShowFeatures)
+	{
+		// ---- draw as glPoint ---- //
+		glPointSize(10.0);
+		glBegin(GL_POINTS);
+		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
+		{
+			Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
+			vt += shift;
+			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
+			glVertex3d(vt.x, vt.y, vt.z);
+		}
+		glEnd();
+		glPointSize(2.0);
+
+		// ---- draw as gluSphere ---- //
+		// 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
+		// 		{
+		// 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
+		// 			vt += shift;
+		// 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
+		// 			GLUquadric* quadric = gluNewQuadric();
+		//   		gluQuadricDrawStyle(quadric, GLU_FILL);
+		//   		glPushMatrix();
+		//   		glTranslated(vt.x, vt.y, vt.z);
+		//   		gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+		//   		glPopMatrix();
+		// 		}
+	}
+
+#endif
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }

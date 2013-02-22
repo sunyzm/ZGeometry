@@ -89,7 +89,7 @@ public:
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);
 	void removePropertyByName(const std::string& rn);
-	const CMesh* getMesh() { return mesh; }
+	const CMesh* getMesh() const { return mesh; }
 protected:
 	CMesh* mesh;
 	int m_size;

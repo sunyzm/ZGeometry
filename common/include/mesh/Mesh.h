@@ -51,8 +51,33 @@ public:
 	friend class CFace;
 	friend class CMesh;
 	friend class CMeshPyramid;
+	
+	// ---- constructors ---- //
+	CVertex();
+	CVertex(double x, double y, double z);
+	CVertex(const Vector3D& v);
+	CVertex(const CVertex& v);
+	CVertex(double x, double y, double z, float r, float g, float b);
+	CVertex& operator = (CVertex& v);	
+	virtual ~CVertex();
+
+	// ---- operations ---- //
+	void				calcNormal();
+	int					getIndex() const { return m_vIndex; }
+	Vector3D			getNormal() const { return m_vNormal; }
+	double				getMeanCurvature() const { return m_vMeanCurvature; }
+	double				getGaussCurvature() const { return m_vGaussCurvature; }
+	std::vector<CFace*> getAdjacentFaces();
+	const Vector3D&		getPosition() const { return m_vPosition; } 
+	bool				judgeOnBoundary();
+	bool				isHole() const { return m_bIsHole; }
+	bool				isValid() const { return m_bIsValid; }
+	void				invalidate(bool flag) { m_bIsValid = flag; }
+	void				translateAndScale(Vector3D translation, double s);
+	void                setPosition( double x, double y, double z );
 
 private:
+	// ---- fields ---- //
 	int						m_vIndex;
 	std::vector<CHalfEdge*> m_HalfEdges;
 	int*					m_piEdge;			// half edge indices start from this vertex
@@ -61,42 +86,16 @@ private:
 	Vector3D				m_vNormal;          // vertex normal
 	RGBf					m_vColor;			// vertex color
 	bool					m_bIsValid;
-
-public:
-	bool		 m_bIsBoundary;     // if boundary vertex
-	bool		 m_bIsHole;
-	double		 m_vMeanCurvature;	// mean curvature
-	double		 m_vGaussCurvature;	// Gauss curvature
+	bool					m_bIsBoundary;      // if boundary vertex
+	bool					m_bIsHole;
+	double					m_vMeanCurvature;	// mean curvature
+	double					m_vGaussCurvature;	// Gauss curvature
 
 	double		 m_LocalGeodesic;	// geodesic from local vertex
 	bool		 m_inheap;			// in heap or not
 	int			 m_vMatched;
 	int			 m_mark;
 
-public:
-	//constructors
-	CVertex();
-	CVertex(double x, double y, double z);
-	CVertex(const Vector3D& v);
-	CVertex(const CVertex& v);
-	CVertex(double x, double y, double z, float r, float g, float b);
-	CVertex& operator = (CVertex& v);	
-	//destructor
-	virtual ~CVertex();
-	
-	//operations
-	int					getIndex() const { return m_vIndex; }
-	Vector3D			getNormal() const { return m_vNormal; }
-	void				calcNormal();
-	std::vector<CFace*> getAdjacentFaces();
-	const Vector3D&		getPosition() const { return m_vPosition; } 
-	bool				judgeOnBoundary();
-	bool				isValid() const { return m_bIsValid; }
-	void				invalidate(bool flag) { m_bIsValid = flag; }
-	void				translateAndScale(Vector3D translation, double s);
-	void                setPosition( double x, double y, double z );
-public:
-	std::list<int>	m_lEdgeList;      // temporary list of constructing m_piEdge
 };
 
 //////////////////////////////////////////////////////
@@ -109,28 +108,14 @@ public:
 	friend class CFace;
 	friend class CMesh;
 	friend class MeshPyramid;
-private:
-	CVertex*	m_Vertices[2];	//starting and ending vertices
-	CHalfEdge*	m_eTwin;		//reverse half-edge; null if boundary half edge
-	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
-	CHalfEdge*	m_ePrev;
-	CFace*		m_Face;			//attached face
-	int			m_eIndex;		//half-edge id
-	bool		m_bIsValid;
 
-	int			m_iVertex[2];	// starting and ending vertex index
-	int			m_iTwinEdge;	// reverse half-edge index, -1 if boundary half edge
-	int			m_iNextEdge;	// next half-edge index ( counter-clock wise )
-	int			m_iPrevEdge;	// previous half-edge index
-	int			m_iFace;        // attaching face index ( on the left side )
-public:
-	//constructions
+	// -- constructors -- //
 	CHalfEdge();
 	CHalfEdge(const CHalfEdge& oldE);
 	CHalfEdge(int iV0, int iV1);
 	virtual ~CHalfEdge();
 
-	//operations
+	// -- operations -- //
 	CHalfEdge& operator = (const CHalfEdge& e);
 	CFace*		getAttachedFace() { return m_Face; }
 	CHalfEdge*  getTwinHalfEdge() { return m_eTwin; }
@@ -138,6 +123,23 @@ public:
 	int			getVertexIndex(int i) const { return m_iVertex[i]; }
 	double		getLength();
 	bool		isValid() const { return m_bIsValid; }
+
+private:
+	// -- fields -- //
+	CVertex*	m_Vertices[2];	//starting and ending vertices
+	CHalfEdge*	m_eTwin;		//reverse half-edge; null if boundary half edge
+	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
+	CHalfEdge*	m_ePrev;
+	CFace*		m_Face;			//attached face
+	int			m_index;		//half-edge id
+	bool		m_bIsValid;
+
+	int			m_iVertex[2];	// starting and ending vertex index
+	int			m_iTwinEdge;	// reverse half-edge index, -1 if boundary half edge
+	int			m_iNextEdge;	// next half-edge index ( counter-clock wise )
+	int			m_iPrevEdge;	// previous half-edge index
+	int			m_iFace;        // attaching face index ( on the left side )
+
 };
 
 //////////////////////////////////////////////////////
@@ -150,7 +152,28 @@ public:
 	friend class CHalfEdge;
 	friend class CMesh;
 	friend class MeshPyramid;
+
+	// -- constructors -- //
+	CFace();
+	CFace(short s);
+	CFace(const CFace& oldF);
+	virtual ~CFace();
+	CFace& operator= (const CFace& f);
+
+	// -- operations -- //
+	void					Create(short s);
+	std::vector<double>		getPlaneFunction();	
+	CVertex*				getVertex(int i) { return m_Vertices[i]; }
+	int						getVertexIndex(int i) const { return m_piVertex[i]; }
+	double					getArea() const;
+	void					calcNormalAndArea();
+	Vector3D				getNormal() const { return m_vNormal; }
+	bool					hasVertex(int vidx) const;
+	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
+	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
+
 private:
+	// ---- fields ---- // 
 	Vector3D				m_vNormal;		// normalized face normal
 	double					m_faceArea;		// face area
 	int						m_fIndex;
@@ -161,26 +184,6 @@ private:
 	short					m_nType;		// number of polygon face edges
 	int*					m_piVertex;		// all vertex index
 	int*					m_piEdge;		// all half-edge index
-
-public:
-	//constructions
-	CFace();
-	CFace(short s);
-	CFace(const CFace& oldF);
-	virtual ~CFace();
-	CFace& operator= (const CFace& f);
-
-	//operations
-	void				Create(short s);
-	std::vector<double> getPlaneFunction();	
-	CVertex*			getVertex(int i) { return m_Vertices[i]; }
-	int					getVertexIndex(int i) const { return m_piVertex[i]; }
-	double				getArea() const;
-	void				calcNormalAndArea();
-	Vector3D			getNormal() const { return m_vNormal; }
-	bool				hasVertex(int vidx) const;
-	bool				hasHalfEdge() const { return (m_piEdge != NULL); }
-	double				distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 };
 
 //////////////////////////////////////////////////////
@@ -223,7 +226,6 @@ public:
 	CMesh(const CMesh& oldMesh);
 	virtual ~CMesh();
 	void        cloneFrom(const CMesh& oldMesh);
-//	void        clone(const CMesh* oldMesh);
 
 // operations
 	bool	    Load(std::string sFileName);			// load from file
@@ -280,7 +282,7 @@ public:
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
 
 private:
-	void	clear();
+	void	clearMesh();
 	bool	construct();	// construct connectivity
 	bool	loadFromOBJ(std::string sFileName);	// load mesh from .obj file
 	bool	loadFromM(std::string sFileName);	// load mesh from .m file
@@ -299,4 +301,5 @@ private:
 	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
+
 };	//CMesh

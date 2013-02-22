@@ -15,7 +15,6 @@ CVertex::~CVertex()
 {
 	if(m_piEdge != NULL)
 		delete[] m_piEdge;
-	m_lEdgeList.clear();
 }
 
 CVertex::CVertex()
@@ -204,7 +203,7 @@ CHalfEdge::CHalfEdge( int iV0, int iV1 )
 
 CHalfEdge::CHalfEdge( const CHalfEdge& e )
 {
-	m_eIndex = e.m_eIndex;
+	m_index = e.m_index;
 	
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin= m_eNext = m_ePrev = NULL;
@@ -220,7 +219,7 @@ CHalfEdge::CHalfEdge( const CHalfEdge& e )
 
 CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 {
-	m_eIndex = e.m_eIndex;
+	m_index = e.m_index;
 
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin= m_eNext = m_ePrev = NULL;
@@ -593,7 +592,7 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 //////////////////////////////////////////////////////
 //						CMesh						//
 //////////////////////////////////////////////////////
-void CMesh::clear()
+void CMesh::clearMesh()
 {
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
 
@@ -663,16 +662,16 @@ CMesh::CMesh( const CMesh& oldMesh )
 
 CMesh::~CMesh()
 {
-	clear();	
+	clearMesh();	
 }
 
 bool CMesh::Load(string sFileName)
 {
-	clear();
+	clearMesh();
 	
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
-	string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
+	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
 	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj")
 	{
 		return loadFromOBJ(sFileName);
@@ -687,9 +686,10 @@ bool CMesh::Load(string sFileName)
 	}
 	else if (ext == ".vert" || ext == ".VERT")
 		return loadFromVERT(sFileName);
-	else if (ext == ".off" || ext == ".OFF")
+	else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
 		return loadFromOFF(sFileName);
-	throw runtime_error("Unrecognizable file extension!");
+	else 
+		throw runtime_error("Unrecognizable file extension!");
 	
 	return false;
 }
@@ -754,9 +754,9 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clear(); return false;}	//out of memory
+	if (m_pVertex == NULL) { clearMesh(); return false; }	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clear(); return false;}	//out of memory
+	if (m_pFace == NULL) { clearMesh(); return false; }	//out of memory
 
 	int i;
 	list<Vector3D>::iterator iVertex = VertexList.begin();
@@ -837,9 +837,9 @@ bool CMesh::loadFromPLY( string sFileName )
 	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clear(); return false;}	//out of memory
+	if (m_pVertex == NULL) {clearMesh(); return false;}	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clear(); return false;}	//out of memory
+	if (m_pFace == NULL) {clearMesh(); return false;}	//out of memory
 
 	// READ IN VERTICES
 	for (i = 0; i < vNr; i++) // Reads the vertices
@@ -950,9 +950,9 @@ bool CMesh::loadFromVERT(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clear(); return false;}//out of memory
+	if (m_pVertex == NULL) {clearMesh(); return false;}//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clear(); return false;}//out of memory
+	if (m_pFace == NULL) {clearMesh(); return false;}//out of memory
 
 	int i;
 	list<Vector3D>::iterator iVertex = VertexList.begin();
@@ -1115,9 +1115,9 @@ bool CMesh::loadFromM(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clear(); return false;}//out of memory
+	if (m_pVertex == NULL) {clearMesh(); return false;}//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clear(); return false;}//out of memory
+	if (m_pFace == NULL) {clearMesh(); return false;}//out of memory
 
 	int i;
 
@@ -1371,7 +1371,7 @@ bool CMesh::construct()
 			}
 		}
 
-	}//for each face
+	} //for each face
 
 	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		//--re-arrange each vertex's half-edges clockwise--
 	{
@@ -1389,7 +1389,7 @@ bool CMesh::construct()
 		
 		pV->judgeOnBoundary();
 		++iter;
-	}//for each vertex
+	} //for each vertex
 
 	assignElementsIndex();
 	gatherStatistics();
@@ -2688,7 +2688,7 @@ void CMesh::buildIndexArrays()
 		m_pVertex[i].m_piEdge = new int[m_pVertex[i].m_nValence];
 		for (int j = 0; j < m_pVertex[i].m_nValence; ++j)
 		{
-			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_eIndex;
+			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_index;
 		}
 	}
 	
@@ -2697,9 +2697,9 @@ void CMesh::buildIndexArrays()
 		m_pHalfEdge[i] = *m_vHalfEdges[i];
 		CHalfEdge& he = m_pHalfEdge[i];
 		he.m_iFace = m_vHalfEdges[i]->m_Face->m_fIndex;
-		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_eIndex : -1);
-		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_eIndex;
-		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_eIndex;
+		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_index : -1);
+		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_index;
+		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_index;
 		int i1 = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
 		int i2 = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
 		
@@ -2725,7 +2725,7 @@ void CMesh::buildIndexArrays()
 			assert(idx >= 0 && idx < m_nVertex);
 			
 			face.m_piVertex[j] = m_vFaces[i]->m_Vertices[j]->m_vIndex;
-			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_eIndex;
+			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_index;
 		}
 	}
 
@@ -2741,7 +2741,7 @@ void CMesh::assignElementsIndex()
 		m_vVertices[i]->m_vIndex = i;
 	
 	for (int i = 0; i < m_nHalfEdge; ++i)
-		m_vHalfEdges[i]->m_eIndex = i;
+		m_vHalfEdges[i]->m_index = i;
 	
 	for (int i = 0; i < m_nFace; ++i)
 		m_vFaces[i]->m_fIndex = i;
@@ -2803,7 +2803,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			const CVertex* oldV = oldMesh.m_vVertices[i];
 			for (int j = 0; j < oldV->m_nValence; ++j)
 			{
-				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
+				int eidx = oldV->m_HalfEdges[j]->m_index;
 				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
@@ -2814,7 +2814,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			for (int j = 0; j < oldF->m_nType; ++j)
 			{
 				int vidx = oldF->m_Vertices[j]->m_vIndex;
-				int eidx = oldF->m_HalfEdges[j]->m_eIndex;
+				int eidx = oldF->m_HalfEdges[j]->m_index;
 
 				assert(vidx >= 0 && vidx < m_nVertex);
 
@@ -2828,8 +2828,8 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
 			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
 				vidx1 = oldE->m_Vertices[1]->m_vIndex,
-				neidx = oldE->m_eNext->m_eIndex,
-				peidx = oldE->m_ePrev->m_eIndex,
+				neidx = oldE->m_eNext->m_index,
+				peidx = oldE->m_ePrev->m_index,
 				fidx = oldE->m_Face->m_fIndex;
 			
 			assert(vidx0 >= 0 && vidx0 < m_nVertex && vidx1 >= 0 && vidx1 < m_nVertex);
@@ -2841,7 +2841,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			curE->m_Face = this->m_vFaces[fidx];
 			if (oldE->m_eTwin != NULL)
 			{
-				int teidx = oldE->m_eTwin->m_eIndex;
+				int teidx = oldE->m_eTwin->m_index;
 				curE->m_eTwin = this->m_vHalfEdges[teidx];
 			}
 			else curE->m_eTwin = NULL;
@@ -3258,9 +3258,9 @@ bool CMesh::loadFromOFF( std::string sFileName )
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clear(); return false;}	//out of memory
+	if (m_pVertex == NULL) {clearMesh(); return false;}	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clear(); return false;}	//out of memory
+	if (m_pFace == NULL) {clearMesh(); return false;}	//out of memory
 
 	list<Vector3D>::iterator iVertex = VertexList.begin();
 	list<int>::iterator iFace = FaceList.begin();

@@ -50,6 +50,7 @@ protected:
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(int obj);
+	void drawMeshExt(const DifferentialMeshProcessor* pPM, const Vector3D& trans, const CQrot& rot, int obj_index);
 
 signals:
 	void vertexPicked(int pRef);

@@ -107,13 +107,13 @@ void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvatur
 		for (int i = 0; i < m_size; ++i)
 		{
 //			mesh->calVertexCurvature(i);
-			vCurvature[i] = mesh->getVertex(i)->m_vMeanCurvature;
+			vCurvature[i] = mesh->getVertex(i)->getMeanCurvature();
 		}
 	}
 	else if (curvatureType == 1)
 	{
 		for (int i = 0; i < m_size; ++i)
-			vCurvature[i] = mesh->getVertex(i)->m_vGaussCurvature;
+			vCurvature[i] = mesh->getVertex(i)->getGaussCurvature();
 	}
 	
 }
