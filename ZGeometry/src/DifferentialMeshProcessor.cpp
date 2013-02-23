@@ -33,7 +33,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	active_handle = -1;
 
 	constrain_weight = 0.1;
-	isComputedSGW = false;
+	m_bSGWComputed = false;
 }
 
 DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
@@ -556,7 +556,7 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
-	if (!isComputedSGW)
+	if (!m_bSGWComputed)
 		throw logic_error("SGW not computed!");
 	 	
  	vector<vector<double> > SGW = m_vSGW;
@@ -739,7 +739,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	}
 	else if (dfType == SGW)
 	{
-		if (!isComputedSGW)
+		if (!m_bSGWComputed)
 			throw logic_error("Error: SGW not computed!");
 
 		vector<double> vRX, vRY, vRZ;
@@ -858,7 +858,7 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 		}
 	}
 
-	isComputedSGW = true;
+	m_bSGWComputed = true;
 }
 
 void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const

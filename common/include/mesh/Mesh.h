@@ -95,7 +95,6 @@ private:
 	bool		 m_inheap;			// in heap or not
 	int			 m_vMatched;
 	int			 m_mark;
-
 };
 
 //////////////////////////////////////////////////////
@@ -139,7 +138,6 @@ private:
 	int			m_iNextEdge;	// next half-edge index ( counter-clock wise )
 	int			m_iPrevEdge;	// previous half-edge index
 	int			m_iFace;        // attaching face index ( on the left side )
-
 };
 
 //////////////////////////////////////////////////////
@@ -208,13 +206,13 @@ private:
 	int		    m_nHalfEdge;			// number of half-edges
 	int			m_nFace;	 			// number of faces
 
+	Vector3D    m_Center;
+	Vector3D    m_bBox;
 public:
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	CFace*		m_pFace;				// array pointer of faces
 
-	Vector3D    m_Center;
-	Vector3D    m_bBox;
 	double		m_edge;					// average edge length
 	std::string m_meshName;				// name of the mesh
 
@@ -251,6 +249,7 @@ public:
 	bool        hasBounary() const;
 	int			getBoundaryVertexNum() const; // get number of boundary vertices
 	Vector3D	getBoundingBox() const { return m_bBox; }
+	Vector3D    getCenter() const { return m_Center; }
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices

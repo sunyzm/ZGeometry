@@ -8,6 +8,7 @@
 #include <vector>
 #include <QFile>
 
+const GLfloat preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, {0.99, 0.73, 0.62, 1.0}};
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
 const GLfloat color_handle[4] = {1.0, 0.5, 0.5, 1};
@@ -17,12 +18,11 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},
                                     {1.0, 1.0, 0.0, 1.0}, 
                                     {1.0, 0.0, 1.0, 1.0},
                                     {0.0, 1.0, 1.0, 1.0}};
+const int gFeatureColorNum = 6;
 extern OutputHelper qout;
 extern QString qformat;
 Qt::MouseButton gButton;
 FalseColorMap falseColorMap;
-
-#define MORE_DRAWING
 
 void glFalseColor(float v, float p)
 {
@@ -45,7 +45,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowSignature = false;
 	m_bShowRefPoint = false;
 
-	vSettings.resize(2, DisplaySettings());
+	vSettings.resize(2, RenderSettings());
 
 	setAutoFillBackground(false);
 }
@@ -165,7 +165,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::MidButton) 
 		{
-			float scale = 3.0 * vpMP[0]->getMesh()->m_bBox.x / win_height;
+			float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / win_height;
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
@@ -176,7 +176,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::RightButton ) 
 		{
-			float scale = 5.0 * vpMP[0]->getMesh()->m_bBox.y / win_height;
+			float scale = 5.0 * vpMP[0]->getMesh()->getBoundingBox().y / win_height;
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
@@ -230,7 +230,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 3.0 * vpMP[0]->getMesh()->m_bBox.x / this->height();
+		float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
 		if (vSettings[0].selected) 
@@ -299,7 +299,7 @@ void GLMeshWidget::drawGL()
 	GLfloat diffuse[] = {1, 1, 1, 1};
 	GLfloat global_ambient[] = {.2, .2, .2, 1};
 	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat position[] = {.0,  .0, 1, 0.0};
+	GLfloat position[] = {.0, .0, 1, 0.0};
 
 	glClearColor(1., 1., 1., 0.);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -315,7 +315,7 @@ void GLMeshWidget::drawGL()
 	glEnable (GL_BLEND); 
 	glEnable(GL_POINT_SMOOTH);
 	glEnable(GL_LINE_SMOOTH);
-	glEnable (GL_POLYGON_SMOOTH);
+	glEnable(GL_POLYGON_SMOOTH);
 	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
 	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
@@ -336,12 +336,12 @@ void GLMeshWidget::drawGL()
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
-	if (vSettings[0].displayType != DisplaySettings::None)
+	if (vpMP.size() > 0 && vpMP[0] != NULL)
 		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, 0);
 //		drawMeshExt(0);
-	if (vSettings[1].displayType != DisplaySettings::None)
+	if (vpMP.size() > 1 && vpMP[1] != NULL)
 //		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
-		drawMeshExt(1);
+		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
 
  	glMatrixMode(GL_MODELVIEW);
  	glPopMatrix();
@@ -433,14 +433,14 @@ void GLMeshWidget::drawMeshExt( int obj )
 	const CMesh* tmesh = vpMP[obj]->getMesh();
 	CQrot rot = (obj == 0) ? ObjRot1 : ObjRot2;
 	Vector3D trans = (obj == 0) ? ObjTrans1 : ObjTrans2;
-	const GLfloat *color = (obj == 0) ? color1 : color2;	
+	const GLfloat *color = preset_colors[obj];	
 
 	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
 //  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
 	Vector3D shift = Vector3D(0, 0, 0);
-	if (obj == 1) shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+	if (obj == 1) shift = Vector3D(tmesh->getBoundingBox().x/2, 0, 0);
 
 	bool showSignature = m_bShowSignature && !vpMP[obj]->vDisplaySignature.empty();
 
@@ -582,12 +582,12 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 
 	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-	//  glMateriali(GL_FRONT, GL_SHININESS, 96);
+//  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
 	Vector3D shift = Vector3D(0, 0, 0);
 	if (obj_index == 1) 
-		shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
-	const GLfloat *color = (obj_index == 0) ? color1 : color2;	
+		shift = Vector3D(tmesh->getBoundingBox().x / 2., 0, 0);
+	const GLfloat *mesh_color = preset_colors[obj_index];	
 
 	bool showSignature = m_bShowSignature && !pMP->vDisplaySignature.empty();
 
@@ -599,31 +599,51 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	glPolygonMode(GL_FRONT_AND_BACK, vSettings[obj_index].glPolygonMode);
 
 	glPointSize(2.0);
-	glColor4f(color[0], color[1], color[2], color[3]); 
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	glBegin(GL_TRIANGLES);
-	for (int i = 0; i < tmesh->getFaceNum(); i++)
+	if (showSignature && !pMP->vDisplaySignature.empty())
 	{
-		if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
-		for (int j = 0; j < 3; j++)
+		glBegin(GL_TRIANGLES);
+		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
-			int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
-			Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
-			glNormal3f(norm.x, norm.y, norm.z);	 				
-			Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
-			vt += shift;	//add some offset to separate object 1 and 2
-			if (showSignature) 
+			if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
+			for (int j = 0; j < 3; j++)
+			{
+				int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
+				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
+				glNormal3f(norm.x, norm.y, norm.z);	 				
+				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
+				vt += shift;	//add some offset to separate object 1 and 2
 				glFalseColor(pMP->vDisplaySignature[pi], 1.0);
-			glVertex3f(vt.x, vt.y, vt.z);
+				glVertex3f(vt.x, vt.y, vt.z);
+			}
 		}
+		glEnd();
 	}
-	glEnd();
+	else 
+	{
+		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
+		glBegin(GL_TRIANGLES);
+		for (int i = 0; i < tmesh->getFaceNum(); i++)
+		{
+			if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
+			for (int j = 0; j < 3; j++)
+			{
+				int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
+				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
+				glNormal3f(norm.x, norm.y, norm.z);	 				
+				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
+				vt += shift;	//add some offset to separate object 1 and 2
+				glVertex3f(vt.x, vt.y, vt.z);
+			}
+		}
+		glEnd();
+	}
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
-#ifdef MORE_DRAWING
+#ifdef DRAW_BOUNDARY
 	/// draw boundary edge
 	//  	glDisable(GL_LIGHTING);
 	//   	if (tmesh->hasBounary())   //highlight boundary edge 
@@ -652,13 +672,14 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	//   		glEnd();
 	//   	}
 	//  	glEnable(GL_LIGHTING);
+#endif
 
-	///	draw reference point
-	if ( obj_index == 0 && m_bShowRefPoint && pMP->pRef >= 0 )
+	//// ----	draw reference point ---- ////
+	if ( m_bShowRefPoint && pMP->pRef >= 0 )
 	{
 		Vector3D vt = tmesh->getVertex_const(pMP->pRef)->getPosition();
 		if (obj_index == 0)
-			vt = vpMP[0]->posRef;
+			vt = pMP->posRef;
 		vt += shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();
@@ -669,40 +690,24 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 		glPopMatrix();
 	}
 
-	/// draw handle points
-	if (obj_index == 0)
+	//// ---- draw feature points ---- ////
+	if (m_bShowFeatures && !pMP->vFeatures.empty())
 	{
-		for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
-		{
-			Vector3D vt = iter->second;
-			vt += shift;
-			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
-			GLUquadric* quadric = gluNewQuadric();
-			gluQuadricDrawStyle(quadric, GLU_FILL);
-			glPushMatrix();
-			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
-			glPopMatrix();
-		}
-	}
-
-	/// draw feature points
-	if (obj_index == 0 && m_bShowFeatures)
-	{
-		// ---- draw as glPoint ---- //
+		///// draw as glPoint
 		glPointSize(10.0);
 		glBegin(GL_POINTS);
 		for (auto iter = pMP->vFeatures.begin(); iter != pMP->vFeatures.end(); ++iter)
 		{
 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
 			vt += shift;
-			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
+			int color_index = iter->scale % gFeatureColorNum;
+			glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
 			glVertex3d(vt.x, vt.y, vt.z);
 		}
 		glEnd();
 		glPointSize(2.0);
 
-		// ---- draw as gluSphere ---- //
+		//// draw as gluSphere 
 		// 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
 		// 		{
 		// 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
@@ -717,7 +722,24 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 		// 		}
 	}
 
-#endif
+	//// ---- draw handle points ---- ////
+	if (!pMP->mHandles.empty())
+	{
+		for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
+		{
+			Vector3D vt = iter->second;
+			vt += shift;
+			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
+			GLUquadric* quadric = gluNewQuadric();
+			gluQuadricDrawStyle(quadric, GLU_FILL);
+			glPushMatrix();
+			glTranslated(vt.x, vt.y, vt.z);
+			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+			glPopMatrix();
+		}
+	}
+	
+
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }

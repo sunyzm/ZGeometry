@@ -5,12 +5,13 @@
 #include <vector>
 #include "DifferentialMeshProcessor.h"
 
-struct DisplaySettings
+class RenderSettings
 {
-	DisplaySettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), showColorSignature(false), selected(false), glPolygonMode(GL_FILL) {}
+public:
+	RenderSettings() : displayType(Mesh), showFeatures(false), showRefPoint(false), showColorSignature(false), selected(false), glPolygonMode(GL_FILL) {}
 
 	enum {PointCloud, Wireframe, Mesh, None} displayType;
-	GLenum glPolygonMode;
+	unsigned int glPolygonMode;
 	bool showFeatures;
 	bool showRefPoint;
 	bool showColorSignature;
@@ -23,8 +24,7 @@ class GLMeshWidget : public QGLWidget
 
 public:
 	std::vector<DifferentialMeshProcessor*> vpMP;
-	std::vector<DisplaySettings> vSettings;
-//	int active_handle;
+	std::vector<RenderSettings> vSettings;
 
 	bool m_bShowLegend;
 	bool m_bShowFeatures;

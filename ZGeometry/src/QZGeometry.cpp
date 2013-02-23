@@ -14,13 +14,12 @@
 #define DEFAULT_DEFORM_RING 5 
 #define LOAD_MHB_CACHE 1
 
-
 using namespace std;
 
 extern OutputHelper qout;
 extern QString qformat;
 const char* g_meshListName = "meshfiles.cfg";
-//int g_objSelect = 0;	//-1 means all object; -2 means no object
+
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -143,7 +142,7 @@ bool QZGeometryWindow::initialize()
 	mesh1.gatherStatistics();
 	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 	
-	Vector3D center1 = mesh1.m_Center, bbox1 = mesh1.m_bBox;
+	Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
 	qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
 
 /*	
@@ -230,9 +229,9 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	case Qt::Key_W:	// switch between display mode
 	{
-		if (ui.glMeshWidget->vSettings[0].displayType == DisplaySettings::Mesh)
+		if (ui.glMeshWidget->vSettings[0].displayType == RenderSettings::Mesh)
 			setDisplayWireframe();
-		else if (ui.glMeshWidget->vSettings[0].displayType == DisplaySettings::Wireframe)
+		else if (ui.glMeshWidget->vSettings[0].displayType == RenderSettings::Wireframe)
 			setDisplayPointCloud();
 		else setDisplayMesh();
 		break;
@@ -434,7 +433,7 @@ void QZGeometryWindow::deformLaplace()
 
 void QZGeometryWindow::deformSGW()
 {
-	if (!vMP[0].isComputedSGW)
+	if (!vMP[0].isSGWComputed())
 		this->computeSGW();
 
 	vector<Vector3D> vHandlePos;
@@ -580,7 +579,7 @@ void QZGeometryWindow::setDisplayPointCloud()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(false);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::PointCloud;
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::PointCloud;
 	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_POINT;
 	ui.glMeshWidget->update();
 }
@@ -591,7 +590,7 @@ void QZGeometryWindow::setDisplayWireframe()
 	ui.actionDisplayWireframe->setChecked(true);
 	ui.actionDisplayMesh->setChecked(false);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Wireframe;
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::Wireframe;
 	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_LINE;
 	ui.glMeshWidget->update();
 
@@ -603,7 +602,7 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(true);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = DisplaySettings::Mesh;
+	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::Mesh;
 	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_FILL;
 	ui.glMeshWidget->update();
 
@@ -848,7 +847,7 @@ void QZGeometryWindow::reconstructMHB()
 
 void QZGeometryWindow::reconstructSGW()
 {
-	if (!vMP[0].isComputedSGW)
+	if (!vMP[0].isSGWComputed())
 		this->computeSGW();
 	
 	vector<double> vx, vy, vz;
