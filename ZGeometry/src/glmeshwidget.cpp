@@ -337,8 +337,8 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (vSettings[0].displayType != DisplaySettings::None)
-//		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, 0);
-		drawMeshExt(0);
+		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, 0);
+//		drawMeshExt(0);
 	if (vSettings[1].displayType != DisplaySettings::None)
 //		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
 		drawMeshExt(1);
@@ -585,7 +585,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	//  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
 	Vector3D shift = Vector3D(0, 0, 0);
-	if (obj_index == 1) shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
+	if (obj_index == 1) 
+		shift = Vector3D(tmesh->m_bBox.x/2, 0, 0);
 	const GLfloat *color = (obj_index == 0) ? color1 : color2;	
 
 	bool showSignature = m_bShowSignature && !pMP->vDisplaySignature.empty();
@@ -653,9 +654,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	//  	glEnable(GL_LIGHTING);
 
 	///	draw reference point
-	if ( obj_index == 0 && m_bShowRefPoint && vpMP[0]->pRef >= 0 )
+	if ( obj_index == 0 && m_bShowRefPoint && pMP->pRef >= 0 )
 	{
-		Vector3D vt = tmesh->getVertex_const(vpMP[0]->pRef)->getPosition();
+		Vector3D vt = tmesh->getVertex_const(pMP->pRef)->getPosition();
 		if (obj_index == 0)
 			vt = vpMP[0]->posRef;
 		vt += shift;
@@ -671,7 +672,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	/// draw handle points
 	if (obj_index == 0)
 	{
-		for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
+		for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
 		{
 			Vector3D vt = iter->second;
 			vt += shift;
@@ -691,7 +692,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 		// ---- draw as glPoint ---- //
 		glPointSize(10.0);
 		glBegin(GL_POINTS);
-		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
+		for (auto iter = pMP->vFeatures.begin(); iter != pMP->vFeatures.end(); ++iter)
 		{
 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
 			vt += shift;
