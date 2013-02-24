@@ -6,6 +6,7 @@
 #include "DifferentialMeshProcessor.h"
 
 const GLfloat preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, {0.99, 0.73, 0.62, 1.0}};
+
 class RenderSettings
 {
 public:

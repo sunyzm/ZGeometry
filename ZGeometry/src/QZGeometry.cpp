@@ -2,12 +2,14 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <deque>
 #include <set>
 #include <algorithm>
 #include <stdexcept>
 #include <QtGui/QMessageBox>
 #include <QTime>
 #include <ZUtil.h>
+#include <stdexcept>
 #include "QZGeometry.h"
 #include "config.h"
 
@@ -111,14 +113,14 @@ bool QZGeometryWindow::initialize()
 	setDisplayMesh();
 	setEditModeMove();
 
-	/// load meshes    
+	//// ---- load meshes ---- ////    
 	ifstream meshfiles(g_meshListName);
 	if (!meshfiles)
 	{
 		qout.output("Cannot open " + QString(g_meshListName), OUT_MSGBOX);
 		return false;
 	}
-	vector<string> vMeshFiles;
+	deque<string> vMeshFiles;
 	while (!meshfiles.eof())
 	{
 		string meshFileName;
@@ -129,18 +131,24 @@ bool QZGeometryWindow::initialize()
 	}
 	meshfiles.close();
 
-	if (!mesh1.Load(vMeshFiles.front()))
+	if (vMeshFiles.empty())
 	{
-		qout.output("Cannot open " + vMeshFiles.front(), OUT_MSGBOX);
+		qout.output("MeshFiles list empty!", OUT_MSGBOX);
 		return false;
 	}
+	try {
+		mesh1.Load(vMeshFiles.front());
+	}
+	catch (runtime_error* e) {
+		qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
+		return false;
+	}
+	vMeshFiles.pop_front();
 	mesh1.scaleEdgeLenToUnit();
 	mesh1.gatherStatistics();
-	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
-	
 	Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
+	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 	qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
-
 /*	
 	ifstream ifcoord("output/coordtrans4.dat");
 	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
@@ -151,11 +159,36 @@ bool QZGeometryWindow::initialize()
 			qout.output("vertex: " + QString::number(x) + "," + QString::number(y) + "," + QString::number(z));
 		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
 	}
-//*/	
-	
+//*/		
 	/// update ui
 	vMP[0].init(&mesh1, m_ep);
 	ui.glMeshWidget->addMesh(&vMP[0]);
+	this->computeLaplacian(0);	
+	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
+//	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
+
+	if (g_preload_meshes == 2 && !vMeshFiles.empty())
+	{
+		try {
+			mesh2.Load(vMeshFiles.front());
+		}
+		catch (runtime_error *e) {
+			qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
+			return false;
+		}
+		vMeshFiles.pop_front();
+		mesh2.scaleEdgeLenToUnit();
+		mesh2.gatherStatistics();
+		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
+		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.m_meshName.c_str(), mesh2.getVerticesNum()));
+//		qout.output("Load mesh: " + QString(mesh2.m_meshName.c_str()) + "    Size: " + QString::number(mesh2.getVerticesNum()));
+		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox1.z));
+		vMP[1].init(&mesh2, m_ep);
+		ui.glMeshWidget->addMesh(&vMP[1]);
+		this->computeLaplacian(1);
+		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
+	}
+
 	ui.glMeshWidget->fieldView(center1, bbox1);
 
 	ui.spinBox1->setMinimum(0);
@@ -171,10 +204,6 @@ bool QZGeometryWindow::initialize()
 
 	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
 	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
-
-	this->computeLaplacian(0);	
-	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
-	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
 
 	return true;
 }
