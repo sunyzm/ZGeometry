@@ -8,7 +8,6 @@
 #include <vector>
 #include <QFile>
 
-const GLfloat preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, {0.99, 0.73, 0.62, 1.0}};
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
 const GLfloat color_handle[4] = {1.0, 0.5, 0.5, 1};
@@ -58,6 +57,8 @@ GLMeshWidget::~GLMeshWidget()
 void GLMeshWidget::addMesh(DifferentialMeshProcessor* pmp)
 {
 	vpMP.push_back(pmp);
+	if (vpMP.size() == 1) vSettings[0].mesh_color = preset_colors[0];
+	else if (vpMP.size() == 2) vSettings[1].mesh_color =preset_colors[1];
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -337,11 +338,9 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (vpMP.size() > 0 && vpMP[0] != NULL)
-		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, 0);
-//		drawMeshExt(0);
+		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, &vSettings[0], 0);
 	if (vpMP.size() > 1 && vpMP[1] != NULL)
-//		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
-		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, 1);
+		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, &vSettings[1], 1);
 
  	glMatrixMode(GL_MODELVIEW);
  	glPopMatrix();
@@ -575,7 +574,8 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glPopMatrix();
 }
 
-void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vector3D& trans, const CQrot& rot, int obj_index )
+void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vector3D& trans, const CQrot& rot, 
+	                            const RenderSettings* renderSettings, int obj_index )
 {
 	if(!pMP->getMesh()) return;
 	const CMesh* tmesh = pMP->getMesh();
@@ -587,7 +587,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	Vector3D shift = Vector3D(0, 0, 0);
 	if (obj_index == 1) 
 		shift = Vector3D(tmesh->getBoundingBox().x / 2., 0, 0);
-	const GLfloat *mesh_color = preset_colors[obj_index];	
+	const GLfloat *mesh_color = renderSettings->mesh_color;	
 
 	bool showSignature = m_bShowSignature && !pMP->vDisplaySignature.empty();
 
@@ -615,7 +615,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
-				glFalseColor(pMP->vDisplaySignature[pi], 1.0);
+				glFalseColor(pMP->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
@@ -739,7 +739,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 		}
 	}
 	
-
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
