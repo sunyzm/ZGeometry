@@ -199,6 +199,7 @@
     <ClInclude Include="src\Laplacian.h" />
     <ClInclude Include="src\MatlabWrapper.h" />
     <ClInclude Include="src\OutputHelper.h" />
+    <ClInclude Include="src\RenderSettings.h" />
     <CustomBuild Include="src\QZGeometry.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing QZGeometry.h...</Message>

@@ -108,6 +108,9 @@
     <ClInclude Include="src\config.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\RenderSettings.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="meshfiles.cfg">

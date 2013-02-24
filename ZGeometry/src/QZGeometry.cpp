@@ -333,26 +333,24 @@ void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
 	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
 	{
 		vMP[obj].readMHB(pathMHB);
+		ifs.close();
 	}
-	else 
+	else // need to compute Laplacian and wave to cache
 	{
 		int nEig = DEFAULT_EIGEN_SIZE;
 		if (nEig > mesh1.getVerticesNum()-1)
 			nEig = mesh1.getVerticesNum() - 1;
 		vMP[obj].decomposeLaplacian(nEig);
-//		vMP[obj].decomposeLaplacian(vMP[obj].m_size);
 		vMP[obj].writeMHB(pathMHB);
 		qout.output("MHB saved to " + pathMHB);
 
-		std::string pathEVL = "output/" + vMP[obj].getMesh()->m_meshName + ".evl";	//eigenvalues
+		std::string pathEVL = "output/" + vMP[obj].getMesh()->m_meshName + ".evl";	//dump eigenvalues
 		ofstream ofs(pathEVL.c_str(), ios::trunc);
 		for (vector<ManifoldBasis>::iterator iter = vMP[obj].mhb.m_func.begin(); iter != vMP[obj].mhb.m_func.end(); ++iter)
-		{
 			ofs << iter->m_val << endl;
-		}
 		ofs.close();
 	}
-	ifs.close();
+	
 	ui.actionComputeLaplacian->setChecked(true);
 	
 	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");

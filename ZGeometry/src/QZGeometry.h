@@ -22,7 +22,7 @@ private slots:
 	void setEditModeMove();
 	void setEditModePick();
 	void setEditModeDrag();
-	void computeLaplacian(int obj = 0);
+	void computeLaplacian(int obj = 0); 
 	void computeSGW();
 	void computeSGWSFeatures();
 	void displayEigenfunction();
@@ -43,6 +43,7 @@ private slots:
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
 	void selectObject(int index);
+
 	void clone();
 	void deformSimple();
 	void deformLaplace();
@@ -50,6 +51,7 @@ private slots:
 	void reconstructMHB();
 	void reconstructSGW();
 	void filterExperimental();
+
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
