@@ -22,10 +22,12 @@ private slots:
 	void setEditModeMove();
 	void setEditModePick();
 	void setEditModeDrag();
-	void computeLaplacian(int obj = 0); 
+	void computeLaplacian(); 
+	void computeHKS();
 	void computeSGW();
 	void computeSGWSFeatures();
 	void displayEigenfunction();
+	void displayHeatKernelSignature();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
 	void displayCurvatureMean();
@@ -67,6 +69,7 @@ private:	// attributes
 	Engine *m_ep;
 	CMesh mesh1, mesh2;
 	bool selected[2];
+	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
 
 	struct {int xMove, yMove, zMove; } refMove;

@@ -27,7 +27,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
 	mesh = NULL;
-	isMHBBuilt = false;
+	m_bLaplacianDecomposed = false;
 	pRef = -1;
 	m_size = 0;
 	active_handle = -1;
@@ -56,7 +56,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 	mLaplacian.decompose(mhb, nEigFunc, m_ep);
-	this->isMHBBuilt = true;
+	this->m_bLaplacianDecomposed = true;
 }
 
 void DifferentialMeshProcessor::readMHB( const std::string& path )
@@ -82,6 +82,7 @@ void DifferentialMeshProcessor::readMHB( const std::string& path )
 	}
 	delete []buffer;
 
+	this->m_bLaplacianDecomposed = true;
 }
 
 void DifferentialMeshProcessor::writeMHB(std::string path)

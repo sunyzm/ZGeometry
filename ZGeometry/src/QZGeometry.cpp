@@ -4,7 +4,6 @@
 #include <vector>
 #include <deque>
 #include <set>
-#include <algorithm>
 #include <stdexcept>
 #include <QtGui/QMessageBox>
 #include <QTime>
@@ -12,6 +11,7 @@
 #include <stdexcept>
 #include "QZGeometry.h"
 #include "config.h"
+#include <algorithm>
 
 using namespace std;
 
@@ -33,6 +33,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
 	
+	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = 50;
 
 	deformType = Simple;
@@ -50,6 +51,7 @@ void QZGeometryWindow::makeConnections()
 	
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
+	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 
@@ -89,6 +91,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
+	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHeatKernelSignature()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
@@ -130,42 +133,32 @@ bool QZGeometryWindow::initialize()
 		else vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
-
 	if (vMeshFiles.empty())
 	{
 		qout.output("MeshFiles list empty!", OUT_MSGBOX);
 		return false;
 	}
-	try {
-		mesh1.Load(vMeshFiles.front());
-	}
-	catch (runtime_error* e) {
-		qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
-		return false;
-	}
-	vMeshFiles.pop_front();
-	mesh1.scaleEdgeLenToUnit();
-	mesh1.gatherStatistics();
-	Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
-	qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
-	qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
-/*	
-	ifstream ifcoord("output/coordtrans4.dat");
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+
+	if (g_preload_meshes >= 1)
 	{
-		double x(0),y(0),z(0);
-		ifcoord >> x >> y >> z;
-		if (i < 5) 
-			qout.output("vertex: " + QString::number(x) + "," + QString::number(y) + "," + QString::number(z));
-		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
+		try {
+			mesh1.Load(vMeshFiles.front());
+		}
+		catch (runtime_error* e) {
+			qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
+			return false;
+		}
+		vMeshFiles.pop_front();
+		mesh1.scaleEdgeLenToUnit();
+		mesh1.gatherStatistics();
+		Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
+		qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
+		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
+		vMP[0].init(&mesh1, m_ep);
+		ui.glMeshWidget->addMesh(&vMP[0]);
+		mesh_valid[0] = true;
 	}
-//*/		
-	/// update ui
-	vMP[0].init(&mesh1, m_ep);
-	ui.glMeshWidget->addMesh(&vMP[0]);
-	this->computeLaplacian(0);	
-	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
-//	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
+
 
 	if (g_preload_meshes == 2 && !vMeshFiles.empty())
 	{
@@ -182,20 +175,46 @@ bool QZGeometryWindow::initialize()
 		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
 		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.m_meshName.c_str(), mesh2.getVerticesNum()));
 //		qout.output("Load mesh: " + QString(mesh2.m_meshName.c_str()) + "    Size: " + QString::number(mesh2.getVerticesNum()));
-		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox1.z));
+		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z));
 		vMP[1].init(&mesh2, m_ep);
 		ui.glMeshWidget->addMesh(&vMP[1]);
-		this->computeLaplacian(1);
-		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
+		mesh_valid[1] = true;
 	}
 
-	ui.glMeshWidget->fieldView(center1, bbox1);
+/*	ifstream ifcoord("output/coordtrans4.dat");
+	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	{
+		double x(0),y(0),z(0);
+		ifcoord >> x >> y >> z;
+		if (i < 5) 
+			qout.output("vertex: " + QString::number(x) + "," + QString::number(y) + "," + QString::number(z));
+		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
+	}
+//*/
+	computeLaplacian();
+	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
+	//	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
+	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
+	
+	// ---- update ui ---- //
+	if (mesh_valid[0])
+	{
+		ui.glMeshWidget->fieldView(mesh1.getCenter(), mesh1.getBoundingBox());
+		ui.spinBox1->setMinimum(0);
+		ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
+		ui.horizontalSlider1->setMinimum(0);
+		ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
+	}
+	if (mesh_valid[1])
+	{
+		ui.spinBox1->setValue(0);	
+		ui.spinBox2->setMinimum(0);
+		ui.spinBox2->setMaximum(mesh2.getVerticesNum()-1);
+		ui.horizontalSlider2->setMinimum(0);
+		ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
+		ui.spinBox2->setValue(0);
+	}
 
-	ui.spinBox1->setMinimum(0);
-	ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
-	ui.horizontalSlider1->setMinimum(0);
-	ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
-	ui.spinBox1->setValue(0);	
 	ui.spinBoxParameter->setMinimum(0);
 	ui.spinBoxParameter->setMaximum(100);
 	ui.horizontalSliderParamter->setMinimum(0);
@@ -322,39 +341,43 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	}
 }
 
-void QZGeometryWindow::computeLaplacian( int obj /*= 0*/ )
+void QZGeometryWindow::computeLaplacian()
 {
-	QTime timer;
-	timer.start();
-
-	string pathMHB = "output/" + vMP[obj].getMesh()->m_meshName + ".mhb";
-	
-	ifstream ifs(pathMHB.c_str());
-	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
+	for (int obj = 0; obj < 2; ++obj)
 	{
-		vMP[obj].readMHB(pathMHB);
-		ifs.close();
-	}
-	else // need to compute Laplacian and wave to cache
-	{
-		int nEig = DEFAULT_EIGEN_SIZE;
-		if (nEig > mesh1.getVerticesNum()-1)
-			nEig = mesh1.getVerticesNum() - 1;
-		vMP[obj].decomposeLaplacian(nEig);
-		vMP[obj].writeMHB(pathMHB);
-		qout.output("MHB saved to " + pathMHB);
+		if (!mesh_valid[obj]) continue;
+		DifferentialMeshProcessor& mp = vMP[obj];
+		
+		QTime timer;
+		timer.start();
 
-		std::string pathEVL = "output/" + vMP[obj].getMesh()->m_meshName + ".evl";	//dump eigenvalues
-		ofstream ofs(pathEVL.c_str(), ios::trunc);
-		for (vector<ManifoldBasis>::iterator iter = vMP[obj].mhb.m_func.begin(); iter != vMP[obj].mhb.m_func.end(); ++iter)
-			ofs << iter->m_val << endl;
-		ofs.close();
-	}
-	
-	ui.actionComputeLaplacian->setChecked(true);
-	
-	qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-	qout.output(qformat.sprintf("Min Eig Val: %f, Max Eig Val: %f", vMP[obj].mhb.m_func.front().m_val, vMP[obj].mhb.m_func.back().m_val));
+		std::string pathMHB = "output/" + mp.getMesh()->m_meshName + ".mhb";
+		ifstream ifs(pathMHB.c_str());
+		if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
+		{
+			mp.readMHB(pathMHB);
+			ifs.close();
+		}
+		else // need to compute Laplacian and to cache
+		{
+			int nEig = min(DEFAULT_EIGEN_SIZE, mesh1.getVerticesNum()-1);
+			
+			mp.decomposeLaplacian(nEig);
+			mp.writeMHB(pathMHB);
+			qout.output("MHB saved to " + pathMHB);
+
+			std::string pathEVL = "output/" + mp.getMesh()->m_meshName + ".evl";	//dump eigenvalues
+			ofstream ofs(pathEVL.c_str(), ios::trunc);
+			for (auto iter = mp.mhb.m_func.begin(); iter != mp.mhb.m_func.end(); ++iter)
+				ofs << iter->m_val << endl;
+			ofs.close();
+		}
+		
+		qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
+		qout.output(qformat.sprintf("Min Eig Val: %f, Max Eig Val: %f",mp.mhb.m_func.front().m_val, mp.mhb.m_func.back().m_val));
+	}	
+
+	ui.actionComputeLaplacian->setChecked(true);	
 }
 
 void QZGeometryWindow::computeSGWSFeatures()
@@ -633,20 +656,17 @@ void QZGeometryWindow::setDisplayMesh()
 
 void QZGeometryWindow::displayEigenfunction()
 {
-	int select_eig = (m_commonParameter - 49 > 1) ? (m_commonParameter - 49) : 1;
+	int select_eig = (m_commonParameter - 49 >= 1) ? (m_commonParameter - 49) : 1;
 
-	if (selected[0])
+	for (int i = 0; i < 2; ++i)
 	{
-		DifferentialMeshProcessor& mp = vMP[0];
-		mp.normalizeSignatureFrom(mp.mhb.m_func[select_eig].m_vec);
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed()) 
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			mp.normalizeSignatureFrom(mp.mhb.m_func[select_eig].m_vec);
+			ui.glMeshWidget->vSettings[i].showColorSignature = true;
+		}
 	}
-
-// 	if (selected[1] && vMP[1].mesh)
-// 	{
-// 		MeshProcessor& mp = vMP[1];		
-// 		mp.normalizeFrom(mp.mhb.m_func[1].m_vec);
-// 		ui.glMeshWidget->vSettings[1].showColorSignature = true;
-// 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -946,4 +966,14 @@ void QZGeometryWindow::displayNeighborVertices()
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayHeatKernelSignature()
+{
+
+}
+
+void QZGeometryWindow::computeHKS()
+{
+
 }

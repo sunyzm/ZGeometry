@@ -47,6 +47,9 @@
       <layout class="QHBoxLayout" name="layoutOptions">
        <item>
         <widget class="QComboBox" name="boxObjSelect">
+         <property name="toolTip">
+          <string>Object Select</string>
+         </property>
          <property name="editable">
           <bool>false</bool>
          </property>
@@ -73,10 +76,34 @@
         </widget>
        </item>
        <item>
-        <widget class="QSpinBox" name="spinBox1"/>
+        <widget class="QSpinBox" name="spinBox1">
+         <property name="toolTip">
+          <string>SpinBox 1</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QSlider" name="horizontalSlider1">
+         <property name="toolTip">
+          <string>Slider 1</string>
+         </property>
+         <property name="orientation">
+          <enum>Qt::Horizontal</enum>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSpinBox" name="spinBox2">
+         <property name="toolTip">
+          <string>SpinBox 2</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QSlider" name="horizontalSlider2">
+         <property name="toolTip">
+          <string>Slider 2</string>
+         </property>
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -252,7 +279,7 @@
     <addaction name="separator"/>
     <addaction name="menuCurvature"/>
     <addaction name="actionEigenfunction"/>
-    <addaction name="actionHKS"/>
+    <addaction name="actionDisplayHKS"/>
     <addaction name="actionSGWS"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="separator"/>
@@ -265,6 +292,7 @@
      <string>Compute</string>
     </property>
     <addaction name="actionComputeLaplacian"/>
+    <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeSGW"/>
     <addaction name="actionSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -375,7 +403,7 @@
     <string>SGWS Features</string>
    </property>
   </action>
-  <action name="actionHKS">
+  <action name="actionDisplayHKS">
    <property name="text">
     <string>HKS</string>
    </property>
@@ -476,6 +504,11 @@
   <action name="actionDeformLaplace">
    <property name="text">
     <string>Laplace</string>
+   </property>
+  </action>
+  <action name="actionComputeHKS">
+   <property name="text">
+    <string>HKS</string>
    </property>
   </action>
  </widget>

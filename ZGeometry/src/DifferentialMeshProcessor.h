@@ -12,8 +12,8 @@ enum DeformType {Simple, Shell, Laplace, SGW};
 
 double transferScalingFunc1(double lambda);
 
-double transferFunc1(double lambda, double t);	// mexican-hat square
-double transferFunc2(double lambda, double t);	// mexican-hat
+double transferFunc1(double lambda, double t);	// Mexican-hat square
+double transferFunc2(double lambda, double t);	// Mexican-hat
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -24,8 +24,8 @@ public:
 	void decomposeLaplacian(int nEigFunc);
 	void readMHB(const std::string& path);
 	void writeMHB(std::string path);
+	void addNewHandle(int hIdx);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
-	
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void normalizeSignatureFrom(const std::vector<double>& vFrom);
 	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
@@ -41,8 +41,9 @@ public:
 	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	void getSGWSignature(double timescale, std::vector<double>& values) const;
+	
 	bool isSGWComputed() const { return m_bSGWComputed; }
-	void addNewHandle(int hIdx);
+	bool isLaplacianDecomposed() const { return  m_bLaplacianDecomposed; }
 
 public:
 	MatlabWrapper matlabWrapper;
@@ -50,7 +51,6 @@ public:
 	
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
-	bool isMHBBuilt;
 
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
@@ -65,8 +65,8 @@ public:
 	
 private:
 	bool m_bSGWComputed;
+	bool m_bLaplacianDecomposed;		// mhb available
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
-
 };
 
