@@ -1,4 +1,4 @@
-#include <util/arithmetic.h>
+#include <arithmetic.h>
 #include <cassert>
 #include <stdexcept>
 

@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <set>
-#include <mesh/Mesh.h>
+#include <Mesh.h>
 #include <stdexcept>
 #include <algorithm>
 using namespace std;

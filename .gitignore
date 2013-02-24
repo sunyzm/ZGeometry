@@ -26,7 +26,8 @@
 bin/
 data/
 lib/
-common/intermediate/
+ZUtil/build/intermediate/
+ZMesh/build/intermediate/
 ZGeometry/GeneratedFiles/
 ZGeometry/intermediate/
 ZGeometry/output/

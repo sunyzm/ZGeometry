@@ -2,6 +2,8 @@
 #include <vector>
 #include <map>
 #include <string>
+#include <Geometry.h>
+#include <Mesh.h>
 
 #define ID_PROPERTY_NOT_SPECIFIED -1
 

@@ -1,4 +1,4 @@
-#include <util/color.h>
+#include <color.h>
 #include <cassert>
 
 void FalseColorMap::BuildLUT()

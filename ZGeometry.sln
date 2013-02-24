@@ -2,10 +2,19 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio 2010
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZGeometry", "ZGeometry\ZGeometry.vcxproj", "{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}"
-EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "common", "common\common.vcxproj", "{4498E894-5F1B-4F5C-8F79-361D8352B125}"
+	ProjectSection(ProjectDependencies) = postProject
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD} = {EB01899C-48D4-48C7-AE60-A8371D3329AD}
+		{895183E2-8707-4F5E-99F3-3C6119CB0729} = {895183E2-8707-4F5E-99F3-3C6119CB0729}
+	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZMeshViewer", "ZMeshViewer\ZMeshViewer.vcxproj", "{34B4303E-665D-4138-A128-54B7435208BD}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZUtil", "ZUtil\build\ZUtil.vcxproj", "{895183E2-8707-4F5E-99F3-3C6119CB0729}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZMesh", "ZMesh\build\ZMesh.vcxproj", "{EB01899C-48D4-48C7-AE60-A8371D3329AD}"
+	ProjectSection(ProjectDependencies) = postProject
+		{895183E2-8707-4F5E-99F3-3C6119CB0729} = {895183E2-8707-4F5E-99F3-3C6119CB0729}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,18 +32,24 @@ Global
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|Win32.Build.0 = Release|Win32
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|x64.ActiveCfg = Release|x64
 		{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}.Release|x64.Build.0 = Release|x64
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Debug|Win32.ActiveCfg = Debug|Win32
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Debug|Win32.Build.0 = Debug|Win32
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Debug|x64.ActiveCfg = Debug|Win32
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|Win32.ActiveCfg = Release|Win32
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|Win32.Build.0 = Release|Win32
-		{4498E894-5F1B-4F5C-8F79-361D8352B125}.Release|x64.ActiveCfg = Release|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|Win32.ActiveCfg = Debug|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|Win32.Build.0 = Debug|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Debug|x64.ActiveCfg = Debug|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Release|Win32.ActiveCfg = Release|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Release|Win32.Build.0 = Release|Win32
 		{34B4303E-665D-4138-A128-54B7435208BD}.Release|x64.ActiveCfg = Release|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Debug|Win32.ActiveCfg = Debug|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Debug|Win32.Build.0 = Debug|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Debug|x64.ActiveCfg = Debug|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Release|Win32.ActiveCfg = Release|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Release|Win32.Build.0 = Release|Win32
+		{895183E2-8707-4F5E-99F3-3C6119CB0729}.Release|x64.ActiveCfg = Release|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Debug|Win32.ActiveCfg = Debug|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Debug|Win32.Build.0 = Debug|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Debug|x64.ActiveCfg = Debug|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Release|Win32.ActiveCfg = Release|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Release|Win32.Build.0 = Release|Win32
+		{EB01899C-48D4-48C7-AE60-A8371D3329AD}.Release|x64.ActiveCfg = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

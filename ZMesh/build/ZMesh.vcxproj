@@ -11,9 +11,9 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{4498E894-5F1B-4F5C-8F79-361D8352B125}</ProjectGuid>
+    <ProjectGuid>{EB01899C-48D4-48C7-AE60-A8371D3329AD}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
-    <RootNamespace>common</RootNamespace>
+    <RootNamespace>ZMesh</RootNamespace>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -38,15 +38,15 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <IncludePath>$(ProjectDir)..\include;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <TargetName>ZCommond</TargetName>
-    <IntDir>.\intermediate\$(Configuration)\</IntDir>
+    <IntDir>$(ProjectDir)intermediate\</IntDir>
+    <TargetName>$(ProjectName)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <IncludePath>$(ProjectDir)..\include;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(SolutionDir)lib\</OutDir>
-    <TargetName>ZCommon</TargetName>
-    <IntDir>.\intermediate\$(Configuration)\</IntDir>
-    <IncludePath>$(VCInstallDir)include;$(VCInstallDir)atlmfc\include;$(FrameworkSDKDir)\include</IncludePath>
+    <IntDir>$(ProjectDir)intermediate\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -55,12 +55,18 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
+    <Lib>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ZUtild.lib</AdditionalDependencies>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -71,7 +77,6 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -79,40 +84,33 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>false</LinkLibraryDependencies>
+    </ProjectReference>
     <Lib>
-      <Verbose>true</Verbose>
-      <LinkTimeCodeGeneration>true</LinkTimeCodeGeneration>
+      <AdditionalLibraryDirectories>$(SolutionDir)lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>ZUtil.lib</AdditionalDependencies>
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\mesh\arcball.h" />
-    <ClInclude Include="include\mesh\Geometry.h" />
-    <ClInclude Include="include\mesh\Mesh.h" />
-    <ClInclude Include="include\mesh\MeshProcessor.h" />
-    <ClInclude Include="include\mesh\MeshPyramid.h" />
-    <ClInclude Include="include\mesh\Quat.h" />
-    <ClInclude Include="include\util\arithmetic.h" />
-    <ClInclude Include="include\util\color.h" />
-    <ClInclude Include="include\util\misc.h" />
-    <ClInclude Include="include\util\output.h" />
-    <ClInclude Include="include\util\timer.h" />
-    <ClInclude Include="include\ZMesh.h" />
-    <ClInclude Include="include\ZUtil.h" />
+    <ClInclude Include="..\include\arcball.h" />
+    <ClInclude Include="..\include\Geometry.h" />
+    <ClInclude Include="..\include\Mesh.h" />
+    <ClInclude Include="..\include\MeshProcessor.h" />
+    <ClInclude Include="..\include\MeshPyramid.h" />
+    <ClInclude Include="..\include\Quat.h" />
+    <ClInclude Include="..\include\ZMesh.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\mesh\arcball.cpp" />
-    <ClCompile Include="src\mesh\Geometry.cpp" />
-    <ClCompile Include="src\mesh\Mesh.cpp" />
-    <ClCompile Include="src\mesh\MeshProcessor.cpp" />
-    <ClCompile Include="src\mesh\MeshPyramid.cpp" />
-    <ClCompile Include="src\mesh\Quat.cpp" />
-    <ClCompile Include="src\util\arithmetic.cpp" />
-    <ClCompile Include="src\util\color.cpp" />
-    <ClCompile Include="src\util\output.cpp" />
-    <ClCompile Include="src\util\timer.cpp" />
+    <ClCompile Include="..\src\arcball.cpp" />
+    <ClCompile Include="..\src\Geometry.cpp" />
+    <ClCompile Include="..\src\Mesh.cpp" />
+    <ClCompile Include="..\src\MeshProcessor.cpp" />
+    <ClCompile Include="..\src\MeshPyramid.cpp" />
+    <ClCompile Include="..\src\Quat.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

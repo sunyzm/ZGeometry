@@ -2,23 +2,19 @@
 #include <string>
 #include <sstream>
 #include <vector>
+#include <set>
 #include <algorithm>
 #include <stdexcept>
 #include <QtGui/QMessageBox>
 #include <QTime>
-#include "QZGeometry.h"
 #include <ZUtil.h>
-#include <set>
-
-#define DEFAULT_EIGEN_SIZE 500
-#define DEFAULT_DEFORM_RING 5 
-#define LOAD_MHB_CACHE 1
+#include "QZGeometry.h"
+#include "config.h"
 
 using namespace std;
 
 extern OutputHelper qout;
 extern QString qformat;
-const char* g_meshListName = "meshfiles.cfg";
 
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)

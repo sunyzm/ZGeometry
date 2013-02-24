@@ -14,7 +14,7 @@ bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEi
 
 	const int nVertex = tmesh->getVerticesNum();
 	m_size = nVertex;
-	m_nEigFunc = std::min(m_size, nEigFunc);
+	m_nEigFunc = min(m_size, nEigFunc);
 
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *Numv;
 	AA = mxCreateDoubleMatrix(nVertex, 1, mxREAL);
@@ -232,7 +232,7 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 
 	mhb.m_func.clear();
 	mhb.m_size = this->m_size;
-	mhb.m_nEigFunc = std::min(mhb.m_size, nEig);
+	mhb.m_nEigFunc = min(mhb.m_size, nEig);
 
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
 	

@@ -456,7 +456,7 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
 
 	vector<double> xCoeff, yCoeff, zCoeff;
-	int approxN = std::min(aN, mhb.m_nEigFunc);
+	int approxN = min(aN, mhb.m_nEigFunc);
 	for (int k = 0; k < approxN; ++k)
 	{
 		xCoeff.push_back(VectorDotProduct(xWeightedCoord, mhb.m_func[k].m_vec));

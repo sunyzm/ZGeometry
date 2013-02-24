@@ -6,7 +6,7 @@
 #include <memory>
 #include <queue>
 #include <functional>
-#include <mesh/Geometry.h>
+#include <Geometry.h>
 
 using namespace std;
 //////////////////////////////////////////////////////////////////////

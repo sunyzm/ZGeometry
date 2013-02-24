@@ -15,8 +15,8 @@ OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL)
 
 OutputHelper::~OutputHelper(void)
 {
-}
 
+}
 
 void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout /*= 0.0*/ )
 {

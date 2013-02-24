@@ -2,9 +2,7 @@
 #include <string>
 #include <sstream>
 #include <cmath>
-#include "color.h"
-#include "output.h"
-#include "arithmetic.h"
+#include <queue>
 
 inline std::string Int2String(int i)
 {
