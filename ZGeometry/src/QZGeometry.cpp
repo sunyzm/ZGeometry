@@ -156,7 +156,8 @@ bool QZGeometryWindow::initialize()
 		qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
 		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
 		vMP[0].init(&mesh1, m_ep);
-		ui.glMeshWidget->addMesh(&vMP[0]);
+		vRS[0].mesh_color = preset_colors[0];
+		ui.glMeshWidget->addMesh(&vMP[0], &vRS[0]);
 		mesh_valid[0] = true;
 	}
 
@@ -178,7 +179,8 @@ bool QZGeometryWindow::initialize()
 //		qout.output("Load mesh: " + QString(mesh2.m_meshName.c_str()) + "    Size: " + QString::number(mesh2.getVerticesNum()));
 		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z));
 		vMP[1].init(&mesh2, m_ep);
-		ui.glMeshWidget->addMesh(&vMP[1]);
+		vRS[1].mesh_color = preset_colors[1];
+		ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
 		mesh_valid[1] = true;
 	}
 
@@ -222,8 +224,8 @@ bool QZGeometryWindow::initialize()
 	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
 
-	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
-	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+	selected[0] = vRS[0].selected = true;
+	selected[1] = vRS[1].selected = false; 
 
 	return true;
 }
@@ -274,9 +276,9 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	case Qt::Key_W:	// switch between display mode
 	{
-		if (ui.glMeshWidget->vSettings[0].displayType == RenderSettings::Mesh)
+		if (vRS[0].displayType == RenderSettings::Mesh)
 			setDisplayWireframe();
-		else if (ui.glMeshWidget->vSettings[0].displayType == RenderSettings::Wireframe)
+		else if (vRS[0].displayType == RenderSettings::Wireframe)
 			setDisplayPointCloud();
 		else setDisplayMesh();
 		break;
@@ -518,23 +520,23 @@ void QZGeometryWindow::selectObject( int index )
 	qout.output("Selected object(s): " + text);
 	if (text == "1") 
 	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+		selected[0] = vRS[0].selected = true;
+		selected[1] = vRS[1].selected = false; 
 	}
 	else if (text == "2")
 	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+		selected[0] = vRS[0].selected = false;
+		selected[1] = vRS[1].selected = true; 
 	}
 	else if (text == "All")
 	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = true; 
+		selected[0] = vRS[0].selected = true;
+		selected[1] = vRS[1].selected = true; 
 	}
 	else if (text == "None")
 	{
-		selected[0] = ui.glMeshWidget->vSettings[0].selected = false;
-		selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
+		selected[0] = vRS[0].selected = false;
+		selected[1] = vRS[1].selected = false; 
 	}
 }
 
@@ -623,8 +625,8 @@ void QZGeometryWindow::setDisplayPointCloud()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(false);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::PointCloud;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_POINT;
+	vRS[0].displayType = vRS[1].displayType = RenderSettings::PointCloud;
+	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_POINT;
 	ui.glMeshWidget->update();
 }
 
@@ -634,8 +636,8 @@ void QZGeometryWindow::setDisplayWireframe()
 	ui.actionDisplayWireframe->setChecked(true);
 	ui.actionDisplayMesh->setChecked(false);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::Wireframe;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_LINE;
+	vRS[0].displayType = vRS[1].displayType = RenderSettings::Wireframe;
+	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_LINE;
 	ui.glMeshWidget->update();
 
 }
@@ -646,8 +648,8 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(true);
 
-	ui.glMeshWidget->vSettings[0].displayType = ui.glMeshWidget->vSettings[1].displayType = RenderSettings::Mesh;
-	ui.glMeshWidget->vSettings[0].glPolygonMode = ui.glMeshWidget->vSettings[1].glPolygonMode = GL_FILL;
+	vRS[0].displayType = vRS[1].displayType = RenderSettings::Mesh;
+	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_FILL;
 	ui.glMeshWidget->update();
 
 }
@@ -661,8 +663,8 @@ void QZGeometryWindow::displayEigenfunction()
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed()) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
-			ui.glMeshWidget->vSettings[i].normalizeSignatureFrom(mp.getMHB().m_func[select_eig].m_vec);
-			ui.glMeshWidget->vSettings[i].showColorSignature = true;
+			vRS[i].normalizeSignatureFrom(mp.getMHB().m_func[select_eig].m_vec);
+			vRS[i].showColorSignature = true;
 		}
 	}
 
@@ -681,7 +683,7 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
-		ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vMHW);
+		vRS[0].normalizeSignatureFrom(vMHW);
 
 	}
 
@@ -710,7 +712,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
-		ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vMHW);
+		vRS[0].normalizeSignatureFrom(vMHW);
 	}
 
 // 	if (selected[1] && vMP[1].mesh)
@@ -737,7 +739,7 @@ void QZGeometryWindow::displayExperimental()
  	vector<double> vExp;
  	mp.computeExperimentalWavelet(vExp, 30); 
 
- 	ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vExp);
+ 	vRS[0].normalizeSignatureFrom(vExp);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -762,7 +764,7 @@ void QZGeometryWindow::displayCurvatureMean()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	ui.glMeshWidget->vSettings[0].bandCurveSignatureFrom(vCurvature, 0, 1);
+	vRS[0].bandCurveSignatureFrom(vCurvature, 0, 1);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -781,7 +783,7 @@ void QZGeometryWindow::displayCurvatureGauss()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	ui.glMeshWidget->vSettings[0].bandCurveSignatureFrom(vCurvature, -1, 1);
+	vRS[0].bandCurveSignatureFrom(vCurvature, -1, 1);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -802,7 +804,7 @@ void QZGeometryWindow::displayDiffPosition()
 		vDiff[i] = (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length() / mesh1.getAvgEdgeLength();
 	}
 
-	ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vDiff);
+	vRS[0].normalizeSignatureFrom(vDiff);
 	
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -827,7 +829,8 @@ void QZGeometryWindow::clone()
 	mesh2.gatherStatistics();
 
 	vMP[1].init(&mesh2, m_ep);
-	ui.glMeshWidget->addMesh(&vMP[1]);
+	vRS[1].mesh_color = preset_colors[1];
+	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
 	qout.output("Mesh " + QString(mesh2.m_meshName.c_str()) + " constructed! Size: " + QString::number(mesh2.getVerticesNum()));
 
 	//	vector<double> vx, vy, vz;

@@ -6,6 +6,7 @@
 #include <vector>
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
+#include "RenderSettings.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -71,6 +72,7 @@ private:	// attributes
 	bool selected[2];
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
+	RenderSettings vRS[2];
 
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;

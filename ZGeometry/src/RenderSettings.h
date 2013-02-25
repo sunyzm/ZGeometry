@@ -1,5 +1,6 @@
 #pragma once
 #include <Geometry.h>
+#include <Quat.h>
 #include <vector>
 
 #define Z_POINT 0x1B00
@@ -22,9 +23,12 @@ public:
 	bool showRefPoint;
 	bool showColorSignature;
 	bool selected;
-	const float* mesh_color;
+
+	Vector3D obj_trans;
+	CQrot obj_rot;
 	Vector3D display_shift;
 	
+	const float* mesh_color;
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
 

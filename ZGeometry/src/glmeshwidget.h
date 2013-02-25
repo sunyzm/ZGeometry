@@ -12,9 +12,6 @@ class GLMeshWidget : public QGLWidget
 	Q_OBJECT
 
 public:
-	std::vector<DifferentialMeshProcessor*> vpMP;
-	std::vector<RenderSettings> vSettings;
-
 	bool m_bShowLegend;
 	bool m_bShowFeatures;
 	bool m_bShowSignature;
@@ -24,7 +21,8 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
-	void addMesh(DifferentialMeshProcessor* pmp);
+	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
+
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -35,12 +33,11 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
-	void setupObject(const CQrot& qrot, const Vector3D& trans);
+	void setupObject(const CQrot& qrot, const Vector3D& trans) const;
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
-	void drawMeshExt(int obj);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const Vector3D& trans, 
-					 const CQrot& rot, const RenderSettings* renderSettings);
+					 const CQrot& rot, const RenderSettings* renderSettings) const;
 
 signals:
 	void vertexPicked(int pRef);
@@ -50,16 +47,19 @@ private:
 	void setupViewport(int width, int height);
 	bool glPick(int x, int y, Vector3D& _p);
 
+	std::vector<DifferentialMeshProcessor*> vpMP;
+	std::vector<RenderSettings*> vpRS;
+
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;
+	GLdouble		g_myNear;
+	GLdouble		g_myFar;
+	GLdouble		g_myAngle;
+	int				g_startx, g_starty;
+	
 	CQrot			ObjRot1;
 	Vector3D		ObjTrans1;
 	CQrot			ObjRot2;
 	Vector3D		ObjTrans2;
-	GLdouble		g_myNear;
-	GLdouble		g_myFar;
-	GLdouble		g_myAngle;
-	
-	int				g_startx, g_starty;
 };
 
