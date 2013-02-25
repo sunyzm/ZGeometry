@@ -15,7 +15,8 @@ public:
 	RenderSettings() : mesh_color(preset_colors[0]), displayType(Mesh), 
 		               showFeatures(false), showRefPoint(false), 
 					   showColorSignature(false), selected(false), 
-					   glPolygonMode(Z_FILL), display_shift(0, 0, 0) {}
+					   glPolygonMode(Z_FILL), display_shift(0, 0, 0),
+					   obj_rot(1,0,0,0), obj_trans(0,0,0) {}
 
 	enum {PointCloud, Wireframe, Mesh, None} displayType;
 	unsigned int glPolygonMode;

@@ -36,8 +36,7 @@ protected:
 	void setupObject(const CQrot& qrot, const Vector3D& trans) const;
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
-	void drawMeshExt(const DifferentialMeshProcessor* pPM, const Vector3D& trans, 
-					 const CQrot& rot, const RenderSettings* renderSettings) const;
+	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
 
 signals:
 	void vertexPicked(int pRef);
@@ -56,10 +55,6 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
-	
-	CQrot			ObjRot1;
-	Vector3D		ObjTrans1;
-	CQrot			ObjRot2;
-	Vector3D		ObjTrans2;
+
 };
 

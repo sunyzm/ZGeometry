@@ -33,8 +33,6 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 {
 //	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
 	g_EyeZ = 10.0;
-	ObjRot1 = ObjRot2 = CQrot(1,0,0,0);
-	ObjTrans1 = ObjTrans2 = Vector3D(0,0,0);
 	g_myNear = 1.0;
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
@@ -158,10 +156,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		if (gButton == Qt::LeftButton) 
 		{
 			rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-			if (vpRS[0]->selected) 
-				ObjRot1 = rot * ObjRot1;
-			if (vpRS[1]->selected) 
-				ObjRot2 = rot * ObjRot2;
+			for (int i = 0; i < 2; ++i)
+			{
+				if (vpRS[i]->selected)
+					vpRS[i]->obj_rot = rot * vpRS[i]->obj_rot;
+			}
 		}
 		else if (gButton == Qt::MidButton) 
 		{
@@ -169,10 +168,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
-			if (vpRS[0]->selected) 
-				ObjTrans1 = ObjTrans1 + trans;
-			if (vpRS[1]->selected) 
-				ObjTrans2 = ObjTrans2 + trans;
+			for (int i = 0; i < 2; ++i)
+			{
+				if (vpRS[i]->selected)
+					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
+			}
 		}
 		else if (gButton == Qt::RightButton ) 
 		{
@@ -180,10 +180,11 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
-			if (vpRS[0]->selected)
-				ObjTrans1 = ObjTrans1 + trans;
-			if (vpRS[1]->selected) 
-				ObjTrans2 = ObjTrans2 + trans;
+			for (int i = 0; i < 2; ++i)
+			{
+				if (vpRS[i]->selected)
+					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
+			}
 		}
 	}
 	else if (editMode == QZ_DRAG && vpMP[0]->active_handle != -1 && vpMP[0]->mHandles.find(vpMP[0]->active_handle) != vpMP[0]->mHandles.end())
@@ -196,8 +197,8 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		glPushMatrix();
 		glLoadIdentity();
 		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-		CQrot& rot = ObjRot1;
-		Vector3D& trans = ObjTrans1;
+		CQrot& rot = vpRS[0]->obj_rot;
+		Vector3D& trans = vpRS[0]->obj_trans;
 		setupObject(rot, trans);
 
 		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
@@ -233,10 +234,11 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 		float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		if (vpRS[0]->selected) 
-			ObjTrans1 = ObjTrans1 + trans;
-		if (vpRS[1]->selected)
-			ObjTrans2 = ObjTrans2 + trans;		
+		for (int i = 0; i < 2; ++i)
+		{
+			if (vpRS[i]->selected)
+				vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
+		}
 	}
 
 	update();
@@ -337,9 +339,9 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (vpMP.size() > 0 && vpMP[0] != NULL)
-		drawMeshExt(vpMP[0], ObjTrans1, ObjRot1, vpRS[0]);
+		drawMeshExt(vpMP[0], vpRS[0]);
 	if (vpMP.size() > 1 && vpMP[1] != NULL)
-		drawMeshExt(vpMP[1], ObjTrans2, ObjRot2, vpRS[1]);
+		drawMeshExt(vpMP[1], vpRS[1]);
 
  	glMatrixMode(GL_MODELVIEW);
  	glPopMatrix();
@@ -423,7 +425,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 }
 */
 
-void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vector3D& trans, const CQrot& rot, const RenderSettings* renderSettings ) const
+void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* renderSettings ) const
 {
 	if(!pMP->getMesh()) return;
 	const CMesh* tmesh = pMP->getMesh();
@@ -437,7 +439,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	setupObject(rot, trans);	
+	setupObject(renderSettings->obj_rot, renderSettings->obj_trans);	
 
 	/// draw the mesh
 	glPolygonMode(GL_FRONT_AND_BACK, renderSettings->glPolygonMode);
@@ -647,8 +649,8 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p )
 	glPushMatrix();
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-	CQrot& rot = ObjRot1;
-	Vector3D& trans = ObjTrans1;
+	CQrot& rot = vpRS[0]->obj_rot;
+	Vector3D& trans = vpRS[0]->obj_trans;
 	setupObject(rot, trans);
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
