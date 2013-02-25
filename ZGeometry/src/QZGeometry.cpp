@@ -12,6 +12,7 @@
 #include "QZGeometry.h"
 #include "config.h"
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -216,10 +217,10 @@ bool QZGeometryWindow::initialize()
 	}
 
 	ui.spinBoxParameter->setMinimum(0);
-	ui.spinBoxParameter->setMaximum(100);
+	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setMinimum(0);
-	ui.horizontalSliderParamter->setMaximum(100);
-	ui.spinBoxParameter->setValue(50);
+	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
+	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
 
 	selected[0] = ui.glMeshWidget->vSettings[0].selected = true;
 	selected[1] = ui.glMeshWidget->vSettings[1].selected = false; 
@@ -367,14 +368,11 @@ void QZGeometryWindow::computeLaplacian()
 			qout.output("MHB saved to " + pathMHB);
 
 			std::string pathEVL = "output/" + mp.getMesh()->m_meshName + ".evl";	//dump eigenvalues
-			ofstream ofs(pathEVL.c_str(), ios::trunc);
-			for (auto iter = mp.mhb.m_func.begin(); iter != mp.mhb.m_func.end(); ++iter)
-				ofs << iter->m_val << endl;
-			ofs.close();
+			mp.getMHB().dumpEigenValues(pathEVL);
 		}
 		
 		qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-		qout.output(qformat.sprintf("Min Eig Val: %f, Max Eig Val: %f",mp.mhb.m_func.front().m_val, mp.mhb.m_func.back().m_val));
+		qout.output(qformat.sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 	}	
 
 	ui.actionComputeLaplacian->setChecked(true);	
@@ -663,7 +661,7 @@ void QZGeometryWindow::displayEigenfunction()
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed()) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
-			mp.normalizeSignatureFrom(mp.mhb.m_func[select_eig].m_vec);
+			ui.glMeshWidget->vSettings[i].normalizeSignatureFrom(mp.getMHB().m_func[select_eig].m_vec);
 			ui.glMeshWidget->vSettings[i].showColorSignature = true;
 		}
 	}
@@ -683,7 +681,7 @@ void QZGeometryWindow::displayMexicanHatWavelet1()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 1);
-		mp.normalizeSignatureFrom(vMHW);
+		ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vMHW);
 
 	}
 
@@ -712,7 +710,7 @@ void QZGeometryWindow::displayMexicanHatWavelet2()
 
 		vector<double> vMHW;
 		mp.computeMexicanHatWavelet(vMHW, 30, 2);
-		mp.normalizeSignatureFrom(vMHW);
+		ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vMHW);
 	}
 
 // 	if (selected[1] && vMP[1].mesh)
@@ -739,7 +737,7 @@ void QZGeometryWindow::displayExperimental()
  	vector<double> vExp;
  	mp.computeExperimentalWavelet(vExp, 30); 
 
- 	mp.normalizeSignatureFrom(vExp);
+ 	ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vExp);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -764,7 +762,7 @@ void QZGeometryWindow::displayCurvatureMean()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	mp.bandCurveSignatureFrom(vCurvature, 0, 1);
+	ui.glMeshWidget->vSettings[0].bandCurveSignatureFrom(vCurvature, 0, 1);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -783,7 +781,7 @@ void QZGeometryWindow::displayCurvatureGauss()
 	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
 
-	mp.bandCurveSignatureFrom(vCurvature, -1, 1);
+	ui.glMeshWidget->vSettings[0].bandCurveSignatureFrom(vCurvature, -1, 1);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -804,7 +802,7 @@ void QZGeometryWindow::displayDiffPosition()
 		vDiff[i] = (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length() / mesh1.getAvgEdgeLength();
 	}
 
-	vMP[0].normalizeSignatureFrom(vDiff);
+	ui.glMeshWidget->vSettings[0].normalizeSignatureFrom(vDiff);
 	
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -868,8 +866,8 @@ void QZGeometryWindow::reconstructMHB()
 {
 //	assert(vMP[1].mesh);
 	
-	double ratio = min((double)m_commonParameter/50.0, 1.0);
-	int nEig = vMP[0].mhb.m_nEigFunc * ratio;
+	double ratio = min((double)m_commonParameter/PARAMETER_SLIDER_CENTER, 1.0);
+	int nEig = vMP[0].getMHB().m_nEigFunc * ratio;
 
 	vector<double> vx, vy, vz;
 	vMP[0].reconstructByMHB(nEig, vx, vy, vz);
@@ -975,5 +973,20 @@ void QZGeometryWindow::displayHeatKernelSignature()
 
 void QZGeometryWindow::computeHKS()
 {
+	double time_scale;
+	if (m_commonParameter <= 50) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	else 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
+	qout.output(qformat.sprintf("Heat Kernel timescale: %f", time_scale));
+
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+
+		}
+	}
 }

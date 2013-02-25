@@ -427,6 +427,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 }
 */
 
+#ifdef USE_OLD_DRAW_MESH
 void GLMeshWidget::drawMeshExt( int obj )
 {
 	if (obj >= vpMP.size() || obj < 0) return;	
@@ -576,6 +577,7 @@ void GLMeshWidget::drawMeshExt( int obj )
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
+#endif
 
 void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vector3D& trans, const CQrot& rot, const RenderSettings* renderSettings )
 {
@@ -600,7 +602,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	if (m_bShowSignature && !pMP->vDisplaySignature.empty())
+	if (m_bShowSignature && !renderSettings->vDisplaySignature.empty())
 	{
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
@@ -613,7 +615,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Vect
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
-				glFalseColor(pMP->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
+				glFalseColor(renderSettings->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
@@ -788,7 +790,7 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 	QPainter painter(this);
 	drawGL();
 
-	if (m_bShowLegend && !vpMP[0]->vDisplaySignature.empty())
+	if (m_bShowLegend && vSettings[0].vDisplaySignature.empty())
  	drawLegend(&painter);
 }
 

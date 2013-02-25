@@ -27,9 +27,9 @@ public:
 	void addNewHandle(int hIdx);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
-	void normalizeSignatureFrom(const std::vector<double>& vFrom);
-	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
-	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
+// 	void normalizeSignatureFrom(const std::vector<double>& vFrom);
+// 	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
+// 	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
 	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
@@ -45,12 +45,12 @@ public:
 	bool isSGWComputed() const { return m_bSGWComputed; }
 	bool isLaplacianDecomposed() const { return  m_bLaplacianDecomposed; }
 
+	// ---- attribute access --- //
+	const ManifoldHarmonics& getMHB() const { return mhb; }
 public:
 	MatlabWrapper matlabWrapper;
 	Engine *m_ep;
 	
-	Laplacian mLaplacian;
-	ManifoldHarmonics mhb;
 
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
@@ -66,6 +66,9 @@ public:
 private:
 	bool m_bSGWComputed;
 	bool m_bLaplacianDecomposed;		// mhb available
+
+	Laplacian mLaplacian;
+	ManifoldHarmonics mhb;
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
 };

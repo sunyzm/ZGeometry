@@ -170,6 +170,14 @@ MeshFunction ManifoldHarmonics::getManifoldHarmonic( int k ) const
 	return mf;
 }
 
+void ManifoldHarmonics::dumpEigenValues( const std::string& pathEVL ) const
+{
+	ofstream ofs(pathEVL.c_str(), ios::trunc);
+	for (auto iter = m_func.begin(); iter != m_func.end(); ++iter)
+		ofs << iter->m_val << endl;
+	ofs.close();
+}
+
 void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	this->m_size = tmesh->getVerticesNum();

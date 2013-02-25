@@ -51,6 +51,7 @@ public:
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
 	MeshFunction getManifoldHarmonic(int k) const;
+	void dumpEigenValues(const std::string& evlPath) const;
 public:
 	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
 	int m_size;	    // shape size
