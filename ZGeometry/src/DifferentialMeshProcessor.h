@@ -48,10 +48,7 @@ public:
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
 public:
-	MatlabWrapper matlabWrapper;
-	Engine *m_ep;
 	
-
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
 
@@ -71,5 +68,8 @@ private:
 	ManifoldHarmonics mhb;
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
+
+	MatlabWrapper matlabWrapper;
+	Engine *m_ep;
 };
 

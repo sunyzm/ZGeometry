@@ -39,12 +39,12 @@ protected:
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
 
 signals:
-	void vertexPicked(int pRef);
-
+	void vertexPicked1(int pRef);
+	void vertexPicked2(int pRef);
 private:
 	void drawGL();
 	void setupViewport(int width, int height);
-	bool glPick(int x, int y, Vector3D& _p);
+	bool glPick(int x, int y, Vector3D& _p, int obj = 0);
 
 	std::vector<DifferentialMeshProcessor*> vpMP;
 	std::vector<RenderSettings*> vpRS;

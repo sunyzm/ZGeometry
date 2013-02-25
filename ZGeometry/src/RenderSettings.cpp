@@ -7,7 +7,6 @@ using namespace std;
 void RenderSettings::normalizeSignatureFrom( const std::vector<double>& vFrom )
 {
 	if (vFrom.empty()) return;	
-	assert(vFrom.size() == m_size);
 
 	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
 	double sMin = *iResult.first, sMax = *iResult.second;
@@ -24,7 +23,6 @@ void RenderSettings::normalizeSignatureFrom( const std::vector<double>& vFrom )
 void RenderSettings::logNormalizeSignatureFrom( const std::vector<double>& vFrom )
 {
 	if (vFrom.empty()) return;	
-	assert(vFrom.size() == m_size);
 
 	std::vector<double> vLog;
 	vLog.reserve(vFrom.size());
@@ -48,7 +46,6 @@ void RenderSettings::logNormalizeSignatureFrom( const std::vector<double>& vFrom
 void RenderSettings::bandCurveSignatureFrom( const std::vector<double>& vFrom, double lowend, double highend )
 {
 	assert(lowend < highend);
-	assert(vFrom.size() == m_size);
 
 	sigMin = lowend, sigMax = highend;
 

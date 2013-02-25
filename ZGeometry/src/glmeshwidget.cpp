@@ -18,11 +18,12 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},
                                     {1.0, 0.0, 1.0, 1.0},
                                     {0.0, 1.0, 1.0, 1.0}};
 const int gFeatureColorNum = 6;
+Qt::MouseButton gButton;
+
 extern OutputHelper qout;
 extern QString qformat;
-Qt::MouseButton gButton;
-FalseColorMap falseColorMap;
 
+FalseColorMap falseColorMap;
 void glFalseColor(float v, float p)
 {
 	int floor = v * 255.0;
@@ -90,14 +91,17 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		{
 			/// for picking up a vertex
 			Vector3D p;
+			int obj_index = -1;
+			if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
+			else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
 
-			if (glPick(x, y, p))
+			if (obj_index >= 0 && glPick(x, y, p, obj_index))
 			{
 				double dmin = 1e10;
 				int hIdx = -1;
-				for (int vi = 0; vi < this->vpMP[0]->getMesh()->getVerticesNum(); ++vi)
+				for (int vi = 0; vi < vpMP[obj_index]->getMesh()->getVerticesNum(); ++vi)
 				{
-					double d = p.distantFrom(this->vpMP[0]->getMesh()->getVertex_const(vi)->getPosition());
+					double d = p.distantFrom(vpMP[obj_index]->getMesh()->getVertex_const(vi)->getPosition());
 					if (d < dmin) 
 					{
 						dmin = d;
@@ -109,32 +113,45 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 
 				if (event->modifiers() & Qt::ControlModifier)
 				{
-					emit vertexPicked(hIdx);	// change reference point
+					if (obj_index == 0)
+					{
+						emit vertexPicked1(hIdx);	// change reference point
+					}
+					else if (obj_index == 1)
+					{
+						emit vertexPicked2(hIdx);
+					}
 				}
 				else 
 				{
-					vpMP[0]->addNewHandle(hIdx);	// change handle set
+					vpMP[obj_index]->addNewHandle(hIdx);	// change handle set
 				}				
 			}
-			// else, no point picked up
+			// otherwise, no point picked up
 		}
 	}
 	else if (editMode == QZ_DRAG)
 	{
-		if (!vpMP[0]->mHandles.empty())
+		/// for picking up a vertex
+		int obj_index = -1;
+		if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
+		else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+
+		if (obj_index >=0 && !vpMP[obj_index]->mHandles.empty())
 		{
 			Vector3D p;
-			if (glPick(x, y, p))
+			if (glPick(x, y, p, obj_index))
 			{
 				// find closest handle
+				DifferentialMeshProcessor* pMP = vpMP[obj_index];
 				int imin(-1);
 				double d, dmin(1e10);
-				for (auto iter = vpMP[0]->mHandles.begin(); iter != vpMP[0]->mHandles.end(); ++iter)
+				for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
 				{
 					d = iter->second.distantFrom(p);
 					if (d < dmin) { dmin = d; imin = iter->first; }
 				}
-				vpMP[0]->active_handle = imin;
+				pMP->active_handle = imin;
 			}
 		}
 	}
@@ -187,32 +204,40 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			}
 		}
 	}
-	else if (editMode == QZ_DRAG && vpMP[0]->active_handle != -1 && vpMP[0]->mHandles.find(vpMP[0]->active_handle) != vpMP[0]->mHandles.end())
+	else if (editMode == QZ_DRAG)
 	{
-		
-		GLdouble  modelview[16], projection[16];
-		GLint     viewport[4];
+		int obj_index = -1;
+		if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
+		else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
 
-		glMatrixMode(GL_MODELVIEW);
-		glPushMatrix();
-		glLoadIdentity();
-		gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-		CQrot& rot = vpRS[0]->obj_rot;
-		Vector3D& trans = vpRS[0]->obj_trans;
-		setupObject(rot, trans);
+		if ( obj_index >= 0 && vpMP[obj_index]->active_handle != -1 && vpMP[obj_index]->mHandles.find(vpMP[obj_index]->active_handle) != vpMP[obj_index]->mHandles.end() )
+		{
+			DifferentialMeshProcessor* pMP = vpMP[obj_index];
 
-		glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
-		glGetDoublev(GL_PROJECTION_MATRIX, projection);
-		glGetIntegerv(GL_VIEWPORT, viewport);
+			GLdouble  modelview[16], projection[16];
+			GLint     viewport[4];
 
-		const Vector3D& handlePos = vpMP[0]->mHandles[vpMP[0]->active_handle];
-		int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
-		GLdouble ox, oy, oz, wx, wy, wz;
-		gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
-		gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
-		vpMP[0]->mHandles[vpMP[0]->active_handle] = Vector3D(ox, oy, oz);
+			glMatrixMode(GL_MODELVIEW);
+			glPushMatrix();
+			glLoadIdentity();
+			gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
+			CQrot& rot = vpRS[obj_index]->obj_rot;
+			Vector3D& trans = vpRS[obj_index]->obj_trans;
+			setupObject(rot, trans);
 
-		glPopMatrix();		
+			glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+			glGetDoublev(GL_PROJECTION_MATRIX, projection);
+			glGetIntegerv(GL_VIEWPORT, viewport);
+
+			const Vector3D& handlePos = pMP->mHandles[pMP->active_handle];
+			int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
+			GLdouble ox, oy, oz, wx, wy, wz;
+			gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
+			gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
+			pMP->mHandles[pMP->active_handle] = Vector3D(ox, oy, oz);
+
+			glPopMatrix();	
+		}	
 	}
 
 	update();
@@ -640,8 +665,10 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
  	drawLegend(&painter);
 }
 
-bool GLMeshWidget::glPick( int x, int y, Vector3D& _p )
+bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {
+	if (vpRS[obj]->selected == false) return false;
+
 	GLdouble  modelview[16], projection[16];
 	GLint     viewport[4];
 
@@ -649,8 +676,8 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p )
 	glPushMatrix();
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
-	CQrot& rot = vpRS[0]->obj_rot;
-	Vector3D& trans = vpRS[0]->obj_trans;
+	const CQrot& rot = vpRS[obj]->obj_rot;
+	const Vector3D& trans = vpRS[obj]->obj_trans;
 	setupObject(rot, trans);
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);

@@ -28,7 +28,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	m_ep = NULL;
 	mesh = NULL;
 	m_bLaplacianDecomposed = false;
-	pRef = -1;
+	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
 

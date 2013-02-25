@@ -40,6 +40,7 @@ private slots:
 	void setDisplayMesh();
 	void displayDiffPosition();
 	void setRefPoint1(int vn);
+	void setRefPoint2(int vn);
 	void setCommonParameter(int p);
 	void toggleShowSignature(bool show = false);
 	void toggleShowRefPoint(bool show = false);
@@ -58,7 +59,7 @@ private slots:
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
-	void updateReferenceMove();
+	void updateReferenceMove(int obj);
 
 private:	// attributes
 	Ui::ZGeometryClass ui;

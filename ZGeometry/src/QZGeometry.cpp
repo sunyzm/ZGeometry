@@ -65,9 +65,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.spinBoxParameter, SIGNAL(valueChanged(int)), this, SLOT(setCommonParameter(int)));
 	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), ui.spinBoxParameter, SLOT(setValue(int)));
 	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), this, SLOT(setCommonParameter(int)));
-	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), this, SLOT(setRefPoint1(int)));
-	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.horizontalSlider1, SLOT(setValue(int)));
-	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked(int)), ui.spinBox1, SLOT(setValue(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked2(int)), this, SLOT(setRefPoint2(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), ui.horizontalSlider1, SLOT(setValue(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), ui.spinBox1, SLOT(setValue(int)));
 	QObject::connect(ui.boxObjSelect, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
 	QObject::connect(ui.actionEditMove, SIGNAL(triggered()), this, SLOT(setEditModeMove()));
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
@@ -323,21 +324,21 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		if (event->modifiers() & Qt::ShiftModifier)
 			refMove.xMove--;
 		else refMove.xMove++;
-		updateReferenceMove();
+//		updateReferenceMove();
 		break;
 
 	case Qt::Key_Y:
 		if (event->modifiers() & Qt::ShiftModifier)
 			refMove.yMove--;
 		else refMove.yMove++;
-		updateReferenceMove();
+//		updateReferenceMove();
 		break;
 
 	case Qt::Key_Z:
 		if (event->modifiers() & Qt::ShiftModifier)
 			refMove.zMove--;
 		else refMove.zMove++;
-		updateReferenceMove();
+//		updateReferenceMove();
 		break;
 
 	default: QWidget::keyPressEvent(event);
@@ -544,7 +545,15 @@ void QZGeometryWindow::setRefPoint1( int vn )
 {
 	vMP[0].pRef = vn;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
-	updateReferenceMove();
+	updateReferenceMove(0);
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setRefPoint2( int vn )
+{
+	vMP[1].pRef = vn;
+	refMove.xMove = refMove.yMove = refMove.zMove = 0;
+	updateReferenceMove(1);
 	ui.glMeshWidget->update();
 }
 
@@ -812,13 +821,15 @@ void QZGeometryWindow::displayDiffPosition()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::updateReferenceMove()
+void QZGeometryWindow::updateReferenceMove( int obj )
 {
-	double unitMove = (mesh1.getBoundingBox().x + mesh1.getBoundingBox().y + mesh1.getBoundingBox().z)/300.0;
-	Vector3D originalPos = mesh1.getVertex(vMP[0].pRef)->getPosition();
-	vMP[0].posRef.x = originalPos.x + unitMove * refMove.xMove;
-	vMP[0].posRef.y = originalPos.y + unitMove * refMove.yMove;
-	vMP[0].posRef.z = originalPos.z + unitMove * refMove.zMove;
+	DifferentialMeshProcessor& mp = vMP[obj]; 
+
+	double unitMove = (mp.getMesh()->getBoundingBox().x + mp.getMesh()->getBoundingBox().y + mp.getMesh()->getBoundingBox().z)/300.0;
+	Vector3D originalPos = mp.getMesh()->getVertex_const(mp.pRef)->getPosition();
+	mp.posRef.x = originalPos.x + unitMove * refMove.xMove;
+	mp.posRef.y = originalPos.y + unitMove * refMove.yMove;
+	mp.posRef.z = originalPos.z + unitMove * refMove.zMove;
 
 	ui.glMeshWidget->update();
 }
