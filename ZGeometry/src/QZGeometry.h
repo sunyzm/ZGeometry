@@ -74,8 +74,9 @@ private:	// attributes
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
 	RenderSettings vRS[2];
-
+	
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;
+	enum {Compute_HKS, Compute_HK, None} current_operation;
 };
 

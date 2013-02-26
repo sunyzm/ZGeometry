@@ -9,11 +9,15 @@
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
+enum SignatureType {HKS = 0, HK, MEAN_CURVATURE, GAUSS_CURVATURE, WKS}; 
+enum KernelType {HEAT_KERNEL, MEXICAN_HAT_KERNEL};
 
 double transferScalingFunc1(double lambda);
 
 double transferFunc1(double lambda, double t);	// Mexican-hat square
 double transferFunc2(double lambda, double t);	// Mexican-hat
+double transferFunc3(double lambda, double t);  // heat kernel
+double transferFunc4(double lambda, double t);	// Mexican-hat (v2)
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -27,9 +31,8 @@ public:
 	void addNewHandle(int hIdx);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
-// 	void normalizeSignatureFrom(const std::vector<double>& vFrom);
-// 	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
-// 	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
+	void computeKernelSignature(double timescale, KernelType kernelType);
+	void computeKernelDistanceSignature(double timescale, KernelType kernelType);
 	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
@@ -47,11 +50,8 @@ public:
 
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
-public:
-	
-	std::vector<double> vDisplaySignature;
-	double sigMin, sigMax;
 
+public:
 	int pRef;
 	Vector3D posRef;
 

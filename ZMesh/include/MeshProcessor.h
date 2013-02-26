@@ -15,7 +15,7 @@ public:
 	friend class MeshProcessor;
 
 	MeshProperty() : id(ID_PROPERTY_NOT_SPECIFIED), name("unnamed") {}
-	void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
+	virtual void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
 protected:
 	int id;
 	std::string name;
@@ -51,12 +51,12 @@ class MeshFunction : public MeshProperty
 {
 public:
 	MeshFunction() { m_size = 0; }
-	MeshFunction(int s) { m_size = 0; m_function.resize(s); }
+	MeshFunction(int s) { m_size = s; m_function.resize(s); }
 	void setSize(int s) { m_size = s; m_function.resize(s); }
 	const std::vector<double>& getMeshFunction() { return m_function; }
 	static double InnerProduct(const MeshFunction& f1, const MeshFunction& f2);
 	double norm() const;
-
+	void setValue(int idx, double val) { m_function[idx] = val; }
 	double& operator[](int idx);
 protected:
 	int m_size;		// vertex number of the mesh

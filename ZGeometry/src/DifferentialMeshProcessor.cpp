@@ -23,6 +23,16 @@ double transferFunc2(double lambda, double t)
 	return coeff * std::exp(-coeff);
 }
 
+double transferFunc3( double lambda, double t )
+{
+	return std::exp(-lambda * t);
+}
+
+double transferFunc4( double lambda, double t )
+{
+	return lambda * std::exp(-lambda * t);
+}
+
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
@@ -816,4 +826,29 @@ void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double
 		values[y] = itemSum;
 	}
 
+}
+
+void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
+{
+	if (!m_bLaplacianDecomposed) return;
+
+	if (kernelType == HEAT_KERNEL)
+	{
+		removePropertyByID(HKS);
+		MeshFunction *hks = new MeshFunction;
+		hks->setSize(m_size);
+		hks->setIDandName(HKS, "HKS");
+		for (int i = 0; i < m_size; ++i)
+		{
+			double sum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				sum += (*transferFunc3)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
+			}
+			hks->setValue(i, sum);
+		}
+
+		addProperty(hks);
+	}
+	
 }

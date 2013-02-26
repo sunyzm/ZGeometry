@@ -70,6 +70,7 @@ void MeshProcessor::removePropertyByID( int rid )
 	{
 		if ((*iter)->id == rid)
 		{
+			delete *iter;
 			vProperties.erase(iter);
 			break;
 		}

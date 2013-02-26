@@ -36,6 +36,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	
 	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = 50;
+	current_operation = None;
 
 	deformType = Simple;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
@@ -560,6 +561,16 @@ void QZGeometryWindow::setRefPoint2( int vn )
 void QZGeometryWindow::setCommonParameter( int p )
 {
 	m_commonParameter = p;
+
+	if (current_operation == Compute_HKS)
+	{
+		double time_scale;
+		if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
+			time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+		else 
+			time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		qout.output(qformat.sprintf("HKS timescale %f", time_scale), OUT_STATUS);
+	}
 }
 
 void QZGeometryWindow::setEditModeMove()
@@ -754,7 +765,7 @@ void QZGeometryWindow::displayExperimental()
 		toggleShowSignature();
 
 	ui.glMeshWidget->update();
-	qout.output("Show MHW from vertex #" + QString::number(mp.pRef));
+	qout.output(qformat.sprintf("Show MHW from vertex #%d", mp.pRef));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
 // 	QTime timer;
@@ -988,7 +999,7 @@ void QZGeometryWindow::displayHeatKernelSignature()
 void QZGeometryWindow::computeHKS()
 {
 	double time_scale;
-	if (m_commonParameter <= 50) 
+	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
 		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
@@ -1000,7 +1011,14 @@ void QZGeometryWindow::computeHKS()
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
-
+			mp.computeKernelSignature(time_scale, HEAT_KERNEL);
+			MeshFunction* hks = dynamic_cast<MeshFunction*>(mp.retrievePropertyByID(HKS));
+			if (hks)
+				vRS[i].normalizeSignatureFrom(hks->getMeshFunction());
 		}
 	}
+
+	ui.glMeshWidget->update();
+
+	current_operation = Compute_HKS;
 }
