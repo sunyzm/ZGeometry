@@ -546,10 +546,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 #endif
 
 	//// ----	draw reference point ---- ////
-	if ( m_bShowRefPoint && pMP->pRef >= 0 )
+	if ( m_bShowRefPoint )
 	{
-		Vector3D vt = tmesh->getVertex_const(pMP->pRef)->getPosition();
-		vt = pMP->posRef;
+		Vector3D vt = tmesh->getVertex_const(pMP->getRefPointIndex())->getPosition();
 		vt += shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();

@@ -19,35 +19,43 @@ public:	// methods
 	bool initialize();
 signals:
 	void refPoint1Changed(int n);
+
 private slots:
 	void setEditModeMove();
 	void setEditModePick();
 	void setEditModeDrag();
+
 	void computeLaplacian(); 
 	void computeHKS();
+	void computeHK();
 	void computeSGW();
 	void computeSGWSFeatures();
+
 	void displayEigenfunction();
-	void displayHeatKernelSignature();
+	void displayHKS();
+	void displayHK();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
 	void displayNeighborVertices();
+	void displayDiffPosition();
+
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
 	void setDisplayMesh();
-	void displayDiffPosition();
+	
+	void selectObject(int index);
 	void setRefPoint1(int vn);
 	void setRefPoint2(int vn);
 	void setCommonParameter(int p);
+	
 	void toggleShowSignature(bool show = false);
 	void toggleShowRefPoint(bool show = false);
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
-	void selectObject(int index);
-
+	
 	void clone();
 	void deformSimple();
 	void deformLaplace();

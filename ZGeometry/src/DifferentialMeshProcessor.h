@@ -9,8 +9,15 @@
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
-enum SignatureType {HKS = 0, HK, MEAN_CURVATURE, GAUSS_CURVATURE, WKS}; 
 enum KernelType {HEAT_KERNEL, MEXICAN_HAT_KERNEL};
+
+#define SIGNATURE_HKS					0x0101
+#define SIGNATURE_HK					0x0102
+#define SIGNATURE_MEAN_CURVATURE		0x0103
+#define SIGNATURE_GAUSS_CURVATURE		0x0104
+#define SIGANTURE_WKS					0x0105
+
+#define FEATURE_NEIGHBORS				0x0201
 
 double transferScalingFunc1(double lambda);
 
@@ -32,7 +39,7 @@ public:
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void computeKernelSignature(double timescale, KernelType kernelType);
-	void computeKernelDistanceSignature(double timescale, KernelType kernelType);
+	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
@@ -50,26 +57,30 @@ public:
 
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
+	int getRefPointIndex() const { return pRef; }
+	void setRefPointIndex(int i) { pRef = i; }
+	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
 
 public:
-	int pRef;
-	Vector3D posRef;
-
 	int active_handle;
 	std::map<int, Vector3D> mHandles;
 	std::vector<MeshFeature> vFeatures;	
 	double constrain_weight;
 	
 private:
+	Engine *m_ep;
+	MatlabWrapper matlabWrapper;
+
 	bool m_bSGWComputed;
 	bool m_bLaplacianDecomposed;		// mhb available
 
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
+	
+	int pRef;
+	Vector3D posRef;
+
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
-
-	MatlabWrapper matlabWrapper;
-	Engine *m_ep;
 };
 

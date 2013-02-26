@@ -54,6 +54,7 @@ void QZGeometryWindow::makeConnections()
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
+	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 
@@ -93,8 +94,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
-	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
-	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHeatKernelSignature()));
+	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
+	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHKS()));
+	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
@@ -544,7 +546,7 @@ void QZGeometryWindow::selectObject( int index )
 
 void QZGeometryWindow::setRefPoint1( int vn )
 {
-	vMP[0].pRef = vn;
+	vMP[0].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(0);
 	ui.glMeshWidget->update();
@@ -552,7 +554,7 @@ void QZGeometryWindow::setRefPoint1( int vn )
 
 void QZGeometryWindow::setRefPoint2( int vn )
 {
-	vMP[1].pRef = vn;
+	vMP[1].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(1);
 	ui.glMeshWidget->update();
@@ -562,7 +564,7 @@ void QZGeometryWindow::setCommonParameter( int p )
 {
 	m_commonParameter = p;
 
-	if (current_operation == Compute_HKS)
+	if (current_operation == Compute_HKS || current_operation == Compute_HK)
 	{
 		double time_scale;
 		if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
@@ -765,7 +767,7 @@ void QZGeometryWindow::displayExperimental()
 		toggleShowSignature();
 
 	ui.glMeshWidget->update();
-	qout.output(qformat.sprintf("Show MHW from vertex #%d", mp.pRef));
+	qout.output(qformat.sprintf("Show MHW from vertex #%d", mp.getRefPointIndex()));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
 // 	QTime timer;
@@ -837,10 +839,11 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	DifferentialMeshProcessor& mp = vMP[obj]; 
 
 	double unitMove = (mp.getMesh()->getBoundingBox().x + mp.getMesh()->getBoundingBox().y + mp.getMesh()->getBoundingBox().z)/300.0;
-	Vector3D originalPos = mp.getMesh()->getVertex_const(mp.pRef)->getPosition();
-	mp.posRef.x = originalPos.x + unitMove * refMove.xMove;
-	mp.posRef.y = originalPos.y + unitMove * refMove.yMove;
-	mp.posRef.z = originalPos.z + unitMove * refMove.zMove;
+	Vector3D originalPos = mp.getMesh()->getVertex_const(mp.getRefPointIndex())->getPosition();
+	
+	mp.setRefPointPosition(originalPos.x + unitMove * refMove.xMove,
+						   originalPos.y + unitMove * refMove.yMove,
+						   originalPos.z + unitMove * refMove.zMove);
 
 	ui.glMeshWidget->update();
 }
@@ -889,8 +892,6 @@ void QZGeometryWindow::clone()
 
 void QZGeometryWindow::reconstructMHB()
 {
-//	assert(vMP[1].mesh);
-	
 	double ratio = min((double)m_commonParameter/PARAMETER_SLIDER_CENTER, 1.0);
 	int nEig = vMP[0].getMHB().m_nEigFunc * ratio;
 
@@ -973,14 +974,14 @@ void QZGeometryWindow::displayNeighborVertices()
 {
 	int ring = (m_commonParameter > 45) ? (m_commonParameter-45) : 1;
 
-	int ref = vMP[0].pRef;
+	int ref = vMP[0].getRefPointIndex();
 	std::vector<int> vn = vMP[0].getMesh()->getNeighboringVertex(ref, ring);
 //	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter)
 	{
 		mfl->m_vFeatures.push_back(MeshFeature(*iter));
-		mfl->setIDandName(1, "Neighbors");
+		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
 	vMP[0].addProperty(mfl);
 
@@ -989,11 +990,6 @@ void QZGeometryWindow::displayNeighborVertices()
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::displayHeatKernelSignature()
-{
-
 }
 
 void QZGeometryWindow::computeHKS()
@@ -1012,13 +1008,73 @@ void QZGeometryWindow::computeHKS()
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, HEAT_KERNEL);
-			MeshFunction* hks = dynamic_cast<MeshFunction*>(mp.retrievePropertyByID(HKS));
-			if (hks)
-				vRS[i].normalizeSignatureFrom(hks->getMeshFunction());
+		}
+	}
+	
+	displayHKS();
+
+	current_operation = Compute_HKS;
+}
+
+void QZGeometryWindow::computeHK()
+{
+	double time_scale;
+	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	else 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+
+	qout.output(qformat.sprintf("Heat Kernel timescale: %f", time_scale));
+
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			int refPoint = mp.getRefPointIndex();
+			mp.computeKernelDistanceSignature(time_scale, HEAT_KERNEL, refPoint);
 		}
 	}
 
-	ui.glMeshWidget->update();
+	displayHK();
 
-	current_operation = Compute_HKS;
+	current_operation = Compute_HK;
+}
+
+void QZGeometryWindow::displayHKS()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			MeshProperty* hks = mp.retrievePropertyByID(SIGNATURE_HKS);
+			if (hks)
+				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hks)->getMeshFunction());
+		}
+	}
+
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayHK()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			MeshProperty* hk = mp.retrievePropertyByID(SIGNATURE_HK);
+			if (hk)
+				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hk)->getMeshFunction());
+		}
+	}
+
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
+	ui.glMeshWidget->update();
 }

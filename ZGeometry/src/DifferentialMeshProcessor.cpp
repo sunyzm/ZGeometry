@@ -834,10 +834,10 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 
 	if (kernelType == HEAT_KERNEL)
 	{
-		removePropertyByID(HKS);
+		removePropertyByID(SIGNATURE_HKS);
 		MeshFunction *hks = new MeshFunction;
 		hks->setSize(m_size);
-		hks->setIDandName(HKS, "HKS");
+		hks->setIDandName(SIGNATURE_HKS, "HKS");
 		for (int i = 0; i < m_size; ++i)
 		{
 			double sum = 0;
@@ -851,4 +851,31 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 		addProperty(hks);
 	}
 	
+}
+
+void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale, KernelType kernelType, int refPoint )
+{
+	if (!m_bLaplacianDecomposed) return;
+	if (refPoint < 0 || refPoint >= m_size)
+		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
+
+	if (kernelType == HEAT_KERNEL)
+	{
+		removePropertyByID(SIGNATURE_HK);
+		MeshFunction *hk = new MeshFunction;
+		hk->setSize(m_size);
+		hk->setIDandName(SIGNATURE_HK, "HK");
+		for (int i = 0; i < m_size; ++i)
+		{
+			double sum = 0;
+			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			{
+				sum += (*transferFunc3)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[refPoint];
+			}
+			hk->setValue(i, sum);
+		}
+
+		addProperty(hk);
+	}
+
 }

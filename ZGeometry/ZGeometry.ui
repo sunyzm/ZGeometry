@@ -278,8 +278,9 @@
     <addaction name="actionColorLegend"/>
     <addaction name="separator"/>
     <addaction name="menuCurvature"/>
-    <addaction name="actionEigenfunction"/>
+    <addaction name="actionDisplayEigenfunction"/>
     <addaction name="actionDisplayHKS"/>
+    <addaction name="actionDisplayHK"/>
     <addaction name="actionSGWS"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="separator"/>
@@ -293,6 +294,7 @@
     </property>
     <addaction name="actionComputeLaplacian"/>
     <addaction name="actionComputeHKS"/>
+    <addaction name="actionComputeHK"/>
     <addaction name="actionComputeSGW"/>
     <addaction name="actionSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -316,7 +318,7 @@
     <string>Laplacian + MHB</string>
    </property>
   </action>
-  <action name="actionEigenfunction">
+  <action name="actionDisplayEigenfunction">
    <property name="text">
     <string>Eigenfunction</string>
    </property>
@@ -509,6 +511,16 @@
   <action name="actionComputeHKS">
    <property name="text">
     <string>HKS</string>
+   </property>
+  </action>
+  <action name="actionComputeHK">
+   <property name="text">
+    <string>HK</string>
+   </property>
+  </action>
+  <action name="actionDisplayHK">
+   <property name="text">
+    <string>HK</string>
    </property>
   </action>
  </widget>

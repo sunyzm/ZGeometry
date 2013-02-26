@@ -5,7 +5,7 @@
 #include <Geometry.h>
 #include <Mesh.h>
 
-#define ID_PROPERTY_NOT_SPECIFIED -1
+#define ID_PROPERTY_NOT_SPECIFIED 0
 
 class MeshProcessor;
 
@@ -15,7 +15,8 @@ public:
 	friend class MeshProcessor;
 
 	MeshProperty() : id(ID_PROPERTY_NOT_SPECIFIED), name("unnamed") {}
-	virtual void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
+	virtual ~MeshProperty() {}
+	void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
 protected:
 	int id;
 	std::string name;
