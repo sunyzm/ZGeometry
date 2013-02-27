@@ -67,6 +67,7 @@ private slots:
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
+	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
 
 private:	// attributes

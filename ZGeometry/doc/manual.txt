@@ -1,15 +1,17 @@
 -------------------------------------------------------------------------------
                             ZGeometry
 author: Ming Zhong (mzhong@cs.stonybrook.edu)
+update: 2/27/2013
 -------------------------------------------------------------------------------
 Keyboard Control
 
-c clone current mesh 
-d set edit mode as Drag
-e perform simple deformation
-f toggle showing features
-m set edit mode as Move
-p set edit move as Pick
-r toggle showing reference point
-s toggle showing signatures
-w switch display mode between mesh, wireframe and pointcloud
+c			- clone current mesh 
+d			- set edit mode as Drag
+e			- perform simple deformation
+ctrl + f	- toggle showing features
+m			- set edit mode as Move
+p			- set edit move as Pick
+r			- repeat previous operation
+ctrl + r	- toggle showing reference point
+ctrl + s	- toggle showing signatures
+w			- switch display mode between mesh, wireframe and pointcloud

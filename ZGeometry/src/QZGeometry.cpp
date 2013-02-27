@@ -180,7 +180,6 @@ bool QZGeometryWindow::initialize()
 		mesh2.gatherStatistics();
 		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
 		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.m_meshName.c_str(), mesh2.getVerticesNum()));
-//		qout.output("Load mesh: " + QString(mesh2.m_meshName.c_str()) + "    Size: " + QString::number(mesh2.getVerticesNum()));
 		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z));
 		vMP[1].init(&mesh2, m_ep);
 		vRS[1].mesh_color = preset_colors[1];
@@ -267,15 +266,19 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_F:
-		toggleShowFeatures();
+		if (event->modifiers() & Qt::AltModifier)
+			toggleShowFeatures();
 		break;
 
 	case Qt::Key_R:
-		toggleShowRefPoint();
+		if (event->modifiers() & Qt::AltModifier)
+			toggleShowRefPoint();
+		else repeatOperation();
 		break;
 
 	case Qt::Key_S:
-		toggleShowSignature();
+		if (event->modifiers() & Qt::AltModifier)
+			toggleShowSignature();
 		break;
 
 	case Qt::Key_W:	// switch between display mode
@@ -1077,4 +1080,12 @@ void QZGeometryWindow::displayHK()
 		toggleShowSignature();
 
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::repeatOperation()
+{
+	if (current_operation == Compute_HKS)
+		computeHKS();
+	else if (current_operation == Compute_HK)
+		computeHK();
 }
