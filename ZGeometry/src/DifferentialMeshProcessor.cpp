@@ -811,7 +811,7 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 	m_bSGWComputed = true;
 }
 
-void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double>& values ) const
+void DifferentialMeshProcessor::calSGWSignature( double timescale, vector<double>& values ) const
 {
 	values.resize(m_size);
 
@@ -828,6 +828,36 @@ void DifferentialMeshProcessor::getSGWSignature( double timescale, vector<double
 
 }
 
+
+void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType kernelType, std::vector<double>& values ) const
+{
+	if (!m_bLaplacianDecomposed) return;
+	values.resize(m_size);
+
+	TransferFunc pTF = &transferFunc3;	// default
+
+	if (kernelType == HEAT_KERNEL)
+	{
+		pTF = &transferFunc3;
+	}
+	else if (kernelType == MEXICAN_HAT_KERNEL)
+	{
+		pTF = &transferFunc4;
+	}
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		double sum = 0;
+		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		{
+			sum += (*pTF)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
+		}
+		values[i] = sum;
+	}
+
+}
+
+
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
 {
 	if (!m_bLaplacianDecomposed) return;
@@ -835,18 +865,9 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 	if (kernelType == HEAT_KERNEL)
 	{
 		removePropertyByID(SIGNATURE_HKS);
-		MeshFunction *hks = new MeshFunction;
-		hks->setSize(m_size);
-		hks->setIDandName(SIGNATURE_HKS, "HKS");
-		for (int i = 0; i < m_size; ++i)
-		{
-			double sum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
-			{
-				sum += (*transferFunc3)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
-			}
-			hks->setValue(i, sum);
-		}
+		MeshFunction *hks = new MeshFunction(SIGNATURE_HKS, "HKS", m_size);
+		
+		calKernelSignature(timescale, kernelType, hks->getMeshFunction());
 
 		addProperty(hks);
 	}
@@ -862,9 +883,8 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 	if (kernelType == HEAT_KERNEL)
 	{
 		removePropertyByID(SIGNATURE_HK);
-		MeshFunction *hk = new MeshFunction;
-		hk->setSize(m_size);
-		hk->setIDandName(SIGNATURE_HK, "HK");
+		MeshFunction *hk = new MeshFunction(SIGNATURE_HK, "HK", m_size);
+
 		for (int i = 0; i < m_size; ++i)
 		{
 			double sum = 0;
@@ -878,4 +898,31 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 		addProperty(hk);
 	}
 
+}
+
+void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vector<double>& timescales, KernelType kernelType )
+{
+	MeshFeatureList *mfl = new MeshFeatureList;
+	int nScales = timescales.size();
+
+	for (int s = 0; s < nScales; ++s)
+	{
+		vector<double> vSig;
+		vector<int> vFeatures;
+		calKernelSignature(timescales[s], kernelType, vSig);
+		mesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
+		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
+		{
+			mfl->addFeature(MeshFeature(*iter, s));
+		}
+	}
+
+	if (kernelType == HEAT_KERNEL)
+	{
+		removePropertyByID(FEATURE_HKS);
+		mfl->setIDandName(FEATURE_HKS, "FHKS");
+		addProperty(mfl);
+	}
+
+	pvActiveFeatures = mfl->getFeatureVector();
 }

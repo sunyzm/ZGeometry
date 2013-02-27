@@ -9,7 +9,7 @@ void RenderSettings::normalizeSignatureFrom( const std::vector<double>& vFrom )
 	if (vFrom.empty()) return;	
 
 	auto iResult = minmax_element(vFrom.begin(), vFrom.end());
-	double sMin = *iResult.first, sMax = *iResult.second;
+	const double sMin = *iResult.first, sMax = *iResult.second;
 
 	sigMin = sMin, sigMax = sMax;
 
@@ -32,8 +32,8 @@ void RenderSettings::logNormalizeSignatureFrom( const std::vector<double>& vFrom
 	}
 
 	auto iResult = minmax_element(vLog.begin(), vLog.end());
-	double sMin = *iResult.first, sMax = *iResult.second;
-	sigMin = sMin, sMax = sMax;
+	const double sMin = *iResult.first, sMax = *iResult.second;
+	sigMin = sMin, sigMax = sMax;
 
 	this->vDisplaySignature.clear();
 	this->vDisplaySignature.reserve(vLog.size());

@@ -450,7 +450,7 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 }
 */
 
-void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* renderSettings ) const
+void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
 {
 	if(!pMP->getMesh()) return;
 	const CMesh* tmesh = pMP->getMesh();
@@ -459,21 +459,21 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
 //  glMateriali(GL_FRONT, GL_SHININESS, 96);
 
-	const Vector3D shift = renderSettings->display_shift;
-	const GLfloat *mesh_color = renderSettings->mesh_color;	
+	const Vector3D shift = pRS->display_shift;
+	const GLfloat *mesh_color = pRS->mesh_color;	
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
-	setupObject(renderSettings->obj_rot, renderSettings->obj_trans);	
+	setupObject(pRS->obj_rot, pRS->obj_trans);	
 
 	/// draw the mesh
-	glPolygonMode(GL_FRONT_AND_BACK, renderSettings->glPolygonMode);
+	glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
 
 	glPointSize(2.0);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	if (m_bShowSignature && !renderSettings->vDisplaySignature.empty())
+	if (m_bShowSignature && !pRS->vDisplaySignature.empty())
 	{
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
@@ -486,7 +486,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
-				glFalseColor(renderSettings->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
+				glFalseColor(pRS->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
@@ -560,35 +560,36 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	//// ---- draw feature points ---- ////
-	if (m_bShowFeatures && !pMP->vFeatures.empty())
+	if (m_bShowFeatures && !pMP->getActiveFeatures().empty())
 	{
-		///// draw as glPoint
-		glPointSize(10.0);
-		glBegin(GL_POINTS);
-		for (auto iter = pMP->vFeatures.begin(); iter != pMP->vFeatures.end(); ++iter)
-		{
-			Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
-			vt += shift;
-			int color_index = iter->scale % gFeatureColorNum;
-			glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-			glVertex3d(vt.x, vt.y, vt.z);
-		}
-		glEnd();
-		glPointSize(2.0);
+		/////// draw as glPoint
+		//glPointSize(10.0);
+		//glBegin(GL_POINTS);
+		//for (auto iter = pMP->getDisplayFeatures().begin(); iter != pMP->getDisplayFeatures().end(); ++iter)
+		//{
+		//	Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
+		//	vt += shift;
+		//	int color_index = iter->scale % gFeatureColorNum;
+		//	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+		//	glVertex3d(vt.x, vt.y, vt.z);
+		//}
+		//glEnd();
+		//glPointSize(2.0);
 
-		//// draw as gluSphere 
-		// 		for (auto iter = vpMP[0]->vFeatures.begin(); iter != vpMP[0]->vFeatures.end(); ++iter)
-		// 		{
-		// 			Vector3D vt = tmesh->getVertex_const(iter->index)->getPos();
-		// 			vt += shift;
-		// 			glColor4f(featureColors[iter->scale][0], featureColors[iter->scale][1], featureColors[iter->scale][2], featureColors[iter->scale][3]);
-		// 			GLUquadric* quadric = gluNewQuadric();
-		//   		gluQuadricDrawStyle(quadric, GLU_FILL);
-		//   		glPushMatrix();
-		//   		glTranslated(vt.x, vt.y, vt.z);
-		//   		gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
-		//   		glPopMatrix();
-		// 		}
+		// draw as gluSphere 
+		for (auto iter = vpMP[0]->getActiveFeatures().begin(); iter != vpMP[0]->getActiveFeatures().end(); ++iter)
+		{
+		 	Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
+		 	vt += shift;
+			int color_index = iter->scale % gFeatureColorNum;
+		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+		 	GLUquadric* quadric = gluNewQuadric();
+			gluQuadricDrawStyle(quadric, GLU_FILL);
+			glPushMatrix();
+			glTranslated(vt.x, vt.y, vt.z);
+			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+			glPopMatrix();
+		}
 	}
 
 	//// ---- draw handle points ---- ////

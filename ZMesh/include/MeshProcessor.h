@@ -13,7 +13,6 @@ class MeshProperty
 {
 public:
 	friend class MeshProcessor;
-
 	MeshProperty() : id(ID_PROPERTY_NOT_SPECIFIED), name("unnamed") {}
 	virtual ~MeshProperty() {}
 	void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
@@ -44,6 +43,9 @@ public:
 class MeshFeatureList : public MeshProperty
 {
 public:
+	void addFeature(const MeshFeature& mf) { m_vFeatures.push_back(mf); }
+	std::vector<MeshFeature>* getFeatureVector() { return &m_vFeatures; }
+private:
 	int featureType;
 	std::vector<MeshFeature> m_vFeatures;
 };
@@ -53,12 +55,15 @@ class MeshFunction : public MeshProperty
 public:
 	MeshFunction() { m_size = 0; }
 	MeshFunction(int s) { m_size = s; m_function.resize(s); }
+	MeshFunction(int id, const std::string& newName, int size) { setIDandName(id, newName); m_size = size; m_function.resize(size); }
 	void setSize(int s) { m_size = s; m_function.resize(s); }
-	const std::vector<double>& getMeshFunction() { return m_function; }
+	const std::vector<double>& getMeshFunction_const() { return m_function; }
+	std::vector<double>& getMeshFunction() { return m_function; }
 	static double InnerProduct(const MeshFunction& f1, const MeshFunction& f2);
 	double norm() const;
 	void setValue(int idx, double val) { m_function[idx] = val; }
 	double& operator[](int idx);
+	void copyValues(const std::vector<double>& values) { m_function = values; }
 protected:
 	int m_size;		// vertex number of the mesh
 	std::vector<double> m_function;

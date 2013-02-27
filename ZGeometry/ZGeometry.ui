@@ -271,6 +271,12 @@
      <addaction name="actionDisplayWireframe"/>
      <addaction name="actionDisplayMesh"/>
     </widget>
+    <widget class="QMenu" name="menuFeatures">
+     <property name="title">
+      <string>Features</string>
+     </property>
+     <addaction name="actionShowHKSFeatures"/>
+    </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
@@ -282,11 +288,12 @@
     <addaction name="actionDisplayHKS"/>
     <addaction name="actionDisplayHK"/>
     <addaction name="actionSGWS"/>
-    <addaction name="actionDiffPosition"/>
-    <addaction name="separator"/>
     <addaction name="actionMexicanHatWavelet1"/>
     <addaction name="actionMexicanHatWavelet2"/>
+    <addaction name="actionDiffPosition"/>
     <addaction name="actionExperimental"/>
+    <addaction name="separator"/>
+    <addaction name="menuFeatures"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -295,6 +302,7 @@
     <addaction name="actionComputeLaplacian"/>
     <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHK"/>
+    <addaction name="actionComputeHKSFeatures"/>
     <addaction name="actionComputeSGW"/>
     <addaction name="actionSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -521,6 +529,16 @@
   <action name="actionDisplayHK">
    <property name="text">
     <string>HK</string>
+   </property>
+  </action>
+  <action name="actionComputeHKSFeatures">
+   <property name="text">
+    <string>HKS Features</string>
+   </property>
+  </action>
+  <action name="actionShowHKSFeatures">
+   <property name="text">
+    <string>HKS Features</string>
    </property>
   </action>
  </widget>

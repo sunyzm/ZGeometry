@@ -1,3 +1,4 @@
+#include <cmath>
 #include <fstream>
 #include <string>
 #include <sstream>
@@ -8,11 +9,8 @@
 #include <QtGui/QMessageBox>
 #include <QTime>
 #include <ZUtil.h>
-#include <stdexcept>
 #include "QZGeometry.h"
 #include "config.h"
-#include <algorithm>
-#include <cmath>
 
 using namespace std;
 
@@ -55,6 +53,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
+	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 
@@ -389,23 +388,23 @@ void QZGeometryWindow::computeLaplacian()
 
 void QZGeometryWindow::computeSGWSFeatures()
 {
-	vMP[0].vFeatures.clear();
-	double timescales[4] = {5, 10, 20, 40};
-	for (int s = 0; s < 4; ++s)
-	{
-		vector<double> vSig;
-		vector<int> vFeatures;
-		vMP[0].getSGWSignature(timescales[s], vSig);
-		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
-		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
-		{
-			vMP[0].vFeatures.push_back(MeshFeature(*iter, s));
-		}
-	}
-
-	if (!ui.actionShowFeatures->isChecked())
-		toggleShowFeatures();
-	ui.glMeshWidget->update();
+// 	vMP[0].vActiveFeatures.clear();
+// 	double timescales[4] = {5, 10, 20, 40};
+// 	for (int s = 0; s < 4; ++s)
+// 	{
+// 		vector<double> vSig;
+// 		vector<int> vFeatures;
+// 		vMP[0].calSGWSignature(timescales[s], vSig);
+// 		mesh1.extractExtrema(vSig, 2, 1e-5, vFeatures);
+// 		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
+// 		{
+// 			vMP[0].vActiveFeatures.push_back(MeshFeature(*iter, s));
+// 		}
+// 	}
+// 
+// 	if (!ui.actionShowFeatures->isChecked())
+// 		toggleShowFeatures();
+// 	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::computeSGW()
@@ -983,12 +982,12 @@ void QZGeometryWindow::displayNeighborVertices()
 	MeshFeatureList *mfl = new MeshFeatureList;
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter)
 	{
-		mfl->m_vFeatures.push_back(MeshFeature(*iter));
+		mfl->getFeatureVector()->push_back(MeshFeature(*iter));
 		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
 	vMP[0].addProperty(mfl);
 
-	vMP[0].vFeatures = mfl->m_vFeatures;
+	vMP[0].setActiveFeatures(mfl->getFeatureVector());
 	
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
@@ -1053,7 +1052,7 @@ void QZGeometryWindow::displayHKS()
 			DifferentialMeshProcessor& mp = vMP[i];
 			MeshProperty* hks = mp.retrievePropertyByID(SIGNATURE_HKS);
 			if (hks)
-				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hks)->getMeshFunction());
+				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hks)->getMeshFunction_const());
 		}
 	}
 
@@ -1072,7 +1071,7 @@ void QZGeometryWindow::displayHK()
 			DifferentialMeshProcessor& mp = vMP[i];
 			MeshProperty* hk = mp.retrievePropertyByID(SIGNATURE_HK);
 			if (hk)
-				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hk)->getMeshFunction());
+				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hk)->getMeshFunction_const());
 		}
 	}
 
@@ -1088,4 +1087,22 @@ void QZGeometryWindow::repeatOperation()
 		computeHKS();
 	else if (current_operation == Compute_HK)
 		computeHK();
+}
+
+void QZGeometryWindow::computeHKSFeatures()
+{
+	vector<double> vTimes;
+	vTimes.push_back(10);
+	vTimes.push_back(30);
+	vTimes.push_back(90);
+	vTimes.push_back(270);
+
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i])
+			vMP[i].computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
+	}
+	
+	if (!ui.glMeshWidget->m_bShowFeatures)
+		toggleShowFeatures();
 }

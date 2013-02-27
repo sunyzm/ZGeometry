@@ -28,6 +28,7 @@ private slots:
 	void computeLaplacian(); 
 	void computeHKS();
 	void computeHK();
+	void computeHKSFeatures();
 	void computeSGW();
 	void computeSGWSFeatures();
 
