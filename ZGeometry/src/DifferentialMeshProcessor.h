@@ -9,7 +9,7 @@
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
-enum KernelType {HEAT_KERNEL, MHW_KERNEL};
+enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL};
 
 #define SIGNATURE_HKS					0x0101
 #define SIGNATURE_HK					0x0102
@@ -18,10 +18,12 @@ enum KernelType {HEAT_KERNEL, MHW_KERNEL};
 #define SIGNATURE_WKS					0x0105
 #define SIGNATURE_MHWS					0x0106
 #define SIGNATURE_MHW					0x0106
+#define SIGNATURE_SGWS					0x0107
+#define SIGNATURE_SGW					0x0108
 
 #define FEATURE_NEIGHBORS				0x0201
 #define FEATURE_HKS						0x0202
-#define FEATURE_MHW						0x0203
+#define FEATURE_MHWS						0x0203
 #define FEATURE_SGWS					0x0204
 
 double transferScalingFunc1(double lambda);
@@ -32,6 +34,7 @@ double transferFunc3(double lambda, double t);  // heat kernel
 double transferFunc4(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
 
 typedef double (*TransferFunc)(double, double);
+typedef double (*ScalelessTransferFunc)(double);
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -51,7 +54,7 @@ public:
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	
-	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
+	void computeSGW(const std::vector<double>& timescales, TransferFunc transferWavelet = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);

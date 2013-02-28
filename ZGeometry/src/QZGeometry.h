@@ -29,17 +29,19 @@ private slots:
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
+	void computeMHW();
 	void computeMHWS();
 	void computeMHWFeatures();
 	void computeSGW();
+	void computeSGWS();
 	void computeSGWSFeatures();
 
 	void displayEigenfunction();
+	void displaySignature(int signatureID);
 	void displayHKS();
 	void displayHK();
 	void displayMHWS();
-	void displayMexicanHatWavelet1();
-	void displayMexicanHatWavelet2();
+	void displaySGWS();
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
@@ -73,7 +75,7 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-
+	void displayMHW();
 private:	// attributes
 	Ui::ZGeometryClass ui;
 	DeformType deformType;
@@ -90,6 +92,8 @@ private:	// attributes
 	
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;
-	enum {Compute_HKS, Compute_HK, Compute_MHWS, None} current_operation;
+	enum {Compute_HKS, Compute_HK, 
+		  Compute_MHWS, Compute_MHW, 
+		  Compute_SGWS, Compute_SGW, None} current_operation;
 };
 

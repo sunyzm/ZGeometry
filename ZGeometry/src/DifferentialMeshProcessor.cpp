@@ -33,6 +33,9 @@ double transferFunc4( double lambda, double t )
 	return lambda * std::exp(-lambda * t);
 }
 
+TransferFunc HeatKernel_TF = &transferFunc3,
+	         MHW_TF = &transferFunc4;
+
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
@@ -816,15 +819,19 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 	if (!m_bLaplacianDecomposed) return;
 	values.resize(m_size);
 
-	TransferFunc pTF = &transferFunc3;	// default
+	TransferFunc pTF = &transferFunc3;	// default as heat kernel
 
-	if (kernelType == HEAT_KERNEL)
+	switch(kernelType)
 	{
+	case HEAT_KERNEL:
 		pTF = &transferFunc3;
-	}
-	else if (kernelType == MHW_KERNEL)
-	{
+		break;
+	case MHW_KERNEL:
 		pTF = &transferFunc4;
+		break;
+	case SGW_KERNEL:
+		pTF = &transferFunc2;
+		break;
 	}
 
 	for (int i = 0; i < m_size; ++i)
@@ -836,9 +843,7 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 		}
 		values[i] = sum;
 	}
-
 }
-
 
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
 {
@@ -852,9 +857,15 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 		removePropertyByID(SIGNATURE_HKS);
 		mf->setIDandName(SIGNATURE_HKS, "HKS");		
 		break;
+
 	case MHW_KERNEL:
 		removePropertyByID(SIGNATURE_MHWS);
 		mf->setIDandName(SIGNATURE_MHWS, "Mexican_Hat_Signature");
+		break;
+	
+	case SGW_KERNEL:
+		removePropertyByID(SIGNATURE_SGWS);
+		mf->setIDandName(SIGNATURE_SGWS, "Spectral_Graph_Wavelet_Signature");
 		break;
 	}
 	
@@ -869,17 +880,24 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
 
 	MeshFunction *mf = new MeshFunction(m_size);
-	TransferFunc pTF;
+	TransferFunc pTF = &transferFunc3;
 
 	switch(kernelType)
 	{
 	case HEAT_KERNEL:
+		pTF = &transferFunc3;
 		removePropertyByID(SIGNATURE_HK);
 		mf->setIDandName(SIGNATURE_HK, "HK");		
 		break;
 	case MHW_KERNEL:
+		pTF = &transferFunc4;
 		removePropertyByID(SIGNATURE_MHW);
 		mf->setIDandName(SIGNATURE_MHW, "MHW");		
+		break;
+	case SGW_KERNEL:
+		pTF = &transferFunc4;
+		removePropertyByID(SIGNATURE_SGW);
+		mf->setIDandName(SIGNATURE_SGW, "SGW");		
 		break;
 	}
 	
@@ -894,7 +912,6 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 	}
 
 	addProperty(mf);
-
 }
 
 void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vector<double>& timescales, KernelType kernelType )
@@ -921,8 +938,12 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		mfl->setIDandName(FEATURE_HKS, "Feature_HKS");
 		break;
 	case MHW_KERNEL:
-		removePropertyByID(FEATURE_MHW);
-		mfl->setIDandName(FEATURE_MHW, "Feature_MHW");
+		removePropertyByID(FEATURE_MHWS);
+		mfl->setIDandName(FEATURE_MHWS, "Feature_MHWS");
+		break;
+	case SGW_KERNEL:
+		removePropertyByID(FEATURE_SGWS);
+		mfl->setIDandName(FEATURE_SGWS, "Feature_SGWS");
 		break;
 	}
 

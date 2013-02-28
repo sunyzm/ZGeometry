@@ -203,7 +203,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -285,16 +285,16 @@
     <addaction name="separator"/>
     <addaction name="menuCurvature"/>
     <addaction name="actionDisplayEigenfunction"/>
-    <addaction name="actionDisplayHKS"/>
     <addaction name="actionDisplayHK"/>
+    <addaction name="actionDisplayHKS"/>
+    <addaction name="actionDisplayMHW"/>
+    <addaction name="actionDisplayMHWS"/>
+    <addaction name="actionSGW"/>
     <addaction name="actionSGWS"/>
-    <addaction name="actionMexicanHatWavelet1"/>
-    <addaction name="actionMexicanHatWavelet2"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="actionExperimental"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
-    <addaction name="actionDisplayMHWS"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -304,10 +304,12 @@
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHKSFeatures"/>
+    <addaction name="actionComputeMHW"/>
     <addaction name="actionComputeMHWS"/>
     <addaction name="actionComputeMHWSFeatures"/>
+    <addaction name="actionComputeSGWS"/>
     <addaction name="actionComputeSGW"/>
-    <addaction name="actionSGWSFeatures"/>
+    <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
    </widget>
    <addaction name="menuFile"/>
@@ -408,7 +410,7 @@
     <string>Show signature</string>
    </property>
   </action>
-  <action name="actionSGWSFeatures">
+  <action name="actionComputeSGWSFeatures">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -557,6 +559,26 @@
   <action name="actionComputeMHWS">
    <property name="text">
     <string>MHWS</string>
+   </property>
+  </action>
+  <action name="actionComputeSGWS">
+   <property name="text">
+    <string>SGWS</string>
+   </property>
+  </action>
+  <action name="actionSGW">
+   <property name="text">
+    <string>SGW</string>
+   </property>
+  </action>
+  <action name="actionComputeMHW">
+   <property name="text">
+    <string>MHW</string>
+   </property>
+  </action>
+  <action name="actionDisplayMHW">
+   <property name="text">
+    <string>MHW</string>
    </property>
   </action>
  </widget>
