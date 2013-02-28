@@ -45,6 +45,12 @@
        </size>
       </property>
       <layout class="QHBoxLayout" name="layoutOptions">
+       <property name="topMargin">
+        <number>5</number>
+       </property>
+       <property name="bottomMargin">
+        <number>5</number>
+       </property>
        <item>
         <widget class="QComboBox" name="boxObjSelect">
          <property name="toolTip">
