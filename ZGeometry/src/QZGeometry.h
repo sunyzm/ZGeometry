@@ -26,15 +26,18 @@ private slots:
 	void setEditModeDrag();
 
 	void computeLaplacian(); 
-	void computeHKS();
 	void computeHK();
+	void computeHKS();	
 	void computeHKSFeatures();
+	void computeMHWS();
+	void computeMHWFeatures();
 	void computeSGW();
 	void computeSGWSFeatures();
 
 	void displayEigenfunction();
 	void displayHKS();
 	void displayHK();
+	void displayMHWS();
 	void displayMexicanHatWavelet1();
 	void displayMexicanHatWavelet2();
 	void displayCurvatureMean();
@@ -87,6 +90,6 @@ private:	// attributes
 	
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;
-	enum {Compute_HKS, Compute_HK, None} current_operation;
+	enum {Compute_HKS, Compute_HK, Compute_MHWS, None} current_operation;
 };
 

@@ -51,9 +51,11 @@ void QZGeometryWindow::makeConnections()
 	
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
-	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
+	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
+	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
+	QObject::connect(ui.actionComputeMHWSFeatures, SIGNAL(triggered()), this, SLOT(computeMHWFeatures()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 
@@ -96,6 +98,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHKS()));
 	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
+	QObject::connect(ui.actionDisplayMHWS, SIGNAL(triggered()), this, SLOT(displayMHWS()));
 	QObject::connect(ui.actionMexicanHatWavelet1, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet1()));
 	QObject::connect(ui.actionMexicanHatWavelet2, SIGNAL(triggered()), this, SLOT(displayMexicanHatWavelet2()));
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
@@ -1047,13 +1050,10 @@ void QZGeometryWindow::displayHKS()
 {
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = vMP[i];
-			MeshProperty* hks = mp.retrievePropertyByID(SIGNATURE_HKS);
-			if (hks)
-				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hks)->getMeshFunction_const());
-		}
+		DifferentialMeshProcessor& mp = vMP[i];
+		MeshProperty* hks = mp.retrievePropertyByID(SIGNATURE_HKS);
+		if (hks)
+			vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hks)->getMeshFunction_const());
 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature)
@@ -1066,13 +1066,10 @@ void QZGeometryWindow::displayHK()
 {
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = vMP[i];
-			MeshProperty* hk = mp.retrievePropertyByID(SIGNATURE_HK);
-			if (hk)
-				vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hk)->getMeshFunction_const());
-		}
+		DifferentialMeshProcessor& mp = vMP[i];
+		MeshProperty* hk = mp.retrievePropertyByID(SIGNATURE_HK);
+		if (hk)
+			vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(hk)->getMeshFunction_const());
 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature)
@@ -1083,10 +1080,18 @@ void QZGeometryWindow::displayHK()
 
 void QZGeometryWindow::repeatOperation()
 {
-	if (current_operation == Compute_HKS)
+	switch(current_operation)
+	{
+	case Compute_HKS:
 		computeHKS();
-	else if (current_operation == Compute_HK)
+		break;
+	case Compute_HK:
 		computeHK();
+		break;
+	case Compute_MHWS:
+		computeMHWS();
+		break;
+	}
 }
 
 void QZGeometryWindow::computeHKSFeatures()
@@ -1105,4 +1110,63 @@ void QZGeometryWindow::computeHKSFeatures()
 	
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
+}
+
+void QZGeometryWindow::computeMHWFeatures()
+{
+	vector<double> vTimes;
+	vTimes.push_back(10);
+	vTimes.push_back(30);
+	vTimes.push_back(90);
+	vTimes.push_back(270);
+
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i])
+			vMP[i].computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
+	}
+
+	if (!ui.glMeshWidget->m_bShowFeatures)
+		toggleShowFeatures();
+
+}
+
+void QZGeometryWindow::computeMHWS()
+{
+	double time_scale;
+	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	else 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+
+	qout.output(qformat.sprintf("MHW timescale: %f", time_scale));
+
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			mp.computeKernelSignature(time_scale, MHW_KERNEL);
+		}
+	}
+
+	displayMHWS();
+
+	current_operation = Compute_MHWS;
+}
+
+void QZGeometryWindow::displayMHWS()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		DifferentialMeshProcessor& mp = vMP[i];
+		MeshProperty* vs = mp.retrievePropertyByID(SIGNATURE_MHWS);
+		if (vs)
+			vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
+	}
+
+	if (!ui.glMeshWidget->m_bShowSignature)
+		toggleShowSignature();
+
+	ui.glMeshWidget->update();
 }

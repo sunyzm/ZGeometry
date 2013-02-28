@@ -9,24 +9,27 @@
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
-enum KernelType {HEAT_KERNEL, MEXICAN_HAT_KERNEL};
+enum KernelType {HEAT_KERNEL, MHW_KERNEL};
 
 #define SIGNATURE_HKS					0x0101
 #define SIGNATURE_HK					0x0102
 #define SIGNATURE_MEAN_CURVATURE		0x0103
 #define SIGNATURE_GAUSS_CURVATURE		0x0104
-#define SIGANTURE_WKS					0x0105
+#define SIGNATURE_WKS					0x0105
+#define SIGNATURE_MHWS					0x0106
+#define SIGNATURE_MHW					0x0106
 
 #define FEATURE_NEIGHBORS				0x0201
 #define FEATURE_HKS						0x0202
-#define FEATURE_SGWS					0x0203
+#define FEATURE_MHW						0x0203
+#define FEATURE_SGWS					0x0204
 
 double transferScalingFunc1(double lambda);
 
-double transferFunc1(double lambda, double t);	// Mexican-hat square
-double transferFunc2(double lambda, double t);	// Mexican-hat
+double transferFunc1(double lambda, double t);	// Mexican-hat square wavelet
+double transferFunc2(double lambda, double t);	// Mexican-hat wavelet
 double transferFunc3(double lambda, double t);  // heat kernel
-double transferFunc4(double lambda, double t);	// Mexican-hat (v2)
+double transferFunc4(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
 
 typedef double (*TransferFunc)(double, double);
 
@@ -46,12 +49,12 @@ public:
 	void calKernelSignature(double timescale, KernelType kernelType, std::vector<double>& values) const;
 	void computeKernelSignature(double timescale, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
+	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
+	
 	void computeSGW(const std::vector<double>& timescales, double (*transferWavelet)(double, double) = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
-	void calSGWSignature(double timescale, std::vector<double>& values) const;
-	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 
 	// ---- editing ---- //
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);

@@ -294,15 +294,18 @@
     <addaction name="actionExperimental"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
+    <addaction name="actionDisplayMHWS"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
      <string>Compute</string>
     </property>
     <addaction name="actionComputeLaplacian"/>
-    <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHK"/>
+    <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHKSFeatures"/>
+    <addaction name="actionComputeMHWS"/>
+    <addaction name="actionComputeMHWSFeatures"/>
     <addaction name="actionComputeSGW"/>
     <addaction name="actionSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -539,6 +542,21 @@
   <action name="actionShowHKSFeatures">
    <property name="text">
     <string>HKS Features</string>
+   </property>
+  </action>
+  <action name="actionComputeMHWSFeatures">
+   <property name="text">
+    <string>MHWS Features</string>
+   </property>
+  </action>
+  <action name="actionDisplayMHWS">
+   <property name="text">
+    <string>MHWS</string>
+   </property>
+  </action>
+  <action name="actionComputeMHWS">
+   <property name="text">
+    <string>MHWS</string>
    </property>
   </action>
  </widget>

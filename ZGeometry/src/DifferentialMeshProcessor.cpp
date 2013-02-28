@@ -811,24 +811,6 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 	m_bSGWComputed = true;
 }
 
-void DifferentialMeshProcessor::calSGWSignature( double timescale, vector<double>& values ) const
-{
-	values.resize(m_size);
-
-	for (int y = 0; y < m_size; ++y)
-	{
-		double itemSum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
-		{
-			double coef = mhb.m_func[k].m_val * timescale;
-			itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[y] * mhb.m_func[k].m_vec[y];
-		}
-		values[y] = itemSum;
-	}
-
-}
-
-
 void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType kernelType, std::vector<double>& values ) const
 {
 	if (!m_bLaplacianDecomposed) return;
@@ -840,7 +822,7 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 	{
 		pTF = &transferFunc3;
 	}
-	else if (kernelType == MEXICAN_HAT_KERNEL)
+	else if (kernelType == MHW_KERNEL)
 	{
 		pTF = &transferFunc4;
 	}
@@ -862,16 +844,22 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 {
 	if (!m_bLaplacianDecomposed) return;
 
-	if (kernelType == HEAT_KERNEL)
-	{
-		removePropertyByID(SIGNATURE_HKS);
-		MeshFunction *hks = new MeshFunction(SIGNATURE_HKS, "HKS", m_size);
-		
-		calKernelSignature(timescale, kernelType, hks->getMeshFunction());
+	MeshFunction *mf = new MeshFunction(m_size);
 
-		addProperty(hks);
+	switch(kernelType)
+	{
+	case HEAT_KERNEL:
+		removePropertyByID(SIGNATURE_HKS);
+		mf->setIDandName(SIGNATURE_HKS, "HKS");		
+		break;
+	case MHW_KERNEL:
+		removePropertyByID(SIGNATURE_MHWS);
+		mf->setIDandName(SIGNATURE_MHWS, "Mexican_Hat_Signature");
+		break;
 	}
 	
+	calKernelSignature(timescale, kernelType, mf->getMeshFunction());
+	addProperty(mf);	
 }
 
 void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale, KernelType kernelType, int refPoint )
@@ -880,23 +868,32 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 	if (refPoint < 0 || refPoint >= m_size)
 		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
 
-	if (kernelType == HEAT_KERNEL)
+	MeshFunction *mf = new MeshFunction(m_size);
+	TransferFunc pTF;
+
+	switch(kernelType)
 	{
+	case HEAT_KERNEL:
 		removePropertyByID(SIGNATURE_HK);
-		MeshFunction *hk = new MeshFunction(SIGNATURE_HK, "HK", m_size);
-
-		for (int i = 0; i < m_size; ++i)
-		{
-			double sum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
-			{
-				sum += (*transferFunc3)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[refPoint];
-			}
-			hk->setValue(i, sum);
-		}
-
-		addProperty(hk);
+		mf->setIDandName(SIGNATURE_HK, "HK");		
+		break;
+	case MHW_KERNEL:
+		removePropertyByID(SIGNATURE_MHW);
+		mf->setIDandName(SIGNATURE_MHW, "MHW");		
+		break;
 	}
+	
+	for (int i = 0; i < m_size; ++i)
+	{
+		double sum = 0;
+		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		{
+			sum += (*pTF)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[refPoint];
+		}
+		mf->setValue(i, sum);
+	}
+
+	addProperty(mf);
 
 }
 
@@ -917,12 +914,19 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		}
 	}
 
-	if (kernelType == HEAT_KERNEL)
+	switch(kernelType)
 	{
+	case HEAT_KERNEL:
 		removePropertyByID(FEATURE_HKS);
-		mfl->setIDandName(FEATURE_HKS, "FHKS");
-		addProperty(mfl);
+		mfl->setIDandName(FEATURE_HKS, "Feature_HKS");
+		break;
+	case MHW_KERNEL:
+		removePropertyByID(FEATURE_MHW);
+		mfl->setIDandName(FEATURE_MHW, "Feature_MHW");
+		break;
 	}
+
+	addProperty(mfl);
 
 	pvActiveFeatures = mfl->getFeatureVector();
 }
