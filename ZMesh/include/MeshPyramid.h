@@ -6,6 +6,7 @@
 #include "Mesh.h"
 #include "Quadric.h"
 
+
 typedef std::map<int, std::list<int> > VerticesCover;
 
 class SparseMatrix

@@ -50,7 +50,7 @@ public:
 	friend class CHalfEdge;
 	friend class CFace;
 	friend class CMesh;
-	friend class CMeshPyramid;
+	friend class MeshPyramid;
 	
 	// ---- constructors ---- //
 	CVertex();
@@ -64,7 +64,7 @@ public:
 	// ---- operations ---- //
 	void				calcNormal();
 	int					getIndex() const { return m_vIndex; }
-	int					getVID() const { return m_vID; }
+	int					getVID() const { return m_vid; }
 	Vector3D			getNormal() const { return m_vNormal; }
 	double				getMeanCurvature() const { return m_vMeanCurvature; }
 	double				getGaussCurvature() const { return m_vGaussCurvature; }
@@ -80,7 +80,7 @@ public:
 private:
 	// ---- fields ---- //
 	int						m_vIndex;
-	int						m_vID;				// ID of the vertex from original mesh
+	int						m_vid;				// ID of the vertex from original mesh
 	std::vector<CHalfEdge*> m_HalfEdges;
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
@@ -132,7 +132,7 @@ private:
 	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
 	CHalfEdge*	m_ePrev;
 	CFace*		m_Face;			//attached face
-	int			m_index;		//half-edge id
+	int			m_eIndex;		//half-edge id
 	bool		m_bIsValid;
 
 	int			m_iVertex[2];	// starting and ending vertex index

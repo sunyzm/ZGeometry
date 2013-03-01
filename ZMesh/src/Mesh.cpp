@@ -68,7 +68,7 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 CVertex::CVertex( const CVertex& v )
 {	
 	m_vIndex			= v.m_vIndex;
-	m_vID				= v.m_vID;
+	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
 	m_nValence			= v.m_nValence;
 	m_vNormal			= v.m_vNormal;
@@ -203,7 +203,7 @@ CHalfEdge::CHalfEdge( int iV0, int iV1 )
 
 CHalfEdge::CHalfEdge( const CHalfEdge& e )
 {
-	m_index = e.m_index;
+	m_eIndex = e.m_eIndex;
 	
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin= m_eNext = m_ePrev = NULL;
@@ -219,7 +219,7 @@ CHalfEdge::CHalfEdge( const CHalfEdge& e )
 
 CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 {
-	m_index = e.m_index;
+	m_eIndex = e.m_eIndex;
 
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin= m_eNext = m_ePrev = NULL;
@@ -849,7 +849,7 @@ bool CMesh::loadFromPLY( string sFileName )
 		while (fgetc(f) != '\n'); // Read till end of the line
 		// to skip texture/color values
 
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 		m_pVertex[i].m_vPosition = Vector3D(x, y, z);
 
 	}
@@ -961,7 +961,7 @@ bool CMesh::loadFromVERT(string sFileName)
 	for(i=0; i<m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 	}
 	short j;
 	for(i=0; i<m_nFace; i++)
@@ -1124,7 +1124,7 @@ bool CMesh::loadFromM(string sFileName)
 	for(i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition= VertexList[i];  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 
 		m_pVertex[i].m_vColor.r = VertexColorList[3*i];
 		m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
@@ -2688,7 +2688,7 @@ void CMesh::buildIndexArrays()
 		m_pVertex[i].m_piEdge = new int[m_pVertex[i].m_nValence];
 		for (int j = 0; j < m_pVertex[i].m_nValence; ++j)
 		{
-			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_index;
+			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_eIndex;
 		}
 	}
 	
@@ -2697,9 +2697,9 @@ void CMesh::buildIndexArrays()
 		m_pHalfEdge[i] = *m_vHalfEdges[i];
 		CHalfEdge& he = m_pHalfEdge[i];
 		he.m_iFace = m_vHalfEdges[i]->m_Face->m_fIndex;
-		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_index : -1);
-		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_index;
-		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_index;
+		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_eIndex : -1);
+		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_eIndex;
+		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_eIndex;
 		int i1 = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
 		int i2 = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
 		
@@ -2725,7 +2725,7 @@ void CMesh::buildIndexArrays()
 			assert(idx >= 0 && idx < m_nVertex);
 			
 			face.m_piVertex[j] = m_vFaces[i]->m_Vertices[j]->m_vIndex;
-			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_index;
+			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_eIndex;
 		}
 	}
 
@@ -2741,7 +2741,7 @@ void CMesh::assignElementsIndex()
 		m_vVertices[i]->m_vIndex = i;
 	
 	for (int i = 0; i < m_nHalfEdge; ++i)
-		m_vHalfEdges[i]->m_index = i;
+		m_vHalfEdges[i]->m_eIndex = i;
 	
 	for (int i = 0; i < m_nFace; ++i)
 		m_vFaces[i]->m_fIndex = i;
@@ -2803,7 +2803,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			const CVertex* oldV = oldMesh.m_vVertices[i];
 			for (int j = 0; j < oldV->m_nValence; ++j)
 			{
-				int eidx = oldV->m_HalfEdges[j]->m_index;
+				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
 				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
@@ -2814,7 +2814,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			for (int j = 0; j < oldF->m_nType; ++j)
 			{
 				int vidx = oldF->m_Vertices[j]->m_vIndex;
-				int eidx = oldF->m_HalfEdges[j]->m_index;
+				int eidx = oldF->m_HalfEdges[j]->m_eIndex;
 
 				assert(vidx >= 0 && vidx < m_nVertex);
 
@@ -2828,8 +2828,8 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
 			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
 				vidx1 = oldE->m_Vertices[1]->m_vIndex,
-				neidx = oldE->m_eNext->m_index,
-				peidx = oldE->m_ePrev->m_index,
+				neidx = oldE->m_eNext->m_eIndex,
+				peidx = oldE->m_ePrev->m_eIndex,
 				fidx = oldE->m_Face->m_fIndex;
 			
 			assert(vidx0 >= 0 && vidx0 < m_nVertex && vidx1 >= 0 && vidx1 < m_nVertex);
@@ -2841,7 +2841,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 			curE->m_Face = this->m_vFaces[fidx];
 			if (oldE->m_eTwin != NULL)
 			{
-				int teidx = oldE->m_eTwin->m_index;
+				int teidx = oldE->m_eTwin->m_eIndex;
 				curE->m_eTwin = this->m_vHalfEdges[teidx];
 			}
 			else curE->m_eTwin = NULL;
@@ -3268,7 +3268,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	for(int i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 	}
 
 	for(int i = 0; i < m_nFace; i++)
