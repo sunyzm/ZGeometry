@@ -64,10 +64,11 @@ public:
 	// ---- operations ---- //
 	void				calcNormal();
 	int					getIndex() const { return m_vIndex; }
+	int					getVID() const { return m_vID; }
 	Vector3D			getNormal() const { return m_vNormal; }
 	double				getMeanCurvature() const { return m_vMeanCurvature; }
 	double				getGaussCurvature() const { return m_vGaussCurvature; }
-	std::vector<CFace*> getAdjacentFaces();
+	std::vector<CFace*> getAdjacentFaces() const;
 	const Vector3D&		getPosition() const { return m_vPosition; } 
 	bool				judgeOnBoundary();
 	bool				isHole() const { return m_bIsHole; }
@@ -79,6 +80,7 @@ public:
 private:
 	// ---- fields ---- //
 	int						m_vIndex;
+	int						m_vID;				// ID of the vertex from original mesh
 	std::vector<CHalfEdge*> m_HalfEdges;
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
@@ -91,10 +93,10 @@ private:
 	double					m_vMeanCurvature;	// mean curvature
 	double					m_vGaussCurvature;	// Gauss curvature
 
-	double		 m_LocalGeodesic;	// geodesic from local vertex
-	bool		 m_inheap;			// in heap or not
-	int			 m_vMatched;
-	int			 m_mark;
+	double					m_LocalGeodesic;	// geodesic from local vertex
+	bool					m_inheap;			// in heap or not
+	int						m_vMatched;
+	int						m_mark;
 };
 
 //////////////////////////////////////////////////////
@@ -191,7 +193,7 @@ class CMesh
 {
 	friend class MeshPyramid;
 
-////////////////    attributes    ////////////////
+////////////////   fields    ////////////////
 private:
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
@@ -208,32 +210,34 @@ private:
 
 	Vector3D    m_Center;
 	Vector3D    m_bBox;
+	double		m_avgEdgeLen;					// average edge length
+
 public:
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	CFace*		m_pFace;				// array pointer of faces
 
-	double		m_edge;					// average edge length
 	std::string m_meshName;				// name of the mesh
 
 ////////////////    methods    ////////////////
 public:
-// constructors
+	// ---- constructors ---- //
 	CMesh();
 	CMesh(const CMesh* pMesh);
 	CMesh(const CMesh& oldMesh);
 	virtual ~CMesh();
-	void        cloneFrom(const CMesh& oldMesh);
 
-// operations
+	// ---- Mesh IO and processing ---- //
+	void        cloneFrom(const CMesh& oldMesh);
+	void		cloneFrom(const CMesh* oldMesh) { cloneFrom(*oldMesh); }
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
-	
-	void	    move(Vector3D translation);
-	void	    scaleAreaToVertexNum();					// move to origin point and scale the mesh so that the surface area equals vertex num
-	void        scaleEdgeLenToUnit();
-	void	    gatherStatistics();
+	void	    move(Vector3D translation);				// translate mesh
+	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
+	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so taht the average edge length is 1
 
+	// ---- attributes access ---- //
+	const std::string& getMeshName() const { return m_meshName; }
 	CVertex*	getVertex(int i) { return &m_pVertex[i]; }
 	const CVertex* getVertex_const(int i) const { return &m_pVertex[i]; }
 	CFace*		getFace(int i) { return &m_pFace[i]; }
@@ -243,13 +247,18 @@ public:
 	int         getHalfEdgeNum() const { return m_nHalfEdge; }
 	int			getMatchedVerticesNum() const;
 	int			getFaceNum() {return m_nFace;}
-	double		getAvgEdgeLength() const { return m_edge; }
+	double		getAvgEdgeLength() const { return m_avgEdgeLen; }
 	int			getEdgeNum();		// get number of edges ( not half-edge! )
 	int			getBoundaryNum() const;    // get number of boundaries
-	bool        hasBounary() const;
 	int			getBoundaryVertexNum() const; // get number of boundary vertices
 	Vector3D	getBoundingBox() const { return m_bBox; }
 	Vector3D    getCenter() const { return m_Center; }
+
+
+	void	    gatherStatistics();
+
+
+	bool        hasBounary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices

@@ -67,16 +67,16 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 
 CVertex::CVertex( const CVertex& v )
 {	
-	m_vIndex		  = v.m_vIndex;
-
-	m_vPosition		  = v.m_vPosition;
-	m_nValence		  = v.m_nValence;
-	m_vNormal		  = v.m_vNormal;
-	m_bIsBoundary	  = v.m_bIsBoundary;
-	m_bIsHole		  = v.m_bIsHole;
-	m_vColor		  = v.m_vColor;
-	m_vMeanCurvature  = v.m_vMeanCurvature;
-	m_vGaussCurvature = v.m_vGaussCurvature;
+	m_vIndex			= v.m_vIndex;
+	m_vID				= v.m_vID;
+	m_vPosition			= v.m_vPosition;
+	m_nValence			= v.m_nValence;
+	m_vNormal			= v.m_vNormal;
+	m_bIsBoundary		= v.m_bIsBoundary;
+	m_bIsHole			= v.m_bIsHole;
+	m_vColor			= v.m_vColor;
+	m_vMeanCurvature	= v.m_vMeanCurvature;
+	m_vGaussCurvature	= v.m_vGaussCurvature;
 
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
@@ -85,8 +85,7 @@ CVertex::CVertex( const CVertex& v )
 	if (v.m_piEdge != NULL)
 	{
 		m_piEdge = new int[m_nValence];		// starting half-edge index array
-		for(int i = 0; i < m_nValence; i++)
-			m_piEdge[i] = v.m_piEdge[i];
+		std::copy(v.m_piEdge, v.m_piEdge + m_nValence, m_piEdge);
 	}
 	else m_piEdge = NULL;
 }
@@ -119,9 +118,10 @@ CVertex& CVertex::operator = (CVertex& v)
 	return *this;
 }
 
-std::vector<CFace*> CVertex::getAdjacentFaces()
+std::vector<CFace*> CVertex::getAdjacentFaces() const
 {
-	assert(m_HalfEdges.size() == m_nValence);
+	if(m_HalfEdges.size() != m_nValence)
+		throw logic_error("Error:  CVertex::getAdjacentFaces()");
 
 	vector<CFace*> pFaces;
 	for (unsigned int i = 0; i < m_HalfEdges.size(); ++i)
@@ -639,7 +639,7 @@ CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
 		m_pVertex[i] = pMesh->m_pVertex[i];
 
 	m_nHalfEdge = pMesh->m_nHalfEdge;					//number of half-edges
-	m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 				//array of half-edges
+	m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 			//array of half-edges
 	for(int i = 0; i < m_nHalfEdge; i++)
 		m_pHalfEdge[i] = pMesh->m_pHalfEdge[i];
 
@@ -650,7 +650,7 @@ CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
 
 	m_Center = pMesh->m_Center;
 	m_bBox = pMesh->m_bBox;
-	m_edge = pMesh->m_edge;
+	m_avgEdgeLen = pMesh->m_avgEdgeLen;
 
 	//buildConnectivity();
 }
@@ -837,9 +837,9 @@ bool CMesh::loadFromPLY( string sFileName )
 	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clearMesh(); return false;}	//out of memory
+	if (m_pVertex == NULL) { clearMesh(); return false; }	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clearMesh(); return false;}	//out of memory
+	if (m_pFace == NULL) { clearMesh(); return false; }	//out of memory
 
 	// READ IN VERTICES
 	for (i = 0; i < vNr; i++) // Reads the vertices
@@ -849,7 +849,7 @@ bool CMesh::loadFromPLY( string sFileName )
 		while (fgetc(f) != '\n'); // Read till end of the line
 		// to skip texture/color values
 
-		m_pVertex[i].m_vIndex = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
 		m_pVertex[i].m_vPosition = Vector3D(x, y, z);
 
 	}
@@ -950,9 +950,9 @@ bool CMesh::loadFromVERT(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clearMesh(); return false;}//out of memory
+	if (m_pVertex == NULL) { clearMesh(); return false; } //out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clearMesh(); return false;}//out of memory
+	if (m_pFace == NULL) { clearMesh(); return false; }   //out of memory
 
 	int i;
 	list<Vector3D>::iterator iVertex = VertexList.begin();
@@ -961,7 +961,7 @@ bool CMesh::loadFromVERT(string sFileName)
 	for(i=0; i<m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
 	}
 	short j;
 	for(i=0; i<m_nFace; i++)
@@ -1115,16 +1115,16 @@ bool CMesh::loadFromM(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clearMesh(); return false;}//out of memory
+	if (m_pVertex == NULL) { clearMesh(); return false; } //out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clearMesh(); return false;}//out of memory
+	if (m_pFace == NULL) { clearMesh(); return false; }//out of memory
 
 	int i;
 
 	for(i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition= VertexList[i];  
-		m_pVertex[i].m_vIndex = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
 
 		m_pVertex[i].m_vColor.r = VertexColorList[3*i];
 		m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
@@ -1485,7 +1485,7 @@ int CMesh::getBoundaryNum() const
 	int boundaryNum = 0;
 
 	std::set<int> boundaryIndexSet;
-	for( int i=0; i<m_nVertex; i++ )
+	for( int i = 0; i < m_nVertex; i++ )
 	{
 		if( m_pVertex[i].m_bIsBoundary )
 			boundaryIndexSet.insert( i );
@@ -1663,9 +1663,9 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 			bs = e2;
 		}
 		// get edge lengths
-		double len0 = getHalfEdgeLen(e0) / m_edge;
-		double len1 = getHalfEdgeLen(e1) / m_edge;
-		double len2 = getHalfEdgeLen(e2) / m_edge;
+		double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 		double cota, cota1 = 0, cota2 = 0;
 		amix += calHalfAreaMixed(len0, len1, len2, cota1);
 
@@ -1676,8 +1676,8 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 			e1 = m_pHalfEdge[e0].m_iNextEdge;
 			e2 = m_pHalfEdge[e1].m_iNextEdge;
 			// get edge lengths
-			len1 = getHalfEdgeLen(e1) / m_edge;
-			len2 = getHalfEdgeLen(e2) / m_edge;
+			len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+			len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 			// compute corner angle by cotangent law 
 			amix += calHalfAreaMixed(len0, len1, len2, cota2);
 		}
@@ -1701,9 +1701,9 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 		int vj = m_pHalfEdge[e2].m_iVertex[1];
 		assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 		// get edge lengths
-		double len0 = getHalfEdgeLen(bs) / m_edge;
-		double len1 = getHalfEdgeLen(e1) / m_edge;
-		double len2 = getHalfEdgeLen(e2) / m_edge;
+		double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 		// compute corner angle by cotangent law 
 		double cota2;
 		amix += calHalfAreaMixed(len0, len1, len2, cota2);
@@ -1742,9 +1742,9 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 			bs = e2;
 		}
 		// get edge lengths
-		double len0 = getHalfEdgeLen(e0) / m_edge;
-		double len1 = getHalfEdgeLen(e1) / m_edge;
-		double len2 = getHalfEdgeLen(e2) / m_edge;
+		double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 		double cota, cota1 = 0, cota2 = 0;
 		amix += calHalfAreaMixed(len0, len1, len2, cota1);
 
@@ -1755,8 +1755,8 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 			e1 = m_pHalfEdge[e0].m_iNextEdge;
 			e2 = m_pHalfEdge[e1].m_iNextEdge;
 			// get edge lengths
-			len1 = getHalfEdgeLen(e1) / m_edge;
-			len2 = getHalfEdgeLen(e2) / m_edge;
+			len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+			len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 			// compute corner angle by cotangent law 
 			amix += calHalfAreaMixed(len0, len1, len2, cota2);
 		}
@@ -1780,9 +1780,9 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 		int vj = m_pHalfEdge[e2].m_iVertex[1];
 		assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 		// get edge lengths
-		double len0 = getHalfEdgeLen(bs) / m_edge;
-		double len1 = getHalfEdgeLen(e1) / m_edge;
-		double len2 = getHalfEdgeLen(e2) / m_edge;
+		double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 		// compute corner angle by cotangent law 
 		double cota2;
 		amix += calHalfAreaMixed(len0, len1, len2, cota2);
@@ -2580,7 +2580,7 @@ bool CMesh::calAreaRatio(CMesh* tmesh, vector<int>& var)
 bool CMesh::calLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 {
 	if(!ld.empty()) ld.clear();
-	const double adjustRatio = this->m_edge / tmesh->m_edge;
+	const double adjustRatio = this->m_avgEdgeLen / tmesh->m_avgEdgeLen;
 	ld.resize(21, 0.0);
 
 	for(int ei = 0; ei < m_nHalfEdge; ei++)
@@ -2596,7 +2596,7 @@ bool CMesh::calLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 		Vector3D v1 = m_pVertex[f1].m_vPosition - m_pVertex[f2].m_vPosition;
 		Vector3D v2 = tmesh->m_pVertex[m1].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
 			
-		double ed = abs(v1.length()-v2.length()*adjustRatio) / m_edge;
+		double ed = abs(v1.length()-v2.length()*adjustRatio) / m_avgEdgeLen;
 
 		int ar = int (2.0 * ed + 0.5);
 
@@ -2761,7 +2761,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 
 	m_Center = oldMesh.m_Center;
 	m_bBox = oldMesh.m_bBox;
-	m_edge = oldMesh.m_edge;
+	m_avgEdgeLen = oldMesh.m_avgEdgeLen;
 
 	m_bIsPointerVectorExist = oldMesh.m_bIsPointerVectorExist;
 	m_bIsIndexArrayExist = oldMesh.m_bIsIndexArrayExist;
@@ -3063,7 +3063,7 @@ void CMesh::gatherStatistics()
 	}
 	edgeLength /= m_vHalfEdges.size();
 
-	this->m_edge = edgeLength;		//necessary
+	this->m_avgEdgeLen = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
 	this->m_nBoundaryEdgeNum = getBoundaryNum();
@@ -3268,7 +3268,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	for(int i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = i;
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vID = i;
 	}
 
 	for(int i = 0; i < m_nFace; i++)
@@ -3431,9 +3431,9 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 				bs = e2;		// find the last edge incident to vi
 			}
 			// get edge lengths
-			double len0 = getHalfEdgeLen(e0) / m_edge;
-			double len1 = getHalfEdgeLen(e1) / m_edge;
-			double len2 = getHalfEdgeLen(e2) / m_edge;
+			double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
+			double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+			double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 			double cota11(0.), cota12(0.), cota21(0.), cota22(0.);
 
 			amix += calAreaMixed(len0, len1, len2, cota11, cota12);
@@ -3445,8 +3445,8 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 				e1 = m_pHalfEdge[e0].m_iNextEdge;
 				e2 = m_pHalfEdge[e1].m_iNextEdge;
 				// get edge lengths
-				len1 = getHalfEdgeLen(e1) / m_edge;
-				len2 = getHalfEdgeLen(e2) / m_edge;
+				len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+				len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 				// compute corner angle by cotangent law 
 				triangleCotan(len0, len1, len2, cota21, cota22);
 			}
@@ -3465,9 +3465,9 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			int vj = m_pHalfEdge[e2].m_iVertex[1];
 			assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 			// get edge lengths
-			double len0 = getHalfEdgeLen(bs) / m_edge;
-			double len1 = getHalfEdgeLen(e1) / m_edge;
-			double len2 = getHalfEdgeLen(e2) / m_edge;
+			double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
+			double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
+			double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
 			// compute corner angle by cotangent law 
 			double cota1, cota2;
 			triangleCotan(len0, len1, len2, cota1, cota2);

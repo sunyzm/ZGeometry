@@ -164,7 +164,7 @@ bool QZGeometryWindow::initialize()
 		mesh1.scaleEdgeLenToUnit();
 		mesh1.gatherStatistics();
 		Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
-		qout.output("Load mesh: " + QString(mesh1.m_meshName.c_str()) + "    Size: " + QString::number(mesh1.getVerticesNum()));
+		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh1.getMeshName().c_str(), mesh1.getVerticesNum()));
 		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
 		vMP[0].init(&mesh1, m_ep);
 		vRS[0].mesh_color = preset_colors[0];
@@ -368,7 +368,7 @@ void QZGeometryWindow::computeLaplacian()
 		QTime timer;
 		timer.start();
 
-		std::string pathMHB = "output/" + mp.getMesh()->m_meshName + ".mhb";
+		std::string pathMHB = "output/" + mp.getMesh()->getMeshName() + ".mhb";
 		ifstream ifs(pathMHB.c_str());
 		if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
 		{
@@ -383,7 +383,7 @@ void QZGeometryWindow::computeLaplacian()
 			mp.writeMHB(pathMHB);
 			qout.output("MHB saved to " + pathMHB);
 
-			std::string pathEVL = "output/" + mp.getMesh()->m_meshName + ".evl";	//dump eigenvalues
+			std::string pathEVL = "output/" + mp.getMesh()->getMeshName() + ".evl";	//dump eigenvalues
 			mp.getMHB().dumpEigenValues(pathEVL);
 		}
 		

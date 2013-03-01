@@ -101,6 +101,7 @@
     <ClInclude Include="..\include\Mesh.h" />
     <ClInclude Include="..\include\MeshProcessor.h" />
     <ClInclude Include="..\include\MeshPyramid.h" />
+    <ClInclude Include="..\include\Quadric.h" />
     <ClInclude Include="..\include\Quat.h" />
     <ClInclude Include="..\include\ZMesh.h" />
   </ItemGroup>
@@ -110,6 +111,7 @@
     <ClCompile Include="..\src\Mesh.cpp" />
     <ClCompile Include="..\src\MeshProcessor.cpp" />
     <ClCompile Include="..\src\MeshPyramid.cpp" />
+    <ClCompile Include="..\src\Quadric.cpp" />
     <ClCompile Include="..\src\Quat.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

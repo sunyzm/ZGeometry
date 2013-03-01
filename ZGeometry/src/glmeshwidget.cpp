@@ -555,7 +555,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+		gluSphere(quadric, 1, 16, 8);
 		glPopMatrix();
 	}
 
@@ -587,7 +587,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+			gluSphere(quadric, 1, 16, 8);
 			glPopMatrix();
 		}
 	}
@@ -604,7 +604,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, tmesh->m_edge/4.0, 16, 8);
+			gluSphere(quadric, 1, 16, 8);
 			glPopMatrix();
 		}
 	}

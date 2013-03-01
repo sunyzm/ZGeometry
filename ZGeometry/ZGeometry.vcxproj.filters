@@ -77,7 +77,7 @@
     <ClCompile Include="src\RenderSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ShapeMapper.cpp">
+    <ClCompile Include="src\DiffusionShapeMapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -117,7 +117,7 @@
     <ClInclude Include="src\RenderSettings.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ShapeMapper.h">
+    <ClInclude Include="src\DiffusionShapeMapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

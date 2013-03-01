@@ -7,6 +7,7 @@
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
+#include "DiffusionShapeMapper.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -89,7 +90,8 @@ private:	// attributes
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
 	RenderSettings vRS[2];
-	
+	DiffusionShapeMapper shapeMapper;
+
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;
 	enum {Compute_HKS, Compute_HK, 
