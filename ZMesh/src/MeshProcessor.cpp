@@ -1,5 +1,6 @@
-#include <MeshProcessor.h>
 #include <stdexcept>
+#include <algorithm>
+#include <MeshProcessor.h>
 
 double& MeshFunction::operator[](int idx)
 {
@@ -95,4 +96,11 @@ MeshProcessor::~MeshProcessor()
 	{
 		delete *iter;
 	}
+}
+
+MeshFeatureList::~MeshFeatureList()
+{
+	std::for_each(m_vFeatures.begin(), m_vFeatures.end(), [](MeshFeature* iter){ 
+		delete iter;
+	});
 }

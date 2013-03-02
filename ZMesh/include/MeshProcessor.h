@@ -33,21 +33,23 @@ public:
 class MeshFeature
 {
 public:
-	int index;
-	int scale;
-	double value;
-	MeshFeature(int i, int s) : index(i), scale(s), value(0.) {}
-	MeshFeature(int i) : index(i), scale(0), value(0.) {}
+	int m_index;
+	int m_scale;
+	MeshFeature() : m_index(-1), m_scale(-1) {}
+	MeshFeature(int i) : m_index(i), m_scale(0) {}
+	MeshFeature(int i, int s) : m_index(i), m_scale(s) {}
+	virtual ~MeshFeature() {}
 };
 
 class MeshFeatureList : public MeshProperty
 {
 public:
-	void addFeature(const MeshFeature& mf) { m_vFeatures.push_back(mf); }
-	std::vector<MeshFeature>* getFeatureVector() { return &m_vFeatures; }
+	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
+	std::vector<MeshFeature*>* getFeatureVector() { return &m_vFeatures; }
+	~MeshFeatureList();
 private:
 	int featureType;
-	std::vector<MeshFeature> m_vFeatures;
+	std::vector<MeshFeature*> m_vFeatures;
 };
 
 class MeshFunction : public MeshProperty
@@ -97,7 +99,8 @@ public:
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);
 	void removePropertyByName(const std::string& rn);
-	const CMesh* getMesh() const { return mesh; }
+	const CMesh* getMesh_const() const { return mesh; }
+	CMesh* getMesh() const { return mesh; }
 protected:
 	CMesh* mesh;
 	int m_size;

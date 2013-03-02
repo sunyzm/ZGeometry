@@ -368,7 +368,7 @@ void QZGeometryWindow::computeLaplacian()
 		QTime timer;
 		timer.start();
 
-		std::string pathMHB = "output/" + mp.getMesh()->getMeshName() + ".mhb";
+		std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb";
 		ifstream ifs(pathMHB.c_str());
 		if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
 		{
@@ -383,7 +383,7 @@ void QZGeometryWindow::computeLaplacian()
 			mp.writeMHB(pathMHB);
 			qout.output("MHB saved to " + pathMHB);
 
-			std::string pathEVL = "output/" + mp.getMesh()->getMeshName() + ".evl";	//dump eigenvalues
+			std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
 			mp.getMHB().dumpEigenValues(pathEVL);
 		}
 		
@@ -436,7 +436,7 @@ void QZGeometryWindow::deformSimple()
 	vHandle.push_back(activeHandle);
 	vector<Vector3D> vHandlePos;
 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	vector<int> vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
+	vector<int> vFree = vMP[0].getMesh_const()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
@@ -466,7 +466,7 @@ void QZGeometryWindow::deformLaplace()
 		vHandle.push_back(iter->first);
 		vHandlePos.push_back(iter->second);
 
-		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
@@ -504,7 +504,7 @@ void QZGeometryWindow::deformSGW()
 		vHandle.push_back(iter->first);
 		vHandlePos.push_back(iter->second);
 
-		vector<int> vNeighbor = vMP[0].getMesh()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());	
@@ -790,8 +790,8 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 {
 	DifferentialMeshProcessor& mp = vMP[obj]; 
 
-	double unitMove = (mp.getMesh()->getBoundingBox().x + mp.getMesh()->getBoundingBox().y + mp.getMesh()->getBoundingBox().z)/300.0;
-	Vector3D originalPos = mp.getMesh()->getVertex_const(mp.getRefPointIndex())->getPosition();
+	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
+	Vector3D originalPos = mp.getMesh_const()->getVertex_const(mp.getRefPointIndex())->getPosition();
 	
 	mp.setRefPointPosition(originalPos.x + unitMove * refMove.xMove,
 						   originalPos.y + unitMove * refMove.yMove,
@@ -924,15 +924,16 @@ void QZGeometryWindow::filterExperimental()
 
 void QZGeometryWindow::displayNeighborVertices()
 {
-	int ring = (m_commonParameter > 45) ? (m_commonParameter-45) : 1;
+	int ring = (m_commonParameter > PARAMETER_SLIDER_CENTER) ? (m_commonParameter-PARAMETER_SLIDER_CENTER) : 1;
 
 	int ref = vMP[0].getRefPointIndex();
-	std::vector<int> vn = vMP[0].getMesh()->getNeighboringVertex(ref, ring);
+	std::vector<int> vn = vMP[0].getMesh_const()->getNeighboringVertex(ref, ring);
 //	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
+
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter)
 	{
-		mfl->getFeatureVector()->push_back(MeshFeature(*iter));
+		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
 		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
 	vMP[0].addProperty(mfl);

@@ -13,7 +13,7 @@ double transferScalingFunc1( double lambda )
 
 double transferFunc1( double lambda, double t )
 {
-	double coeff = std::pow(lambda * t, 2.0);
+	double coeff = (lambda*t) * (lambda*t);
 	return coeff * std::exp(-coeff);
 }
 
@@ -927,7 +927,7 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		mesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
 		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
 		{
-			mfl->addFeature(MeshFeature(*iter, s));
+			mfl->addFeature(new MeshFeature(*iter, s));
 		}
 	}
 

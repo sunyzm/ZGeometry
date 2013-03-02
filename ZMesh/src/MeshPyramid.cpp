@@ -489,7 +489,7 @@ void MeshPyramid::buildPyramid()
 								
 				if (vp_iter->pV[0] == vKeep || vp_iter->pV[1] == vKeep)
 				{
-					Quadric q = m_VertexQuadrics[vp_iter->pV[0]->m_vid - 1] + m_VertexQuadrics[vp_iter->pV[1]->m_vid - 1];
+					Quadric q = m_VertexQuadrics[vp_iter->pV[0]->m_vid] + m_VertexQuadrics[vp_iter->pV[1]->m_vid];
 					double cost_0 = q.eval(vp_iter->pV[0]->m_vPosition),
 						   cost_1 = q.eval(vp_iter->pV[1]->m_vPosition);
 					if (cost_0 < cost_1)
@@ -570,7 +570,7 @@ void MeshPyramid::buildPyramid()
 			}
 			else if (curV->m_HalfEdges.size() == 0)
 			{
-				cout << "Isolated vertex: " << curV->m_vid << endl;
+				m_ostr << "Isolated vertex: " << curV->m_vid << endl;
 				delete curV;
 				iter = currentMesh->m_vVertices.erase(iter);
 			}
@@ -585,10 +585,10 @@ void MeshPyramid::buildPyramid()
 		currentMesh->m_nFace = (int)currentMesh->m_vFaces.size();
 		
 		m_ostr << "  Vertex Num: " << currentMesh->m_nVertex << endl
-			//<< "  Face Num: " << currentMesh->m_nFace << endl
-			//<< "  Half-edge Num: " << currentMesh->m_nEdge << endl
-			//<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
-			<< "  Boundary Vertex Num: " << currentMesh->getBoundaryVertexNum() << endl; 
+			 //<< "  Face Num: " << currentMesh->m_nFace << endl
+			 //<< "  Half-edge Num: " << currentMesh->m_nEdge << endl
+			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
+			   << "  Boundary Vertex Num: " << currentMesh->getBoundaryVertexNum() << endl; 
 		
 		currentMesh->assignElementsIndex();
 		currentMesh->buildIndexArrays();

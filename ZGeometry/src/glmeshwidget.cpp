@@ -99,9 +99,9 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			{
 				double dmin = 1e10;
 				int hIdx = -1;
-				for (int vi = 0; vi < vpMP[obj_index]->getMesh()->getVerticesNum(); ++vi)
+				for (int vi = 0; vi < vpMP[obj_index]->getMesh_const()->getVerticesNum(); ++vi)
 				{
-					double d = p.distantFrom(vpMP[obj_index]->getMesh()->getVertex_const(vi)->getPosition());
+					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex_const(vi)->getPosition());
 					if (d < dmin) 
 					{
 						dmin = d;
@@ -181,7 +181,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::MidButton) 
 		{
-			float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / win_height;
+			float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / win_height;
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
@@ -193,7 +193,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::RightButton ) 
 		{
-			float scale = 5.0 * vpMP[0]->getMesh()->getBoundingBox().y / win_height;
+			float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().y / win_height;
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
@@ -256,7 +256,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / this->height();
+		float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
 		for (int i = 0; i < 2; ++i)
@@ -452,8 +452,8 @@ void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D
 
 void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
 {
-	if(!pMP->getMesh()) return;
-	const CMesh* tmesh = pMP->getMesh();
+	if(!pMP->getMesh_const()) return;
+	const CMesh* tmesh = pMP->getMesh_const();
 
 	const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
@@ -579,9 +579,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		// draw as gluSphere 
 		for (auto iter = vpMP[0]->getActiveFeatures().begin(); iter != vpMP[0]->getActiveFeatures().end(); ++iter)
 		{
-		 	Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
+		 	Vector3D vt = tmesh->getVertex_const((*iter)->m_index)->getPosition();
 		 	vt += shift;
-			int color_index = iter->scale % gFeatureColorNum;
+			int color_index = (*iter)->m_scale % gFeatureColorNum;
 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
 		 	GLUquadric* quadric = gluNewQuadric();
 			gluQuadricDrawStyle(quadric, GLU_FILL);

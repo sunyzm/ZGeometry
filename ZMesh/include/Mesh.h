@@ -58,7 +58,7 @@ public:
 	CVertex(const Vector3D& v);
 	CVertex(const CVertex& v);
 	CVertex(double x, double y, double z, float r, float g, float b);
-	CVertex& operator = (CVertex& v);	
+	CVertex& operator = (const CVertex& v);	
 	virtual ~CVertex();
 
 	// ---- operations ---- //
@@ -78,6 +78,7 @@ public:
 	void                setPosition( double x, double y, double z );
 
 private:
+	void clone(const CVertex& v);
 	// ---- fields ---- //
 	int						m_vIndex;
 	int						m_vid;				// ID of the vertex from original mesh

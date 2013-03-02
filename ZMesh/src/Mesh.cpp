@@ -67,6 +67,18 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 
 CVertex::CVertex( const CVertex& v )
 {	
+	clone(v);
+}
+
+CVertex& CVertex::operator= ( const CVertex& v )
+{
+	
+	clone(v);
+	return *this;
+}
+
+void CVertex::clone(const CVertex& v)
+{
 	m_vIndex			= v.m_vIndex;
 	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
@@ -88,34 +100,6 @@ CVertex::CVertex( const CVertex& v )
 		std::copy(v.m_piEdge, v.m_piEdge + m_nValence, m_piEdge);
 	}
 	else m_piEdge = NULL;
-}
-
-CVertex& CVertex::operator = (CVertex& v)
-{
-	m_vIndex		  = v.m_vIndex;
-	m_vPosition		  = v.m_vPosition;
-	m_nValence		  = v.m_nValence;
-	m_vNormal		  = v.m_vNormal;
-	m_bIsBoundary	  = v.m_bIsBoundary;
-	m_bIsHole		  = v.m_bIsHole;
-	m_vColor		  = v.m_vColor;
-	m_vMeanCurvature  = v.m_vMeanCurvature;
-	m_vGaussCurvature = v.m_vGaussCurvature;
-
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
-
-	if (v.m_piEdge != NULL)
-	{
-		if (m_piEdge != NULL) 
-			delete []m_piEdge;
-		m_piEdge = new int[m_nValence];		// starting half-edge index array
-		for(int i = 0; i < m_nValence; i++)
-			m_piEdge[i] = v.m_piEdge[i];
-	}
-	
-	return *this;
 }
 
 std::vector<CFace*> CVertex::getAdjacentFaces() const

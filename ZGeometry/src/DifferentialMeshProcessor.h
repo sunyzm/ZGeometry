@@ -77,8 +77,8 @@ public:
 	int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
-	const std::vector<MeshFeature>& getActiveFeatures() const { return *pvActiveFeatures; }
-	void setActiveFeatures(const std::vector<MeshFeature>* pvMF) { pvActiveFeatures = pvMF; }
+	const std::vector<MeshFeature*>& getActiveFeatures() const { return *pvActiveFeatures; }
+	void setActiveFeatures(std::vector<MeshFeature*>* pvMF) { pvActiveFeatures = pvMF; }
 
 public:
 	int active_handle;
@@ -97,7 +97,7 @@ private:
 	
 	int pRef;
 	Vector3D posRef;
-	const std::vector<MeshFeature>* pvActiveFeatures;	
+	std::vector<MeshFeature*>* pvActiveFeatures;	
 
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
