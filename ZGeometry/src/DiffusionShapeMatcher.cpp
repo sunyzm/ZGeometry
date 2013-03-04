@@ -3,6 +3,7 @@
 #include <exception>
 #include <set>
 #include <algorithm>
+#include <cassert>
 #include "DiffusionShapeMatcher.h"
 
 #define INFINITY 1e10
@@ -23,26 +24,46 @@ const int	 DiffusionShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
 
 DiffusionShapeMatcher::DiffusionShapeMatcher()
 {
-	pMP[0] = pMP[1] = NULL; 
+	m_ep = NULL;
+	pOriginalProcessor[0] = pOriginalProcessor[1] = NULL; 
 	pOriginalMesh[0] = pOriginalMesh[1] = NULL;
-
 	m_bPyramidBuilt = false;
 	m_nCurrentMatchLevel = -1;
+}
+
+DiffusionShapeMatcher::~DiffusionShapeMatcher()
+{
+	for (auto iter = liteMP[0].begin(); iter != liteMP[0].end(); ++iter)
+	{
+		delete *iter;
+	}
+	for (auto iter = liteMP[1].begin(); iter != liteMP[1].end(); ++iter)
+	{
+		delete *iter;
+	}
 }
 
 void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep )
 {
 	m_ep = ep;
-	pMP[0] = pMP1;
-	pMP[1] = pMP2;
-	pOriginalMesh[0] = pMP[0]->getMesh();
-	pOriginalMesh[1] = pMP[1]->getMesh();
+	pOriginalProcessor[0] = pMP1;
+	pOriginalProcessor[1] = pMP2;
+	pOriginalMesh[0] = pMP1->getMesh();
+	pOriginalMesh[1] = pMP2->getMesh();
+
+	liteMP[0].push_back(pMP1);
+	liteMP[1].push_back(pMP2);
+
+	meshPyramids[0].setInitialMesh(pOriginalMesh[0]);
+	meshPyramids[1].setInitialMesh(pOriginalMesh[1]);
 }
 
 CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 {
-	return this->pOriginalMesh[obj];
-//	return meshPyramids[obj].getMesh(level);
+	if (level == 0)
+		return this->pOriginalMesh[obj];
+	else
+		return meshPyramids[obj].getMesh(level);
 }
 
 std::vector<MatchPair> DiffusionShapeMatcher::getFeatureMatches( int level ) const
@@ -50,6 +71,27 @@ std::vector<MatchPair> DiffusionShapeMatcher::getFeatureMatches( int level ) con
 	vector<MatchPair> retv;
 	return retv;
 }
+
+void DiffusionShapeMatcher::constructPyramid( int n )
+{
+	assert(n >= 1);
+
+	m_nPyramidLevels = n;
+
+	meshPyramids[0].setLevel(n);
+	meshPyramids[1].setLevel(n);
+
+	meshPyramids[0].buildPyramid();
+	meshPyramids[1].buildPyramid();
+
+	for (int k = 1; k < n; ++k)
+	{
+		liteMP[0].push_back(new DifferentialMeshProcessor(meshPyramids[0].getMesh(k)));
+		liteMP[1].push_back(new DifferentialMeshProcessor(meshPyramids[1].getMesh(k)));
+	}
+}
+
+
 
 
 

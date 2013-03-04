@@ -163,6 +163,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\main.cpp" />

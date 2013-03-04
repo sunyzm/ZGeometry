@@ -51,6 +51,7 @@ class DiffusionShapeMatcher
 {
 public:
 	DiffusionShapeMatcher();
+	~DiffusionShapeMatcher();
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
 	void	detectFeatures();
@@ -98,7 +99,9 @@ public:
 private:
 	Engine *m_ep;
 	CMesh* pOriginalMesh[2];
-	DifferentialMeshProcessor *pMP[2];
+	DifferentialMeshProcessor* pOriginalProcessor[2];
+	std::vector<DifferentialMeshProcessor*> liteMP[2];
+
 	MeshPyramid meshPyramids[2];
 
 	std::vector<int> vFeatures1, vFeatures2;

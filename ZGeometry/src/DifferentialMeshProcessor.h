@@ -40,6 +40,7 @@ class DifferentialMeshProcessor : public MeshProcessor
 {
 public:
 	DifferentialMeshProcessor(void);
+	DifferentialMeshProcessor(CMesh* tm);
 	~DifferentialMeshProcessor(void);
 	void init(CMesh* tm, Engine* e);
 	void init_lite(CMesh* tm);

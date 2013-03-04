@@ -8,6 +8,7 @@
 #define MAX_HK_TIMESCALE 2000.0
 #define PARAMETER_SLIDER_CENTER 50
 
-const char* g_meshListName = "meshfiles.cfg";
+enum GeometryTask {TASK_REGISTRATION, TASK_EDITING};
 
-const int g_preload_meshes = 2;
+extern const char* g_meshListName;
+extern const int g_preload_meshes;

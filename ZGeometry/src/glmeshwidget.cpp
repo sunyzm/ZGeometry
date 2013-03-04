@@ -1,12 +1,13 @@
 #include <cstdlib>
-#include "glmeshwidget.h"
-#include "OutputHelper.h"
 #include <fstream>
 #include <ZUtil.h>
-#include <gl/GL.h>
-#include <gl/GLU.h>
 #include <vector>
 #include <QFile>
+#include "glmeshwidget.h"
+#include "OutputHelper.h"
+#include "config.h"
+#include <gl/GL.h>
+#include <gl/GLU.h>
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
@@ -22,6 +23,7 @@ Qt::MouseButton gButton;
 
 extern OutputHelper qout;
 extern QString qformat;
+extern GeometryTask g_task;
 
 FalseColorMap falseColorMap;
 void glFalseColor(float v, float p)
@@ -740,7 +742,6 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 
 	std::vector<MatchPair> vmp = shapeMatcher->getFeatureMatches(0);
 
-	glColor4f(0.3, 0.9, 0.3, 0.9);
 	glLineWidth(2.0);
 	const int size = (int)vmp.size();
 

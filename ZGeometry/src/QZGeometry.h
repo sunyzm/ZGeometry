@@ -22,6 +22,9 @@ signals:
 	void refPoint1Changed(int n);
 
 private slots:
+	void setTaskRegistration();
+	void setTaskEditing();
+
 	void setEditModeMove();
 	void setEditModePick();
 	void setEditModeDrag();

@@ -288,7 +288,7 @@
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
-    <addaction name="actionColorLegend"/>
+    <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
     <addaction name="menuCurvature"/>
@@ -320,10 +320,18 @@
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
    </widget>
+   <widget class="QMenu" name="menuTask">
+    <property name="title">
+     <string>Task</string>
+    </property>
+    <addaction name="actionTaskRegistration"/>
+    <addaction name="actionTaskEditing"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCompute"/>
    <addaction name="menuDisplay"/>
+   <addaction name="menuTask"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
@@ -446,7 +454,7 @@
     <string>Diff Position</string>
    </property>
   </action>
-  <action name="actionColorLegend">
+  <action name="actionShowColorLegend">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -602,7 +610,26 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Show Matching Lines</string>
+    <string>Show matching lines</string>
+   </property>
+  </action>
+  <action name="actionTaskRegistration">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Registration</string>
+   </property>
+  </action>
+  <action name="actionTaskEditing">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Editing</string>
    </property>
   </action>
  </widget>

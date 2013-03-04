@@ -17,6 +17,7 @@ using namespace std;
 extern OutputHelper qout;
 extern QString qformat;
 
+GeometryTask g_task = TASK_REGISTRATION;
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -100,7 +101,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowFeatures, SIGNAL(triggered(bool)), this, SLOT(toggleShowFeatures(bool)));
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
-	QObject::connect(ui.actionColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
+	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
@@ -112,6 +113,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
+
+	////////	Task	////////
+	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
+	QObject::connect(ui.actionTaskEditing, SIGNAL(triggered()), this, SLOT(setTaskEditing()));
+
 }
 
 bool QZGeometryWindow::initialize()
@@ -632,7 +638,7 @@ void QZGeometryWindow::toggleShowColorLegend( bool show /*= false*/ )
 {
 	bool bChecked = !ui.glMeshWidget->m_bShowLegend;
 	ui.glMeshWidget->m_bShowLegend = bChecked;
-	ui.actionColorLegend->setChecked(bChecked);
+	ui.actionShowColorLegend->setChecked(bChecked);
 
 	ui.glMeshWidget->update();
 }
@@ -1191,4 +1197,18 @@ void QZGeometryWindow::computeMHW()
 void QZGeometryWindow::displayMHW()
 {
 	displaySignature(SIGNATURE_MHW);
+}
+
+void QZGeometryWindow::setTaskRegistration()
+{
+	g_task = TASK_REGISTRATION;
+	ui.actionTaskRegistration->setChecked(true);
+	ui.actionTaskEditing->setChecked(false);
+}
+
+void QZGeometryWindow::setTaskEditing()
+{
+	g_task = TASK_EDITING;
+	ui.actionTaskRegistration->setChecked(false);
+	ui.actionTaskEditing->setChecked(true);
 }

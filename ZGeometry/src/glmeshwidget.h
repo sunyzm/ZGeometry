@@ -62,5 +62,7 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
+
+	int				nMeshLevel;
 };
 
