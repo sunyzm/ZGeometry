@@ -55,7 +55,9 @@ public:
 	void	constructPyramid(int n);
 	void	detectFeatures();
 	void	matchFeatures();
-	void    registerMeshes();
+	void    registerShapes();
+	void	evaluateRegistration();
+	std::vector<MatchPair> getFeatureMatches(int level) const;
 
 	/* basic */
 	void	setEngine(Engine* ep) { m_ep = ep; }

@@ -62,6 +62,8 @@ private slots:
 	void toggleShowRefPoint(bool show = false);
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
+	void toggleDrawMatching(bool show = false);
+	void toggleShowMatchingLines(bool show = false);
 	
 	void clone();
 	void deformSimple();
@@ -77,6 +79,7 @@ private:	// methods
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
 	void displayMHW();
+
 private:	// attributes
 	Ui::ZGeometryClass ui;
 	DeformType deformType;

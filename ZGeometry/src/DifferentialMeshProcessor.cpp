@@ -40,6 +40,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
 	mesh = NULL;
+	pvActiveFeatures = NULL;
 	m_bLaplacianDecomposed = false;
 	pRef = 0;
 	m_size = 0;
@@ -64,6 +65,14 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	posRef = mesh->getVertex(0)->getPosition();
 	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
 	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
+}
+
+void DifferentialMeshProcessor::init_lite(CMesh* tm)
+{
+	mesh = tm;
+	m_size = mesh->getVerticesNum();
+	pRef = 0;
+	posRef = mesh->getVertex(0)->getPosition();
 }
 
 void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)

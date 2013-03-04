@@ -17,7 +17,7 @@ public:
 					   showColorSignature(false), selected(false), 
 					   glPolygonMode(Z_FILL), display_shift(0, 0, 0),
 					   obj_rot(1,0,0,0), obj_trans(0,0,0) {}
-
+	
 	enum {PointCloud, Wireframe, Mesh, None} displayType;
 	unsigned int glPolygonMode;
 	bool showFeatures;
@@ -28,8 +28,8 @@ public:
 	Vector3D obj_trans;
 	CQrot obj_rot;
 	Vector3D display_shift;
-	
 	const float* mesh_color;
+	
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;
 

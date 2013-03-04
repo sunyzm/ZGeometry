@@ -284,10 +284,12 @@
      <addaction name="actionShowHKSFeatures"/>
     </widget>
     <addaction name="menuDisplay_Type"/>
+    <addaction name="actionDrawMatching"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
     <addaction name="actionColorLegend"/>
+    <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
     <addaction name="menuCurvature"/>
     <addaction name="actionDisplayEigenfunction"/>
@@ -585,6 +587,22 @@
   <action name="actionDisplayMHW">
    <property name="text">
     <string>MHW</string>
+   </property>
+  </action>
+  <action name="actionDrawMatching">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw matching</string>
+   </property>
+  </action>
+  <action name="actionShowMatchingLines">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Matching Lines</string>
    </property>
   </action>
  </widget>

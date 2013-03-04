@@ -35,8 +35,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = 50;
 	current_operation = None;
-
 	deformType = Simple;
+	
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
@@ -101,6 +101,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
+	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
+	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHKS()));
 	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
@@ -236,6 +238,9 @@ bool QZGeometryWindow::initialize()
 
 	selected[0] = vRS[0].selected = true;
 	selected[1] = vRS[1].selected = false; 
+
+	shapeMapper.initialize(&vMP[0], &vMP[1], m_ep);
+	ui.glMeshWidget->setShapeMatcher(&shapeMapper);
 
 	return true;
 }
@@ -648,6 +653,26 @@ void QZGeometryWindow::toggleShowSignature( bool show /*= false*/ )
 	ui.actionShowSignature->setChecked(bToShow);
 	
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::toggleDrawMatching(bool show)
+{
+	bool bToShow = !ui.glMeshWidget->m_bDrawMatching;
+	ui.glMeshWidget->m_bDrawMatching = bToShow;
+	ui.actionDrawMatching->setChecked(bToShow);
+
+	ui.glMeshWidget->update();
+
+}
+
+void QZGeometryWindow::toggleShowMatchingLines(bool show)
+{
+	bool bToShow = !ui.glMeshWidget->m_bShowCorrespondenceLine;
+	ui.glMeshWidget->m_bShowCorrespondenceLine = bToShow;
+	ui.actionShowMatchingLines->setChecked(bToShow);
+
+	ui.glMeshWidget->update();
+
 }
 
 void QZGeometryWindow::setDisplayPointCloud()

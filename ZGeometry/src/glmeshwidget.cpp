@@ -30,6 +30,21 @@ void glFalseColor(float v, float p)
 	glColor4f(falseColorMap.RedMap[floor], falseColorMap.GreenMap[floor], falseColorMap.BlueMap[floor], p);
 }
 
+void glColorCoded(float v, float pf)
+{
+	int ic = v;
+	float f = v - ic;
+	switch(ic)
+	{
+	case 0: glColor4f(1,f,0,pf); break;     // red -> yellow
+	case 1: glColor4f(1-f,1,0,pf); break;   // yellow -> green
+	case 2: glColor4f(0,1,f,pf); break;		// green -> cyan
+	case 3: glColor4f(0,1-f,1,pf); break;	// cyan -> blue
+	case 4: glColor4f(f,0,1,pf); break;     // blue -> purple 
+	case 5: glColor4f(1,0,1-f,pf); break;   // purple -> red
+	}
+}
+
 GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 {
 //	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
@@ -42,7 +57,8 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
 	m_bShowRefPoint = false;
-
+	m_bDrawMatching = false;
+	m_bShowCorrespondenceLine = true;
 //	vSettings.resize(2, RenderSettings());
 
 	setAutoFillBackground(false);
@@ -368,6 +384,9 @@ void GLMeshWidget::drawGL()
 	if (vpMP.size() > 1 && vpMP[1] != NULL)
 		drawMeshExt(vpMP[1], vpRS[1]);
 
+	if (m_bDrawMatching)
+		drawMatching(pDSM, vpRS[0], vpRS[1]);
+
  	glMatrixMode(GL_MODELVIEW);
  	glPopMatrix();
  	glPopAttrib();
@@ -473,7 +492,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	if (m_bShowSignature && !pRS->vDisplaySignature.empty())
+	if (m_bShowSignature && pRS->vDisplaySignature.size() != tmesh->getVerticesNum())
 	{
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
@@ -560,7 +579,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	//// ---- draw feature points ---- ////
-	if (m_bShowFeatures && !pMP->getActiveFeatures().empty())
+	if (m_bShowFeatures && pMP->getActiveFeatures() != NULL)
 	{
 		/////// draw as glPoint
 		//glPointSize(10.0);
@@ -577,19 +596,20 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		//glPointSize(2.0);
 
 		// draw as gluSphere 
-		for (auto iter = vpMP[0]->getActiveFeatures().begin(); iter != vpMP[0]->getActiveFeatures().end(); ++iter)
+		GLUquadric* quadric = gluNewQuadric();
+		for (auto iter = vpMP[0]->getActiveFeatures()->begin(); iter != vpMP[0]->getActiveFeatures()->end(); ++iter)
 		{
 		 	Vector3D vt = tmesh->getVertex_const((*iter)->m_index)->getPosition();
 		 	vt += shift;
 			int color_index = (*iter)->m_scale % gFeatureColorNum;
 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-		 	GLUquadric* quadric = gluNewQuadric();
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
 			gluSphere(quadric, 1, 16, 8);
 			glPopMatrix();
 		}
+		gluDeleteQuadric(quadric);
 	}
 
 	//// ---- draw handle points ---- ////
@@ -703,6 +723,72 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 	return false;
 
+}
+
+void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
+{
+	CMesh *tmesh1 = shapeMatcher->getMesh(0), *tmesh2 = shapeMatcher->getMesh(1);
+
+	float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
+	glMateriali(GL_FRONT, GL_SHININESS, 96);
+	double rot1[16], rot2[16];
+	rs1->obj_rot.convert(rot1);
+	rs2->obj_rot.convert(rot2);
+	const Vector3D& trans1 = rs1->obj_trans;
+	const Vector3D& trans2 = rs2->obj_trans;
+
+	std::vector<MatchPair> vmp = shapeMatcher->getFeatureMatches(0);
+
+	glColor4f(0.3, 0.9, 0.3, 0.9);
+	glLineWidth(2.0);
+	const int size = (int)vmp.size();
+
+	GLUquadric* quadric = gluNewQuadric();
+	gluQuadricDrawStyle(quadric, GLU_FILL);
+	for (int i = 0; i < size; i++)
+	{
+
+		float cc = (i*1.0f)/(size-1.0f);
+		glColorCoded(cc*4.0f, 0.9);
+		//greenCoded(cc,0.9);
+		int loc1 = vmp[i].m_idx1;
+		int loc2 = vmp[i].m_idx2;
+
+		Vector3D pos1 = tmesh1->m_pVertex[loc1].getPosition();
+		//pos1 -= tmesh1->m_Center;
+		Vector3D pos2 = tmesh2->m_pVertex[loc2].getPosition();
+		//pos2 -= tmesh2->m_Center;
+
+		double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
+		double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
+		double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
+
+		double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
+		double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
+		double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
+
+		glPushMatrix();
+		glTranslated(x1, y1, z1);
+		gluSphere(quadric, tmesh1->getAvgEdgeLength()*2, 16, 8);
+		glPopMatrix();
+
+		glPushMatrix();
+		glTranslated(x2, y2, z2);
+		gluSphere(quadric, tmesh2->getAvgEdgeLength()*2, 16, 8);
+		glPopMatrix();
+
+		if (m_bShowCorrespondenceLine)
+		{
+			glDisable(GL_LIGHTING);
+			glBegin(GL_LINES);
+			glVertex3d(x1, y1, z1);
+			glVertex3d(x2, y2, z2);
+			glEnd();
+			glEnable(GL_LIGHTING);
+		}
+	}
+	gluDeleteQuadric(quadric);
 }
 
 

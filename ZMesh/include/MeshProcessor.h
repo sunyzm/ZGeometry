@@ -101,9 +101,9 @@ public:
 	void removePropertyByName(const std::string& rn);
 	const CMesh* getMesh_const() const { return mesh; }
 	CMesh* getMesh() const { return mesh; }
+
 protected:
 	CMesh* mesh;
 	int m_size;
-
 	std::vector<MeshProperty*> vProperties;
 };

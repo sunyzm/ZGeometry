@@ -42,6 +42,7 @@ public:
 	DifferentialMeshProcessor(void);
 	~DifferentialMeshProcessor(void);
 	void init(CMesh* tm, Engine* e);
+	void init_lite(CMesh* tm);
 	void readMHB(const std::string& path);
 	void writeMHB(std::string path);
 	void addNewHandle(int hIdx);
@@ -77,7 +78,7 @@ public:
 	int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
-	const std::vector<MeshFeature*>& getActiveFeatures() const { return *pvActiveFeatures; }
+	const std::vector<MeshFeature*>* getActiveFeatures() const { return pvActiveFeatures; }
 	void setActiveFeatures(std::vector<MeshFeature*>* pvMF) { pvActiveFeatures = pvMF; }
 
 public:
