@@ -8,7 +8,7 @@
 #define MAX_HK_TIMESCALE 2000.0
 #define PARAMETER_SLIDER_CENTER 50
 
-enum GeometryTask {TASK_REGISTRATION, TASK_EDITING};
+enum GeometryTask {TASK_VIEWING, TASK_REGISTRATION, TASK_EDITING};
 
 extern const char* g_meshListName;
 extern const int g_preload_meshes;

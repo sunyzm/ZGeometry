@@ -327,11 +327,24 @@
     <addaction name="actionTaskRegistration"/>
     <addaction name="actionTaskEditing"/>
    </widget>
+   <widget class="QMenu" name="menuRegister">
+    <property name="title">
+     <string>Register</string>
+    </property>
+    <addaction name="actionRegisterAutomatic"/>
+    <addaction name="separator"/>
+    <addaction name="actionBuildHierarchy"/>
+    <addaction name="actionDetectFeatures"/>
+    <addaction name="actionMatchFeatures"/>
+    <addaction name="actionRegisterStep"/>
+    <addaction name="actionRegisterFull"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCompute"/>
    <addaction name="menuDisplay"/>
    <addaction name="menuTask"/>
+   <addaction name="menuRegister"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
@@ -630,6 +643,36 @@
    </property>
    <property name="text">
     <string>Editing</string>
+   </property>
+  </action>
+  <action name="actionRegisterAutomatic">
+   <property name="text">
+    <string>Automatic</string>
+   </property>
+  </action>
+  <action name="actionBuildHierarchy">
+   <property name="text">
+    <string>Build hierarchy</string>
+   </property>
+  </action>
+  <action name="actionDetectFeatures">
+   <property name="text">
+    <string>Detect features</string>
+   </property>
+  </action>
+  <action name="actionMatchFeatures">
+   <property name="text">
+    <string>Match features</string>
+   </property>
+  </action>
+  <action name="actionRegisterStep">
+   <property name="text">
+    <string>Register step</string>
+   </property>
+  </action>
+  <action name="actionRegisterFull">
+   <property name="text">
+    <string>Register full</string>
    </property>
   </action>
  </widget>

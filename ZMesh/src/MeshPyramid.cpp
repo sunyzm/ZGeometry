@@ -4,6 +4,7 @@
 #include <iostream>
 #include <exception>
 #include <fstream>
+#include <set>
 #include "MeshPyramid.h"
 
 #define SILVER_TRIANGLE_TRHESH 0.05
@@ -100,7 +101,7 @@ MeshPyramid::~MeshPyramid()
 	clear();
 }
 
-void MeshPyramid::buildPyramid()
+void MeshPyramid::construct()
 {
 	if (!originalMesh) throw logic_error("Initial mesh required for building pyramid!");
 
@@ -131,6 +132,8 @@ void MeshPyramid::buildPyramid()
 		CMesh* currentMesh = meshLevel.mesh;
 		currentMesh->cloneFrom(m_vMeshes[level-1].mesh);
 		
+		m_ostr << "Clone level finished!" << endl;
+
 		list<VertexPair> vertexPairsList;
 		//initialize vertex pairs
 		{
@@ -196,10 +199,12 @@ void MeshPyramid::buildPyramid()
 				minIter = vp_iter;
 			}
 		}
+
+		m_ostr << "Before contractions" << endl;
 		
 		/** main iteration for each edge collapse **/
-//		const int num_contraction = int(this->m_nVertices / pow(2.0, level)); 
-		const int num_contraction = int(3 * this->m_nVertices / pow(4.0, level)); 
+		const int num_contraction = int(this->m_nVertices / pow(2.0, level)); 
+//		const int num_contraction = int(3 * this->m_nVertices / pow(4.0, level)); 
 		for (int step = 0; step < num_contraction; ++step)		
 		{
 			CVertex* vKeep = minIter->pV[minIter->vToKeep];
@@ -207,23 +212,20 @@ void MeshPyramid::buildPyramid()
 			const int idKeep = vKeep->m_vid; 
 			const int idRemove = vRemove->m_vid;
 			m_VertexQuadrics[idKeep] += m_VertexQuadrics[idRemove];		//combine quadric of vKeep and vRemove
-			
 			CHalfEdge *heRemove1(NULL), *heRemove2(NULL);
 			CFace *fRemove1(NULL), *fRemove2(NULL);
 			CHalfEdge* eDelIn[3] = {NULL, NULL, NULL}; 
 			CHalfEdge* eDelOut[3] = {NULL, NULL, NULL};
 			CFace *fIn(NULL), *fOut(NULL);
 			CVertex *vOppoIn(NULL), *vOppoOut(NULL);
-
 			heRemove1 = minIter->correspondingHalfEdge();
 			assert(heRemove1);
 			fRemove1 = heRemove1->m_Face;
-			if (heRemove1->m_eTwin && heRemove1->m_eTwin->m_bIsValid)
+			if (heRemove1->m_eTwin != NULL && heRemove1->m_eTwin->m_bIsValid)
 			{
 				heRemove2 = heRemove1->m_eTwin;
 				fRemove2 = heRemove2->m_Face;
 			}
-			
 			bool bVertexPairValid(true);
 			if (/*!heRemove1 || */ !minIter->pV[0]->m_bIsValid || !minIter->pV[1]->m_bIsValid)
 			{
@@ -235,7 +237,6 @@ void MeshPyramid::buildPyramid()
 				m_ostr << "Half-edge not mergeable!" << endl;
 				bVertexPairValid = false;
 			}
-
 #ifdef AVOID_SILVER_TRIANGLE
 			/* judge whether silver triangle will appear */
 			else {
@@ -254,14 +255,13 @@ void MeshPyramid::buildPyramid()
 					double gamma = 4.0 * std::sqrt(3.0) * area / (l1.length2() + l2.length2() + l3.length2());
 					if (gamma < SILVER_TRIANGLE_TRHESH)
 					{
-						//cout << "Silver Triangle " << gamma << " avoided!" << endl;
+						m_ostr << "Silver Triangle " << gamma << " avoided!" << endl;
 						bVertexPairValid = false;
 						break;
 					}
 				}
 			}
 #endif	
-
 			if (!bVertexPairValid)
 			{
 				vertexPairsList.erase(minIter);
@@ -277,7 +277,7 @@ void MeshPyramid::buildPyramid()
 				}
 				continue;
 			}
-			
+
 			const bool bInRemove = (heRemove1->m_Vertices[1] == vRemove);
 			if (bInRemove)
 			{
@@ -311,7 +311,7 @@ void MeshPyramid::buildPyramid()
 					vOppoIn = eDelIn[1]->m_Vertices[1];
 				}
 			}
-						
+			
 			assert(vRemove->m_HalfEdges.size() > 0);
 
 			//case 1
@@ -407,13 +407,13 @@ void MeshPyramid::buildPyramid()
 					fOut->m_bIsValid = false;
 				}
 			}//end of case 2
-				
+
 			// ---- update verticesCover ---- //			
 			VerticesCover::iterator iterKeepFull = meshLevel.verticesCoverFull.find(idKeep),
  					                iterRemoveFull = meshLevel.verticesCoverFull.find(idRemove);
  			iterKeepFull->second.insert(iterKeepFull->second.end(), iterRemoveFull->second.begin(), iterRemoveFull->second.end());
  			meshLevel.verticesCoverFull.erase(iterRemoveFull);
-			
+
 			VerticesCover::iterator iterKeep = meshLevel.verticesCover.find(idKeep);
 			if (iterKeep == meshLevel.verticesCover.end())
 			{
@@ -423,7 +423,7 @@ void MeshPyramid::buildPyramid()
 				iterKeep = meshLevel.verticesCover.find(idKeep);
 			}
 			else iterKeep->second.push_back(idRemove);
-			
+
 			vRemove->m_bIsValid = false;
 
 			if (vOppoIn && vOppoIn->m_HalfEdges.size() == 0)
@@ -511,7 +511,9 @@ void MeshPyramid::buildPyramid()
 				vp_iter++;
 			}
 
-		}////for every contraction
+		} ////for every contraction
+
+		m_ostr << "Before striping invalid primitives" << endl;
 
 		/////////// after simplification by half ////////////////////////////////////////////////
 		//// strip out invalid vertices, half-edges and faces; re-assign index
@@ -524,20 +526,20 @@ void MeshPyramid::buildPyramid()
 		for (vector<CHalfEdge*>::iterator iter = currentMesh->m_vHalfEdges.begin(); iter != currentMesh->m_vHalfEdges.end();)
 		{
 			CHalfEdge* curHe = *iter;
-			if (!curHe->m_bIsValid)
+			if (curHe->m_bIsValid == false)
 			{
-				delete curHe;
 				iter = currentMesh->m_vHalfEdges.erase(iter);
+				delete curHe;
 				continue;
 			}
 			assert(curHe->m_Vertices[0]->m_bIsValid && curHe->m_Vertices[1]->m_bIsValid);
 			iter++;
 		}
 		currentMesh->m_nHalfEdge = (int)currentMesh->m_vHalfEdges.size();
-		
+
 		for (vector<CFace*>::iterator iter = currentMesh->m_vFaces.begin(); iter != currentMesh->m_vFaces.end();)
 		{
-			CFace* curF = *iter;
+			CFace* curF = *iter; 
 			if (curF->m_bIsValid == false)
 			{
 				delete curF;
@@ -547,7 +549,7 @@ void MeshPyramid::buildPyramid()
 			if(curF->m_Vertices.empty())
 			{
 				assert(curF->m_HalfEdges.empty());
-				cout << "Empty face!" << endl;
+				m_ostr << "Empty face!" << endl;
 				delete curF;
 				iter = currentMesh->m_vFaces.erase(iter);
 				continue;
@@ -585,8 +587,8 @@ void MeshPyramid::buildPyramid()
 		currentMesh->m_nFace = (int)currentMesh->m_vFaces.size();
 		
 		m_ostr << "  Vertex Num: " << currentMesh->m_nVertex << endl
-			 //<< "  Face Num: " << currentMesh->m_nFace << endl
-			 //<< "  Half-edge Num: " << currentMesh->m_nEdge << endl
+			   << "  Face Num: " << currentMesh->m_nFace << endl
+			   << "  Half-edge Num: " << currentMesh->m_nHalfEdge << endl
 			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
 			   << "  Boundary Vertex Num: " << currentMesh->getBoundaryVertexNum() << endl; 
 		
@@ -597,6 +599,8 @@ void MeshPyramid::buildPyramid()
 		//finally
 		m_vMeshes.push_back(meshLevel);
 	}///for each level; outermost iteration
+
+	m_ostr << "Before building in2index map" << endl;
 
 	/*** build id2index map ***/
 	m_Id2IndexMap = new int*[m_nVertices];

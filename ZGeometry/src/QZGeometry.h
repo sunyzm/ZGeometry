@@ -76,6 +76,14 @@ private slots:
 	void reconstructSGW();
 	void filterExperimental();
 
+	void registerAutomatic();
+	void buildHierarchy();
+	void detectFeatures();
+	void matchFeatures();
+	void reigsterStep();
+	void regsiterFull();
+	void showFiner();		// lower level
+	void showCoarser();		// higher level
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
@@ -96,7 +104,7 @@ private:	// attributes
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
 	RenderSettings vRS[2];
-	DiffusionShapeMatcher shapeMapper;
+	DiffusionShapeMatcher shapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
 	int m_commonParameter;

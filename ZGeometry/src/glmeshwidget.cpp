@@ -61,8 +61,9 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowRefPoint = false;
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
-//	vSettings.resize(2, RenderSettings());
-
+	
+	m_nMeshLevel = 0;
+	
 	setAutoFillBackground(false);
 }
 
@@ -381,14 +382,22 @@ void GLMeshWidget::drawGL()
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
-	if (vpMP.size() > 0 && vpMP[0] != NULL)
-		drawMeshExt(vpMP[0], vpRS[0]);
-	if (vpMP.size() > 1 && vpMP[1] != NULL)
-		drawMeshExt(vpMP[1], vpRS[1]);
+	if (g_task == TASK_EDITING)
+	{
+		if (vpMP.size() > 0 && vpMP[0] != NULL)
+			drawMeshExt(vpMP[0], vpRS[0]);
+		if (vpMP.size() > 1 && vpMP[1] != NULL)
+			drawMeshExt(vpMP[1], vpRS[1]);
+	}
+	else if (g_task == TASK_REGISTRATION)
+	{
+		drawMeshExt(pDSM->getMeshProcessor(0, m_nMeshLevel), vpRS[0]);
+		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
 
-	if (m_bDrawMatching)
-		drawMatching(pDSM, vpRS[0], vpRS[1]);
-
+		if (m_bDrawMatching)
+			drawMatching(pDSM, vpRS[0], vpRS[1]);
+	}
+	
  	glMatrixMode(GL_MODELVIEW);
  	glPopMatrix();
  	glPopAttrib();

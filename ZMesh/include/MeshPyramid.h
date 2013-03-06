@@ -27,7 +27,7 @@ public:
 	void			setInitialMesh(CMesh* mesh);
 	void			setLevel(int level) { m_levels = level; }
 	int				numOfLevels() const { return m_levels; }
-	void			buildPyramid();
+	void			construct();
 	void			buildProlongMatrix();
 	void			clear();
 	CMesh*			getMesh(int level) const;

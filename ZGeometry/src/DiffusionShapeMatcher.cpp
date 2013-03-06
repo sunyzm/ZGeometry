@@ -5,10 +5,14 @@
 #include <algorithm>
 #include <cassert>
 #include "DiffusionShapeMatcher.h"
+#include "OutputHelper.h"
 
 #define INFINITY 1e10
 #define LOCAL_ANCHORS_NUM 8
 using namespace std;
+
+extern OutputHelper qout;
+extern QString qformat;
 
 const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
@@ -81,14 +85,15 @@ void DiffusionShapeMatcher::constructPyramid( int n )
 	meshPyramids[0].setLevel(n);
 	meshPyramids[1].setLevel(n);
 
-	meshPyramids[0].buildPyramid();
-	meshPyramids[1].buildPyramid();
+	meshPyramids[0].construct();
+	meshPyramids[1].construct();
 
 	for (int k = 1; k < n; ++k)
 	{
 		liteMP[0].push_back(new DifferentialMeshProcessor(meshPyramids[0].getMesh(k)));
 		liteMP[1].push_back(new DifferentialMeshProcessor(meshPyramids[1].getMesh(k)));
 	}
+
 }
 
 

@@ -59,6 +59,8 @@ public:
 	void    registerShapes();
 	void	evaluateRegistration();
 	std::vector<MatchPair> getFeatureMatches(int level) const;
+	int     getPyramidLevels() const { return m_nPyramidLevels; }
+	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
 
 	/* basic */
 	void	setEngine(Engine* ep) { m_ep = ep; }

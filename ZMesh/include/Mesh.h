@@ -230,7 +230,7 @@ public:
 
 	// ---- Mesh IO and processing ---- //
 	void        cloneFrom(const CMesh& oldMesh);
-	void		cloneFrom(const CMesh* oldMesh) { cloneFrom(*oldMesh); }
+	void		cloneFrom(const CMesh* oldMesh);
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void	    move(Vector3D translation);				// translate mesh
@@ -255,9 +255,7 @@ public:
 	Vector3D	getBoundingBox() const { return m_bBox; }
 	Vector3D    getCenter() const { return m_Center; }
 
-
 	void	    gatherStatistics();
-
 
 	bool        hasBounary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f

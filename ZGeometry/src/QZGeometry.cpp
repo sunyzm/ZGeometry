@@ -118,6 +118,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
 	QObject::connect(ui.actionTaskEditing, SIGNAL(triggered()), this, SLOT(setTaskEditing()));
 
+	////////	Register	////////
+	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
+	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -245,8 +248,8 @@ bool QZGeometryWindow::initialize()
 	selected[0] = vRS[0].selected = true;
 	selected[1] = vRS[1].selected = false; 
 
-	shapeMapper.initialize(&vMP[0], &vMP[1], m_ep);
-	ui.glMeshWidget->setShapeMatcher(&shapeMapper);
+	shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
+	ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 
 	return true;
 }
@@ -277,6 +280,14 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("All"));
 			selectObject(ui.boxObjSelect->findText("All"));
 		}
+		break;
+
+	case Qt::Key_BracketLeft:
+		showFiner();
+		break;
+
+	case Qt::Key_BracketRight:
+		showCoarser();
 		break;
 
 	case Qt::Key_C:
@@ -1211,4 +1222,51 @@ void QZGeometryWindow::setTaskEditing()
 	g_task = TASK_EDITING;
 	ui.actionTaskRegistration->setChecked(false);
 	ui.actionTaskEditing->setChecked(true);
+}
+
+void QZGeometryWindow::registerAutomatic()
+{
+	buildHierarchy();
+}
+
+void QZGeometryWindow::buildHierarchy()
+{
+	shapeMatcher.constructPyramid(3);
+	qout.output("Mesh hierarchy constructed!");
+}
+
+void QZGeometryWindow::detectFeatures()
+{
+
+}
+
+void QZGeometryWindow::matchFeatures()
+{
+
+}
+
+void QZGeometryWindow::reigsterStep()
+{
+
+}
+
+void QZGeometryWindow::regsiterFull()
+{
+
+}
+
+void QZGeometryWindow::showFiner()
+{
+	if (ui.glMeshWidget->m_nMeshLevel > 0)
+		ui.glMeshWidget->m_nMeshLevel--;
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::showCoarser()
+{
+	if (ui.glMeshWidget->m_nMeshLevel < shapeMatcher.getPyramidLevels()-1)
+		ui.glMeshWidget->m_nMeshLevel++;
+
+	ui.glMeshWidget->update();
 }

@@ -53,7 +53,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 {
 	m_ep = NULL;
-	mesh = NULL;
+	mesh = tm;
 	pvActiveFeatures = NULL;
 	m_bLaplacianDecomposed = false;
 	pRef = 0;

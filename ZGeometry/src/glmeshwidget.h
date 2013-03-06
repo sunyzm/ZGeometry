@@ -20,7 +20,8 @@ public:
 	bool m_bShowRegistration;
 	bool m_bDrawMatching;
 	bool m_bShowCorrespondenceLine;
-	
+	int	 m_nMeshLevel;
+
 	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
 
 	GLMeshWidget(QWidget *parent = 0);
@@ -63,6 +64,5 @@ private:
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
 
-	int				nMeshLevel;
 };
 
