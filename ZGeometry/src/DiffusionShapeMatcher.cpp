@@ -96,6 +96,13 @@ void DiffusionShapeMatcher::constructPyramid( int n )
 
 }
 
+void DiffusionShapeMatcher::detectFeatures( int ring /*= 2*/, int scale /*= 1*/, double tvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= 0.04*/ )
+{
+	//TODO
+
+}
+
+
 
 
 

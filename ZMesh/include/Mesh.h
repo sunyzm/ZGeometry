@@ -211,9 +211,8 @@ private:
 
 	Vector3D    m_Center;
 	Vector3D    m_bBox;
-	double		m_avgEdgeLen;					// average edge length
+	double		m_avgEdgeLen;			// average edge length
 
-public:
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
 	CFace*		m_pFace;				// array pointer of faces
@@ -242,6 +241,7 @@ public:
 	CVertex*	getVertex(int i) { return m_vVertices[i]; }
 	const CVertex* getVertex_const(int i) const { return m_vVertices[i]; }
 	CFace*		getFace(int i) { return &m_pFace[i]; }
+	const CFace* getFace_const(int i) const { return m_vFaces[i]; }
 	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int			getVerticesNum() const { return m_nVertex; }
 	int			getFaceNum() const { return m_nFace; }

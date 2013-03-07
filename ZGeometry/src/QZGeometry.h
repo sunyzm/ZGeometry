@@ -80,8 +80,8 @@ private slots:
 	void buildHierarchy();
 	void detectFeatures();
 	void matchFeatures();
-	void reigsterStep();
-	void regsiterFull();
+	void registerStep();
+	void registerFull();
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 private:	// methods

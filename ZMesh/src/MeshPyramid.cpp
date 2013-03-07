@@ -110,10 +110,10 @@ void MeshPyramid::construct()
 
 	m_ostr << "------- Original Mesh --------" << endl;
 	m_ostr << "  Vertex Num: " << originalMesh->m_nVertex << endl
-		//<< "  Face Num: " << originalMesh->m_nFace << endl
-		//<< "  Half-edge Num: " << originalMesh->m_nEdge << endl
-		//<< "  Edge Num: " << originalMesh->GetEdgeNum() << endl 
-		<< "  Boundary Vertex Num: " << originalMesh->getBoundaryVertexNum() << endl; 
+		   << "  Face Num: " << originalMesh->m_nFace << endl
+		   << "  Half-edge Num: " << originalMesh->m_nHalfEdge << endl
+		 //<< "  Edge Num: " << originalMesh->GetEdgeNum() << endl 
+		   << "  Boundary Vertex Num: " << originalMesh->getBoundaryVertexNum() << endl; 
 	
 	/* construct multi-resolution mesh structure */
 	MeshLevel baseLevel;

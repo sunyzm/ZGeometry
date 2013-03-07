@@ -197,7 +197,7 @@ bool QZGeometryWindow::initialize()
 		mesh2.scaleEdgeLenToUnit();
 		mesh2.gatherStatistics();
 		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
-		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.m_meshName.c_str(), mesh2.getVerticesNum()));
+		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
 		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z));
 		vMP[1].init(&mesh2, m_ep);
 		vRS[1].mesh_color = preset_colors[1];
@@ -850,8 +850,8 @@ void QZGeometryWindow::clone()
 	vMP[1].init(&mesh2, m_ep);
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
-	qout.output("Mesh " + QString(mesh2.m_meshName.c_str()) + " constructed! Size: " + QString::number(mesh2.getVerticesNum()));
-
+	qout.output(qformat.sprintf("Mesh %s constructed! Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
+	
 	//	vector<double> vx, vy, vz;
 	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
 	//	vMP[0].reconstructByDifferential(vx, vy, vz);
@@ -859,7 +859,7 @@ void QZGeometryWindow::clone()
 	//	mesh2.setVertexCoordinates(vx, vy, vz);
 
 	/*  to prove the effect of scalar product   
-
+	
 	ofstream ofs1("output/dotproduct.dat"), ofs2("output/scalarproduct.dat");
 	for (int i = 0; i < vMP[0].mhb.m_nEigFunc; ++i)
 	{
@@ -1227,6 +1227,9 @@ void QZGeometryWindow::setTaskEditing()
 void QZGeometryWindow::registerAutomatic()
 {
 	buildHierarchy();
+	detectFeatures();
+	matchFeatures();
+
 }
 
 void QZGeometryWindow::buildHierarchy()
@@ -1237,7 +1240,8 @@ void QZGeometryWindow::buildHierarchy()
 
 void QZGeometryWindow::detectFeatures()
 {
-
+	shapeMatcher.detectFeatures(3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
+	qout.output("Multi-scale mesh features detected!");
 }
 
 void QZGeometryWindow::matchFeatures()
@@ -1245,12 +1249,12 @@ void QZGeometryWindow::matchFeatures()
 
 }
 
-void QZGeometryWindow::reigsterStep()
+void QZGeometryWindow::registerStep()
 {
 
 }
 
-void QZGeometryWindow::regsiterFull()
+void QZGeometryWindow::registerFull()
 {
 
 }
@@ -1260,6 +1264,7 @@ void QZGeometryWindow::showFiner()
 	if (ui.glMeshWidget->m_nMeshLevel > 0)
 		ui.glMeshWidget->m_nMeshLevel--;
 
+	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
 	ui.glMeshWidget->update();
 }
 
@@ -1268,5 +1273,6 @@ void QZGeometryWindow::showCoarser()
 	if (ui.glMeshWidget->m_nMeshLevel < shapeMatcher.getPyramidLevels()-1)
 		ui.glMeshWidget->m_nMeshLevel++;
 
+	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
 	ui.glMeshWidget->update();
 }

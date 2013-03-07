@@ -508,10 +508,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
-			if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
+			if(!tmesh->getFace_const(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++)
 			{
-				int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
+				int pi = tmesh->getFace_const(i)->getVertexIndex(j);					 				
 				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
@@ -528,10 +528,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)
 		{
-			if(!tmesh->m_pFace[i].hasHalfEdge()) continue;
+			if(!tmesh->getFace_const(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++)
 			{
-				int pi = tmesh->m_pFace[i].getVertexIndex(j);					 				
+				int pi = tmesh->getFace_const(i)->getVertexIndex(j);					 				
 				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
