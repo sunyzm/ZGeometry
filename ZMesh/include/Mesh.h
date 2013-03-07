@@ -82,7 +82,7 @@ private:
 	// ---- fields ---- //
 	int						m_vIndex;
 	int						m_vid;				// ID of the vertex from original mesh
-	std::vector<CHalfEdge*> m_HalfEdges;
+	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
 	Vector3D				m_vPosition;		// vertex coordinates
@@ -202,7 +202,7 @@ private:
 
 	bool		m_bIsPointerVectorExist;		// pointer vectors representation
 	bool		m_bIsIndexArrayExist;			// index array representation
-	bool		m_bSeperateStorage;		
+	bool		m_bSeparateStorage;		
 	int			m_nBoundaryEdgeNum;
 
 	int		    m_nVertex;				// number of vertices
@@ -239,8 +239,8 @@ public:
 
 	// ---- attributes access ---- //
 	const std::string& getMeshName() const { return m_meshName; }
-	CVertex*	getVertex(int i) { return &m_pVertex[i]; }
-	const CVertex* getVertex_const(int i) const { return &m_pVertex[i]; }
+	CVertex*	getVertex(int i) { return m_vVertices[i]; }
+	const CVertex* getVertex_const(int i) const { return m_vVertices[i]; }
 	CFace*		getFace(int i) { return &m_pFace[i]; }
 	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int			getVerticesNum() const { return m_nVertex; }

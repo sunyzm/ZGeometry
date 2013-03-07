@@ -28,11 +28,9 @@ public:
 	void			setLevel(int level) { m_levels = level; }
 	int				numOfLevels() const { return m_levels; }
 	void			construct();
-	void			buildProlongMatrix();
 	void			clear();
 	CMesh*			getMesh(int level) const;
 	std::list<int>	getCoveredVertexList(int level, int idx) const;	//return index list of vertices that collapsed to a specific vertex on given level 
-	SparseMatrix*	getProlongationMatrix(int level) const;
 	void			dumpVertexValence(int level, std::string filename);
 	int				**m_Id2IndexMap;
 
@@ -60,5 +58,4 @@ private:
 	std::vector<MeshLevel>	m_vMeshes;
 	std::vector<Quadric>	m_FaceQuadrics;
 	std::vector<Quadric>	m_VertexQuadrics;
-	std::vector<SparseMatrix*> m_vProlongMat;
 };

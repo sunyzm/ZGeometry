@@ -107,22 +107,20 @@ void MeshPyramid::construct()
 
 	ofstream m_ostr("output/build_pyramid.log", ios::trunc);
 
-	/* construct multi-resolution mesh structure */
-	{
-		MeshLevel baseLevel;
-		baseLevel.mesh = originalMesh;
-		m_vMeshes.clear();
-		m_vMeshes.push_back(baseLevel);
-	}
-	
+
 	m_ostr << "------- Original Mesh --------" << endl;
 	m_ostr << "  Vertex Num: " << originalMesh->m_nVertex << endl
 		//<< "  Face Num: " << originalMesh->m_nFace << endl
 		//<< "  Half-edge Num: " << originalMesh->m_nEdge << endl
 		//<< "  Edge Num: " << originalMesh->GetEdgeNum() << endl 
 		<< "  Boundary Vertex Num: " << originalMesh->getBoundaryVertexNum() << endl; 
-
-
+	
+	/* construct multi-resolution mesh structure */
+	MeshLevel baseLevel;
+	baseLevel.mesh = originalMesh;
+	m_vMeshes.clear();
+	m_vMeshes.push_back(baseLevel);
+	
 	for (int level = 1; level < m_levels; ++level)
 	{
 		m_ostr << "-------- Level " << level << " --------" << endl;
@@ -626,7 +624,7 @@ void MeshPyramid::construct()
 			int matchedIdx = -1;
 			for (int j = 0; j < mesh_l->m_nVertex; ++j)
 			{
-			 	if (mesh_l->m_pVertex[j].m_vid == cvid)
+			 	if (mesh_l->getVertex_const(j)->m_vid == cvid)
 			 	{
 			 		matchedIdx = j;
 			 		break;
@@ -658,14 +656,9 @@ void MeshPyramid::clear()
 		if (m_vMeshes[i].mesh != NULL) 
 			delete m_vMeshes[i].mesh;
 	}
-	for (unsigned int i = 0; i < m_vProlongMat.size() - 1; ++i)
-	{
-		if (m_vProlongMat[i]) delete m_vProlongMat[i];
-	}
 	m_vMeshes.clear();
 	m_FaceQuadrics.clear();
 	m_VertexQuadrics.clear();
-	m_vProlongMat.clear();
 	originalMesh = NULL;
 	m_levels = 0;
 }
@@ -679,74 +672,6 @@ CMesh* MeshPyramid::getMesh( int level ) const
 		return m_vMeshes[level].mesh;
 	else 
 		return m_vMeshes[m_levels + level].mesh;
-}
-
-void MeshPyramid::buildProlongMatrix()
-{
-	for (size_t n = 0; n < m_vMeshes.size()-1; ++n)
-	{
-		SparseMatrix *smat = new SparseMatrix();
-		// the mat should be v_n * v_(n+1)
-
-		const CMesh* mesh_n = m_vMeshes[n].mesh, *mesh_n1 = m_vMeshes[n+1].mesh;  
-		for (int i = 0; i < mesh_n->m_nVertex; ++i)
-		{
-			const CVertex* vi = mesh_n->m_vVertices[i];
-			double minDistToFace = 1e15;
-			CFace*  minFace(NULL);
-			vector<double> minDistCoord;
-			vector<double> tmpCoord;
-			tmpCoord.resize(3);
-
-			//shortcut to vertex that has direct correspondence; seems working
-			int vid = vi->getVID();
-			bool hasCorrespondence(false);
-			for (vector<CVertex*>::const_iterator viter = mesh_n1->m_vVertices.begin(); viter != mesh_n1->m_vVertices.end(); ++viter)
-			{
-				if (vid == (*viter)->getVID())
-				{
-					smat->m_ii.push_back(i);
-					smat->m_jj.push_back((*viter)->m_vIndex);
-					smat->m_ss.push_back(1.0);
-					hasCorrespondence = true;
-					break;
-				}
-			}
-			if (hasCorrespondence) continue;
-
-			for (int j = 0; j < mesh_n1->m_nFace; ++j)
-			{
-				CFace* fj = mesh_n1->m_vFaces[j];
-				double dist = fj->distanceToVertex(vi, tmpCoord);
-				if (dist < minDistToFace)
-				{
-					minFace = fj;
-					minDistToFace = dist;
-					minDistCoord = tmpCoord;
-				}
-			}
-			int faceIndex[3] = {
-						minFace->m_Vertices[0]->m_vIndex, 
-						minFace->m_Vertices[1]->m_vIndex,
-						minFace->m_Vertices[2]->m_vIndex
-						};
-			for (int l = 0; l < 3; ++l)
-			{
-				if ( minDistCoord[l] < 1e-6) continue;	//zero element ignored to save space
-				smat->m_ii.push_back(i);
-				smat->m_jj.push_back(faceIndex[l] + 1);
-				smat->m_ss.push_back(minDistCoord[l]);
-			}
-			
-		}//	for (int i = 0; i < mesh_n->m_nVertex; ++i)
-		m_vProlongMat.push_back(smat);
-	}
-}
-
-SparseMatrix* MeshPyramid::getProlongationMatrix( int level ) const
-{
-	assert (0 <= level && level <= m_levels - 2 && m_vProlongMat.size() == m_levels - 1);
-	return m_vProlongMat[level];
 }
 
 CHalfEdge* MeshPyramid::VertexPair::correspondingHalfEdge()
@@ -795,7 +720,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 
 	for (int i = 0; i < tmesh->m_nVertex; ++i)
 	{
-		valOut << i << '\t' << tmesh->m_vVertices[i]->m_nValence << '\t' << tmesh->m_pVertex[i].m_nValence << endl;
+		valOut << i << '\t' << tmesh->m_vVertices[i]->m_nValence << '\t' << tmesh->getVertex_const(i)->m_nValence << endl;
 	}
 
 	valOut.close();
@@ -807,7 +732,7 @@ std::list<int> MeshPyramid::getCoveredVertexList( int level, int idx ) const
 
 	const VerticesCover& coverMap = m_vMeshes[level+1].verticesCover;
 	const CMesh* tmesh = getMesh(level);
-	int v_id = tmesh->m_pVertex[idx].m_vid;
+	int v_id = tmesh->getVertex_const(idx)->m_vid;
 	map<int, list<int> >::const_iterator viter = coverMap.find(v_id);
 	
 	list<int> retlist;

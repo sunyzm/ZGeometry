@@ -765,9 +765,9 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 		int loc1 = vmp[i].m_idx1;
 		int loc2 = vmp[i].m_idx2;
 
-		Vector3D pos1 = tmesh1->m_pVertex[loc1].getPosition();
+		Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
 		//pos1 -= tmesh1->m_Center;
-		Vector3D pos2 = tmesh2->m_pVertex[loc2].getPosition();
+		Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
 		//pos2 -= tmesh2->m_Center;
 
 		double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;

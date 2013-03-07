@@ -101,7 +101,8 @@ void CVertex::clone(const CVertex& v)
 	if (v.m_piEdge != NULL)
 	{
 		m_piEdge = new int[m_nValence];		// starting half-edge index array
-		std::copy(v.m_piEdge, v.m_piEdge + m_nValence, m_piEdge);
+		for (int i = 0; i < m_nValence; ++i)
+			this->m_piEdge[i] = v.m_piEdge[i];
 	}
 	else m_piEdge = NULL;
 
@@ -603,17 +604,15 @@ void CMesh::clearMesh()
 		if(m_pFace != NULL)	{delete[] m_pFace; m_pFace = NULL;}
 	}
 		
-	if (m_bIsPointerVectorExist)
+	if (m_bIsPointerVectorExist && m_bSeparateStorage)
 	{
-		if (m_bSeperateStorage)
-		{
-			for (unsigned int i = 0; i < m_vVertices.size(); ++i)
-				delete m_vVertices[i];
-			for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
-				delete m_vHalfEdges[i];
-			for (unsigned int i = 0; i < m_vFaces.size(); ++i)
-				delete m_vFaces[i];
-		}		
+		for (unsigned int i = 0; i < m_vVertices.size(); ++i)
+			delete m_vVertices[i];
+		for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
+			delete m_vHalfEdges[i];
+		for (unsigned int i = 0; i < m_vFaces.size(); ++i)
+			delete m_vFaces[i];
+		
 		m_vVertices.clear();
 		m_vHalfEdges.clear();
 		m_vFaces.clear();
@@ -2665,7 +2664,7 @@ void CMesh::buildPointerVectors()
 	}
 
 	m_bIsPointerVectorExist = true;
-	m_bSeperateStorage = false;
+	m_bSeparateStorage = false;
 }
 
 void CMesh::buildIndexArrays()
@@ -2731,7 +2730,7 @@ void CMesh::buildIndexArrays()
 	}
 
 	m_bIsIndexArrayExist = true;
-	m_bSeperateStorage = true;
+	m_bSeparateStorage = true;
 }
 
 void CMesh::assignElementsIndex()
@@ -2868,8 +2867,9 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 	m_bBox = oldMesh->m_bBox;
 	m_avgEdgeLen = oldMesh->m_avgEdgeLen;
 
-	m_bIsPointerVectorExist = oldMesh->m_bIsPointerVectorExist;
-	m_bIsIndexArrayExist = false;
+	assert(oldMesh->m_bIsPointerVectorExist);
+	
+	m_bIsPointerVectorExist = true;
 
 	if (m_bIsPointerVectorExist)
 	{
@@ -2940,6 +2940,8 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 		}
 	}
 
+	m_bIsIndexArrayExist = false;
+	m_bSeparateStorage = true;
 }
 
 /*

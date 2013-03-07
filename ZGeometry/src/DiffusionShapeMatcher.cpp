@@ -37,11 +37,11 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 
 DiffusionShapeMatcher::~DiffusionShapeMatcher()
 {
-	for (auto iter = liteMP[0].begin(); iter != liteMP[0].end(); ++iter)
+	for (auto iter = liteMP[0].begin()+1; iter != liteMP[0].end(); ++iter)
 	{
 		delete *iter;
 	}
-	for (auto iter = liteMP[1].begin(); iter != liteMP[1].end(); ++iter)
+	for (auto iter = liteMP[1].begin()+1; iter != liteMP[1].end(); ++iter)
 	{
 		delete *iter;
 	}
