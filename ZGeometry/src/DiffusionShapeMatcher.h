@@ -41,10 +41,13 @@ public:
 	int		m_tn;	    // num of scales; log_2(tu/tl)
 public:
 	HKSFeature() { m_index = 0; m_tu = 0.0; m_tl = 0.0; m_tn = 0; }
+	HKSFeature(int i, int s) : MeshFeature(i, s) { HKSFeature(); }
 	HKSFeature(int x, double tl, double tu) { m_index = x; m_tl = tl; m_tu = tu; m_tn = 0; }
 	HKSFeature(int x, double tl, int n) { m_index = x; m_tn = n; m_tu = tl; }
 	HKSFeature(int x, double tl, double tu, int n) { m_index = x; m_tn = n; m_tl = tl; m_tu = tu; }
 	HKSFeature(int x, double tl, double tu, int n, int scale) { m_index = x; m_tn = n; m_tl = tl; m_tu = tu; m_scale = scale; }
+	HKSFeature(const HKSFeature& f) { m_index = f.m_index; m_scale = f.m_scale; m_tl = f.m_tl; m_tu = f.m_tu; m_tn = f.m_tn; }
+	void setTimes(double tl, double tu, double tn) { m_tl = tl; m_tu = tu; m_tn = tn; }
 };
 
 class DiffusionShapeMatcher
@@ -54,7 +57,7 @@ public:
 	~DiffusionShapeMatcher();
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
-	void	detectFeatures(int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = 0.04);
+	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = 0.04);
 	void	matchFeatures();
 	void    registerShapes();
 	void	evaluateRegistration();
@@ -105,7 +108,7 @@ private:
 
 	MeshPyramid meshPyramids[2];
 
-	std::vector<int> vFeatures1, vFeatures2;
+	std::vector<HKSFeature> vFeatures[2];
 
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;

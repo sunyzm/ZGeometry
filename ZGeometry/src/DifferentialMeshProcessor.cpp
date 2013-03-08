@@ -976,3 +976,12 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 
 	pvActiveFeatures = mfl->getFeatureVector();
 }
+
+void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
+{
+	if (retrievePropertyByID(feature_id))
+	{
+		MeshFeatureList* mfl = dynamic_cast<MeshFeatureList*>(retrievePropertyByID(feature_id));
+		pvActiveFeatures = mfl->getFeatureVector();
+	}
+}

@@ -98,6 +98,15 @@ MeshProcessor::~MeshProcessor()
 	}
 }
 
+void MeshProcessor::replaceProperty( MeshProperty* newProperty )
+{
+	if (retrievePropertyByID(newProperty->id) != NULL)
+	{
+		removePropertyByID(newProperty->id);
+	}
+	addProperty(newProperty);
+}
+
 MeshFeatureList::~MeshFeatureList()
 {
 	std::for_each(m_vFeatures.begin(), m_vFeatures.end(), [](MeshFeature* iter){ 

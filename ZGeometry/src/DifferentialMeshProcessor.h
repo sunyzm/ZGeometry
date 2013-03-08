@@ -23,8 +23,9 @@ enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL};
 
 #define FEATURE_NEIGHBORS				0x0201
 #define FEATURE_HKS						0x0202
-#define FEATURE_MHWS						0x0203
+#define FEATURE_MHWS					0x0203
 #define FEATURE_SGWS					0x0204
+#define FEATURE_MULTI_HKS				0x0205
 
 double transferScalingFunc1(double lambda);
 
@@ -60,7 +61,7 @@ public:
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
-
+	
 	// ---- editing ---- //
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void calGeometryDWT();
@@ -81,7 +82,7 @@ public:
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
 	const std::vector<MeshFeature*>* getActiveFeatures() const { return pvActiveFeatures; }
 	void setActiveFeatures(std::vector<MeshFeature*>* pvMF) { pvActiveFeatures = pvMF; }
-
+	void setActiveFeaturesByID(int feature_id);
 public:
 	int active_handle;
 	std::map<int, Vector3D> mHandles;

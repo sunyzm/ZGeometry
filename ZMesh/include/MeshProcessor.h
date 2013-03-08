@@ -95,6 +95,7 @@ public:
 	~MeshProcessor();
 	void setMesh(CMesh* newMesh);
 	bool addProperty(MeshProperty* newProperty);
+	void replaceProperty(MeshProperty* newProperty);
 	MeshProperty* retrievePropertyByID(int rid);
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);

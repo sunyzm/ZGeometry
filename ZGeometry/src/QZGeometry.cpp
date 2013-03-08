@@ -121,6 +121,7 @@ void QZGeometryWindow::makeConnections()
 	////////	Register	////////
 	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
 	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
+	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -1240,8 +1241,11 @@ void QZGeometryWindow::buildHierarchy()
 
 void QZGeometryWindow::detectFeatures()
 {
-	shapeMatcher.detectFeatures(3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
+	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
+	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
 	qout.output("Multi-scale mesh features detected!");
+	
+	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 }
 
 void QZGeometryWindow::matchFeatures()
