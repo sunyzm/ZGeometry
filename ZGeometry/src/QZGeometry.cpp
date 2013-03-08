@@ -1250,7 +1250,8 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
-
+	shapeMatcher.matchFeatures();
+	qout.output("Initial features matched!");
 }
 
 void QZGeometryWindow::registerStep()

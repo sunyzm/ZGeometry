@@ -83,8 +83,6 @@ public:
 	void    initializeHKParam( const std::vector<int>& anchors, double t = 30.0 );
 	void	setRegisterDiffusionTime(double t) { this->m_registerTimescale = t; }
 
-	void	detectFeatures2(int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = 0.04);	//two levels of features
-
 	void    prepareHeatRegistration( double regTime );
 
 	// static constants
@@ -104,10 +102,8 @@ private:
 	Engine *m_ep;
 	CMesh* pOriginalMesh[2];
 	DifferentialMeshProcessor* pOriginalProcessor[2];
-	std::vector<DifferentialMeshProcessor*> liteMP[2];
-
 	MeshPyramid meshPyramids[2];
-
+	std::vector<DifferentialMeshProcessor*> liteMP[2];
 	std::vector<HKSFeature> vFeatures[2];
 
 	bool					m_bPyramidBuilt;

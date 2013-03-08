@@ -218,6 +218,27 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 
 }
 
+void DiffusionShapeMatcher::matchFeatures()
+{
+	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
+	const vector<HKSFeature>& vftFine1 = vFeatures[0];
+	const vector<HKSFeature>& vftFine2 = vFeatures[1];
+
+	vector<HKSFeature> vftCoarse1, vftCoarse2;
+
+	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
+		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
+	});
+	for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){ 
+		if(f.m_scale >= 2) vftCoarse2.push_back(f);
+	});
+
+	vector<MatchPair> vTmpMatchPairs;
+	vector<double> vFeatureMatchScores;
+	
+
+}
+
 
 
 
