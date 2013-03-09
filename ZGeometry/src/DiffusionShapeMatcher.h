@@ -18,7 +18,7 @@ public:
 	int		m_note;		
 
 public:
-	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = 0.0; m_tn = 0; m_score = score; m_note = 0;}
+	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
 	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_score = score; m_note = 0;}
 	bool operator== (const MatchPair& mc) const;
 
@@ -58,7 +58,7 @@ public:
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = 0.04);
-	void	matchFeatures();
+	void    matchFeatures(double matchThresh = DEFAULT_MATCH_THRESH);
 	void    registerShapes();
 	void	evaluateRegistration();
 	std::vector<MatchPair> getFeatureMatches(int level) const;
@@ -84,7 +84,7 @@ public:
 	void	setRegisterDiffusionTime(double t) { this->m_registerTimescale = t; }
 
 	void    prepareHeatRegistration( double regTime );
-
+	void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& vftCoarse1, VectorND& vsig1 ) const;
 	// static constants
 	static const double DEFAULT_C_RATIO;
 	static const double DEFAULT_RANK_EPSILON;
@@ -92,6 +92,7 @@ public:
 	static const double DEFAULT_FEATURE_TIMESCALE;
 	static const double DEFAULT_T_MULTIPLIER;
 	static const double DEFAULT_MATCH_TIME_LOW;
+	static const double DEFAULT_MATCH_THRESH;
 	static const double DEFAULT_REGISTER_TIMESCALE;
 	static const int    DEFAULT_NBASE;
 	static const int	DEFAULT_PYRAMID_LEVELS;
@@ -104,7 +105,7 @@ private:
 	DifferentialMeshProcessor* pOriginalProcessor[2];
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
-	std::vector<HKSFeature> vFeatures[2];
+	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
 
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
@@ -118,4 +119,7 @@ private:
 	std::vector<HKSFeature> m_hksFeatureFine, m_hksFeatureCoarse;
 	std::vector<std::vector<int> > m_matchCandidates;
 	double *randArray;	
+
+
+	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
 };

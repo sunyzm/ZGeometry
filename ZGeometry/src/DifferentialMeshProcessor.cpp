@@ -985,3 +985,13 @@ void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 		pvActiveFeatures = mfl->getFeatureVector();
 	}
 }
+
+double DifferentialMeshProcessor::getVertexPairHK( int v1, int v2, double timescale ) const
+{
+	double sum = 0;
+	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	{
+		sum += std::exp(-mhb.m_func[k].m_val * timescale) * mhb.m_func[k].m_vec[v1] * mhb.m_func[k].m_vec[v2];
+	}
+	return sum;
+}
