@@ -55,6 +55,9 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
+	m_dFeatureSphereRadius = 1;
+	m_dMeshPointSize = 2;
+	
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
@@ -63,7 +66,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowCorrespondenceLine = true;
 	
 	m_nMeshLevel = 0;
-	
+
 	setAutoFillBackground(false);
 }
 
@@ -499,7 +502,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	/// draw the mesh
 	glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
 
-	glPointSize(2.0);
+	glPointSize(m_dMeshPointSize);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
@@ -585,14 +588,14 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, 1, 16, 8);
+		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 		glPopMatrix();
 	}
 
 	//// ---- draw feature points ---- ////
 	if (m_bShowFeatures && pMP->getActiveFeatures() != NULL)
 	{
-		/////// draw as glPoint
+		/* ---- draw as glPoint ---- */
 		//glPointSize(10.0);
 		//glBegin(GL_POINTS);
 		//for (auto iter = pMP->getDisplayFeatures().begin(); iter != pMP->getDisplayFeatures().end(); ++iter)
@@ -617,7 +620,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, 1, 16, 8);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 		gluDeleteQuadric(quadric);
@@ -635,7 +638,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, 1, 16, 8);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 	}
@@ -780,12 +783,12 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 
 		glPushMatrix();
 		glTranslated(x1, y1, z1);
-		gluSphere(quadric, tmesh1->getAvgEdgeLength()*2, 16, 8);
+		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 		glPopMatrix();
 
 		glPushMatrix();
 		glTranslated(x2, y2, z2);
-		gluSphere(quadric, tmesh2->getAvgEdgeLength()*2, 16, 8);
+		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 		glPopMatrix();
 
 		if (m_bShowCorrespondenceLine)

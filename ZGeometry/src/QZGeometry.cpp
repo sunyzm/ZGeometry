@@ -122,6 +122,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
 	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
+	QObject::connect(ui.actionMatchFeatures, SIGNAL(triggered()), this, SLOT(matchFeatures()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -1245,13 +1246,17 @@ void QZGeometryWindow::detectFeatures()
 	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
 	qout.output("Multi-scale mesh features detected!");
 	
-	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
+	if (!ui.glMeshWidget->m_bShowFeatures)
+		toggleShowFeatures();
 }
 
 void QZGeometryWindow::matchFeatures()
 {
 	shapeMatcher.matchFeatures();
-	qout.output("Initial features matched!");
+	qout.output(qformat.sprintf("Initial features matched! Match size: %d", shapeMatcher.getFeatureMatches(-1).size()));
+
+	if (!ui.glMeshWidget->m_bDrawMatching)
+		toggleDrawMatching();
 }
 
 void QZGeometryWindow::registerStep()

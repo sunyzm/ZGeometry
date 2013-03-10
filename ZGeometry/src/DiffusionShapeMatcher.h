@@ -61,7 +61,7 @@ public:
 	void    matchFeatures(double matchThresh = DEFAULT_MATCH_THRESH);
 	void    registerShapes();
 	void	evaluateRegistration();
-	std::vector<MatchPair> getFeatureMatches(int level) const;
+	const std::vector<MatchPair>& getFeatureMatches(int level) const;
 	int     getPyramidLevels() const { return m_nPyramidLevels; }
 	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
 

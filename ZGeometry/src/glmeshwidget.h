@@ -29,7 +29,7 @@ public:
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
 	void setShapeMatcher(DiffusionShapeMatcher* p) { pDSM = p; }
-
+	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -64,5 +64,7 @@ private:
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
 
+	double			m_dFeatureSphereRadius;
+	double			m_dMeshPointSize;
 };
 

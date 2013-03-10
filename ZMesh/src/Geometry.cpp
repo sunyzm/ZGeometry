@@ -383,7 +383,7 @@ double VectorND::calDistance(const VectorND& v, int method) const
 
 void VectorND::reserve(int n)
 {
-	if(m_vec) delete m_vec;
+	if(m_vec) delete []m_vec;
 	m_size = n;
 	m_vec = new double[m_size];
 }

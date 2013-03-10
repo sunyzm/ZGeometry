@@ -46,7 +46,7 @@ double distFeature(const HKSFeature& hf1, const HKSFeature& hf2, const VectorND&
 	double dist = 0.0;
 	for(int i = 0; i < tn; i++)
 	{
-		dist += std::pow(sig1.m_vec[i] - sig2.m_vec[i], 2);
+		dist += (sig1.m_vec[i] - sig2.m_vec[i]) * (sig1.m_vec[i] - sig2.m_vec[i]);
 	}
 	return dist/tn;
 }
@@ -64,7 +64,7 @@ double distFeaturePair(const DifferentialMeshProcessor* pmp1, const Differential
 	VectorND v1(n), v2(n);
 	for(int i = 0; i < n; i++)
 	{
-		v1.m_vec[i] =pmp1->getVertexPairHK(x1, y1, t);
+		v1.m_vec[i] = pmp1->getVertexPairHK(x1, y1, t);
 		v2.m_vec[i] = pmp2->getVertexPairHK(x2, y2, t);
 		t *= 2.0;
 	}
@@ -166,7 +166,7 @@ CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 		return meshPyramids[obj].getMesh(level);
 }
 
-std::vector<MatchPair> DiffusionShapeMatcher::getFeatureMatches( int level ) const
+const std::vector<MatchPair>& DiffusionShapeMatcher::getFeatureMatches( int level ) const
 {
 	if (level == -1)
 		return matchedPairsFine;
@@ -246,23 +246,24 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 	}
 
 	double tl = DEFAULT_MATCH_TIME_LOW;	//10.0
-	for (auto iter = vF.begin(); iter != vF.end(); ++iter)
+	for (auto iter = vF.begin(); iter != vF.end();)
 	{
 		const int vi = iter->m_index;
 		double tu = findTmax(fineMesh, vi);	//?? max time to boundary? why geo*geo/4?
 		int tn;
-		if (tu < 0)
+		if (tu < 0)	// no boundary
 		{
 			tn = 8;
 			tu = std::pow(2.0, tn-1) * tl;				// no boundary
 		}
 		else
 		{
-			if(tu < tl) continue;
-			tn = (int)ceil(log(tu/tl)/log(2.0));	// tn is the number of timescales
+			if(tu < tl) { vF.erase(iter); continue;}	// features too close to boundary are discarded
+			tn = (int)ceil(log(tu/tl)/log(2.0));	    // tn is the number of timescales
 		}
-
 		iter->setTimes(tl, tu, tn);
+
+		++iter;
 	}
 
 	MeshFeatureList *mfl = new MeshFeatureList;
@@ -288,6 +289,8 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 
 	vector<HKSFeature> vftCoarse1, vftCoarse2;
 
+	ostr << "Before defining vftCoarse" << endl;
+
 	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
 		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
 	});
@@ -304,11 +307,21 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 	int size2 = (int) vftCoarse2.size();
 	vector<VectorND> vsig1(size1), vsig2(size2);
 	
-	for(int i1 = 0; i1 < size1; i1++)
-		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
-			
-	for(int i2 = 0; i2 < size2; i2++)
-		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
+	ostr << "vfCoarse1: " << size1 << "; vftCoarse2: " << size2 << "\nBefore calVertexSignature" << endl;
+
+	try
+	{
+		for(int i1 = 0; i1 < size1; i1++)
+			calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
+
+		for(int i2 = 0; i2 < size2; i2++)
+			calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
+	}
+	catch (runtime_error* e)
+	{
+		qout.output(e->what());
+		return;
+	}
 
  	ostr << "  Coarse features 1: ";
  	for (int i = 0; i < size1; ++i)
@@ -589,7 +602,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 			restMatches.push_back(MatchPair(restFeat1[i], restFeat2[j], s));
 		}
 	}
-	cout << "  candidate rest matches: " << restMatches.size() << endl;
+	ostr << "  candidate rest matches: " << restMatches.size() << endl;
 	while (!restMatches.empty())
 	{
 		vector<MatchPair>::iterator maxIter = restMatches.end();
@@ -654,7 +667,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 		for (vector<HKSFeature>::const_iterator hiter = vftFine1.begin(); hiter != vftFine1.end(); ++hiter)
 		{
 			if (hiter->m_scale == 3 && hiter->m_index == iter->m_idx1)
-				cout << " --- Scale-3 Feature Pair: " << iter->m_idx1 << ", " << iter->m_idx2 << endl;
+				ostr << " --- Scale-3 Feature Pair: " << iter->m_idx1 << ", " << iter->m_idx2 << endl;
 		}
 
 		if (iter->m_idx1 == iter->m_idx2)
@@ -689,7 +702,16 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 	for(int i = 0; i < hf.m_tn; i++)
 	{
 		double eref = 4.0*PI*t;
-		sig.m_vec[i] = log(pOriginalProcessor->getVertexHKS(hf.m_index, t) * eref);	//normalization to balance HKS at different t
+		try
+		{		
+			sig.m_vec[i] = std::log(pOriginalProcessor->getVertexPairHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
+		}
+		catch (std::exception* e)
+		{
+			stringstream osstr;
+			osstr << e->what() << "\n i=" << i << " index=" << hf.m_index << "sig.size=" << sig.m_size << " hf.m_tl=" << hf.m_tl << " hf.m_tn" << hf.m_tn << "t=" << t << '\0';
+			throw runtime_error(std::string(e->what()) + osstr.str());
+		}
 		t *= 2.0;
 	}
 }
