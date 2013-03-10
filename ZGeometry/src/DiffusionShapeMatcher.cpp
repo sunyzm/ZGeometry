@@ -196,6 +196,8 @@ void DiffusionShapeMatcher::constructPyramid( int n )
 		liteMP[1].push_back(new DifferentialMeshProcessor(meshPyramids[1].getMesh(k)));
 	}
 
+	m_bPyramidBuilt = true;
+
 }
 
 void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
@@ -278,19 +280,18 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 	pMP->replaceProperty(mfl);
 	pMP->setActiveFeaturesByID(FEATURE_MULTI_HKS);
 
+	m_bFeatureDetected = true;
 }
 
-void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
+void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
 {
-//	ofstream ostr("output/FeatureMatch.log", ios::trunc);
-
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = vFeatures[0];
 	const vector<HKSFeature>& vftFine2 = vFeatures[1];
 
 	vector<HKSFeature> vftCoarse1, vftCoarse2;
 
-	ostr << "Before defining vftCoarse" << endl;
+	flog << "Before defining vftCoarse" << endl;
 
 	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
 		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
@@ -308,7 +309,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 	int size2 = (int) vftCoarse2.size();
 	vector<VectorND> vsig1(size1), vsig2(size2);
 	
-	ostr << "vfCoarse1: " << size1 << "; vftCoarse2: " << size2 << "\nBefore calVertexSignature" << endl;
+	flog << "  vftCoarse1: " << size1 << "; vftCoarse2: " << size2 << "\nBefore calVertexSignature" << endl;
 
 	for(int i1 = 0; i1 < size1; i1++)
 		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
@@ -316,15 +317,15 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 	for(int i2 = 0; i2 < size2; i2++)
 		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
 
- 	ostr << "  Coarse features 1: ";
+ 	flog << "  Coarse features 1: ";
  	for (int i = 0; i < size1; ++i)
- 		ostr << vftCoarse1[i].m_index << ' ';
- 	ostr << "\n Coarse features 2: ";
+ 		flog << vftCoarse1[i].m_index << ' ';
+ 	flog << "\n  Coarse features 2: ";
  	for (int i = 0; i < size2; ++i)
- 		ostr << vftCoarse2[i].m_index << ' ';
- 	ostr << endl;
+ 		flog << vftCoarse2[i].m_index << ' ';
+ 	flog << endl;
 	
-	ostr << "candidates: ";
+	flog << "  candidates: ";
 	double sigma1 = 4.0 * matchThresh;
 	for(int i = 0; i < size1; i++)
 	{
@@ -336,7 +337,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			double d = distFeature(vftCoarse1[i], vftCoarse2[j], vsig1[i], vsig2[j], tl, tn);	//average on each overlapped scale
 			if(d < matchThresh)
 			{
-				ostr << '(' << vftCoarse1[i].m_index <<','<< vftCoarse2[j].m_index << ") "; 
+				flog << '(' << vftCoarse1[i].m_index <<','<< vftCoarse2[j].m_index << ") "; 
 
 				double score = std::exp(-d/sigma1);
 				vTmpMatchPairs.push_back(MatchPair(vftCoarse1[i].m_index, vftCoarse2[j].m_index, tl, tn, score));
@@ -344,11 +345,11 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			}
 		}
 	}
-	ostr << endl;
+	flog << endl;
 
 /// create affinity matrix (compatibility of each candidate match)
 	const int affinitySize = (int)vTmpMatchPairs.size();
-    ostr << "\nAffinity Matrix size: " << affinitySize << endl;
+    flog << "\nAffinity Matrix size: " << affinitySize << endl;
 
 	mxArray *AM, *VM, *VA;
 	AM = mxCreateDoubleMatrix(affinitySize, affinitySize, mxREAL);
@@ -371,9 +372,9 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			am[i*affinitySize+j] = am[j*affinitySize+i] = exp(-ds/sigma2);
 		}
 	}
-	ostr << "affinity matrix constructed!" << endl;
+	flog << "affinity matrix constructed!" << endl;
 
-	// solving the greatest eigen-vector (PCA?)
+	/* ---- solving the greatest eigenvector (PCA?) ---- */
 	engPutVariable(m_ep, "AM", AM);
 	engEvalString(m_ep, "[VM,VA] = spectral_embedding(AM);");	//computing leading eigenvector of A using svd
 	VM = engGetVariable(m_ep, "VM");
@@ -399,11 +400,11 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 
 		if (v_max <= c_thresh) 
 		{
-			ostr << "  Discarded v_max: " << v_max << endl;
+			flog << "  Discarded v_max: " << v_max << endl;
 			break;
 		}
 
-		ostr << mpc1.size() << ": " << i_max << ',' << v_max << endl;
+		flog << mpc1.size() << ": " << i_max << ',' << v_max << endl;
 
 		bool hit = true;
 		const int curMatchSize = (int)mpc1.size();
@@ -487,11 +488,11 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			if((vTmpMatchPairs[i_max].m_idx1 == vTmpMatchPairs[j].m_idx1) ^ (vTmpMatchPairs[i_max].m_idx2 == vTmpMatchPairs[j].m_idx2)) // xor, conflict
 				vm[j] = 0.0;
 		}
-	}// end of while()
+	} // end of while()
 
 	matchedPairsCoarse = mpc1;
 
-	ostr << "  Coarse Match computed!" << endl;
+	flog << "Coarse Match computed!" << endl;
 
 	mxDestroyArray(VM);
 	mxDestroyArray(VA);
@@ -516,18 +517,15 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 
 //////////////////////////////////////////////////////////////////////////
 ////////    2. Match rest features if possible    ////
-	ostr << "Mesh 1 features: " << endl;
+	flog << "\nMatch rest features if possible" << endl;
+	flog << "  Mesh 1 features: ";
 	for (vector<HKSFeature>::const_iterator hiter = vftFine1.begin(); hiter != vftFine1.end(); ++hiter)
-	{
-		ostr << "  "<< hiter->m_index  << ',' << hiter->m_scale;
-	}
-	ostr << endl;
-	ostr << "Mesh 2 features: " << endl;
+		flog << "  "<< hiter->m_index  << ',' << hiter->m_scale;
+	flog << endl;
+	flog << "  Mesh 2 features: ";
 	for (vector<HKSFeature>::const_iterator hiter = vftFine2.begin(); hiter != vftFine2.end(); ++hiter)
-	{
-		ostr << "  " << hiter->m_index  << ',' << hiter->m_scale;
-	}
-	ostr << endl;	
+		flog << "  " << hiter->m_index  << ',' << hiter->m_scale;
+	flog << endl;	
 	
 	matchedPairsFine = matchedPairsCoarse;
 
@@ -538,6 +536,9 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 		coarseFeat1.push_back(iter->m_idx1);
 		coarseFeat2.push_back(iter->m_idx2);
 	}
+
+	flog << "!!test ok 1" << endl;
+
 	vector<int> restFeat1, restFeat2;
 	map<int, vector<HKSFeature>::const_iterator> restIdxToHKS1, restIdxToHKS2;
 	for (vector<HKSFeature>::const_iterator iter = vftFine1.begin(); iter != vftFine1.end(); ++iter)
@@ -548,6 +549,8 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			restIdxToHKS1[iter->m_index] = iter;
 		}
 	}
+	flog << "!!test ok 2" << endl;
+
 	for (vector<HKSFeature>::const_iterator iter = vftFine2.begin(); iter != vftFine2.end(); ++iter)
 	{
 		if (find(coarseFeat2.begin(), coarseFeat2.end(), iter->m_index) == coarseFeat2.end())
@@ -557,9 +560,9 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 		}
 	}
 
-	const int restSize1 = (int) restFeat1.size(),
-		      restSize2 = (int) restFeat2.size();
-	ostr << "  Rest Size1: " << restSize1 << '\t' << "Rest Size2: " << restSize2 << endl;
+	const int restSize1 = (int) restFeat1.size(), restSize2 = (int) restFeat2.size();
+	flog << "Rest Size1: " << restSize1 << '\t' << "Rest Size2: " << restSize2 << endl;
+
 	vector<VectorND> vHKC1, vHKC2;
 	vHKC1.resize(restSize1);
 	vHKC2.resize(restSize2);
@@ -595,7 +598,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			restMatches.push_back(MatchPair(restFeat1[i], restFeat2[j], s));
 		}
 	}
-	ostr << "  candidate rest matches: " << restMatches.size() << endl;
+	flog << "Candidate rest matches: " << restMatches.size() << endl;
 	while (!restMatches.empty())
 	{
 		vector<MatchPair>::iterator maxIter = restMatches.end();
@@ -633,7 +636,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 		if (pass) 
 		{
 			matchedPairsFine.push_back(MatchPair(maxIdx1, maxIdx2));
-			ostr << "  add new match: " << maxIdx1 << ", " << maxIdx2 << endl;
+			flog << "  add new match: " << maxIdx1 << ", " << maxIdx2 << endl;
 		}
 		else 
 		{
@@ -649,10 +652,10 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 		}
 	}
 
-	ostr << "  Fine matches computed" << endl;
-	ostr << " --- Total Matched Features: " << matchedPairsFine.size() << endl;
-	ostr << " --- Mesh 1 features num: " << vftFine1.size() << endl;
-	ostr << " --- Mesh 2 features num: " << vftFine2.size() << endl;
+	flog << "  Fine matches computed" << endl;
+	flog << " --- Total Matched Features: " << matchedPairsFine.size() << endl;
+	flog << " --- Mesh 1 features num: " << vftFine1.size() << endl;
+	flog << " --- Mesh 2 features num: " << vftFine2.size() << endl;
 //// add note to matchings with great discrepancy
 	
 	for (vector<MatchPair>::iterator iter = matchedPairsFine.begin(); iter != matchedPairsFine.end(); /*++iter*/ )
@@ -660,7 +663,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 		for (vector<HKSFeature>::const_iterator hiter = vftFine1.begin(); hiter != vftFine1.end(); ++hiter)
 		{
 			if (hiter->m_scale == 3 && hiter->m_index == iter->m_idx1)
-				ostr << " --- Scale-3 Feature Pair: " << iter->m_idx1 << ", " << iter->m_idx2 << endl;
+				flog << " --- Scale-3 Feature Pair: " << iter->m_idx1 << ", " << iter->m_idx2 << endl;
 		}
 
 		if (iter->m_idx1 == iter->m_idx2)
@@ -686,7 +689,9 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 			iter->m_note = -1;
 		//iter = matchedPairs.erase(iter);
 	}
-}
+
+	m_bFeatureMatched = true;
+} // DiffusionShapmeMatcher::matchFeatures()
 
 void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig) const
 {
@@ -698,6 +703,11 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 		sig.m_vec[i] = std::log(pOriginalProcessor->getVertexPairHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
 		t *= 2.0;
 	}
+}
+
+void DiffusionShapeMatcher::registerOneLevel( std::ofstream& flog )
+{
+	//TODO: finish the registration function
 }
 
 

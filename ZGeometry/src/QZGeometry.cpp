@@ -1228,10 +1228,9 @@ void QZGeometryWindow::setTaskEditing()
 
 void QZGeometryWindow::registerAutomatic()
 {
-	buildHierarchy();
-	detectFeatures();
-	matchFeatures();
-
+	this->buildHierarchy();
+	this->detectFeatures();
+	this->matchFeatures();
 }
 
 void QZGeometryWindow::buildHierarchy()
@@ -1265,6 +1264,9 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
+	ofstream ofstr("output/Registration.log");
+	shapeMatcher.registerOneLevel(ofstr);
+
 
 }
 

@@ -61,8 +61,8 @@ public:
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
-	void    matchFeatures(std::ofstream& ofstr, double matchThresh = DEFAULT_MATCH_THRESH);
-	void    registerOneLevel();
+	void    matchFeatures(std::ofstream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
+	void    registerOneLevel(std::ofstream& flog);
 	void	evaluateRegistration();
 
 	/* attributes access */
@@ -88,8 +88,6 @@ public:
 	void    initializeHKParam( const std::vector<int>& anchors, double t = 30.0 );
 	void	setRegisterDiffusionTime(double t) { this->m_registerTimescale = t; }
 
-	void    prepareHeatRegistration( double regTime );
-	void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& vftCoarse1, VectorND& vsig1 ) const;
 	// static constants
 	static const double DEFAULT_C_RATIO;
 	static const double DEFAULT_RANK_EPSILON;
@@ -113,6 +111,8 @@ private:
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
 	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
 
+	std::vector<HKSFeature> m_hksFeatureFine, m_hksFeatureCoarse;
+
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
 	bool					m_bFeatureMatched;
@@ -122,10 +122,14 @@ private:
 
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
 	double					m_registerTimescale;
-	std::vector<HKSFeature> m_hksFeatureFine, m_hksFeatureCoarse;
 	std::vector<std::vector<int> > m_matchCandidates;
 	double *randArray;	
 
 
 	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
+
+	/* helper functions */
+	void    prepareHeatRegistration( double regTime );
+	void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& vftCoarse1, VectorND& vsig1 ) const;
+
 };
