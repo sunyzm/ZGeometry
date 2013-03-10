@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <algorithm>
+#include <fstream>
 #include <engine.h>
 #include "DifferentialMeshProcessor.h"
 #include "MeshPyramid.h"
@@ -55,12 +56,16 @@ class DiffusionShapeMatcher
 public:
 	DiffusionShapeMatcher();
 	~DiffusionShapeMatcher();
+
+	/* core functions */
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
-	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = 0.04);
-	void    matchFeatures(double matchThresh = DEFAULT_MATCH_THRESH);
-	void    registerShapes();
+	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
+	void    matchFeatures(std::ofstream& ofstr, double matchThresh = DEFAULT_MATCH_THRESH);
+	void    registerOneLevel();
 	void	evaluateRegistration();
+
+	/* attributes access */
 	const std::vector<MatchPair>& getFeatureMatches(int level) const;
 	int     getPyramidLevels() const { return m_nPyramidLevels; }
 	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
@@ -93,6 +98,7 @@ public:
 	static const double DEFAULT_T_MULTIPLIER;
 	static const double DEFAULT_MATCH_TIME_LOW;
 	static const double DEFAULT_MATCH_THRESH;
+	static const double DEFAULT_EXTREAMA_THRESH;
 	static const double DEFAULT_REGISTER_TIMESCALE;
 	static const int    DEFAULT_NBASE;
 	static const int	DEFAULT_PYRAMID_LEVELS;

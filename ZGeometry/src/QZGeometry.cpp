@@ -1242,8 +1242,8 @@ void QZGeometryWindow::buildHierarchy()
 
 void QZGeometryWindow::detectFeatures()
 {
-	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
-	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, EXTREMA_THRESHOLD);
+	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
+	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	qout.output("Multi-scale mesh features detected!");
 	
 	if (!ui.glMeshWidget->m_bShowFeatures)
@@ -1252,7 +1252,11 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
-	shapeMatcher.matchFeatures();
+	ofstream ofstr("output/FeatureMatch.log", ios::trunc);
+	
+	shapeMatcher.matchFeatures(ofstr);
+	
+	ofstr.close();
 	qout.output(qformat.sprintf("Initial features matched! Match size: %d", shapeMatcher.getFeatureMatches(-1).size()));
 
 	if (!ui.glMeshWidget->m_bDrawMatching)

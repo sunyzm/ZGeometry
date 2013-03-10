@@ -22,8 +22,9 @@ const double DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE	= 30.0;
 const double DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER		= 3.0;
 const double DiffusionShapeMatcher::DEFAULT_MATCH_TIME_LOW		= 10.0;
 const double DiffusionShapeMatcher::DEFAULT_MATCH_THRESH        = 0.52;
+const double DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH     = 0.04;
 const double DiffusionShapeMatcher::DEFAULT_REGISTER_TIMESCALE	= 80;
-const int	 DiffusionShapeMatcher::DEFAULT_NBASE				= 200;//300;
+const int	 DiffusionShapeMatcher::DEFAULT_NBASE				= 200;	//300;
 const int	 DiffusionShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
 const int	 DiffusionShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
 const int	 DiffusionShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
@@ -197,7 +198,7 @@ void DiffusionShapeMatcher::constructPyramid( int n )
 
 }
 
-void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= 0.04*/ )
+void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
 {
 	assert(obj == 0 || obj == 1);
 
@@ -279,9 +280,9 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 
 }
 
-void DiffusionShapeMatcher::matchFeatures( double matchThresh )
+void DiffusionShapeMatcher::matchFeatures( ofstream& ostr, double matchThresh )
 {
-	ofstream ostr("output/FeatureMatch.log", ios::trunc);
+//	ofstream ostr("output/FeatureMatch.log", ios::trunc);
 
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = vFeatures[0];
@@ -309,19 +310,11 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 	
 	ostr << "vfCoarse1: " << size1 << "; vftCoarse2: " << size2 << "\nBefore calVertexSignature" << endl;
 
-	try
-	{
-		for(int i1 = 0; i1 < size1; i1++)
-			calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
+	for(int i1 = 0; i1 < size1; i1++)
+		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
 
-		for(int i2 = 0; i2 < size2; i2++)
-			calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
-	}
-	catch (runtime_error* e)
-	{
-		qout.output(e->what());
-		return;
-	}
+	for(int i2 = 0; i2 < size2; i2++)
+		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
 
  	ostr << "  Coarse features 1: ";
  	for (int i = 0; i < size1; ++i)
@@ -355,7 +348,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 
 /// create affinity matrix (compatibility of each candidate match)
 	const int affinitySize = (int)vTmpMatchPairs.size();
-    ostr << "\n  Affinity Matrix size: " << affinitySize << endl;
+    ostr << "\nAffinity Matrix size: " << affinitySize << endl;
 
 	mxArray *AM, *VM, *VA;
 	AM = mxCreateDoubleMatrix(affinitySize, affinitySize, mxREAL);
@@ -378,9 +371,9 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 			am[i*affinitySize+j] = am[j*affinitySize+i] = exp(-ds/sigma2);
 		}
 	}
+	ostr << "affinity matrix constructed!" << endl;
 
-//  cout << "affinity matrix done" << endl;
-	// solving the greatest eigen-vector
+	// solving the greatest eigen-vector (PCA?)
 	engPutVariable(m_ep, "AM", AM);
 	engEvalString(m_ep, "[VM,VA] = spectral_embedding(AM);");	//computing leading eigenvector of A using svd
 	VM = engGetVariable(m_ep, "VM");
@@ -498,7 +491,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 
 	matchedPairsCoarse = mpc1;
 
-	cout << "  Coarse Match computed!" << endl;
+	ostr << "  Coarse Match computed!" << endl;
 
 	mxDestroyArray(VM);
 	mxDestroyArray(VA);
@@ -523,18 +516,18 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 
 //////////////////////////////////////////////////////////////////////////
 ////////    2. Match rest features if possible    ////
-	cout << "Mesh 1 features: " << endl;
+	ostr << "Mesh 1 features: " << endl;
 	for (vector<HKSFeature>::const_iterator hiter = vftFine1.begin(); hiter != vftFine1.end(); ++hiter)
 	{
-		cout << "  "<< hiter->m_index  << ',' << hiter->m_scale;
+		ostr << "  "<< hiter->m_index  << ',' << hiter->m_scale;
 	}
-	cout << endl;
-	cout << "Mesh 2 features: " << endl;
+	ostr << endl;
+	ostr << "Mesh 2 features: " << endl;
 	for (vector<HKSFeature>::const_iterator hiter = vftFine2.begin(); hiter != vftFine2.end(); ++hiter)
 	{
-		cout << "  " << hiter->m_index  << ',' << hiter->m_scale;
+		ostr << "  " << hiter->m_index  << ',' << hiter->m_scale;
 	}
-	cout << endl;	
+	ostr << endl;	
 	
 	matchedPairsFine = matchedPairsCoarse;
 
@@ -566,7 +559,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 
 	const int restSize1 = (int) restFeat1.size(),
 		      restSize2 = (int) restFeat2.size();
-	cout << "  Rest Size1: " << restSize1 << '\t' << "Rest Size2: " << restSize2 << endl;
+	ostr << "  Rest Size1: " << restSize1 << '\t' << "Rest Size2: " << restSize2 << endl;
 	vector<VectorND> vHKC1, vHKC2;
 	vHKC1.resize(restSize1);
 	vHKC2.resize(restSize2);
@@ -640,7 +633,7 @@ void DiffusionShapeMatcher::matchFeatures( double matchThresh )
 		if (pass) 
 		{
 			matchedPairsFine.push_back(MatchPair(maxIdx1, maxIdx2));
-			cout << "  add new match: " << maxIdx1 << ", " << maxIdx2 << endl;
+			ostr << "  add new match: " << maxIdx1 << ", " << maxIdx2 << endl;
 		}
 		else 
 		{
@@ -702,16 +695,7 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 	for(int i = 0; i < hf.m_tn; i++)
 	{
 		double eref = 4.0*PI*t;
-		try
-		{		
-			sig.m_vec[i] = std::log(pOriginalProcessor->getVertexPairHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
-		}
-		catch (std::exception* e)
-		{
-			stringstream osstr;
-			osstr << e->what() << "\n i=" << i << " index=" << hf.m_index << "sig.size=" << sig.m_size << " hf.m_tl=" << hf.m_tl << " hf.m_tn" << hf.m_tn << "t=" << t << '\0';
-			throw runtime_error(std::string(e->what()) + osstr.str());
-		}
+		sig.m_vec[i] = std::log(pOriginalProcessor->getVertexPairHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
 		t *= 2.0;
 	}
 }
