@@ -62,26 +62,26 @@ public:
 	void	constructPyramid(int n);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void    matchFeatures(std::ofstream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
-	void    registerOneLevel(std::ofstream& flog);
+	void    refineRegister(std::ofstream& flog);
 	void	evaluateRegistration();
 
 	/* attributes access */
-	const std::vector<MatchPair>& getFeatureMatches(int level) const;
-	int     getPyramidLevels() const { return m_nPyramidLevels; }
 	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
-
-	/* basic */
+	int     getPyramidLevels() const { return m_nPyramidLevels; }
+	bool	isPyramidBuilt() const { return m_bPyramidBuilt; }
+	int		getRegistrationLevels() const { return m_nRegistrationLevels; }
+	void	setRegistrationLevels(int val);
 	void	setEngine(Engine* ep) { m_ep = ep; }
 	const MeshPyramid& getMeshPyramid(int obj) const { return meshPyramids[obj]; }
 	CMesh*  getMesh(int obj, int level = 0) const;
-	const std::vector<MatchPair>& getMatchedFeatures();
+	const std::vector<MatchPair>& getMatchedFeaturesResults(int level) const;
+	const std::vector<MatchPair>& getRegistrationResults(int level) const;
+	std::vector<MatchPair> getFeatureMatches() const { return matchedPairsFine; }
 
-	bool	isPyramidBuilt() const { return m_bPyramidBuilt; }
-	int		getRequiredLevels() const { return m_nRequiredLevels; }
-	void	setRequiredLevels(int val) { m_nRequiredLevels = min(val, m_nPyramidLevels); }
-	void    dumpIndexMap(const std::string& filename) const;
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
-	
+
+	void    dumpIndexMap(const std::string& filename) const;
+
 	double	getHeatKernelValue( int vi, int vj, int level);
 	void	initializeCoarseKernel(double regTimescale, const std::string& kernelName, const std::string& prolongMatName);	//calculate coarse heat kernel matrix on the given t, save the result into Matlab	
 	void	setHKParam(int v, const std::vector<int>& anchors, int level) const;
@@ -117,7 +117,7 @@ private:
 	bool					m_bFeatureDetected;
 	bool					m_bFeatureMatched;
 	int						m_nPyramidLevels;
-	int						m_nRequiredLevels;
+	int						m_nRegistrationLevels;
 	int						m_nCurrentMatchLevel;	// the level of mesh that have been registered. 
 
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
@@ -127,6 +127,9 @@ private:
 
 
 	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
+
+	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
+	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
 	/* helper functions */
 	void    prepareHeatRegistration( double regTime );

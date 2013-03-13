@@ -1256,7 +1256,7 @@ void QZGeometryWindow::matchFeatures()
 	shapeMatcher.matchFeatures(ofstr);
 	
 	ofstr.close();
-	qout.output(qformat.sprintf("Initial features matched! Match size: %d", shapeMatcher.getFeatureMatches(-1).size()));
+	qout.output(qformat.sprintf("Initial features matched! Match size: %d", shapeMatcher.getMatchedFeaturesResults(-1).size()));
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
@@ -1265,7 +1265,7 @@ void QZGeometryWindow::matchFeatures()
 void QZGeometryWindow::registerStep()
 {
 	ofstream ofstr("output/Registration.log");
-	shapeMatcher.registerOneLevel(ofstr);
+	shapeMatcher.refineRegister(ofstr);
 
 
 }

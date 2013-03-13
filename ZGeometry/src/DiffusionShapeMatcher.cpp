@@ -167,17 +167,6 @@ CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 		return meshPyramids[obj].getMesh(level);
 }
 
-const std::vector<MatchPair>& DiffusionShapeMatcher::getFeatureMatches( int level ) const
-{
-	if (level == -1)
-		return matchedPairsFine;
-	else
-	{
-		//TODO: return match pairs on different levels
-		return matchedPairsFine;
-	}
-}
-
 void DiffusionShapeMatcher::constructPyramid( int n )
 {
 	assert(n >= 1);
@@ -198,6 +187,7 @@ void DiffusionShapeMatcher::constructPyramid( int n )
 
 	m_bPyramidBuilt = true;
 
+	setRegistrationLevels(n);
 }
 
 void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
@@ -691,6 +681,8 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
 	}
 
 	m_bFeatureMatched = true;
+
+	vFeatureMatchingResults[m_nRegistrationLevels-1] = matchedPairsFine;
 } // DiffusionShapmeMatcher::matchFeatures()
 
 void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig) const
@@ -705,9 +697,35 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 	}
 }
 
-void DiffusionShapeMatcher::registerOneLevel( std::ofstream& flog )
+void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 {
-	//TODO: finish the registration function
+	// TODO
+}
+
+void DiffusionShapeMatcher::setRegistrationLevels( int val )
+{
+	m_nRegistrationLevels = min(val, m_nPyramidLevels);
+
+	vFeatureMatchingResults.resize(m_nRegistrationLevels);
+	vRegistrationResutls.resize(m_nRegistrationLevels);
+
+	m_nCurrentMatchLevel = m_nRegistrationLevels;
+}
+
+const std::vector<MatchPair>& DiffusionShapeMatcher::getMatchedFeaturesResults ( int level ) const
+{
+ 	if (level < -1 || level >= m_nRegistrationLevels) 
+		throw logic_error("Selected level out of bound!");
+ 	else if (level == -1) return vFeatureMatchingResults[m_nRegistrationLevels-1];
+ 	else return vFeatureMatchingResults[level];	
+}
+
+const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int level ) const
+{
+	if (level < -1 || level >= m_nRegistrationLevels) 
+		throw logic_error("Selected level out of bound!");
+	else if (level == -1) return vRegistrationResutls[m_nRegistrationLevels-1];
+	else return vRegistrationResutls[level];	
 }
 
 

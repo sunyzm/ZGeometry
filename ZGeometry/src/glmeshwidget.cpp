@@ -752,7 +752,8 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 	const Vector3D& trans1 = rs1->obj_trans;
 	const Vector3D& trans2 = rs2->obj_trans;
 
-	std::vector<MatchPair> vmp = shapeMatcher->getFeatureMatches(-1);
+	
+	const std::vector<MatchPair>& vmp = shapeMatcher->getMatchedFeaturesResults(-1);
 
 	glLineWidth(2.0);
 	const int size = (int)vmp.size();
@@ -802,6 +803,7 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 		}
 	}
 	gluDeleteQuadric(quadric);
+
 }
 
 
