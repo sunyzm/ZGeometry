@@ -104,6 +104,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
+	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));
 	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
 	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHKS()));
 	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
@@ -123,6 +124,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
 	QObject::connect(ui.actionMatchFeatures, SIGNAL(triggered()), this, SLOT(matchFeatures()));
+	QObject::connect(ui.actionRegisterStep, SIGNAL(triggered()), this, SLOT(registerStep()));
 }
 
 bool QZGeometryWindow::initialize()
@@ -694,6 +696,15 @@ void QZGeometryWindow::toggleShowMatchingLines(bool show)
 
 }
 
+void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
+{
+	bool bToShow = !ui.glMeshWidget->m_bDrawRegistration;
+	ui.glMeshWidget->m_bDrawRegistration = bToShow;
+	ui.actionDrawRegistration->setChecked(bToShow);
+
+	ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::setDisplayPointCloud()
 {
 	ui.actionDisplayPointCloud->setChecked(true);
@@ -1235,7 +1246,7 @@ void QZGeometryWindow::registerAutomatic()
 
 void QZGeometryWindow::buildHierarchy()
 {
-	shapeMatcher.constructPyramid(3);
+	shapeMatcher.constructPyramid(2);
 	qout.output("Mesh hierarchy constructed!");
 }
 
@@ -1243,31 +1254,38 @@ void QZGeometryWindow::detectFeatures()
 {
 	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
+	
 	qout.output("Multi-scale mesh features detected!");
 	
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::matchFeatures()
 {
 	ofstream ofstr("output/FeatureMatch.log", ios::trunc);
-	
 	shapeMatcher.matchFeatures(ofstr);
-	
 	ofstr.close();
-	qout.output(qformat.sprintf("Initial features matched! Match size: %d", shapeMatcher.getMatchedFeaturesResults(-1).size()));
+	
+	qout.output(qformat.sprintf("Initial features matched! Match#: %d", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size()));
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::registerStep()
 {
 	ofstream ofstr("output/Registration.log");
 	shapeMatcher.refineRegister(ofstr);
+	ofstr.close();
+	
+	qout.output(qformat.sprintf("Registration level %d finished! Registered#:%d", shapeMatcher.getAlreadyRegisteredLevel(), shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel()).size()));
 
-
+	if (!ui.glMeshWidget->m_bDrawRegistration)
+		toggleDrawRegistration();
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::registerFull()

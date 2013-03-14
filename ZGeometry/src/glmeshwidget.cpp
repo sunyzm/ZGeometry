@@ -64,7 +64,8 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowRefPoint = false;
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
-	
+	m_bDrawRegistration = false;
+
 	m_nMeshLevel = 0;
 
 	setAutoFillBackground(false);
@@ -397,7 +398,7 @@ void GLMeshWidget::drawGL()
 		drawMeshExt(pDSM->getMeshProcessor(0, m_nMeshLevel), vpRS[0]);
 		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
 
-		if (m_bDrawMatching)
+		if (m_bDrawMatching || m_bDrawRegistration)
 			drawMatching(pDSM, vpRS[0], vpRS[1]);
 	}
 	
@@ -741,7 +742,7 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
 {
-	CMesh *tmesh1 = shapeMatcher->getMesh(0), *tmesh2 = shapeMatcher->getMesh(1);
+	const CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
 
 	float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
@@ -751,59 +752,107 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 	rs2->obj_rot.convert(rot2);
 	const Vector3D& trans1 = rs1->obj_trans;
 	const Vector3D& trans2 = rs2->obj_trans;
-
-	
-	const std::vector<MatchPair>& vmp = shapeMatcher->getMatchedFeaturesResults(-1);
-
-	glLineWidth(2.0);
-	const int size = (int)vmp.size();
-
-	GLUquadric* quadric = gluNewQuadric();
-	gluQuadricDrawStyle(quadric, GLU_FILL);
-	for (int i = 0; i < size; i++)
+		
+	if (m_bDrawMatching)
 	{
+		const std::vector<MatchPair>& vmp = shapeMatcher->getMatchedFeaturesResults(shapeMatcher->getAlreadyMatchedLevel());
+		const int size = (int)vmp.size();
 
-		float cc = (i*1.0f)/(size-1.0f);
-		glColorCoded(cc*4.0f, 0.9);
-		//greenCoded(cc,0.9);
-		int loc1 = vmp[i].m_idx1;
-		int loc2 = vmp[i].m_idx2;
-
-		Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
-		//pos1 -= tmesh1->m_Center;
-		Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
-		//pos2 -= tmesh2->m_Center;
-
-		double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
-		double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
-		double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
-
-		double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
-		double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
-		double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
-
-		glPushMatrix();
-		glTranslated(x1, y1, z1);
-		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
-		glPopMatrix();
-
-		glPushMatrix();
-		glTranslated(x2, y2, z2);
-		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
-		glPopMatrix();
-
-		if (m_bShowCorrespondenceLine)
+		glLineWidth(2.0);
+		GLUquadric* quadric = gluNewQuadric();
+		gluQuadricDrawStyle(quadric, GLU_FILL);
+		for (int i = 0; i < size; i++)
 		{
-			glDisable(GL_LIGHTING);
-			glBegin(GL_LINES);
-			glVertex3d(x1, y1, z1);
-			glVertex3d(x2, y2, z2);
-			glEnd();
-			glEnable(GL_LIGHTING);
-		}
-	}
-	gluDeleteQuadric(quadric);
 
+			float cc = (i*1.0f)/(size-1.0f);
+			glColorCoded(cc*4.0f, 0.9);
+			//greenCoded(cc,0.9);
+			int loc1 = vmp[i].m_idx1;
+			int loc2 = vmp[i].m_idx2;
+
+			Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
+			Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
+
+			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
+			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
+			double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
+
+			double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
+			double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
+			double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
+
+			glPushMatrix();
+			glTranslated(x1, y1, z1);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			glPopMatrix();
+
+			glPushMatrix();
+			glTranslated(x2, y2, z2);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			glPopMatrix();
+
+			if (m_bShowCorrespondenceLine)
+			{
+				glDisable(GL_LIGHTING);
+				glBegin(GL_LINES);
+				glVertex3d(x1, y1, z1);
+				glVertex3d(x2, y2, z2);
+				glEnd();
+				glEnable(GL_LIGHTING);
+			}
+		}
+		gluDeleteQuadric(quadric);
+	}
+
+	if (m_bDrawRegistration)
+	{
+		const std::vector<MatchPair>& vdr = shapeMatcher->getRegistrationResults(shapeMatcher->getAlreadyRegisteredLevel());
+		const int size = vdr.size();
+		std::vector<int> colorClass1, colorClass2;
+		colorClass1.resize(tmesh1->getVerticesNum(), -1);
+		colorClass2.resize(tmesh2->getVerticesNum(), -1);
+		
+		GLUquadric* quadric = gluNewQuadric();
+		gluQuadricDrawStyle(quadric, GLU_FILL);
+		for (int i = 0; i < size; i++)
+		{
+			const int loc1 = vdr[i].m_idx1;
+			const int loc2 = vdr[i].m_idx2;
+			Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
+			Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
+
+			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
+			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
+			double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
+
+			double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
+			double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
+			double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
+
+			int color = i;
+			
+			if (colorClass1[loc1] != -1)
+				color = colorClass2[loc2] = colorClass1[loc1];
+			else if (colorClass2[loc2] != -1)
+				color = colorClass1[loc1] = colorClass2[loc2];
+			else 
+				colorClass1[loc1] = colorClass2[loc2] = color;
+
+			float cc = (color*1.0f) / ((float)size-1.0f);
+
+			glColorCoded(cc*4.0f, 0.9);
+			glPushMatrix();
+			glTranslated(x1, y1, z1);
+			gluSphere(quadric, tmesh1->getAvgEdgeLength()*0.2, 16, 8);
+			glPopMatrix();
+
+			glPushMatrix();
+			glTranslated(x2, y2, z2);
+			gluSphere(quadric, tmesh2->getAvgEdgeLength()*0.2, 16, 8);
+			glPopMatrix();			
+		}
+		gluDeleteQuadric(quadric);
+	}
 }
 
 

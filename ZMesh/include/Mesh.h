@@ -69,8 +69,10 @@ public:
 	double				getMeanCurvature() const { return m_vMeanCurvature; }
 	double				getGaussCurvature() const { return m_vGaussCurvature; }
 	std::vector<CFace*> getAdjacentFaces() const;
+	CHalfEdge*			getHalfEdge(int ei) const { return m_HalfEdges[ei]; }
 	const Vector3D&		getPosition() const { return m_vPosition; } 
-	bool				judgeOnBoundary();
+	int					getValence() const { return m_nValence; }
+	bool				judgeOnBoundary() const;
 	bool				isHole() const { return m_bIsHole; }
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
@@ -96,7 +98,7 @@ private:
 
 	double					m_LocalGeodesic;	// geodesic from local vertex
 	bool					m_inheap;			// in heap or not
-	int						m_vMatched;
+//	int						m_vMatched;
 	int						m_mark;
 };
 
@@ -246,7 +248,6 @@ public:
 	int			getVerticesNum() const { return m_nVertex; }
 	int			getFaceNum() const { return m_nFace; }
 	int         getHalfEdgeNum() const { return m_nHalfEdge; }
-	int			getMatchedVerticesNum() const;
 	int			getFaceNum() {return m_nFace;}
 	double		getAvgEdgeLength() const { return m_avgEdgeLen; }
 	int			getEdgeNum();		// get number of edges ( not half-edge! )
@@ -272,8 +273,8 @@ public:
 	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	double		getVolume();	// calculate volume (area) of a surface
-	bool		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
-	bool		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
+	void calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
+	void calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
 	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;

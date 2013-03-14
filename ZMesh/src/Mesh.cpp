@@ -136,17 +136,17 @@ void CVertex::calcNormal()
 	this->m_vNormal = v;
 }
 
-bool CVertex::judgeOnBoundary()
+bool CVertex::judgeOnBoundary() const
 {
-	for (vector<CHalfEdge*>::iterator iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter)
+	for (vector<CHalfEdge*>::const_iterator iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter)
 	{
 		if ((*iter)->getTwinHalfEdge() == NULL || false == (*iter)->getTwinHalfEdge()->isValid())
 		{
-			m_bIsBoundary = true;
+//			m_bIsBoundary = true;
 			return true;
 		}
 	}
-	m_bIsBoundary = false;
+//	m_bIsBoundary = false;
 	return false;
 }
 
@@ -2541,8 +2541,9 @@ double CMesh::getVolume()
 	return vol;
 }
 
-bool CMesh::calAreaRatio(CMesh* tmesh, vector<int>& var)
+void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& ar )
 {
+/*
 	if(!var.empty()) var.clear();
 
 	var.resize(61);
@@ -2573,11 +2574,12 @@ bool CMesh::calAreaRatio(CMesh* tmesh, vector<int>& var)
 		if(ar<61) var[ar]++;
 		else var[60]++;
 	}
-	return true;
+*/
 }
 
-bool CMesh::calLengthDifference(const CMesh* tmesh, vector<double>& ld) const
+void CMesh::calLengthDifference( const CMesh* tmesh, std::vector<double>& ld ) const
 {
+/*
 	if(!ld.empty()) ld.clear();
 	const double adjustRatio = this->m_avgEdgeLen / tmesh->m_avgEdgeLen;
 	ld.resize(21, 0.0);
@@ -2610,6 +2612,7 @@ bool CMesh::calLengthDifference(const CMesh* tmesh, vector<double>& ld) const
 	}
 
 	return true;
+*/
 }
 
 std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
@@ -3121,17 +3124,6 @@ void CMesh::clearVertexMark()
 {
 	for (int i = 0; i < m_nVertex; i++) 
 		m_pVertex[i].m_mark = -1;
-}
-
-int CMesh::getMatchedVerticesNum() const
-{
-	int count = 0;
-	for (int i = 0; i < m_nVertex; ++i)
-	{
-		if (m_pVertex[i].m_vMatched >= 0)
-			count++;
-	}
-	return count;
 }
 
 void CMesh::scaleEdgeLenToUnit()

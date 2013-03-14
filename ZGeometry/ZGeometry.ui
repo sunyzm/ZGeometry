@@ -285,6 +285,7 @@
     </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
+    <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
@@ -673,6 +674,14 @@
   <action name="actionRegisterFull">
    <property name="text">
     <string>Register full</string>
+   </property>
+  </action>
+  <action name="actionDrawRegistration">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw registration</string>
    </property>
   </action>
  </widget>

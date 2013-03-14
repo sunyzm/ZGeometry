@@ -21,7 +21,7 @@ public:
 public:
 	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
 	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_score = score; m_note = 0;}
-	bool operator== (const MatchPair& mc) const;
+	bool operator== (const MatchPair& mc) const { return (m_idx1 == mc.m_idx1 && m_idx2 == mc.m_idx2); }
 
 	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
 	{
@@ -51,6 +51,25 @@ public:
 	void setTimes(double tl, double tu, double tn) { m_tl = tl; m_tu = tu; m_tn = tn; }
 };
 
+class HKParam : public VectorND
+{
+public:
+	HKParam& operator =(const HKParam& hkp);
+	double m_votes;
+	virtual void clear();
+};
+
+class HKParamManager
+{
+public:
+	DifferentialMeshProcessor* pMP;
+	std::vector<HKParam> vHKParam;
+	
+	void initialize(DifferentialMeshProcessor* p) { pMP = p; }
+	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
+	const std::vector<HKParam>& getHKParam() const { return vHKParam; }
+};
+
 class DiffusionShapeMatcher
 {
 public:
@@ -69,14 +88,15 @@ public:
 	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
 	int     getPyramidLevels() const { return m_nPyramidLevels; }
 	bool	isPyramidBuilt() const { return m_bPyramidBuilt; }
-	int		getRegistrationLevels() const { return m_nRegistrationLevels; }
+	int		getTotalRegistrationLevels() const { return m_nRegistrationLevels; }
 	void	setRegistrationLevels(int val);
 	void	setEngine(Engine* ep) { m_ep = ep; }
 	const MeshPyramid& getMeshPyramid(int obj) const { return meshPyramids[obj]; }
 	CMesh*  getMesh(int obj, int level = 0) const;
+	int     getAlreadyRegisteredLevel() const { return m_nAlreadyRegisteredLevel; }
+	int		getAlreadyMatchedLevel() const { return m_nAlreadyMatchedLevel; }
 	const std::vector<MatchPair>& getMatchedFeaturesResults(int level) const;
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
-	std::vector<MatchPair> getFeatureMatches() const { return matchedPairsFine; }
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 
@@ -116,17 +136,16 @@ private:
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
 	bool					m_bFeatureMatched;
-	int						m_nPyramidLevels;
-	int						m_nRegistrationLevels;
-	int						m_nCurrentMatchLevel;	// the level of mesh that have been registered. 
-
+	int						m_nPyramidLevels;           // >= 1
+	int						m_nRegistrationLevels;      // [1,..,m_nPyramidLevels]
+	int						m_nAlreadyRegisteredLevel;	// [0,..,m_nRegistrationLevels]
+	int						m_nAlreadyMatchedLevel;		// [1,...,m_nRegistrationLevels]
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
 	double					m_registerTimescale;
 	std::vector<std::vector<int> > m_matchCandidates;
 	double *randArray;	
 
-
-	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
+	HKParamManager			m_HKParamMgr[2];
 
 	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > vRegistrationResutls;
@@ -134,5 +153,6 @@ private:
 	/* helper functions */
 	void    prepareHeatRegistration( double regTime );
 	void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& vftCoarse1, VectorND& vsig1 ) const;
-
+	double  computeMatchScore(int idx1, int idx2) const;
+	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
 };

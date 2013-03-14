@@ -17,7 +17,7 @@ public:
 	bool m_bShowSignature;
 	bool m_bShowRefPoint;
 	bool m_bShowFeatureMatching;
-	bool m_bShowRegistration;
+	bool m_bDrawRegistration;
 	bool m_bDrawMatching;
 	bool m_bShowCorrespondenceLine;
 	int	 m_nMeshLevel;

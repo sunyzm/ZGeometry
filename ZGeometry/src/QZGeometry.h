@@ -67,6 +67,7 @@ private slots:
 	void toggleShowFeatures(bool show = false);
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
+	void toggleDrawRegistration(bool show = false);
 	
 	void clone();
 	void deformSimple();
