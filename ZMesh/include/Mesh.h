@@ -239,25 +239,25 @@ public:
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so taht the average edge length is 1
 
 	// ---- attributes access ---- //
-	const std::string& getMeshName() const { return m_meshName; }
-	CVertex*	getVertex(int i) { return m_vVertices[i]; }
-	const CVertex* getVertex_const(int i) const { return m_vVertices[i]; }
-	CFace*		getFace(int i) { return &m_pFace[i]; }
-	const CFace* getFace_const(int i) const { return m_vFaces[i]; }
-	double		getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
-	int			getVerticesNum() const { return m_nVertex; }
-	int			getFaceNum() const { return m_nFace; }
-	int         getHalfEdgeNum() const { return m_nHalfEdge; }
-	int			getFaceNum() {return m_nFace;}
-	double		getAvgEdgeLength() const { return m_avgEdgeLen; }
-	int			getEdgeNum();		// get number of edges ( not half-edge! )
-	int			getBoundaryNum() const;    // get number of boundaries
-	int			getBoundaryVertexNum() const; // get number of boundary vertices
-	Vector3D	getBoundingBox() const { return m_bBox; }
-	Vector3D    getCenter() const { return m_Center; }
+	const std::string&	getMeshName() const { return m_meshName; }
+	CVertex*			getVertex(int i) { return m_vVertices[i]; }
+	const CVertex*		getVertex_const(int i) const { return m_vVertices[i]; }
+	CFace*				getFace(int i) { return &m_pFace[i]; }
+	const CFace*		getFace_const(int i) const { return m_vFaces[i]; }
+	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
+	int					getVerticesNum() const { return m_nVertex; }
+	int					getFaceNum() const { return m_nFace; }
+	int					getHalfEdgeNum() const { return m_nHalfEdge; }
+	int					getFaceNum() { return m_nFace; }
+	double				getAvgEdgeLength() const { return m_avgEdgeLen; }
+	int					getEdgeNum();		// get number of edges ( not half-edge! )
+	int					getBoundaryNum() const;    // get number of boundaries
+	int					getBoundaryVertexNum() const; // get number of boundary vertices
+	const Vector3D&		getBoundingBox() const { return m_bBox; }
+	const Vector3D&		getCenter() const { return m_Center; }
+	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
 
 	void	    gatherStatistics();
-
 	bool        hasBounary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
@@ -273,8 +273,8 @@ public:
 	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	double		getVolume();	// calculate volume (area) of a surface
-	void calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
-	void calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
+	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
+	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
 	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;

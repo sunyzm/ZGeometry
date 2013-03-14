@@ -125,6 +125,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
 	QObject::connect(ui.actionMatchFeatures, SIGNAL(triggered()), this, SLOT(matchFeatures()));
 	QObject::connect(ui.actionRegisterStep, SIGNAL(triggered()), this, SLOT(registerStep()));
+	QObject::connect(ui.actionRegisterFull, SIGNAL(triggered()), this, SLOT(registerFull()));
+
 }
 
 bool QZGeometryWindow::initialize()
@@ -1256,6 +1258,7 @@ void QZGeometryWindow::detectFeatures()
 	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	
 	qout.output("Multi-scale mesh features detected!");
+	qout.output(qformat.sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 	
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1277,12 +1280,25 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
+	qout.output(qformat.sprintf("-------- level %d --------", shapeMatcher.getAlreadyRegisteredLevel() - 1));
+
 	ofstream ofstr("output/Registration.log");
+	CStopWatch timer;
+	timer.startTimer();
 	shapeMatcher.refineRegister(ofstr);
+	timer.stopTimer();
 	ofstr.close();
 	
-	qout.output(qformat.sprintf("Registration level %d finished! Registered#:%d", shapeMatcher.getAlreadyRegisteredLevel(), shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel()).size()));
-
+	int level = shapeMatcher.getAlreadyRegisteredLevel();
+	const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
+	const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
+	
+	qout.output(qformat.sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matced:%d; Registered:%d",
+		                        level, timer.getElapsedTime(), vf.size(), vr.size()));
+	qout.output(qformat.sprintf("Registered ratio: %f (%d/%d)", 
+		                        double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
+								vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
+	
 	if (!ui.glMeshWidget->m_bDrawRegistration)
 		toggleDrawRegistration();
 	ui.glMeshWidget->update();
@@ -1290,7 +1306,8 @@ void QZGeometryWindow::registerStep()
 
 void QZGeometryWindow::registerFull()
 {
-
+	while(shapeMatcher.getAlreadyMatchedLevel() > 0)
+		registerStep();
 }
 
 void QZGeometryWindow::showFiner()

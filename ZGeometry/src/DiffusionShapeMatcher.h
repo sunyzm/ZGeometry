@@ -97,6 +97,7 @@ public:
 	int		getAlreadyMatchedLevel() const { return m_nAlreadyMatchedLevel; }
 	const std::vector<MatchPair>& getMatchedFeaturesResults(int level) const;
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
+	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return vFeatures[obj]; }
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 

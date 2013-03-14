@@ -694,6 +694,8 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 	const int totalLevels = m_nRegistrationLevels;
 	const int current_level = m_nAlreadyRegisteredLevel - 1;	//the registration level we currently working on
 	
+	flog << "-------- registration level " << current_level << " --------" << endl;
+
 	double thresh;
 	double regT = 20.0 * pow(2.0, current_level);
 	if (current_level == 1) 
@@ -712,7 +714,7 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 	const CMesh *oriMesh1 = pOriginalMesh[0], *oriMesh2 = pOriginalMesh[1];
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
 	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
-	vector<MatchPair> featureMatch = getMatchedFeaturesResults(m_nAlreadyRegisteredLevel);
+	vector<MatchPair> featureMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
 
 	vector<int> vMatch1, vMatch2;
 	vector<double> vMatchScore1, vMatchScore2;
@@ -924,10 +926,10 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 		}
 	}
 
-	vFeatureMatchingResults[m_nAlreadyMatchedLevel-1] = featureMatch;
-	vRegistrationResutls[m_nAlreadyRegisteredLevel-1] = refinedReg;
 	m_nAlreadyMatchedLevel--;
 	m_nAlreadyRegisteredLevel--;
+	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = featureMatch;
+	vRegistrationResutls[m_nAlreadyRegisteredLevel] = refinedReg;
 
 } // refineRegister
 

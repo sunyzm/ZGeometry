@@ -770,8 +770,8 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 			int loc1 = vmp[i].m_idx1;
 			int loc2 = vmp[i].m_idx2;
 
-			Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
-			Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
+			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
+			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
 
 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
@@ -818,8 +818,8 @@ void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, cons
 		{
 			const int loc1 = vdr[i].m_idx1;
 			const int loc2 = vdr[i].m_idx2;
-			Vector3D pos1 = tmesh1->getVertex_const(loc1)->getPosition();
-			Vector3D pos2 = tmesh2->getVertex_const(loc2)->getPosition();
+			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
+			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
 
 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
