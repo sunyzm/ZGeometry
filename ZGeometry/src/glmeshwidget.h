@@ -44,7 +44,7 @@ protected:
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
-	void drawMatching(const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
+	void drawCorrespondences(const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
 signals:
 	void vertexPicked1(int pRef);
 	void vertexPicked2(int pRef);

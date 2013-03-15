@@ -72,7 +72,8 @@ public:
 	CHalfEdge*			getHalfEdge(int ei) const { return m_HalfEdges[ei]; }
 	const Vector3D&		getPosition() const { return m_vPosition; } 
 	int					getValence() const { return m_nValence; }
-	bool				judgeOnBoundary() const;
+	bool				judgeOnBoundary();
+	bool				isOnBoundary() const { return m_bIsBoundary; }
 	bool				isHole() const { return m_bIsHole; }
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }

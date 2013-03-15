@@ -399,7 +399,7 @@ void GLMeshWidget::drawGL()
 		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
 
 		if (m_bDrawMatching || m_bDrawRegistration)
-			drawMatching(pDSM, vpRS[0], vpRS[1]);
+			drawCorrespondences(pDSM, vpRS[0], vpRS[1]);
 	}
 	
  	glMatrixMode(GL_MODELVIEW);
@@ -740,7 +740,7 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 }
 
-void GLMeshWidget::drawMatching( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
+void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
 {
 	const CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
 

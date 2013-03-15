@@ -24,7 +24,6 @@ const double DiffusionShapeMatcher::DEFAULT_MATCH_TIME_LOW		= 10.0;
 const double DiffusionShapeMatcher::DEFAULT_MATCH_THRESH        = 0.52;
 const double DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH     = 0.04;
 const double DiffusionShapeMatcher::DEFAULT_REGISTER_TIMESCALE	= 80;
-const int	 DiffusionShapeMatcher::DEFAULT_NBASE				= 200;	//300;
 const int	 DiffusionShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
 const int	 DiffusionShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
 const int	 DiffusionShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
@@ -760,7 +759,7 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 		const int vid_i = mpIter->m_idx1, vid_j = mpIter->m_idx2;
 		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
 
-		// filter out repeated match
+		// filter out repeated matches
 		vector<MatchPair>::iterator uiter = find(uniquePairs.begin(), uniquePairs.end(), MatchPair(vi, vj));
 		if (uiter != uniquePairs.end()) continue;
 		else
@@ -825,7 +824,7 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 			if( vMatch1[vt] >= 0 && vMatch1[vt] < coarseSize2 ) 
 				continue;  // already registered
 
-			if (tmesh1->getVertex_const(vt)->judgeOnBoundary())
+			if (tmesh1->getVertex_const(vt)->isOnBoundary())
 				continue;
 		//  if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
 		//		continue;	// low priority points skipped
@@ -1046,7 +1045,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 // 		if (tmesh2->m_pVertex[vt].m_vMatched >= 0 && tmesh2->m_pVertex[vt].m_vMatched < tmesh1->m_nVertex)
 // 			continue;	//injection, not a good idea
 		int vid_t = tmesh2->getVertex_const(vt)->getVID();
-		if (tmesh2->getVertex_const(vt)->judgeOnBoundary())
+		if (tmesh2->getVertex_const(vt)->isOnBoundary())
 			continue;
 		double dt = computeMatchScore(vid_i, vid_t);
 		if(dt > smax)

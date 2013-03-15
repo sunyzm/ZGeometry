@@ -1248,12 +1248,14 @@ void QZGeometryWindow::registerAutomatic()
 
 void QZGeometryWindow::buildHierarchy()
 {
+	qout.output("-- Build hierarchy --");
 	shapeMatcher.constructPyramid(2);
 	qout.output("Mesh hierarchy constructed!");
 }
 
 void QZGeometryWindow::detectFeatures()
 {
+	qout.output("-- Detect initial features --");
 	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	
@@ -1267,11 +1269,15 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
+	qout.output("-- Match initial features --");
 	ofstream ofstr("output/FeatureMatch.log", ios::trunc);
-	shapeMatcher.matchFeatures(ofstr);
+	CStopWatch timer;
+	timer.startTimer();
+	shapeMatcher.matchFeatures(ofstr, DiffusionShapeMatcher::DEFAULT_MATCH_THRESH);
+	timer.stopTimer();
 	ofstr.close();
 	
-	qout.output(qformat.sprintf("Initial features matched! Match#: %d", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size()));
+	qout.output(qformat.sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
@@ -1280,7 +1286,7 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
-	qout.output(qformat.sprintf("-------- level %d --------", shapeMatcher.getAlreadyRegisteredLevel() - 1));
+	qout.output(qformat.sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
 
 	ofstream ofstr("output/Registration.log");
 	CStopWatch timer;

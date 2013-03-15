@@ -136,17 +136,17 @@ void CVertex::calcNormal()
 	this->m_vNormal = v;
 }
 
-bool CVertex::judgeOnBoundary() const
+bool CVertex::judgeOnBoundary()
 {
 	for (vector<CHalfEdge*>::const_iterator iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter)
 	{
 		if ((*iter)->getTwinHalfEdge() == NULL || false == (*iter)->getTwinHalfEdge()->isValid())
 		{
-//			m_bIsBoundary = true;
+			m_bIsBoundary = true;
 			return true;
 		}
 	}
-//	m_bIsBoundary = false;
+	m_bIsBoundary = false;
 	return false;
 }
 
@@ -3063,9 +3063,7 @@ void CMesh::gatherStatistics()
 
 	int boundaryCount(0);
 	double edgeLength = 0;
-	double center_x = 0.0,
-		center_y = 0.0,
-		center_z = 0.0;
+	double center_x = 0.0, center_y = 0.0, center_z = 0.0;
 	Vector3D boundBox(0.0, 0.0, 0.0);
 
 	for (int i = 0; i < m_nVertex; ++i)
@@ -3079,7 +3077,7 @@ void CMesh::gatherStatistics()
 		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
 		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
 
-		if (m_vVertices[i]->m_bIsBoundary) 
+		if (m_vVertices[i]->judgeOnBoundary()) 
 			boundaryCount++;
 	}
 	center_x = center_x / m_nVertex;

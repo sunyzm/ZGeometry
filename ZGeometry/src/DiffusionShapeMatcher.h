@@ -21,17 +21,17 @@ public:
 public:
 	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
 	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_score = score; m_note = 0;}
-	bool operator== (const MatchPair& mc) const { return (m_idx1 == mc.m_idx1 && m_idx2 == mc.m_idx2); }
-
-	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
-	{
-		return mp1.m_score < mp2.m_score;
-	}
-
-	friend bool operator> (const MatchPair& mp1, const MatchPair& mp2)
-	{
-		return mp1.m_score > mp2.m_score;
-	}
+//	bool operator== (const MatchPair& mc) const { return (m_idx1 == mc.m_idx1 && m_idx2 == mc.m_idx2); }
+	friend bool operator== (const MatchPair& mp1, const MatchPair& mp2) { return (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 == mp2.m_idx2); }
+ 	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
+ 	{
+ 		return mp1.m_score < mp2.m_score;
+ 	}
+ 
+ 	friend bool operator> (const MatchPair& mp1, const MatchPair& mp2)
+ 	{
+ 		return mp1.m_score > mp2.m_score;
+ 	}
 };
 
 class HKSFeature : public MeshFeature
@@ -119,7 +119,6 @@ public:
 	static const double DEFAULT_MATCH_THRESH;
 	static const double DEFAULT_EXTREAMA_THRESH;
 	static const double DEFAULT_REGISTER_TIMESCALE;
-	static const int    DEFAULT_NBASE;
 	static const int	DEFAULT_PYRAMID_LEVELS;
 	static const int	MAXIMAL_PYRAMID_LEVELS;
 	static const int    NUM_OF_EIGVAL_FOR_ESTIMATE;
