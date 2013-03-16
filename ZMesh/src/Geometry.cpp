@@ -429,6 +429,13 @@ double VectorND::normalizedDifference( const VectorND& v ) const
 	return sum;
 }
 
+void VectorND::resize( int n )
+{
+	if(m_vec) delete []m_vec;
+	m_size = n;
+	m_vec = new double[m_size];
+}
+
 /////////////////////////////////////////////////////////////
 // Matrix3 : 3*3 matrix
 /////////////////////////////////////////////////////////////

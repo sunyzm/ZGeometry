@@ -113,6 +113,7 @@ public:
 	virtual ~VectorND() { if(m_vec) delete []m_vec; }
 	VectorND& operator= (const VectorND& vnd); 
 public:
+	void resize(int n);	// equivalent to reserve
 	void reserve(int n);
 	bool empty() {return !m_vec;}
 	virtual void clear() {m_size = 0; if(!empty()) delete m_vec; m_vec=NULL;}

@@ -1094,7 +1094,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 	return vmatch;
 }
 
-void DiffusionShapeMatcher::computeFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void DiffusionShapeMatcher::ComputeTensorFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
 {
 
 	if(i==j || i==k || j==k)
@@ -1145,7 +1145,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	// improve to local triangles
 	// ***************************************/
 
-	if(vsize1>8) 
+	if(vsize1 > 8) 
 	{
 		for(i=0; i<vsize1; i++)
 		{
@@ -1214,7 +1214,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 		int vi = triangs[i*3];
 		int vj = triangs[i*3+1];
 		int vk = triangs[i*3+2];
-		computeFeature(pmp1, ct1.m_member[vi], ct1.m_member[vj], ct1.m_member[vk],t, &pfeat1[i*3]);
+		ComputeTensorFeature(pmp1, ct1.m_member[vi], ct1.m_member[vj], ct1.m_member[vk], t, pfeat1 + i*3);
 	}
 
 	for(i=0; i<vsize2; i++)
@@ -1223,7 +1223,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 		{
 			for(k=0; k<vsize2; k++)
 			{
-				computeFeature(pmp2,ct2.m_member[i],ct2.m_member[j],ct2.m_member[k],t,&pfeat2[((i*vsize2+j)*vsize2+k)*3]);
+				ComputeTensorFeature(pmp2, ct2.m_member[i], ct2.m_member[j], ct2.m_member[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*3);
 			}
 		}
 	}
@@ -1251,19 +1251,24 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	while(1)
 	{
 		count++;
-		double pmax = 0.0;
-		int imax = 0;
 
-		for(i=0; i<vsize1; i++)
-		{
-			if(pv[i]>pmax)
-			{
-				pmax = pv[i];
-				imax = i;
-			}
-		}
+		double *pmax = max_element(pv, pv+vsize1);
+		int imax = pmax - pv;
+
+// 		double pmax = 0.0;
+// 		int imax = 0;
+// 		
+// 		for(i=0; i<vsize1; i++)
+// 		{
+// 			if(pv[i]>pmax)
+// 			{
+// 				pmax = pv[i];
+// 				imax = i;
+// 			}
+// 		}
 		//cout << imax << ": " << pmax << endl;
-		if(pmax<thresh || count>vsize1) break;
+		if(*pmax < thresh || count > vsize1) 
+			break;
 		result += pv[imax];
 		MatchPair mpt;
 		mpt.m_idx2 = ct1.m_member[imax];
@@ -1284,10 +1289,15 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	mxDestroyArray(feat2);
 	mxDestroyArray(tris);
 	mxDestroyArray(numbs);
-	mxDestroyArray(mX2);
-	mxDestroyArray(vX2);
-	mxDestroyArray(score);
+// 	mxDestroyArray(mX2);
+// 	mxDestroyArray(vX2);
+// 	mxDestroyArray(score);
 
 	return result;
 
+}
+
+void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double timescale, double thresh )
+{
+	//TODO
 }

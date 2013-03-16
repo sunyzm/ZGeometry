@@ -1,0 +1,16 @@
+######################## Installation guide of ZGeometry ########################
+
+-------------------------------------------------------------------------------
+Prerequisite:
+1. Visual Studio 2010
+2. Qt 4.8
+3. Qt Visual Studio Add-on 1.1
+4. Matlab 32_bit
+
+-------------------------------------------------------------------------------
+Development environment settings:
+1. Add $(QT_DIR)\bin$ to system path
+2. Add $(MatlabDir)runtime\win32;$(MatlabDir)bin;$(MatlabDir)bin\win32 to system path
+3. In Matlab, add $(SolutionDir)\thirdparty\matlab to search path with subfolders.
+4. In Visual Studio, set user macro $(MatlabDir) to the root directory of matlab 32bit in the property page of Microsoft.Cpp.Win32.user.
+5. Place the 'Data' folder in the same path with the 'ZGeometry' solution folder

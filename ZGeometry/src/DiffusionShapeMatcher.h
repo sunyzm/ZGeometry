@@ -87,6 +87,7 @@ public:
 	void	constructPyramid(int n);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void    matchFeatures(std::ofstream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
+	void    matchFeaturesTensor(std::ofstream& flog, double timescale, double thresh);
 	void    refineRegister(std::ofstream& flog);
 	void	evaluateRegistration();
 
@@ -106,14 +107,7 @@ public:
 	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return vFeatures[obj]; }
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
-
 	void    dumpIndexMap(const std::string& filename) const;
-
-	double	getHeatKernelValue( int vi, int vj, int level);
-	void	initializeCoarseKernel(double regTimescale, const std::string& kernelName, const std::string& prolongMatName);	//calculate coarse heat kernel matrix on the given t, save the result into Matlab	
-	void	setHKParam(int v, const std::vector<int>& anchors, int level) const;
-	void    initializeHKParam( const std::vector<int>& anchors, double t = 30.0 );
-	void	setRegisterDiffusionTime(double t) { this->m_registerTimescale = t; }
 
 	// static constants
 	static const double DEFAULT_C_RATIO;
@@ -136,6 +130,8 @@ private:
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
 	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
+	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
+	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
@@ -146,17 +142,12 @@ private:
 	int						m_nAlreadyMatchedLevel;		// [1,...,m_nRegistrationLevels]
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
 	double					m_registerTimescale;
-	std::vector<std::vector<int> > m_matchCandidates;
-	double *randArray;	
-
 	HKParamManager			m_HKParamMgr[2];
 
-	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
-	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
 	/* helper functions */
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
-	static void computeFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static void ComputeTensorFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
 	static double TensorMatching(Engine *ep,  const DifferentialMeshProcessor* pmp1,  const DifferentialMeshProcessor* pmp2, Cluster& ct1, Cluster& ct2, std::vector<MatchPair>& matched, double t, double thresh);
 	void    prepareHeatRegistration( double regTime );
 	double  computeMatchScore(int idx1, int idx2) const;
