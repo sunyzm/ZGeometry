@@ -19,6 +19,7 @@ public:
 	int		m_note;		
 
 public:
+	MatchPair() { m_idx1 = -1; m_idx2 = -1; }
 	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
 	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_score = score; m_note = 0;}
 //	bool operator== (const MatchPair& mc) const { return (m_idx1 == mc.m_idx1 && m_idx2 == mc.m_idx2); }
@@ -73,6 +74,11 @@ public:
 class DiffusionShapeMatcher
 {
 public:
+	class Cluster{
+	public:
+		std::vector<int> m_member;
+	};
+public:
 	DiffusionShapeMatcher();
 	~DiffusionShapeMatcher();
 
@@ -124,14 +130,12 @@ public:
 	static const int    NUM_OF_EIGVAL_FOR_ESTIMATE;
 
 private:
-	Engine *m_ep;
+	Engine* m_ep;
 	CMesh* pOriginalMesh[2];
 	DifferentialMeshProcessor* pOriginalProcessor[2];
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
 	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
-
-	std::vector<HKSFeature> m_hksFeatureFine, m_hksFeatureCoarse;
 
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
@@ -151,8 +155,10 @@ private:
 	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
 	/* helper functions */
+	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
+	static void computeFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static double TensorMatching(Engine *ep,  const DifferentialMeshProcessor* pmp1,  const DifferentialMeshProcessor* pmp2, Cluster& ct1, Cluster& ct2, std::vector<MatchPair>& matched, double t, double thresh);
 	void    prepareHeatRegistration( double regTime );
-	void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& vftCoarse1, VectorND& vsig1 ) const;
 	double  computeMatchScore(int idx1, int idx2) const;
 	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
 };

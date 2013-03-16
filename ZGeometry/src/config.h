@@ -1,6 +1,6 @@
 #pragma once
 
-#define DEFAULT_EIGEN_SIZE 500
+#define DEFAULT_EIGEN_SIZE 300
 #define DEFAULT_DEFORM_RING 5 
 #define LOAD_MHB_CACHE 1
 #define MIN_HK_TIMESCALE 1e-2

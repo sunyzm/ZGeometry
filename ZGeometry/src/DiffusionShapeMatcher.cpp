@@ -35,6 +35,41 @@ double findTmax( const CMesh* tmesh, int s )
 	return geo*geo/4.0;
 }
 
+void HKParam::clear()
+{
+	m_size = 0; 
+	m_votes = 0.0; 
+	if(!empty()) 
+		delete m_vec; 
+	m_vec = NULL;
+}
+
+HKParam& HKParam::operator=( const HKParam& hkp )
+{
+	reserve(hkp.m_size);
+	for (int i = 0; i < m_size; ++i)
+		m_vec[i] = hkp.m_vec[i];
+	m_votes = hkp.m_votes;
+	return *this;
+}
+
+void HKParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
+{
+	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int pn = (int)anchors.size();
+	vHKParam.resize(fineSize);
+
+	for (int v = 0; v < fineSize; ++v)
+	{
+		HKParam& hkp = vHKParam[v];
+		hkp.reserve(pn);
+		for (int i = 0; i < pn; ++i)
+			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+
+		hkp.m_votes = hkp.length();
+	}
+}
+
 double distFeature(const HKSFeature& hf1, const HKSFeature& hf2, const VectorND& sig1, const VectorND& sig2, double& tl, int& tn)
 {
 	tl = max(hf1.m_tl, hf2.m_tl);	// now both are 10.0
@@ -64,8 +99,8 @@ double distFeaturePair(const DifferentialMeshProcessor* pmp1, const Differential
 	VectorND v1(n), v2(n);
 	for(int i = 0; i < n; i++)
 	{
-		v1.m_vec[i] = pmp1->getVertexPairHK(x1, y1, t);
-		v2.m_vec[i] = pmp2->getVertexPairHK(x2, y2, t);
+		v1.m_vec[i] = pmp1->calHK(x1, y1, t);
+		v2.m_vec[i] = pmp2->calHK(x2, y2, t);
 		t *= 2.0;
 	}
 
@@ -549,7 +584,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
 		vnd.reserve(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd.m_vec[i] = pOriginalProcessor[0]->getVertexPairHK(restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
+			vnd.m_vec[i] = pOriginalProcessor[0]->calHK(restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
 //			vnd.m_vec[i] = mesh1->CalGeodesic(restFeat1[j], matchedPairsCoarse[i].m_idx1);
 		}
 	}
@@ -561,7 +596,7 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
 		vnd.reserve(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd.m_vec[i] = pOriginalProcessor[1]->getVertexPairHK(restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
+			vnd.m_vec[i] = pOriginalProcessor[1]->calHK(restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
 //			vnd.m_vec[i] = mesh2->CalGeodesic(restFeat2[j], matchedPairsCoarse[i].m_idx2);
 		}
 	}
@@ -676,14 +711,14 @@ void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
 	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = matchedPairsFine;
 } // DiffusionShapmeMatcher::matchFeatures()
 
-void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig) const
+void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig)
 {
 	double t = hf.m_tl;
 	sig.reserve(hf.m_tn);
 	for(int i = 0; i < hf.m_tn; i++)
 	{
 		double eref = 4.0*PI*t;
-		sig.m_vec[i] = std::log(pOriginalProcessor->getVertexPairHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
+		sig.m_vec[i] = std::log(pOriginalProcessor->calHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
 		t *= 2.0;
 	}
 }
@@ -1059,37 +1094,200 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 	return vmatch;
 }
 
-void HKParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
+void DiffusionShapeMatcher::computeFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
 {
-	const int fineSize = pMP->getMesh_const()->getVerticesNum();
-	const int pn = (int)anchors.size();
-	vHKParam.resize(fineSize);
 
-	for (int v = 0; v < fineSize; ++v)
+	if(i==j || i==k || j==k)
 	{
-		HKParam& hkp = vHKParam[v];
-		hkp.reserve(pn);
-		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->getVertexPairHK(v, anchors[i], t);
-		
-		hkp.m_votes = hkp.length();
+		sang[0] = -10.0;
+		sang[1] = -10.0;
+		sang[2] = -10.0;
+		return;
 	}
+
+	double d1 = pmp->calHK(i,j,t);
+	double d2 = pmp->calHK(j,k,t);
+	double d3 = pmp->calHK(k,i,t);
+
+	if(d1<0.0) d1 = 1e-15;
+	if(d2<0.0) d2 = 1e-15;
+	if(d3<0.0) d3 = 1e-15;
+
+	d1 = sqrt(-4.0*t*log(d1));
+	d2 = sqrt(-4.0*t*log(d2));
+	d3 = sqrt(-4.0*t*log(d3));
+
+	// cot
+
+	//sang[0] = (d1*d1+d2*d2-d3*d3)/(2.0*d1*d2);
+	//sang[1] = (d2*d2+d3*d3-d1*d1)/(2.0*d2*d3);
+	//sang[2] = (d3*d3+d1*d1-d2*d2)/(2.0*d3*d1);
+
+	// sin
+	double s = (d1+d2+d3)/2.0;
+	double a = sqrt(s*(s-d1)*(s-d2)*(s-d3));
+	sang[0] = a/(2*d1*d2);
+	sang[1] = a/(2*d2*d3);
+	sang[2] = a/(2*d3*d1);
 }
 
-void HKParam::clear()
-{
-	m_size = 0; 
-	m_votes = 0.0; 
-	if(!empty()) 
-		delete m_vec; 
-	m_vec = NULL;
-}
 
-HKParam& HKParam::operator=( const HKParam& hkp )
+double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMeshProcessor* pmp1,  const DifferentialMeshProcessor* pmp2, Cluster& ct1, Cluster& ct2, vector<MatchPair>& matched, double t, double thresh)
 {
-	reserve(hkp.m_size);
-	for (int i = 0; i < m_size; ++i)
-		m_vec[i] = hkp.m_vec[i];
-	m_votes = hkp.m_votes;
-	return *this;
+	// generate triangles
+	int vsize1 = (int) ct1.m_member.size();
+	int vsize2 = (int) ct2.m_member.size();
+
+	vector<int> triangs;
+	int i,j,k,tsize1,tsize2;
+
+	// ***************************************
+	// improve to local triangles
+	// ***************************************/
+
+	if(vsize1>8) 
+	{
+		for(i=0; i<vsize1; i++)
+		{
+			for(j=0; j<8; j++)
+			{
+				if(i==j) continue;
+				for(k=vsize1-1; k>vsize1-9; k--)
+				{
+					if(i==k || j==k) continue;
+					triangs.push_back(i);
+					triangs.push_back(j);
+					triangs.push_back(k);
+				}
+			}
+		}
+		tsize1 = (int)triangs.size()/3;
+	}
+	else
+	{
+		for(i=0; i<vsize1; i++)
+		{
+			for(j=0; j<vsize1; j++)
+			{
+				if(i==j) continue;
+				for(k=0; k<vsize1; k++)
+				{
+					if(i==k || j==k) continue;
+					triangs.push_back(i);
+					triangs.push_back(j);
+					triangs.push_back(k);
+				}
+			}
+		}
+		tsize1 = (int)triangs.size()/3;
+	}
+
+	tsize2 = vsize2*vsize2*vsize2;
+
+	// compute feature descriptors
+
+	mxArray *feat1, *feat2, *tris, *numbs, *mX2, *vX2, *score;
+	feat1 = mxCreateDoubleMatrix(3, tsize1, mxREAL);
+	double *pfeat1 = mxGetPr(feat1);
+	feat2 = mxCreateDoubleMatrix(3, tsize2, mxREAL);
+	double *pfeat2 = mxGetPr(feat2);
+	tris = mxCreateDoubleMatrix(3, tsize1, mxREAL);
+	double *ptris = mxGetPr(tris);
+	numbs = mxCreateDoubleMatrix(1, 4, mxREAL);
+	double *pnumbs = mxGetPr(numbs);
+
+	pnumbs[0] = vsize1; // nP1
+	pnumbs[1] = vsize2; // nP2
+	pnumbs[2] = tsize1; // nT
+	if(tsize1>60) pnumbs[3] = 60;     // nNN
+	else pnumbs[3] = tsize1*0.5;
+
+	for(i=0; i<tsize1; i++)
+	{
+		ptris[i*3] = triangs[i*3];
+		ptris[i*3+1] = triangs[i*3+1];
+		ptris[i*3+2] = triangs[i*3+2];
+	}
+
+	for(i=0; i<tsize1; i++)
+	{
+		int vi = triangs[i*3];
+		int vj = triangs[i*3+1];
+		int vk = triangs[i*3+2];
+		computeFeature(pmp1, ct1.m_member[vi], ct1.m_member[vj], ct1.m_member[vk],t, &pfeat1[i*3]);
+	}
+
+	for(i=0; i<vsize2; i++)
+	{
+		for(j=0; j<vsize2; j++)
+		{
+			for(k=0; k<vsize2; k++)
+			{
+				computeFeature(pmp2,ct2.m_member[i],ct2.m_member[j],ct2.m_member[k],t,&pfeat2[((i*vsize2+j)*vsize2+k)*3]);
+			}
+		}
+	}
+
+	// invoke matlab for tensor matching
+
+	engPutVariable(ep,"feat1",feat1);
+	engPutVariable(ep,"feat2",feat2);
+	engPutVariable(ep,"tris",tris);
+	engPutVariable(ep,"numbs",numbs);
+	engEvalString(ep, "[vX2,mX2,score]=tensorMat(feat1,feat2,tris,numbs);");
+	vX2 = engGetVariable(ep, "vX2");
+	double *pv = mxGetPr(vX2);
+	mX2 = engGetVariable(ep, "mX2");
+	double *px = mxGetPr(mX2);
+	score = engGetVariable(ep, "score");
+	double *ps = mxGetPr(score);
+
+	// interpret results
+
+	double result = ps[0];
+	result = 0.0;
+	int count = 0;
+
+	while(1)
+	{
+		count++;
+		double pmax = 0.0;
+		int imax = 0;
+
+		for(i=0; i<vsize1; i++)
+		{
+			if(pv[i]>pmax)
+			{
+				pmax = pv[i];
+				imax = i;
+			}
+		}
+		//cout << imax << ": " << pmax << endl;
+		if(pmax<thresh || count>vsize1) break;
+		result += pv[imax];
+		MatchPair mpt;
+		mpt.m_idx2 = ct1.m_member[imax];
+		int ind = (int)px[imax];
+		//if(ind<0 || ind>vsize2) continue;
+		mpt.m_idx1 = ct2.m_member[ind-1];
+		matched.push_back(mpt);
+		pv[imax] = 0.0;
+		// clear conflicted
+		for(i=0; i<vsize1; i++)
+		{
+			int pind = (int)px[i];
+			if(pind==ind) pv[i] = 0.0;
+		}
+	}
+
+	mxDestroyArray(feat1);
+	mxDestroyArray(feat2);
+	mxDestroyArray(tris);
+	mxDestroyArray(numbs);
+	mxDestroyArray(mX2);
+	mxDestroyArray(vX2);
+	mxDestroyArray(score);
+
+	return result;
+
 }

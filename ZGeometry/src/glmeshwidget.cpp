@@ -814,43 +814,80 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 		
 		GLUquadric* quadric = gluNewQuadric();
 		gluQuadricDrawStyle(quadric, GLU_FILL);
+		
+		glMatrixMode(GL_MODELVIEW);
+		glPushMatrix();
+		setupObject(rs1->obj_rot, rs1->obj_trans);	
 		for (int i = 0; i < size; i++)
 		{
 			const int loc1 = vdr[i].m_idx1;
-			const int loc2 = vdr[i].m_idx2;
 			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
-			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
-
-			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
-			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
-			double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
-
-			double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
-			double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
-			double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
-
 			int color = i;
-			
-			if (colorClass1[loc1] != -1)
-				color = colorClass2[loc2] = colorClass1[loc1];
-			else if (colorClass2[loc2] != -1)
-				color = colorClass1[loc1] = colorClass2[loc2];
-			else 
-				colorClass1[loc1] = colorClass2[loc2] = color;
-
 			float cc = (color*1.0f) / ((float)size-1.0f);
 
 			glColorCoded(cc*4.0f, 0.9);
 			glPushMatrix();
-			glTranslated(x1, y1, z1);
+			glTranslated(pos1.x, pos1.y, pos1.z);
 			gluSphere(quadric, tmesh1->getAvgEdgeLength()*0.2, 16, 8);
 			glPopMatrix();
-
-			glPushMatrix();
-			glTranslated(x2, y2, z2);
-			gluSphere(quadric, tmesh2->getAvgEdgeLength()*0.2, 16, 8);
-			glPopMatrix();			
 		}
+		glPopMatrix();
+
+		glPushMatrix();
+		setupObject(rs2->obj_rot, rs2->obj_trans);	
+		for (int i = 0; i < size; i++)
+		{
+			const int loc2 = vdr[i].m_idx2;
+			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
+			int color = i;
+			float cc = (color*1.0f) / ((float)size-1.0f);
+
+			glColorCoded(cc*4.0f, 0.9);
+			glPushMatrix();
+			glTranslated(pos2.x, pos2.y, pos2.z);
+			gluSphere(quadric, tmesh2->getAvgEdgeLength()*0.2, 16, 8);
+			glPopMatrix();
+		}
+		glPopMatrix();
+		
+// 		for (int i = 0; i < size; i++)
+// 		{
+// 			const int loc1 = vdr[i].m_idx1;
+// 			const int loc2 = vdr[i].m_idx2;
+// 			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
+// 			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
+// 
+// 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
+// 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
+// 			double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
+// 
+// 			double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
+// 			double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
+// 			double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
+// 
+// 			int color = i;
+// 			
+// 			if (colorClass1[loc1] != -1)
+// 				color = colorClass2[loc2] = colorClass1[loc1];
+// 			else if (colorClass2[loc2] != -1)
+// 				color = colorClass1[loc1] = colorClass2[loc2];
+// 			else 
+// 				colorClass1[loc1] = colorClass2[loc2] = color;
+// 
+// 			float cc = (color*1.0f) / ((float)size-1.0f);
+// 
+// 			glColorCoded(cc*4.0f, 0.9);
+// 			glPushMatrix();
+// 			glTranslated(x1, y1, z1);
+// 			gluSphere(quadric, tmesh1->getAvgEdgeLength()*0.2, 16, 8);
+// 			glPopMatrix();
+// 
+// 			glPushMatrix();
+// 			glTranslated(x2, y2, z2);
+// 			gluSphere(quadric, tmesh2->getAvgEdgeLength()*0.2, 16, 8);
+// 			glPopMatrix();			
+// 		}
+
 		gluDeleteQuadric(quadric);
 	}
 }

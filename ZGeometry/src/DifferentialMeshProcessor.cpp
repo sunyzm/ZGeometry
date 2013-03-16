@@ -986,7 +986,7 @@ void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 	}
 }
 
-double DifferentialMeshProcessor::getVertexPairHK( int v1, int v2, double timescale ) const
+double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
 	double sum = 0;
 	for (int k = 0; k < mhb.m_nEigFunc; ++k)

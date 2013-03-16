@@ -56,8 +56,8 @@ public:
 	void computeKernelSignature(double timescale, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
-	double getVertexPairHK(int v1, int v2, double timescale) const;
-	double getVertexHKS(int index, double timescale) const { return getVertexPairHK(index, index, timescale); }
+	double calHK(int v1, int v2, double timescale) const;
+	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 
 	void computeSGW(const std::vector<double>& timescales, TransferFunc transferWavelet = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
