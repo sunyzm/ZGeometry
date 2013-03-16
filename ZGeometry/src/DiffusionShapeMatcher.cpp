@@ -911,6 +911,9 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
 			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);
+
+			Cluster clus1 = 
+
 			qReg.push(MatchPair(vi, vm1, m_HKParamMgr[0].vHKParam[vi].m_votes * score));
 		}
 		while(!qReg.empty())
@@ -1300,4 +1303,75 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double timescale, double thresh )
 {
 	//TODO
+}
+
+void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const
+{
+	const CMesh* tmesh = getMesh(obj, level);
+	int vid = tmesh->getVertex_const(vidx)->getVID();
+
+	list<int> vNeighbor;
+	set<int> marked_set;
+	marked_set.insert(vidx);
+	vNeighbor.push_back(vidx);
+
+	if (upper_level > level)
+	{
+		vector<int> vCover;
+		vCover.push_back(vid);
+
+		for (int l = upper_level-1; l >= level; --l)
+		{
+			vector<int> vCoverTmp = vCover;
+			for (vector<int>::iterator iter = vCover.begin(); iter != vCover.end(); ++iter)
+			{
+				int idxL = id2Index(obj, *iter, l);
+				list<int> idxCovered = getMeshPyramid(obj).getCoveredVertexList(l, idxL);
+				for (list<int>::iterator citer = idxCovered.begin(); citer != idxCovered.end(); ++citer)
+				{
+					int newId = getMesh(obj, l)->getVertex_const(*citer)->getVID();
+					vCoverTmp.push_back(newId);
+				}
+			}
+			vCover = vCoverTmp;
+		}
+		for (vector<int>::iterator iter = vCover.begin(); iter != vCover.end(); ++iter)
+		{
+			int idxL = id2Index(obj, *iter, level);
+			if (marked_set.find(idxL) != marked_set.end())
+			{
+				vNeighbor.push_back(idxL);
+				marked_set.insert(idxL);
+			}
+		}
+	}
+
+	list<int> nb1, nb2;
+	nb1 = vNeighbor;
+	for (int r = 0; r < ring; r++)
+	{
+		nb2.clear();
+		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
+		{
+			int idx = *iter;
+			for (int l = 0; l < tmesh->getVertex_const(idx)->getValence(); ++l)
+			{
+				const CHalfEdge* he = tmesh->getVertex_const(idx)->getHalfEdge(l);
+				int vt = he->getVertexIndex(1);
+				if (marked_set.find(vt) == marked_set.end())
+				{
+					marked_set.insert(vt);
+					vNeighbor.push_back(vt);
+					nb2.push_back(vt);
+				}				
+			}
+		}
+		nb1 = nb2;
+	}
+
+	vCoveredIdx.clear();
+	for (auto iter = nb1.begin(); iter != nb1.end(); ++iter)
+	{
+		vCoveredIdx.push_back(*iter);
+	}
 }

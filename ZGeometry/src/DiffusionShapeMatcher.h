@@ -152,4 +152,5 @@ private:
 	void    prepareHeatRegistration( double regTime );
 	double  computeMatchScore(int idx1, int idx2) const;
 	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
+	void getVertexCover(int obj, int vidx, int level, int upper_level, int ring,  std::vector<int>& vCoveredIdx) const;
 };
