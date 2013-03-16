@@ -911,9 +911,6 @@ void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
 			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);
-
-			Cluster clus1 = 
-
 			qReg.push(MatchPair(vi, vm1, m_HKParamMgr[0].vHKParam[vi].m_votes * score));
 		}
 		while(!qReg.empty())
@@ -1205,19 +1202,15 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	if(tsize1>60) pnumbs[3] = 60;     // nNN
 	else pnumbs[3] = tsize1*0.5;
 
-	for(i=0; i<tsize1; i++)
-	{
-		ptris[i*3] = triangs[i*3];
-		ptris[i*3+1] = triangs[i*3+1];
-		ptris[i*3+2] = triangs[i*3+2];
-	}
+	for(i=0; i<tsize1*3; i++)
+		ptris[i] = triangs[i];
 
 	for(i=0; i<tsize1; i++)
 	{
 		int vi = triangs[i*3];
 		int vj = triangs[i*3+1];
 		int vk = triangs[i*3+2];
-		ComputeTensorFeature(pmp1, ct1.m_member[vi], ct1.m_member[vj], ct1.m_member[vk], t, pfeat1 + i*3);
+		ComputeTensorFeature(pmp1, ct1.m_member[vi], ct1.m_member[vj], ct1.m_member[vk], t, &pfeat1[i*3]);
 	}
 
 	for(i=0; i<vsize2; i++)
@@ -1226,7 +1219,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 		{
 			for(k=0; k<vsize2; k++)
 			{
-				ComputeTensorFeature(pmp2, ct2.m_member[i], ct2.m_member[j], ct2.m_member[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*3);
+				ComputeTensorFeature(pmp2, ct2.m_member[i], ct2.m_member[j], ct2.m_member[k], t, &pfeat2[((i*vsize2+j)*vsize2+k)*3]);
 			}
 		}
 	}
@@ -1302,7 +1295,44 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 
 void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double timescale, double thresh )
 {
-	//TODO
+	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
+	const vector<HKSFeature>& vftFine1 = vFeatures[0];
+	const vector<HKSFeature>& vftFine2 = vFeatures[1];
+	const double prescreen_thresh = DEFAULT_MATCH_THRESH;
+	
+	vector<HKSFeature> vftCoarse1, vftCoarse2;
+	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
+
+	flog << "Before defining vftCoarse" << endl;
+
+	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
+		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
+	});
+	for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){ 
+		if(f.m_scale >= 2) vftCoarse2.push_back(f);
+	});
+
+	vector<MatchPair> vTmpMatchPairs;
+	vector<double> vFeatureMatchScores;
+	
+	int size1 = (int) vftCoarse1.size();
+	int size2 = (int) vftCoarse2.size();
+	
+	flog << "-- vftCoarse1: " << size1 << "; vftCoarse2: " << size2 << endl;
+
+	Cluster cluster1, cluster2;
+	for (auto iter = vftCoarse1.begin(); iter != vftCoarse1.end(); ++iter)
+		cluster1.m_member.push_back(iter->m_index);
+	for (auto iter = vftCoarse2.begin(); iter != vftCoarse2.end(); ++iter)
+		cluster2.m_member.push_back(iter->m_index);
+
+	vector<MatchPair> vPairs;
+	double matchScore = TensorMatching(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], cluster1, cluster2, vPairs, timescale, thresh);
+	flog << "Match score: " << matchScore << endl;
+
+	vFeatureMatchingResults[m_nRegistrationLevels] = vPairs;
+	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
+	m_bFeatureMatched = true;
 }
 
 void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const

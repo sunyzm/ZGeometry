@@ -1273,7 +1273,8 @@ void QZGeometryWindow::matchFeatures()
 	ofstream ofstr("output/FeatureMatch.log", ios::trunc);
 	CStopWatch timer;
 	timer.startTimer();
-	shapeMatcher.matchFeatures(ofstr, DiffusionShapeMatcher::DEFAULT_MATCH_THRESH);
+//	shapeMatcher.matchFeatures(ofstr, DiffusionShapeMatcher::DEFAULT_MATCH_THRESH);
+	shapeMatcher.matchFeaturesTensor(ofstr, 30.0, 1e-4);
 	timer.stopTimer();
 	ofstr.close();
 	
