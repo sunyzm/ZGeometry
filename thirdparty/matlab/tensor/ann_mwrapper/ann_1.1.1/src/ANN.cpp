@@ -26,6 +26,7 @@
 
 #include <ANN/ANNx.h>					// all ANN includes
 #include <ANN/ANNperf.h>				// ANN performance 
+#include <stdlib.h>
 
 using namespace std;					// make std:: accessible
 

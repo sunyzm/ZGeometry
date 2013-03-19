@@ -5,6 +5,7 @@
 #include <vector>
 #include <deque>
 #include <set>
+#include <exception>
 #include <stdexcept>
 #include <QtGui/QMessageBox>
 #include <QTime>
@@ -1274,7 +1275,15 @@ void QZGeometryWindow::matchFeatures()
 	CStopWatch timer;
 	timer.startTimer();
 //	shapeMatcher.matchFeatures(ofstr, DiffusionShapeMatcher::DEFAULT_MATCH_THRESH);
-	shapeMatcher.matchFeaturesTensor(ofstr, 30.0, 1e-4);
+	try
+	{
+		shapeMatcher.matchFeaturesTensor(ofstr, 30.0, 1e-4);
+	}
+	catch (exception* e)
+	{
+		qout.output(std::string("Fail to match features! Error: ") + e->what(), OUT_MSGBOX);
+		return;
+	}
 	timer.stopTimer();
 	ofstr.close();
 	

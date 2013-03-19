@@ -12,6 +12,7 @@
 #ifndef ANNMWRAP_H
 #define ANNMWRAP_H
 
+#include "string.h"
 #include "mex.h"
 #include "ANN/ANN.h"
 

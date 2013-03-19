@@ -29,7 +29,7 @@ if isempty(indH3) && isempty(valH3)
 end
 
 if nargin<8
-  nIter=100;
+  nIter=200;
 end
 if nargin<9
   sparsity=1;
@@ -37,5 +37,5 @@ end
 if nargin<10
   stoc=2;
 end
-[X2, score]=mexTensorMatching(double(X),indH1,valH1,indH2,valH2,indH3,valH3,nIter,sparsity,stoc);
+[X2, score]=mexTensorMatching(double(X),int32(indH1),valH1,int32(indH2),valH2,int32(indH3),valH3,nIter,sparsity,stoc);
 
