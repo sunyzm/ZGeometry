@@ -647,9 +647,12 @@ void MeshPyramid::construct()
 
 void MeshPyramid::clear()
 {
-	for (int i = 0; i < m_nVertices; ++i)
-		delete []m_Id2IndexMap[i];
-	delete []m_Id2IndexMap;
+	if (m_Id2IndexMap)
+	{
+		for (int i = 0; i < m_nVertices; ++i)
+			delete []m_Id2IndexMap[i];
+		delete []m_Id2IndexMap;
+	}	
 
 	for (unsigned int i = 1; i < m_vMeshes.size(); ++i)	// leave original mesh for outer destruction
 	{

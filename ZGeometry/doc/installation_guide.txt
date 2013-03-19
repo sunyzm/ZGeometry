@@ -9,8 +9,8 @@ Prerequisite:
 
 -------------------------------------------------------------------------------
 Development environment settings:
-1. Add $(QT_DIR)\bin$ to system path
-2. Add $(MatlabDir)runtime\win32;$(MatlabDir)bin;$(MatlabDir)bin\win32 to system path
-3. In Matlab, add $(SolutionDir)\thirdparty\matlab to search path with subfolders.
+1. Add $(QT_DIR)\bin$ to system path.
+2. Add $(MatlabDir)runtime\win32;$(MatlabDir)bin;$(MatlabDir)bin\win32 to system path.
+3. In Matlab, add $(SolutionDir)\thirdparty\matlab\tensor and $(SolutionDir)\thirdparty\matlab\tensor\mex to search path.
 4. In Visual Studio, set user macro $(MatlabDir) to the root directory of matlab 32bit in the property page of Microsoft.Cpp.Win32.user.
-5. Place the 'Data' folder in the same path with the 'ZGeometry' solution folder
+5. Place the 'Data' folder in the same level with the 'ZGeometry' solution folder.

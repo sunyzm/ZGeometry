@@ -8,6 +8,7 @@
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"
+#include "SimpleConfigLoader.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -100,6 +101,9 @@ private:	// attributes
 	int objSelect;
 
 	Engine *m_ep;
+	std::string mesh_list_name;
+	int num_preload_meshes;
+
 	CMesh mesh1, mesh2;
 	bool selected[2];
 	bool mesh_valid[2];
@@ -112,5 +116,16 @@ private:	// attributes
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW, None} current_operation;
+
+	/*---- static members as constant parameters ----*/
+	static int DEFAULT_EIGEN_SIZE;
+	static int DEFAULT_DEFORM_RING; 
+	static int LOAD_MHB_CACHE;
+	static double MIN_HK_TIMESCALE;
+	static double DEFUALT_HK_TIMESCALE;
+	static double MAX_HK_TIMESCALE;
+	static double PARAMETER_SLIDER_CENTER;
+	static double DR_THRESH_INCREMENT;
+	static double MATCHING_THRESHOLD;
 };
 

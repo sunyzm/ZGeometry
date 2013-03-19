@@ -163,7 +163,6 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\config.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
@@ -197,7 +196,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GeneratedFiles\ui_ZGeometry.h" />
-    <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\common.h" />
     <ClInclude Include="src\DifferentialMeshProcessor.h" />
     <ClInclude Include="src\Laplacian.h" />
     <ClInclude Include="src\MatlabWrapper.h" />
@@ -242,6 +241,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <None Include="configs.txt" />
     <None Include="doc\installation_guide.txt" />
     <None Include="doc\manual.txt" />
     <None Include="meshfiles.cfg" />

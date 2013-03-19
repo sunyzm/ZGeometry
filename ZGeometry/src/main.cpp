@@ -2,6 +2,12 @@
 #include <QtGui/QApplication>
 #include <QtGui/QLabel>
 #include <QGLFormat>
+#include <SimpleConfigLoader.h>
+#include "OutputHelper.h"
+
+SimpleConfigLoader g_configMgr("configs.txt");
+OutputHelper qout;
+QString qformat;
 
 int main(int argc, char *argv[])
 {

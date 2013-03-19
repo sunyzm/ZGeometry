@@ -5,7 +5,7 @@
 #include <QFile>
 #include "glmeshwidget.h"
 #include "OutputHelper.h"
-#include "config.h"
+#include "common.h"
 #include <gl/GL.h>
 #include <gl/GLU.h>
 

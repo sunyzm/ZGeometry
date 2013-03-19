@@ -11,35 +11,58 @@
 #include <QTime>
 #include <ZUtil.h>
 #include "QZGeometry.h"
-#include "config.h"
+#include <SimpleConfigLoader.h>
+#include "common.h"
 
 using namespace std;
 
 extern OutputHelper qout;
 extern QString qformat;
+extern SimpleConfigLoader g_configMgr;
 
 GeometryTask g_task = TASK_REGISTRATION;
+
+int QZGeometryWindow::DEFAULT_EIGEN_SIZE = 300;
+int QZGeometryWindow::DEFAULT_DEFORM_RING = 5 ;
+int QZGeometryWindow::LOAD_MHB_CACHE = 1;
+double QZGeometryWindow::MIN_HK_TIMESCALE = 1e-2;
+double QZGeometryWindow::DEFUALT_HK_TIMESCALE = 40.0;
+double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
+double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
+double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
+double QZGeometryWindow::MATCHING_THRESHOLD = 0.002;
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
+	mesh_list_name = "meshfiles.cfg";
+	num_preload_meshes = 2;
 	totalShapeNum = 1;
 
+	//* read in configuration parameters from g_configMgr *//
+	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
+	PARAMETER_SLIDER_CENTER = g_configMgr.getConfigValueInt("PARAMETER_SLIDER_CENTER");
+	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
+	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
+	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
+
+	mesh_valid[0] = mesh_valid[1] = false;
+	m_commonParameter = PARAMETER_SLIDER_CENTER;
+	current_operation = None;
+	deformType = Simple;
+	refMove.xMove = refMove.yMove = refMove.zMove = 0;
+	
 	ui.setupUi(this);
 	ui.centralWidget->setLayout(ui.mainLayout);
+	ui.horizontalSliderParamter->setMinimum(0);
+	ui.horizontalSliderParamter->setMaximum(2*PARAMETER_SLIDER_CENTER-1);
+	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
 
 	this->makeConnections();
 	
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
-	
-	mesh_valid[0] = mesh_valid[1] = false;
-	m_commonParameter = 50;
-	current_operation = None;
-	deformType = Simple;
-	
-	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 }
 
 QZGeometryWindow::~QZGeometryWindow()
@@ -147,10 +170,10 @@ bool QZGeometryWindow::initialize()
 	setEditModeMove();
 
 	//// ---- load meshes ---- ////    
-	ifstream meshfiles(g_meshListName);
+	ifstream meshfiles(mesh_list_name);
 	if (!meshfiles)
 	{
-		qout.output("Cannot open " + QString(g_meshListName), OUT_MSGBOX);
+		qout.output("Cannot open " + mesh_list_name, OUT_MSGBOX);
 		return false;
 	}
 	deque<string> vMeshFiles;
@@ -169,7 +192,7 @@ bool QZGeometryWindow::initialize()
 		return false;
 	}
 
-	if (g_preload_meshes >= 1)
+	if (num_preload_meshes >= 1)
 	{
 		try {
 			mesh1.Load(vMeshFiles.front());
@@ -191,7 +214,7 @@ bool QZGeometryWindow::initialize()
 	}
 
 
-	if (g_preload_meshes == 2 && !vMeshFiles.empty())
+	if (num_preload_meshes == 2 && !vMeshFiles.empty())
 	{
 		try {
 			mesh2.Load(vMeshFiles.front());
