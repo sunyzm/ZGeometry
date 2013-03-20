@@ -1,5 +1,6 @@
 #include "zmeshviewer.h"
 
+
 ZMeshViewer::ZMeshViewer(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
@@ -8,5 +9,4 @@ ZMeshViewer::ZMeshViewer(QWidget *parent, Qt::WFlags flags)
 
 ZMeshViewer::~ZMeshViewer()
 {
-
 }

@@ -2,6 +2,7 @@
 #define ZMESHVIEWER_H
 
 #include <QtGui/QMainWindow>
+#include <QProcess>
 #include "ui_zmeshviewer.h"
 
 class ZMeshViewer : public QMainWindow

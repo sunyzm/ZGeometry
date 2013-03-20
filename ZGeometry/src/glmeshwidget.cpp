@@ -295,16 +295,16 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 void GLMeshWidget::initializeGL()
 {
 	// initialize GLEW
-	qout.output("********************");
+	qout.output("********************", OUT_TERMINAL);
 	if(glewInit() != GLEW_OK)
-		qout.output("glewInit failed", OUT_CONSOLE);
-	else qout.output("glewInit succeeded", OUT_CONSOLE);
+		qout.output("glewInit failed", OUT_TERMINAL);
+	else qout.output("glewInit succeeded", OUT_TERMINAL);
 	// print out some info about the graphics drivers
 
-	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_CONSOLE);
-	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_CONSOLE);
-	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_CONSOLE);
-	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_CONSOLE);
+	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
+	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_TERMINAL);
+	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
+	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
 
 //#define MORE_DEBUG
 #ifdef MORE_DEBUG	
@@ -316,8 +316,8 @@ void GLMeshWidget::initializeGL()
 #endif
 	// make sure OpenGL version 3.2 API is available
 	if(!GLEW_VERSION_3_2)
-		qout.output("OpenGL 3.2 API is not available.", OUT_CONSOLE);
-	qout.output("********************");
+		qout.output("OpenGL 3.2 API is not available.", OUT_TERMINAL);
+	qout.output("********************", OUT_TERMINAL);
 }
 
 void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )

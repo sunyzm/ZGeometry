@@ -45,6 +45,7 @@ private slots:
 	void displaySignature(int signatureID);
 	void displayHKS();
 	void displayHK();
+	void displayMHW();
 	void displayMHWS();
 	void displaySGWS();
 	void displayCurvatureMean();
@@ -91,7 +92,6 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void displayMHW();
 
 private:	// attributes
 	Ui::ZGeometryClass ui;
@@ -127,5 +127,7 @@ private:	// attributes
 	static double PARAMETER_SLIDER_CENTER;
 	static double DR_THRESH_INCREMENT;
 	static double MATCHING_THRESHOLD;
+	static std::string MATCH_OUTPUT_FILE;
+	static std::string REGISTER_OUTPUT_FILE;
 };
 

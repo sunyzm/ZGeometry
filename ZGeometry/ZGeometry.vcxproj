@@ -75,7 +75,7 @@
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -110,7 +110,7 @@
       <OpenMPSupport>true</OpenMPSupport>
     </ClCompile>
     <Link>
-      <SubSystem>Windows</SubSystem>
+      <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
       <AdditionalLibraryDirectories>$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>

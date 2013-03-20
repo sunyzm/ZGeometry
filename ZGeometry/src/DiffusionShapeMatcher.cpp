@@ -1303,8 +1303,6 @@ void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double tim
 	vector<HKSFeature> vftCoarse1, vftCoarse2;
 	std::vector<MatchPair> matchedPairsCoarse, matchedPairsFine;
 
-	flog << "Before defining vftCoarse" << endl;
-
 	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
 		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
 	});
@@ -1318,7 +1316,14 @@ void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double tim
 	int size1 = (int) vftCoarse1.size();
 	int size2 = (int) vftCoarse2.size();
 	
-	flog << "-- vftCoarse1: " << size1 << "; vftCoarse2: " << size2 << endl;
+	flog << "vftCoarse1(" << size1 << "): ";
+	for (auto iter = vftCoarse1.begin(); iter != vftCoarse1.end(); ++iter)
+		flog << iter->m_index << " ";
+
+	flog << "\nvftCoarse2(" << size2 << "): ";
+	for (auto iter = vftCoarse2.begin(); iter != vftCoarse2.end(); ++iter)
+		flog << iter->m_index << " ";
+	flog << endl;
 
 	Cluster cluster1, cluster2;
 	for (auto iter = vftCoarse1.begin(); iter != vftCoarse1.end(); ++iter)

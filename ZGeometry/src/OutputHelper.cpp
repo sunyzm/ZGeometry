@@ -3,7 +3,9 @@
 #include <QDateTime>
 #include <Qtgui/QMessageBox>
 #include <QScrollBar>
+#include <QDebug>
 #include <fstream>
+#include <iostream>
 
 OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL) {}
 
@@ -11,18 +13,28 @@ OutputHelper::~OutputHelper(void) {}
 
 void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout /*= 0.0*/ )
 {
-	if (venue == OUT_CONSOLE && consoleOutput)
+	switch (venue)
 	{
-		consoleOutput->insertPlainText(msg + "\n");
-		QScrollBar *vScrollBar = consoleOutput->verticalScrollBar();
-		vScrollBar->triggerAction(QScrollBar::SliderToMaximum);
-	}
-	else if (venue == OUT_STATUS && statusBar)
-		statusBar->showMessage(msg, timeout);
-	else if (venue == OUT_MSGBOX)
-	{
-		QMessageBox::information(NULL, "Important!", msg, QMessageBox::Ok);
-	}
+		case OUT_TERMINAL: 
+			std::cout << msg.toStdString() << std::endl;
+//			qDebug() << msg;
+			break;
+		case OUT_CONSOLE:
+			{
+				consoleOutput->insertPlainText(msg + "\n");
+				QScrollBar *vScrollBar = consoleOutput->verticalScrollBar();
+				vScrollBar->triggerAction(QScrollBar::SliderToMaximum);
+				break;
+			}
+		case OUT_STATUS:
+			if (statusBar) 	statusBar->showMessage(msg, timeout);
+			break;
+		case OUT_MSGBOX:
+			QMessageBox::information(NULL, "Important!", msg, QMessageBox::Ok);
+			break;
+		default:
+			std::cout << msg.toStdString() << std::endl;
+	}	
 }
 
 void OutputHelper::output( const std::string& msg, int venue /*= OUT_CONSOLE*/, double timeout /*= 0.0*/ )

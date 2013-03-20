@@ -3036,9 +3036,6 @@ void CMesh::scaleAreaToVertexNum()
 		totalSufaceArea += m_pFace[i].getArea();
 	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
 
-	cout << "center: (" << center.x << ", " << center.y << ", " << center.z << ")"
-		 << "\tscale: " << scale << endl; 
-	
 	for (int i = 0; i < m_nVertex; ++i)
 	{
 		m_vVertices[i]->translateAndScale(-center, scale);
@@ -3152,9 +3149,6 @@ void CMesh::scaleEdgeLenToUnit()
 	length /= edgeNum;
 	double scale = 1.0 / length;
 	
-	cout << "center: (" << center.x << ", " << center.y << ", " << center.z << ")"
-		<< "\tscale: " << scale << endl; 
-
 	for (int i = 0; i < m_nVertex; ++i)
 	{
 		m_vVertices[i]->translateAndScale(-center, scale);

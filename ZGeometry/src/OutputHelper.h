@@ -3,11 +3,8 @@
 #include <QtGui/QPlainTextEdit>
 #include <string>
 #include <vector>
-//#define OUT_CONSOLE 1
-//#define OUT_STATUS  2
-//#define OUT_MSGBOX  3
 
-enum OutputVenue {OUT_CONSOLE = 1, OUT_STATUS = 2, OUT_MSGBOX = 3};
+enum OutputVenue {OUT_TERMINAL = 0, OUT_CONSOLE = 1, OUT_STATUS = 2, OUT_MSGBOX = 3};
 
 class OutputHelper
 {
@@ -26,4 +23,3 @@ private:
 	QPlainTextEdit* consoleOutput;
 	QStatusBar* statusBar;
 };
-

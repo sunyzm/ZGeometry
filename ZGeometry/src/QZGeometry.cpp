@@ -9,6 +9,7 @@
 #include <stdexcept>
 #include <QtGui/QMessageBox>
 #include <QTime>
+#include <QProcess>
 #include <ZUtil.h>
 #include "QZGeometry.h"
 #include <SimpleConfigLoader.h>
@@ -31,6 +32,8 @@ double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
 double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
 double QZGeometryWindow::MATCHING_THRESHOLD = 0.002;
+std::string QZGeometryWindow::REGISTER_OUTPUT_FILE = "output/Registration.log";
+std::string QZGeometryWindow::MATCH_OUTPUT_FILE = "output/FeatureMatch.log";
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -46,6 +49,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
 	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
 	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
+	MATCH_OUTPUT_FILE = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
+	REGISTER_OUTPUT_FILE = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
 
 	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = PARAMETER_SLIDER_CENTER;
@@ -163,7 +168,7 @@ bool QZGeometryWindow::initialize()
 		qout.output("Can't start MATLAB engine!", OUT_MSGBOX);
 		return false;
 	}
-	else qout.output("Matlab engine initialized!", OUT_CONSOLE);
+	else qout.output("Matlab engine initialized!", OUT_TERMINAL);
 	qout.output('*', 24);
 	
 	setDisplayMesh();
@@ -205,8 +210,8 @@ bool QZGeometryWindow::initialize()
 		mesh1.scaleEdgeLenToUnit();
 		mesh1.gatherStatistics();
 		Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
-		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh1.getMeshName().c_str(), mesh1.getVerticesNum()));
-		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z));
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh1.getMeshName().c_str(), mesh1.getVerticesNum()), OUT_CONSOLE);
+		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z), OUT_CONSOLE);
 		vMP[0].init(&mesh1, m_ep);
 		vRS[0].mesh_color = preset_colors[0];
 		ui.glMeshWidget->addMesh(&vMP[0], &vRS[0]);
@@ -227,8 +232,8 @@ bool QZGeometryWindow::initialize()
 		mesh2.scaleEdgeLenToUnit();
 		mesh2.gatherStatistics();
 		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
-		qout.output(qformat.sprintf("Load mesh: %s; Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
-		qout.output(qformat.sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z));
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()), OUT_CONSOLE);
+		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z), OUT_CONSOLE);
 		vMP[1].init(&mesh2, m_ep);
 		vRS[1].mesh_color = preset_colors[1];
 		ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
@@ -440,7 +445,7 @@ void QZGeometryWindow::computeLaplacian()
 		}
 		
 		qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-		qout.output(qformat.sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
+		qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 	}	
 
 	ui.actionComputeLaplacian->setChecked(true);	
@@ -1034,7 +1039,7 @@ void QZGeometryWindow::computeHKS()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(qformat.sprintf("Heat Kernel timescale: %f", time_scale));
+	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -1294,21 +1299,26 @@ void QZGeometryWindow::detectFeatures()
 void QZGeometryWindow::matchFeatures()
 {
 	qout.output("-- Match initial features --");
-	ofstream ofstr("output/FeatureMatch.log", ios::trunc);
+
+	ofstream ofstr(MATCH_OUTPUT_FILE, ios::trunc);
 	CStopWatch timer;
 	timer.startTimer();
-//	shapeMatcher.matchFeatures(ofstr, DiffusionShapeMatcher::DEFAULT_MATCH_THRESH);
-	try
-	{
-		shapeMatcher.matchFeaturesTensor(ofstr, 30.0, 1e-4);
-	}
-	catch (exception* e)
-	{
-		qout.output(std::string("Fail to match features! Error: ") + e->what(), OUT_MSGBOX);
-		return;
-	}
+
+	bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
+	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
+	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
+	double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
+
+	if (!use_tensor)
+		shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
+	else
+		shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+
 	timer.stopTimer();
 	ofstr.close();
+
+// 	QProcess* processShowLog = new QProcess();
+// 	processShowLog->start("notepad++.exe", QStringList() << "-systemtray" << MATCH_OUTPUT_FILE.c_str());
 	
 	qout.output(qformat.sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
 
@@ -1320,8 +1330,12 @@ void QZGeometryWindow::matchFeatures()
 void QZGeometryWindow::registerStep()
 {
 	qout.output(qformat.sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
+	
+	ofstream ofstr;	
+	if (shapeMatcher.getAlreadyRegisteredLevel() == shapeMatcher.getTotalRegistrationLevels())
+		ofstr.open(REGISTER_OUTPUT_FILE, ios::trunc);
+	else ofstr.open(REGISTER_OUTPUT_FILE, ios::app);
 
-	ofstream ofstr("output/Registration.log");
 	CStopWatch timer;
 	timer.startTimer();
 	shapeMatcher.refineRegister(ofstr);
@@ -1366,3 +1380,5 @@ void QZGeometryWindow::showCoarser()
 	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
 	ui.glMeshWidget->update();
 }
+
+
