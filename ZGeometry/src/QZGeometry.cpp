@@ -1297,21 +1297,23 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
+	bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
+	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
+	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
+	double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
+
 	qout.output("-- Match initial features --");
 
 	ofstream ofstr(MATCH_OUTPUT_FILE, ios::trunc);
 	CStopWatch timer;
 	timer.startTimer();
 
-	bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
-	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
-	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
-	double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
-
 	if (!use_tensor)
 		shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
 	else
+	{
 		shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+	}
 
 	timer.stopTimer();
 	ofstr.close();

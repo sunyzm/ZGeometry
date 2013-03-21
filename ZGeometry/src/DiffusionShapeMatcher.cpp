@@ -6,6 +6,7 @@
 #include <cassert>
 #include "DiffusionShapeMatcher.h"
 #include "OutputHelper.h"
+#include "SimpleConfigLoader.h"
 
 #define INFINITY 1e10
 #define LOCAL_ANCHORS_NUM 8
@@ -13,6 +14,7 @@
 using namespace std;
 
 extern OutputHelper qout;
+extern SimpleConfigLoader g_configMgr;
 
 const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
@@ -1122,20 +1124,21 @@ void DiffusionShapeMatcher::ComputeTensorFeature( const DifferentialMeshProcesso
 	//sang[1] = (d2*d2+d3*d3-d1*d1)/(2.0*d2*d3);
 	//sang[2] = (d3*d3+d1*d1-d2*d2)/(2.0*d3*d1);
 
-	// sin
+	// sine theorem: area = 2*a*b*sin(C)
 	double s = (d1+d2+d3)/2.0;
 	double a = sqrt(s*(s-d1)*(s-d2)*(s-d3));
+
 	sang[0] = a/(2*d1*d2);
 	sang[1] = a/(2*d2*d3);
 	sang[2] = a/(2*d3*d1);
 }
 
 
-double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMeshProcessor* pmp1,  const DifferentialMeshProcessor* pmp2, Cluster& ct1, Cluster& ct2, vector<MatchPair>& matched, double t, double thresh)
+double DiffusionShapeMatcher::TensorMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, Cluster& ct1, Cluster& ct2, vector<MatchPair>& matched, double t, double thresh)
 {
 	// generate triangles
-	int vsize1 = (int) ct1.m_member.size();
-	int vsize2 = (int) ct2.m_member.size();
+	int vsize1 = (int) ct1.m_member.size();	// input feature size 1
+	int vsize2 = (int) ct2.m_member.size(); // input feature size 2
 
 	vector<int> triangs;
 	int i,j,k,tsize1,tsize2;
@@ -1143,7 +1146,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	// ***************************************
 	// improve to local triangles
 	// ***************************************/
-
+	
 	if(vsize1 > 8) 
 	{
 		for(i=0; i<vsize1; i++)
@@ -1160,7 +1163,6 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 				}
 			}
 		}
-		tsize1 = (int)triangs.size()/3;
 	}
 	else
 	{
@@ -1178,9 +1180,9 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 				}
 			}
 		}
-		tsize1 = (int)triangs.size()/3;
 	}
 
+	tsize1 = (int)triangs.size()/3;
 	tsize2 = vsize2*vsize2*vsize2;
 
 	// compute feature descriptors
@@ -1198,7 +1200,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 	pnumbs[0] = vsize1; // nP1
 	pnumbs[1] = vsize2; // nP2
 	pnumbs[2] = tsize1; // nT
-	if(tsize1>60) pnumbs[3] = 60;     // nNN
+	if(tsize1 > 60) pnumbs[3] = 60;     // nNN
 	else pnumbs[3] = tsize1*0.5;
 
 	for(i=0; i<tsize1*3; i++)
@@ -1241,15 +1243,12 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 
 	double result = ps[0];
 	result = 0.0;
+
 	int count = 0;
-
-	while(1)
+	while(count++ < vsize1)
 	{
-		count++;
-
 		double *pmax = max_element(pv, pv+vsize1);
 		int imax = pmax - pv;
-
 // 		double pmax = 0.0;
 // 		int imax = 0;
 // 		
@@ -1261,22 +1260,25 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 // 				imax = i;
 // 			}
 // 		}
-		//cout << imax << ": " << pmax << endl;
-		if(*pmax < thresh || count > vsize1) 
+		cout << imax << ": " << *pmax << endl;
+		if(*pmax < thresh) 
 			break;
+
 		result += pv[imax];
 		MatchPair mpt;
-		mpt.m_idx2 = ct1.m_member[imax];
+		mpt.m_idx1 = ct1.m_member[imax];
 		int ind = (int)px[imax];
 		//if(ind<0 || ind>vsize2) continue;
-		mpt.m_idx1 = ct2.m_member[ind-1];
+		mpt.m_idx2 = ct2.m_member[ind-1];
 		matched.push_back(mpt);
+
 		pv[imax] = 0.0;
 		// clear conflicted
 		for(i=0; i<vsize1; i++)
 		{
 			int pind = (int)px[i];
-			if(pind==ind) pv[i] = 0.0;
+			if(pind == ind)
+				pv[i] = 0.0;
 		}
 	}
 
@@ -1289,7 +1291,6 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 // 	mxDestroyArray(score);
 
 	return result;
-
 }
 
 void DiffusionShapeMatcher::matchFeaturesTensor( std::ostream& flog, double timescale, double thresh )
