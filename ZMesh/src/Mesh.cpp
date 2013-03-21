@@ -2541,40 +2541,40 @@ double CMesh::getVolume()
 	return vol;
 }
 
-void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& ar )
+void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& var )
 {
-/*
-	if(!var.empty()) var.clear();
 
-	var.resize(61);
+	//if(!var.empty()) var.clear();
 
-	for(int fi=0; fi<m_nFace; fi++)
-	{
-		int *fv = m_pFace[fi].m_piVertex;
-		int m1 = m_pVertex[fv[0]].m_vMatched;
-		int m2 = m_pVertex[fv[1]].m_vMatched;
-		int m3 = m_pVertex[fv[2]].m_vMatched;
-		if(m1<0 || m2<0 || m3<0) continue;
-		if(m1==m2 || m1==m3 || m2==m3) {var[0]++;continue;} // special case.
+	//var.resize(61);
 
-		Vector3D v1 = m_pVertex[fv[0]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
-		Vector3D v2 = m_pVertex[fv[2]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
-		Vector3D v3;
-		crossProduct3D(v1,v2,v3);
-		double a1 = v3.length();
+	//for(int fi=0; fi<m_nFace; fi++)
+	//{
+	//	int *fv = m_pFace[fi].m_piVertex;
+	//	int m1 = m_pVertex[fv[0]].m_vMatched;
+	//	int m2 = m_pVertex[fv[1]].m_vMatched;
+	//	int m3 = m_pVertex[fv[2]].m_vMatched;
+	//	if(m1<0 || m2<0 || m3<0) continue;
+	//	if(m1==m2 || m1==m3 || m2==m3) {var[0]++;continue;} // special case.
 
-		v1 = tmesh->m_pVertex[m1].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
-		v2 = tmesh->m_pVertex[m3].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
-		crossProduct3D(v1,v2,v3);
-		double a2 = v3.length();
+	//	Vector3D v1 = m_pVertex[fv[0]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
+	//	Vector3D v2 = m_pVertex[fv[2]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
+	//	Vector3D v3;
+	//	crossProduct3D(v1,v2,v3);
+	//	double a1 = v3.length();
 
-		int ar;
-		ar = int (3*a2/a1+0.5);
+	//	v1 = tmesh->m_pVertex[m1].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
+	//	v2 = tmesh->m_pVertex[m3].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
+	//	crossProduct3D(v1,v2,v3);
+	//	double a2 = v3.length();
 
-		if(ar<61) var[ar]++;
-		else var[60]++;
-	}
-*/
+	//	int ar;
+	//	ar = int (3*a2/a1+0.5);
+
+	//	if(ar<61) var[ar]++;
+	//	else var[60]++;
+	//}
+
 }
 
 void CMesh::calLengthDifference( const CMesh* tmesh, std::vector<double>& ld ) const

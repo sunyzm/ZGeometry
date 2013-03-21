@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <algorithm>
+#include <iostream>
 #include <fstream>
 #include <engine.h>
 #include "DifferentialMeshProcessor.h"
@@ -86,9 +87,9 @@ public:
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
 	void	constructPyramid(int n);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
-	void    matchFeatures(std::ofstream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
-	void    matchFeaturesTensor(std::ofstream& flog, double timescale, double thresh);
-	void    refineRegister(std::ofstream& flog);
+	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
+	void matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
+	void	refineRegister(std::ostream& flog);
 	void	evaluateRegistration();
 
 	/* attributes access */

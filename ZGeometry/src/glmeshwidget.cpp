@@ -22,7 +22,6 @@ const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
 
 extern OutputHelper qout;
-extern QString qformat;
 extern GeometryTask g_task;
 
 FalseColorMap falseColorMap;

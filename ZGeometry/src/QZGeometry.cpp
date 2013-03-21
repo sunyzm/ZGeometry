@@ -18,7 +18,6 @@
 using namespace std;
 
 extern OutputHelper qout;
-extern QString qformat;
 extern SimpleConfigLoader g_configMgr;
 
 GeometryTask g_task = TASK_REGISTRATION;
@@ -637,7 +636,7 @@ void QZGeometryWindow::setCommonParameter( int p )
 			time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 		else 
 			time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-		qout.output(qformat.sprintf("HKS timescale %f", time_scale), OUT_STATUS);
+		qout.output(QString().sprintf("HKS timescale %f", time_scale), OUT_STATUS);
 	}
 }
 
@@ -805,7 +804,7 @@ void QZGeometryWindow::displayExperimental()
 		toggleShowSignature();
 
 	ui.glMeshWidget->update();
-	qout.output(qformat.sprintf("Show MHW from vertex #%d", mp.getRefPointIndex()));
+	qout.output(QString().sprintf("Show MHW from vertex #%d", mp.getRefPointIndex()));
 	
 // 	qout.output("Start calculating wavelet of geometry...");
 // 	QTime timer;
@@ -894,7 +893,7 @@ void QZGeometryWindow::clone()
 	vMP[1].init(&mesh2, m_ep);
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
-	qout.output(qformat.sprintf("Mesh %s constructed! Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
 	
 	//	vector<double> vx, vy, vz;
 	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -1063,7 +1062,7 @@ void QZGeometryWindow::computeHK()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(qformat.sprintf("Heat Kernel timescale: %f", time_scale));
+	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -1157,7 +1156,7 @@ void QZGeometryWindow::computeMHWS()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(qformat.sprintf("MHW timescale: %f", time_scale));
+	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -1186,7 +1185,7 @@ void QZGeometryWindow::computeSGWS()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(qformat.sprintf("Spectral Graph Wavelet timescale: %f", time_scale));
+	qout.output(QString().sprintf("Spectral Graph Wavelet timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -1232,7 +1231,7 @@ void QZGeometryWindow::computeMHW()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(qformat.sprintf("MHW timescale: %f", time_scale));
+	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
@@ -1289,7 +1288,7 @@ void QZGeometryWindow::detectFeatures()
 	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
 	
 	qout.output("Multi-scale mesh features detected!");
-	qout.output(qformat.sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
+	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 	
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1320,7 +1319,7 @@ void QZGeometryWindow::matchFeatures()
 // 	QProcess* processShowLog = new QProcess();
 // 	processShowLog->start("notepad++.exe", QStringList() << "-systemtray" << MATCH_OUTPUT_FILE.c_str());
 	
-	qout.output(qformat.sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+	qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
@@ -1329,7 +1328,7 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
-	qout.output(qformat.sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
+	qout.output(QString().sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
 	
 	ofstream ofstr;	
 	if (shapeMatcher.getAlreadyRegisteredLevel() == shapeMatcher.getTotalRegistrationLevels())
@@ -1346,9 +1345,9 @@ void QZGeometryWindow::registerStep()
 	const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
 	const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
 	
-	qout.output(qformat.sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matced:%d; Registered:%d",
+	qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matced:%d; Registered:%d",
 		                        level, timer.getElapsedTime(), vf.size(), vr.size()));
-	qout.output(qformat.sprintf("Registered ratio: %f (%d/%d)", 
+	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
 		                        double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
 								vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
 	

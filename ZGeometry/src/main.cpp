@@ -7,7 +7,6 @@
 
 SimpleConfigLoader g_configMgr("configs.txt");
 OutputHelper qout;
-QString qformat;
 
 int main(int argc, char *argv[])
 {

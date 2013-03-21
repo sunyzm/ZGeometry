@@ -13,7 +13,6 @@
 using namespace std;
 
 extern OutputHelper qout;
-extern QString qformat;
 
 const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
@@ -293,7 +292,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 	m_bFeatureDetected = true;
 }
 
-void DiffusionShapeMatcher::matchFeatures( ofstream& flog, double matchThresh )
+void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEFAULT_MATCH_THRESH*/ )
 {
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = vFeatures[0];
@@ -723,7 +722,7 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 	}
 }
 
-void DiffusionShapeMatcher::refineRegister( std::ofstream& flog )
+void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 {
 	const int totalLevels = m_nRegistrationLevels;
 	const int current_level = m_nAlreadyRegisteredLevel - 1;	//the registration level we currently working on
@@ -1293,7 +1292,7 @@ double DiffusionShapeMatcher::TensorMatching(Engine *ep,  const DifferentialMesh
 
 }
 
-void DiffusionShapeMatcher::matchFeaturesTensor( std::ofstream& flog, double timescale, double thresh )
+void DiffusionShapeMatcher::matchFeaturesTensor( std::ostream& flog, double timescale, double thresh )
 {
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = vFeatures[0];
