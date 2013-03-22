@@ -74,8 +74,7 @@ public:
 class DiffusionShapeMatcher
 {
 public:
-	class Cluster{
-	public:
+	struct Cluster{
 		std::vector<int> m_member;
 	};
 public:

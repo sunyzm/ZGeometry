@@ -21,13 +21,13 @@ void SimpleConfigLoader::load( const std::string& config_file_path )
 		string::iterator iter = s_key.begin();
 		while (iter != s_key.end())
 		{
-			if (*iter == ' ') iter = s_key.erase(iter);
+			if (*iter == ' ' || *iter == '\t') iter = s_key.erase(iter);
 			else ++iter;
 		}
 		iter = s_value.begin();
 		while (iter != s_value.end())
 		{
-			if (*iter == ' ') iter = s_value.erase(iter);
+			if (*iter == ' ' || *iter == '\t') iter = s_value.erase(iter);
 			else ++iter;
 		}
 		m_config.insert(make_pair(s_key, s_value));

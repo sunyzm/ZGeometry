@@ -11,8 +11,8 @@
 #include <QTime>
 #include <QProcess>
 #include <ZUtil.h>
-#include "QZGeometry.h"
 #include <SimpleConfigLoader.h>
+#include "QZGeometry.h"
 #include "common.h"
 
 using namespace std;

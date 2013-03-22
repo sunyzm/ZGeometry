@@ -87,6 +87,7 @@ private slots:
 	void registerFull();
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
+
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
