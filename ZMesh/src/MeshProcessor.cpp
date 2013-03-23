@@ -1,5 +1,6 @@
 #include <stdexcept>
 #include <algorithm>
+#include <cassert>
 #include <MeshProcessor.h>
 
 double& MeshFunction::operator[](int idx)
@@ -25,6 +26,12 @@ double MeshFunction::InnerProduct( const MeshFunction& f1, const MeshFunction& f
 double MeshFunction::norm() const
 {
 	return MeshFunction::InnerProduct(*this, *this);
+}
+
+void MeshFunction::copyValues( const std::vector<double>& values )
+{
+	assert(m_size == values.size());
+	m_function = values;
 }
 
 bool MeshProcessor::addProperty( MeshProperty* newProperty )
@@ -100,10 +107,7 @@ MeshProcessor::~MeshProcessor()
 
 void MeshProcessor::replaceProperty( MeshProperty* newProperty )
 {
-	if (retrievePropertyByID(newProperty->id) != NULL)
-	{
-		removePropertyByID(newProperty->id);
-	}
+	removePropertyByID(newProperty->id);
 	addProperty(newProperty);
 }
 

@@ -898,7 +898,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	if(current_level > 0)
 	{
 		tmpReg.clear();
-		for (vector<MatchPair>::const_iterator iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
+		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter)
 		{
 			int vid_1 = iter->m_idx1, vid_2 = iter->m_idx2;
 			int v1 = id2Index(0, vid_1, current_level), v2 = id2Index(1, vid_2, current_level);
@@ -909,7 +909,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 		refinedReg.clear();
 		priority_queue<MatchPair, vector<MatchPair>, greater<MatchPair> > qReg;
-		for (vector<MatchPair>::iterator iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
+		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter)
 		{
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
@@ -950,18 +950,20 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	}
 	else refinedReg = tmpReg1;
 
+
+
 	/************************************************************************/
 	// add note to matchings with great discrepancy; meaningful only when ground truth is given
-	for (auto iter = featureMatch.begin(); iter != featureMatch.end(); ++iter )
-	{
-		if (iter->m_idx1 == iter->m_idx2) 
-			continue;
-
-		if (!pOriginalMesh[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 5))	
-		{
-			iter->m_note = -1;		
-		}
-	}
+// 	for (auto iter = featureMatch.begin(); iter != featureMatch.end(); ++iter )
+// 	{
+// 		if (iter->m_idx1 == iter->m_idx2) 
+// 			continue;
+// 
+// 		if (!pOriginalMesh[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 5))	
+// 		{
+// 			iter->m_note = -1;		
+// 		}
+// 	}
 
 	m_nAlreadyMatchedLevel--;
 	m_nAlreadyRegisteredLevel--;
@@ -1007,10 +1009,11 @@ double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2 ) const
 
 int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
 {
+	assert( level < m_nRegistrationLevels);
+
 	// search vi's match in vj's neighborhood
 	const CMesh* tmesh1 = getMesh(0, level);
 	const CMesh* tmesh2 = getMesh(1, level);
-	const int totalLevels = m_nRegistrationLevels;
 	int vid_i = tmesh1->getVertex_const(vt)->getVID();
 	int vid_j = tmesh2->getVertex_const(vj)->getVID();
 
@@ -1073,6 +1076,8 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 		}
 		nb1 = nb2;
 	}
+	// now vNeighbor contains the index set of indices covered by vj in current level
+
 
 	/* ---- find the maximum match ---- */
 	int vmatch = -1;
