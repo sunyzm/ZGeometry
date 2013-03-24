@@ -16,7 +16,7 @@ MATCH_OUTPUT_FILE = output/FeatureMatch.log
 REGISTER_OUTPUT_FILE = output/Registration.log
 
 # match features
-USE_TENSOR_MATCHING = 1
+USE_TENSOR_MATCHING = 0
 # pair matching 
 MATCHING_THRESH_1 = 0.52
 # tensor matching

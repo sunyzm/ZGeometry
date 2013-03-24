@@ -751,73 +751,67 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	const CMesh *oriMesh1 = pOriginalMesh[0], *oriMesh2 = pOriginalMesh[1];
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
 	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
-	vector<MatchPair> featureMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
+	const vector<MatchPair> oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
 
-	vector<int> vMatch1, vMatch2;
-	vector<double> vMatchScore1, vMatchScore2;
+	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
+	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
 
-	vMatch1.resize(coarseSize1, -1);
-	vMatchScore1.resize(coarseSize1, 0.);
-	vMatch2.resize(coarseSize2, -1);
-	vMatchScore2.resize(coarseSize2, 0.);
+	const vector<MatchPair> oldReg = (current_level == m_nRegistrationLevels - 1) ?
+									 oldAnchorMatch : getRegistrationResults(m_nAlreadyRegisteredLevel);
 
-	vector<MatchPair> refinedReg;
-	if (current_level == m_nRegistrationLevels - 1) 
-		refinedReg = featureMatch;
-	else 
-		refinedReg = getRegistrationResults(m_nAlreadyRegisteredLevel);
+	vector<MatchPair> newAnchorMatch;
+	vector<MatchPair> tmpReg1, tmpReg2;
 
 	/************************************************************************/
 	/*                        1. Initialize/Compute HKC                     */
 	/************************************************************************/
-
-	vector<int> vFeatureIdx1, vFeatureIdx2;
-	flog << "Anchors index: " << endl;
-	for (auto iter = featureMatch.begin(); iter != featureMatch.end(); ++iter)
+	vector<int> vFeatureID1, vFeatureID2;
+	flog << "Anchors IDs: " << endl;
+	for (auto iter = begin(oldAnchorMatch); iter != end(oldAnchorMatch); ++iter)
 	{
 		flog << "(" << iter->m_idx1 << ',' << iter->m_idx2 << ") ";
-		vFeatureIdx1.push_back(iter->m_idx1);
-		vFeatureIdx2.push_back(iter->m_idx2);
+		vFeatureID1.push_back(iter->m_idx1);
+		vFeatureID2.push_back(iter->m_idx2);
 	}
 	flog << endl << endl;
 
-	m_HKParamMgr[0].computeHKParam(vFeatureIdx1, regT);
-	m_HKParamMgr[1].computeHKParam(vFeatureIdx2, regT);
-	flog << "\n  HK Param initialized" << endl;
-
-	vector<MatchPair> tmpReg;
-	vector<MatchPair> tmpReg1, tmpReg2;
-
-	for (auto iter = featureMatch.begin(); iter != featureMatch.end(); ++iter)
-		iter->m_note = 1;	
-
-	vector<MatchPair> uniquePairs;
-	for (vector<MatchPair>::const_iterator mpIter = refinedReg.begin(); mpIter != refinedReg.end(); ++mpIter)
+	m_HKParamMgr[0].computeHKParam(vFeatureID1, regT);
+	m_HKParamMgr[1].computeHKParam(vFeatureID2, regT);
+	std::vector<HKParam>& vHKParam1 = m_HKParamMgr[0].vHKParam;
+	std::vector<HKParam>& vHKParam2 = m_HKParamMgr[1].vHKParam;
+	flog << "HKParam initialized!" << endl;
+	
+	set<MatchPair> uniquePairs;
+	for (vector<MatchPair>::const_iterator mpIter = oldReg.begin(); mpIter != oldReg.end(); ++mpIter)
 	{
 		const int vid_i = mpIter->m_idx1, vid_j = mpIter->m_idx2;
 		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
 
 		// filter out repeated matches
-		vector<MatchPair>::iterator uiter = find(uniquePairs.begin(), uniquePairs.end(), MatchPair(vi, vj));
-		if (uiter != uniquePairs.end()) continue;
-		else
+		tmpReg1.push_back(*mpIter);
+
+		if (uniquePairs.find(MatchPair(vi, vj)) == uniquePairs.end())
 		{
-			uniquePairs.push_back(MatchPair(vi, vj));
-			tmpReg1.push_back(*mpIter);
+			uniquePairs.insert(MatchPair(vi, vj));
+			tmpReg1.push_back(*mpIter);			
 		}		
 	}
 
-	for (vector<MatchPair>::iterator iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
+	for (auto iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
 	{
-		if (iter->m_note == 1) iter->m_score = 1.;	// matched feature pairs have the highest score 1.0
+		const int vid_i = iter->m_idx1, vid_j = iter->m_idx2;
+		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
+
+		if (find(oldAnchorMatch.begin(), oldAnchorMatch.end(), *iter) != oldAnchorMatch.end())
+			iter->m_note = 1;
+
+		if (iter->m_note == 1) 
+			iter->m_score = 1.;	// matched feature pairs have the highest score 1.0
 		else
 		{
 			double score = computeMatchScore(iter->m_idx1, iter->m_idx2);
 			iter->m_score = score;
 		}		
-
-		const int vid_i = iter->m_idx1, vid_j = iter->m_idx2;
-		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
 
 		vMatch1[vi] = vj;
 		vMatch2[vj] = vi;
@@ -825,19 +819,22 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		vMatchScore2[vj] = iter->m_score;
 	}
 
-	flog << "HKC computed!" << endl;
+	flog << "\n1. HKC computed!\n" 
+		 << "  Old anchor size: " << oldAnchorMatch.size() 
+		 << "\n  Old reg size: " << oldReg.size() 
+		 << "\n  Filtered old reg size: " << tmpReg1.size() << endl;
 
 	/************************************************************************/
 	/*              2. Registration                                         */
 	/************************************************************************/
 	NoteQueue qscan1;
-	for (vector<MatchPair>::const_iterator iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
+	for (auto iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
 	{
 		int vid_1 = iter->m_idx1, vid_2 = iter->m_idx2;
 		int v1 = id2Index(0, vid_1, current_level), v2 = id2Index(1, vid_2, current_level);
 		//MyNote mn(v1, v2, iter->m_score);	//id, score
 		//MyNote mn(v1, tmesh1->m_pVertex[v1].m_vParam.m_votes);
-		MyNote mn(v1, v2, m_HKParamMgr[0].vHKParam[vid_1].m_votes/* * iter->m_score*/);
+		MyNote mn(v1, v2, vHKParam1[vid_1].m_votes/* * iter->m_score*/);
 		qscan1.push(mn);
 	}
 
@@ -883,55 +880,56 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 				}
 
 				//MyNote mn(vt, vm, score);
-				MyNote mn(vt, vm, m_HKParamMgr[0].getHKParam()[vid_t].m_votes);
+				MyNote mn(vt, vm, vHKParam1[vid_t].m_votes);
 				qscan1.push(mn);
 			}
 			else flog << "No match 3!" << endl;
 		}
 	} //while(!qscan1.empty())
 
-	flog << "  tmp reg size: " << tmpReg1.size() << endl;
+	flog << "\n2. Temp registration finished!" << "Tmp reg size: " << tmpReg1.size() << endl;
 
 	/************************************************************************/
 	/*              3. Adjust and update anchor points                      */
 	/************************************************************************/
+	
+	newAnchorMatch = oldAnchorMatch;
 	if(current_level > 0)
 	{
-		tmpReg.clear();
 		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter)
 		{
 			int vid_1 = iter->m_idx1, vid_2 = iter->m_idx2;
 			int v1 = id2Index(0, vid_1, current_level), v2 = id2Index(1, vid_2, current_level);
-			if (vMatch1[v1] == v2 && vMatch2[v2] == v1)
-				tmpReg.push_back(*iter);
+			if (vMatch1[v1] == v2 && vMatch2[v2] == v1)		// select only the pair considered best mutually
+				tmpReg2.push_back(*iter);
 		}
-		tmpReg1 = tmpReg;
 
-		refinedReg.clear();
 		priority_queue<MatchPair, vector<MatchPair>, greater<MatchPair> > qReg;
-		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter)
+		for (auto iter = begin(tmpReg2); iter != end(tmpReg2); ++iter)
 		{
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
-			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);
-			qReg.push(MatchPair(vi, vm1, m_HKParamMgr[0].vHKParam[vi].m_votes * score));
+			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);	// vi, vj here are vertex id as well as level-0 index
+			qReg.push(MatchPair(vi, vm1, vHKParam1[vi].m_votes * score));
 		}
+
+		tmpReg1.clear();
 		while(!qReg.empty())
 		{
-			refinedReg.push_back(qReg.top());
+			tmpReg1.push_back(qReg.top());
 			qReg.pop();
 		}
 
 		// insert additional anchor points
-		for (vector<MatchPair>::const_iterator riter = refinedReg.begin(); riter != refinedReg.end(); ++riter)
+		for (auto riter = tmpReg1.begin(); riter != tmpReg1.end(); ++riter)
 		{
-			if (m_HKParamMgr[0].getHKParam()[riter->m_idx1].m_votes < 5*thresh ||
-				m_HKParamMgr[1].getHKParam()[riter->m_idx2].m_votes < 5*thresh
+			if (vHKParam1[riter->m_idx1].m_votes < 5*thresh ||
+				vHKParam2[riter->m_idx2].m_votes < 5*thresh
 				) 
 				continue;
 
 			bool pass = true;
-			for (vector<MatchPair>::const_iterator fiter = featureMatch.begin(); fiter != featureMatch.end(); ++fiter)
+			for (auto fiter = newAnchorMatch.begin(); fiter != newAnchorMatch.end(); ++fiter)
 			{
 				if (fiter->m_idx1 == riter->m_idx1 || fiter->m_idx2 == riter->m_idx2 ||
 					pOriginalMesh[0]->isInNeighborRing(fiter->m_idx1, riter->m_idx1, 6) ||
@@ -943,14 +941,14 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 				}
 			}
 			if (pass)
-				featureMatch.push_back(*riter);
+				newAnchorMatch.push_back(*riter);
 		}
-
-		flog << "  anchor points size: " << featureMatch.size() << endl;
 	}
-	else refinedReg = tmpReg1;
 
+	vector<MatchPair>& newReg = tmpReg1;
 
+	flog << "\n3. Registration adjustment and anchor set augmentation finished!\n"
+		 << "  New reg size: " << newReg.size() << "; new anchor size: " << newAnchorMatch.size() << endl;
 
 	/************************************************************************/
 	// add note to matchings with great discrepancy; meaningful only when ground truth is given
@@ -967,8 +965,8 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 	m_nAlreadyMatchedLevel--;
 	m_nAlreadyRegisteredLevel--;
-	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = featureMatch;
-	vRegistrationResutls[m_nAlreadyRegisteredLevel] = refinedReg;
+	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = newAnchorMatch;
+	vRegistrationResutls[m_nAlreadyRegisteredLevel] = newReg;
 
 } // refineRegister
 

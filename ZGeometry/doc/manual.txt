@@ -8,10 +8,11 @@ Keyboard Control
 c			- clone current mesh 
 d			- set edit mode as Drag
 e			- perform simple deformation
-ctrl + f	- toggle showing features
+ctrl + f		- toggle showing features
 m			- set edit mode as Move
 p			- set edit move as Pick
 r			- repeat previous operation
-ctrl + r	- toggle showing reference point
-ctrl + s	- toggle showing signatures
+ctrl + r		- toggle showing reference point
+ctrl + s		- toggle showing signatures
+ctrl + l		- toggle show correspondence lines
 w			- switch display mode between mesh, wireframe and pointcloud

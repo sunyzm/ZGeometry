@@ -333,6 +333,11 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 			toggleShowFeatures();
 		break;
 
+	case Qt::Key_L:
+		if (event->modifiers() & Qt::AltModifier)
+			toggleShowMatchingLines();
+		break;
+
 	case Qt::Key_R:
 		if (event->modifiers() & Qt::AltModifier)
 			toggleShowRefPoint();

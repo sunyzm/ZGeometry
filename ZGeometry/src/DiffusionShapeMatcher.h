@@ -26,12 +26,12 @@ public:
 	friend bool operator== (const MatchPair& mp1, const MatchPair& mp2) { return (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 == mp2.m_idx2); }
  	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
  	{
- 		return mp1.m_score < mp2.m_score;
+ 		return mp1.m_idx1 < mp2.m_idx1 || (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 < mp2.m_idx2);
  	}
  
  	friend bool operator> (const MatchPair& mp1, const MatchPair& mp2)
  	{
- 		return mp1.m_score > mp2.m_score;
+ 		return mp2 < mp1;
  	}
 };
 
