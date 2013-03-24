@@ -83,10 +83,10 @@ public:
 
 	/* core functions */
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
-	void	constructPyramid(int n);
+	void	constructPyramid(int n, double ratio, std::ostream& ostr);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
-	void matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
+	void	matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
 	void	evaluateRegistration();
 

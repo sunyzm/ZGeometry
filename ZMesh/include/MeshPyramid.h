@@ -2,7 +2,7 @@
 #include <vector>
 #include <list>
 #include <map>
-#include <string>
+#include <iostream>
 #include "Mesh.h"
 #include "Quadric.h"
 
@@ -25,9 +25,9 @@ public:
 	~MeshPyramid();
 
 	void			setInitialMesh(CMesh* mesh);
-	void			setLevel(int level) { m_levels = level; }
+	void			setLevel(int level, double contract_ratio = 0.5) { m_levels = level; m_contract_ratio = contract_ratio; }
 	int				numOfLevels() const { return m_levels; }
-	void			construct();
+	void			construct(std::ostream& ostr);
 	void			clear();
 	CMesh*			getMesh(int level) const;
 	std::list<int>	getCoveredVertexList(int level, int idx) const;	//return index list of vertices that collapsed to a specific vertex on given level 
@@ -53,7 +53,7 @@ private:
 	int			m_levels;
 	int		    m_nVertices;		// number of vertices
 	int			m_nFace;	 		// number of faces
-
+	double      m_contract_ratio;
 	CMesh*					originalMesh;
 	std::vector<MeshLevel>	m_vMeshes;
 	std::vector<Quadric>	m_FaceQuadrics;

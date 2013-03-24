@@ -101,12 +101,9 @@ MeshPyramid::~MeshPyramid()
 	clear();
 }
 
-void MeshPyramid::construct()
+void MeshPyramid::construct(std::ostream& m_ostr)
 {
 	if (!originalMesh) throw logic_error("Initial mesh required for building pyramid!");
-
-	ofstream m_ostr("output/build_pyramid.log", ios::trunc);
-
 
 	m_ostr << "------- Original Mesh --------" << endl;
 	m_ostr << "  Vertex Num: " << originalMesh->m_nVertex << endl
@@ -186,6 +183,7 @@ void MeshPyramid::construct()
 			do pair contraction
 			update cost for remaining pair */
 		
+
 		/* find initial min-cost pair */
 		double minCost = COST_MIN;		//need more consideration
 		list<VertexPair>::iterator minIter;
@@ -201,8 +199,8 @@ void MeshPyramid::construct()
 		m_ostr << "Before contractions" << endl;
 		
 		/** main iteration for each edge collapse **/
-		const int num_contraction = int(this->m_nVertices / pow(2.0, level)); 
-//		const int num_contraction = int(3 * this->m_nVertices / pow(4.0, level)); 
+		const int num_contraction = static_cast<int>((1.0 - m_contract_ratio) * pow(m_contract_ratio, level-1) * m_nVertices); 
+		
 		for (int step = 0; step < num_contraction; ++step)		
 		{
 			CVertex* vKeep = minIter->pV[minIter->vToKeep];

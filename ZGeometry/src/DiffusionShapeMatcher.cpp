@@ -188,17 +188,17 @@ CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 		return meshPyramids[obj].getMesh(level);
 }
 
-void DiffusionShapeMatcher::constructPyramid( int n )
+void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
 {
 	assert(n >= 1);
 
 	m_nPyramidLevels = n;
 
-	meshPyramids[0].setLevel(n);
-	meshPyramids[1].setLevel(n);
+	meshPyramids[0].setLevel(n, ratio);
+	meshPyramids[1].setLevel(n, ratio);
 
-	meshPyramids[0].construct();
-	meshPyramids[1].construct();
+	meshPyramids[0].construct(ostr);
+	meshPyramids[1].construct(ostr);
 
 	for (int k = 1; k < n; ++k)
 	{
@@ -731,7 +731,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	const int totalLevels = m_nRegistrationLevels;
 	const int current_level = m_nAlreadyRegisteredLevel - 1;	//the registration level we currently working on
 	
-	flog << "-------- registration level " << current_level << " --------" << endl;
+	flog << "\n-------- registration level " << current_level << " --------" << endl;
 
 	double thresh;
 	double regT = 20.0 * pow(2.0, current_level);
@@ -750,12 +750,12 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 	const CMesh *oriMesh1 = pOriginalMesh[0], *oriMesh2 = pOriginalMesh[1];
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
+	
 	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
-	const vector<MatchPair> oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
-
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
 	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
 
+	const vector<MatchPair> oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
 	const vector<MatchPair> oldReg = (current_level == m_nRegistrationLevels - 1) ?
 									 oldAnchorMatch : getRegistrationResults(m_nAlreadyRegisteredLevel);
 
@@ -788,8 +788,6 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
 
 		// filter out repeated matches
-		tmpReg1.push_back(*mpIter);
-
 		if (uniquePairs.find(MatchPair(vi, vj)) == uniquePairs.end())
 		{
 			uniquePairs.insert(MatchPair(vi, vj));
@@ -887,7 +885,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		}
 	} //while(!qscan1.empty())
 
-	flog << "\n2. Temp registration finished!" << "Tmp reg size: " << tmpReg1.size() << endl;
+	flog << "\n2. Crude registration finished!" << "\n  Tmp reg size: " << tmpReg1.size() << endl;
 
 	/************************************************************************/
 	/*              3. Adjust and update anchor points                      */

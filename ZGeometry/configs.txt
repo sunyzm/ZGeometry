@@ -12,8 +12,13 @@ MATCHING_THRESHOLD = 0.002
 MESH_LIST_NAME = meshfiles.cfg
 NUM_PRELOAD_MESHES = 2
 
+HIERARCHY_OUTPUT_FILE = output/build_pyramid.log
 MATCH_OUTPUT_FILE = output/FeatureMatch.log
 REGISTER_OUTPUT_FILE = output/Registration.log
+
+# hierachy
+HIERARCHY_LEVEL = 2
+CONTRACTION_RATIO = 0.25
 
 # match features
 USE_TENSOR_MATCHING = 0

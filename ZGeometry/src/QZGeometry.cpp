@@ -1,6 +1,7 @@
 #include <cmath>
 #include <fstream>
 #include <string>
+#include <iostream>
 #include <sstream>
 #include <vector>
 #include <deque>
@@ -31,8 +32,6 @@ double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
 double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
 double QZGeometryWindow::MATCHING_THRESHOLD = 0.002;
-std::string QZGeometryWindow::REGISTER_OUTPUT_FILE = "output/Registration.log";
-std::string QZGeometryWindow::MATCH_OUTPUT_FILE = "output/FeatureMatch.log";
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
@@ -48,8 +47,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
 	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
 	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
-	MATCH_OUTPUT_FILE = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
-	REGISTER_OUTPUT_FILE = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
 
 	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = PARAMETER_SLIDER_CENTER;
@@ -1281,9 +1278,16 @@ void QZGeometryWindow::registerAutomatic()
 
 void QZGeometryWindow::buildHierarchy()
 {
+	int nLevel = g_configMgr.getConfigValueInt("HIERARCHY_LEVEL");
+	double ratio = g_configMgr.getConfigValueDouble("CONTRACTION_RATIO");
+	std::string log_filename = g_configMgr.getConfigValue("HIERARCHY_OUTPUT_FILE");
+	ofstream ostr(log_filename.c_str(), ios::trunc);
+
 	qout.output("-- Build hierarchy --");
-	shapeMatcher.constructPyramid(2);
+	shapeMatcher.constructPyramid(nLevel, ratio, ostr);
 	qout.output("Mesh hierarchy constructed!");
+
+	ostr.close();
 }
 
 void QZGeometryWindow::detectFeatures()
@@ -1294,7 +1298,7 @@ void QZGeometryWindow::detectFeatures()
 	
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
-	
+
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
 	ui.glMeshWidget->update();
@@ -1306,10 +1310,11 @@ void QZGeometryWindow::matchFeatures()
 	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
 	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
 	double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
+	std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
 	qout.output("-- Match initial features --");
 
-	ofstream ofstr(MATCH_OUTPUT_FILE, ios::trunc);
+	ofstream ofstr(log_filename.c_str(), ios::trunc);
 	CStopWatch timer;
 	timer.startTimer();
 
@@ -1335,12 +1340,14 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
+	string log_filename = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
+
 	qout.output(QString().sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
 	
 	ofstream ofstr;	
 	if (shapeMatcher.getAlreadyRegisteredLevel() == shapeMatcher.getTotalRegistrationLevels())
-		ofstr.open(REGISTER_OUTPUT_FILE, ios::trunc);
-	else ofstr.open(REGISTER_OUTPUT_FILE, ios::app);
+		ofstr.open(log_filename.c_str(), ios::trunc);
+	else ofstr.open(log_filename.c_str(), ios::app);
 
 	CStopWatch timer;
 	timer.startTimer();
