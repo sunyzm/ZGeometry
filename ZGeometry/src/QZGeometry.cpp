@@ -13,6 +13,7 @@
 #include <QProcess>
 #include <ZUtil.h>
 #include <SimpleConfigLoader.h>
+#include <ppl.h>
 #include "QZGeometry.h"
 #include "common.h"
 
@@ -45,7 +46,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
 	PARAMETER_SLIDER_CENTER = g_configMgr.getConfigValueInt("PARAMETER_SLIDER_CENTER");
 	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
-	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
 	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
 
 	mesh_valid[0] = mesh_valid[1] = false;
@@ -170,7 +170,12 @@ bool QZGeometryWindow::initialize()
 	setDisplayMesh();
 	setEditModeMove();
 
-	//// ---- load meshes ---- ////    
+	//// ---- load meshes ---- ////   
+#ifdef NDEBUG
+	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
+#else NDEBUG
+	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
+#endif
 	ifstream meshfiles(mesh_list_name);
 	if (!meshfiles)
 	{
@@ -1390,7 +1395,14 @@ void QZGeometryWindow::registerStep()
 	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
 		                        double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
 								vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
-	
+	/* ---- evaluation ---- */
+	double vError[3];
+	for(int k = 0; k < 2; ++k) { 
+		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &mesh1, &mesh2, shapeMatcher.m_randPairs, 200 * k);
+	}
+
+	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
+
 	if (!ui.glMeshWidget->m_bDrawRegistration)
 		toggleDrawRegistration();
 	ui.glMeshWidget->update();

@@ -1445,3 +1445,29 @@ void DiffusionShapeMatcher::readInRandPair( const std::string& filename )
 	}
 	cout << "## rand pair size: " << m_randPairs.size() << endl;
 }
+
+double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+{
+	int matchSize = vIdMatchPair.size(), rand_size = vRandPair.size();
+	
+	double distortSum = 0.;
+	double avg_len_ratio = mesh1->getAvgEdgeLength() / mesh2->getAvgEdgeLength();
+
+	const int total_run = 200;
+	int count = 0;
+	for (int k = rand_start; count < total_run || k < rand_size; ++k)
+	{
+		int pick1 = matchSize * vRandPair[k].first, pick2 = matchSize * vRandPair[k].second;
+		int idx_11 = vIdMatchPair[pick1].m_idx1, idx_12 = vIdMatchPair[pick1].m_idx2;
+		int idx_21 = vIdMatchPair[pick2].m_idx1, idx_22 = vIdMatchPair[pick2].m_idx2;
+
+		if (idx_11 == idx_21) continue;
+
+		double dist1 = mesh1->getGeodesic(idx_11, idx_21), dist2 = mesh2->getGeodesic(idx_12, idx_22) * avg_len_ratio;
+
+		distortSum += abs(dist1 - dist2)/dist1;
+		count++;
+	}
+
+	return distortSum / double(count);
+}

@@ -110,7 +110,9 @@ public:
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;
 	void	readInRandPair(const std::string& filename);
-	double  evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair);
+	
+	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
+	std::vector<std::pair<double, double> > m_randPairs;
 
 	// static constants
 	static const double DEFAULT_C_RATIO;
@@ -146,7 +148,6 @@ private:
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
 	double					m_registerTimescale;
 	HKParamManager			m_HKParamMgr[2];
-	std::vector<std::pair<double, double> > m_randPairs;
 
 	/* helper functions */
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
