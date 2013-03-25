@@ -280,6 +280,10 @@ bool QZGeometryWindow::initialize()
 	selected[1] = vRS[1].selected = false; 
 
 	shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
+
+	string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
+	shapeMatcher.readInRandPair(rand_data_file);
+	
 	ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 
 	return true;
@@ -1306,6 +1310,8 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
+	bool force_matching = (1 == g_configMgr.getConfigValueInt("FORCE_MATCHING"));
+	
 	bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
 	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
 	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
@@ -1318,20 +1324,40 @@ void QZGeometryWindow::matchFeatures()
 	CStopWatch timer;
 	timer.startTimer();
 
-	if (!use_tensor)
-		shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
-	else
+	if (use_tensor)
 	{
 		shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+	}
+	else
+	{
+		shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
 	}
 
 	timer.stopTimer();
 	ofstr.close();
-
-// 	QProcess* processShowLog = new QProcess();
-// 	processShowLog->start("notepad++.exe", QStringList() << "-systemtray" << MATCH_OUTPUT_FILE.c_str());
-	
 	qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+
+	if (force_matching)
+	{
+		string string_override = "";
+		if (mesh1.getMeshName() == "horse0")
+		{
+			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
+		}
+		
+		if (string_override != "")
+		{
+			vector<int> idx_override = splitStringToInt(string_override);
+			vector<MatchPair> vmp;
+			for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
+			{
+				vmp.push_back(MatchPair(*iter, *iter));
+			}
+			shapeMatcher.forceInitialAnchors(vmp);
+			
+			qout.output("!!Matched anchors manually assigned!!");
+		}
+	}
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();

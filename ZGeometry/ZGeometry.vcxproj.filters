@@ -134,5 +134,8 @@
     <None Include="configs.txt">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="random_num.dat">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

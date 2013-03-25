@@ -91,7 +91,7 @@
     <ClInclude Include="..\include\color.h" />
     <ClInclude Include="..\include\fibheap.h" />
     <ClInclude Include="..\include\misc.h" />
-    <ClInclude Include="..\include\output.h" />
+    <ClInclude Include="..\include\data.h" />
     <ClInclude Include="..\include\SimpleConfigLoader.h" />
     <ClInclude Include="..\include\timer.h" />
     <ClInclude Include="..\include\ZUtil.h" />
@@ -100,7 +100,7 @@
     <ClCompile Include="..\src\arithmetic.cpp" />
     <ClCompile Include="..\src\color.cpp" />
     <ClCompile Include="..\src\fibheap.cpp" />
-    <ClCompile Include="..\src\output.cpp" />
+    <ClCompile Include="..\src\data.cpp" />
     <ClCompile Include="..\src\SimpleConfigLoader.cpp" />
     <ClCompile Include="..\src\timer.cpp" />
   </ItemGroup>

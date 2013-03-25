@@ -7,6 +7,7 @@
 #include "DiffusionShapeMatcher.h"
 #include "OutputHelper.h"
 #include "SimpleConfigLoader.h"
+#include <ppl.h>
 
 #define INFINITY 1e10
 #define LOCAL_ANCHORS_NUM 8
@@ -306,10 +307,12 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	flog << "Before defining vftCoarse" << endl;
 
 	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
-		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
+		if(f.m_scale >= 2) 
+			vftCoarse1.push_back(f); 
 	});
 	for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){ 
-		if(f.m_scale >= 2) vftCoarse2.push_back(f);
+		if(f.m_scale >= 2)
+			vftCoarse2.push_back(f);
 	});
 
 	std::sort(vftCoarse1.begin(), vftCoarse1.end(), [](const HKSFeature& f1, const HKSFeature& f2) { return f1.m_index < f2.m_index; });
@@ -333,11 +336,29 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 		flog << vftCoarse2[i].m_index << ' ';
 	flog << endl;
 
-	for(int i1 = 0; i1 < size1; i1++)
-		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
+// 	vector<HKSFeature>* vftCoarse[2] = {&vftCoarse1, &vftCoarse2};
+// 	vector<VectorND>* vsig[2] = {&vsig1, &vsig2};
+// 
+// 	Concurrency::parallel_for(0, 1, [](int obj) {
+// 		int size = vftCoarse[obj]->size();
+// 		for(int i = 0; i < size; i++)
+// 			calVertexSignature(pOriginalProcessor[obj], vftCoarse[obj]->at(i), vsig[obj]->at(i));
+// 	});
 
-	for(int i2 = 0; i2 < size2; i2++)
-		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
+#if (_MSC_VER >= 1600)
+ 	Concurrency::parallel_for (0, size1, [&](int i1) {
+ 		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
+ 	});
+ 
+ 	Concurrency::parallel_for(0, size2, [&](int i2) {
+ 		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
+ 	});
+#else
+  	for(int i1 = 0; i1 < size1; i1++)
+  		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
+    for(int i2 = 0; i2 < size2; i2++)
+   		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
+#endif
 
 	flog << "-- candidates: ";
 	double sigma1 = 4.0 * matchThresh;
@@ -1405,4 +1426,22 @@ void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int up
 	{
 		vCoveredIdx.push_back(*iter);
 	}
+}
+
+void DiffusionShapeMatcher::readInRandPair( const std::string& filename )
+{
+	m_randPairs.clear();
+	ifstream ifs(filename.c_str());
+
+	double x, y;
+	int count(0);
+	ifs >> count;
+	m_randPairs.reserve(count);
+	for (int i = 0; i < count; ++i)
+	{
+		ifs >> x >> y;
+		m_randPairs.push_back(make_pair(x, y));
+		
+	}
+	cout << "## rand pair size: " << m_randPairs.size() << endl;
 }

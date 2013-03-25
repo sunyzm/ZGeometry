@@ -27,9 +27,6 @@
     <ClInclude Include="..\include\misc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\include\output.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\include\SimpleConfigLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -42,15 +39,15 @@
     <ClInclude Include="..\include\fibheap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\include\data.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\src\arithmetic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\color.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\src\output.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\SimpleConfigLoader.cpp">
@@ -60,6 +57,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\src\fibheap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\src\data.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

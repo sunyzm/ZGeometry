@@ -16,17 +16,25 @@ HIERARCHY_OUTPUT_FILE = output/build_pyramid.log
 MATCH_OUTPUT_FILE = output/FeatureMatch.log
 REGISTER_OUTPUT_FILE = output/Registration.log
 
-# hierachy
+
+## hierarchy ##
 HIERARCHY_LEVEL = 2
 CONTRACTION_RATIO = 0.25
 
-# match features
-USE_TENSOR_MATCHING = 0
+## evaluation ##
+RAND_DATA_FILE = random_num.dat
+
+## match features ##
+USE_TENSOR_MATCHING = 1
 # pair matching 
 MATCHING_THRESH_1 = 0.52
 # tensor matching
 MATCHING_THRESH_2 = 1e-2
 TENSOR_MATCHING_TIMESCALE = 40.0
+# feature_match_override
+FORCE_MATCHING = 1
+HORSE0_FEATURE_OVERRIDE = 232,354,700,735,1072,1440,2116,2787,3270,3943,4231,5152,5574,5934,5953,6541, 6585, 6944, 6965, 7552, 7580, 8113, 8428
+#EIGHT_FEATURE_OVERRIDE = 
 
-# register
+## register ##
 
