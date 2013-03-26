@@ -995,3 +995,26 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	}
 	return sum;
 }
+
+void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint )
+{
+	if (!m_bLaplacianDecomposed) return;
+	if (refPoint < 0 || refPoint >= m_size)
+		throw runtime_error("Error computeBiharmonicDistanceSignature: invalid reference point");
+
+	MeshFunction *mf = new MeshFunction(m_size);
+	
+	for (int i = 0; i < m_size; ++i)
+	{
+		double sum = 0;
+		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		{
+			sum += pow((mhb.m_func[k].m_vec[i] - mhb.m_func[k].m_vec[refPoint]) / mhb.m_func[k].m_val, 2);
+		}
+		mf->setValue(i, sum);
+	}
+
+	removePropertyByID(SIGNATURE_BIHARMONIC_DISTANCE);
+	mf->setIDandName(SIGNATURE_BIHARMONIC_DISTANCE, "Biharmonic_Distance_signature");
+	addProperty(mf);
+}

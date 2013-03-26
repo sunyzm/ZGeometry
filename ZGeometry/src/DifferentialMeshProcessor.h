@@ -9,7 +9,7 @@
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
-enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL};
+enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
 
 #define SIGNATURE_HKS					0x0101
 #define SIGNATURE_HK					0x0102
@@ -20,6 +20,7 @@ enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL};
 #define SIGNATURE_MHW					0x0106
 #define SIGNATURE_SGWS					0x0107
 #define SIGNATURE_SGW					0x0108
+#define SIGNATURE_BIHARMONIC_DISTANCE   0x0109
 
 #define FEATURE_NEIGHBORS				0x0201
 #define FEATURE_HKS						0x0202
@@ -54,8 +55,9 @@ public:
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void calKernelSignature(double timescale, KernelType kernelType, std::vector<double>& values) const;
 	void computeKernelSignature(double timescale, KernelType kernelType);
-	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
+	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
+	void computeBiharmonicDistanceSignature(int refPoint);
 	double calHK(int v1, int v2, double timescale) const;
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 

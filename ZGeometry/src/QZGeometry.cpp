@@ -38,7 +38,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
-	mesh_list_name = "meshfiles.cfg";
 	num_preload_meshes = 2;
 	totalShapeNum = 1;
 
@@ -76,7 +75,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	
 	////////	compute	////////
-	QObject::connect(ui.actionComputeLaplacian, SIGNAL(triggered()), this, SLOT(computeLaplacian()));
+	QObject::connect(ui.actionDecomposeLaplacian, SIGNAL(triggered()), this, SLOT(decomposeLaplacian()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -86,7 +85,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeSGWS, SIGNAL(triggered()), this, SLOT(computeSGWS()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
-
+	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+	
 	////////    Control	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -135,6 +135,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
 	QObject::connect(ui.actionDisplayMHW, SIGNAL(triggered()), this, SLOT(displayMHW()));
 	QObject::connect(ui.actionDisplayMHWS, SIGNAL(triggered()), this, SLOT(displayMHWS()));
+	QObject::connect(ui.actionDisplayBiharmonic, SIGNAL(triggered()), this, SLOT(displayBiharmonic()));
+	
 	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
@@ -159,6 +161,13 @@ bool QZGeometryWindow::initialize()
 	qout.output("******** Welcome ********", OUT_CONSOLE);
 	qout.outputDateTime(OUT_CONSOLE);
 
+	string mesh_list_name;
+#ifdef NDEBUG
+	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
+#else NDEBUG
+	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
+#endif
+
 	if (!(m_ep = engOpen("\0")))
 	{
 		qout.output("Can't start MATLAB engine!", OUT_MSGBOX);
@@ -170,12 +179,8 @@ bool QZGeometryWindow::initialize()
 	setDisplayMesh();
 	setEditModeMove();
 
-	//// ---- load meshes ---- ////   
-#ifdef NDEBUG
-	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
-#else NDEBUG
-	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
-#endif
+	//// ---- load meshes ---- ////
+
 	ifstream meshfiles(mesh_list_name);
 	if (!meshfiles)
 	{
@@ -218,8 +223,7 @@ bool QZGeometryWindow::initialize()
 		ui.glMeshWidget->addMesh(&vMP[0], &vRS[0]);
 		mesh_valid[0] = true;
 	}
-
-
+	
 	if (num_preload_meshes == 2 && !vMeshFiles.empty())
 	{
 		try {
@@ -251,7 +255,7 @@ bool QZGeometryWindow::initialize()
 		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
 	}
 //*/
-	computeLaplacian();
+	decomposeLaplacian();
 	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
 	//	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
 	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
@@ -425,7 +429,7 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	}
 }
 
-void QZGeometryWindow::computeLaplacian()
+void QZGeometryWindow::decomposeLaplacian()
 {
 	for (int obj = 0; obj < 2; ++obj)
 	{
@@ -458,7 +462,7 @@ void QZGeometryWindow::computeLaplacian()
 		qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 	}	
 
-	ui.actionComputeLaplacian->setChecked(true);	
+	ui.actionDecomposeLaplacian->setChecked(true);	
 }
 
 void QZGeometryWindow::computeSGWSFeatures()
@@ -1380,18 +1384,21 @@ void QZGeometryWindow::registerStep()
 		ofstr.open(log_filename.c_str(), ios::trunc);
 	else ofstr.open(log_filename.c_str(), ios::app);
 
-	CStopWatch timer;
-	timer.startTimer();
-	shapeMatcher.refineRegister(ofstr);
-	timer.stopTimer();
-	ofstr.close();
+	double time_elapsed = time_call([&]{
+		shapeMatcher.refineRegister(ofstr);
+	}) / 1000.0;
+
+	//CStopWatch timer;
+	//timer.startTimer();
+	//timer.stopTimer();
+	//ofstr.close();
 	
 	int level = shapeMatcher.getAlreadyRegisteredLevel();
 	const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
 	const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
 	
 	qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matced:%d; Registered:%d",
-		                        level, timer.getElapsedTime(), vf.size(), vr.size()));
+		                        level, time_elapsed, vf.size(), vr.size()));
 	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
 		                        double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
 								vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
@@ -1430,6 +1437,26 @@ void QZGeometryWindow::showCoarser()
 
 	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::computeBiharmonic()
+{
+	for (int i = 0; i < 2; ++i)
+	{
+		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			int refPoint = mp.getRefPointIndex();
+			mp.computeBiharmonicDistanceSignature(refPoint);
+		}
+	}
+
+	displayBiharmonic();
+}
+
+void QZGeometryWindow::displayBiharmonic()
+{
+	displaySignature(SIGNATURE_BIHARMONIC_DISTANCE);
 }
 
 

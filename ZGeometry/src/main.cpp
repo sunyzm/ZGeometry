@@ -5,6 +5,10 @@
 #include <SimpleConfigLoader.h>
 #include "OutputHelper.h"
 
+#if _MSC_VER < 1600
+#error VC++ 2010 or later required.
+#endif
+
 SimpleConfigLoader g_configMgr("configs.txt");
 OutputHelper qout;
 

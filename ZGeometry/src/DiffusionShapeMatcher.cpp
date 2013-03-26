@@ -345,12 +345,11 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 // 			calVertexSignature(pOriginalProcessor[obj], vftCoarse[obj]->at(i), vsig[obj]->at(i));
 // 	});
 
-#if (_MSC_VER >= 1600)
+#if (0)//(_MSC_VER >= 1600)
  	Concurrency::parallel_for (0, size1, [&](int i1) {
  		calVertexSignature(pOriginalProcessor[0], vftCoarse1[i1], vsig1[i1]);
  	});
- 
- 	Concurrency::parallel_for(0, size2, [&](int i2) {
+  	Concurrency::parallel_for(0, size2, [&](int i2) {
  		calVertexSignature(pOriginalProcessor[1], vftCoarse2[i2], vsig2[i2]);
  	});
 #else

@@ -209,7 +209,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -300,6 +300,7 @@
     <addaction name="actionDisplayMHWS"/>
     <addaction name="actionSGW"/>
     <addaction name="actionSGWS"/>
+    <addaction name="actionDisplayBiharmonic"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="actionExperimental"/>
     <addaction name="separator"/>
@@ -309,7 +310,7 @@
     <property name="title">
      <string>Compute</string>
     </property>
-    <addaction name="actionComputeLaplacian"/>
+    <addaction name="actionDecomposeLaplacian"/>
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHKSFeatures"/>
@@ -320,6 +321,7 @@
     <addaction name="actionComputeSGW"/>
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
+    <addaction name="actionComputeBiharmonic"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -353,7 +355,7 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionComputeLaplacian">
+  <action name="actionDecomposeLaplacian">
    <property name="checkable">
     <bool>true</bool>
    </property>
@@ -685,6 +687,16 @@
    </property>
    <property name="text">
     <string>Draw registration</string>
+   </property>
+  </action>
+  <action name="actionComputeBiharmonic">
+   <property name="text">
+    <string>Biharmonic</string>
+   </property>
+  </action>
+  <action name="actionDisplayBiharmonic">
+   <property name="text">
+    <string>Biharmonic</string>
    </property>
   </action>
  </widget>

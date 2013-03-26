@@ -10,6 +10,7 @@
 #include "DiffusionShapeMatcher.h"
 #include "SimpleConfigLoader.h"
 
+
 class QZGeometryWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -30,7 +31,7 @@ private slots:
 	void setEditModePick();
 	void setEditModeDrag();
 
-	void computeLaplacian(); 
+	void decomposeLaplacian(); 
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -40,6 +41,7 @@ private slots:
 	void computeSGW();
 	void computeSGWS();
 	void computeSGWSFeatures();
+	void computeBiharmonic();
 
 	void displayEigenfunction();
 	void displaySignature(int signatureID);
@@ -48,6 +50,7 @@ private slots:
 	void displayMHW();
 	void displayMHWS();
 	void displaySGWS();
+	void displayBiharmonic();
 	void displayCurvatureMean();
 	void displayCurvatureGauss();
 	void displayExperimental();
@@ -93,7 +96,6 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-
 private:	// attributes
 	Ui::ZGeometryClass ui;
 	DeformType deformType;
@@ -102,7 +104,6 @@ private:	// attributes
 	int objSelect;
 
 	Engine *m_ep;
-	std::string mesh_list_name;
 	int num_preload_meshes;
 
 	CMesh mesh1, mesh2;
