@@ -72,14 +72,15 @@ public:
 class ParamManager
 {
 public:
-	DifferentialMeshProcessor* pMP;
-	std::vector<PointParam> vHKParam;
-	std::vector<PointParam> vBHParam;
-
+	enum ParamType {HKParam, BHParam};
+	std::vector<PointParam> vParam;
 	void initialize(DifferentialMeshProcessor* p) { pMP = p; }
+	const std::vector<PointParam>& getParam() const { return vParam; }
+
+	DifferentialMeshProcessor* pMP;
+
 	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
 	void computeBHParam(const std::vector<int>& anchors);
-	const std::vector<PointParam>& getHKParam() const { return vHKParam; }
 };
 
 class DiffusionShapeMatcher

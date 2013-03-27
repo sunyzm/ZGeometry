@@ -60,11 +60,11 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
-	vHKParam.resize(fineSize);
+	vParam.resize(fineSize);
 
 	for (int v = 0; v < fineSize; ++v)
 	{
-		PointParam& hkp = vHKParam[v];
+		PointParam& hkp = vParam[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
 			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
@@ -77,11 +77,11 @@ void ParamManager::computeBHParam( const std::vector<int>& anchors )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
-	vBHParam.resize(fineSize);
+	vParam.resize(fineSize);
 
 	for (int v = 0; v < fineSize; ++v)
 	{
-		PointParam& hkp = vBHParam[v];
+		PointParam& hkp = vParam[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
 			hkp.m_vec[i] = pMP->calBiharmonic(v, anchors[i]);
@@ -813,15 +813,13 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	}
 	flog << endl << endl;
 
-// 	m_ParamMgr[0].computeHKParam(vFeatureID1, regT);
-// 	m_ParamMgr[1].computeHKParam(vFeatureID2, regT);
-// 	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vHKParam;
-// 	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vHKParam;
+	Concurrency::parallel_invoke(
+		[&]{ m_ParamMgr[0].computeHKParam(vFeatureID1, regT); },
+		[&]{ m_ParamMgr[1].computeHKParam(vFeatureID2, regT); }
+	);
 
-	m_ParamMgr[0].computeBHParam(vFeatureID1);
-	m_ParamMgr[1].computeBHParam(vFeatureID2);
-	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vBHParam;
-	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vBHParam;
+	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vParam;
+	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vParam;
 
 	flog << "Multi-anchor coordinates initialized!" << endl;
 	
@@ -1028,8 +1026,8 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int
 
 double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2 ) const
 {
-	const PointParam &hkp1 = m_ParamMgr[0].vBHParam[idx1],
-		             &hkp2 = m_ParamMgr[1].vBHParam[idx2];
+	const PointParam &hkp1 = m_ParamMgr[0].vParam[idx1],
+		             &hkp2 = m_ParamMgr[1].vParam[idx2];
 
 	return std::exp(-hkp1.calDistance(hkp2, 1));
 }
