@@ -506,7 +506,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	if (m_bShowSignature && pRS->vDisplaySignature.size() != tmesh->getVerticesNum())
+	if (m_bShowSignature && pRS->vDisplaySignature.size() == tmesh->getVerticesNum())
 	{
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->getFaceNum(); i++)

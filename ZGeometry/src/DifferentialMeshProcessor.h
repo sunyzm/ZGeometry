@@ -10,6 +10,7 @@
 
 enum DeformType {Simple, Shell, Laplace, SGW};
 enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
+enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW};
 
 #define SIGNATURE_HKS					0x0101
 #define SIGNATURE_HK					0x0102
@@ -59,6 +60,7 @@ public:
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeBiharmonicDistanceSignature(int refPoint);
 	double calHK(int v1, int v2, double timescale) const;
+	double calBiharmonic(int v1, int v2) const;
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 
 	void computeSGW(const std::vector<double>& timescales, TransferFunc transferWavelet = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);

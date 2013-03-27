@@ -8,6 +8,7 @@
 #include "OutputHelper.h"
 #include "SimpleConfigLoader.h"
 #include <ppl.h>
+#include <functional>
 
 #define INFINITY 1e10
 #define LOCAL_ANCHORS_NUM 8
@@ -1469,4 +1470,45 @@ double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& 
 	}
 
 	return distortSum / double(count);
+}
+
+double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor* mp1, const DifferentialMeshProcessor* mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+{
+	int mesh_size = mp1->getMesh_const()->getVerticesNum();
+	int rand_size = vRandPair.size();
+	const DifferentialMeshProcessor* aMP[2] = { mp1, mp2};
+
+	const int total_run = 200;
+	int count = 0;
+
+	std::function<double(const DifferentialMeshProcessor*, int, int, const std::vector<double>&)> fDist;
+
+	switch (distType)
+	{
+	case DISTANCE_GEODESIC:
+		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->getMesh_const()->getGeodesic(v1, v2) / mp->getMesh_const()->getAvgEdgeLength();};
+		break;
+	case DISTANCE_HK:
+		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->calHK(v1, v2, vParam[0]);};
+		break;
+	case DISTANCE_BIHARMONIC:
+		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->calBiharmonic(v1, v2);};
+		break;
+	}
+
+	double distort_sum = 0.;
+	for (int k = rand_start; count < total_run || k < rand_size; ++k)
+	{
+		int v1 = mesh_size * vRandPair[k].first, v2 = mesh_size * vRandPair[k].second;
+		if (v1 == v2) continue;
+		double dist1, dist2;
+
+		dist1 = fDist(aMP[0], v1, v2, vParam);
+		dist2 = fDist(aMP[1], v1, v2, vParam);
+
+		distort_sum += abs(dist1 - dist2) / abs(dist1);
+		count++;
+	}
+
+	return distort_sum / count;
 }

@@ -293,6 +293,22 @@ bool QZGeometryWindow::initialize()
 	string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 	shapeMatcher.readInRandPair(rand_data_file);
 	
+	CStopWatch timer;
+	timer.startTimer();
+	Concurrency::parallel_invoke(
+		[&](){ cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl; },
+		[&](){ cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl; }
+//		[&](){cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 30.), shapeMatcher.m_randPairs, 0) << endl;},
+//		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 90.), shapeMatcher.m_randPairs, 0) << endl;
+//		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 270.), shapeMatcher.m_randPairs, 0) << endl;
+	);
+	timer.stopTimer();
+	cout << "Eval Dist time (ppl): " << timer.getElapsedTime() << endl;
+	timer.startTimer();
+	cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl;
+	cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl;
+	timer.stopTimer();
+	cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 	ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 
 	return true;

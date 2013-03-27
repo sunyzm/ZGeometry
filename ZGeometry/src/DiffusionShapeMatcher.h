@@ -3,10 +3,10 @@
 #include <algorithm>
 #include <iostream>
 #include <fstream>
+#include <utility>
 #include <engine.h>
 #include "DifferentialMeshProcessor.h"
 #include "MeshPyramid.h"
-
 
 class MatchPair
 {
@@ -23,6 +23,8 @@ public:
 	MatchPair() { m_idx1 = -1; m_idx2 = -1; }
 	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
 	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_score = score; m_note = 0;}
+	operator std::pair<int, int>() const { return std::make_pair(m_idx1, m_idx2); }
+	
 	friend bool operator== (const MatchPair& mp1, const MatchPair& mp2) { return (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 == mp2.m_idx2); }
  	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
  	{
@@ -33,6 +35,13 @@ public:
  	{
  		return mp2 < mp1;
  	}
+
+	static std::vector<std::pair<int, int> > ToPairVector(const std::vector<MatchPair>& vmp) {
+		std::vector<std::pair<int, int> > vp;
+		for (auto iter = vmp.begin(); iter != vmp.end(); ++iter) 
+			vp.push_back( (std::pair<int, int>)(*iter) );
+		return vp;
+	}
 };
 
 class HKSFeature : public MeshFeature
@@ -112,6 +121,8 @@ public:
 	void	readInRandPair(const std::string& filename);
 	
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
+	static double evaluateDistance(const DifferentialMeshProcessor* mp1, const DifferentialMeshProcessor* mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
+
 	std::vector<std::pair<double, double> > m_randPairs;
 
 	// static constants

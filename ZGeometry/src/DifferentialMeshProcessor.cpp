@@ -996,6 +996,16 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	return sum;
 }
 
+double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
+{
+	double sum = 0;
+	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	{
+		sum += pow( (mhb.m_func[k].m_vec[v1] - mhb.m_func[k].m_vec[v2]) / mhb.m_func[k].m_val, 2 );
+	}
+	return sum;
+}
+
 void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint )
 {
 	if (!m_bLaplacianDecomposed) return;
