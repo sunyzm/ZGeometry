@@ -771,19 +771,19 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	
 	flog << "\n-------- registration level " << current_level << " --------" << endl;
 
-	double thresh;
+	double anchorThresh;
 	double regT = 20.0 * pow(2.0, current_level);
 	if (current_level == 1) 
 	{
 		regT = 80;
-		thresh = 1e-4;
+		anchorThresh = 1e-4;
 	}
 	if (current_level == 0)
 	{
 		regT = 20;
-		thresh = 2e-4;
+		anchorThresh = 2e-4;
 	}
-	thresh = 1e-4;
+	anchorThresh = 1e-4;
 //	thresh = (double)featureMatch.size() * 1e-5;
 
 	const CMesh *oriMesh1 = pOriginalMesh[0], *oriMesh2 = pOriginalMesh[1];
@@ -963,8 +963,8 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		// insert additional anchor points
 		for (auto riter = tmpReg1.begin(); riter != tmpReg1.end(); ++riter)
 		{
-			if (vCoordinates1[riter->m_idx1].m_votes < 5*thresh ||
-				vCoordinates2[riter->m_idx2].m_votes < 5*thresh
+			if (vCoordinates1[riter->m_idx1].m_votes < 5*anchorThresh ||
+				vCoordinates2[riter->m_idx2].m_votes < 5*anchorThresh
 				) 
 				continue;
 
