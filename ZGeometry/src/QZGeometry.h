@@ -96,6 +96,10 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
+
+	// helper functions
+	void evalDistance();
+	
 private:	// attributes
 	Ui::ZGeometryClass ui;
 	DeformType deformType;

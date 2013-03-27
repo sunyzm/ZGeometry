@@ -38,7 +38,7 @@ double findTmax( const CMesh* tmesh, int s )
 	return geo*geo/4.0;
 }
 
-void HKParam::clear()
+void PointParam::clear()
 {
 	m_size = 0; 
 	m_votes = 0.0; 
@@ -47,7 +47,7 @@ void HKParam::clear()
 	m_vec = NULL;
 }
 
-HKParam& HKParam::operator=( const HKParam& hkp )
+PointParam& PointParam::operator=( const PointParam& hkp )
 {
 	reserve(hkp.m_size);
 	for (int i = 0; i < m_size; ++i)
@@ -56,7 +56,7 @@ HKParam& HKParam::operator=( const HKParam& hkp )
 	return *this;
 }
 
-void HKParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
+void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
@@ -64,10 +64,27 @@ void HKParamManager::computeHKParam( const std::vector<int>& anchors, double t /
 
 	for (int v = 0; v < fineSize; ++v)
 	{
-		HKParam& hkp = vHKParam[v];
+		PointParam& hkp = vHKParam[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
 			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+
+		hkp.m_votes = hkp.length();
+	}
+}
+
+void ParamManager::computeBHParam( const std::vector<int>& anchors )
+{
+	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int pn = (int)anchors.size();
+	vBHParam.resize(fineSize);
+
+	for (int v = 0; v < fineSize; ++v)
+	{
+		PointParam& hkp = vBHParam[v];
+		hkp.reserve(pn);
+		for (int i = 0; i < pn; ++i)
+			hkp.m_vec[i] = pMP->calBiharmonic(v, anchors[i]);
 
 		hkp.m_votes = hkp.length();
 	}
@@ -178,8 +195,8 @@ void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, Differe
 	meshPyramids[0].setInitialMesh(pOriginalMesh[0]);
 	meshPyramids[1].setInitialMesh(pOriginalMesh[1]);
 
-	m_HKParamMgr[0].initialize(pMP1);
-	m_HKParamMgr[1].initialize(pMP2);
+	m_ParamMgr[0].initialize(pMP1);
+	m_ParamMgr[1].initialize(pMP2);
 }
 
 CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
@@ -796,11 +813,17 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	}
 	flog << endl << endl;
 
-	m_HKParamMgr[0].computeHKParam(vFeatureID1, regT);
-	m_HKParamMgr[1].computeHKParam(vFeatureID2, regT);
-	std::vector<HKParam>& vHKParam1 = m_HKParamMgr[0].vHKParam;
-	std::vector<HKParam>& vHKParam2 = m_HKParamMgr[1].vHKParam;
-	flog << "HKParam initialized!" << endl;
+// 	m_ParamMgr[0].computeHKParam(vFeatureID1, regT);
+// 	m_ParamMgr[1].computeHKParam(vFeatureID2, regT);
+// 	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vHKParam;
+// 	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vHKParam;
+
+	m_ParamMgr[0].computeBHParam(vFeatureID1);
+	m_ParamMgr[1].computeBHParam(vFeatureID2);
+	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vBHParam;
+	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vBHParam;
+
+	flog << "Multi-anchor coordinates initialized!" << endl;
 	
 	set<MatchPair> uniquePairs;
 	for (vector<MatchPair>::const_iterator mpIter = oldReg.begin(); mpIter != oldReg.end(); ++mpIter)
@@ -853,7 +876,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		int v1 = id2Index(0, vid_1, current_level), v2 = id2Index(1, vid_2, current_level);
 		//MyNote mn(v1, v2, iter->m_score);	//id, score
 		//MyNote mn(v1, tmesh1->m_pVertex[v1].m_vParam.m_votes);
-		MyNote mn(v1, v2, vHKParam1[vid_1].m_votes/* * iter->m_score*/);
+		MyNote mn(v1, v2, vCoordinates1[vid_1].m_votes/* * iter->m_score*/);
 		qscan1.push(mn);
 	}
 
@@ -899,7 +922,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 				}
 
 				//MyNote mn(vt, vm, score);
-				MyNote mn(vt, vm, vHKParam1[vid_t].m_votes);
+				MyNote mn(vt, vm, vCoordinates1[vid_t].m_votes);
 				qscan1.push(mn);
 			}
 			else flog << "No match 3!" << endl;
@@ -929,7 +952,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
 			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);	// vi, vj here are vertex id as well as level-0 index
-			qReg.push(MatchPair(vi, vm1, vHKParam1[vi].m_votes * score));
+			qReg.push(MatchPair(vi, vm1, vCoordinates1[vi].m_votes * score));
 		}
 
 		tmpReg1.clear();
@@ -942,8 +965,8 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		// insert additional anchor points
 		for (auto riter = tmpReg1.begin(); riter != tmpReg1.end(); ++riter)
 		{
-			if (vHKParam1[riter->m_idx1].m_votes < 5*thresh ||
-				vHKParam2[riter->m_idx2].m_votes < 5*thresh
+			if (vCoordinates1[riter->m_idx1].m_votes < 5*thresh ||
+				vCoordinates2[riter->m_idx2].m_votes < 5*thresh
 				) 
 				continue;
 
@@ -968,19 +991,6 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 	flog << "\n3. Registration adjustment and anchor set augmentation finished!\n"
 		 << "  New reg size: " << newReg.size() << "; new anchor size: " << newAnchorMatch.size() << endl;
-
-	/************************************************************************/
-	// add note to matchings with great discrepancy; meaningful only when ground truth is given
-// 	for (auto iter = featureMatch.begin(); iter != featureMatch.end(); ++iter )
-// 	{
-// 		if (iter->m_idx1 == iter->m_idx2) 
-// 			continue;
-// 
-// 		if (!pOriginalMesh[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 5))	
-// 		{
-// 			iter->m_note = -1;		
-// 		}
-// 	}
 
 	m_nAlreadyMatchedLevel--;
 	m_nAlreadyRegisteredLevel--;
@@ -1018,8 +1028,8 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int
 
 double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2 ) const
 {
-	const HKParam &hkp1 = m_HKParamMgr[0].getHKParam()[idx1],
-		          &hkp2 = m_HKParamMgr[1].getHKParam()[idx2];
+	const PointParam &hkp1 = m_ParamMgr[0].vBHParam[idx1],
+		             &hkp2 = m_ParamMgr[1].vBHParam[idx2];
 
 	return std::exp(-hkp1.calDistance(hkp2, 1));
 }
@@ -1094,7 +1104,6 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 		nb1 = nb2;
 	}
 	// now vNeighbor contains the index set of indices covered by vj in current level
-
 
 	/* ---- find the maximum match ---- */
 	int vmatch = -1;
@@ -1472,39 +1481,42 @@ double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& 
 	return distortSum / double(count);
 }
 
-double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor* mp1, const DifferentialMeshProcessor* mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
 {
-	int mesh_size = mp1->getMesh_const()->getVerticesNum();
+	int mesh_size = mp1.getMesh_const()->getVerticesNum();
 	int rand_size = vRandPair.size();
-	const DifferentialMeshProcessor* aMP[2] = { mp1, mp2};
 
-	const int total_run = 200;
-	int count = 0;
 
-	std::function<double(const DifferentialMeshProcessor*, int, int, const std::vector<double>&)> fDist;
+	std::function<double(const DifferentialMeshProcessor&, int, int, const std::vector<double>&)> fDist;
 
 	switch (distType)
 	{
 	case DISTANCE_GEODESIC:
-		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->getMesh_const()->getGeodesic(v1, v2) / mp->getMesh_const()->getAvgEdgeLength();};
+		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) { 
+			return mp.getMesh_const()->getGeodesic(v1, v2) / mp.getMesh_const()->getAvgEdgeLength(); };
 		break;
 	case DISTANCE_HK:
-		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->calHK(v1, v2, vParam[0]);};
+		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) {
+			return mp.calHK(v1, v2, vParam[0]); };
 		break;
 	case DISTANCE_BIHARMONIC:
-		fDist = [](const DifferentialMeshProcessor* mp, int v1, int v2, const std::vector<double>& vParam) { return mp->calBiharmonic(v1, v2);};
+		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) {
+			return mp.calBiharmonic(v1, v2); };
 		break;
 	}
 
 	double distort_sum = 0.;
-	for (int k = rand_start; count < total_run || k < rand_size; ++k)
+	int count = 0;
+	const int total_run = 200;
+
+	for (int k = rand_start; k < rand_start + total_run || k < rand_size; ++k)
 	{
 		int v1 = mesh_size * vRandPair[k].first, v2 = mesh_size * vRandPair[k].second;
 		if (v1 == v2) continue;
 		double dist1, dist2;
 
-		dist1 = fDist(aMP[0], v1, v2, vParam);
-		dist2 = fDist(aMP[1], v1, v2, vParam);
+		dist1 = fDist(mp1, v1, v2, vParam);
+		dist2 = fDist(mp2, v1, v2, vParam);
 
 		distort_sum += abs(dist1 - dist2) / abs(dist1);
 		count++;

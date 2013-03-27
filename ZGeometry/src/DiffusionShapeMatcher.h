@@ -61,23 +61,25 @@ public:
 	void setTimes(double tl, double tu, double tn) { m_tl = tl; m_tu = tu; m_tn = tn; }
 };
 
-class HKParam : public VectorND
+class PointParam : public VectorND
 {
 public:
-	HKParam& operator =(const HKParam& hkp);
+	PointParam& operator =(const PointParam& hkp);
 	double m_votes;
 	virtual void clear();
 };
 
-class HKParamManager
+class ParamManager
 {
 public:
 	DifferentialMeshProcessor* pMP;
-	std::vector<HKParam> vHKParam;
-	
+	std::vector<PointParam> vHKParam;
+	std::vector<PointParam> vBHParam;
+
 	void initialize(DifferentialMeshProcessor* p) { pMP = p; }
 	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
-	const std::vector<HKParam>& getHKParam() const { return vHKParam; }
+	void computeBHParam(const std::vector<int>& anchors);
+	const std::vector<PointParam>& getHKParam() const { return vHKParam; }
 };
 
 class DiffusionShapeMatcher
@@ -121,7 +123,7 @@ public:
 	void	readInRandPair(const std::string& filename);
 	
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
-	static double evaluateDistance(const DifferentialMeshProcessor* mp1, const DifferentialMeshProcessor* mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
+	static double evaluateDistance(const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 
 	std::vector<std::pair<double, double> > m_randPairs;
 
@@ -158,7 +160,7 @@ private:
 	int						m_nAlreadyMatchedLevel;		// [1,...,m_nRegistrationLevels]
 	int						m_nBaseEigensMatch, m_nBaseEigensRegister;
 	double					m_registerTimescale;
-	HKParamManager			m_HKParamMgr[2];
+	ParamManager			m_ParamMgr[2];
 
 	/* helper functions */
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
