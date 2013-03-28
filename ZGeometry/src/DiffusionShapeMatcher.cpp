@@ -9,8 +9,8 @@
 #include "SimpleConfigLoader.h"
 #include <ppl.h>
 #include <functional>
+#include <limits>
 
-#define INFINITY 1e10
 #define LOCAL_ANCHORS_NUM 8
 
 using namespace std;
@@ -786,9 +786,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 	anchorThresh = 1e-4;
 //	thresh = (double)featureMatch.size() * 1e-5;
 
-	const CMesh *oriMesh1 = pOriginalMesh[0], *oriMesh2 = pOriginalMesh[1];
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
-	
 	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
 	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
@@ -1105,7 +1103,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 
 	/* ---- find the maximum match ---- */
 	int vmatch = -1;
-	double smax = -INFINITY;
+	double smax = -DBL_MAX;
 	for (list<int>::iterator iter = vNeighbor.begin(); iter != vNeighbor.end(); ++iter)
 	{
 		int vt = *iter;
