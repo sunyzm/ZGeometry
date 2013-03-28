@@ -1483,8 +1483,7 @@ double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor&
 {
 	int mesh_size = mp1.getMesh_const()->getVerticesNum();
 	int rand_size = vRandPair.size();
-
-
+	
 	std::function<double(const DifferentialMeshProcessor&, int, int, const std::vector<double>&)> fDist;
 
 	switch (distType)
@@ -1515,6 +1514,9 @@ double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor&
 
 		dist1 = fDist(mp1, v1, v2, vParam);
 		dist2 = fDist(mp2, v1, v2, vParam);
+
+		if (dist1 < 1e-3) 
+			cout << "Dist(" << v1 << ',' << v2 << "): " << dist1 << endl;
 
 		distort_sum += abs(dist1 - dist2) / abs(dist1);
 		count++;

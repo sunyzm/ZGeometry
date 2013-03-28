@@ -2056,7 +2056,7 @@ bool CMesh::VertexNeighborGeo(int i, double ring, vector<GeoNote>& nbg)
 
 double CMesh::getGeodesic( int s, int t ) const
 {
-	if(s==t) return 0.0;
+	if(s == t) return 0.0;
 
 	GeoQueue heapqueue;
 
@@ -2129,7 +2129,7 @@ double CMesh::getGeodesic( int s, int t ) const
 		}
 		
 		double sgd = nt.m_geodesic;
-		if(m_pVertex[sg].m_bIsBoundary) continue;
+//		if(m_pVertex[sg].m_bIsBoundary) continue;
 		if(m_pVertex[sg].m_mark==s) continue;  // matched already
 		m_pVertex[sg].m_mark = s;
 		nbg.push_back(nt);
