@@ -8,90 +8,6 @@
 
 using namespace std;
 
-bool ManifoldHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type /*= Laplacian::CotFormula*/ )
-{
-	m_func.clear();
-
-	const int nVertex = tmesh->getVerticesNum();
-	m_size = nVertex;
-	m_nEigFunc = min(m_size, nEigFunc);
-
-	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *Numv;
-	AA = mxCreateDoubleMatrix(nVertex, 1, mxREAL);
-	double *aa = mxGetPr(AA);
-	Numv = mxCreateDoubleMatrix(1, 1, mxREAL);
-	double *numv = mxGetPr(Numv);	
-	numv[0] = m_nEigFunc;			// number of eigen vectors to be computed
-	vector<int> IIv;
-	vector<int> JJv;
-	vector<double> SSv;
-	vector<double> diagW;
-	diagW.resize(nVertex, 0);
-
-	if(lbo_type == Laplacian::CotFormula)
-	{
-		for(int i = 0; i < nVertex; i++)	//for each vertex
-		{
-			double Av;
-			tmesh->calVertexLBO(i, IIv, JJv, SSv, Av, diagW);
-			aa[i] = Av;		//mixed area
-		}
-	}
-	for(int i = 0; i < nVertex; i++)
-	{
-		IIv.push_back(i+1);
-		JJv.push_back(i+1);
-		SSv.push_back(diagW[i]);
-	}
-
-	int ns = (int) IIv.size();
-	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	double *ii = mxGetPr(II);
-	double *jj = mxGetPr(JJ);
-	double *ss = mxGetPr(SS);
-	std::copy(IIv.begin(), IIv.end(), ii);
-	std::copy(JJv.begin(), JJv.end(), jj);
-	std::copy(SSv.begin(), SSv.end(), ss);
-
-	engPutVariable(ep, "II", II);
-	engPutVariable(ep, "JJ", JJ);
-	engPutVariable(ep, "SS", SS);
-	engPutVariable(ep, "AA", AA);
-	engPutVariable(ep, "Numv", Numv);
-
-	engEvalString(ep, "[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
-
-	evecs = engGetVariable(ep, "evecs");		
-	double *evec = mxGetPr(evecs);				//eigenvectors
-	evals = engGetVariable(ep, "evals");		
-	double *eval = mxGetPr(evals);				//eigenvalues
-
-	m_func.reserve(m_nEigFunc);
-	for(int i = 0; i < m_nEigFunc; i++)
-	{
-		m_func.push_back(ManifoldBasis());
-
-		m_func[i].m_vec.reserve(nVertex);
-		for(int j = 0; j < nVertex; j++)
-		{
-			m_func[i].m_vec.push_back(evec[i*nVertex+j]);
-		}
-		m_func[i].m_val = abs(eval[i]);		// always non-negative
-	}
-
-	mxDestroyArray(evecs);
-	mxDestroyArray(evals);
-	mxDestroyArray(AA);
-	mxDestroyArray(II);
-	mxDestroyArray(JJ);
-	mxDestroyArray(SS);
-	mxDestroyArray(Numv);
-
-	return true;
-}
-
 void ManifoldHarmonics::write( const std::string& meshPath ) const
 {
 	ofstream ofs(meshPath.c_str(), ios::trunc);
@@ -178,62 +94,69 @@ void ManifoldHarmonics::dumpEigenValues( const std::string& pathEVL ) const
 	ofs.close();
 }
 
-void Laplacian::computeLaplacian( const CMesh* tmesh, LaplacianType laplacianType /*= CotFormula*/ )
+//: computer inner product of two manifold functions induced by the Laplacian matrix
+double SparseMeshMatrix::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
 {
-	this->m_size = tmesh->getVerticesNum();
-	
-	vector<double> diagW;
-	diagW.resize(m_size, 0);
+	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->m_size);
 
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-	vWeights.clear();
-
-	if(laplacianType == CotFormula)
+	double sum = 0;
+	for (int i = 0; i < m_size; ++i)
 	{
-// 		for(int k = 0; k < m_size; k++)	//for each vertex
-// 		{
-// 			double Av;
-// 			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
-// 			vWeights.push_back(Av);		//mixed area as weight of each vertex
-// 		}
-// 		for(int k = 0; k < m_size; k++)
-// 		{
-// 			vII.push_back(k+1);
-// 			vJJ.push_back(k+1);
-// 			vSS.push_back(diagW[k]);
-// 		}
-
-		tmesh->calLBO(vII, vJJ, vSS, vWeights);
+		sum += vf[i] * vWeights[i] * vg[i];
 	}
-	else if (laplacianType == Umbrella)
-	{
-		vWeights.resize(m_size, 1.0);
-
-		for (int i = 0; i < m_size; ++i)
-		{
-			const CVertex* vi = tmesh->getVertex_const(i);
-			vector<int> vNeighbors;
-			tmesh->VertexNeighborRing(i, 1, vNeighbors);
-			int valence = vNeighbors.size();
-
-			for (int j = 0; j < valence; ++j)
-			{
-				vII.push_back(i+1);
-				vJJ.push_back(vNeighbors[j]+1);
-				vSS.push_back(-1.0);
-			}
-			vII.push_back(i+1);
-			vJJ.push_back(i+1);
-			vSS.push_back(valence);
-		}
-	}
-
-	isBuilt = true;
+	return sum;
 }
 
-void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
+void SparseMeshMatrix::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
+{
+	assert(func.size() == m_size);
+	/*	
+	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
+
+	int ns = (int) vII.size();
+	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
+	double *ii = mxGetPr(II);
+	double *jj = mxGetPr(JJ);
+	double *ss = mxGetPr(SS);
+	std::copy(vII.begin(), vII.end(), ii);
+	std::copy(vJJ.begin(), vJJ.end(), jj);
+	std::copy(vSS.begin(), vSS.end(), ss);
+
+	engPutVariable(ep, "II", II);
+	engPutVariable(ep, "JJ", JJ);
+	engPutVariable(ep, "SS", SS);
+
+	//TODO: to finish the multiplication
+	*/
+}
+
+void SparseMeshMatrix::getSparseMatrix( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const
+{
+	II = vII;
+	JJ = vJJ;
+	SS = vSS;
+	int nz = II.size();
+
+	for (int k = 0; k < nz; ++k)
+	{
+		SS[k] /= vWeights[II[k]];
+	}
+}
+
+void SparseMeshMatrix::dumpMatrix( const std::string& path ) const
+{
+	int nz = vII.size();
+	ofstream lout(path.c_str());
+	for (int i = 0; i < nz; ++i)
+	{
+		lout << vII[i] << ',' << vJJ[i] << ',' << vSS[i] << '\n';
+	}
+	lout.close();
+}
+
+void SparseMeshMatrix::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {
 	assert(isBuilt);
 	assert(nEig > 0);
@@ -243,7 +166,7 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 	mhb.m_nEigFunc = min(mhb.m_size, nEig);
 
 	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
-	
+
 	AA = mxCreateDoubleMatrix(m_size, 1, mxREAL);
 	double *aa = mxGetPr(AA);
 	assert((int)vWeights.size() == m_size);
@@ -298,58 +221,178 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 	mxDestroyArray(NUMV);
 }
 
-//: computer inner product of two manifold functions induced by the Laplacian matrix
-double MeshMatrix::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
+void Laplacian::constructFromMesh( const CMesh* tmesh )
 {
-	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->m_size);
+//	m_laplacianType = CotFormula;	// already set in contructors
 
-	double sum = 0;
-	for (int i = 0; i < m_size; ++i)
+	this->m_size = tmesh->getVerticesNum();
+	
+	vector<double> diagW;
+	diagW.resize(m_size, 0);
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+	vWeights.clear();
+
+	if(m_laplacianType == CotFormula)
 	{
-		sum += vf[i] * vWeights[i] * vg[i];
+// 		for(int k = 0; k < m_size; k++)	//for each vertex
+// 		{
+// 			double Av;
+// 			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
+// 			vWeights.push_back(Av);		//mixed area as weight of each vertex
+// 		}
+// 		for(int k = 0; k < m_size; k++)
+// 		{
+// 			vII.push_back(k+1);
+// 			vJJ.push_back(k+1);
+// 			vSS.push_back(diagW[k]);
+// 		}
+
+		tmesh->calLBO(vII, vJJ, vSS, vWeights);
 	}
-	return sum;
+	else if (m_laplacianType == Umbrella)
+	{
+		for (int i = 0; i < m_size; ++i)
+		{
+			const CVertex* vi = tmesh->getVertex_const(i);
+			vector<int> vNeighbors;
+			tmesh->VertexNeighborRing(i, 1, vNeighbors);
+			int valence = vNeighbors.size();
+
+			for (int j = 0; j < valence; ++j)
+			{
+				vII.push_back(i+1);
+				vJJ.push_back(vNeighbors[j]+1);
+				vSS.push_back(-1.0);
+			}
+			vII.push_back(i+1);
+			vJJ.push_back(i+1);
+			vSS.push_back(valence);
+		}
+
+		vWeights.resize(m_size, 1.0);
+	}
+
+	isBuilt = true;
 }
 
-void MeshMatrix::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
+bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type /*= Laplacian::CotFormula*/ )
 {
-	assert(func.size() == m_size);
-/*	
-	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
+	m_func.clear();
 
-	int ns = (int) vII.size();
+	const int nVertex = tmesh->getVerticesNum();
+	m_size = nVertex;
+	m_nEigFunc = min(m_size, nEigFunc);
+
+	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *Numv;
+	AA = mxCreateDoubleMatrix(nVertex, 1, mxREAL);
+	double *aa = mxGetPr(AA);
+	Numv = mxCreateDoubleMatrix(1, 1, mxREAL);
+	double *numv = mxGetPr(Numv);	
+	numv[0] = m_nEigFunc;			// number of eigen vectors to be computed
+	vector<int> IIv;
+	vector<int> JJv;
+	vector<double> SSv;
+	vector<double> diagW;
+	diagW.resize(nVertex, 0);
+
+	if(lbo_type == Laplacian::CotFormula)
+	{
+		for(int i = 0; i < nVertex; i++)	//for each vertex
+		{
+			double Av;
+			tmesh->calVertexLBO(i, IIv, JJv, SSv, Av, diagW);
+			aa[i] = Av;		//mixed area
+		}
+	}
+	for(int i = 0; i < nVertex; i++)
+	{
+		IIv.push_back(i+1);
+		JJv.push_back(i+1);
+		SSv.push_back(diagW[i]);
+	}
+
+	int ns = (int) IIv.size();
 	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
 	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
 	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
 	double *ii = mxGetPr(II);
 	double *jj = mxGetPr(JJ);
 	double *ss = mxGetPr(SS);
-	std::copy(vII.begin(), vII.end(), ii);
-	std::copy(vJJ.begin(), vJJ.end(), jj);
-	std::copy(vSS.begin(), vSS.end(), ss);
+	std::copy(IIv.begin(), IIv.end(), ii);
+	std::copy(JJv.begin(), JJv.end(), jj);
+	std::copy(SSv.begin(), SSv.end(), ss);
 
 	engPutVariable(ep, "II", II);
 	engPutVariable(ep, "JJ", JJ);
 	engPutVariable(ep, "SS", SS);
+	engPutVariable(ep, "AA", AA);
+	engPutVariable(ep, "Numv", Numv);
 
-	//TODO: to finish the multiplication
-*/
-}
+	engEvalString(ep, "[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
 
-void Laplacian::getSparseLaplacian( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const
-{
-	II = vII; 
-	JJ = vJJ;
-	SS = vSS;
-}
+	evecs = engGetVariable(ep, "evecs");		
+	double *evec = mxGetPr(evecs);				//eigenvectors
+	evals = engGetVariable(ep, "evals");		
+	double *eval = mxGetPr(evals);				//eigenvalues
 
-void Laplacian::dumpLaplacian( const std::string& path ) const
-{
-	int nz = vII.size();
-	ofstream lout(path.c_str());
-	for (int i = 0; i < nz; ++i)
+	m_func.reserve(m_nEigFunc);
+	for(int i = 0; i < m_nEigFunc; i++)
 	{
-		lout << vII[i] << ',' << vJJ[i] << ',' << vSS[i] << '\n';
+		m_func.push_back(ManifoldBasis());
+
+		m_func[i].m_vec.reserve(nVertex);
+		for(int j = 0; j < nVertex; j++)
+		{
+			m_func[i].m_vec.push_back(evec[i*nVertex+j]);
+		}
+		m_func[i].m_val = abs(eval[i]);		// always non-negative
 	}
-	lout.close();
+
+	mxDestroyArray(evecs);
+	mxDestroyArray(evals);
+	mxDestroyArray(AA);
+	mxDestroyArray(II);
+	mxDestroyArray(JJ);
+	mxDestroyArray(SS);
+	mxDestroyArray(Numv);
+
+	return true;
+}
+
+void AnisotropicKernel::constructFromMesh( const CMesh* tmesh )
+{
+	for (int i = 0; i < m_size; ++i)
+	{
+		const CVertex* vi = tmesh->getVertex_const(i);
+		vector<int> vNeighbors;
+		tmesh->VertexNeighborRing(i, 3, vNeighbors);
+		int valence = vNeighbors.size();
+
+		vector<double> vDist;
+		double avg_len = tmesh->getAvgEdgeLength();
+		double dist_sum = 0.;
+
+		for (int j = 0; j < valence; ++j)
+		{
+			double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
+			vDist.push_back(coeff);
+			dist_sum += coeff;
+		}
+		
+		for (int j = 0; j < valence; ++j)
+		{
+			vII.push_back(i+1);
+			vJJ.push_back(vNeighbors[j]+1);
+			vSS.push_back(-vDist[j]/dist_sum);
+		}
+
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(1.);
+	}
+
+	vWeights.resize(m_size, 1.0);
 }

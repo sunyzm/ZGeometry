@@ -79,7 +79,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
 	posRef = mesh->getVertex(0)->getPosition();
-	mLaplacian.computeLaplacian(mesh, Laplacian::CotFormula);
+	mLaplacian.constructFromMesh(mesh);
 //	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
 }
 
@@ -479,7 +479,7 @@ void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& 
 
 	vector<int> vII, vJJ;
 	vector<double> vSS;
-	mLaplacian.getSparseLaplacian(vII, vJJ, vSS);
+	mLaplacian.getSparseMatrix(vII, vJJ, vSS);
 
 	int sparseLapSize = vII.size();
 	for (int n = 0; n < sparseLapSize; ++n)

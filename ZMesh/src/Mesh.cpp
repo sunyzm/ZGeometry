@@ -3298,12 +3298,12 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	return flag;
 }
 
-#define STATE_IDLE		0
-#define STATE_MIN		-1
-#define STATE_MAX		1
-
 void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures ) const
 {
+	const int STATE_IDLE = 0;
+	const int STATE_MIN	= -1;
+	const int STATE_MAX	=  1;
+
 	assert(vSigVal.size() == m_nVertex);
 	vFeatures.clear();
 	
@@ -3466,7 +3466,7 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			}
 			double cota = (cota11 + cota21) / 2.0;
 
-			vII.push_back(i+1);
+			vII.push_back(i+1);	// 1-based index
 			vJJ.push_back(vj+1);
 			vSS.push_back(cota);
 			diagW[i] -= cota;

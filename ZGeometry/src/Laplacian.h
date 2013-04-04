@@ -13,38 +13,6 @@
 // const double NZERO  = -0.00001;
 // const int HOLE_SIZE = 10;
 
-class ManifoldHarmonics;
-
-class MeshMatrix
-{
-public:
-	int m_size;
-	std::vector<double> vWeights;
-	std::vector<int> vII, vJJ;
-	std::vector<double> vSS;
-
-public:
-	MeshMatrix() : m_size(0) {}
-	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
-	const std::vector<double>& getVerticesWeight() const { return vWeights; };
-	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
-	int getNonzeroNum() const { return vSS.size(); }
-};
-
-class Laplacian : public MeshMatrix
-{
-public:
-	enum LaplacianType {Umbrella, CotFormula};
-	bool isBuilt;
-
-public:
-	Laplacian() : isBuilt(false) {}
-	void computeLaplacian(const CMesh* tmesh, LaplacianType laplacianType = CotFormula);
-	void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
-	void getSparseLaplacian(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
-	void dumpLaplacian(const std::string& path) const;
-};
-
 class ManifoldBasis
 {
 public:
@@ -56,8 +24,6 @@ class ManifoldHarmonics
 {
 public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
-	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type = Laplacian::CotFormula);
-	void decompLaplacian(Engine *ep, const Laplacian& matLaplacian, int nEigFunc) { matLaplacian.decompose(*this, nEigFunc, ep); }
 	void write(const std::string& meshPath) const;
 	void read(const std::string& meshPath);
 	MeshFunction getManifoldHarmonic(int k) const;
@@ -66,4 +32,50 @@ public:
 	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
 	int m_size;	    // shape size
 	int m_nEigFunc; // number of basis < shape size
+};
+
+class SparseMeshMatrix
+{
+public:
+	int m_size;
+	bool isBuilt;
+	std::vector<double> vWeights;	// weight associated with each vertex
+	std::vector<int> vII, vJJ;		// 1-based index of non-zero elements
+	std::vector<double> vSS;		// value of non-zero elements
+
+public:
+	SparseMeshMatrix() : m_size(0), isBuilt(false) {}
+	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
+	const std::vector<double>& getVerticesWeight() const { return vWeights; };
+	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
+	int getNonzeroNum() const { return vSS.size(); }
+	void getSparseMatrix(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
+	void dumpMatrix(const std::string& path) const;
+
+	virtual void constructFromMesh(const CMesh* tmesh) {}
+	virtual void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+
+};
+
+class Laplacian : public SparseMeshMatrix
+{
+public:
+	enum LaplacianType {Umbrella, CotFormula} m_laplacianType;
+
+public:
+	Laplacian() : m_laplacianType(CotFormula) {}
+	void setLaplacianType(LaplacianType lt) { m_laplacianType = lt; }
+	void constructFromMesh(const CMesh* tmesh);
+};
+
+class ManifoldLaplaceHarmonics : public ManifoldHarmonics
+{
+public:
+	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type = Laplacian::CotFormula);
+};
+
+class AnisotropicKernel : public SparseMeshMatrix
+{
+public:
+	void constructFromMesh(const CMesh* tmesh);
 };

@@ -101,10 +101,9 @@ private:
 	bool m_bSGWComputed;
 	bool m_bLaplacianDecomposed;		// mhb available
 
+	SparseMeshMatrix* meshKernel;
 	Laplacian mLaplacian;
-	ManifoldHarmonics mhb;
-	
-	
+	ManifoldHarmonics mhb;	
 
 	int pRef;
 	Vector3D posRef;
