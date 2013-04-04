@@ -104,6 +104,8 @@ private:
 	Laplacian mLaplacian;
 	ManifoldHarmonics mhb;
 	
+	
+
 	int pRef;
 	Vector3D posRef;
 	std::vector<MeshFeature*>* pvActiveFeatures;	

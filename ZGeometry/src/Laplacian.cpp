@@ -299,7 +299,7 @@ void Laplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 }
 
 //: computer inner product of two manifold functions induced by the Laplacian matrix
-double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
+double MeshMatrix::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
 {
 	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->m_size);
 
@@ -311,7 +311,7 @@ double Laplacian::innerProduct( const std::vector<double>& vf, const std::vector
 	return sum;
 }
 
-void Laplacian::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
+void MeshMatrix::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
 {
 	assert(func.size() == m_size);
 /*	
