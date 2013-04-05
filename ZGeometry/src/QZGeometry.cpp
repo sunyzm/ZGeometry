@@ -1385,7 +1385,7 @@ void QZGeometryWindow::registerStep()
 	else ofstr.open(log_filename.c_str(), ios::app);
 
 	double time_elapsed = time_call([&]{
-		shapeMatcher.refineRegister(ofstr);
+		shapeMatcher.refineRegister2(ofstr);
 	}) / 1000.0;
 
 	int level = shapeMatcher.getAlreadyRegisteredLevel();

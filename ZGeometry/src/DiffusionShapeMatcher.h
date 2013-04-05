@@ -100,6 +100,7 @@ public:
 	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
 	void	matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
+	void    refineRegister2(std::ostream& flog);
 	void	evaluateRegistration();
 
 	/* attributes access */
