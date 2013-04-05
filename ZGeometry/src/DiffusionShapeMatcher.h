@@ -80,6 +80,7 @@ public:
 	DifferentialMeshProcessor* pMP;
 
 	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
+	void computeHKParam2(const std::vector<int>& anchors, double t = 30.0);
 	void computeBHParam(const std::vector<int>& anchors);
 };
 

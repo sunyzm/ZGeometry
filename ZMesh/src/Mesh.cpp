@@ -2207,7 +2207,7 @@ double CMesh::getGeodesic( int s, int t ) const
 	return geo;
 }
 
-
+/*
 double CMesh::calGeodesic( int s, int t ) const
 {
 	if(s == t) return 0.0;
@@ -2387,7 +2387,7 @@ double CMesh::calGeodesic( int s, int t ) const
 	nbg.clear();
 	return geo;
 }
-
+*/
 
 double CMesh::getGeodesicToBoundary(int s) const
 {
