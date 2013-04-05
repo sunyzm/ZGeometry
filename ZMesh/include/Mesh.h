@@ -271,6 +271,7 @@ public:
 	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 	void		VertexNeighborRing(int i, int ring, std::vector<int>& nbr) const;
 	bool		isInNeighborRing(int ref, int query, int ring) const;
+	double		calGeodesic(int s, int t) const;	// thread-safe version of computing pairwise geodesic
 	double		getGeodesic(int s, int t) const;
 	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);

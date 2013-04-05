@@ -60,17 +60,33 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
+
 	vParam.resize(fineSize);
 
-	for (int v = 0; v < fineSize; ++v)
-	{
-		PointParam& hkp = vParam[v];
-		hkp.reserve(pn);
-		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+ 	for (int v = 0; v < fineSize; ++v)
+ 	{
+ 		PointParam& hkp = vParam[v];
+ 		hkp.reserve(pn);
+ 		for (int i = 0; i < pn; ++i)
+ 			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+ 
+ 		hkp.m_votes = hkp.length();
+ 	}
+}
 
-		hkp.m_votes = hkp.length();
-	}
+void ParamManager::computeHKParam2( const std::vector<int>& anchors, double t /*= 30.0*/ )
+{
+	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int pn = (int)anchors.size();
+	vParam.resize(fineSize);
+
+	Concurrency::parallel_for(0, fineSize, [&](int v){
+	 	PointParam& hkp = vParam[v];
+	 	hkp.reserve(pn);
+	 	for (int i = 0; i < pn; ++i)
+	 		hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+	 	hkp.m_votes = hkp.length();
+	});
 }
 
 void ParamManager::computeBHParam( const std::vector<int>& anchors )
@@ -814,10 +830,12 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 		flog << "(" << iter->m_idx1 << ',' << iter->m_idx2 << ") ";
 	flog << endl << endl;
 
-	Concurrency::parallel_invoke(
-		[&]{ m_ParamMgr[0].computeHKParam(vFeatureID1, regT); },
-		[&]{ m_ParamMgr[1].computeHKParam(vFeatureID2, regT); }
-	);
+	CStopWatch timer;
+	timer.startTimer();
+	m_ParamMgr[0].computeHKParam2(vFeatureID1, regT); 
+	m_ParamMgr[1].computeHKParam2(vFeatureID2, regT); 
+	timer.stopTimer();
+	cout << "HKParam computation time: " << timer.getElapsedTime() << 's' << endl;
 
 	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vParam;
 	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vParam;
