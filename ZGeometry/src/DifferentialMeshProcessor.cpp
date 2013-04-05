@@ -3,8 +3,11 @@
 #include <stdexcept>
 #include <set>
 #include <algorithm>
+#include <SimpleConfigLoader.h>
 
 using namespace std;
+
+extern SimpleConfigLoader g_configMgr;
 
 double transferScalingFunc1( double lambda )
 {
@@ -33,8 +36,7 @@ double transferFunc4( double lambda, double t )
 	return lambda * std::exp(-lambda * t);
 }
 
-TransferFunc HeatKernel_TF = &transferFunc3,
-	         MHW_TF = &transferFunc4;
+TransferFunc HeatKernel_TF = &transferFunc3, MHW_TF = &transferFunc4;
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
@@ -56,6 +58,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 	mesh = tm;
 	pvActiveFeatures = NULL;
 	m_bLaplacianDecomposed = false;
+	meshKernel = NULL;
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
@@ -68,7 +71,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 
 DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
 {
-
+	if (meshKernel != NULL) delete meshKernel;
 }
 
 void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
@@ -77,10 +80,13 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	m_ep = e;
 	matlabWrapper.setEngine(e);
 	m_size = mesh->getVerticesNum();
-	pRef = 0;
-	posRef = mesh->getVertex(0)->getPosition();
+	pRef = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
+	posRef = mesh->getVertex(pRef)->getPosition();
+
 	mLaplacian.constructFromMesh(mesh);
-//	vector2file("output/weights.dat", mLaplacian.getVerticesWeight());
+
+	meshKernel = new AnisotropicKernel;
+	meshKernel->constructFromMesh(mesh);
 }
 
 void DifferentialMeshProcessor::init_lite(CMesh* tm)
@@ -94,6 +100,7 @@ void DifferentialMeshProcessor::init_lite(CMesh* tm)
 void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
 {
 	mLaplacian.decompose(mhb, nEigFunc, m_ep);
+//	meshKernel->decompose(mhb, nEigFunc, m_ep);
 	this->m_bLaplacianDecomposed = true;
 }
 

@@ -17,6 +17,7 @@ HIERARCHY_OUTPUT_FILE = output/build_pyramid.log
 MATCH_OUTPUT_FILE = output/FeatureMatch.log
 REGISTER_OUTPUT_FILE = output/Registration.log
 
+INITIAL_REF_POINT = 0
 
 ## hierarchy ##
 HIERARCHY_LEVEL = 2

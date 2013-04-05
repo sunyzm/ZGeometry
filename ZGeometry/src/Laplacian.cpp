@@ -158,7 +158,7 @@ void SparseMeshMatrix::dumpMatrix( const std::string& path ) const
 
 void SparseMeshMatrix::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {
-	assert(isBuilt);
+	assert(m_bMatrixBuilt);
 	assert(nEig > 0);
 
 	mhb.m_func.clear();
@@ -275,7 +275,7 @@ void Laplacian::constructFromMesh( const CMesh* tmesh )
 		vWeights.resize(m_size, 1.0);
 	}
 
-	isBuilt = true;
+	m_bMatrixBuilt = true;
 }
 
 bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type /*= Laplacian::CotFormula*/ )
@@ -364,6 +364,7 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 
 void AnisotropicKernel::constructFromMesh( const CMesh* tmesh )
 {
+	m_size = tmesh->getMeshSize();
 	for (int i = 0; i < m_size; ++i)
 	{
 		const CVertex* vi = tmesh->getVertex_const(i);
@@ -395,4 +396,6 @@ void AnisotropicKernel::constructFromMesh( const CMesh* tmesh )
 	}
 
 	vWeights.resize(m_size, 1.0);
+
+	m_bMatrixBuilt = true;
 }

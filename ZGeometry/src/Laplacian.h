@@ -5,10 +5,6 @@
 #include <engine.h>
 #include <ZMesh.h>
 
-#define LBO_EPS 0
-#define LBO_COT 1
-#define LBO_UMBRELLA 2
-
 // const double PZERO  = 0.00001;
 // const double NZERO  = -0.00001;
 // const int HOLE_SIZE = 10;
@@ -38,13 +34,13 @@ class SparseMeshMatrix
 {
 public:
 	int m_size;
-	bool isBuilt;
+	bool m_bMatrixBuilt;
 	std::vector<double> vWeights;	// weight associated with each vertex
 	std::vector<int> vII, vJJ;		// 1-based index of non-zero elements
 	std::vector<double> vSS;		// value of non-zero elements
 
 public:
-	SparseMeshMatrix() : m_size(0), isBuilt(false) {}
+	SparseMeshMatrix() : m_size(0), m_bMatrixBuilt(false) {}
 	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
 	const std::vector<double>& getVerticesWeight() const { return vWeights; };
 	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;

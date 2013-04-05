@@ -246,6 +246,7 @@ public:
 	CFace*				getFace(int i) { return &m_pFace[i]; }
 	const CFace*		getFace_const(int i) const { return m_vFaces[i]; }
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
+	int					getMeshSize() const { return m_nVertex; }
 	int					getVerticesNum() const { return m_nVertex; }
 	int					getFaceNum() const { return m_nFace; }
 	int					getHalfEdgeNum() const { return m_nHalfEdge; }
