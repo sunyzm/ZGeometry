@@ -1306,11 +1306,27 @@ void QZGeometryWindow::buildHierarchy()
 void QZGeometryWindow::detectFeatures()
 {
 	qout.output("-- Detect initial features --");
-	shapeMatcher.detectFeatures(0, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
-	shapeMatcher.detectFeatures(1, 3, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
-	
+	shapeMatcher.detectFeatures(0, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
+	shapeMatcher.detectFeatures(1, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
+
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
+
+	const vector<HKSFeature>& vf1 = shapeMatcher.vFeatures[0], &vf2 = shapeMatcher.vFeatures[1];
+
+	int count_possible = 0;
+	for (auto iter = vf1.begin(); iter != vf1.end(); ++iter)
+	{
+		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
+		{
+			if (std::abs(iter->m_index - iter2->m_index) <= 1 || mesh2.isInNeighborRing(iter->m_index, iter2->m_index, 1))
+			{
+				count_possible++;
+				break;
+			}
+		}
+	}
+	qout.output(QString().sprintf("-- Valid detections: %d", count_possible));
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();

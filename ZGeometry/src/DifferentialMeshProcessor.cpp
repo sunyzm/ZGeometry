@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <set>
 #include <algorithm>
+#include <ppl.h>
 #include <SimpleConfigLoader.h>
 
 using namespace std;
@@ -866,7 +867,8 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 		break;
 	}
 
-	for (int i = 0; i < m_size; ++i)
+	Concurrency::parallel_for(0, m_size, [&](int i)
+//	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
 		for (int k = 0; k < mhb.m_nEigFunc; ++k)
@@ -875,6 +877,7 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 		}
 		values[i] = sum;
 	}
+	);
 }
 
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )

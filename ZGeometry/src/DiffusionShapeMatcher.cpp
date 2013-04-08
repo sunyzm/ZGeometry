@@ -61,11 +61,11 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
 
-	vParam.resize(fineSize);
+	vCoord.resize(fineSize);
 
  	for (int v = 0; v < fineSize; ++v)
  	{
- 		PointParam& hkp = vParam[v];
+ 		PointParam& hkp = vCoord[v];
  		hkp.reserve(pn);
  		for (int i = 0; i < pn; ++i)
  			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
@@ -74,14 +74,31 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
  	}
 }
 
-void ParamManager::computeHKParam2( const std::vector<int>& anchors, double t /*= 30.0*/ )
+void ParamManager::computeBHParam( const std::vector<int>& anchors )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
-	vParam.resize(fineSize);
+	vCoord.resize(fineSize);
+
+	for (int v = 0; v < fineSize; ++v)
+	{
+		PointParam& hkp = vCoord[v];
+		hkp.reserve(pn);
+		for (int i = 0; i < pn; ++i)
+			hkp.m_vec[i] = pMP->calBiharmonic(v, anchors[i]);
+
+		hkp.m_votes = hkp.length();
+	}
+}
+
+void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*= 30.0*/ )
+{
+	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int pn = (int)anchors.size();
+	vCoord.resize(fineSize);
 
 	Concurrency::parallel_for(0, fineSize, [&](int v){
-	 	PointParam& hkp = vParam[v];
+	 	PointParam& hkp = vCoord[v];
 	 	hkp.reserve(pn);
 	 	for (int i = 0; i < pn; ++i)
 	 		hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
@@ -89,21 +106,17 @@ void ParamManager::computeHKParam2( const std::vector<int>& anchors, double t /*
 	});
 }
 
-void ParamManager::computeBHParam( const std::vector<int>& anchors )
+void ParamManager::para_computeHKS( const std::vector<double>& times )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
-	const int pn = (int)anchors.size();
-	vParam.resize(fineSize);
+	const int sn = (int)times.size();
+	vSignature.resize(fineSize);
 
-	for (int v = 0; v < fineSize; ++v)
-	{
-		PointParam& hkp = vParam[v];
-		hkp.reserve(pn);
-		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->calBiharmonic(v, anchors[i]);
-
-		hkp.m_votes = hkp.length();
-	}
+	Concurrency::parallel_for(0, fineSize, [&](int v){
+		vSignature[v].reserve(sn);
+		for (int i = 0; i < sn; ++i)
+			vSignature[v].m_vec[i] = pMP->calHK(v, v, times[sn]);
+	});
 }
 
 double distFeature(const HKSFeature& hf1, const HKSFeature& hf2, const VectorND& sig1, const VectorND& sig2, double& tl, int& tn)
@@ -263,11 +276,18 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 		vector<double> hksv;
 		pMP->calKernelSignature(tvalue, HEAT_KERNEL, hksv);
 
-		double sref = 4.0 * PI * tvalue;
-		for_each (hksv.begin(), hksv.end(), [=](double& v){ v = std::log(v * sref); });		
+ 		double sref = 4.0 * PI * tvalue;
+ 		for_each ( hksv.begin(), hksv.end(), [=](double& v){ v = std::log(v * sref);} );		
 
 		vector<int> vFeatureIdx;
+		if (s == 0) ring = 3;
 		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
+		cout << "obj " << obj << ", timescale: " << tvalue << endl;
+		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
+		{
+			cout << *iter << ", ";
+		}
+		cout << endl;
 
 		priority_queue<ExtremaPoint, vector<ExtremaPoint>, greater<ExtremaPoint> > extremaPointsQueue;
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
@@ -281,7 +301,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 			bool notCoveredFine = true;
 			for (auto iter = vF.begin(); iter != vF.end(); ++iter)
 			{
-				if (fineMesh->isInNeighborRing(iter->m_index, ep.index, 5))
+				if (fineMesh->isInNeighborRing(iter->m_index, ep.index, 3))
 				{
 					notCoveredFine = false;
 					break;
@@ -289,13 +309,22 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 			}
 			if (notCoveredFine)
 			{
-				vF.push_back(HKSFeature(ep.index, scale));
+				vF.push_back(HKSFeature(ep.index, s));
 			}
 		}
 	}
 
+	/* Begin LOG-FEATURES */
+	cout << "Candidate features " << obj << ":\n  ";
+	std::sort(vF.begin(), vF.end(), [](HKSFeature& f1, HKSFeature& f2) { return f1.m_index < f2.m_index;});
+	std::sort(vF.begin(), vF.end(), [](HKSFeature& f1, HKSFeature& f2) { return f1.m_scale > f2.m_scale;});
+	for (auto iter = vF.begin(); iter != vF.end(); ++iter)
+		cout << "(" << iter->m_index << "," << iter->m_scale << ")" << ", ";
+	cout << endl;
+	/* End LOG-FEATURES */
+
 	double tl = DEFAULT_MATCH_TIME_LOW;	//10.0
-	for (auto iter = vF.begin(); iter != vF.end();)
+	for (auto iter = vF.begin(); iter != vF.end(); )
 	{
 		const int vi = iter->m_index;
 		double tu = findTmax(fineMesh, vi);	//?? max time to boundary? why geo*geo/4?
@@ -832,13 +861,13 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 	CStopWatch timer;
 	timer.startTimer();
-	m_ParamMgr[0].computeHKParam2(vFeatureID1, regT); 
-	m_ParamMgr[1].computeHKParam2(vFeatureID2, regT); 
+	m_ParamMgr[0].para_computeHKC(vFeatureID1, regT); 
+	m_ParamMgr[1].para_computeHKC(vFeatureID2, regT); 
 	timer.stopTimer();
 	cout << "HKParam computation time: " << timer.getElapsedTime() << 's' << endl;
 
-	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vParam;
-	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vParam;
+	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vCoord;
+	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vCoord;
 
 	flog << "Multi-anchor coordinates initialized!" << endl;
 	
@@ -1045,8 +1074,8 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int
 
 double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2 ) const
 {
-	const PointParam &hkp1 = m_ParamMgr[0].vParam[idx1],
-		             &hkp2 = m_ParamMgr[1].vParam[idx2];
+	const PointParam &hkp1 = m_ParamMgr[0].vCoord[idx1],
+		             &hkp2 = m_ParamMgr[1].vCoord[idx2];
 
 	return std::exp(-hkp1.calDistance(hkp2, 1));
 }
@@ -1592,13 +1621,16 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		flog << "(" << iter->m_idx1 << ',' << iter->m_idx2 << ") ";
 	flog << endl << endl;
 
-	Concurrency::parallel_invoke(
-		[&]{ m_ParamMgr[0].computeHKParam(vFeatureID1, regT); },
-		[&]{ m_ParamMgr[1].computeHKParam(vFeatureID2, regT); }
-	);
+	CStopWatch timer;
+	timer.startTimer();
+	m_ParamMgr[0].para_computeHKC(vFeatureID1, regT); // parallel computing supported
+	m_ParamMgr[1].para_computeHKC(vFeatureID2, regT); 
+//	m_ParamMgr[0].para_computeHKS()
+	timer.stopTimer();
+	cout << "HKParam computation time: " << timer.getElapsedTime() << 's' << endl;
 
-	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vParam;
-	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vParam;
+	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vCoord;
+	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vCoord;
 
 	flog << "Multi-anchor coordinates initialized!" << endl;
 

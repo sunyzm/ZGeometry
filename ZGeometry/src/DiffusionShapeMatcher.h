@@ -73,15 +73,17 @@ class ParamManager
 {
 public:
 	enum ParamType {HKParam, BHParam};
-	std::vector<PointParam> vParam;
+	std::vector<PointParam> vCoord;
+	std::vector<PointParam> vSignature;
 	void initialize(DifferentialMeshProcessor* p) { pMP = p; }
-	const std::vector<PointParam>& getParam() const { return vParam; }
+	const std::vector<PointParam>& getParam() const { return vCoord; }
 
 	DifferentialMeshProcessor* pMP;
 
 	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
-	void computeHKParam2(const std::vector<int>& anchors, double t = 30.0);
 	void computeBHParam(const std::vector<int>& anchors);
+	void para_computeHKC(const std::vector<int>& anchors, double t = 30.0);
+	void para_computeHKS(const std::vector<double>& times);
 };
 
 class DiffusionShapeMatcher
@@ -150,7 +152,9 @@ private:
 	DifferentialMeshProcessor* pOriginalProcessor[2];
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
+public:
 	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
+private:
 	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
