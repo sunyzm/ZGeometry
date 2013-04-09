@@ -362,40 +362,49 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 	return true;
 }
 
-void AnisotropicKernel::constructFromMesh( const CMesh* tmesh )
+void AnisotropicLaplacian::constructFromMesh( const CMesh* tmesh )
 {
 	m_size = tmesh->getMeshSize();
-	for (int i = 0; i < m_size; ++i)
+
+	if (anisotropicType == 0)	// default setting
 	{
-		const CVertex* vi = tmesh->getVertex_const(i);
-		vector<int> vNeighbors;
-		tmesh->VertexNeighborRing(i, 3, vNeighbors);
-		int valence = vNeighbors.size();
 
-		vector<double> vDist;
-		double avg_len = tmesh->getAvgEdgeLength();
-		double dist_sum = 0.;
+	}
+	else if (anisotropicType == 1)
+	{
+		for (int i = 0; i < m_size; ++i)
+		{
+			const CVertex* vi = tmesh->getVertex_const(i);
+			vector<int> vNeighbors;
+			tmesh->VertexNeighborRing(i, 3, vNeighbors);
+			int valence = vNeighbors.size();
 
-		for (int j = 0; j < valence; ++j)
-		{
-			double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
-			vDist.push_back(coeff);
-			dist_sum += coeff;
-		}
-		
-		for (int j = 0; j < valence; ++j)
-		{
+			vector<double> vDist;
+			double avg_len = tmesh->getAvgEdgeLength();
+			double dist_sum = 0.;
+
+			for (int j = 0; j < valence; ++j)
+			{
+				double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
+				vDist.push_back(coeff);
+				dist_sum += coeff;
+			}
+
+			for (int j = 0; j < valence; ++j)
+			{
+				vII.push_back(i+1);
+				vJJ.push_back(vNeighbors[j]+1);
+				vSS.push_back(-vDist[j]/dist_sum);
+			}
+
 			vII.push_back(i+1);
-			vJJ.push_back(vNeighbors[j]+1);
-			vSS.push_back(-vDist[j]/dist_sum);
+			vJJ.push_back(i+1);
+			vSS.push_back(1.);
 		}
-
-		vII.push_back(i+1);
-		vJJ.push_back(i+1);
-		vSS.push_back(1.);
+		vWeights.resize(m_size, 1.0);
 	}
 
-	vWeights.resize(m_size, 1.0);
+
 
 	m_bMatrixBuilt = true;
 }

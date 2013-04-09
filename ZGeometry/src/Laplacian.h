@@ -5,10 +5,6 @@
 #include <engine.h>
 #include <ZMesh.h>
 
-// const double PZERO  = 0.00001;
-// const double NZERO  = -0.00001;
-// const int HOLE_SIZE = 10;
-
 class ManifoldBasis
 {
 public:
@@ -70,8 +66,11 @@ public:
 	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type = Laplacian::CotFormula);
 };
 
-class AnisotropicKernel : public SparseMeshMatrix
+class AnisotropicLaplacian : public SparseMeshMatrix
 {
 public:
+	AnisotropicLaplacian() : anisotropicType(0) {}
 	void constructFromMesh(const CMesh* tmesh);
+	int anisotropicType; 
+	void setAnisotropicType(int a) { anisotropicType = a; }
 };

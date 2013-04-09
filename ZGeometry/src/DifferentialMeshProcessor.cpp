@@ -86,7 +86,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 
 	mLaplacian.constructFromMesh(mesh);
 
-	meshKernel = new AnisotropicKernel;
+	meshKernel = new AnisotropicLaplacian;
 	meshKernel->constructFromMesh(mesh);
 }
 
