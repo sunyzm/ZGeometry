@@ -19,14 +19,14 @@ public :
 public:
 	Vector2D(){	x = 0;	y = 0;}
 	// constructions
-	Vector2D(double xx, double yy)	{	x = xx;	y = yy;}
-	Vector2D(const Vector2D& v)	{	x = v.x;	y = v.y;}
+	Vector2D(double xx, double yy)	{ x = xx; y = yy; }
+	Vector2D(const Vector2D& v)	{ x = v.x; y = v.y; }
 
   
 	// operator
-	double	  length()		{	return std::sqrt(x*x + y*y);	}
-	double	  length2()		{	return x*x + y*y;	}
-	double	  normalize()	{	double len = length();	if (!EQUALZERO(len)) {x/=len;y/=len;}	return len;	}
+	double	  length()		{ return std::sqrt(x*x + y*y); }
+	double	  length2()		{ return x*x + y*y;	}
+	double	  normalize()	{ double len = length(); if (!EQUALZERO(len)) {x/=len; y/=len;}	return len;	}
 	Vector2D& operator=(const Vector2D& v);
 	Vector2D& operator+=(const Vector2D& v);
 	Vector2D& operator-=(const Vector2D& v);
@@ -95,14 +95,11 @@ public :
 	friend Vector3D operator*(const Matrix3& mat1, const Vector3D& vec);
 };
 
-double dotProduct3D(const Vector3D& v1, const Vector3D& v2);
-bool crossProduct3D(const Vector3D&v1, const Vector3D&v2, Vector3D& v3);
-Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
-
 /////////////////////////////////////////////////////////////
 // VectorND : n-dim vector
 /////////////////////////////////////////////////////////////
-class VectorND{
+class VectorND
+{
 public:
 	int m_size;
 	double* m_vec;
@@ -115,8 +112,8 @@ public:
 public:
 	void resize(int n);	// equivalent to reserve
 	void reserve(int n);
-	bool empty() {return !m_vec;}
-	virtual void clear() {m_size = 0; if(!empty()) delete m_vec; m_vec=NULL;}
+	bool empty() { return !m_vec; }
+	virtual void clear() { m_size = 0; if(!empty()) delete m_vec; m_vec=NULL; }
 	double length();
 	double length2();
 	double normalize();
@@ -159,4 +156,10 @@ public:
 /////////////////////////////////////////////////////////////
 // Helper functions
 /////////////////////////////////////////////////////////////
-Vector3D triArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+
+double dotProduct3D(const Vector3D& v1, const Vector3D& v2);
+bool crossProduct3D(const Vector3D&v1, const Vector3D&v2, Vector3D& v3);
+Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
+
+Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);

@@ -366,45 +366,36 @@ void AnisotropicLaplacian::constructFromMesh( const CMesh* tmesh )
 {
 	m_size = tmesh->getMeshSize();
 
-	if (anisotropicType == 0)	// default setting
+	for (int i = 0; i < m_size; ++i)
 	{
+		const CVertex* vi = tmesh->getVertex_const(i);
+		vector<int> vNeighbors;
+		tmesh->VertexNeighborRing(i, 3, vNeighbors);
+		int valence = vNeighbors.size();
 
-	}
-	else if (anisotropicType == 1)
-	{
-		for (int i = 0; i < m_size; ++i)
+		vector<double> vDist;
+		double avg_len = tmesh->getAvgEdgeLength();
+		double dist_sum = 0.;
+
+		for (int j = 0; j < valence; ++j)
 		{
-			const CVertex* vi = tmesh->getVertex_const(i);
-			vector<int> vNeighbors;
-			tmesh->VertexNeighborRing(i, 3, vNeighbors);
-			int valence = vNeighbors.size();
-
-			vector<double> vDist;
-			double avg_len = tmesh->getAvgEdgeLength();
-			double dist_sum = 0.;
-
-			for (int j = 0; j < valence; ++j)
-			{
-				double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
-				vDist.push_back(coeff);
-				dist_sum += coeff;
-			}
-
-			for (int j = 0; j < valence; ++j)
-			{
-				vII.push_back(i+1);
-				vJJ.push_back(vNeighbors[j]+1);
-				vSS.push_back(-vDist[j]/dist_sum);
-			}
-
-			vII.push_back(i+1);
-			vJJ.push_back(i+1);
-			vSS.push_back(1.);
+			double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
+			vDist.push_back(coeff);
+			dist_sum += coeff;
 		}
-		vWeights.resize(m_size, 1.0);
+
+		for (int j = 0; j < valence; ++j)
+		{
+			vII.push_back(i+1);
+			vJJ.push_back(vNeighbors[j]+1);
+			vSS.push_back(-vDist[j]/dist_sum);
+		}
+
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(1.);
 	}
-
-
-
+	vWeights.resize(m_size, 1.0);	
+	
 	m_bMatrixBuilt = true;
 }
