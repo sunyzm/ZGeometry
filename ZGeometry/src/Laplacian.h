@@ -71,7 +71,7 @@ class AnisotropicLaplacian : public SparseMeshMatrix
 public:
 	AnisotropicLaplacian() : anisotropicType(0) {}
 	void constructFromMesh1(const CMesh* tmesh);
-	void constructFromMesh2(const CMesh* tmesh, int ringT, double hPara);
+	void constructFromMesh2(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	int anisotropicType; 
 	void setAnisotropicType(int a) { anisotropicType = a; }
 };

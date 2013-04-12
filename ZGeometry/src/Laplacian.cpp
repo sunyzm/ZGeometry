@@ -405,7 +405,7 @@ void AnisotropicLaplacian::constructFromMesh1( const CMesh* tmesh )
 	m_bMatrixBuilt = true;
 }
 
-void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, double hPara )
+void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
 {
 	vII.clear();
 	vJJ.clear();
@@ -427,15 +427,21 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex_const(k);
-				double svalue = face_area * std::exp(-tmesh->getGeodesic(vi, vki) * (pvi->getMeanCurvature() - pvk->getMeanCurvature()) / hPara);
-				
+
+//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
+//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+
+				double svalue = w1 * w2;
+				svalue *= face_area;
+
 				vSparseElements.push_back(make_tuple(vi, vki, svalue));
 			}
 		}
 	}
 
 	vector<double> vDiag(msize, 0.);
-
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
 		int ii, jj; double ss;
@@ -453,6 +459,11 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 		vII.push_back(i);
 		vJJ.push_back(i);
 		vSS.push_back(vDiag[i]);
+	}
+
+	for (int k = 0; k < vII.size(); ++k)
+	{
+		vSS[k] /= vDiag[vII[k]];
 	}
 
 	vWeights.resize(m_size, 1.0);	

@@ -161,11 +161,10 @@ bool QZGeometryWindow::initialize()
 	qout.output("******** Welcome ********", OUT_CONSOLE);
 	qout.outputDateTime(OUT_CONSOLE);
 
-	string mesh_list_name;
 #ifdef NDEBUG
-	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
+	string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
 #else NDEBUG
-	mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
+	string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 #endif
 
 	if (!(m_ep = engOpen("\0")))

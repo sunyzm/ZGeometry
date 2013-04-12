@@ -84,10 +84,11 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 
 	mLaplacian.constructFromMesh(mesh);
 
-//	cout << "Time to compute Anisotropic kernel: " << time_call([&](){
-		meshKernel.constructFromMesh2(mesh, 1, 1.);
-//	}) / 1000. << endl;
-	
+	cout << "Time to compute Anisotropic kernel: " << time_call([&](){
+		double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
+		meshKernel.constructFromMesh2(mesh, 1, para1, para1);
+	}) / 1000. << endl;
+	cout << "Kernel Sparsity: " << meshKernel.vSS.size() / double(m_size*m_size) << endl;
 }
 
 void DifferentialMeshProcessor::init_lite(CMesh* tm)
