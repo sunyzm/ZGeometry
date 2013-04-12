@@ -418,7 +418,7 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
-		for (int fi = 0; fi < vFaces.size(); fi)
+		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
 			double face_area = pfi->getArea();
@@ -427,10 +427,8 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex_const(k);
-				double svalue;
-
-
-
+				double svalue = face_area * std::exp(-tmesh->getGeodesic(vi, vki) * (pvi->getMeanCurvature() - pvk->getMeanCurvature()) / hPara);
+				
 				vSparseElements.push_back(make_tuple(vi, vki, svalue));
 			}
 		}
@@ -440,11 +438,13 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
-		int ii = std::get<0>(*iter), jj = std::get<1>(*iter);
-		double ss = std::get<2>(*iter);
+		int ii, jj; double ss;
+		std::tie(ii, jj, ss) = *iter;
+		
 		vII.push_back(ii);
 		vJJ.push_back(jj);
 		vSS.push_back(ss);
+		
 		vDiag[ii] += -ss;
 	}
 

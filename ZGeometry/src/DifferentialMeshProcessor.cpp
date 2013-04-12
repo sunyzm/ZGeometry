@@ -59,7 +59,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 	mesh = tm;
 	pvActiveFeatures = NULL;
 	m_bLaplacianDecomposed = false;
-	meshKernel = NULL;
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
@@ -72,7 +71,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 
 DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
 {
-	if (meshKernel != NULL) delete meshKernel;
 }
 
 void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
@@ -86,8 +84,10 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 
 	mLaplacian.constructFromMesh(mesh);
 
-	meshKernel = new AnisotropicLaplacian;
-	meshKernel->constructFromMesh(mesh);
+//	cout << "Time to compute Anisotropic kernel: " << time_call([&](){
+		meshKernel.constructFromMesh2(mesh, 1, 1.);
+//	}) / 1000. << endl;
+	
 }
 
 void DifferentialMeshProcessor::init_lite(CMesh* tm)
