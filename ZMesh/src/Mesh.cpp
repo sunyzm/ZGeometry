@@ -5,6 +5,7 @@
 #include <Mesh.h>
 #include <stdexcept>
 #include <algorithm>
+#include <iterator>
 using namespace std;
 
 
@@ -109,15 +110,15 @@ void CVertex::clone(const CVertex& v)
 	m_bIsValid = v.m_bIsValid;
 }
 
-std::vector<CFace*> CVertex::getAdjacentFaces() const
+std::vector<const CFace*> CVertex::getAdjacentFaces() const
 {
 	if(m_HalfEdges.size() != m_nValence)
 		throw logic_error("Error:  CVertex::getAdjacentFaces()");
 
-	vector<CFace*> pFaces;
+	vector<const CFace*> pFaces;
 	for (unsigned int i = 0; i < m_HalfEdges.size(); ++i)
 	{
-		pFaces.push_back(m_HalfEdges[i]->getAttachedFace());
+		pFaces.push_back(m_HalfEdges[i]->getAttachedFace_const());
 	}
 	return pFaces;
 }
@@ -331,11 +332,6 @@ std::vector<double> CFace::getPlaneFunction()
 	double d = m_vNormal * m_Vertices[0]->getPosition();
 	para[3] = -d;
 	return para;
-}
-
-double CFace::getArea() const
-{
-	return m_faceArea;
 }
 
 void CFace::calcNormalAndArea()
@@ -2797,17 +2793,41 @@ void CMesh::calLengthDifference( const CMesh* tmesh, std::vector<double>& ld ) c
 */
 }
 
-std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
+// std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx )
+// {
+// 	vector<int> faceIndex;
+// 	CVertex* pV = &m_pVertex[vIdx];
+// 	for (int i = 0; i < pV->m_nValence; ++i)
+// 	{
+// 		int iEdge = pV->m_piEdge[i];
+// 		if (iEdge != -1)
+// 			faceIndex.push_back(m_pHalfEdge[iEdge].m_iFace);
+// 	}
+// 	return faceIndex;
+// }
+
+std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx, int ring /*= 1*/ ) const
 {
-	vector<int> faceIndex;
-	CVertex* pV = &m_pVertex[vIdx];
-	for (int i = 0; i < pV->m_nValence; ++i)
+	assert(ring >= 1);
+	vector<int> vNeighbors = getNeighborVertexIndex(vIdx, ring-1);
+	vNeighbors.insert(begin(vNeighbors), vIdx);
+
+	set<int> setMarkedFaces;
+	for (auto iter = begin(vNeighbors); iter != end(vNeighbors); ++iter)
 	{
-		int iEdge = pV->m_piEdge[i];
-		if (iEdge != -1)
-			faceIndex.push_back(m_pHalfEdge[iEdge].m_iFace);
+		const CVertex* pv = getVertex_const(*iter);
+		for (int he = 0; he < pv->getValence(); ++he)
+		{
+			const CFace* pf = pv->getHalfEdge_const(he)->getAttachedFace_const();
+			setMarkedFaces.insert(pf->getFaceIndex());
+		}		
 	}
-	return faceIndex;
+
+	vector<int> vFaces;
+	for(auto iter = begin(setMarkedFaces); iter != end(setMarkedFaces); ++iter)
+		vFaces.push_back(*iter);
+
+	return vFaces;
 }
 
 void CMesh::buildPointerVectors()
@@ -3347,10 +3367,12 @@ std::vector<int> CMesh::getOriginalVertexIndex() const
 	return vret;
 }
 
-std::vector<int> CMesh::getNeighboringVertex( int v, int ring ) const
+std::vector<int> CMesh::getNeighborVertexIndex( int v, int ring ) const
 {
 	if (ring < 0)
 		throw runtime_error("Error: getNeighboringVertex with ring < 0");
+
+	if (ring == 0) return vector<int>();
 
 	list<int> vNeighbor;
 	
@@ -3584,11 +3606,11 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	}
 }
 
-VectorInt CMesh::getRingVertex( int v, int ring ) const
+VectorInt CMesh::getRingVertexIndex( int v, int ring ) const
 {
 	if (ring < 1) 
 		throw logic_error("Error: getRingVertex with ring < 1");
-	std::vector<int> v1 = getNeighboringVertex(v, ring-1), v2 = getNeighboringVertex(v, ring); 
+	std::vector<int> v1 = getNeighborVertexIndex(v, ring-1), v2 = getNeighborVertexIndex(v, ring); 
 
 	std::vector<int> v3;
 	for (auto iter = v2.begin(); iter != v2.end(); ++iter)

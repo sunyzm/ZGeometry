@@ -940,7 +940,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 		for (int ei = 0; ei < tmesh1->getVertex_const(vi)->getValence(); ei++)
 		{
-			const CHalfEdge* he = tmesh1->getVertex_const(vi)->getHalfEdge(ei);
+			const CHalfEdge* he = tmesh1->getVertex_const(vi)->getHalfEdge_const(ei);
 			const int vt = he->getVertexIndex(1);
 			const int vid_t = tmesh1->getVertex_const(vt)->getVID();
 
@@ -1137,7 +1137,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 			int idx = *iter;
 			for (int l = 0; l < tmesh2->getVertex_const(idx)->getValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh2->getVertex_const(idx)->getHalfEdge(l);
+				const CHalfEdge* he = tmesh2->getVertex_const(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -1463,7 +1463,7 @@ void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int up
 			int idx = *iter;
 			for (int l = 0; l < tmesh->getVertex_const(idx)->getValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh->getVertex_const(idx)->getHalfEdge(l);
+				const CHalfEdge* he = tmesh->getVertex_const(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -1707,7 +1707,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 
 		for (int ei = 0; ei < tmesh1->getVertex_const(vi)->getValence(); ei++)
 		{
-			const CHalfEdge* he = tmesh1->getVertex_const(vi)->getHalfEdge(ei);
+			const CHalfEdge* he = tmesh1->getVertex_const(vi)->getHalfEdge_const(ei);
 			const int vt = he->getVertexIndex(1);
 			const int vid_t = tmesh1->getVertex_const(vt)->getVID();
 

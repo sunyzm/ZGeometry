@@ -68,8 +68,9 @@ public:
 	Vector3D			getNormal() const { return m_vNormal; }
 	double				getMeanCurvature() const { return m_vMeanCurvature; }
 	double				getGaussCurvature() const { return m_vGaussCurvature; }
-	std::vector<CFace*> getAdjacentFaces() const;
-	CHalfEdge*			getHalfEdge(int ei) const { return m_HalfEdges[ei]; }
+	std::vector<const CFace*> getAdjacentFaces() const;
+	CHalfEdge*			getHalfEdge(int ei) { return m_HalfEdges[ei]; }
+	const CHalfEdge*    getHalfEdge_const(int ei) const { return m_HalfEdges[ei]; }
 	const Vector3D&		getPosition() const { return m_vPosition; } 
 	int					getValence() const { return m_nValence; }
 	bool				judgeOnBoundary();
@@ -123,6 +124,7 @@ public:
 	// -- operations -- //
 	CHalfEdge& operator = (const CHalfEdge& e);
 	CFace*		getAttachedFace() { return m_Face; }
+	const CFace* getAttachedFace_const() const { return m_Face; }
 	CHalfEdge*  getTwinHalfEdge() { return m_eTwin; }
 	bool		isBoundaryEdge() const { return (m_iTwinEdge == -1); }
 	int			getVertexIndex(int i) const { return m_iVertex[i]; }
@@ -168,14 +170,16 @@ public:
 	void					Create(short s);
 	std::vector<double>		getPlaneFunction();	
 	CVertex*				getVertex(int i) { return m_Vertices[i]; }
-	int						getVertexIndex(int i) const { return m_piVertex[i]; }
-	double					getArea() const;
+	const CVertex*			getVertex_const(int i) const { return m_Vertices[i]; }
+	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
+	double					getArea() const { return m_faceArea; }
+	double					computeArea() const { return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()); }
 	void					calcNormalAndArea();
 	Vector3D				getNormal() const { return m_vNormal; }
 	bool					hasVertex(int vidx) const;
 	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
-
+	int						getFaceIndex() const { return m_fIndex; }
 private:
 	// ---- fields ---- // 
 	Vector3D				m_vNormal;		// normalized face normal
@@ -282,9 +286,9 @@ public:
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	VectorInt	getOriginalVertexIndex() const;
-	VectorInt	getNeighboringVertex(int v, int ring) const;
-	VectorInt   getRingVertex(int v, int ring) const;
-	VectorInt	getVertexAdjacentFacesIndex(int vIdx);
+	VectorInt	getNeighborVertexIndex(int v, int ring) const;
+	VectorInt   getRingVertexIndex(int v, int ring) const;
+	VectorInt	getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
 	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);

@@ -1,6 +1,7 @@
 #include <ctime>
 #include <algorithm>
 #include <cstdio>
+#include <tuple>
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
@@ -362,8 +363,12 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 	return true;
 }
 
-void AnisotropicLaplacian::constructFromMesh( const CMesh* tmesh )
+void AnisotropicLaplacian::constructFromMesh1( const CMesh* tmesh )
 {
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+
 	m_size = tmesh->getMeshSize();
 
 	for (int i = 0; i < m_size; ++i)
@@ -397,5 +402,60 @@ void AnisotropicLaplacian::constructFromMesh( const CMesh* tmesh )
 	}
 	vWeights.resize(m_size, 1.0);	
 	
+	m_bMatrixBuilt = true;
+}
+
+void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, double hPara )
+{
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+
+	int msize = tmesh->getMeshSize();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	for (int vi = 0; vi < msize; ++vi)
+	{
+		const CVertex* pvi = tmesh->getVertex_const(vi); 
+		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		for (int fi = 0; fi < vFaces.size(); fi)
+		{
+			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
+			double face_area = pfi->getArea();
+			for (int k = 0; k < 3; ++k)
+			{
+				int vki = pfi->getVertexIndex(k);
+				if (vki == vi) continue;
+				const CVertex* pvk = pfi->getVertex_const(k);
+				double svalue;
+
+
+
+				vSparseElements.push_back(make_tuple(vi, vki, svalue));
+			}
+		}
+	}
+
+	vector<double> vDiag(msize, 0.);
+
+	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
+	{
+		int ii = std::get<0>(*iter), jj = std::get<1>(*iter);
+		double ss = std::get<2>(*iter);
+		vII.push_back(ii);
+		vJJ.push_back(jj);
+		vSS.push_back(ss);
+		vDiag[ii] += -ss;
+	}
+
+	for (int i = 0; i < msize; ++i)
+	{
+		vII.push_back(i);
+		vJJ.push_back(i);
+		vSS.push_back(vDiag[i]);
+	}
+
+	vWeights.resize(m_size, 1.0);	
+
 	m_bMatrixBuilt = true;
 }

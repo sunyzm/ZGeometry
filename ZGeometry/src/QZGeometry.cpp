@@ -507,7 +507,7 @@ void QZGeometryWindow::deformSimple()
 	vHandle.push_back(activeHandle);
 	vector<Vector3D> vHandlePos;
 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	vector<int> vFree = vMP[0].getMesh_const()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
+	vector<int> vFree = vMP[0].getMesh_const()->getNeighborVertexIndex(activeHandle, DEFAULT_DEFORM_RING);
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
@@ -537,7 +537,7 @@ void QZGeometryWindow::deformLaplace()
 		vHandle.push_back(iter->first);
 		vHandlePos.push_back(iter->second);
 
-		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighborVertexIndex(iter->first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
@@ -575,7 +575,7 @@ void QZGeometryWindow::deformSGW()
 		vHandle.push_back(iter->first);
 		vHandlePos.push_back(iter->second);
 
-		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighboringVertex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = vMP[0].getMesh_const()->getNeighborVertexIndex(iter->first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());	
@@ -1027,7 +1027,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	int ring = (m_commonParameter > PARAMETER_SLIDER_CENTER) ? (m_commonParameter-PARAMETER_SLIDER_CENTER) : 1;
 
 	int ref = vMP[0].getRefPointIndex();
-	std::vector<int> vn = vMP[0].getMesh_const()->getNeighboringVertex(ref, ring);
+	std::vector<int> vn = vMP[0].getMesh_const()->getNeighborVertexIndex(ref, ring);
 //	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
 

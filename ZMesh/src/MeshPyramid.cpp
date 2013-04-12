@@ -59,12 +59,13 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 		const CVertex* pV = originalMesh->m_vVertices[i];
 		// iterate through each face incident on v; 
 		// TODO: consider boundary constraint
-		vector<CFace*> adjFaces = pV->getAdjacentFaces();
+		auto adjFaces = pV->getAdjacentFaces();
 		Quadric q;
-		for (unsigned int j = 0; j < adjFaces.size(); ++j)
-			q += m_FaceQuadrics[adjFaces[j]->m_fIndex];
+		for (auto iter = begin(adjFaces); iter != end(adjFaces); ++iter)
+		{
+			q += m_FaceQuadrics[(*iter)->m_fIndex];
+		}
 		m_VertexQuadrics.push_back(q);
-
 	}
 
 	//add boundary constraints on every boundary edge
