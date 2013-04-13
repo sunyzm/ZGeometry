@@ -101,8 +101,8 @@ void DifferentialMeshProcessor::init_lite(CMesh* tm)
 
 void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
 {
-	mLaplacian.decompose(mhb, nEigFunc, m_ep);
-//	meshKernel->decompose(mhb, nEigFunc, m_ep);
+//	mLaplacian.decompose(mhb, nEigFunc, m_ep);
+	meshKernel.decompose(mhb, nEigFunc, m_ep);
 	this->m_bLaplacianDecomposed = true;
 }
 

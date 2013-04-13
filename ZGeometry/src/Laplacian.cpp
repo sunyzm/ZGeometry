@@ -369,7 +369,7 @@ void AnisotropicLaplacian::constructFromMesh1( const CMesh* tmesh )
 	vJJ.clear();
 	vSS.clear();
 
-	m_size = tmesh->getMeshSize();
+	this->m_size = tmesh->getMeshSize();
 
 	for (int i = 0; i < m_size; ++i)
 	{
@@ -411,10 +411,10 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 	vJJ.clear();
 	vSS.clear();
 
-	int msize = tmesh->getMeshSize();
+	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
-	for (int vi = 0; vi < msize; ++vi)
+	for (int vi = 0; vi < m_size; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
@@ -441,29 +441,29 @@ void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, do
 		}
 	}
 
-	vector<double> vDiag(msize, 0.);
+	vector<double> vDiag(m_size, 0.);
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
 		int ii, jj; double ss;
 		std::tie(ii, jj, ss) = *iter;
 		
-		vII.push_back(ii);
-		vJJ.push_back(jj);
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
 		vSS.push_back(ss);
 		
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < msize; ++i)
+	for (int i = 0; i < m_size; ++i)
 	{
-		vII.push_back(i);
-		vJJ.push_back(i);
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
 		vSS.push_back(vDiag[i]);
 	}
 
 	for (int k = 0; k < vII.size(); ++k)
 	{
-		vSS[k] /= vDiag[vII[k]];
+		vSS[k] /= vDiag[vII[k]-1];
 	}
 
 	vWeights.resize(m_size, 1.0);	
