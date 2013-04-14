@@ -48,7 +48,8 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
-
+	m_currentLaplacian = CotFormula;
+	
 	constrain_weight = 0.1;
 	m_bSGWComputed = false;
 }
@@ -62,6 +63,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
+	m_currentLaplacian = CotFormula;
 
 	constrain_weight = 0.1;
 	m_bSGWComputed = false;
@@ -82,13 +84,13 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	pRef = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	posRef = mesh->getVertex(pRef)->getPosition();
 
-	mLaplacian.constructFromMesh(mesh);
+	vMeshLaplacian[CotFormula].constructFromMesh2(mesh);
 
 	cout << "Time to compute Anisotropic kernel: " << time_call([&](){
 		double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
-		meshKernel.constructFromMesh2(mesh, 1, para1, para1);
+		vMeshLaplacian[Anisotropic1].constructFromMesh3(mesh, 1, para1, para1);
 	}) / 1000. << endl;
-	cout << "Kernel Sparsity: " << meshKernel.vSS.size() / double(m_size*m_size) << endl;
+	cout << "Kernel Sparsity: " << vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 }
 
 void DifferentialMeshProcessor::init_lite(CMesh* tm)
@@ -99,10 +101,14 @@ void DifferentialMeshProcessor::init_lite(CMesh* tm)
 	posRef = mesh->getVertex(0)->getPosition();
 }
 
-void DifferentialMeshProcessor::decomposeLaplacian(int nEigFunc)
+void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
+	
 //	mLaplacian.decompose(mhb, nEigFunc, m_ep);
-	meshKernel.decompose(mhb, nEigFunc, m_ep);
+//	meshKernel.decompose(mhb, nEigFunc, m_ep);
+
+	vMeshLaplacian[laplacianType].decompose(mhb, nEigFunc, m_ep);
+
 	this->m_bLaplacianDecomposed = true;
 }
 
@@ -294,6 +300,8 @@ void DifferentialMeshProcessor::calGeometryDWT()
 
 void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
 {
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+
 	vx.resize(m_size);
 	vy.resize(m_size);
 	vz.resize(m_size);
@@ -427,6 +435,8 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 
 void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
 {
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+
 	vx.resize(m_size);
 	vy.resize(m_size);
 	vz.resize(m_size);
@@ -469,6 +479,8 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 
 void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /* =false */ ) const
 {
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+
 	vx.resize(m_size);
 	vy.resize(m_size);
 	vz.resize(m_size);
@@ -652,6 +664,8 @@ void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vecto
 
 void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
 {
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+
 	if (vHandleIdx.size() != vHandlePos.size())
 		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
 	

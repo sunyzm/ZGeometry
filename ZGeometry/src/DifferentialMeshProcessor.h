@@ -52,7 +52,9 @@ public:
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //
-	void decomposeLaplacian(int nEigFunc);
+	void computeLaplacian(LaplacianType laplacianType = CotFormula);
+	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
+	void selectMHB(LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void calKernelSignature(double timescale, KernelType kernelType, std::vector<double>& values) const;
 	void computeKernelSignature(double timescale, KernelType kernelType);
@@ -101,10 +103,14 @@ private:
 	bool m_bSGWComputed;
 	bool m_bLaplacianDecomposed;		// mhb available
 
-	Laplacian mLaplacian;
+//	Laplacian mLaplacian;
+//	MeshLaplacian meshKernel;
 	ManifoldHarmonics mhb;	
-	AnisotropicLaplacian meshKernel;
 
+	int	m_currentLaplacian;
+	MeshLaplacian vMeshLaplacian[LaplacianEnd];
+	ManifoldHarmonics vMHB[LaplacianEnd];
+	
 	int pRef;
 	Vector3D posRef;
 	std::vector<MeshFeature*>* pvActiveFeatures;	

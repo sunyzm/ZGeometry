@@ -5,6 +5,8 @@
 #include <engine.h>
 #include <ZMesh.h>
 
+enum LaplacianType {Umbrella, CotFormula, Anisotropic1, Anisotropic2, LaplacianEnd};
+
 class ManifoldBasis
 {
 public:
@@ -20,6 +22,7 @@ public:
 	void read(const std::string& meshPath);
 	MeshFunction getManifoldHarmonic(int k) const;
 	void dumpEigenValues(const std::string& evlPath) const;
+	bool empty() const { return m_func.empty(); }
 public:
 	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
 	int m_size;	    // shape size
@@ -52,26 +55,24 @@ public:
 class Laplacian : public SparseMeshMatrix
 {
 public:
-	enum LaplacianType {Umbrella, CotFormula} m_laplacianType;
-
-public:
-	Laplacian() : m_laplacianType(CotFormula) {}
-	void setLaplacianType(LaplacianType lt) { m_laplacianType = lt; }
+	Laplacian(){}
 	void constructFromMesh(const CMesh* tmesh);
 };
 
 class ManifoldLaplaceHarmonics : public ManifoldHarmonics
 {
 public:
-	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type = Laplacian::CotFormula);
+	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc);
 };
 
-class AnisotropicLaplacian : public SparseMeshMatrix
+class MeshLaplacian : public SparseMeshMatrix
 {
 public:
-	AnisotropicLaplacian() : anisotropicType(0) {}
-	void constructFromMesh1(const CMesh* tmesh);
-	void constructFromMesh2(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
-	int anisotropicType; 
-	void setAnisotropicType(int a) { anisotropicType = a; }
+	MeshLaplacian() {}
+	void constructFromMesh1(const CMesh* tmesh);	// COT formula
+	void constructFromMesh2(const CMesh* tmesh);	// graph Laplacian
+	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
+	void constructFromMesh4(const CMesh* tmesh);	
+
+	LaplacianType m_laplacianType;
 };

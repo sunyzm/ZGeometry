@@ -224,62 +224,19 @@ void SparseMeshMatrix::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep )
 
 void Laplacian::constructFromMesh( const CMesh* tmesh )
 {
-//	m_laplacianType = CotFormula;	// already set in contructors
-
 	this->m_size = tmesh->getVerticesNum();
-	
-	vector<double> diagW;
-	diagW.resize(m_size, 0);
 
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-	vWeights.clear();
+	this->vII.clear();
+	this->vJJ.clear();
+	this->vSS.clear();
+	this->vWeights.clear();
 
-	if(m_laplacianType == CotFormula)
-	{
-// 		for(int k = 0; k < m_size; k++)	//for each vertex
-// 		{
-// 			double Av;
-// 			tmesh->calVertexLBO2(k, vII, vJJ, vSS, Av, diagW);
-// 			vWeights.push_back(Av);		//mixed area as weight of each vertex
-// 		}
-// 		for(int k = 0; k < m_size; k++)
-// 		{
-// 			vII.push_back(k+1);
-// 			vJJ.push_back(k+1);
-// 			vSS.push_back(diagW[k]);
-// 		}
-
-		tmesh->calLBO(vII, vJJ, vSS, vWeights);
-	}
-	else if (m_laplacianType == Umbrella)
-	{
-		for (int i = 0; i < m_size; ++i)
-		{
-			const CVertex* vi = tmesh->getVertex_const(i);
-			vector<int> vNeighbors;
-			tmesh->VertexNeighborRing(i, 1, vNeighbors);
-			int valence = vNeighbors.size();
-
-			for (int j = 0; j < valence; ++j)
-			{
-				vII.push_back(i+1);
-				vJJ.push_back(vNeighbors[j]+1);
-				vSS.push_back(-1.0);
-			}
-			vII.push_back(i+1);
-			vJJ.push_back(i+1);
-			vSS.push_back(valence);
-		}
-
-		vWeights.resize(m_size, 1.0);
-	}
+	tmesh->calLBO(vII, vJJ, vSS, vWeights);
 
 	m_bMatrixBuilt = true;
 }
 
-bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc, Laplacian::LaplacianType lbo_type /*= Laplacian::CotFormula*/ )
+bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc )
 {
 	m_func.clear();
 
@@ -298,16 +255,14 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 	vector<double> SSv;
 	vector<double> diagW;
 	diagW.resize(nVertex, 0);
-
-	if(lbo_type == Laplacian::CotFormula)
+	
+	for(int i = 0; i < nVertex; i++)	//for each vertex
 	{
-		for(int i = 0; i < nVertex; i++)	//for each vertex
-		{
-			double Av;
-			tmesh->calVertexLBO(i, IIv, JJv, SSv, Av, diagW);
-			aa[i] = Av;		//mixed area
-		}
+		double Av;
+		tmesh->calVertexLBO(i, IIv, JJv, SSv, Av, diagW);
+		aa[i] = Av;		//mixed area
 	}
+	
 	for(int i = 0; i < nVertex; i++)
 	{
 		IIv.push_back(i+1);
@@ -363,7 +318,121 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 	return true;
 }
 
-void AnisotropicLaplacian::constructFromMesh1( const CMesh* tmesh )
+void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
+{
+	this->m_size = tmesh->getVerticesNum();
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+	vWeights.clear();
+
+	tmesh->calLBO(vII, vJJ, vSS, vWeights);
+
+	m_bMatrixBuilt = true;
+	m_laplacianType = CotFormula;
+}
+
+void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
+{
+	this->m_size = tmesh->getVerticesNum();
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+	vWeights.clear();
+	
+	for (int i = 0; i < m_size; ++i)
+	{
+		const CVertex* vi = tmesh->getVertex_const(i);
+		vector<int> vNeighbors;
+		tmesh->VertexNeighborRing(i, 1, vNeighbors);
+		int valence = vNeighbors.size();
+
+		for (int j = 0; j < valence; ++j)
+		{
+			vII.push_back(i+1);
+			vJJ.push_back(vNeighbors[j]+1);
+			vSS.push_back(-1.0);
+		}
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(valence);
+	}
+
+	vWeights.resize(m_size, 1.0);
+
+	m_bMatrixBuilt = true;
+	m_laplacianType = Umbrella;
+}
+
+void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
+{
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+
+	this->m_size = tmesh->getMeshSize();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	for (int vi = 0; vi < m_size; ++vi)
+	{
+		const CVertex* pvi = tmesh->getVertex_const(vi); 
+		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		for (int fi = 0; fi < vFaces.size(); ++fi)
+		{
+			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
+			double face_area = pfi->getArea();
+			for (int k = 0; k < 3; ++k)
+			{
+				int vki = pfi->getVertexIndex(k);
+				if (vki == vi) continue;
+				const CVertex* pvk = pfi->getVertex_const(k);
+
+				//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
+				//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+
+				double svalue = w1 * w2;
+				svalue *= face_area;
+
+				vSparseElements.push_back(make_tuple(vi, vki, svalue));
+			}
+		}
+	}
+
+	vector<double> vDiag(m_size, 0.);
+	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
+	{
+		int ii, jj; double ss;
+		std::tie(ii, jj, ss) = *iter;
+
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
+		vSS.push_back(ss);
+
+		vDiag[ii] += -ss;
+	}
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(vDiag[i]);
+	}
+
+	for (int k = 0; k < vII.size(); ++k)
+	{
+		vSS[k] /= vDiag[vII[k]-1];
+	}
+
+	vWeights.resize(m_size, 1.0);	
+
+	m_bMatrixBuilt = true;
+}
+
+void MeshLaplacian::constructFromMesh4( const CMesh* tmesh )
 {
 	vII.clear();
 	vJJ.clear();
@@ -400,72 +469,6 @@ void AnisotropicLaplacian::constructFromMesh1( const CMesh* tmesh )
 		vJJ.push_back(i+1);
 		vSS.push_back(1.);
 	}
-	vWeights.resize(m_size, 1.0);	
-	
-	m_bMatrixBuilt = true;
-}
-
-void AnisotropicLaplacian::constructFromMesh2( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
-{
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-
-	this->m_size = tmesh->getMeshSize();
-	vector<std::tuple<int,int,double> > vSparseElements;
-
-	for (int vi = 0; vi < m_size; ++vi)
-	{
-		const CVertex* pvi = tmesh->getVertex_const(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
-		for (int fi = 0; fi < vFaces.size(); ++fi)
-		{
-			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
-			double face_area = pfi->getArea();
-			for (int k = 0; k < 3; ++k)
-			{
-				int vki = pfi->getVertexIndex(k);
-				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex_const(k);
-
-//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
-//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-
-				double svalue = w1 * w2;
-				svalue *= face_area;
-
-				vSparseElements.push_back(make_tuple(vi, vki, svalue));
-			}
-		}
-	}
-
-	vector<double> vDiag(m_size, 0.);
-	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
-	{
-		int ii, jj; double ss;
-		std::tie(ii, jj, ss) = *iter;
-		
-		vII.push_back(ii+1);
-		vJJ.push_back(jj+1);
-		vSS.push_back(ss);
-		
-		vDiag[ii] += -ss;
-	}
-
-	for (int i = 0; i < m_size; ++i)
-	{
-		vII.push_back(i+1);
-		vJJ.push_back(i+1);
-		vSS.push_back(vDiag[i]);
-	}
-
-	for (int k = 0; k < vII.size(); ++k)
-	{
-		vSS[k] /= vDiag[vII[k]-1];
-	}
-
 	vWeights.resize(m_size, 1.0);	
 
 	m_bMatrixBuilt = true;
