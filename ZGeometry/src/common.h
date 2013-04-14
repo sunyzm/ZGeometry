@@ -1,3 +1,3 @@
 #pragma once
 
-enum GeometryTask {TASK_VIEWING, TASK_REGISTRATION, TASK_EDITING};
+enum GeometryTask {TASK_VIEWING = 0, TASK_REGISTRATION = 1, TASK_EDITING = 2};

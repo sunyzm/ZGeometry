@@ -96,21 +96,19 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-
+	void decomposeSingleLaplacian(int obj);
 	// helper functions
 	void evalDistance();
 	
 private:	// attributes
 	Ui::ZGeometryClass ui;
 	DeformType deformType;
-//	QString statusBarMsg;
-	int totalShapeNum;
 	int objSelect;
 
 	Engine *m_ep;
 	int num_preload_meshes;
 
-	CMesh mesh1, mesh2;
+	CMesh m_mesh[2];
 	bool selected[2];
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
@@ -122,7 +120,6 @@ private:	// attributes
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW, None} current_operation;
-
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;
 	static int DEFAULT_DEFORM_RING; 

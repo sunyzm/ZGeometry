@@ -21,8 +21,7 @@ using namespace std;
 
 extern OutputHelper qout;
 extern SimpleConfigLoader g_configMgr;
-
-GeometryTask g_task = TASK_REGISTRATION;
+extern GeometryTask g_task;
 
 int QZGeometryWindow::DEFAULT_EIGEN_SIZE = 300;
 int QZGeometryWindow::DEFAULT_DEFORM_RING = 5 ;
@@ -38,14 +37,12 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
-	num_preload_meshes = 2;
-	totalShapeNum = 1;
+	num_preload_meshes = 1;
 
 	//* read in configuration parameters from g_configMgr *//
 	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
 	PARAMETER_SLIDER_CENTER = g_configMgr.getConfigValueInt("PARAMETER_SLIDER_CENTER");
 	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
-	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
 
 	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = PARAMETER_SLIDER_CENTER;
@@ -167,18 +164,23 @@ bool QZGeometryWindow::initialize()
 	std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 #endif
 
-	if (!(m_ep = engOpen("\0")))
+	int eng_open_time = time_call([&](){
+		m_ep = engOpen("\0");
+	});
+
+	if (!m_ep)
 	{
 		qout.output("Can't start MATLAB engine!", OUT_MSGBOX);
 		return false;
 	}
-	else qout.output("Matlab engine initialized!", OUT_TERMINAL);
+	else qout.output(QString().sprintf("Matlab engine initialized! (%fs)", eng_open_time/1000.), OUT_TERMINAL);
 	qout.output('*', 24);
 	
 	setDisplayMesh();
 	setEditModeMove();
 
 	//// ---- load meshes ---- ////
+	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
 
 	ifstream meshfiles(mesh_list_name);
 	if (!meshfiles)
@@ -196,65 +198,40 @@ bool QZGeometryWindow::initialize()
 		else vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
-	if (vMeshFiles.empty())
+	if (vMeshFiles.size() < num_preload_meshes)
 	{
-		qout.output("MeshFiles list empty!", OUT_MSGBOX);
+		qout.output("Not enough meshes found!", OUT_MSGBOX);
 		return false;
 	}
 
-	if (num_preload_meshes >= 1)
+	CStopWatch timer;
+	timer.startTimer();
+	Concurrency::parallel_for(0, num_preload_meshes, [&](int obj)
 	{
-		try {
-			mesh1.Load(vMeshFiles.front());
-		}
-		catch (runtime_error* e) {
-			qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
-			return false;
-		}
-		vMeshFiles.pop_front();
-		mesh1.scaleEdgeLenToUnit();
-		mesh1.gatherStatistics();
-		Vector3D center1 = mesh1.getCenter(), bbox1 = mesh1.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh1.getMeshName().c_str(), mesh1.getVerticesNum()), OUT_CONSOLE);
-		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center1.x, center1.y, center1.z, bbox1.x, bbox1.y, bbox1.z), OUT_CONSOLE);
-		vMP[0].init(&mesh1, m_ep);
-		vRS[0].mesh_color = preset_colors[0];
-		ui.glMeshWidget->addMesh(&vMP[0], &vRS[0]);
-		mesh_valid[0] = true;
-	}
-	
-	if (num_preload_meshes == 2 && !vMeshFiles.empty())
+		CMesh& mesh = m_mesh[obj];
+		mesh.Load(vMeshFiles[obj]);
+		mesh.scaleEdgeLenToUnit();
+		mesh.gatherStatistics();
+	});
+	timer.stopTimer();
+	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
+
+	for (int obj = 0; obj < num_preload_meshes; ++obj)
 	{
-		try {
-			mesh2.Load(vMeshFiles.front());
-		}
-		catch (runtime_error *e) {
-			qout.output("Cannot open " + vMeshFiles.front() + ": " + e->what(), OUT_MSGBOX);
-			return false;
-		}
-		vMeshFiles.pop_front();
-		mesh2.scaleEdgeLenToUnit();
-		mesh2.gatherStatistics();
-		Vector3D center2 = mesh2.getCenter(), bbox2 = mesh2.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()), OUT_CONSOLE);
-		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center2.x, center2.y, center2.z, bbox2.x, bbox2.y, bbox2.z), OUT_CONSOLE);
-		vMP[1].init(&mesh2, m_ep);
-		vRS[1].mesh_color = preset_colors[1];
-		ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
-		mesh_valid[1] = true;
+		CMesh& mesh = m_mesh[obj];
+		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
+		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
+		vMP[obj].init(&mesh, m_ep);
+		vRS[obj].mesh_color = preset_colors[obj];
+		ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
+		mesh_valid[obj] = true;
 	}
 
-/*	ifstream ifcoord("output/coordtrans4.dat");
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
-	{
-		double x(0),y(0),z(0);
-		ifcoord >> x >> y >> z;
-		if (i < 5) 
-			qout.output("vertex: " + QString::number(x) + "," + QString::number(y) + "," + QString::number(z));
-		mesh1.m_pVertex[i].m_vPosition = Vector3D(x,y,z);
-	}
-//*/
+	timer.startTimer();
 	decomposeLaplacian();
+	timer.stopTimer();
+	cout << "Time to decompose Laplacian: " << timer.getElapsedTime() << "s" << endl;
 	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
 	//	vMP[0].mLaplacian.dumpLaplacian("output/sparse_laplacian.csv");
 	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
@@ -262,19 +239,19 @@ bool QZGeometryWindow::initialize()
 	// ---- update ui ---- //
 	if (mesh_valid[0])
 	{
-		ui.glMeshWidget->fieldView(mesh1.getCenter(), mesh1.getBoundingBox());
+		ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mesh1.getVerticesNum()-1);
+		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mesh1.getVerticesNum()-1);
+		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
 	}
 	if (mesh_valid[1])
 	{
 		ui.spinBox1->setValue(0);	
 		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(mesh2.getVerticesNum()-1);
+		ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
 		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(mesh2.getVerticesNum()-1);
+		ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
 		ui.spinBox2->setValue(0);
 	}
 
@@ -430,37 +407,20 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 void QZGeometryWindow::decomposeLaplacian()
 {
-	for (int obj = 0; obj < 2; ++obj)
+	if (LOAD_MHB_CACHE)
 	{
-		if (!mesh_valid[obj]) continue;
-		DifferentialMeshProcessor& mp = vMP[obj];
-		
-		QTime timer;
-		timer.start();
-
-		std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb";
-		ifstream ifs(pathMHB.c_str());
-		if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
+		Concurrency::parallel_for(0, num_preload_meshes, [&](int obj)
 		{
-			mp.readMHB(pathMHB);
-			ifs.close();
-		}
-		else // need to compute Laplacian and to cache
+			decomposeSingleLaplacian(obj);
+		});
+	}
+	else
+	{
+		for (int obj = 0; obj < num_preload_meshes; ++obj)
 		{
-			int nEig = min(DEFAULT_EIGEN_SIZE, mesh1.getVerticesNum()-1);
-			
-			mp.decomposeLaplacian(nEig);
-			mp.writeMHB(pathMHB);
-			qout.output("MHB saved to " + pathMHB);
-
-			std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
-			mp.getMHB().dumpEigenValues(pathEVL);
+			decomposeSingleLaplacian(obj);
 		}
-		
-		qout.output("Laplacian decomposed in " + QString::number(timer.elapsed()/1000.0) + " (s)");
-		qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
-	}	
-
+	}
 	ui.actionDecomposeLaplacian->setChecked(true);	
 }
 
@@ -510,8 +470,8 @@ void QZGeometryWindow::deformSimple()
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
-	mesh2.setVertexCoordinates(vFree, vNewPos);
-	mesh2.setVertexCoordinates(vHandle, vHandlePos);
+	m_mesh[1].setVertexCoordinates(vFree, vNewPos);
+	m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
 
 	deformType = Simple;
 	ui.glMeshWidget->update();
@@ -544,8 +504,8 @@ void QZGeometryWindow::deformLaplace()
 	try
 	{
 		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
-		mesh2.setVertexCoordinates(vFree, vNewPos);
-		mesh2.setVertexCoordinates(vHandle, vHandlePos);
+		m_mesh[1].setVertexCoordinates(vFree, vNewPos);
+		m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -582,8 +542,8 @@ void QZGeometryWindow::deformSGW()
 	try
 	{
 		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
-		mesh2.setVertexCoordinates(vFree, vNewPos);
-		mesh2.setVertexCoordinates(vHandle, vHandlePos);
+		m_mesh[1].setVertexCoordinates(vFree, vNewPos);
+		m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -867,14 +827,14 @@ void QZGeometryWindow::displayCurvatureGauss()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	assert(mesh1.getVerticesNum() == mesh2.getVerticesNum());
-	int size = mesh1.getVerticesNum();
+	assert(m_mesh[0].getVerticesNum() == m_mesh[1].getVerticesNum());
+	int size = m_mesh[0].getVerticesNum();
 	vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
 	{
-		vDiff[i] = (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length() / mesh1.getAvgEdgeLength();
+		vDiff[i] = (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length() / m_mesh[0].getAvgEdgeLength();
 	}
 
 	vRS[0].normalizeSignatureFrom(vDiff);
@@ -901,13 +861,13 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 
 void QZGeometryWindow::clone()
 {
-	mesh2.cloneFrom(mesh1);
-	mesh2.gatherStatistics();
+	m_mesh[1].cloneFrom(m_mesh[0]);
+	m_mesh[1].gatherStatistics();
 
-	vMP[1].init(&mesh2, m_ep);
+	vMP[1].init(&m_mesh[1], m_ep);
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mesh2.getMeshName().c_str(), mesh2.getVerticesNum()));
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", m_mesh[1].getMeshName().c_str(), m_mesh[1].getVerticesNum()));
 	
 	//	vector<double> vx, vy, vz;
 	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -948,15 +908,15 @@ void QZGeometryWindow::reconstructMHB()
 
 	vector<double> vx, vy, vz;
 	vMP[0].reconstructByMHB(nEig, vx, vy, vz);
-	mesh2.setVertexCoordinates(vx, vy, vz);
+	m_mesh[1].setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->update();
 
 	double errorSum(0);
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
+		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
 	qout.output("Average position error: " + QString::number(errorSum));
 
@@ -983,22 +943,22 @@ void QZGeometryWindow::reconstructSGW()
 	timer.stopTimer();
 	qout.output(QString("SGW reconstruct time: ") + QString::number(timer.getElapsedTime()));
 
-	mesh2.setVertexCoordinates(vx, vy, vz);
+	m_mesh[1].setVertexCoordinates(vx, vy, vz);
 
 	{
 		int debugIdx = (*vMP[0].mHandles.begin()).first;
-		qout.output("Original pos: " + std::string(mesh1.getVertex(debugIdx)->getPosition()));
+		qout.output("Original pos: " + std::string(m_mesh[0].getVertex(debugIdx)->getPosition()));
 		if (!vMP[0].mHandles.empty())
 			qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
-		qout.output("Deformed pos: " + std::string(mesh2.getVertex(debugIdx)->getPosition()));
+		qout.output("Deformed pos: " + std::string(m_mesh[1].getVertex(debugIdx)->getPosition()));
 	}
 
 	double errorSum(0);
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
+		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1008,14 +968,14 @@ void QZGeometryWindow::filterExperimental()
 {
 	vector<double> vx, vy, vz;
 	vMP[0].filterBySGW(vx, vy, vz);
-	mesh2.setVertexCoordinates(vx, vy, vz);
+	m_mesh[1].setVertexCoordinates(vx, vy, vz);
 
 	double errorSum(0);
-	for (int i = 0; i < mesh1.getVerticesNum(); ++i)
+	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
 	{
-		errorSum += (mesh1.getVertex_const(i)->getPosition() - mesh2.getVertex_const(i)->getPosition()).length();
+		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mesh1.getVerticesNum() * mesh1.getAvgEdgeLength();
+	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1318,7 +1278,7 @@ void QZGeometryWindow::detectFeatures()
 	{
 		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
 		{
-			if (std::abs(iter->m_index - iter2->m_index) <= 1 || mesh2.isInNeighborRing(iter->m_index, iter2->m_index, 1))
+			if (std::abs(iter->m_index - iter2->m_index) <= 1 || m_mesh[1].isInNeighborRing(iter->m_index, iter2->m_index, 1))
 			{
 				count_possible++;
 				break;
@@ -1364,7 +1324,7 @@ void QZGeometryWindow::matchFeatures()
 	if (force_matching)
 	{
 		string string_override = "";
-		if (mesh1.getMeshName() == "horse0")
+		if (m_mesh[0].getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
 		}
@@ -1415,7 +1375,7 @@ void QZGeometryWindow::registerStep()
 	/* ---- evaluation ---- */
 	double vError[3];
 	for(int k = 0; k < 2; ++k) { 
-		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &mesh1, &mesh2, shapeMatcher.m_randPairs, 200 * k);
+		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
 	}
 
 	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
@@ -1493,3 +1453,37 @@ void QZGeometryWindow::evalDistance()
 //  timer.stopTimer();
 //  cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 }
+
+void QZGeometryWindow::decomposeSingleLaplacian( int obj )
+{
+	if (!mesh_valid[obj]) return;
+	DifferentialMeshProcessor& mp = vMP[obj];
+	const CMesh& mesh = m_mesh[obj];
+
+	CStopWatch timer;
+	timer.startTimer();
+
+	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb";
+	ifstream ifs(pathMHB.c_str());
+	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
+	{
+		mp.readMHB(pathMHB);
+		ifs.close();
+	}
+	else // need to compute Laplacian and to cache
+	{
+		int nEig = min(DEFAULT_EIGEN_SIZE, mesh.getVerticesNum()-1);
+
+		mp.decomposeLaplacian(nEig);
+		mp.writeMHB(pathMHB);
+		qout.output("MHB saved to " + pathMHB);
+
+		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
+		mp.getMHB().dumpEigenValues(pathEVL);
+	}
+
+	timer.stopTimer();
+	qout.output(QString().sprintf("Laplacian %d decomposed in %f(s)", obj, timer.getElapsedTime()));
+	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
+}
+

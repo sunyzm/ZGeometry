@@ -11,8 +11,9 @@ void SimpleConfigLoader::load( const std::string& config_file_path )
 	while (ifs)
 	{
 		string sline;
-		getline(ifs, sline);
+		getline(ifs, sline);	
 		if (sline.empty() || sline[0] == '#') continue;
+		sline = sline.substr(0, sline.find('#'));
 
 		size_t sep = sline.find('=');
 		if (sep == string::npos) continue;	// no '=' is found

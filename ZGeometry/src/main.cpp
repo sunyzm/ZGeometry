@@ -4,6 +4,7 @@
 #include <QGLFormat>
 #include <SimpleConfigLoader.h>
 #include "OutputHelper.h"
+#include "common.h"
 
 #if _MSC_VER < 1600
 #error VC++ 2010 or later required.
@@ -11,6 +12,7 @@
 
 SimpleConfigLoader g_configMgr("configs.txt");
 OutputHelper qout;
+GeometryTask g_task = TASK_REGISTRATION;
 
 int main(int argc, char *argv[])
 {
@@ -18,8 +20,9 @@ int main(int argc, char *argv[])
 
 	QGLFormat fmt;
 	fmt.setProfile(QGLFormat::CompatibilityProfile);
-//	fmt.setVersion(4, 3);
 	QGLFormat::setDefaultFormat(fmt);
+	
+	g_task = (GeometryTask)g_configMgr.getConfigValueInt("GEOMETRY_TASK");
 
 	QZGeometryWindow w;
 	if (!w.initialize()) exit(-1);
