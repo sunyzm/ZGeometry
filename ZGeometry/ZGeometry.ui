@@ -310,7 +310,11 @@
     <property name="title">
      <string>Compute</string>
     </property>
-    <addaction name="actionDecomposeLaplacian"/>
+    <addaction name="actionComputeLaplacian1"/>
+    <addaction name="actionComputeLaplacian2"/>
+    <addaction name="actionComputeLaplacian3"/>
+    <addaction name="actionComputeLaplacian4"/>
+    <addaction name="separator"/>
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHKSFeatures"/>
@@ -355,9 +359,9 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionDecomposeLaplacian">
+  <action name="actionComputeLaplacian1">
    <property name="checkable">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Laplacian + MHB</string>
@@ -697,6 +701,21 @@
   <action name="actionDisplayBiharmonic">
    <property name="text">
     <string>Biharmonic</string>
+   </property>
+  </action>
+  <action name="actionComputeLaplacian2">
+   <property name="text">
+    <string>Laplacian2</string>
+   </property>
+  </action>
+  <action name="actionComputeLaplacian3">
+   <property name="text">
+    <string>Laplacian3</string>
+   </property>
+  </action>
+  <action name="actionComputeLaplacian4">
+   <property name="text">
+    <string>Laplacian4</string>
    </property>
   </action>
  </widget>

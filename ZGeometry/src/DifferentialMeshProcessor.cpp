@@ -83,14 +83,6 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	m_size = mesh->getVerticesNum();
 	pRef = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	posRef = mesh->getVertex(pRef)->getPosition();
-
-	vMeshLaplacian[CotFormula].constructFromMesh2(mesh);
-
-	cout << "Time to compute Anisotropic kernel: " << time_call([&](){
-		double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
-		vMeshLaplacian[Anisotropic1].constructFromMesh3(mesh, 1, para1, para1);
-	}) / 1000. << endl;
-	cout << "Kernel Sparsity: " << vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 }
 
 void DifferentialMeshProcessor::init_lite(CMesh* tm)
@@ -107,12 +99,13 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType 
 //	mLaplacian.decompose(mhb, nEigFunc, m_ep);
 //	meshKernel.decompose(mhb, nEigFunc, m_ep);
 
-	vMeshLaplacian[laplacianType].decompose(mhb, nEigFunc, m_ep);
+	vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, m_ep);
+	mhb = vMHB[laplacianType];
 
 	this->m_bLaplacianDecomposed = true;
 }
 
-void DifferentialMeshProcessor::readMHB( const std::string& path )
+void DifferentialMeshProcessor::readMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ifstream ifs(path, ios::binary);
 	ifs.seekg (0, ios::end);
@@ -135,10 +128,11 @@ void DifferentialMeshProcessor::readMHB( const std::string& path )
 	}
 	delete []buffer;
 
+	vMHB[laplacianType] = mhb;
 	this->m_bLaplacianDecomposed = true;
 }
 
-void DifferentialMeshProcessor::writeMHB(std::string path)
+void DifferentialMeshProcessor::writeMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ofstream ofs(path.c_str(), ios::trunc);
 	ofs << mhb.m_nEigFunc << endl;

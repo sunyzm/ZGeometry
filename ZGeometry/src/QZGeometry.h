@@ -31,7 +31,10 @@ private slots:
 	void setEditModePick();
 	void setEditModeDrag();
 
-	void decomposeLaplacian(); 
+	void computeLaplacian1(); 
+	void computeLaplacian2();
+	void computeLaplacian3();
+	void computeLaplacian4();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -96,7 +99,7 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void decomposeSingleLaplacian(int obj);
+	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
 	// helper functions
 	void evalDistance();
 	
@@ -106,7 +109,7 @@ private:	// attributes
 	int objSelect;
 
 	Engine *m_ep;
-	int num_preload_meshes;
+	int num_meshes;
 
 	CMesh m_mesh[2];
 	bool selected[2];

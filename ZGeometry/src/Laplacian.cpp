@@ -327,21 +327,6 @@ void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
 	vSS.clear();
 	vWeights.clear();
 
-	tmesh->calLBO(vII, vJJ, vSS, vWeights);
-
-	m_bMatrixBuilt = true;
-	m_laplacianType = CotFormula;
-}
-
-void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
-{
-	this->m_size = tmesh->getVerticesNum();
-
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-	vWeights.clear();
-	
 	for (int i = 0; i < m_size; ++i)
 	{
 		const CVertex* vi = tmesh->getVertex_const(i);
@@ -364,6 +349,21 @@ void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
 
 	m_bMatrixBuilt = true;
 	m_laplacianType = Umbrella;
+}
+
+void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
+{
+	this->m_size = tmesh->getVerticesNum();
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+	vWeights.clear();
+
+	tmesh->calLBO(vII, vJJ, vSS, vWeights);
+
+	m_bMatrixBuilt = true;
+	m_laplacianType = CotFormula;
 }
 
 void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
@@ -389,10 +389,10 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex_const(k);
 
-				//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
-				//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+//				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
 
 				double svalue = w1 * w2;
 				svalue *= face_area;

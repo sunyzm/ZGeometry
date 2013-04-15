@@ -47,8 +47,8 @@ public:
 	~DifferentialMeshProcessor(void);
 	void init(CMesh* tm, Engine* e);
 	void init_lite(CMesh* tm);
-	void readMHB(const std::string& path);
-	void writeMHB(std::string path);
+	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //
@@ -91,6 +91,7 @@ public:
 	const std::vector<MeshFeature*>* getActiveFeatures() const { return pvActiveFeatures; }
 	void setActiveFeatures(std::vector<MeshFeature*>* pvMF) { pvActiveFeatures = pvMF; }
 	void setActiveFeaturesByID(int feature_id);
+	void setActiveMHB(LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
 public:
 	int active_handle;
 	std::map<int, Vector3D> mHandles;
@@ -108,9 +109,10 @@ private:
 	ManifoldHarmonics mhb;	
 
 	int	m_currentLaplacian;
+public:
 	MeshLaplacian vMeshLaplacian[LaplacianEnd];
 	ManifoldHarmonics vMHB[LaplacianEnd];
-	
+private:	
 	int pRef;
 	Vector3D posRef;
 	std::vector<MeshFeature*>* pvActiveFeatures;	

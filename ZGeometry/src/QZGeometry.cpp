@@ -37,7 +37,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
-	num_preload_meshes = 1;
+	num_meshes = 1;
 
 	//* read in configuration parameters from g_configMgr *//
 	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
@@ -72,7 +72,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	
 	////////	compute	////////
-	QObject::connect(ui.actionDecomposeLaplacian, SIGNAL(triggered()), this, SLOT(decomposeLaplacian()));
+	QObject::connect(ui.actionComputeLaplacian1, SIGNAL(triggered()), this, SLOT(computeLaplacian1()));
+	QObject::connect(ui.actionComputeLaplacian2, SIGNAL(triggered()), this, SLOT(computeLaplacian2()));
+	QObject::connect(ui.actionComputeLaplacian3, SIGNAL(triggered()), this, SLOT(computeLaplacian3()));
+	QObject::connect(ui.actionComputeLaplacian4, SIGNAL(triggered()), this, SLOT(computeLaplacian4()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -180,8 +183,11 @@ bool QZGeometryWindow::initialize()
 	setEditModeMove();
 
 	//// ---- load meshes ---- ////
-	num_preload_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
-
+	if (g_task == TASK_EDITING)
+		num_meshes = 1;
+	else 
+		num_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
+	
 	ifstream meshfiles(mesh_list_name);
 	if (!meshfiles)
 	{
@@ -198,7 +204,7 @@ bool QZGeometryWindow::initialize()
 		else vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
-	if (vMeshFiles.size() < num_preload_meshes)
+	if (vMeshFiles.size() < num_meshes)
 	{
 		qout.output("Not enough meshes found!", OUT_MSGBOX);
 		return false;
@@ -206,7 +212,7 @@ bool QZGeometryWindow::initialize()
 
 	CStopWatch timer;
 	timer.startTimer();
-	Concurrency::parallel_for(0, num_preload_meshes, [&](int obj)
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
 	{
 		CMesh& mesh = m_mesh[obj];
 		mesh.Load(vMeshFiles[obj]);
@@ -216,7 +222,7 @@ bool QZGeometryWindow::initialize()
 	timer.stopTimer();
 	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
 
-	for (int obj = 0; obj < num_preload_meshes; ++obj)
+	for (int obj = 0; obj < num_meshes; ++obj)
 	{
 		CMesh& mesh = m_mesh[obj];
 		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
@@ -229,7 +235,7 @@ bool QZGeometryWindow::initialize()
 	}
 
 	timer.startTimer();
-	decomposeLaplacian();
+	computeLaplacian2();	// CotFormula
 	timer.stopTimer();
 	cout << "Time to decompose Laplacian: " << timer.getElapsedTime() << "s" << endl;
 	//	qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].mLaplacian.getNonzeroNum()));
@@ -264,11 +270,13 @@ bool QZGeometryWindow::initialize()
 	selected[0] = vRS[0].selected = true;
 	selected[1] = vRS[1].selected = false; 
 
-	shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
-
-	string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
-	shapeMatcher.readInRandPair(rand_data_file);
-	ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
+	if (g_task == TASK_REGISTRATION)
+	{
+		shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
+		string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
+		shapeMatcher.readInRandPair(rand_data_file);
+		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
+	}
 
 //	evalDistance();
 	return true;
@@ -403,25 +411,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	default: QWidget::keyPressEvent(event);
 	}
-}
-
-void QZGeometryWindow::decomposeLaplacian()
-{
-	if (LOAD_MHB_CACHE)
-	{
-		Concurrency::parallel_for(0, num_preload_meshes, [&](int obj)
-		{
-			decomposeSingleLaplacian(obj);
-		});
-	}
-	else
-	{
-		for (int obj = 0; obj < num_preload_meshes; ++obj)
-		{
-			decomposeSingleLaplacian(obj);
-		}
-	}
-	ui.actionDecomposeLaplacian->setChecked(true);	
 }
 
 void QZGeometryWindow::computeSGWSFeatures()
@@ -1454,28 +1443,36 @@ void QZGeometryWindow::evalDistance()
 //  cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj )
+void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (!mesh_valid[obj]) return;
 	DifferentialMeshProcessor& mp = vMP[obj];
 	const CMesh& mesh = m_mesh[obj];
 
+	if (!mp.vMHB[laplacianType].empty()) 
+	{
+		mp.setActiveMHB(laplacianType);
+		return;
+	}
+
 	CStopWatch timer;
 	timer.startTimer();
 
-	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb";
+	string s_idx = "0";
+	s_idx[0] += (int)laplacianType;
+	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	ifstream ifs(pathMHB.c_str());
 	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
 	{
-		mp.readMHB(pathMHB);
+		mp.readMHB(pathMHB, laplacianType);
 		ifs.close();
 	}
 	else // need to compute Laplacian and to cache
 	{
 		int nEig = min(DEFAULT_EIGEN_SIZE, mesh.getVerticesNum()-1);
 
-		mp.decomposeLaplacian(nEig);
-		mp.writeMHB(pathMHB);
+		mp.decomposeLaplacian(nEig, laplacianType);
+		mp.writeMHB(pathMHB, laplacianType);
 		qout.output("MHB saved to " + pathMHB);
 
 		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
@@ -1485,5 +1482,92 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj )
 	timer.stopTimer();
 	qout.output(QString().sprintf("Laplacian %d decomposed in %f(s)", obj, timer.getElapsedTime()));
 	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
+}
+
+void QZGeometryWindow::computeLaplacian1()
+{
+	LaplacianType laplacianType = Umbrella;
+
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
+	});
+
+	if (LOAD_MHB_CACHE)
+	{
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		});
+	}
+	else
+	{
+		for (int obj = 0; obj < num_meshes; ++obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		}
+	}
+}
+
+void QZGeometryWindow::computeLaplacian2()
+{
+	LaplacianType laplacianType = CotFormula;
+
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
+	});
+
+	if (LOAD_MHB_CACHE)
+	{
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		});
+	}
+	else
+	{
+		for (int obj = 0; obj < num_meshes; ++obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		}
+	}
+}
+
+void QZGeometryWindow::computeLaplacian3()
+{
+	LaplacianType laplacianType = Anisotropic1;
+
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		const CMesh* tm = &m_mesh[obj];
+		
+		cout << "Time to compute Anisotropic kernel: " << time_call([&](){
+			double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
+			vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para1);
+		}) / 1000. << endl;
+//		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
+	});
+
+	if (LOAD_MHB_CACHE)
+	{
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		});
+	}
+	else
+	{
+		for (int obj = 0; obj < num_meshes; ++obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		}
+	}
+}
+
+void QZGeometryWindow::computeLaplacian4()
+{
+	LaplacianType laplacianType = Anisotropic2;
+
 }
 
