@@ -1443,7 +1443,7 @@ void QZGeometryWindow::evalDistance()
 //  cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::calculateSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (!mesh_valid[obj]) return;
 	DifferentialMeshProcessor& mp = vMP[obj];
@@ -1493,20 +1493,7 @@ void QZGeometryWindow::computeLaplacian1()
 		vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
 	});
 
-	if (LOAD_MHB_CACHE)
-	{
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		});
-	}
-	else
-	{
-		for (int obj = 0; obj < num_meshes; ++obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		}
-	}
+	calculateLaplacians(laplacianType);
 }
 
 void QZGeometryWindow::computeLaplacian2()
@@ -1517,21 +1504,8 @@ void QZGeometryWindow::computeLaplacian2()
 	{
 		vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
 	});
-
-	if (LOAD_MHB_CACHE)
-	{
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		});
-	}
-	else
-	{
-		for (int obj = 0; obj < num_meshes; ++obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		}
-	}
+		
+	calculateLaplacians(laplacianType);
 }
 
 void QZGeometryWindow::computeLaplacian3()
@@ -1550,20 +1524,7 @@ void QZGeometryWindow::computeLaplacian3()
 //		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 	});
 
-	if (LOAD_MHB_CACHE)
-	{
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		});
-	}
-	else
-	{
-		for (int obj = 0; obj < num_meshes; ++obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		}
-	}
+	calculateLaplacians(laplacianType);
 }
 
 void QZGeometryWindow::computeLaplacian4()
@@ -1581,19 +1542,32 @@ void QZGeometryWindow::computeLaplacian4()
 //		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
 	});
 
-	if (LOAD_MHB_CACHE)
-	{
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
-		{
-			decomposeSingleLaplacian(obj, laplacianType);
-		});
-	}
-	else
+	calculateLaplacians(laplacianType);
+}
+
+void QZGeometryWindow::calculateLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
+{
+	DifferentialMeshProcessor& mp1 = vMP[0], &mp2 = vMP[1];
+	string s_idx = "0";
+	s_idx[0] += (int)laplacianType;
+	std::string pathMHB1 = "output/" + m_mesh[0].getMeshName() + ".mhb." + s_idx;
+	std::string pathMHB2 = "output/" + m_mesh[1].getMeshName() + ".mhb." + s_idx;
+
+	ifstream ifs1(pathMHB1.c_str()), ifs2(pathMHB2.c_str());
+
+	if (LOAD_MHB_CACHE == 0 || !(ifs1 && ifs2))	// both Laplacians need Matlab decomposition
 	{
 		for (int obj = 0; obj < num_meshes; ++obj)
 		{
-			decomposeSingleLaplacian(obj, laplacianType);
+			calculateSingleLaplacian(obj, laplacianType);
 		}
+	}
+	else
+	{
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			calculateSingleLaplacian(obj, laplacianType);
+		});
 	}
 
 }

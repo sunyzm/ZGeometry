@@ -620,8 +620,8 @@ void CMesh::clearMesh()
 CMesh::CMesh() : 
 	m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
 	m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
-	m_bIsPointerVectorExist(false),
-	m_bIsIndexArrayExist(false)
+	m_meshName(""),
+	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
 {
 
 }

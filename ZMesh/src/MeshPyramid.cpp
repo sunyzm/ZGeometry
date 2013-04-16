@@ -92,8 +92,8 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 // 		int faceIndex = pHE->m_Face->m_fIndex;
 // 		Quadric bQ = m_FaceQuadrics[faceIndex];
 
-		m_VertexQuadrics[bV1-1] += bQ;
-		m_VertexQuadrics[bv2-1] += bQ;
+		m_VertexQuadrics[bV1] += bQ;
+		m_VertexQuadrics[bv2] += bQ;
 	}
 }
 

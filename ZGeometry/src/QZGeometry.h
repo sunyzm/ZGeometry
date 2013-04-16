@@ -99,7 +99,8 @@ private:	// methods
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
+	void calculateLaplacians(LaplacianType laplacianType = CotFormula);
+	void calculateSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
 	// helper functions
 	void evalDistance();
 	
