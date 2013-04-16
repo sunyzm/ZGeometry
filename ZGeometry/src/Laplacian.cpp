@@ -368,6 +368,8 @@ void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
 
 void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
 {
+	// curvature difference based
+
 	vII.clear();
 	vJJ.clear();
 	vSS.clear();
@@ -432,7 +434,76 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	m_bMatrixBuilt = true;
 }
 
-void MeshLaplacian::constructFromMesh4( const CMesh* tmesh )
+void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
+{
+	// similar to bilateral filtering
+
+	vII.clear();
+	vJJ.clear();
+	vSS.clear();
+
+	this->m_size = tmesh->getMeshSize();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	for (int vi = 0; vi < m_size; ++vi)
+	{
+		const CVertex* pvi = tmesh->getVertex_const(vi); 
+		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		for (int fi = 0; fi < vFaces.size(); ++fi)
+		{
+			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
+			double face_area = pfi->getArea();
+			for (int k = 0; k < 3; ++k)
+			{
+				int vki = pfi->getVertexIndex(k);
+				if (vki == vi) continue;
+				const CVertex* pvk = pfi->getVertex_const(k);
+
+//				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+//				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
+//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+
+				double svalue = w2;
+				svalue *= face_area;
+
+				vSparseElements.push_back(make_tuple(vi, vki, svalue));
+			}
+		}
+	}
+
+	vector<double> vDiag(m_size, 0.);
+	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
+	{
+		int ii, jj; double ss;
+		std::tie(ii, jj, ss) = *iter;
+
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
+		vSS.push_back(ss);
+
+		vDiag[ii] += -ss;
+	}
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(vDiag[i]);
+	}
+
+	for (int k = 0; k < vII.size(); ++k)
+	{
+		vSS[k] /= vDiag[vII[k]-1];
+	}
+
+	vWeights.resize(m_size, 1.0);	
+
+	m_bMatrixBuilt = true;
+}
+
+
+void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 {
 	vII.clear();
 	vJJ.clear();

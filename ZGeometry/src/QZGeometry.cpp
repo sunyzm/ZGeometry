@@ -1544,7 +1544,8 @@ void QZGeometryWindow::computeLaplacian3()
 		
 		cout << "Time to compute Anisotropic kernel: " << time_call([&](){
 			double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
-			vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para1);
+			double para2 = para1;
+			vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para2);
 		}) / 1000. << endl;
 //		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 	});
@@ -1568,6 +1569,32 @@ void QZGeometryWindow::computeLaplacian3()
 void QZGeometryWindow::computeLaplacian4()
 {
 	LaplacianType laplacianType = Anisotropic2;
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		const CMesh* tm = &m_mesh[obj];
+
+		cout << "Time to compute Anisotropic kernel: " << time_call([&](){
+			double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
+			double para2 = 1.0;
+			vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&m_mesh[obj], 1, para1, para2);
+		}) / 1000. << endl;
+//		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
+	});
+
+	if (LOAD_MHB_CACHE)
+	{
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		});
+	}
+	else
+	{
+		for (int obj = 0; obj < num_meshes; ++obj)
+		{
+			decomposeSingleLaplacian(obj, laplacianType);
+		}
+	}
 
 }
 

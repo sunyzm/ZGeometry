@@ -72,7 +72,8 @@ public:
 	void constructFromMesh1(const CMesh* tmesh);	// COT formula
 	void constructFromMesh2(const CMesh* tmesh);	// graph Laplacian
 	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
-	void constructFromMesh4(const CMesh* tmesh);	
+	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
+	void constructFromMesh5(const CMesh* tmesh);	
 
 	LaplacianType m_laplacianType;
 };
