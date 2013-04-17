@@ -437,13 +437,16 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
 {
 	// similar to bilateral filtering
-
+	
 	vII.clear();
 	vJJ.clear();
 	vSS.clear();
 
 	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
+
+	ringT = 1;
+	hPara2 = 1.0;
 
 	for (int vi = 0; vi < m_size; ++vi)
 	{
@@ -459,12 +462,14 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex_const(k);
 
+				double w1 = 1., w2 = 1.;
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-//				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
-//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+//				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+//				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / hPara2);
 
-				double svalue = w2;
+				double svalue = w1 * w2;
 				svalue *= face_area;
 
 				vSparseElements.push_back(make_tuple(vi, vki, svalue));

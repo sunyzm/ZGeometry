@@ -307,8 +307,8 @@ private:
 	bool	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	bool    saveToM( std::string sFileName );    // save mesh to .m file
 
-	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
-	void	calVertexNormal(int i);					// compute i-th vertex's normal
+//	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
+//	void	calVertexNormal(int i);					// compute i-th vertex's normal
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 

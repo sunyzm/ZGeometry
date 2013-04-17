@@ -25,8 +25,8 @@ MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 
 ## Laplacian & MHB##
 # -1 means no Laplacian computed at initialization
-INIT_LAPLACIAN_TYPE = 1
-LOAD_MHB_CACHE = 1
+INIT_LAPLACIAN_TYPE = 3
+LOAD_MHB_CACHE = 0
 DEFAULT_EIGEN_SIZE = 300
 
 ## hierarchy ##

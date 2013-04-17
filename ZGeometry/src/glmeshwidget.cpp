@@ -116,8 +116,14 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			/// for picking up a vertex
 			Vector3D p;
 			int obj_index = -1;
-			if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
-			else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+
+			if (m_num_meshes >= 2)
+			{
+				if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
+				else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+			}
+			else if (vpRS[0]->selected)
+				obj_index = 0;
 
 			if (obj_index >= 0 && glPick(x, y, p, obj_index))
 			{
@@ -158,10 +164,16 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 	{
 		/// for picking up a vertex
 		int obj_index = -1;
-		if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
-		else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+		
+		if (m_num_meshes >= 2)
+		{
+			if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
+			else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+		}
+		else if (vpRS[0]->selected)
+			obj_index = 0;
 
-		if (obj_index >=0 && !vpMP[obj_index]->mHandles.empty())
+		if (obj_index >= 0 && !vpMP[obj_index]->mHandles.empty())
 		{
 			Vector3D p;
 			if (glPick(x, y, p, obj_index))
@@ -714,7 +726,8 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {
-	if (obj >= m_num_meshes || vpRS[obj]->selected == false) return false;
+	if (obj >= m_num_meshes || vpRS[obj]->selected == false) 
+		return false;
 
 	GLdouble  modelview[16], projection[16];
 	GLint     viewport[4];
