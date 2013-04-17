@@ -158,6 +158,7 @@ private:
 	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > vRegistrationResutls;
 
+	bool					m_bInitialized;
 	bool					m_bPyramidBuilt;
 	bool					m_bFeatureDetected;
 	bool					m_bFeatureMatched;

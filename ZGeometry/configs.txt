@@ -1,7 +1,8 @@
 ## global settings ##
-# 0: editing
+# 0: viewving
 # 1: registration
-GEOMETRY_TASK = 1
+# 2: editing
+GEOMETRY_TASK = 2
 
 DEFAULT_DEFORM_RING = 5 
 MIN_HK_TIMESCALE = 1e-2
@@ -18,12 +19,14 @@ REGISTER_OUTPUT_FILE = output/Registration.log
 INITIAL_REF_POINT = 0
 
 ## mesh input ##
-NUM_PRELOAD_MESHES = 2
+NUM_PRELOAD_MESHES = 1
 MESH_LIST_NAME = meshfiles.cfg
 MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 
-## decomposition ##
-LOAD_MHB_CACHE = 1
+## Laplacian & MHB##
+# -1 means no Laplacian computed at initialization
+INIT_LAPLACIAN_TYPE = -1
+LOAD_MHB_CACHE = 0
 DEFAULT_EIGEN_SIZE = 300
 
 ## hierarchy ##

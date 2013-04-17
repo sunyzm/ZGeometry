@@ -303,6 +303,7 @@
     <addaction name="actionDisplayBiharmonic"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="actionExperimental"/>
+    <addaction name="actionDisplaySimilarityMap"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>
@@ -326,6 +327,9 @@
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeBiharmonic"/>
+    <addaction name="separator"/>
+    <addaction name="actionComputeSimilarityMap"/>
+    <addaction name="actionComputeSimilarityMap2"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -357,14 +361,6 @@
   <action name="actionExit">
    <property name="text">
     <string>Exit</string>
-   </property>
-  </action>
-  <action name="actionComputeLaplacian1">
-   <property name="checkable">
-    <bool>false</bool>
-   </property>
-   <property name="text">
-    <string>Laplacian + MHB</string>
    </property>
   </action>
   <action name="actionDisplayEigenfunction">
@@ -703,19 +699,51 @@
     <string>Biharmonic</string>
    </property>
   </action>
+  <action name="actionComputeLaplacian1">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Laplacian1</string>
+   </property>
+  </action>
   <action name="actionComputeLaplacian2">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Laplacian2</string>
    </property>
   </action>
   <action name="actionComputeLaplacian3">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Laplacian3</string>
    </property>
   </action>
   <action name="actionComputeLaplacian4">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Laplacian4</string>
+   </property>
+  </action>
+  <action name="actionComputeSimilarityMap">
+   <property name="text">
+    <string>Similarity Map</string>
+   </property>
+  </action>
+  <action name="actionDisplaySimilarityMap">
+   <property name="text">
+    <string>Similarity Map</string>
+   </property>
+  </action>
+  <action name="actionComputeSimilarityMap2">
+   <property name="text">
+    <string>Similarity Map2</string>
    </property>
   </action>
  </widget>

@@ -56,6 +56,7 @@ private:
 	std::vector<DifferentialMeshProcessor*> vpMP;
 	std::vector<RenderSettings*> vpRS;
 	DiffusionShapeMatcher* pDSM;
+	int m_num_meshes;
 
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;

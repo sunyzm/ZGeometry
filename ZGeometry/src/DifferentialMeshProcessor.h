@@ -22,6 +22,7 @@ enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE
 #define SIGNATURE_SGWS					0x0107
 #define SIGNATURE_SGW					0x0108
 #define SIGNATURE_BIHARMONIC_DISTANCE   0x0109
+#define SIGNATURE_SIMILARITY_MAP		0x0110
 
 #define FEATURE_NEIGHBORS				0x0201
 #define FEATURE_HKS						0x0202
@@ -61,6 +62,8 @@ public:
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeBiharmonicDistanceSignature(int refPoint);
+	void computeSimilarityMap(int refPoint);
+	void computeSimilarityMap2(int refPoint);
 	double calHK(int v1, int v2, double timescale) const;
 	double calBiharmonic(int v1, int v2) const;
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
