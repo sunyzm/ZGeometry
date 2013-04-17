@@ -194,19 +194,24 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 	m_ep = NULL;
 	pOriginalProcessor[0] = pOriginalProcessor[1] = NULL; 
 	pOriginalMesh[0] = pOriginalMesh[1] = NULL;
+	m_bInitialized = false;
 	m_bPyramidBuilt = false;
 	m_nAlreadyRegisteredLevel = -1;
 }
 
 DiffusionShapeMatcher::~DiffusionShapeMatcher()
 {
-	for (auto iter = liteMP[0].begin()+1; iter != liteMP[0].end(); ++iter)
+	if (!m_bInitialized) return;
+
+	int mpSize1 = liteMP[0].size(), mpSize2 = liteMP[1].size();
+
+	for (int k = 1; k < mpSize1; ++k)
 	{
-		delete *iter;
+		delete liteMP[0][k];
 	}
-	for (auto iter = liteMP[1].begin()+1; iter != liteMP[1].end(); ++iter)
+	for (int k = 1; k < mpSize2; ++k)
 	{
-		delete *iter;
+		delete liteMP[1][k];
 	}
 }
 
@@ -226,6 +231,8 @@ void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, Differe
 
 	m_ParamMgr[0].initialize(pMP1);
 	m_ParamMgr[1].initialize(pMP2);
+
+	m_bInitialized = true;
 }
 
 CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const

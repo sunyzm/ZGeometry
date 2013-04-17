@@ -111,12 +111,12 @@ private:	// attributes
 
 	Engine *m_ep;
 	int num_meshes;
-
+	
 	CMesh m_mesh[2];
-	bool selected[2];
 	bool mesh_valid[2];
 	DifferentialMeshProcessor vMP[2];
 	RenderSettings vRS[2];
+
 	DiffusionShapeMatcher shapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
@@ -124,6 +124,9 @@ private:	// attributes
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW, None} current_operation;
+
+	std::vector<QAction*> m_actionLaplacians;
+
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;
 	static int DEFAULT_DEFORM_RING; 

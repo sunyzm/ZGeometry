@@ -66,6 +66,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bDrawRegistration = false;
 
 	m_nMeshLevel = 0;
+	m_num_meshes = 0;
 
 	setAutoFillBackground(false);
 }
@@ -79,6 +80,7 @@ void GLMeshWidget::addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS)
 {
 	vpMP.push_back(pMP);
 	vpRS.push_back(pRS);
+	m_num_meshes = vpMP.size();
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -195,7 +197,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		if (gButton == Qt::LeftButton) 
 		{
 			rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-			for (int i = 0; i < 2; ++i)
+			for (int i = 0; i < m_num_meshes; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_rot = rot * vpRS[i]->obj_rot;
@@ -207,7 +209,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < 2; ++i)
+			for (int i = 0; i < m_num_meshes; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -219,7 +221,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < 2; ++i)
+			for (int i = 0; i < m_num_meshes; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -229,8 +231,16 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	else if (editMode == QZ_DRAG)
 	{
 		int obj_index = -1;
-		if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
-		else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
+		if (m_num_meshes >= 2)
+		{
+			if (vpRS[0]->selected && !vpRS[1]->selected)
+				obj_index = 0;
+			else if (!vpRS[0]->selected && vpRS[1]->selected)
+				obj_index = 1;
+		}
+		else if (m_num_meshes == 1 && vpRS[0]->selected) 
+			obj_index = 0;
+		else return;
 
 		if ( obj_index >= 0 && vpMP[obj_index]->active_handle != -1 && vpMP[obj_index]->mHandles.find(vpMP[obj_index]->active_handle) != vpMP[obj_index]->mHandles.end() )
 		{
@@ -278,10 +288,10 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / this->height();
+		float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		for (int i = 0; i < 2; ++i)
+		for (int i = 0; i < m_num_meshes; ++i)
 		{
 			if (vpRS[i]->selected)
 				vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -388,13 +398,15 @@ void GLMeshWidget::drawGL()
 
 	if (g_task == TASK_EDITING)
 	{
-		if (vpMP.size() > 0 && vpMP[0] != NULL)
-			drawMeshExt(vpMP[0], vpRS[0]);
-		if (vpMP.size() > 1 && vpMP[1] != NULL)
-			drawMeshExt(vpMP[1], vpRS[1]);
+		for (int obj = 0; obj < m_num_meshes; ++obj)
+		{
+			drawMeshExt(vpMP[obj], vpRS[obj]);
+		}		
 	}
 	else if (g_task == TASK_REGISTRATION)
 	{
+		assert(m_num_meshes >= 2);
+
 		drawMeshExt(pDSM->getMeshProcessor(0, m_nMeshLevel), vpRS[0]);
 		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
 
@@ -702,7 +714,7 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {
-	if (vpRS[obj]->selected == false) return false;
+	if (obj >= m_num_meshes || vpRS[obj]->selected == false) return false;
 
 	GLdouble  modelview[16], projection[16];
 	GLint     viewport[4];
@@ -742,6 +754,9 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
 {
+	if (shapeMatcher == NULL || g_task != TASK_REGISTRATION)
+		return;
+
 	const CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
 
 	float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
