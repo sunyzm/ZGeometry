@@ -84,7 +84,9 @@ public:
 	
 	// ---- boolean query ---- //
 	bool isSGWComputed() const { return m_bSGWComputed; }
+	bool isLaplacianConstructed(LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].m_bMatrixBuilt; }
 	bool isLaplacianDecomposed() const { return  m_bLaplacianDecomposed; }
+	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
@@ -107,11 +109,8 @@ private:
 	bool m_bSGWComputed;
 	bool m_bLaplacianDecomposed;		// mhb available
 
-//	Laplacian mLaplacian;
-//	MeshLaplacian meshKernel;
 	ManifoldHarmonics mhb;	
 
-	int	m_currentLaplacian;
 public:
 	MeshLaplacian vMeshLaplacian[LaplacianEnd];
 	ManifoldHarmonics vMHB[LaplacianEnd];

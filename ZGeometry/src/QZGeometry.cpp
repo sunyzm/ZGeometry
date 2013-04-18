@@ -1523,10 +1523,12 @@ void QZGeometryWindow::computeLaplacian1()
 
 	Concurrency::parallel_for(0, num_meshes, [&](int obj)
 	{
-		if (!vMP[obj].vMeshLaplacian[laplacianType].m_bMatrixBuilt)
+		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+		{
 			cout << "Time to construct Umbrella Laplacian: " << time_call([&](){
 				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
 			}) / 1000. << "(s)" << endl;
+		}
 	});
 
 	calculateLaplacians(laplacianType);
@@ -1538,10 +1540,12 @@ void QZGeometryWindow::computeLaplacian2()
 
 	Concurrency::parallel_for(0, num_meshes, [&](int obj)
 	{
-		if (!vMP[obj].vMeshLaplacian[laplacianType].m_bMatrixBuilt)
+		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+		{
 			cout << "Time to construct CotFormula Laplacian: " << time_call([&](){
 				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
 			}) / 1000. << "(s)" << endl;
+		}
 	});
 
 	calculateLaplacians(laplacianType);
@@ -1553,16 +1557,17 @@ void QZGeometryWindow::computeLaplacian3()
 
 	Concurrency::parallel_for(0, num_meshes, [&](int obj)
 	{		
-		if (!vMP[obj].vMeshLaplacian[laplacianType].m_bMatrixBuilt)
+		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
 		{
 			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct Anisotropic_1 kernel: " << time_call([&](){
+			cout << "Time to construct Anisotropic_1 kernel: " << time_call([&]()
+			{
 				double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
 				double para2 = para1;
 				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para2);
 			}) / 1000. << "(s)" << endl;
+//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 		}	
-//		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 	});
 
 	calculateLaplacians(laplacianType);
@@ -1573,15 +1578,34 @@ void QZGeometryWindow::computeLaplacian4()
 	LaplacianType laplacianType = Anisotropic2;
 	Concurrency::parallel_for(0, num_meshes, [&](int obj)
 	{
-		if (!vMP[obj].vMeshLaplacian[laplacianType].m_bMatrixBuilt)
+		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
 		{
 			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct Anisotropic_2 kernel: " << time_call([&](){
+			cout << "Time to construct Anisotropic_2 kernel: " << time_call([&]()
+			{
 				double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
 				double para2 = tm->getAvgEdgeLength() / 2;
 				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&m_mesh[obj], 1, para1, para2);
 			}) / 1000. << "(s)" << endl;
-//		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
+//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
+		}
+	});
+
+	calculateLaplacians(laplacianType);
+}
+
+void QZGeometryWindow::computeLaplacian5()
+{
+	LaplacianType laplacianType = IsoApproximate;
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+		{
+			const CMesh* tm = &m_mesh[obj];
+			cout << "Time to construct mesh laplacian: " << time_call([&](){
+				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&m_mesh[obj]);
+			}) / 1000. << "(s)" << endl;
+//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
 		}
 	});
 
@@ -1648,21 +1672,5 @@ void QZGeometryWindow::displaySimilarityMap()
 	displaySignature(SIGNATURE_SIMILARITY_MAP);
 }
 
-void QZGeometryWindow::computeLaplacian5()
-{
-	LaplacianType laplacianType = IsoApproximate;
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		if (!vMP[obj].vMeshLaplacian[laplacianType].m_bMatrixBuilt)
-		{
-			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct mesh laplacian: " << time_call([&](){
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&m_mesh[obj]);
-			}) / 1000. << "(s)" << endl;
-			//		cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
-		}
-	});
 
-	calculateLaplacians(laplacianType);
-}
 

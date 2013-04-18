@@ -48,7 +48,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;
-	m_currentLaplacian = CotFormula;
 	
 	constrain_weight = 0.1;
 	m_bSGWComputed = false;
@@ -56,17 +55,8 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
 {
-	m_ep = NULL;
+	DifferentialMeshProcessor();
 	mesh = tm;
-	pvActiveFeatures = NULL;
-	m_bLaplacianDecomposed = false;
-	pRef = 0;
-	m_size = 0;
-	active_handle = -1;
-	m_currentLaplacian = CotFormula;
-
-	constrain_weight = 0.1;
-	m_bSGWComputed = false;
 
 	init_lite(tm);
 }
