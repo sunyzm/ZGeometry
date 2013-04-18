@@ -1160,6 +1160,5 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 	removePropertyByID(SIGNATURE_SIMILARITY_MAP);
 	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
 	addProperty(mf);
-
 }
 

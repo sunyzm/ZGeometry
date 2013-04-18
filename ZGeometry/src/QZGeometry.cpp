@@ -84,6 +84,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeLaplacian2, SIGNAL(triggered()), this, SLOT(computeLaplacian2()));
 	QObject::connect(ui.actionComputeLaplacian3, SIGNAL(triggered()), this, SLOT(computeLaplacian3()));
 	QObject::connect(ui.actionComputeLaplacian4, SIGNAL(triggered()), this, SLOT(computeLaplacian4()));
+	QObject::connect(ui.actionComputeLaplacian5, SIGNAL(triggered()), this, SLOT(computeLaplacian5()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -1633,11 +1634,6 @@ void QZGeometryWindow::computeSimilarityMap()
 	displaySimilarityMap();
 }
 
-void QZGeometryWindow::displaySimilarityMap()
-{
-	displaySignature(SIGNATURE_SIMILARITY_MAP);
-}
-
 void QZGeometryWindow::computeSimilarityMap2()
 {
 	Concurrency::parallel_for(0, num_meshes, [&](int obj){
@@ -1645,6 +1641,11 @@ void QZGeometryWindow::computeSimilarityMap2()
 	});
 
 	displaySimilarityMap();
+}
+
+void QZGeometryWindow::displaySimilarityMap()
+{
+	displaySignature(SIGNATURE_SIMILARITY_MAP);
 }
 
 void QZGeometryWindow::computeLaplacian5()

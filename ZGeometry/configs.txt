@@ -33,10 +33,8 @@ DEFAULT_EIGEN_SIZE = 300
 HIERARCHY_LEVEL = 2
 CONTRACTION_RATIO = 0.25
 
-
 ## evaluation ##
 RAND_DATA_FILE = random_num.dat
-
 
 ## match features ##
 USE_TENSOR_MATCHING = 0
