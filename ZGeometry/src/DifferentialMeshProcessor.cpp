@@ -1047,3 +1047,119 @@ void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint
 	mf->setIDandName(SIGNATURE_BIHARMONIC_DISTANCE, "Biharmonic_Distance_signature");
 	addProperty(mf);
 }
+
+void DifferentialMeshProcessor::computeSimilarityMap( int refPoint )
+{
+	const CVertex* pvi = mesh->getVertex_const(refPoint); 
+	int ringT = 10;
+	vector<int> vFaces;
+//	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
+	vFaces.resize(mesh->getFaceNum());
+	for (int f = 0; f < mesh->getFaceNum(); ++f)
+		vFaces[f] = f;
+
+	vector<double> vSimilarities;
+	vSimilarities.resize(mesh->getVerticesNum(), 1.0);
+
+	vector<double> vAreas;
+	vAreas.resize(mesh->getVerticesNum(), 0.);
+
+	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
+	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
+
+	for (int fi = 0; fi < vFaces.size(); ++fi)
+	{
+		const CFace* pfi = mesh->getFace_const(vFaces[fi]);
+		double face_area = pfi->getArea();
+		for (int k = 0; k < 3; ++k)
+		{
+			int vki = pfi->getVertexIndex(k);
+//			if (vki == refPoint) continue;
+			const CVertex* pvk = pfi->getVertex_const(k);
+
+			double w1 = 1., w2 = 1.;
+//			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+//			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+//			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
+
+			double svalue = w1 * w2;
+			
+			vSimilarities[vki] += svalue * face_area;
+			vAreas[vki] += face_area;
+		}
+	}
+
+	std::transform(vSimilarities.begin(), vSimilarities.end(), vAreas.begin(), vSimilarities.begin(), [](double v1, double v2) { return v1 / v2; } );
+
+	MeshFunction *mf = new MeshFunction(m_size);
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		mf->setValue(i, vSimilarities[i]);
+	}
+
+	removePropertyByID(SIGNATURE_SIMILARITY_MAP);
+	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
+	addProperty(mf);
+}
+
+void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
+{
+	const CVertex* pvi = mesh->getVertex_const(refPoint); 
+	int ringT = 10;
+	vector<int> vFaces;
+	//	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
+	vFaces.resize(mesh->getFaceNum());
+	for (int f = 0; f < mesh->getFaceNum(); ++f)
+		vFaces[f] = f;
+
+	vector<double> vSimilarities;
+	vSimilarities.resize(mesh->getVerticesNum(), 1.0);
+
+	vector<double> vAreas;
+	vAreas.resize(mesh->getVerticesNum(), 0.);
+
+	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
+	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
+
+	for (int fi = 0; fi < vFaces.size(); ++fi)
+	{
+		const CFace* pfi = mesh->getFace_const(vFaces[fi]);
+		double face_area = pfi->getArea();
+		for (int k = 0; k < 3; ++k)
+		{
+			int vki = pfi->getVertexIndex(k);
+			//			if (vki == refPoint) continue;
+			const CVertex* pvk = pfi->getVertex_const(k);
+
+			double w1 = 1., w2 = 1.;
+//			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
+			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+//			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+//			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
+
+			double svalue = w1 * w2;
+
+			vSimilarities[vki] += svalue * face_area;
+			vAreas[vki] += face_area;
+		}
+	}
+
+	std::transform(vSimilarities.begin(), vSimilarities.end(), vAreas.begin(), vSimilarities.begin(), [](double v1, double v2) { return v1 / v2; } );
+
+	MeshFunction *mf = new MeshFunction(m_size);
+
+	for (int i = 0; i < m_size; ++i)
+	{
+		mf->setValue(i, vSimilarities[i]);
+	}
+
+	removePropertyByID(SIGNATURE_SIMILARITY_MAP);
+	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
+	addProperty(mf);
+
+}
+

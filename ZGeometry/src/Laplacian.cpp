@@ -445,8 +445,9 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
-	ringT = 1;
-	hPara2 = 1.0;
+	ringT = 2;
+	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
 	for (int vi = 0; vi < m_size; ++vi)
 	{
@@ -466,8 +467,9 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-//				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-				w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / hPara2);
+				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+//				w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
+
 
 				double svalue = w1 * w2;
 				svalue *= face_area;
@@ -515,37 +517,60 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 	vSS.clear();
 
 	this->m_size = tmesh->getMeshSize();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	int ringT = 5;
+	double hPara1 = std::pow(tmesh->getAvgEdgeLength()*2, 2);
+	
+	for (int vi = 0; vi < m_size; ++vi)
+	{
+		const CVertex* pvi = tmesh->getVertex_const(vi); 
+		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		for (int fi = 0; fi < vFaces.size(); ++fi)
+		{
+			const CFace* pfi = tmesh->getFace_const(vFaces[fi]);
+			double face_area = pfi->getArea();
+			for (int k = 0; k < 3; ++k)
+			{
+				int vki = pfi->getVertexIndex(k);
+				if (vki == vi) continue;
+				const CVertex* pvk = pfi->getVertex_const(k);
+
+				double svalue = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / (4 * hPara1));
+				svalue = svalue * face_area / (3 * 4 * PI * hPara1 * hPara1);
+
+				vSparseElements.push_back(make_tuple(vi, vki, svalue));
+			}
+		}
+	}
+
+	vector<double> vDiag(m_size, 0.);
+	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
+	{
+		int ii, jj; double ss;
+		std::tie(ii, jj, ss) = *iter;
+
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
+		vSS.push_back(ss);
+
+		vDiag[ii] += -ss;
+	}
 
 	for (int i = 0; i < m_size; ++i)
 	{
-		const CVertex* vi = tmesh->getVertex_const(i);
-		vector<int> vNeighbors;
-		tmesh->VertexNeighborRing(i, 3, vNeighbors);
-		int valence = vNeighbors.size();
-
-		vector<double> vDist;
-		double avg_len = tmesh->getAvgEdgeLength();
-		double dist_sum = 0.;
-
-		for (int j = 0; j < valence; ++j)
-		{
-			double coeff = exp( -tmesh->getGeodesic(i, vNeighbors[j]) / avg_len);
-			vDist.push_back(coeff);
-			dist_sum += coeff;
-		}
-
-		for (int j = 0; j < valence; ++j)
-		{
-			vII.push_back(i+1);
-			vJJ.push_back(vNeighbors[j]+1);
-			vSS.push_back(-vDist[j]/dist_sum);
-		}
-
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
-		vSS.push_back(1.);
+		vSS.push_back(vDiag[i]);
 	}
+
+	for (int k = 0; k < vII.size(); ++k)
+	{
+		vSS[k] /= vDiag[vII[k]-1];
+	}
+
 	vWeights.resize(m_size, 1.0);	
 
 	m_bMatrixBuilt = true;
+
 }

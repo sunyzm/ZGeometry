@@ -35,6 +35,7 @@ private slots:
 	void computeLaplacian2();
 	void computeLaplacian3();
 	void computeLaplacian4();
+	void computeLaplacian5();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -45,6 +46,8 @@ private slots:
 	void computeSGWS();
 	void computeSGWSFeatures();
 	void computeBiharmonic();
+	void computeSimilarityMap();
+	void computeSimilarityMap2();
 
 	void displayEigenfunction();
 	void displaySignature(int signatureID);
@@ -59,6 +62,7 @@ private slots:
 	void displayExperimental();
 	void displayNeighborVertices();
 	void displayDiffPosition();
+	void displaySimilarityMap();
 
 	void setDisplayPointCloud();
 	void setDisplayWireframe();

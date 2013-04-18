@@ -303,6 +303,7 @@
     <addaction name="actionDisplayBiharmonic"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="actionExperimental"/>
+    <addaction name="actionDisplaySimilarityMap"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>
@@ -314,6 +315,7 @@
     <addaction name="actionComputeLaplacian2"/>
     <addaction name="actionComputeLaplacian3"/>
     <addaction name="actionComputeLaplacian4"/>
+    <addaction name="actionComputeLaplacian5"/>
     <addaction name="separator"/>
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
@@ -326,6 +328,9 @@
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeBiharmonic"/>
+    <addaction name="separator"/>
+    <addaction name="actionComputeSimilarityMap"/>
+    <addaction name="actionComputeSimilarityMap2"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -725,6 +730,29 @@
    </property>
    <property name="text">
     <string>Laplacian4</string>
+   </property>
+  </action>
+  <action name="actionComputeSimilarityMap">
+   <property name="text">
+    <string>Similarity Map</string>
+   </property>
+  </action>
+  <action name="actionDisplaySimilarityMap">
+   <property name="text">
+    <string>Similarity Map</string>
+   </property>
+  </action>
+  <action name="actionComputeSimilarityMap2">
+   <property name="text">
+    <string>Similarity Map2</string>
+   </property>
+  </action>
+  <action name="actionComputeLaplacian5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Laplacian5</string>
    </property>
   </action>
  </widget>
