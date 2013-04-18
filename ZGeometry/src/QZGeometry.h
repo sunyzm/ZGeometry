@@ -35,6 +35,7 @@ private slots:
 	void computeLaplacian2();
 	void computeLaplacian3();
 	void computeLaplacian4();
+	void computeLaplacian5();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();

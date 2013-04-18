@@ -5,7 +5,7 @@
 #include <engine.h>
 #include <ZMesh.h>
 
-enum LaplacianType {Umbrella, CotFormula, Anisotropic1, Anisotropic2, LaplacianEnd};
+enum LaplacianType {Umbrella, CotFormula, Anisotropic1, Anisotropic2, IsoApproximate, LaplacianEnd};
 
 class ManifoldBasis
 {

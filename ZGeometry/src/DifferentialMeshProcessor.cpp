@@ -1136,10 +1136,10 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 			double w1 = 1., w2 = 1.;
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-//			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-//			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
+//			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
 
 			double svalue = w1 * w2;
 

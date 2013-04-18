@@ -315,6 +315,7 @@
     <addaction name="actionComputeLaplacian2"/>
     <addaction name="actionComputeLaplacian3"/>
     <addaction name="actionComputeLaplacian4"/>
+    <addaction name="actionComputeLaplacian5"/>
     <addaction name="separator"/>
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
@@ -744,6 +745,14 @@
   <action name="actionComputeSimilarityMap2">
    <property name="text">
     <string>Similarity Map2</string>
+   </property>
+  </action>
+  <action name="actionComputeLaplacian5">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Laplacian5</string>
    </property>
   </action>
  </widget>
