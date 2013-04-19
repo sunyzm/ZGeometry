@@ -97,7 +97,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeSimilarityMap, SIGNAL(triggered()), this, SLOT(computeSimilarityMap()));
 	QObject::connect(ui.actionComputeSimilarityMap2, SIGNAL(triggered()), this, SLOT(computeSimilarityMap2()));
-
+	QObject::connect(ui.actionComputeSimilarityMap3, SIGNAL(triggered()), this, SLOT(computeSimilarityMap3()));
 	////////    Control	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -1667,10 +1667,21 @@ void QZGeometryWindow::computeSimilarityMap2()
 	displaySimilarityMap();
 }
 
+void QZGeometryWindow::computeSimilarityMap3()
+{
+	Concurrency::parallel_for(0, num_meshes, [&](int obj){
+		vMP[obj].computeSimilarityMap3(vMP[obj].getRefPointIndex());
+	});
+
+	displaySimilarityMap();
+}
+
 void QZGeometryWindow::displaySimilarityMap()
 {
 	displaySignature(SIGNATURE_SIMILARITY_MAP);
 }
+
+
 
 
 

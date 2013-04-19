@@ -445,8 +445,8 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
-	ringT = 2;
-	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	ringT = 5;
+	hPara1 = std::pow(tmesh->getAvgEdgeLength()*5, 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
 	for (int vi = 0; vi < m_size; ++vi)

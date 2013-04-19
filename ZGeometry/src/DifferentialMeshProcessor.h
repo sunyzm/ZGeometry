@@ -64,6 +64,7 @@ public:
 	void computeBiharmonicDistanceSignature(int refPoint);
 	void computeSimilarityMap(int refPoint);
 	void computeSimilarityMap2(int refPoint);
+	void computeSimilarityMap3(int refPoint);
 	double calHK(int v1, int v2, double timescale) const;
 	double calBiharmonic(int v1, int v2) const;
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }

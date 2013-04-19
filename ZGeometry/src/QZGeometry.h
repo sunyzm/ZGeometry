@@ -48,6 +48,7 @@ private slots:
 	void computeBiharmonic();
 	void computeSimilarityMap();
 	void computeSimilarityMap2();
+	void computeSimilarityMap3();
 
 	void displayEigenfunction();
 	void displaySignature(int signatureID);

@@ -209,7 +209,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>21</height>
+     <height>25</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -331,6 +331,7 @@
     <addaction name="separator"/>
     <addaction name="actionComputeSimilarityMap"/>
     <addaction name="actionComputeSimilarityMap2"/>
+    <addaction name="actionComputeSimilarityMap3"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -753,6 +754,11 @@
    </property>
    <property name="text">
     <string>Laplacian5</string>
+   </property>
+  </action>
+  <action name="actionComputeSimilarityMap3">
+   <property name="text">
+    <string>Similarity Map3</string>
    </property>
   </action>
  </widget>
