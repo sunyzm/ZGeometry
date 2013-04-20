@@ -920,4 +920,16 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 	}
 }
 
+void GLMeshWidget::updateMP_RS( std::vector<DifferentialMeshProcessor>& vMP, std::vector<RenderSettings>& vRS )
+{
+	m_num_meshes = vMP.size();
+	vpMP.resize(m_num_meshes);
+	vpRS.resize(m_num_meshes);
+
+	for (int i = 0; i < m_num_meshes; ++i)
+		vpMP[i] = &vMP[i];
+	for (int i = 0; i < m_num_meshes; ++i)
+		vpRS[i] = &vRS[i];
+}
+
 

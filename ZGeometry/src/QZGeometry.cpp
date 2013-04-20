@@ -38,24 +38,32 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	: QMainWindow(parent, flags)
 {
 	m_ep = NULL;
-	num_meshes = 1;
+	num_meshes = 0;
 
 	//* read in configuration parameters from g_configMgr *//
 	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
 	PARAMETER_SLIDER_CENTER = g_configMgr.getConfigValueInt("PARAMETER_SLIDER_CENTER");
 	DEFUALT_HK_TIMESCALE = g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE");
 
-	mesh_valid[0] = mesh_valid[1] = false;
 	m_commonParameter = PARAMETER_SLIDER_CENTER;
 	current_operation = None;
 	deformType = Simple;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	
+	m_mesh.resize(5);
+	mesh_valid.resize(5);
+	vMP.resize(5);
+	vRS.resize(5);
+
 	ui.setupUi(this);
 	ui.centralWidget->setLayout(ui.mainLayout);
+
+	ui.spinBoxParameter->setMinimum(0);
+	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setMinimum(0);
-	ui.horizontalSliderParamter->setMaximum(2*PARAMETER_SLIDER_CENTER-1);
+	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
+//	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
 
 	m_actionLaplacians.resize(LaplacianEnd);
 	m_actionLaplacians[Umbrella] = ui.actionComputeLaplacian1;
@@ -63,7 +71,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	m_actionLaplacians[Anisotropic1] = ui.actionComputeLaplacian3;
 	m_actionLaplacians[Anisotropic2] = ui.actionComputeLaplacian4;
 	m_actionLaplacians[IsoApproximate] = ui.actionComputeLaplacian5;
-
 
 	this->makeConnections();
 	
@@ -81,6 +88,7 @@ void QZGeometryWindow::makeConnections()
 	////////	file	////////
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
+	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
 
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian1, SIGNAL(triggered()), this, SLOT(computeLaplacian1()));
@@ -101,6 +109,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeSimilarityMap, SIGNAL(triggered()), this, SLOT(computeSimilarityMap()));
 	QObject::connect(ui.actionComputeSimilarityMap2, SIGNAL(triggered()), this, SLOT(computeSimilarityMap2()));
 	QObject::connect(ui.actionComputeSimilarityMap3, SIGNAL(triggered()), this, SLOT(computeSimilarityMap3()));
+
 	////////    Control	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -182,9 +191,7 @@ bool QZGeometryWindow::initialize()
 	std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 #endif
 
-	int eng_open_time = time_call( [&](){
-		m_ep = engOpen("\0");
-	});
+	int eng_open_time = time_call( [&](){ m_ep = engOpen("\0"); });
 
 	if (!m_ep)
 	{
@@ -199,110 +206,110 @@ bool QZGeometryWindow::initialize()
 
 	//// ---- load meshes ---- ////
 	num_meshes = g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES");
-	
-	ifstream meshfiles(mesh_list_name);
-	if (!meshfiles)
-	{
-		qout.output("Cannot open " + mesh_list_name, OUT_MSGBOX);
-		return false;
-	}
-	deque<string> vMeshFiles;
-	while (!meshfiles.eof())
-	{
-		string meshFileName;
-		getline(meshfiles, meshFileName);
-		if (meshFileName == "") continue;
-		if (meshFileName[0] == '#') continue;
-		else vMeshFiles.push_back(meshFileName);
-	}
-	meshfiles.close();
-	if (vMeshFiles.size() < num_meshes)
-	{
-		qout.output("Not enough meshes found!", OUT_MSGBOX);
-		return false;
-	}
+// 	m_mesh.resize(num_meshes);
+// 	mesh_valid.resize(num_meshes);
+// 	vMP.resize(num_meshes);
+// 	vRS.resize(num_meshes);
 
-	CStopWatch timer;
-	timer.startTimer();
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	if (num_meshes > 0)
 	{
-		CMesh& mesh = m_mesh[obj];
-		mesh.Load(vMeshFiles[obj]);
-		mesh.scaleEdgeLenToUnit();
-		mesh.gatherStatistics();
-	});
-	timer.stopTimer();
-	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
-
-	for (int obj = 0; obj < num_meshes; ++obj)
-	{
-		CMesh& mesh = m_mesh[obj];
-		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
-		qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
-		vMP[obj].init(&mesh, m_ep);
-		vRS[obj].mesh_color = preset_colors[obj];
-		ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
-		mesh_valid[obj] = true;
-	}
-
-	int init_laplacian_type = g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE");
-	if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianEnd)
-	{
-		timer.startTimer();
-		switch((LaplacianType)init_laplacian_type)
+		ifstream meshfiles(mesh_list_name);
+		if (!meshfiles)
 		{
-		case Umbrella:
-			computeLaplacian1();
-			break;
-		case CotFormula:
-			computeLaplacian2();
-			break;
-		case Anisotropic1:
-			computeLaplacian3();
-			break;
-		case Anisotropic2:
-			computeLaplacian4();
-			break;
-		case IsoApproximate:
-			computeLaplacian5();
-			break;
+			qout.output("Cannot open " + mesh_list_name, OUT_MSGBOX);
+			return false;
 		}
+		deque<string> vMeshFiles;
+		while (!meshfiles.eof())
+		{
+			string meshFileName;
+			getline(meshfiles, meshFileName);
+			if (meshFileName == "") continue;
+			if (meshFileName[0] == '#') continue;
+			else vMeshFiles.push_back(meshFileName);
+		}
+		meshfiles.close();
+		if (vMeshFiles.size() < num_meshes)
+		{
+			qout.output("Not enough meshes found!", OUT_MSGBOX);
+			return false;
+		}
+
+		CStopWatch timer;
+		timer.startTimer();
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			CMesh& mesh = m_mesh[obj];
+			mesh.Load(vMeshFiles[obj]);
+			mesh.scaleEdgeLenToUnit();
+			mesh.gatherStatistics();
+		});
 		timer.stopTimer();
-		cout << "Time to decompose initial Laplacian: " << timer.getElapsedTime() << "(s)" << endl;
-//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].vMeshLaplacian[init_laplacian_type].getNonzeroNum()));
-//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
-	}
-	
-	// ---- update ui ---- //
-	if (mesh_valid[0])
-	{
-		ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
-		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
-		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
-	}
-	if (mesh_valid[1])
-	{
-		ui.spinBox1->setValue(0);	
-		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
-		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
-		ui.spinBox2->setValue(0);
-	}
+		cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
 
-	ui.spinBoxParameter->setMinimum(0);
-	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
-	ui.horizontalSliderParamter->setMinimum(0);
-	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
-	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
+		for (int obj = 0; obj < num_meshes; ++obj)
+		{
+			CMesh& mesh = m_mesh[obj];
+			Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+			qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
+			qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
+			vMP[obj].init(&mesh, m_ep);
+			vRS[obj].mesh_color = preset_colors[obj%2];
+			ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
+			mesh_valid[obj] = true;
+		}
 
-	vRS[0].selected = true;
-	vRS[1].selected = false; 
+		int init_laplacian_type = g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE");
+		if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianEnd)
+		{
+			timer.startTimer();
+			switch((LaplacianType)init_laplacian_type)
+			{
+			case Umbrella:
+				computeLaplacian1();
+				break;
+			case CotFormula:
+				computeLaplacian2();
+				break;
+			case Anisotropic1:
+				computeLaplacian3();
+				break;
+			case Anisotropic2:
+				computeLaplacian4();
+				break;
+			case IsoApproximate:
+				computeLaplacian5();
+				break;
+			}
+			timer.stopTimer();
+			cout << "Time to decompose initial Laplacian: " << timer.getElapsedTime() << "(s)" << endl;
+			//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].vMeshLaplacian[init_laplacian_type].getNonzeroNum()));
+			//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
+		}
 
-	if (g_task == TASK_REGISTRATION)
+		// ---- update ui ---- //
+		if (mesh_valid[0])
+		{
+			ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
+			ui.spinBox1->setMinimum(0);
+			ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
+			ui.horizontalSlider1->setMinimum(0);
+			ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
+		}
+		if (num_meshes >= 2 && mesh_valid[1])
+		{
+			ui.spinBox1->setValue(0);	
+			ui.spinBox2->setMinimum(0);
+			ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
+			ui.horizontalSlider2->setMinimum(0);
+			ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
+			ui.spinBox2->setValue(0);
+		}
+
+		vRS[0].selected = true;
+	}	// pre-load mesh
+
+	if (g_task == TASK_REGISTRATION && num_meshes >= 2)
 	{
 		shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
 		string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
@@ -586,28 +593,27 @@ void QZGeometryWindow::selectObject( int index )
 	qout.output("Selected object(s): " + text);
 	if (text == "1") 
 	{
-		vRS[0].selected = true;
-		vRS[1].selected = false; 
+		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
+		if (vRS.size() >= 1) vRS[0].selected = true;
 	}
 	else if (text == "2")
 	{
-		vRS[0].selected = false;
-		vRS[1].selected = true; 
+		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
+		if (vRS.size() >= 2) vRS[1].selected = true;
 	}
 	else if (text == "All")
 	{
-		vRS[0].selected = true;
-		vRS[1].selected = true; 
+		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = true; }); 
 	}
 	else if (text == "None")
 	{
-		vRS[0].selected = false;
-		vRS[1].selected = false; 
+		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
 	}
 }
 
 void QZGeometryWindow::setRefPoint1( int vn )
 {
+	if (num_meshes < 1) return;
 	vMP[0].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(0);
@@ -616,6 +622,8 @@ void QZGeometryWindow::setRefPoint1( int vn )
 
 void QZGeometryWindow::setRefPoint2( int vn )
 {
+	if (num_meshes < 2) return;
+
 	vMP[1].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(1);
@@ -740,8 +748,12 @@ void QZGeometryWindow::setDisplayPointCloud()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(false);
 
-	vRS[0].displayType = vRS[1].displayType = RenderSettings::PointCloud;
-	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_POINT;
+	for ( auto iter = begin(vRS); iter != end(vRS); ++iter)
+	{
+		iter->displayType = RenderSettings::PointCloud;
+		iter->glPolygonMode = GL_POINT;
+	}
+
 	ui.glMeshWidget->update();
 }
 
@@ -751,10 +763,14 @@ void QZGeometryWindow::setDisplayWireframe()
 	ui.actionDisplayWireframe->setChecked(true);
 	ui.actionDisplayMesh->setChecked(false);
 
-	vRS[0].displayType = vRS[1].displayType = RenderSettings::Wireframe;
-	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_LINE;
-	ui.glMeshWidget->update();
 
+	for ( auto iter = begin(vRS); iter != end(vRS); ++iter)
+	{
+		iter->displayType = RenderSettings::Wireframe;
+		iter->glPolygonMode = GL_LINE;
+	}
+
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::setDisplayMesh()
@@ -763,10 +779,13 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(true);
 
-	vRS[0].displayType = vRS[1].displayType = RenderSettings::Mesh;
-	vRS[0].glPolygonMode = vRS[1].glPolygonMode = GL_FILL;
-	ui.glMeshWidget->update();
+	for ( auto iter = begin(vRS); iter != end(vRS); ++iter)
+	{
+		iter->displayType = RenderSettings::Mesh;
+		iter->glPolygonMode = GL_FILL;
+	}
 
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::displayEigenfunction()
@@ -886,6 +905,17 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 
 void QZGeometryWindow::clone()
 {
+	if (num_meshes < 1) return;
+
+	if (num_meshes == 1)
+	{
+		m_mesh.push_back(CMesh());
+		mesh_valid.push_back(false);
+		vMP.push_back(DifferentialMeshProcessor());
+		vRS.push_back(RenderSettings());
+		num_meshes = 2;
+	}
+
 	m_mesh[1].cloneFrom(m_mesh[0]);
 	m_mesh[1].gatherStatistics();
 
@@ -1039,7 +1069,7 @@ void QZGeometryWindow::computeHKS()
 
 	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
@@ -1063,7 +1093,7 @@ void QZGeometryWindow::computeHK()
 
 	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
@@ -1118,7 +1148,7 @@ void QZGeometryWindow::computeHKSFeatures()
 	vTimes.push_back(90);
 	vTimes.push_back(270);
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i])
 			vMP[i].computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
@@ -1136,7 +1166,7 @@ void QZGeometryWindow::computeMHWFeatures()
 	vTimes.push_back(90);
 	vTimes.push_back(270);
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i])
 			vMP[i].computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
@@ -1157,7 +1187,7 @@ void QZGeometryWindow::computeMHWS()
 
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
@@ -1207,7 +1237,7 @@ void QZGeometryWindow::displaySGWS()
 
 void QZGeometryWindow::displaySignature( int signatureID )
 {
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		DifferentialMeshProcessor& mp = vMP[i];
 		MeshProperty* vs = mp.retrievePropertyByID(signatureID);
@@ -1232,7 +1262,7 @@ void QZGeometryWindow::computeMHW()
 
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
@@ -1436,7 +1466,7 @@ void QZGeometryWindow::showCoarser()
 
 void QZGeometryWindow::computeBiharmonic()
 {
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
 		{
@@ -1456,6 +1486,8 @@ void QZGeometryWindow::displayBiharmonic()
 
 void QZGeometryWindow::evalDistance()
 {
+	if (num_meshes < 2) return;
+
 	CStopWatch timer;
 	timer.startTimer();
 	Concurrency::parallel_invoke(
@@ -1698,6 +1730,46 @@ void QZGeometryWindow::saveSignature()
 	vector<double> vSig = vRS[0].vOriginalSignature;
 
 	vector2file<double>(fileName.toStdString(), vSig);
+}
+
+void QZGeometryWindow::addMesh()
+{
+	QStringList filenames =  QFileDialog::getOpenFileNames(
+		this, "Select one or more mesh files to open",
+		"../../Data/", "Meshes (*.obj *.off *.ply)");
+
+	int cur_obj = num_meshes++;
+
+	CStopWatch timer;
+	timer.startTimer();
+	CMesh& mesh = m_mesh[cur_obj];
+	mesh.Load(filenames.begin()->toStdString());
+	mesh.scaleEdgeLenToUnit();
+	mesh.gatherStatistics();
+	timer.stopTimer();
+	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
+
+	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
+	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
+	vMP[cur_obj].init(&mesh, m_ep);
+	vRS[cur_obj].selected = true;
+	vRS[cur_obj].mesh_color = preset_colors[cur_obj%2];
+
+	ui.glMeshWidget->addMesh(&vMP[cur_obj], &vRS[cur_obj]);
+
+	mesh_valid[cur_obj] = true;
+
+	if (cur_obj == 0)
+	{
+		ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
+		ui.spinBox1->setMinimum(0);
+		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
+		ui.horizontalSlider1->setMinimum(0);
+		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
+	}
+
+	ui.glMeshWidget->update();
 }
 
 

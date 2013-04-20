@@ -24,6 +24,9 @@ signals:
 	void refPoint1Changed(int n);
 
 private slots:
+	void addMesh();
+	void saveSignature();
+
 	void setTaskRegistration();
 	void setTaskEditing();
 
@@ -99,8 +102,6 @@ private slots:
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 
-	void saveSignature();
-
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
@@ -117,12 +118,12 @@ private:	// attributes
 	int objSelect;
 
 	Engine *m_ep;
-	int num_meshes;
 	
-	CMesh m_mesh[2];
-	bool mesh_valid[2];
-	DifferentialMeshProcessor vMP[2];
-	RenderSettings vRS[2];
+	int num_meshes;
+	std::vector<CMesh> m_mesh;
+	std::vector<bool> mesh_valid;
+	std::vector<DifferentialMeshProcessor> vMP;
+	std::vector<RenderSettings> vRS;
 
 	DiffusionShapeMatcher shapeMatcher;
 
