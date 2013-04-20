@@ -9,6 +9,7 @@
 #include <exception>
 #include <stdexcept>
 #include <QtGui/QMessageBox>
+#include <QFileDialog>
 #include <QTime>
 #include <QProcess>
 #include <ZUtil.h>
@@ -77,8 +78,10 @@ QZGeometryWindow::~QZGeometryWindow()
 
 void QZGeometryWindow::makeConnections()
 {	
+	////////	file	////////
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
-	
+	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
+
 	////////	compute	////////
 	QObject::connect(ui.actionComputeLaplacian1, SIGNAL(triggered()), this, SLOT(computeLaplacian1()));
 	QObject::connect(ui.actionComputeLaplacian2, SIGNAL(triggered()), this, SLOT(computeLaplacian2()));
@@ -1679,6 +1682,22 @@ void QZGeometryWindow::computeSimilarityMap3()
 void QZGeometryWindow::displaySimilarityMap()
 {
 	displaySignature(SIGNATURE_SIMILARITY_MAP);
+}
+
+void QZGeometryWindow::saveSignature()
+{
+	if (vRS[0].vOriginalSignature.empty())
+	{
+		qout.output("No signature available", OUT_MSGBOX);
+		return;
+	}
+
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
+		"./output/signature.txt",
+		tr("Text Files (*.txt *.dat)"));
+	vector<double> vSig = vRS[0].vOriginalSignature;
+
+	vector2file<double>(fileName.toStdString(), vSig);
 }
 
 

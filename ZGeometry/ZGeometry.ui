@@ -216,6 +216,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionSaveSignature"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -759,6 +760,11 @@
   <action name="actionComputeSimilarityMap3">
    <property name="text">
     <string>Similarity Map3</string>
+   </property>
+  </action>
+  <action name="actionSaveSignature">
+   <property name="text">
+    <string>Save Signature</string>
    </property>
   </action>
  </widget>

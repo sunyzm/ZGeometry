@@ -99,6 +99,8 @@ private slots:
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 
+	void saveSignature();
+
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
