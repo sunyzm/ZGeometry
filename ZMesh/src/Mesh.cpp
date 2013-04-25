@@ -3662,10 +3662,10 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			{
 				e1 = m_pHalfEdge[e0].m_iNextEdge;
 				e2 = m_pHalfEdge[e1].m_iNextEdge;
-				// get edge lengths
+				/* get edge lengths */
 				len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
 				len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
-				// compute corner angle by cotangent law 
+				/* compute corner angle by cotangent law */
 				triangleCotan(len0, len1, len2, cota21, cota22);
 			}
 			double cota = (cota11 + cota21) / 2.0;
@@ -3682,11 +3682,11 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			int	e2 = m_pHalfEdge[e1].m_iNextEdge;
 			int vj = m_pHalfEdge[e2].m_iVertex[1];
 			assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
-			// get edge lengths
+			/* get edge lengths */
 			double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
 			double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
 			double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
-			// compute corner angle by cotangent law 
+			/* compute corner angle by cotangent law */
 			double cota1, cota2;
 			triangleCotan(len0, len1, len2, cota1, cota2);
 			double cota = cota1 / 2.0;		

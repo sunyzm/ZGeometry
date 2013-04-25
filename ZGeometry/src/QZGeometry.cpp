@@ -81,6 +81,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 QZGeometryWindow::~QZGeometryWindow()
 {
 	engClose(m_ep);
+	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a; });
 }
 
 void QZGeometryWindow::makeConnections()
@@ -1081,6 +1082,7 @@ void QZGeometryWindow::computeHKS()
 	displayHKS();
 
 	current_operation = Compute_HKS;
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::computeHK()
@@ -1106,6 +1108,7 @@ void QZGeometryWindow::computeHK()
 	displayHK();
 
 	current_operation = Compute_HK;
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displayHKS()
@@ -1199,6 +1202,7 @@ void QZGeometryWindow::computeMHWS()
 	displayMHWS();
 
 	current_operation = Compute_MHWS;
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displayMHWS()
@@ -1228,6 +1232,7 @@ void QZGeometryWindow::computeSGWS()
 	displaySGWS();
 
 	current_operation = Compute_SGWS;
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displaySGWS()
@@ -1275,6 +1280,7 @@ void QZGeometryWindow::computeMHW()
 	displayMHW();
 
 	current_operation = Compute_MHW;
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displayMHW()
@@ -1691,6 +1697,7 @@ void QZGeometryWindow::computeSimilarityMap()
 	});
 
 	displaySimilarityMap();
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::computeSimilarityMap2()
@@ -1700,6 +1707,7 @@ void QZGeometryWindow::computeSimilarityMap2()
 	});
 
 	displaySimilarityMap();
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::computeSimilarityMap3()
@@ -1709,6 +1717,7 @@ void QZGeometryWindow::computeSimilarityMap3()
 	});
 
 	displaySimilarityMap();
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displaySimilarityMap()
@@ -1770,6 +1779,30 @@ void QZGeometryWindow::addMesh()
 	}
 
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::updateDisplaySignatureMenu()
+{
+	QList<QAction*> signatureActions = ui.menuSignature->actions();
+	for (auto iter = m_actionDisplaySignatures.begin(); iter != m_actionDisplaySignatures.end(); ++iter)
+	{
+		ui.menuSignature->removeAction(*iter);
+		delete *iter;
+	}
+	m_actionDisplaySignatures.clear();
+
+	std::vector<MeshProperty*> vProperties = vMP[0].properties();
+	vector<MeshFunction*> vSigFunctions;
+	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp){
+		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_END)
+			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
+	});
+
+	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf){
+		m_actionDisplaySignatures.push_back(new QAction(pmf->name.c_str(), this));
+		// TODO: connection //
+		ui.menuSignature->addAction(m_actionDisplaySignatures.back());
+	});
 }
 
 

@@ -102,6 +102,7 @@ private slots:
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 
+	void updateDisplaySignatureMenu();
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
@@ -109,6 +110,7 @@ private:	// methods
 	void updateReferenceMove(int obj);
 	void calculateLaplacians(LaplacianType laplacianType = CotFormula);
 	void calculateSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
+
 	// helper functions
 	void evalDistance();
 	
@@ -134,6 +136,7 @@ private:	// attributes
 		  Compute_SGWS, Compute_SGW, None} current_operation;
 
 	std::vector<QAction*> m_actionLaplacians;
+	std::vector<QAction*> m_actionDisplaySignatures;
 
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;

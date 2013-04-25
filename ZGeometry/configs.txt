@@ -19,7 +19,7 @@ REGISTER_OUTPUT_FILE = output/Registration.log
 INITIAL_REF_POINT = 0
 
 ## mesh input ##
-NUM_PRELOAD_MESHES = 0
+NUM_PRELOAD_MESHES = 1
 MESH_LIST_NAME = meshfiles.cfg
 MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 

@@ -16,7 +16,7 @@ public:
 	MeshProperty() : id(ID_PROPERTY_NOT_SPECIFIED), name("unnamed") {}
 	virtual ~MeshProperty() {}
 	void setIDandName(int newID, const std::string& newName ) { id = newID; name = newName; }
-protected:
+
 	int id;
 	std::string name;
 };
@@ -94,6 +94,7 @@ public:
 	MeshProcessor();
 	~MeshProcessor();
 	void setMesh(CMesh* newMesh);
+	std::vector<MeshProperty*> properties() { return vProperties; }
 	bool addProperty(MeshProperty* newProperty);
 	void replaceProperty(MeshProperty* newProperty);
 	MeshProperty* retrievePropertyByID(int rid);

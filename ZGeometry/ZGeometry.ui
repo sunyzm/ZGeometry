@@ -265,12 +265,25 @@
     <property name="title">
      <string>Display</string>
     </property>
-    <widget class="QMenu" name="menuCurvature">
+    <widget class="QMenu" name="menuSignature">
      <property name="title">
-      <string>Curvature</string>
+      <string>Signature</string>
      </property>
-     <addaction name="actionMeanCurvature"/>
+     <addaction name="separator"/>
      <addaction name="actionGaussCurvature"/>
+     <addaction name="actionMeanCurvature"/>
+     <addaction name="actionDisplayEigenfunction"/>
+     <addaction name="actionDisplayHK"/>
+     <addaction name="actionDisplayHKS"/>
+     <addaction name="actionDisplayMHW"/>
+     <addaction name="actionDisplayMHWS"/>
+     <addaction name="actionSGW"/>
+     <addaction name="actionSGWS"/>
+     <addaction name="actionDisplayBiharmonic"/>
+     <addaction name="actionDiffPosition"/>
+     <addaction name="actionExperimental"/>
+     <addaction name="actionDisplaySimilarityMap"/>
+     <addaction name="separator"/>
     </widget>
     <widget class="QMenu" name="menuDisplay_Type">
      <property name="title">
@@ -295,18 +308,7 @@
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
-    <addaction name="menuCurvature"/>
-    <addaction name="actionDisplayEigenfunction"/>
-    <addaction name="actionDisplayHK"/>
-    <addaction name="actionDisplayHKS"/>
-    <addaction name="actionDisplayMHW"/>
-    <addaction name="actionDisplayMHWS"/>
-    <addaction name="actionSGW"/>
-    <addaction name="actionSGWS"/>
-    <addaction name="actionDisplayBiharmonic"/>
-    <addaction name="actionDiffPosition"/>
-    <addaction name="actionExperimental"/>
-    <addaction name="actionDisplaySimilarityMap"/>
+    <addaction name="menuSignature"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>
