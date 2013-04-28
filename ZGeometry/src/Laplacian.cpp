@@ -445,9 +445,10 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
-	ringT = 5;
-	hPara1 = std::pow(tmesh->getAvgEdgeLength()*5, 2);
-	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	ringT = 1;
+	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
+//	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	hPara2 = tmesh->getAvgEdgeLength();
 
 	for (int vi = 0; vi < m_size; ++vi)
 	{
@@ -467,10 +468,9 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-//				w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
-
-
+//				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				w2 = std::exp(dotProduct3D(pvi->getNormal(), pvk->getPosition() - pvi->getPosition()) / hPara2);
+				
 				double svalue = w1 * w2;
 				svalue *= face_area;
 

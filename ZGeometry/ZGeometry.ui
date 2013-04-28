@@ -270,20 +270,6 @@
       <string>Signature</string>
      </property>
      <addaction name="separator"/>
-     <addaction name="actionGaussCurvature"/>
-     <addaction name="actionMeanCurvature"/>
-     <addaction name="actionDisplayEigenfunction"/>
-     <addaction name="actionDisplayHK"/>
-     <addaction name="actionDisplayHKS"/>
-     <addaction name="actionDisplayMHW"/>
-     <addaction name="actionDisplayMHWS"/>
-     <addaction name="actionSGW"/>
-     <addaction name="actionSGWS"/>
-     <addaction name="actionDisplayBiharmonic"/>
-     <addaction name="actionDiffPosition"/>
-     <addaction name="actionExperimental"/>
-     <addaction name="actionDisplaySimilarityMap"/>
-     <addaction name="separator"/>
     </widget>
     <widget class="QMenu" name="menuDisplay_Type">
      <property name="title">
@@ -308,6 +294,7 @@
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
+    <addaction name="actionDiffPosition"/>
     <addaction name="menuSignature"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
@@ -329,6 +316,9 @@
     <addaction name="menuComputeLaplacian"/>
     <addaction name="menuComputeSimilarityMap"/>
     <addaction name="separator"/>
+    <addaction name="actionEigenfunction"/>
+    <addaction name="actionGaussCurvature"/>
+    <addaction name="actionMeanCurvature"/>
     <addaction name="actionComputeHK"/>
     <addaction name="actionComputeHKS"/>
     <addaction name="actionComputeHKSFeatures"/>
@@ -374,7 +364,7 @@
     <string>Exit</string>
    </property>
   </action>
-  <action name="actionDisplayEigenfunction">
+  <action name="actionEigenfunction">
    <property name="text">
     <string>Eigenfunction</string>
    </property>

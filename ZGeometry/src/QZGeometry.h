@@ -47,21 +47,14 @@ private slots:
 	void computeSGWS();
 	void computeSGWSFeatures();
 	void computeBiharmonic();
+	void computeEigenfunction();
+	void computeCurvatureMean();
+	void computeCurvatureGauss();
 
-	void displayEigenfunction();
 	void displaySignature(int signatureID);
-	void displayHKS();
-	void displayHK();
-	void displayMHW();
-	void displayMHWS();
-	void displaySGWS();
-	void displayBiharmonic();
-	void displayCurvatureMean();
-	void displayCurvatureGauss();
 	void displayExperimental();
 	void displayNeighborVertices();
 	void displayDiffPosition();
-	void displaySimilarityMap();
 
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
@@ -106,7 +99,6 @@ private:	// methods
 	void updateReferenceMove(int obj);
 	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
-
 	// helper functions
 	void evalDistance();
 	
@@ -131,13 +123,12 @@ private:	// attributes
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW, None} current_operation;
 
-	std::vector<QAction*> m_actionDisplaySignatures;
-
 	QSignalMapper *laplacianSignalMapper;
 	std::vector<QAction*> m_actionComputeLaplacians;
 	QSignalMapper *simlaritySignalMapper;
 	std::vector<QAction*> m_actionComputeSimilarities;
-
+	QSignalMapper *signatureSignalMapper;
+	std::vector<QAction*> m_actionDisplaySignatures;
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;
 	static int DEFAULT_DEFORM_RING; 

@@ -27,8 +27,9 @@ MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 # -1 means no Laplacian computed at initialization
 # 0 umbrella laplacian
 # 1 cot formula laplacain
-INIT_LAPLACIAN_TYPE = 1
-LOAD_MHB_CACHE = 1
+# 2 Anisotropic1 (
+INIT_LAPLACIAN_TYPE = 3
+LOAD_MHB_CACHE = 0
 DEFAULT_EIGEN_SIZE = 300
 
 ## hierarchy ##

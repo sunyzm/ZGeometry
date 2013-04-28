@@ -38,6 +38,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 {
 	m_ep = NULL;
 	num_meshes = 0;
+	objSelect = -1;
 
 	//* read in configuration parameters from g_configMgr *//
 	LOAD_MHB_CACHE = g_configMgr.getConfigValueInt("LOAD_MHB_CACHE");
@@ -71,15 +72,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
 		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
 		laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
-		connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), laplacianSignalMapper, SLOT(map()));
+		QObject::connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), laplacianSignalMapper, SLOT(map()));
 	}
-	connect(laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
-
-// 	m_actionLaplacians[Umbrella] = ui.actionComputeLaplacian1;
-// 	m_actionLaplacians[CotFormula] = ui.actionComputeLaplacian2;
-// 	m_actionLaplacians[Anisotropic1] = ui.actionComputeLaplacian3;
-// 	m_actionLaplacians[Anisotropic2] = ui.actionComputeLaplacian4;
-// 	m_actionLaplacians[IsoApproximate] = ui.actionComputeLaplacian5;
+	QObject::connect(laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
 	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
 	simlaritySignalMapper = new QSignalMapper(this);
@@ -88,10 +83,13 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 		m_actionComputeSimilarities[t] = new QAction(QString("Similarity type ") + QString::number(t), this);
 		ui.menuComputeSimilarityMap->addAction(m_actionComputeSimilarities[t]);
 		simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
-		connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), simlaritySignalMapper, SLOT(map()));
+		QObject::connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), simlaritySignalMapper, SLOT(map()));
 	}
-	connect(simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
+	QObject::connect(simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
 	
+	signatureSignalMapper = new QSignalMapper(this);
+	QObject::connect(signatureSignalMapper, SIGNAL(mapped(int)), this, SLOT(displaySignature(int)));
+
 	this->makeConnections();
 	
 	qout.setConsole(ui.consoleOutput);
@@ -107,6 +105,7 @@ QZGeometryWindow::~QZGeometryWindow()
 	for_each(m_actionComputeLaplacians.begin(), m_actionComputeLaplacians.end(), [](QAction* a){ delete a;});
 	delete simlaritySignalMapper;
 	delete laplacianSignalMapper;
+	delete signatureSignalMapper;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -117,6 +116,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
 
 	////////	compute	////////
+	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
+	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
+	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -171,17 +173,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));
-	QObject::connect(ui.actionDisplayEigenfunction, SIGNAL(triggered()), this, SLOT(displayEigenfunction()));
-	QObject::connect(ui.actionDisplayHKS, SIGNAL(triggered()), this, SLOT(displayHKS()));
-	QObject::connect(ui.actionDisplayHK, SIGNAL(triggered()), this, SLOT(displayHK()));
-	QObject::connect(ui.actionDisplayMHW, SIGNAL(triggered()), this, SLOT(displayMHW()));
-	QObject::connect(ui.actionDisplayMHWS, SIGNAL(triggered()), this, SLOT(displayMHWS()));
-	QObject::connect(ui.actionDisplayBiharmonic, SIGNAL(triggered()), this, SLOT(displayBiharmonic()));
-	QObject::connect(ui.actionDisplaySimilarityMap, SIGNAL(triggered()), this, SLOT(displaySimilarityMap()));
-
-	QObject::connect(ui.actionExperimental, SIGNAL(triggered()), this, SLOT(displayExperimental()));
-	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureMean()));
-	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(displayCurvatureGauss()));
+	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
 
 	////////	Task	////////
@@ -308,6 +300,7 @@ bool QZGeometryWindow::initialize()
 		}
 
 		vRS[0].selected = true;
+		objSelect = 0;
 	}	// pre-load mesh
 
 	if (g_task == TASK_REGISTRATION && num_meshes >= 2)
@@ -596,19 +589,23 @@ void QZGeometryWindow::selectObject( int index )
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
 		if (vRS.size() >= 1) vRS[0].selected = true;
+		objSelect = 0;
 	}
 	else if (text == "2")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
 		if (vRS.size() >= 2) vRS[1].selected = true;
+		objSelect = 1;
 	}
 	else if (text == "All")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = true; }); 
+		objSelect = 0;
 	}
 	else if (text == "None")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
+		objSelect = -1;
 	}
 }
 
@@ -789,25 +786,26 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayEigenfunction()
+void QZGeometryWindow::computeEigenfunction()
 {
-	int select_eig = (m_commonParameter - 49 >= 1) ? (m_commonParameter - 49) : 1;
+	int select_eig = (m_commonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (m_commonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
 
-	for (int i = 0; i < 2; ++i)
+	for (int i = 0; i < num_meshes; ++i)
 	{
 		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed()) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
-			vRS[i].normalizeSignatureFrom(mp.getMHB().m_func[select_eig].m_vec);
-			vRS[i].showColorSignature = true;
+			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+			mf->copyValues(mp.getMHB().m_func[select_eig].m_vec);
+			mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
+			mp.replaceProperty(mf);			
 		}
 	}
 
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-
-	ui.glMeshWidget->update();
+	displaySignature(SIGNATURE_EIG_FUNC);
 	qout.output("Show eigenfunction" + Int2String(select_eig));
+
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displayExperimental()
@@ -832,42 +830,54 @@ void QZGeometryWindow::displayExperimental()
 // 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
 }
 
-void QZGeometryWindow::displayCurvatureMean()
+void QZGeometryWindow::computeCurvatureMean()
 {
-	DifferentialMeshProcessor& mp = vMP[0];
+	for (int i = 0; i < num_meshes; ++i)
+	{
+		if (mesh_valid[i]) 
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			vector<double> vCurvature;
+			mp.computeCurvature(vCurvature, 0);
+			auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+			qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 
-	vector<double> vCurvature;
-	mp.computeCurvature(vCurvature, 0);
+			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+			mf->copyValues(vCurvature);
+			mf->setIDandName(SIGNATURE_MEAN_CURVATURE, "Mean Curvature");
+			mp.replaceProperty(mf);			
+		}
+	}
 
-	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
+	displaySignature(SIGNATURE_MEAN_CURVATURE);
+	qout.output("Show Mean curvature");
 
-	vRS[0].bandCurveSignatureFrom(vCurvature, 0, 1);
-
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-
-	ui.glMeshWidget->update();
-	qout.output("Show Mean Curvature");
+	updateDisplaySignatureMenu();
 }
 
-void QZGeometryWindow::displayCurvatureGauss()
+void QZGeometryWindow::computeCurvatureGauss()
 {
-	DifferentialMeshProcessor& mp = vMP[0];
+	for (int i = 0; i < num_meshes; ++i)
+	{
+		if (mesh_valid[i]) 
+		{
+			DifferentialMeshProcessor& mp = vMP[i];
+			vector<double> vCurvature;
+			mp.computeCurvature(vCurvature, 1);
+			auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+			qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
+			
+			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+			mf->copyValues(vCurvature);
+			mf->setIDandName(SIGNATURE_GAUSS_CURVATURE, "Gauss Curvature");
+			mp.replaceProperty(mf);			
+		}
+	}
 
-	vector<double> vCurvature;
-	mp.computeCurvature(vCurvature, 1);
+	displaySignature(SIGNATURE_GAUSS_CURVATURE);
+	qout.output("Show Gauss curvature");
 
-	auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-	qout.output("Min curvature: " + QString::number(*mm.first) + "  Max curvature: " + QString::number(*mm.second));
-
-	vRS[0].bandCurveSignatureFrom(vCurvature, -1, 1);
-
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-
-	ui.glMeshWidget->update();
-	qout.output("Show Mean Curvature");
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::displayDiffPosition()
@@ -1079,7 +1089,7 @@ void QZGeometryWindow::computeHKS()
 		}
 	}
 	
-	displayHKS();
+	displaySignature(SIGNATURE_HKS);
 
 	current_operation = Compute_HKS;
 	updateDisplaySignatureMenu();
@@ -1105,20 +1115,10 @@ void QZGeometryWindow::computeHK()
 		}
 	}
 
-	displayHK();
+	displaySignature(SIGNATURE_HK);
 
 	current_operation = Compute_HK;
 	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::displayHKS()
-{
-	displaySignature(SIGNATURE_HKS);
-}
-
-void QZGeometryWindow::displayHK()
-{
-	displaySignature(SIGNATURE_HK);
 }
 
 void QZGeometryWindow::repeatOperation()
@@ -1199,15 +1199,10 @@ void QZGeometryWindow::computeMHWS()
 		}
 	}
 
-	displayMHWS();
+	displaySignature(SIGNATURE_MHWS);
 
 	current_operation = Compute_MHWS;
 	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::displayMHWS()
-{
-	displaySignature(SIGNATURE_MHWS);
 }
 
 void QZGeometryWindow::computeSGWS()
@@ -1229,15 +1224,10 @@ void QZGeometryWindow::computeSGWS()
 		}
 	}
 
-	displaySGWS();
+	displaySignature(SIGNATURE_SGWS);
 
 	current_operation = Compute_SGWS;
 	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::displaySGWS()
-{
-	displaySignature(SIGNATURE_SGWS);
 }
 
 void QZGeometryWindow::displaySignature( int signatureID )
@@ -1277,15 +1267,10 @@ void QZGeometryWindow::computeMHW()
 		}
 	}
 
-	displayMHW();
+	displaySignature(SIGNATURE_MHW);
 
 	current_operation = Compute_MHW;
 	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::displayMHW()
-{
-	displaySignature(SIGNATURE_MHW);
 }
 
 void QZGeometryWindow::setTaskRegistration()
@@ -1482,12 +1467,8 @@ void QZGeometryWindow::computeBiharmonic()
 		}
 	}
 
-	displayBiharmonic();
-}
-
-void QZGeometryWindow::displayBiharmonic()
-{
 	displaySignature(SIGNATURE_BIHARMONIC_DISTANCE);
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::evalDistance()
@@ -1595,11 +1576,6 @@ void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotF
 	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
 
-void QZGeometryWindow::displaySimilarityMap()
-{
-	displaySignature(SIGNATURE_SIMILARITY_MAP);
-}
-
 void QZGeometryWindow::saveSignature()
 {
 	if (vRS[0].vOriginalSignature.empty())
@@ -1658,25 +1634,35 @@ void QZGeometryWindow::addMesh()
 
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
-	QList<QAction*> signatureActions = ui.menuSignature->actions();
-	for (auto iter = m_actionDisplaySignatures.begin(); iter != m_actionDisplaySignatures.end(); ++iter)
-	{
-		ui.menuSignature->removeAction(*iter);
-		delete *iter;
-	}
-	m_actionDisplaySignatures.clear();
-
-	std::vector<MeshProperty*> vProperties = vMP[0].properties();
+	if (objSelect < 0) return;
+	const std::vector<MeshProperty*> vProperties = vMP[objSelect].properties();
 	vector<MeshFunction*> vSigFunctions;
-	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp){
+	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp)
+	{
 		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_COUNT)
 			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
 	});
 
-	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf){
-		m_actionDisplaySignatures.push_back(new QAction(pmf->name.c_str(), this));
-		// TODO: connection //
-		ui.menuSignature->addAction(m_actionDisplaySignatures.back());
+	QList<QAction*> signatureActions = ui.menuSignature->actions();
+	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* qa)
+	{
+		if (vSigFunctions.end() == find_if(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* mf){ return mf->name == qa->text().toStdString();}))
+		{
+			ui.menuSignature->removeAction(qa);
+			delete qa;			
+		}
+	});
+
+	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf)
+	{
+		if (m_actionDisplaySignatures.end() == find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == pmf->name;}))
+		{
+			QAction* newDisplayAction = new QAction(pmf->name.c_str(), this);
+			m_actionDisplaySignatures.push_back(newDisplayAction);
+			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
+			signatureSignalMapper->setMapping(newDisplayAction, (int)pmf->id);
+			QObject::connect(newDisplayAction, SIGNAL(triggered()), signatureSignalMapper, SLOT(map()));
+		}		
 	});
 }
 
@@ -1703,7 +1689,7 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 		break;
 	}
 
-	displaySimilarityMap();
+	displaySignature(SIGNATURE_SIMILARITY_MAP);
 	updateDisplaySignatureMenu();
 }
 
