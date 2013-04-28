@@ -1,6 +1,7 @@
 #pragma once
 #include "ui_ZGeometry.h"
 #include <QtGui/QMainWindow>
+#include <QSignalMapper>
 #include <ZMesh.h>
 #include <engine.h>
 #include <vector>
@@ -34,11 +35,8 @@ private slots:
 	void setEditModePick();
 	void setEditModeDrag();
 
-	void computeLaplacian1(); 
-	void computeLaplacian2();
-	void computeLaplacian3();
-	void computeLaplacian4();
-	void computeLaplacian5();
+	void computeSimilarityMap(int simType);
+	void computeLaplacian(int laplacianType);
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -49,9 +47,6 @@ private slots:
 	void computeSGWS();
 	void computeSGWSFeatures();
 	void computeBiharmonic();
-	void computeSimilarityMap();
-	void computeSimilarityMap2();
-	void computeSimilarityMap3();
 
 	void displayEigenfunction();
 	void displaySignature(int signatureID);
@@ -103,13 +98,14 @@ private slots:
 	void showCoarser();		// higher level
 
 	void updateDisplaySignatureMenu();
+
 private:	// methods
 	void makeConnections();
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void calculateLaplacians(LaplacianType laplacianType = CotFormula);
-	void calculateSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
+	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
+	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
 
 	// helper functions
 	void evalDistance();
@@ -135,8 +131,12 @@ private:	// attributes
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW, None} current_operation;
 
-	std::vector<QAction*> m_actionLaplacians;
 	std::vector<QAction*> m_actionDisplaySignatures;
+
+	QSignalMapper *laplacianSignalMapper;
+	std::vector<QAction*> m_actionComputeLaplacians;
+	QSignalMapper *simlaritySignalMapper;
+	std::vector<QAction*> m_actionComputeSimilarities;
 
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;

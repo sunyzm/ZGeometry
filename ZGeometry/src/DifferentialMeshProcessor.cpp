@@ -1038,7 +1038,7 @@ void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint
 	addProperty(mf);
 }
 
-void DifferentialMeshProcessor::computeSimilarityMap( int refPoint )
+void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 {
 	const CVertex* pvi = mesh->getVertex_const(refPoint); 
 	int ringT = 10;

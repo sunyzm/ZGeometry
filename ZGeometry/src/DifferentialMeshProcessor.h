@@ -11,16 +11,17 @@
 enum DeformType {Simple, Shell, Laplace, SGW};
 enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
 enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW};
+enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};
 
 enum SignatureID {	SIGNATURE_ID = 0x0100, SIGNATURE_HKS, SIGNATURE_HK, 
 					SIGNATURE_MEAN_CURVATURE, SIGNATURE_GAUSS_CURVATURE, SIGNATURE_WKS, 
 					SIGNATURE_MHWS, SIGNATURE_MHW, SIGNATURE_SGWS, SIGNATURE_SGW, 
 					SIGNATURE_BIHARMONIC_DISTANCE, SIGNATURE_SIMILARITY_MAP, 
-					SIGNATURE_ID_END};
+					SIGNATURE_ID_COUNT};
 
 enum FeatureID {	FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
 					FEATURE_MHWS, FEATURE_SGWS, FEATURE_MULTI_HKS,
-					FEATURE_ID_END};
+					FEATURE_ID_COUNT};
 
 double transferScalingFunc1(double lambda);
 
@@ -54,7 +55,7 @@ public:
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeBiharmonicDistanceSignature(int refPoint);
-	void computeSimilarityMap(int refPoint);
+	void computeSimilarityMap1(int refPoint);
 	void computeSimilarityMap2(int refPoint);
 	void computeSimilarityMap3(int refPoint);
 	double calHK(int v1, int v2, double timescale) const;
@@ -105,8 +106,8 @@ private:
 	ManifoldHarmonics mhb;	
 
 public:
-	MeshLaplacian vMeshLaplacian[LaplacianEnd];
-	ManifoldHarmonics vMHB[LaplacianEnd];
+	MeshLaplacian vMeshLaplacian[LaplacianTypeCount];
+	ManifoldHarmonics vMHB[LaplacianTypeCount];
 private:	
 	int pRef;
 	Vector3D posRef;

@@ -34,8 +34,7 @@ double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
 double QZGeometryWindow::MATCHING_THRESHOLD = 0.002;
 
-QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags)
+QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWindow(parent, flags)
 {
 	m_ep = NULL;
 	num_meshes = 0;
@@ -65,13 +64,34 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
 //	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
 
-	m_actionLaplacians.resize(LaplacianEnd);
-	m_actionLaplacians[Umbrella] = ui.actionComputeLaplacian1;
-	m_actionLaplacians[CotFormula] = ui.actionComputeLaplacian2;
-	m_actionLaplacians[Anisotropic1] = ui.actionComputeLaplacian3;
-	m_actionLaplacians[Anisotropic2] = ui.actionComputeLaplacian4;
-	m_actionLaplacians[IsoApproximate] = ui.actionComputeLaplacian5;
+	m_actionComputeLaplacians.resize(LaplacianTypeCount);
+	laplacianSignalMapper = new QSignalMapper(this);
+	for (int t = 0; t < LaplacianTypeCount; ++t)
+	{
+		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
+		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
+		laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
+		connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), laplacianSignalMapper, SLOT(map()));
+	}
+	connect(laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
+// 	m_actionLaplacians[Umbrella] = ui.actionComputeLaplacian1;
+// 	m_actionLaplacians[CotFormula] = ui.actionComputeLaplacian2;
+// 	m_actionLaplacians[Anisotropic1] = ui.actionComputeLaplacian3;
+// 	m_actionLaplacians[Anisotropic2] = ui.actionComputeLaplacian4;
+// 	m_actionLaplacians[IsoApproximate] = ui.actionComputeLaplacian5;
+
+	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
+	simlaritySignalMapper = new QSignalMapper(this);
+	for (int t = 0; t < SIM_TYPE_COUNT; ++t)
+	{
+		m_actionComputeSimilarities[t] = new QAction(QString("Similarity type ") + QString::number(t), this);
+		ui.menuComputeSimilarityMap->addAction(m_actionComputeSimilarities[t]);
+		simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
+		connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), simlaritySignalMapper, SLOT(map()));
+	}
+	connect(simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
+	
 	this->makeConnections();
 	
 	qout.setConsole(ui.consoleOutput);
@@ -81,7 +101,12 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 QZGeometryWindow::~QZGeometryWindow()
 {
 	engClose(m_ep);
-	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a; });
+
+	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a;});
+	for_each(m_actionComputeSimilarities.begin(), m_actionComputeSimilarities.end(), [](QAction* a){ delete a;});
+	for_each(m_actionComputeLaplacians.begin(), m_actionComputeLaplacians.end(), [](QAction* a){ delete a;});
+	delete simlaritySignalMapper;
+	delete laplacianSignalMapper;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -92,11 +117,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
 
 	////////	compute	////////
-	QObject::connect(ui.actionComputeLaplacian1, SIGNAL(triggered()), this, SLOT(computeLaplacian1()));
-	QObject::connect(ui.actionComputeLaplacian2, SIGNAL(triggered()), this, SLOT(computeLaplacian2()));
-	QObject::connect(ui.actionComputeLaplacian3, SIGNAL(triggered()), this, SLOT(computeLaplacian3()));
-	QObject::connect(ui.actionComputeLaplacian4, SIGNAL(triggered()), this, SLOT(computeLaplacian4()));
-	QObject::connect(ui.actionComputeLaplacian5, SIGNAL(triggered()), this, SLOT(computeLaplacian5()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -107,9 +127,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
-	QObject::connect(ui.actionComputeSimilarityMap, SIGNAL(triggered()), this, SLOT(computeSimilarityMap()));
-	QObject::connect(ui.actionComputeSimilarityMap2, SIGNAL(triggered()), this, SLOT(computeSimilarityMap2()));
-	QObject::connect(ui.actionComputeSimilarityMap3, SIGNAL(triggered()), this, SLOT(computeSimilarityMap3()));
 
 	////////    Control	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -261,27 +278,10 @@ bool QZGeometryWindow::initialize()
 		}
 
 		int init_laplacian_type = g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE");
-		if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianEnd)
+		if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianTypeCount)
 		{
 			timer.startTimer();
-			switch((LaplacianType)init_laplacian_type)
-			{
-			case Umbrella:
-				computeLaplacian1();
-				break;
-			case CotFormula:
-				computeLaplacian2();
-				break;
-			case Anisotropic1:
-				computeLaplacian3();
-				break;
-			case Anisotropic2:
-				computeLaplacian4();
-				break;
-			case IsoApproximate:
-				computeLaplacian5();
-				break;
-			}
+			computeLaplacian(init_laplacian_type);
 			timer.stopTimer();
 			cout << "Time to decompose initial Laplacian: " << timer.getElapsedTime() << "(s)" << endl;
 			//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].vMeshLaplacian[init_laplacian_type].getNonzeroNum()));
@@ -1517,7 +1517,7 @@ void QZGeometryWindow::evalDistance()
 //  cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 }
 
-void QZGeometryWindow::calculateSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (!mesh_valid[obj]) return;
 	DifferentialMeshProcessor& mp = vMP[obj];
@@ -1558,102 +1558,7 @@ void QZGeometryWindow::calculateSingleLaplacian( int obj, LaplacianType laplacia
 	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 }
 
-void QZGeometryWindow::computeLaplacian1()
-{
-	LaplacianType laplacianType = Umbrella;
-
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
-		{
-			cout << "Time to construct Umbrella Laplacian: " << time_call([&](){
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
-			}) / 1000. << "(s)" << endl;
-		}
-	});
-
-	calculateLaplacians(laplacianType);
-}
-
-void QZGeometryWindow::computeLaplacian2()
-{
-	LaplacianType laplacianType = CotFormula;
-
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
-		{
-			cout << "Time to construct CotFormula Laplacian: " << time_call([&](){
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
-			}) / 1000. << "(s)" << endl;
-		}
-	});
-
-	calculateLaplacians(laplacianType);
-}
-
-void QZGeometryWindow::computeLaplacian3()
-{
-	LaplacianType laplacianType = Anisotropic1;
-
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{		
-		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
-		{
-			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct Anisotropic_1 kernel: " << time_call([&]()
-			{
-				double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
-				double para2 = para1;
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para2);
-			}) / 1000. << "(s)" << endl;
-//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
-		}	
-	});
-
-	calculateLaplacians(laplacianType);
-}
-
-void QZGeometryWindow::computeLaplacian4()
-{
-	LaplacianType laplacianType = Anisotropic2;
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
-		{
-			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct Anisotropic_2 kernel: " << time_call([&]()
-			{
-				double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
-				double para2 = tm->getAvgEdgeLength() / 2;
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&m_mesh[obj], 1, para1, para2);
-			}) / 1000. << "(s)" << endl;
-//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
-		}
-	});
-
-	calculateLaplacians(laplacianType);
-}
-
-void QZGeometryWindow::computeLaplacian5()
-{
-	LaplacianType laplacianType = IsoApproximate;
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
-		{
-			const CMesh* tm = &m_mesh[obj];
-			cout << "Time to construct mesh laplacian: " << time_call([&](){
-				vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&m_mesh[obj]);
-			}) / 1000. << "(s)" << endl;
-//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
-		}
-	});
-
-	calculateLaplacians(laplacianType);
-}
-
-void QZGeometryWindow::calculateLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (LOAD_MHB_CACHE && num_meshes == 2)	// special acceleration condition
 	{
@@ -1682,42 +1587,12 @@ void QZGeometryWindow::calculateLaplacians( LaplacianType laplacianType /*= CotF
 
 	for (int obj = 0; obj < num_meshes; ++obj)
 	{
-		calculateSingleLaplacian(obj, laplacianType);
+		decomposeSingleLaplacian(obj, laplacianType);
 	}
 
-	for (int l = 0; l < LaplacianEnd; ++l)
-		m_actionLaplacians[l]->setChecked(false);
-	m_actionLaplacians[laplacianType]->setChecked(true);
-}
-
-void QZGeometryWindow::computeSimilarityMap()
-{
-	Concurrency::parallel_for(0, num_meshes, [&](int obj){
-		vMP[obj].computeSimilarityMap(vMP[obj].getRefPointIndex());
-	});
-
-	displaySimilarityMap();
-	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::computeSimilarityMap2()
-{
-	Concurrency::parallel_for(0, num_meshes, [&](int obj){
-		vMP[obj].computeSimilarityMap2(vMP[obj].getRefPointIndex());
-	});
-
-	displaySimilarityMap();
-	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::computeSimilarityMap3()
-{
-	Concurrency::parallel_for(0, num_meshes, [&](int obj){
-		vMP[obj].computeSimilarityMap3(vMP[obj].getRefPointIndex());
-	});
-
-	displaySimilarityMap();
-	updateDisplaySignatureMenu();
+	for (int l = 0; l < LaplacianTypeCount; ++l)
+		m_actionComputeLaplacians[l]->setChecked(false);
+	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
 
 void QZGeometryWindow::displaySimilarityMap()
@@ -1794,7 +1669,7 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 	std::vector<MeshProperty*> vProperties = vMP[0].properties();
 	vector<MeshFunction*> vSigFunctions;
 	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp){
-		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_END)
+		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_COUNT)
 			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
 	});
 
@@ -1803,6 +1678,114 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 		// TODO: connection //
 		ui.menuSignature->addAction(m_actionDisplaySignatures.back());
 	});
+}
+
+void QZGeometryWindow::computeSimilarityMap( int simType )
+{
+	switch(simType)
+	{
+	case SIM_TYPE_1:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+			vMP[obj].computeSimilarityMap1(vMP[obj].getRefPointIndex());
+		});
+		break;
+
+	case SIM_TYPE_2:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+			vMP[obj].computeSimilarityMap2(vMP[obj].getRefPointIndex());
+		});
+		break;
+
+	case SIM_TYPE_3:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+			vMP[obj].computeSimilarityMap3(vMP[obj].getRefPointIndex());
+		});
+		break;
+	}
+
+	displaySimilarityMap();
+	updateDisplaySignatureMenu();
+}
+
+void QZGeometryWindow::computeLaplacian( int lapType )
+{
+	LaplacianType laplacianType = (LaplacianType)lapType;
+	switch(laplacianType)
+	{
+	case Umbrella:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+			{
+				cout << "Time to construct Umbrella Laplacian: " << time_call([&](){
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
+				}) / 1000. << "(s)" << endl;
+			}
+		});
+		break;
+	
+	case CotFormula:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+			{
+				cout << "Time to construct CotFormula Laplacian: " << time_call([&](){
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
+				}) / 1000. << "(s)" << endl;
+			}
+		});
+		break;
+
+	case Anisotropic1:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{		
+			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
+			{
+				const CMesh* tm = &m_mesh[obj];
+				cout << "Time to construct Anisotropic_1 kernel: " << time_call([&]()
+				{
+					double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
+					double para2 = para1;
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para2);
+				}) / 1000. << "(s)" << endl;
+				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
+			}	
+		});
+		break;
+
+	case Anisotropic2:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
+			{
+				const CMesh* tm = &m_mesh[obj];
+				cout << "Time to construct Anisotropic_2 kernel: " << time_call([&]()
+				{
+					double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
+					double para2 = tm->getAvgEdgeLength() / 2;
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&m_mesh[obj], 1, para1, para2);
+				}) / 1000. << "(s)" << endl;
+				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
+			}
+		});
+		break;
+
+	case IsoApproximate:
+		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		{
+			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
+			{
+				const CMesh* tm = &m_mesh[obj];
+				cout << "Time to construct mesh laplacian: " << time_call([&](){
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&m_mesh[obj]);
+				}) / 1000. << "(s)" << endl;
+				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
+			}
+		});
+		break;
+	}
+
+	decomposeLaplacians(laplacianType);
 }
 
 
