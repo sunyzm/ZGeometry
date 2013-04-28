@@ -377,6 +377,10 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
+	ringT = 1;
+	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
+
 	for (int vi = 0; vi < m_size; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
@@ -393,8 +397,8 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
-				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-//				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
 
 				double svalue = w1 * w2;
 				svalue *= face_area;
@@ -508,7 +512,6 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 
 	m_bMatrixBuilt = true;
 }
-
 
 void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 {

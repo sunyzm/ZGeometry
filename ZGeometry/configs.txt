@@ -2,7 +2,7 @@
 # 0: viewving
 # 1: registration
 # 2: editing
-GEOMETRY_TASK = 2
+GEOMETRY_TASK = 1
 
 DEFAULT_DEFORM_RING = 5 
 MIN_HK_TIMESCALE = 1e-2
@@ -19,7 +19,7 @@ REGISTER_OUTPUT_FILE = output/Registration.log
 INITIAL_REF_POINT = 0
 
 ## mesh input ##
-NUM_PRELOAD_MESHES = 1
+NUM_PRELOAD_MESHES = 2
 MESH_LIST_NAME = meshfiles.cfg
 MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 
@@ -27,9 +27,10 @@ MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 # -1 means no Laplacian computed at initialization
 # 0 umbrella laplacian
 # 1 cot formula laplacain
-# 2 Anisotropic1 (
-INIT_LAPLACIAN_TYPE = 3
-LOAD_MHB_CACHE = 0
+# 2 Anisotropic1 
+# 3 Anisotropic2
+INIT_LAPLACIAN_TYPE = 2
+LOAD_MHB_CACHE = 1
 DEFAULT_EIGEN_SIZE = 300
 
 ## hierarchy ##

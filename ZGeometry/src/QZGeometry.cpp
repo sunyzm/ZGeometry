@@ -1239,11 +1239,13 @@ void QZGeometryWindow::displaySignature( int signatureID )
 		if (vs != NULL)
 			vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
 //			vRS[i].logNormalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
+
+		qout.output(QString().sprintf("Sig Min: %f; Sig Max: %f", vRS[i].sigMin, vRS[i].sigMax), OUT_CONSOLE);
 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
-
+	
 	ui.glMeshWidget->update();
 }
 
@@ -1541,13 +1543,11 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacia
 
 void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (LOAD_MHB_CACHE && num_meshes == 2)	// special acceleration condition
+	if (LOAD_MHB_CACHE && num_meshes == 2 && vMP[0].vMHB[laplacianType].empty() && vMP[1].vMHB[laplacianType].empty())	// special acceleration condition
 	{
 		DifferentialMeshProcessor& mp1 = vMP[0], &mp2 = vMP[1];
-		string s_idx = "0";
-		s_idx[0] += (int)laplacianType;
-		std::string pathMHB1 = "output/" + m_mesh[0].getMeshName() + ".mhb." + s_idx;
-		std::string pathMHB2 = "output/" + m_mesh[1].getMeshName() + ".mhb." + s_idx;
+		std::string pathMHB1 = QString().sprintf("output/%s.mhb.%d", m_mesh[0].getMeshName().c_str(), (int)laplacianType).toStdString();
+		std::string pathMHB2 = QString().sprintf("output/%s.mhb.%d", m_mesh[1].getMeshName().c_str(), (int)laplacianType).toStdString();
 
 		ifstream ifs1(pathMHB1.c_str()), ifs2(pathMHB2.c_str());
 
