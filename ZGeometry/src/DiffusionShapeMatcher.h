@@ -121,7 +121,7 @@ public:
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
 	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return vFeatures[obj]; }
 
-	void	forceInitialAnchors(const std::vector<MatchPair>& mp) { vFeatureMatchingResults[m_nRegistrationLevels] = mp; }
+	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;

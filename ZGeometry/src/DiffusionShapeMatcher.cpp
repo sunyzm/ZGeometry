@@ -284,7 +284,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 		pMP->calKernelSignature(tvalue, HEAT_KERNEL, hksv);
 
  		double sref = 4.0 * PI * tvalue;
- 		for_each ( hksv.begin(), hksv.end(), [=](double& v){ v = std::log(v * sref);} );		
+ 		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
 
 		vector<int> vFeatureIdx;
 		if (s == 0) ring = 3;
@@ -765,8 +765,12 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	flog << " --- Total Matched Features: " << matchedPairsFine.size() << endl;
 	flog << " --- Mesh 1 features num: " << vftFine1.size() << endl;
 	flog << " --- Mesh 2 features num: " << vftFine2.size() << endl;
-//// add note to matchings with great discrepancy
-	
+
+	flog << "\nResults: " << endl;
+	for(auto iter = matchedPairsFine.begin(); iter != matchedPairsFine.end(); ++iter)
+		flog << "(" << iter->m_idx1 << ", " << iter->m_idx2 << ")" << endl;
+
+	//* add note to matchings with great discrepancy *//	
 	for (vector<MatchPair>::iterator iter = matchedPairsFine.begin(); iter != matchedPairsFine.end(); /*++iter*/ )
 	{
 		for (vector<HKSFeature>::const_iterator hiter = vftFine1.begin(); hiter != vftFine1.end(); ++hiter)
@@ -788,6 +792,7 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 		}
 		else iter++;
 	}
+
 	for (vector<MatchPair>::iterator iter = matchedPairsCoarse.begin(); iter != matchedPairsCoarse.end(); ++iter )
 	{
 		if (iter->m_idx1 == iter->m_idx2) 
@@ -799,7 +804,6 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	}
 
 	m_bFeatureMatched = true;
-
 	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
 	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = matchedPairsFine;
 } // DiffusionShapmeMatcher::matchFeatures()
@@ -1818,4 +1822,11 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = newAnchorMatch;
 	vRegistrationResutls[m_nAlreadyRegisteredLevel] = newReg;
 
+}
+
+void DiffusionShapeMatcher::forceInitialAnchors( const std::vector<MatchPair>& mp )
+{
+	m_bFeatureMatched = true;
+	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
+	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = mp;
 }

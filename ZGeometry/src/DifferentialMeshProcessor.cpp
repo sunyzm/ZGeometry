@@ -875,7 +875,8 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 			sum += (*pTF)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
 		}
 		values[i] = sum;
-	});
+	}
+	);
 }
 
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )

@@ -1313,8 +1313,8 @@ void QZGeometryWindow::buildHierarchy()
 void QZGeometryWindow::detectFeatures()
 {
 	qout.output("-- Detect initial features --");
-	shapeMatcher.detectFeatures(0, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
-	shapeMatcher.detectFeatures(1, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH);
+	shapeMatcher.detectFeatures(0, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH * 2);
+	shapeMatcher.detectFeatures(1, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH * 2);
 
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
@@ -1344,53 +1344,56 @@ void QZGeometryWindow::matchFeatures()
 {
 	bool force_matching = (1 == g_configMgr.getConfigValueInt("FORCE_MATCHING"));
 	
-	bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
-	double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
-	double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
-	double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
-	std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
-
-	qout.output("-- Match initial features --");
-
-	ofstream ofstr(log_filename.c_str(), ios::trunc);
-	CStopWatch timer;
-	timer.startTimer();
-
-	if (use_tensor)
+	string string_override = "";
+	if (m_mesh[0].getMeshName() == "horse0")
 	{
-		shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+		string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
+	}
+	else if (m_mesh[0].getMeshName() == "eight")
+	{
+		string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
+	}
+	
+	if (force_matching && string_override != "")
+	{
+		vector<int> idx_override = splitStringToInt(string_override);
+		vector<MatchPair> vmp;
+		for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
+		{
+			vmp.push_back(MatchPair(*iter, *iter));
+		}
+		shapeMatcher.forceInitialAnchors(vmp);
+
+		qout.output("!!Matched anchors manually assigned!!");
 	}
 	else
 	{
-		shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
-	}
+		bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
+		double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
+		double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
+		double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
+		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
-	timer.stopTimer();
-	ofstr.close();
-	qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+		qout.output("-- Match initial features --");
 
-	if (force_matching)
-	{
-		string string_override = "";
-		if (m_mesh[0].getMeshName() == "horse0")
+		ofstream ofstr(log_filename.c_str(), ios::trunc);
+		CStopWatch timer;
+		timer.startTimer();
+
+		if (use_tensor)
 		{
-			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
+			shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 		}
-		
-		if (string_override != "")
+		else
 		{
-			vector<int> idx_override = splitStringToInt(string_override);
-			vector<MatchPair> vmp;
-			for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
-			{
-				vmp.push_back(MatchPair(*iter, *iter));
-			}
-			shapeMatcher.forceInitialAnchors(vmp);
-			
-			qout.output("!!Matched anchors manually assigned!!");
+			shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
 		}
-	}
 
+		timer.stopTimer();
+		ofstr.close();
+		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+	}
+	
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
 	ui.glMeshWidget->update();

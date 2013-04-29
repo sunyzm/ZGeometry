@@ -12,12 +12,12 @@
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};
 const GLfloat color_handle[4] = {1.0, 0.5, 0.5, 1};
-const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0}, 
-                                    {0.0, 1.0, 0.0, 1.0}, 
-                                    {0.0, 0.0, 1.0, 0.0},
-                                    {1.0, 1.0, 0.0, 1.0}, 
-                                    {1.0, 0.0, 1.0, 1.0},
-                                    {0.0, 1.0, 1.0, 1.0}};
+const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
+                                    {0.0, 1.0, 0.0, 1.0},	//green
+                                    {0.0, 0.0, 1.0, 0.0},	//blue
+                                    {1.0, 1.0, 0.0, 1.0},	//yellow
+                                    {1.0, 0.0, 1.0, 1.0},	//magenta
+                                    {0.0, 1.0, 1.0, 1.0}};	//cyan
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
 
