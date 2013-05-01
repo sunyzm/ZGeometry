@@ -57,14 +57,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 
 	ui.setupUi(this);
 	ui.centralWidget->setLayout(ui.mainLayout);
-
-	ui.spinBoxParameter->setMinimum(0);
-	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
-	ui.horizontalSliderParamter->setMinimum(0);
-	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
-	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
-//	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
-
+	
+	//*  actionComputeLaplacians  *//
 	m_actionComputeLaplacians.resize(LaplacianTypeCount);
 	laplacianSignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < LaplacianTypeCount; ++t)
@@ -76,6 +70,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 	}
 	QObject::connect(laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
+	//*  actioComputeSimilarities  *//
 	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
 	simlaritySignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < SIM_TYPE_COUNT; ++t)
@@ -87,11 +82,20 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 	}
 	QObject::connect(simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
 	
+	//*  actionDisplaySignatures  *//
 	signatureSignalMapper = new QSignalMapper(this);
 	QObject::connect(signatureSignalMapper, SIGNAL(mapped(int)), this, SLOT(displaySignature(int)));
 
+
 	this->makeConnections();
 	
+	ui.spinBoxParameter->setMinimum(0);
+	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
+	ui.horizontalSliderParamter->setMinimum(0);
+	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
+	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
+	//	ui.spinBoxParameter->setValue(PARAMETER_SLIDER_CENTER);
+
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
 }
@@ -276,8 +280,8 @@ bool QZGeometryWindow::initialize()
 			computeLaplacian(init_laplacian_type);
 			timer.stopTimer();
 			cout << "Time to decompose initial Laplacian: " << timer.getElapsedTime() << "(s)" << endl;
-			//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].vMeshLaplacian[init_laplacian_type].getNonzeroNum()));
-			//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
+	//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[0].vMeshLaplacian[init_laplacian_type].getNonzeroNum()));
+	//		qout.output("Non-zeros of Laplacian: " + Int2String(vMP[1].mLaplacian.getNonzeroNum()));
 		}
 
 		// ---- update ui ---- //
@@ -301,7 +305,7 @@ bool QZGeometryWindow::initialize()
 
 		vRS[0].selected = true;
 		objSelect = 0;
-	}	// pre-load mesh
+	}	// preload mesh
 
 	if (g_task == TASK_REGISTRATION && num_meshes >= 2)
 	{

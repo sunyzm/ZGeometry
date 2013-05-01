@@ -19,8 +19,8 @@ class ManifoldHarmonics
 {
 public:
 	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
-	void write(const std::string& meshPath) const;
-	void read(const std::string& meshPath);
+	void write(const std::string& meshPath, bool binaryMode = true) const;
+	void read(const std::string& meshPath, bool binaryMode = true);
 	MeshFunction getManifoldHarmonic(int k) const;
 	void dumpEigenValues(const std::string& evlPath) const;
 	bool empty() const { return m_func.empty(); }

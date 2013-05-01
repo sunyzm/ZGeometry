@@ -9,23 +9,45 @@
 
 using namespace std;
 
-void ManifoldHarmonics::write( const std::string& meshPath ) const
+void ManifoldHarmonics::write( const std::string& meshPath, bool binaryMode /*= true*/ ) const
 {
-	ofstream ofs(meshPath.c_str(), ios::trunc);
-	ofs << m_nEigFunc << endl;
-	ofs << m_size << endl;
-	for (int i = 0; i < m_nEigFunc; ++i)
+	if (binaryMode)
 	{
-		ofs << m_func[i].m_val;
-		for (int j = 0; j < m_size; ++j)
-			ofs << ' ' << m_func[i].m_vec[j];
-		ofs << endl;
+		ofstream ofs(meshPath.c_str(), ios::trunc|ios::binary);
+		ofs.write((char*)&m_nEigFunc, sizeof(int));
+		ofs.write((char*)&m_size, sizeof(int));
+		double *buf = new double[m_nEigFunc*(m_size+1)];
+		for (int i = 0; i < m_nEigFunc; ++i)
+		{
+			buf[i * (m_size+1)] = m_func[i].m_val;
+			for (int j = 0; j < m_size; ++j)
+			{
+				buf[i*(m_size+1)+j+1] = m_func[i].m_vec[j];
+			}
+		}
+		ofs.write((char*)buf, sizeof(double)*m_nEigFunc*(m_size+1));
+		delete []buf;
+		ofs.close();
 	}
-	ofs.close();
+	else
+	{
+		ofstream ofs(meshPath.c_str(), ios::trunc);
+		ofs << m_nEigFunc << endl;
+		ofs << m_size << endl;
+		for (int i = 0; i < m_nEigFunc; ++i)
+		{
+			ofs << m_func[i].m_val;
+			for (int j = 0; j < m_size; ++j)
+				ofs << ' ' << m_func[i].m_vec[j];
+			ofs << endl;
+		}
+		ofs.close();
+	}
+	
 	cout << "MHB saved to " << meshPath << endl;
 }
 
-void ManifoldHarmonics::read( const std::string& meshPath )
+void ManifoldHarmonics::read( const std::string& meshPath, bool binaryMode /*= true*/ )
 {
 	// 	FILE* file = NULL;
 	// 	fopen_s(&file, meshPath.c_str(), "rb");
@@ -38,40 +60,63 @@ void ManifoldHarmonics::read( const std::string& meshPath )
 	// 	}
 	// 	fclose(file);
 
-	ifstream ifs(meshPath.c_str(), ios::binary);
-	ifs.seekg (0, ios::end);
-	int length = (int)ifs.tellg();
-	ifs.seekg (0, ios::beg);
-	char *buffer = new char[length];
-	ifs.read(buffer, length);
-	ifs.close();
-	
-	istringstream iss (buffer, istringstream::in);
-	iss >> m_nEigFunc;
-	iss >> m_size;
-	m_func.resize(m_nEigFunc);
-	for (int i = 0; i < m_nEigFunc; ++i)
+	if (binaryMode)
 	{
-		m_func[i].m_vec.resize(m_size);
-		iss >> m_func[i].m_val;
-		for (int j = 0; j < m_size; ++j)
-			iss >>m_func[i].m_vec[j];
+		ifstream ifs(meshPath.c_str(), ios::binary);
+		ifs.read((char*)&m_nEigFunc, sizeof(int));
+		ifs.read((char*)&m_size, sizeof(int));
+		double *buf = new double[m_nEigFunc * (m_size+1)];
+		ifs.read((char*)buf,sizeof(double)*m_nEigFunc*(m_size+1));
+
+		m_func.resize(m_nEigFunc);
+		for (int i = 0; i < m_nEigFunc; ++i)
+		{
+			m_func[i].m_vec.resize(m_size);
+			m_func[i].m_val = buf[i*(m_size+1)];
+			for (int j = 0; j < m_size; ++j)
+				m_func[i].m_vec[j] = buf[i*(m_size+1)+j+1];
+		}
+
+		delete []buf;
 	}
-	delete []buffer;
-/*
-	ifstream ifs(meshPath.c_str());
-	ifs >> m_nEigFunc;
-	ifs >> m_size;
-	m_func.resize(m_nEigFunc);
-	
-	for (int i = 0; i < m_nEigFunc; ++i)
+	else
 	{
-		m_func[i].m_vec.resize(m_size);
-		ifs >> m_func[i].m_val;
-		for (int j = 0; j < m_size; ++j)
-			ifs >>m_func[i].m_vec[j];
+		ifstream ifs(meshPath.c_str(), ios::binary);
+		ifs.seekg (0, ios::end);
+		int length = (int)ifs.tellg();
+		ifs.seekg (0, ios::beg);
+		char *buffer = new char[length];
+		ifs.read(buffer, length);
+		ifs.close();
+	
+		istringstream iss (buffer, istringstream::in);
+		iss >> m_nEigFunc;
+		iss >> m_size;
+		m_func.resize(m_nEigFunc);
+		for (int i = 0; i < m_nEigFunc; ++i)
+		{
+			m_func[i].m_vec.resize(m_size);
+			iss >> m_func[i].m_val;
+			for (int j = 0; j < m_size; ++j)
+				iss >>m_func[i].m_vec[j];
+		}
+		delete []buffer;
+	/*
+		ifstream ifs(meshPath.c_str());
+		ifs >> m_nEigFunc;
+		ifs >> m_size;
+		m_func.resize(m_nEigFunc);
+	
+		for (int i = 0; i < m_nEigFunc; ++i)
+		{
+			m_func[i].m_vec.resize(m_size);
+			ifs >> m_func[i].m_val;
+			for (int j = 0; j < m_size; ++j)
+				ifs >>m_func[i].m_vec[j];
+		}
+	*/
 	}
-*/
+	
 	cout << "MHB loaded from " << meshPath << endl;
 }
 

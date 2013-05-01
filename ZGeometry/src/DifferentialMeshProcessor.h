@@ -41,8 +41,8 @@ public:
 	~DifferentialMeshProcessor(void);
 	void init(CMesh* tm, Engine* e);
 	void init_lite(CMesh* tm);
-	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
+	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //

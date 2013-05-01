@@ -29,7 +29,7 @@ MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 # 1 cot formula laplacain
 # 2 Anisotropic1 
 # 3 Anisotropic2
-INIT_LAPLACIAN_TYPE = 2
+INIT_LAPLACIAN_TYPE = 1
 LOAD_MHB_CACHE = 1
 DEFAULT_EIGEN_SIZE = 300
 
@@ -39,6 +39,9 @@ CONTRACTION_RATIO = 0.25
 
 ## evaluation ##
 RAND_DATA_FILE = random_num.dat
+
+## feature detection ##
+
 
 ## match features ##
 USE_TENSOR_MATCHING = 0
