@@ -98,27 +98,6 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType 
 void DifferentialMeshProcessor::readMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
 	vMHB[laplacianType].read(path, binaryMode);
-// 	ifstream ifs(path, ios::binary);
-// 	ifs.seekg (0, ios::end);
-// 	int length = (int)ifs.tellg();
-// 	ifs.seekg (0, ios::beg);
-// 	char *buffer = new char[length];
-// 	ifs.read(buffer, length);
-// 	ifs.close();
-// 	
-// 	istringstream iss (buffer, istringstream::in);
-// 	iss >> mhb.m_nEigFunc;
-// 	iss >> mhb.m_size;
-// 	mhb.m_func.resize(mhb.m_nEigFunc);
-// 	for (int i = 0; i < mhb.m_nEigFunc; ++i)
-// 	{
-// 		mhb.m_func[i].m_vec.resize(mhb.m_size);
-// 		iss >> mhb.m_func[i].m_val;
-// 		for (int j = 0; j < mhb.m_size; ++j)
-// 			iss >> mhb.m_func[i].m_vec[j];
-// 	}
-// 	delete []buffer;
-
 	mhb = vMHB[laplacianType];
 	this->m_bLaplacianDecomposed = true;
 }
@@ -127,17 +106,6 @@ void DifferentialMeshProcessor::writeMHB( const std::string& path, LaplacianType
 {
 	const ManifoldHarmonics& mh = vMHB[laplacianType];
 	mh.write(path, binaryMode);
-// 	ofstream ofs(path.c_str(), ios::trunc);
-// 	ofs << mhb.m_nEigFunc << endl;
-// 	ofs << mhb.m_size << endl;
-// 	for (int i = 0; i < mhb.m_nEigFunc; ++i)
-// 	{
-// 		ofs << mhb.m_func[i].m_val;
-// 		for (int j = 0; j < mhb.m_size; ++j)
-// 			ofs << ' ' << mhb.m_func[i].m_vec[j];
-// 		ofs << endl;
-// 	}
-// 	ofs.close();	
 }
 
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )

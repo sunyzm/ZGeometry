@@ -1316,9 +1316,13 @@ void QZGeometryWindow::buildHierarchy()
 
 void QZGeometryWindow::detectFeatures()
 {
+	double feature_detection_timescale = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_TIMESCALE");
+	double feature_detection_t_multiplier = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_T_MULTIPLIER");
+	double feature_detection_extrema_thresh = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_EXTREMA_THRESH");
+
 	qout.output("-- Detect initial features --");
-	shapeMatcher.detectFeatures(0, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH * 2);
-	shapeMatcher.detectFeatures(1, 2, 4, DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE, DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER, DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH * 2);
+	shapeMatcher.detectFeatures(0, 2, 4, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
+	shapeMatcher.detectFeatures(1, 2, 4, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
 
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
@@ -1337,7 +1341,7 @@ void QZGeometryWindow::detectFeatures()
 			}
 		}
 	}
-	qout.output(QString().sprintf("-- Valid detections: %d", count_possible));
+	cout << "-- Valid detections: " << count_possible << endl;
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();

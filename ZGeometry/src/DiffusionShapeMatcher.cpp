@@ -700,7 +700,7 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	{
 		for (int j = 0; j < restSize2; ++j)
 		{
-			if (vftFine2[restFeat1[i]].m_scale != vftFine2[restFeat2[j]].m_scale)
+			if (restIdxToHKS1[restFeat1[i]]->m_scale != restIdxToHKS2[restFeat2[j]]->m_scale)
 				continue;
 			double s = std::exp(-vHKC1[i].calDistance(vHKC2[j]));
 			restMatches.push_back(MatchPair(restFeat1[i], restFeat2[j], s));
@@ -753,10 +753,10 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 			continue;
 		}
 
-		for (vector<MatchPair>::iterator iter = restMatches.begin(); iter != restMatches.end(); )
+		for (vector<MatchPair>::const_iterator iter = restMatches.begin(); iter != restMatches.end(); )
 		{
 			if (iter->m_idx1 == maxIdx1 || iter->m_idx2 == maxIdx2)
-				restMatches.erase(iter);
+				iter = restMatches.erase(iter);
 			else iter++;
 		}
 	}
