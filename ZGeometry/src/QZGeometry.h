@@ -138,6 +138,5 @@ private:	// attributes
 	static double MAX_HK_TIMESCALE;
 	static double PARAMETER_SLIDER_CENTER;
 	static double DR_THRESH_INCREMENT;
-	static double MATCHING_THRESHOLD;
 };
 

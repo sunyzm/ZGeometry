@@ -18,7 +18,10 @@ void RenderSettings::logNormalizeSignatureFrom( const std::vector<double>& vFrom
 	if (vFrom.empty()) return;	
 
 	importSignature(vFrom);
-	logNormalizeSignature();
+	if (sigMin <= 0)
+		normalizeSignature();
+	else
+		logNormalizeSignature();
 }
 
 void RenderSettings::bandCurveSignatureFrom( const std::vector<double>& vFrom, double lowend, double highend )
@@ -56,8 +59,8 @@ void RenderSettings::logNormalizeSignature()
 	assert(!vOriginalSignature.empty());
 
 	std::vector<double> vLog(vOriginalSignature.size());
-	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), vLog.begin(), [](double v){ return std::log(v+1); });
-	const double sMin = std::log(sigMin+1), sMax = std::log(sigMax+1);
+	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), vLog.begin(), [](double v){ return std::log(v); });
+	const double sMin = std::log(sigMin), sMax = std::log(sigMax);
 
 	vDisplaySignature.resize(vLog.size());
 	std::transform(vLog.begin(), vLog.end(), vDisplaySignature.begin(),

@@ -32,7 +32,6 @@ double QZGeometryWindow::DEFUALT_HK_TIMESCALE = 40.0;
 double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
 double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
-double QZGeometryWindow::MATCHING_THRESHOLD = 0.002;
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWindow(parent, flags)
 {
@@ -1241,10 +1240,11 @@ void QZGeometryWindow::displaySignature( int signatureID )
 		DifferentialMeshProcessor& mp = vMP[i];
 		MeshProperty* vs = mp.retrievePropertyByID(signatureID);
 		if (vs != NULL)
+		{
 			vRS[i].normalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
 //			vRS[i].logNormalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
-
-		qout.output(QString().sprintf("Sig Min: %f; Sig Max: %f", vRS[i].sigMin, vRS[i].sigMax), OUT_CONSOLE);
+			qout.output(QString().sprintf("Sig Min: %f; Sig Max: %f", vRS[i].sigMin, vRS[i].sigMax), OUT_CONSOLE);
+		}
 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature)
@@ -1319,29 +1319,36 @@ void QZGeometryWindow::detectFeatures()
 	double feature_detection_timescale = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_TIMESCALE");
 	double feature_detection_t_multiplier = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_T_MULTIPLIER");
 	double feature_detection_extrema_thresh = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_EXTREMA_THRESH");
+	int detect_ring = g_configMgr.getConfigValueInt("FEATURE_DETECTION_RING");
+	int num_detect_scales = g_configMgr.getConfigValueInt("FEATURE_DETECTION_NUM_SCALES");
 
 	qout.output("-- Detect initial features --");
-	shapeMatcher.detectFeatures(0, 2, 4, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
-	shapeMatcher.detectFeatures(1, 2, 4, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
-
+	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+	{
+		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
+	});
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 
 	const vector<HKSFeature>& vf1 = shapeMatcher.vFeatures[0], &vf2 = shapeMatcher.vFeatures[1];
 
+	std::map<int, int> feature_count;
 	int count_possible = 0;
-	for (auto iter = vf1.begin(); iter != vf1.end(); ++iter)
+	for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
 	{
 		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
 		{
-			if (std::abs(iter->m_index - iter2->m_index) <= 1 || m_mesh[1].isInNeighborRing(iter->m_index, iter2->m_index, 1))
+			if (iter1->m_scale == iter2->m_scale && m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 1))
 			{
 				count_possible++;
+				if (feature_count.find(iter1->m_index) == feature_count.end())
+					feature_count.insert(make_pair(iter1->m_index, 1));
+				else feature_count[iter1->m_index] += 1;
 				break;
 			}
 		}
 	}
-	cout << "-- Valid detections: " << count_possible << endl;
+	cout << "-- Valid detections: " << feature_count.size() << "/" << count_possible << endl;
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1377,26 +1384,23 @@ void QZGeometryWindow::matchFeatures()
 	else
 	{
 		bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
-		double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
-		double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
-		double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
 		qout.output("-- Match initial features --");
-
 		ofstream ofstr(log_filename.c_str(), ios::trunc);
 		CStopWatch timer;
 		timer.startTimer();
-
 		if (use_tensor)
 		{
+			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
+			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 			shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 		}
 		else
 		{
+			double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
 			shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
 		}
-
 		timer.stopTimer();
 		ofstr.close();
 		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));

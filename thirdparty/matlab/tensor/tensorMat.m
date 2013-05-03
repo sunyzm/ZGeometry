@@ -5,7 +5,7 @@ nP2 = numbs(2);
 nT = numbs(3);
 nNN = numbs(4);
 %find the nearest neighbors
-[inds, dists] = annquery(feat2, feat1, nNN, 'eps', 10); % feat2 is complete seta nd feat1 is query set
+[inds, dists] = annquery(feat2, feat1, nNN, 'eps', 10); % feat2 is complete seta and feat1 is query set
 tris = int32(tris);
 %build the tensor
 [i j k]=ind2sub([nP2,nP2,nP2],inds);  % find multi-script representations corresponding to indices 
