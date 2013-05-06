@@ -27,17 +27,15 @@ double transferFunc2(double lambda, double t)
 	return coeff * std::exp(-coeff);
 }
 
-double transferFunc3( double lambda, double t )
+double heatKernelTransferFunc( double lambda, double t )
 {
 	return std::exp(-lambda * t);
 }
 
-double transferFunc4( double lambda, double t )
+double mhwTransferFunc1( double lambda, double t )
 {
 	return lambda * std::exp(-lambda * t);
 }
-
-TransferFunc HeatKernel_TF = &transferFunc3, MHW_TF = &transferFunc4;
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
@@ -817,20 +815,20 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 	m_bSGWComputed = true;
 }
 
-void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType kernelType, std::vector<double>& values ) const
+void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
 	if (!m_bLaplacianDecomposed) return;
 	values.resize(m_size);
 
-	TransferFunc pTF = &transferFunc3;	// default as heat kernel
+	TransferFunc pTF = &heatKernelTransferFunc;	// default as heat kernel
 
 	switch(kernelType)
 	{
 	case HEAT_KERNEL:
-		pTF = &transferFunc3;
+		pTF = &heatKernelTransferFunc;
 		break;
 	case MHW_KERNEL:
-		pTF = &transferFunc4;
+		pTF = &mhwTransferFunc1;
 		break;
 	case SGW_KERNEL:
 		pTF = &transferFunc2;
@@ -843,12 +841,33 @@ void DifferentialMeshProcessor::calKernelSignature( double timescale, KernelType
 		double sum = 0;
 		for (int k = 0; k < mhb.m_nEigFunc; ++k)
 		{
-			sum += (*pTF)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
+			sum += (*pTF)(mhb.m_func[k].m_val, scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
 		}
 		values[i] = sum;
 	}
 	);
 }
+
+void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const
+{
+	calKernelSignature(scale, kernelType, normalized_values);
+
+	double normalize_factor = 0.;
+	for (auto iter = normalized_values.begin(); iter != normalized_values.end(); ++iter)
+	{
+		normalize_factor += *iter;
+	}
+
+	double normalize_factor2 = 0.;
+	for (auto iter = mhb.m_func.begin(); iter != mhb.m_func.end(); ++iter)
+	{
+		normalize_factor2 += std::exp(-iter->m_val * scale);
+	}
+	cout << "factor1 = " << normalize_factor << ", " << "factor2 = " << normalize_factor2 << endl;
+
+	std::transform( normalized_values.begin(), normalized_values.end(), normalized_values.begin(), [=](double v){return v / normalize_factor;} );
+}
+
 
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
 {
@@ -882,20 +901,20 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
 
 	MeshFunction *mf = new MeshFunction(m_size);
-	TransferFunc pTF = &transferFunc3;
+	TransferFunc pTF = &heatKernelTransferFunc;
 
 	switch(kernelType)
 	{
 	case HEAT_KERNEL:
-		pTF = &transferFunc3;
+		pTF = &heatKernelTransferFunc;
 		mf->setIDandName(SIGNATURE_HK, "HK");		
 		break;
 	case MHW_KERNEL:
-		pTF = &transferFunc4;
+		pTF = &mhwTransferFunc1;
 		mf->setIDandName(SIGNATURE_MHW, "MHW");		
 		break;
 	case SGW_KERNEL:
-		pTF = &transferFunc4;
+		pTF = &mhwTransferFunc1;
 		mf->setIDandName(SIGNATURE_SGW, "SGW");		
 		break;
 	}

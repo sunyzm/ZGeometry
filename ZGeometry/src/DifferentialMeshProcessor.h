@@ -27,8 +27,8 @@ double transferScalingFunc1(double lambda);
 
 double transferFunc1(double lambda, double t);	// Mexican-hat square wavelet
 double transferFunc2(double lambda, double t);	// Mexican-hat wavelet
-double transferFunc3(double lambda, double t);  // heat kernel
-double transferFunc4(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
+double heatKernelTransferFunc(double lambda, double t);  // heat kernel
+double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
 
 typedef double (*TransferFunc)(double, double);
 typedef double (*ScalelessTransferFunc)(double);
@@ -50,7 +50,8 @@ public:
 	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
 	void selectMHB(LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
-	void calKernelSignature(double timescale, KernelType kernelType, std::vector<double>& values) const;
+	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
+	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
 	void computeKernelSignature(double timescale, KernelType kernelType);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);

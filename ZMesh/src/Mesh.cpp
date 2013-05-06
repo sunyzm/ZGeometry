@@ -3551,6 +3551,53 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	}
 }
 
+void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures ) const
+{
+	const int STATE_IDLE = 0;
+	const int STATE_MIN	= -1;
+	const int STATE_MAX	=  1;
+
+	assert(vSigVal.size() == m_nVertex);
+	vFeatures.clear();
+
+	int state = STATE_IDLE;
+	int state_c = STATE_IDLE;
+	vector<int> nb;
+
+	double pz = 1e-5;		//1e-5
+	double nz = -1e-5;
+
+	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
+	{
+		state = STATE_IDLE;
+		if (m_pVertex[j].m_bIsBoundary) 
+			continue;  // ignore boundary vertex
+
+		VertexNeighborRing(j, ring, nb);			//ring == 2
+		for (size_t k = 0; k < nb.size(); k++)		//for each neighbor 
+		{
+			int ev = nb[k];
+			state_c = STATE_IDLE;
+			if( vSigVal[j] - vSigVal[ev] < 0)		// low bound
+				state_c = STATE_MIN;
+			else if( vSigVal[j] - vSigVal[ev] > 0)	// high bound
+				state_c = STATE_MAX;
+
+			if(state == STATE_IDLE)				    // two-step change
+				state = state_c;
+			else if( state * state_c <= 0 ) 
+			{
+				state = STATE_IDLE;
+				break;
+			}
+		}
+		if(state == STATE_IDLE) continue;
+
+		vFeatures.push_back(make_pair(j, state_c));	//max: 1, min: -1
+	}
+
+}
+
 bool CMesh::hasBounary() const
 {
 	return m_nBoundaryEdgeNum > 0;

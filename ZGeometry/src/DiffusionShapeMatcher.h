@@ -50,14 +50,15 @@ public:
 	double	m_tl;	    // lower time
 	double	m_tu;	    // upper time
 	int		m_tn;	    // num of scales; log_2(tu/tl)
+	int     minOrMax;	// -1:min; 1:max
 public:
-	HKSFeature() { m_index = 0; m_tu = 0.0; m_tl = 0.0; m_tn = 0; }
-	HKSFeature(int i, int s) : MeshFeature(i, s) { HKSFeature(); }
+	HKSFeature() { m_index = 0; m_scale = -1; m_tu = m_tl = 0.0; m_tn = 0; }
+	HKSFeature(int i, int s, int state = 1) : minOrMax(state) { m_index = i; m_scale = s; m_tu = m_tl = 0.0; m_tn = 0; }
 	HKSFeature(int x, double tl, double tu) { m_index = x; m_tl = tl; m_tu = tu; m_tn = 0; }
 	HKSFeature(int x, double tl, int n) { m_index = x; m_tn = n; m_tu = tl; }
 	HKSFeature(int x, double tl, double tu, int n) { m_index = x; m_tn = n; m_tl = tl; m_tu = tu; }
 	HKSFeature(int x, double tl, double tu, int n, int scale) { m_index = x; m_tn = n; m_tl = tl; m_tu = tu; m_scale = scale; }
-	HKSFeature(const HKSFeature& f) { m_index = f.m_index; m_scale = f.m_scale; m_tl = f.m_tl; m_tu = f.m_tu; m_tn = f.m_tn; }
+	HKSFeature(const HKSFeature& f) { m_index = f.m_index; m_scale = f.m_scale; m_tl = f.m_tl; m_tu = f.m_tu; m_tn = f.m_tn; minOrMax = f.minOrMax; }
 	void setTimes(double tl, double tu, double tn) { m_tl = tl; m_tu = tu; m_tn = tn; }
 };
 

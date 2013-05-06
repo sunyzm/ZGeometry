@@ -198,6 +198,9 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 	m_bPyramidBuilt = false;
 	m_nAlreadyRegisteredLevel = -1;
 	m_nRegistrationLevels = 0;
+
+	vFeatureMatchingResults.resize(1);
+	vRegistrationResutls.resize(1);
 }
 
 DiffusionShapeMatcher::~DiffusionShapeMatcher()
@@ -267,7 +270,7 @@ void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream&
 	setRegistrationLevels(n);
 }
 
-void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
+void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
 {
 	assert(obj == 0 || obj == 1);
 	vFeatures[obj].clear();
@@ -277,26 +280,31 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int scale
 	const int fineSize = fineMesh->getVerticesNum();
 	vector<HKSFeature>& vF = vFeatures[obj];
 	
-	for (int s = scale-1; s >= 0; --s)
-	{
-		double tvalue = baseTvalue * std::pow(talpha, s);
-		vector<double> hksv;
-		pMP->calKernelSignature(tvalue, HEAT_KERNEL, hksv);
+	vector<double> vScaleValues(nScales);
+	for (int s = nScales-1; s >= 0; --s) 
+		vScaleValues[s] = baseTvalue * std::pow(talpha, s);
 
- 		double sref = 4.0 * PI * tvalue;
+	for (int s = nScales-1; s >= 0; --s)
+	{
+		vector<double> hksv;
+//		pMP->calNormalizedKernelSignature(vScaleValues[s], HEAT_KERNEL, hksv);
+		pMP->calKernelSignature(vScaleValues[s], HEAT_KERNEL, hksv); 
+ 		double sref = 4.0 * PI * vScaleValues[s];
  		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
 
-		vector<int> vFeatureIdx;
+		vector<pair<int, int> > vFeatureIdx;
+//		vector<int> vFeatureIdx;
 //		if (s == 0) ring = 3;
-		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
+//		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
+		fineMesh->extractExtrema(hksv, ring, vFeatureIdx);
 		
-		cout << "[Raw Features] obj " << obj << ", timescale = " << tvalue << '\n';
+		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) 
-			cout << *iter << ", ";
+			cout << iter->first	<< ", ";
 		cout << '\n';
 
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
-			vF.push_back(HKSFeature(*iter, s));
+			vF.push_back(HKSFeature(iter->first, s, iter->second));
 
 // 		priority_queue<ExtremaPoint, vector<ExtremaPoint>, greater<ExtremaPoint> > extremaPointsQueue;
 // 		for_each (vFeatureIdx.begin(), vFeatureIdx.end(), [&](int idx){

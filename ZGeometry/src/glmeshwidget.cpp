@@ -635,17 +635,18 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		//glPointSize(2.0);
 
 		// draw as gluSphere 
+		glColor4f(0.62, 0, 0.77, 1);	// purple 
 		GLUquadric* quadric = gluNewQuadric();
 		for (auto iter = vpMP[0]->getActiveFeatures()->begin(); iter != vpMP[0]->getActiveFeatures()->end(); ++iter)
 		{
 		 	Vector3D vt = tmesh->getVertex_const((*iter)->m_index)->getPosition();
 		 	vt += shift;
-			int color_index = (*iter)->m_scale % gFeatureColorNum;
-		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+// 			int color_index = (*iter)->m_scale % gFeatureColorNum;
+// 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 *(*iter)->m_scale), 16, 8);
 			glPopMatrix();
 		}
 		gluDeleteQuadric(quadric);
@@ -791,7 +792,6 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		for (int i = 0; i < size; i++)
 		{
-
 			float cc = (i*1.0f)/(size-1.0f);
 			glColorCoded(cc*4.0f, 0.9);
 			//greenCoded(cc,0.9);

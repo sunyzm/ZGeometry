@@ -1323,15 +1323,16 @@ void QZGeometryWindow::detectFeatures()
 	int num_detect_scales = g_configMgr.getConfigValueInt("FEATURE_DETECTION_NUM_SCALES");
 
 	qout.output("-- Detect initial features --");
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
-	});
+ 	Concurrency::parallel_for(0, num_meshes, [&](int obj)
+ 	{
+ 		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
+ 	});
+// 	shapeMatcher.detectFeatures(0, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
+// 	shapeMatcher.detectFeatures(1, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 
 	const vector<HKSFeature>& vf1 = shapeMatcher.vFeatures[0], &vf2 = shapeMatcher.vFeatures[1];
-
 	std::map<int, int> feature_count;
 	int count_possible = 0;
 	for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
