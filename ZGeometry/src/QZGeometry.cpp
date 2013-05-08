@@ -117,6 +117,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
 	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
+	QObject::connect(ui.actionSaveMatching, SIGNAL(triggered()), this, SLOT(saveMatchingResult()));
+	QObject::connect(ui.actionLoadMatching, SIGNAL(triggered()), this, SLOT(loadMatchingResult()));
 
 	////////	compute	////////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
@@ -1795,6 +1797,59 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 	}
 
 	decomposeLaplacians(laplacianType);
+}
+
+void QZGeometryWindow::saveMatchingResult()
+{
+	if (g_task != TASK_REGISTRATION) return;
+
+	const vector<MatchPair>& vPairs = shapeMatcher.getInitialMatchedFeaturePairs();
+	if (vPairs.empty())
+	{
+		qout.output("No matching result available", OUT_MSGBOX);
+		return;
+	}
+
+	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Matching Result to File"),
+		"./output/matching.txt",
+		tr("Text Files (*.txt *.dat)"));
+	
+	ofstream ofs(fileName.toStdString().c_str(), ios::trunc);
+
+	ofs << vPairs.size() << endl;
+
+	for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter)
+	{
+		ofs << iter->m_idx1 << ' ' << iter->m_idx2 << ' ' << iter->m_score << endl;
+	}
+
+	ofs.close();
+}
+
+void QZGeometryWindow::loadMatchingResult()
+{
+	if (g_task != TASK_REGISTRATION) return;
+
+	QString filename =  QFileDialog::getOpenFileName(
+		this, "Select one or more mesh files to open",
+		"./output/", tr("Text Files (*.txt *.dat)"));
+
+	ifstream ifs(filename.toStdString().c_str());
+	int vsize;
+	ifs >> vsize;
+	vector<MatchPair> vPairs;
+	for (int i = 0; i < vsize; ++i)
+	{
+		int idx1, idx2; double score;
+		ifs >> idx1 >> idx2 >> score;
+		vPairs.push_back(MatchPair(idx1, idx2, score));
+	}
+
+	shapeMatcher.forceInitialAnchors(vPairs);		
+
+	if (ui.glMeshWidget->m_bDrawMatching)
+		ui.glMeshWidget->update();
+	else toggleDrawMatching();
 }
 
 

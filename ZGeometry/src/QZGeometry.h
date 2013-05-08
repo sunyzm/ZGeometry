@@ -27,6 +27,8 @@ signals:
 private slots:
 	void addMesh();
 	void saveSignature();
+	void saveMatchingResult();
+	void loadMatchingResult();
 
 	void setTaskRegistration();
 	void setTaskEditing();

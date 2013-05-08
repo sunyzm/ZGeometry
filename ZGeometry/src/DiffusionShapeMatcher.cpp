@@ -11,8 +11,6 @@
 #include <functional>
 #include <limits>
 
-#define LOCAL_ANCHORS_NUM 8
-
 using namespace std;
 
 extern OutputHelper qout;
@@ -197,10 +195,6 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 	m_bInitialized = false;
 	m_bPyramidBuilt = false;
 	m_nAlreadyRegisteredLevel = -1;
-	m_nRegistrationLevels = 0;
-
-	vFeatureMatchingResults.resize(1);
-	vRegistrationResutls.resize(1);
 }
 
 DiffusionShapeMatcher::~DiffusionShapeMatcher()
@@ -235,7 +229,9 @@ void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, Differe
 
 	m_ParamMgr[0].initialize(pMP1);
 	m_ParamMgr[1].initialize(pMP2);
-
+	
+	m_nPyramidLevels = 1;
+	setRegistrationLevels(1);
 	m_bInitialized = true;
 }
 
@@ -1063,7 +1059,7 @@ void DiffusionShapeMatcher::setRegistrationLevels( int val )
 	vRegistrationResutls.resize(m_nRegistrationLevels);
 
 	m_nAlreadyRegisteredLevel = m_nRegistrationLevels;
-	m_nAlreadyMatchedLevel = m_nRegistrationLevels+1;
+	m_nAlreadyMatchedLevel = m_nRegistrationLevels + 1;
 }
 
 const std::vector<MatchPair>& DiffusionShapeMatcher::getMatchedFeaturesResults ( int level ) const
@@ -1994,4 +1990,9 @@ void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair
 	}
 
 	cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
+}
+
+const std::vector<MatchPair>& DiffusionShapeMatcher::getInitialMatchedFeaturePairs() const
+{
+	return vFeatureMatchingResults[m_nRegistrationLevels];
 }
