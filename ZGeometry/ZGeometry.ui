@@ -218,6 +218,7 @@
     </property>
     <addaction name="actionAddMesh"/>
     <addaction name="actionSaveSignature"/>
+    <addaction name="actionSaveMatching"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -350,6 +351,8 @@
     <addaction name="actionMatchFeatures"/>
     <addaction name="actionRegisterStep"/>
     <addaction name="actionRegisterFull"/>
+    <addaction name="separator"/>
+    <addaction name="actionPickMatches"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -768,6 +771,16 @@
   <action name="actionAddMesh">
    <property name="text">
     <string>Add Mesh</string>
+   </property>
+  </action>
+  <action name="actionPickMatches">
+   <property name="text">
+    <string>Pick Matches</string>
+   </property>
+  </action>
+  <action name="actionSaveMatching">
+   <property name="text">
+    <string>Save Matching</string>
    </property>
   </action>
  </widget>

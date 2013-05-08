@@ -128,6 +128,7 @@ public:
 	void    dumpIndexMap(const std::string& filename) const;
 	void	readInRandPair(const std::string& filename);
 	
+	static void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2);
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 	static double evaluateDistance(const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 

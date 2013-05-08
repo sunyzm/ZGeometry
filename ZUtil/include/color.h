@@ -1,5 +1,17 @@
 #pragma once
 
+enum ColorID {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_PURPLE, COLOR_MAGENTA, COLOR_CYAN};
+
+const float RGBColors[][3] = {	
+	{1.f, 0, 0},	//red
+	{0, 1.f, 0},	//green
+	{0, 0, 1.f},	//blue
+	{1.f, 1.f, 0},	//yellow
+	{159.f/255.f, 0, 197.f/255.f}, //purple
+	{1.f, 0, 1.f}, // magenta
+	{0, 1.f, 1.f}	// cyan
+};
+
 class RGBf 
 {
 public :
@@ -28,3 +40,4 @@ public:
 	double RedMap[256], GreenMap[256], BlueMap[256];
 	void BuildLUT();
 };
+

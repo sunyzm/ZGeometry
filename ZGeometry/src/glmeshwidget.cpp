@@ -635,7 +635,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		//glPointSize(2.0);
 
 		// draw as gluSphere 
-		glColor4f(0.62, 0, 0.77, 1);	// purple 
+		const float *feature_color1 = RGBColors[COLOR_MAGENTA];
+		const float *feature_color2 = RGBColors[COLOR_GREEN];
+		
 		GLUquadric* quadric = gluNewQuadric();
 		for (auto iter = vpMP[0]->getActiveFeatures()->begin(); iter != vpMP[0]->getActiveFeatures()->end(); ++iter)
 		{
@@ -643,6 +645,11 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		 	vt += shift;
 // 			int color_index = (*iter)->m_scale % gFeatureColorNum;
 // 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+			if (dynamic_cast<HKSFeature*>(*iter)->minOrMax == 1)
+				glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
+			else
+				glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
+
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
@@ -793,7 +800,7 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 		for (int i = 0; i < size; i++)
 		{
 			float cc = (i*1.0f)/(size-1.0f);
-			glColorCoded(cc*4.0f, 0.9);
+			glColorCoded(cc*4.0f, 0.8);
 			//greenCoded(cc,0.9);
 			int loc1 = vmp[i].m_idx1;
 			int loc2 = vmp[i].m_idx2;
@@ -811,12 +818,12 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 
 			glPushMatrix();
 			glTranslated(x1, y1, z1);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+//			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslated(x2, y2, z2);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+//			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			if (m_bShowCorrespondenceLine)

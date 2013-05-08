@@ -1334,22 +1334,26 @@ void QZGeometryWindow::detectFeatures()
 
 	const vector<HKSFeature>& vf1 = shapeMatcher.vFeatures[0], &vf2 = shapeMatcher.vFeatures[1];
 	std::map<int, int> feature_count;
-	int count_possible = 0;
+	int count_possible1 = 0;
+	int count_possible0 = 0; 
+	int count_possible2 = 0;
 	for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
 	{
 		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
 		{
 			if (iter1->m_scale == iter2->m_scale && m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 1))
 			{
-				count_possible++;
+				count_possible1++;
 				if (feature_count.find(iter1->m_index) == feature_count.end())
 					feature_count.insert(make_pair(iter1->m_index, 1));
 				else feature_count[iter1->m_index] += 1;
-				break;
+
+				if (iter1->m_index == iter2->m_index) 
+					count_possible0++;
 			}
 		}
 	}
-	cout << "-- Valid detections: " << feature_count.size() << "/" << count_possible << endl;
+	cout << "-- Valid detections: " << feature_count.size() << "/" << count_possible0 << "/" << count_possible1 << endl;
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1406,6 +1410,9 @@ void QZGeometryWindow::matchFeatures()
 		ofstr.close();
 		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
 	}
+
+	const std::vector<MatchPair>& result = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
+	shapeMatcher.evaluateWithGroundTruth(result, &m_mesh[0], &m_mesh[1]);
 	
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();

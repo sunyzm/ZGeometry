@@ -292,7 +292,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
  		double sref = 4.0 * PI * vScaleValues[s];
  		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
 
-		vector<pair<int, int> > vFeatureIdx;
+		vector<pair<int, int> > vFeatureIdx;	// <index, minOrMax>
 //		vector<int> vFeatureIdx;
 //		if (s == 0) ring = 3;
 //		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
@@ -1231,9 +1231,9 @@ void DiffusionShapeMatcher::ComputeTensorFeature( const DifferentialMeshProcesso
 // 		return;
 // 	}
 
-	double d1 = pmp->calHK(i,j,t);
-	double d2 = pmp->calHK(j,k,t);
-	double d3 = pmp->calHK(k,i,t);
+	double d1 = pmp->calHK(i, j, t);
+	double d2 = pmp->calHK(j, k, t);
+	double d3 = pmp->calHK(k, i, t);
 	double s1 = pmp->calHK(i, i, t);
 	double s2 = pmp->calHK(j, j, t);
 	double s3 = pmp->calHK(k, k, t);
@@ -1271,11 +1271,12 @@ double DiffusionShapeMatcher::TensorMatching( Engine *ep, const DifferentialMesh
 	int tsize2 = vsize2 * vsize2 * vsize2;
 
 	// compute feature descriptors
+	const int FeatureDim = 6;
 
 	mxArray *mxfeat1, *mxfeat2, *mxtris, *mxnumbs, *mX2, *vX2, *score;
-	mxfeat1 = mxCreateDoubleMatrix(6, tsize1, mxREAL);
+	mxfeat1 = mxCreateDoubleMatrix(FeatureDim, tsize1, mxREAL);
 	double *pfeat1 = mxGetPr(mxfeat1);
-	mxfeat2 = mxCreateDoubleMatrix(6, tsize2, mxREAL);
+	mxfeat2 = mxCreateDoubleMatrix(FeatureDim, tsize2, mxREAL);
 	double *pfeat2 = mxGetPr(mxfeat2);
 	mxtris = mxCreateDoubleMatrix(3, tsize1, mxREAL);
 	double *ptris = mxGetPr(mxtris);
@@ -1288,17 +1289,17 @@ double DiffusionShapeMatcher::TensorMatching( Engine *ep, const DifferentialMesh
 	if(tsize1 > 60) pnumbs[3] = 30;     // nNN
 	else pnumbs[3] = tsize1*0.5;
 
-// 	for(int i = 0; i < tsize1*3; i++)
-// 		ptris[i] = triangs[i];
 	copy(triangs.begin(), triangs.end(), ptris);
 
-	for(int i = 0; i < tsize1; i++)
+//	for(int i = 0; i < tsize1; i++)
+	Concurrency::parallel_for(0, tsize1, [&](int i)
 	{
 		int vi = triangs[i*3];
 		int vj = triangs[i*3+1];
 		int vk = triangs[i*3+2];
-		ComputeTensorFeature(pmp1, ct1[vi].m_index, ct1[vj].m_index, ct1[vk].m_index, t, pfeat1 + i*6);
+		ComputeTensorFeature(pmp1, ct1[vi].m_index, ct1[vj].m_index, ct1[vk].m_index, t, pfeat1 + i*FeatureDim);
 	}
+	);
 
 	Concurrency::parallel_for(0, vsize2, [&](int i)
 //	for(int i = 0; i < vsize2; i++)
@@ -1307,7 +1308,7 @@ double DiffusionShapeMatcher::TensorMatching( Engine *ep, const DifferentialMesh
 		{
 			for(int k = 0; k < vsize2; k++)
 			{
-				ComputeTensorFeature(pmp2, ct2[i].m_index, ct2[j].m_index, ct2[k].m_index, t, pfeat2 + ((i*vsize2+j)*vsize2+k)*6);
+				ComputeTensorFeature(pmp2, ct2[i].m_index, ct2[j].m_index, ct2[k].m_index, t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
 			}
 		}
 	}
@@ -1336,17 +1337,18 @@ double DiffusionShapeMatcher::TensorMatching( Engine *ep, const DifferentialMesh
 	{
 		double *pmax = max_element(pv, pv+vsize1);	// max feature match score
 		int imax = pmax - pv;	// shape 1 feature index
-
-		cout << imax << ": " << *pmax << endl;
-		if(*pmax < thresh) 
-			break;
-
-		result += pv[imax];
 		MatchPair mpt;
 		mpt.m_idx1 = ct1[imax].m_index;
 		int ind = (int)px[imax];		// shape 2 feature index matched to imax
 		//if(ind<0 || ind>vsize2) continue;
 		mpt.m_idx2 = ct2[ind-1].m_index;
+		mpt.m_score = *pmax;
+
+		cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
+		if(*pmax < thresh) 
+			break;
+
+		result += pv[imax];
 		matched.push_back(mpt);
 
 		pv[imax] = 0.0;
@@ -1977,4 +1979,19 @@ void DiffusionShapeMatcher::forceInitialAnchors( const std::vector<MatchPair>& m
 	m_bFeatureMatched = true;
 	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
 	vFeatureMatchingResults[m_nAlreadyMatchedLevel] = mp;
+}
+
+void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2 )
+{
+	int count_valid = 0;
+	int count_valid_strict = 0;
+	for (auto iter = vIdMatchPair.begin(); iter != vIdMatchPair.end(); ++iter)
+	{
+		if (mesh2->isInNeighborRing(iter->m_idx2, iter->m_idx1, 1))
+			count_valid++;
+		if (iter->m_idx1 == iter->m_idx2)
+			count_valid_strict++;
+	}
+
+	cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
 }
