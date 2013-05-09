@@ -3,13 +3,13 @@
 enum ColorID {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_PURPLE, COLOR_MAGENTA, COLOR_CYAN};
 
 const float RGBColors[][3] = {	
-	{1.f, 0, 0},	//red
-	{0, 1.f, 0},	//green
-	{0, 0, 1.f},	//blue
-	{1.f, 1.f, 0},	//yellow
-	{159.f/255.f, 0, 197.f/255.f}, //purple
-	{1.f, 0, 1.f}, // magenta
-	{0, 1.f, 1.f}	// cyan
+	/*red*/{1.f, 0, 0},
+	/*green*/{0, 1.f, 0},	
+	/*blue*/{0, 0, 1.f},
+	/*yellow*/{1.f, 1.f, 0},
+	/*purple*/{159.f/255.f, 0, 197.f/255.f},
+	/*magenta*/{1.f, 0, 1.f},
+	/*cyan*/{0, 1.f, 1.f}
 };
 
 class RGBf 

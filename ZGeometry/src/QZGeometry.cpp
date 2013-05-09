@@ -1334,7 +1334,7 @@ void QZGeometryWindow::detectFeatures()
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 
-	const vector<HKSFeature>& vf1 = shapeMatcher.vFeatures[0], &vf2 = shapeMatcher.vFeatures[1];
+	const vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
 	std::map<int, int> feature_count;
 	int count_possible1 = 0;
 	int count_possible0 = 0; 
@@ -1834,18 +1834,7 @@ void QZGeometryWindow::loadMatchingResult()
 		this, "Select one or more mesh files to open",
 		"./output/", tr("Text Files (*.txt *.dat)"));
 
-	ifstream ifs(filename.toStdString().c_str());
-	int vsize;
-	ifs >> vsize;
-	vector<MatchPair> vPairs;
-	for (int i = 0; i < vsize; ++i)
-	{
-		int idx1, idx2; double score;
-		ifs >> idx1 >> idx2 >> score;
-		vPairs.push_back(MatchPair(idx1, idx2, score));
-	}
-
-	shapeMatcher.forceInitialAnchors(vPairs);		
+	shapeMatcher.loadInitialFeaturePairs(filename.toStdString());
 
 	if (ui.glMeshWidget->m_bDrawMatching)
 		ui.glMeshWidget->update();

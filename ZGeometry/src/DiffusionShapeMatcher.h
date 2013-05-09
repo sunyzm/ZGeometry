@@ -121,7 +121,8 @@ public:
 	const std::vector<MatchPair>& getInitialMatchedFeaturePairs() const;
 	const std::vector<MatchPair>& getMatchedFeaturesResults(int level) const;
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
-	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return vFeatures[obj]; }
+	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return m_vFeatures[obj]; }
+	void    loadInitialFeaturePairs(const std::string& filename);
 	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
@@ -154,11 +155,10 @@ private:
 	DifferentialMeshProcessor* pOriginalProcessor[2];
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
-public:
-	std::vector<HKSFeature> vFeatures[2];	// original detected fine features
-private:
-	std::vector<std::vector<MatchPair> > vFeatureMatchingResults;
-	std::vector<std::vector<MatchPair> > vRegistrationResutls;
+	std::vector<HKSFeature> m_vFeatures[2];	// original detected fine features
+
+	std::vector<std::vector<MatchPair> > m_vFeatureMatchingResults;
+	std::vector<std::vector<MatchPair> > m_vRegistrationResutls;
 
 	bool					m_bInitialized;
 	bool					m_bPyramidBuilt;
