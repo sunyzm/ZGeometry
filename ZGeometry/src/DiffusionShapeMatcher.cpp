@@ -1054,10 +1054,8 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 void DiffusionShapeMatcher::setRegistrationLevels( int val )
 {
 	m_nRegistrationLevels = min(val, m_nPyramidLevels);
-
 	m_vFeatureMatchingResults.resize(m_nRegistrationLevels + 1);
 	m_vRegistrationResutls.resize(m_nRegistrationLevels);
-
 	m_nAlreadyRegisteredLevel = m_nRegistrationLevels;
 	m_nAlreadyMatchedLevel = m_nRegistrationLevels + 1;
 }
@@ -1995,9 +1993,10 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getInitialMatchedFeaturePai
 	return m_vFeatureMatchingResults[m_nRegistrationLevels];
 }
 
-void DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename )
+bool DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename )
 {
 	ifstream ifs(filename.c_str());
+	if (!ifs) return false;
 	int vsize;
 	ifs >> vsize;
 	vector<MatchPair> vPairs;
@@ -2009,4 +2008,5 @@ void DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename
 	}
 
 	forceInitialAnchors(vPairs);	
+	return true;
 }

@@ -723,7 +723,6 @@ void QZGeometryWindow::toggleDrawMatching(bool show)
 	ui.actionDrawMatching->setChecked(bToShow);
 
 	ui.glMeshWidget->update();
-
 }
 
 void QZGeometryWindow::toggleShowMatchingLines(bool show)
@@ -1355,7 +1354,7 @@ void QZGeometryWindow::detectFeatures()
 			}
 		}
 	}
-	cout << "-- Valid detections: " << feature_count.size() << "/" << count_possible0 << "/" << count_possible1 << endl;
+	cout << "-- Potential matches: " << count_possible0 << "/" << count_possible1 << endl;
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1364,31 +1363,54 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
-	bool force_matching = (1 == g_configMgr.getConfigValueInt("FORCE_MATCHING"));
-	
+	int force_matching = g_configMgr.getConfigValueInt("FORCE_MATCHING");
 	string string_override = "";
-	if (m_mesh[0].getMeshName() == "horse0")
-	{
-		string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
-	}
-	else if (m_mesh[0].getMeshName() == "eight")
-	{
-		string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
-	}
+	bool alreadyMached = false;
 	
-	if (force_matching && string_override != "")
+	if (force_matching == 1)
 	{
-		vector<int> idx_override = splitStringToInt(string_override);
-		vector<MatchPair> vmp;
-		for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
+		if (m_mesh[0].getMeshName() == "horse0")
 		{
-			vmp.push_back(MatchPair(*iter, *iter));
+			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
 		}
-		shapeMatcher.forceInitialAnchors(vmp);
-
-		qout.output("!!Matched anchors manually assigned!!");
+		else if (m_mesh[0].getMeshName() == "eight")
+		{
+			string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
+		}
+		if (string_override != "")
+		{
+			vector<int> idx_override = splitStringToInt(string_override);
+			if (!idx_override.empty())
+			{
+				vector<MatchPair> vmp;
+				for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
+				{
+					vmp.push_back(MatchPair(*iter, *iter));
+				}
+				shapeMatcher.forceInitialAnchors(vmp);
+				qout.output("!!Matched anchors manually assigned!!");
+				alreadyMached = true;
+			}
+		}
 	}
-	else
+	else if (force_matching == 2)
+	{
+		if (m_mesh[0].getMeshName() == "horse0")
+		{
+			string_override = g_configMgr.getConfigValue("MATCHING_HORSE_FILE");
+		}
+		else if (m_mesh[0].getMeshName() == "eight")
+		{
+			string_override = g_configMgr.getConfigValue("MATCHING_EIGHT_FILE");
+		}
+		if (string_override != "" && shapeMatcher.loadInitialFeaturePairs(string_override))
+		{
+			qout.output("!!Matched anchors manually assigned!!");
+			alreadyMached = true;
+		}
+	}
+
+	if (!alreadyMached)
 	{
 		bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
 		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
@@ -1403,7 +1425,7 @@ void QZGeometryWindow::matchFeatures()
 			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 			shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 		}
-		else
+		else	// traditional pair-based matching
 		{
 			double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
 			shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
@@ -1415,10 +1437,9 @@ void QZGeometryWindow::matchFeatures()
 
 	const std::vector<MatchPair>& result = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
 	shapeMatcher.evaluateWithGroundTruth(result, &m_mesh[0], &m_mesh[1]);
-	
+
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
-	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::registerStep()
@@ -1430,10 +1451,11 @@ void QZGeometryWindow::registerStep()
 	ofstream ofstr;	
 	if (shapeMatcher.getAlreadyRegisteredLevel() == shapeMatcher.getTotalRegistrationLevels())
 		ofstr.open(log_filename.c_str(), ios::trunc);
-	else ofstr.open(log_filename.c_str(), ios::app);
+	else
+		ofstr.open(log_filename.c_str(), ios::app);
 
 	double time_elapsed = time_call([&]{
-		shapeMatcher.refineRegister2(ofstr);
+		shapeMatcher.refineRegister(ofstr);
 	}) / 1000.0;
 
 	int level = shapeMatcher.getAlreadyRegisteredLevel();
