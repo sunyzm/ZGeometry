@@ -1,4 +1,5 @@
 ## global settings ##
+# GEOMETRY_TASK #
 # 0: viewving
 # 1: registration
 # 2: editing
@@ -20,10 +21,11 @@ INITIAL_REF_POINT = 0
 
 ## mesh input ##
 NUM_PRELOAD_MESHES = 2
+GROUND_TRUTH_AVAILABLE = 1
 MESH_LIST_NAME = meshfiles.cfg
 MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 
-## Laplacian & MHB##
+## laplacian & harmonics ##
 # -1 means no Laplacian computed at initialization
 # 0 umbrella laplacian
 # 1 cot formula laplacain
@@ -62,4 +64,4 @@ MATCHING_HORSE_FILE = output/matching_horse.txt
 MATCHING_EIGHT_FILE = output/matching_eight.txt
 
 ## registration ##
-
+REGISTRATION_METHOD = 1
