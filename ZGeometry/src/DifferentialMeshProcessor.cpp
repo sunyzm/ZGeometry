@@ -989,6 +989,17 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	return sum;
 }
 
+double DifferentialMeshProcessor::calHeatTrace( double timescale ) const
+{
+	double sum = 0;
+	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	{
+		sum += std::exp(-mhb.m_func[k].m_val * timescale);
+	}
+	return sum;
+}
+
+
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
 	double sum = 0;
@@ -1193,4 +1204,3 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
 	addProperty(mf);
 }
-

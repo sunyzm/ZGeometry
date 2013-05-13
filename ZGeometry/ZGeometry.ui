@@ -354,6 +354,7 @@
     <addaction name="actionRegisterFull"/>
     <addaction name="separator"/>
     <addaction name="actionPickMatches"/>
+    <addaction name="actionRegisterTest"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
@@ -787,6 +788,11 @@
   <action name="actionLoadMatching">
    <property name="text">
     <string>Load Matching</string>
+   </property>
+  </action>
+  <action name="actionRegisterTest">
+   <property name="text">
+    <string>Register Test</string>
    </property>
   </action>
  </widget>

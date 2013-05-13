@@ -89,6 +89,7 @@ private slots:
 	void matchFeatures();
 	void registerStep();
 	void registerFull();
+	void registerTest();
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 

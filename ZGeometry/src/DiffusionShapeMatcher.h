@@ -105,6 +105,7 @@ public:
 	void	matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
 	void    refineRegister2(std::ostream& flog);
+	void    registerTesting1();
 	void	evaluateRegistration();
 
 	/* attributes access */

@@ -1957,7 +1957,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 	const vector<MatchPair>& newReg = tmpReg1;
 
 	flog << "\n3. Registration adjustment and anchor set augmentation finished!\n"
-		<< "  New reg size: " << newReg.size() << "; new anchor size: " << newAnchorMatch.size() << endl;
+		 << "  New reg size: " << newReg.size() << "; new anchor size: " << newAnchorMatch.size() << endl;
 
 	if (m_nAlreadyMatchedLevel > 0) m_nAlreadyMatchedLevel--;
 	if (m_nAlreadyRegisteredLevel > 0) m_nAlreadyRegisteredLevel--;
@@ -2009,4 +2009,75 @@ bool DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename
 
 	forceInitialAnchors(vPairs);	
 	return true;
+}
+
+void DiffusionShapeMatcher::registerTesting1()
+{
+	const int current_level = max(m_nAlreadyRegisteredLevel - 1, 0);	//the registration level we currently working on
+
+	double anchorThresh;
+	double regT = 20.0 * pow(2.0, current_level);
+	if (current_level == 1) 
+	{
+		regT = 80;
+		anchorThresh = 1e-4;
+	}
+	if (current_level == 0)
+	{
+		regT = 20;
+		anchorThresh = 2e-4;
+	}
+	anchorThresh = 1e-4;
+	//	thresh = (double)featureMatch.size() * 1e-5;
+
+	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
+	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
+	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
+
+	const vector<MatchPair>& oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
+	const vector<MatchPair>& oldReg = (current_level == m_nRegistrationLevels - 1) ? oldAnchorMatch : getRegistrationResults(m_nAlreadyRegisteredLevel);
+	vector<MatchPair> newAnchorMatch;
+	vector<MatchPair> tmpReg1, tmpReg2;
+
+	/************************************************************************/
+	/*                        1. Initialize/Compute HKC                     */
+	/************************************************************************/
+	vector<int> vFeatureID1, vFeatureID2;
+	for (auto iter = begin(oldAnchorMatch); iter != end(oldAnchorMatch); ++iter)
+	{
+		vFeatureID1.push_back(iter->m_idx1);
+		vFeatureID2.push_back(iter->m_idx2);
+	}
+
+	ofstream ofs("output/register_test.csv");
+	
+	vector<double> vt;
+	for (int i = 0; i < 10; ++i)
+		vt.push_back(1 * std::exp((double)i));
+	ofs << "Time";
+	for (auto iter = vt.begin(); iter != vt.end(); ++iter)
+		ofs << ", " << *iter;
+	ofs << endl;
+	
+//	vector<int> vSelected[2] = {tmesh1->getNeighborVertexIndex(5934, 1), tmesh2->getNeighborVertexIndex(5934, 1)};
+	vector<int> vSelected[2] = {vFeatureID1, vFeatureID2};
+
+	for (int obj = 0; obj < 2; ++obj)
+	{
+		for (auto iter1 = vSelected[obj].begin(); iter1 != vSelected[obj].end(); ++iter1)
+		{
+			ofs << "Vertex " << obj+1 << "-" << *iter1;
+			for (auto iter2 = vt.begin(); iter2 != vt.end(); ++iter2)
+			{
+				double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter1, *iter2);
+				//hk = std::log(4.*PI*hk);
+				hk /= pOriginalProcessor[obj]->calHeatTrace(*iter2);
+				ofs << ", " << hk;
+			}
+			ofs << endl;
+		}
+	}	
+
+	system("excel output/register_test.csv");
 }
