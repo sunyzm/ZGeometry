@@ -37,10 +37,10 @@ class DifferentialMeshProcessor : public MeshProcessor
 {
 public:
 	DifferentialMeshProcessor(void);
-	DifferentialMeshProcessor(CMesh* tm);
+	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
 	~DifferentialMeshProcessor(void);
 	void init(CMesh* tm, Engine* e);
-	void init_lite(CMesh* tm);
+	void init_lite(CMesh* tm, CMesh* originalMesh);
 	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
 	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
 	void addNewHandle(int hIdx);

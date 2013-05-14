@@ -64,4 +64,4 @@ MATCHING_HORSE_FILE = output/matching_horse.txt
 MATCHING_EIGHT_FILE = output/matching_eight.txt
 
 ## registration ##
-REGISTRATION_METHOD = 1
+REGISTRATION_METHOD = 2

@@ -106,6 +106,7 @@ public:
 	void	refineRegister(std::ostream& flog);
 	void    refineRegister2(std::ostream& flog);
 	void    registerTesting1();
+	void    regsiterTesting2();
 	void	evaluateRegistration();
 
 	/* attributes access */
@@ -156,7 +157,7 @@ private:
 	DifferentialMeshProcessor* pOriginalProcessor[2];
 	MeshPyramid meshPyramids[2];
 	std::vector<DifferentialMeshProcessor*> liteMP[2];
-	std::vector<HKSFeature> m_vFeatures[2];	// original detected fine features
+	std::vector<std::vector<HKSFeature> > m_vFeatures;	// original detected fine features
 
 	std::vector<std::vector<MatchPair> > m_vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > m_vRegistrationResutls;
@@ -177,6 +178,7 @@ private:
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
 	static void ComputeTensorFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
 	static void ComputeTensorFeature2( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static double TensorMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh);
 	static double TensorMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& ct1, const std::vector<HKSFeature>& ct2, std::vector<MatchPair>& matched, double t, double thresh);
 	static double TensorMatching2(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& ct1, const std::vector<HKSFeature>& ct2, std::vector<MatchPair>& matched, double t, double thresh);
 	void    prepareHeatRegistration( double regTime );

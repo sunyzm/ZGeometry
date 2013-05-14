@@ -51,12 +51,10 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 	m_bSGWComputed = false;
 }
 
-DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm)
+DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
 {
 	DifferentialMeshProcessor();
-	mesh = tm;
-
-	init_lite(tm);
+	init_lite(tm, originalMesh);
 }
 
 DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
@@ -66,6 +64,7 @@ DifferentialMeshProcessor::~DifferentialMeshProcessor(void)
 void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 {
 	mesh = tm;
+	ori_mesh = tm;
 	m_ep = e;
 	matlabWrapper.setEngine(e);
 	m_size = mesh->getVerticesNum();
@@ -73,9 +72,10 @@ void DifferentialMeshProcessor::init(CMesh* tm, Engine* e)
 	posRef = mesh->getVertex(pRef)->getPosition();
 }
 
-void DifferentialMeshProcessor::init_lite(CMesh* tm)
+void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 {
 	mesh = tm;
+	ori_mesh = originalMesh;
 	m_size = mesh->getVerticesNum();
 	pRef = 0;
 	posRef = mesh->getVertex(0)->getPosition();
@@ -989,7 +989,7 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	return sum;
 }
 
-double DifferentialMeshProcessor::calHeatTrace( double timescale ) const
+double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
 	double sum = 0;
 	for (int k = 0; k < mhb.m_nEigFunc; ++k)
@@ -998,7 +998,6 @@ double DifferentialMeshProcessor::calHeatTrace( double timescale ) const
 	}
 	return sum;
 }
-
 
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
@@ -1204,3 +1203,4 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
 	addProperty(mf);
 }
+

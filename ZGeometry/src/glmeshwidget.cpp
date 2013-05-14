@@ -512,6 +512,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 {
 	if(!pMP->getMesh_const()) return;
 	const CMesh* tmesh = pMP->getMesh_const();
+	const CMesh* ori_mesh = pMP->getOriMesh_const();
 
 	const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
@@ -641,7 +642,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		GLUquadric* quadric = gluNewQuadric();
 		for (auto iter = vpMP[0]->getActiveFeatures()->begin(); iter != vpMP[0]->getActiveFeatures()->end(); ++iter)
 		{
-		 	Vector3D vt = tmesh->getVertex_const((*iter)->m_index)->getPosition();
+		 	Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
 		 	vt += shift;
 // 			int color_index = (*iter)->m_scale % gFeatureColorNum;
 // 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
