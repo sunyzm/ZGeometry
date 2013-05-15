@@ -1904,7 +1904,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 
 	CStopWatch timer;
 	timer.startTimer();
-	m_ParamMgr[0].para_computeHKC(vFeatureID1, regT); // parallel computing supported
+	m_ParamMgr[0].para_computeHKC(vFeatureID1, regT); // parallel computing HKC
 	m_ParamMgr[1].para_computeHKC(vFeatureID2, regT); 
 //	m_ParamMgr[0].para_computeHKS()
 	timer.stopTimer();

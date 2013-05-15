@@ -1840,6 +1840,11 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 	}
 
 	decomposeLaplacians(laplacianType);
+
+// 	for (int obj = 0; obj < num_meshes; ++obj)
+// 	{
+// 		vMP[obj].getMHB().dumpEigenValues(QString().sprintf("output/eigval%d.txt", obj+1).toStdString());
+// 	}
 }
 
 void QZGeometryWindow::saveMatchingResult()
