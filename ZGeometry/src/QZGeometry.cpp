@@ -1424,7 +1424,14 @@ void QZGeometryWindow::matchFeatures()
 		{
 			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
 			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
-			shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+			//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
+
+			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
+			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
+			vector<MatchPair> vPairs;
+			double matchScore = DiffusionShapeMatcher::TensorGraphMatching(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2);
+			cout << "Tensor match score: " << matchScore << endl;
+			shapeMatcher.forceInitialAnchors(vPairs);
 		}
 		else	// traditional pair-based matching
 		{
