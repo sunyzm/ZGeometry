@@ -621,6 +621,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	//// ---- draw feature points ---- ////
 	if (m_bShowFeatures && pMP->getActiveFeatures() != NULL)
 	{
+		const MeshFeatureList* feature_list = pMP->getActiveFeatures();
+
 		/* ---- draw as glPoint ---- */
 		//glPointSize(10.0);
 		//glBegin(GL_POINTS);
@@ -637,20 +639,26 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
 		// draw as gluSphere 
 		const float *feature_color1 = RGBColors[COLOR_MAGENTA];
-		const float *feature_color2 = RGBColors[COLOR_GREEN];
-		
+		const float *feature_color2 = RGBColors[COLOR_GREEN];		
 		GLUquadric* quadric = gluNewQuadric();
-		for (auto iter = vpMP[0]->getActiveFeatures()->begin(); iter != vpMP[0]->getActiveFeatures()->end(); ++iter)
+		bool is_hks_feature = (feature_list->featureType == FEATURE_MULTI_HKS);
+
+		for (auto iter = feature_list->m_vFeatures.begin(); iter != feature_list->m_vFeatures.end(); ++iter)
 		{
 		 	Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
 		 	vt += shift;
-// 			int color_index = (*iter)->m_scale % gFeatureColorNum;
-// 		 	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-			if (dynamic_cast<HKSFeature*>(*iter)->minOrMax == 1)
-				glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
+			if (is_hks_feature)
+			{
+				if (dynamic_cast<HKSFeature*>(*iter)->minOrMax == 1)
+					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
+				else
+					glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
+			}
 			else
-				glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-
+			{
+				int color_index = (*iter)->m_scale % gFeatureColorNum;
+				glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+			}			
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);

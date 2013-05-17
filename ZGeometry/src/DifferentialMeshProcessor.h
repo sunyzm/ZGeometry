@@ -89,8 +89,7 @@ public:
 	int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
-	const std::vector<MeshFeature*>* getActiveFeatures() const { return pvActiveFeatures; }
-	void setActiveFeatures(std::vector<MeshFeature*>* pvMF) { pvActiveFeatures = pvMF; }
+	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id);
 	void setActiveMHB(LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
 public:
@@ -113,7 +112,7 @@ public:
 private:	
 	int pRef;
 	Vector3D posRef;
-	std::vector<MeshFeature*>* pvActiveFeatures;	
+	int active_feature_id;
 
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;

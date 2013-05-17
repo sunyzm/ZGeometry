@@ -1068,7 +1068,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	}
 	vMP[0].addProperty(mfl);
 
-	vMP[0].setActiveFeatures(mfl->getFeatureVector());
+	vMP[0].setActiveFeaturesByID(FEATURE_NEIGHBORS);
 	
 	if (!ui.actionShowFeatures->isChecked())
 		toggleShowFeatures();
@@ -1429,7 +1429,7 @@ void QZGeometryWindow::matchFeatures()
 			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
 			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
 			vector<MatchPair> vPairs;
-			double matchScore = DiffusionShapeMatcher::TensorGraphMatching(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2);
+			double matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2);
 			cout << "Tensor match score: " << matchScore << endl;
 			shapeMatcher.forceInitialAnchors(vPairs);
 		}
@@ -1464,7 +1464,7 @@ void QZGeometryWindow::registerStep()
 
 	int regMethod = g_configMgr.getConfigValueInt("REGISTRATION_METHOD");
 
-	if (false) /*   Testing for data collection */
+	if (true) /*   Testing for data collection */
 	{
 		shapeMatcher.registerTesting1();
 		shapeMatcher.regsiterTesting2();

@@ -1,15 +1,16 @@
+#include "DiffusionShapeMatcher.h"
+#include "OutputHelper.h"
+#include "SimpleConfigLoader.h"
+#include <ppl.h>
 #include <fstream>
 #include <sstream>
 #include <exception>
 #include <set>
 #include <algorithm>
 #include <cassert>
-#include "DiffusionShapeMatcher.h"
-#include "OutputHelper.h"
-#include "SimpleConfigLoader.h"
-#include <ppl.h>
 #include <functional>
 #include <limits>
+
 
 using namespace std;
 
@@ -313,12 +314,12 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 		if (tu < 0)	// no boundary
 		{
 			tn = default_num_scales;
-			tu = std::pow(2.0, tn-1) * tl;				// no boundary
+			tu = tl * std::pow(2.0, tn-1);
 		}
 		else
 		{
-			if(tu < tl) { iter = vF.erase(iter); continue;}	// features too close to boundary are discarded
-			tn = (int)ceil(log(tu/tl)/log(2.0));	    // tn is the number of timescales
+			if(tu < tl) { tu = tl;/*iter = vF.erase(iter); continue;*/}	// features too close to boundary are discarded
+			tn = log(tu/tl)/log(2.0) + 1.01;	    // tn is the number of timescales
 		}
 		iter->setTimes(tl, tu, tn);
 		++iter;
@@ -1155,7 +1156,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 	return vmatch;
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature2( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void DiffusionShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
 {
 
 	if(i==j || i==k || j==k)		//not a triangle
@@ -1192,7 +1193,7 @@ void DiffusionShapeMatcher::ComputeTensorFeature2( const DifferentialMeshProcess
 
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void DiffusionShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
 {
 // 	if(i==j || i==k || j==k)		//not a triangle
 // 	{
@@ -1323,7 +1324,10 @@ void DiffusionShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMes
 	if (verbose) cout << "Graph matching computed!" << endl;
 }
 
-double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double t, double thresh, bool verbose/* = false */)
+double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep, 
+	const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, 
+	const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, 
+	double t, double thresh, bool verbose/* = false */)
 {
 	// generate triangles
 	int vsize1 = (int)vFeatures1.size();	// input feature size 1
@@ -1348,7 +1352,6 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 
 	// compute feature descriptors
 	const int FeatureDim = 6;
-
 	mxArray *mxfeat1, *mxfeat2, *mxtris, *mxnumbs, *mX2, *vX2, *score;
 	mxfeat1 = mxCreateDoubleMatrix(FeatureDim, tsize1, mxREAL);
 	double *pfeat1 = mxGetPr(mxfeat1);
@@ -1359,139 +1362,15 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 	mxnumbs = mxCreateDoubleMatrix(1, 4, mxREAL);
 	double *pnumbs = mxGetPr(mxnumbs);
 
+	const int maxNN = 30;
 	pnumbs[0] = vsize1; // nP1
 	pnumbs[1] = vsize2; // nP2
 	pnumbs[2] = tsize1; // nT
-	if(tsize1 > 60) pnumbs[3] = 30;     // nNN
-	else pnumbs[3] = tsize1*0.5;
+	if(tsize1 > 2*maxNN) pnumbs[3] = maxNN;     // nNN
+	else pnumbs[3] = tsize1 * 0.5;
 
 	copy(triangs.begin(), triangs.end(), ptris);
 
-//	for(int i = 0; i < tsize1; i++)
-	Concurrency::parallel_for(0, tsize1, [&](int i)
-	{
-		int vi = triangs[i*3];
-		int vj = triangs[i*3+1];
-		int vk = triangs[i*3+2];
-		ComputeTensorFeature(pmp1, vFeatures1[vi].m_index, vFeatures1[vj].m_index, vFeatures1[vk].m_index, t, pfeat1 + i*FeatureDim);
-	}
-	);
-//	for(int i = 0; i < vsize2; i++)
-	Concurrency::parallel_for(0, vsize2, [&](int i)
-	{
-		for(int j = 0; j < vsize2; j++)
-		{
-			for(int k = 0; k < vsize2; k++)
-			{
-				ComputeTensorFeature(pmp2, vFeatures2[i].m_index, vFeatures2[j].m_index, vFeatures2[k].m_index, t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
-			}
-		}
-	}
-	);
-	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
-	transform(pfeat1, pfeat1 + FeatureDim*tsize1, pfeat1, [=](double vhk){return vhk/ht1;} );
-	transform(pfeat2, pfeat2 + FeatureDim*tsize2, pfeat2, [=](double vhk){return vhk/ht2;} );
-
-	/* invoke matlab for tensor matching */
-	engPutVariable(ep, "feat1", mxfeat1);
-	engPutVariable(ep, "feat2", mxfeat2);
-	engPutVariable(ep, "tris", mxtris);
-	engPutVariable(ep, "numbs", mxnumbs);
-	//	system("PAUSE");	// break execution for manually testing tensorMat
-	engEvalString(ep, "[vX2,mX2,score]=tensorMat(feat1,feat2,tris,numbs);");
-	vX2 = engGetVariable(ep, "vX2");
-	double *pv = mxGetPr(vX2);	// best match of each shape-1 feature in the set of shape-2 features
-	mX2 = engGetVariable(ep, "mX2");
-	double *px = mxGetPr(mX2);  // corresponding match scores
-	score = engGetVariable(ep, "score");
-	double *ps = mxGetPr(score);
-
-	/* interpret results */
-	double result = ps[0];	// tensor matching score
-	result = 0.0;
-
-	int count = 0;
-	while(count++ < vsize1)
-	{
-		double *pmax = max_element(pv, pv+vsize1);	// max feature match score
-		int imax = pmax - pv;	// shape 1 feature index
-		MatchPair mpt;
-		mpt.m_idx1 = vFeatures1[imax].m_index;
-		int ind = (int)px[imax];		// shape 2 feature index matched to imax
-		//if(ind<0 || ind>vsize2) continue;
-		mpt.m_idx2 = vFeatures2[ind-1].m_index;
-		mpt.m_score = *pmax;
-
-		cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
-		if(*pmax < thresh) 
-			break;
-
-		result += pv[imax];
-		matched.push_back(mpt);
-
-		pv[imax] = 0.0;
-		// clear conflicted
-		for(int i = 0; i < vsize1; i++)
-		{
-			if((int)px[i] == (int)px[imax])
-				pv[i] = 0.0;
-		}
-	}
-
-	mxDestroyArray(mxfeat1);
-	mxDestroyArray(mxfeat2);
-	mxDestroyArray(mxtris);
-	mxDestroyArray(mxnumbs);
-// 	mxDestroyArray(mX2);
-// 	mxDestroyArray(vX2);
-// 	mxDestroyArray(score);
-
-	return result;
-}
-
-double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
-{
-	// generate triangles
-	int vsize1 = (int)ct1.size();	// input feature size 1
-	int vsize2 = (int)ct2.size();   // input feature size 2
-
-	vector<int> triangs;
-	for (int i = 0; i < vsize1; i++)
-	{
-		for (int j = i+1; j < vsize1; j++)
-		{
-			for (int k = j+1; k < vsize1; k++)
-			{
-				triangs.push_back(i);
-				triangs.push_back(j);
-				triangs.push_back(k);
-			}			
-		}
-	}
-
-	int tsize1 = (int)triangs.size() / 3;
-	int tsize2 = vsize2 * vsize2 * vsize2;
-
-	// compute feature descriptors
-	const int FeatureDim = 6;
-
-	mxArray *mxfeat1, *mxfeat2, *mxtris, *mxnumbs, *mX2, *vX2, *score;
-	mxfeat1 = mxCreateDoubleMatrix(FeatureDim, tsize1, mxREAL);
-	double *pfeat1 = mxGetPr(mxfeat1);
-	mxfeat2 = mxCreateDoubleMatrix(FeatureDim, tsize2, mxREAL);
-	double *pfeat2 = mxGetPr(mxfeat2);
-	mxtris = mxCreateDoubleMatrix(3, tsize1, mxREAL);
-	double *ptris = mxGetPr(mxtris);
-	mxnumbs = mxCreateDoubleMatrix(1, 4, mxREAL);
-	double *pnumbs = mxGetPr(mxnumbs);
-
-	pnumbs[0] = vsize1; // nP1
-	pnumbs[1] = vsize2; // nP2
-	pnumbs[2] = tsize1; // nT
-	if(tsize1 > 60) pnumbs[3] = 30;     // nNN
-	else pnumbs[3] = tsize1*0.5;
-
-	copy(triangs.begin(), triangs.end(), ptris);
 
 	//	for(int i = 0; i < tsize1; i++)
 	Concurrency::parallel_for(0, tsize1, [&](int i)
@@ -1499,10 +1378,9 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 		int vi = triangs[i*3];
 		int vj = triangs[i*3+1];
 		int vk = triangs[i*3+2];
-		ComputeTensorFeature(pmp1, ct1[vi], ct1[vj], ct1[vk], t, pfeat1 + i*FeatureDim);
+		ComputeTensorFeature6(pmp1, vFeatures1[vi], vFeatures1[vj], vFeatures1[vk], t, pfeat1 + i*FeatureDim);
 	}
 	);
-
 	Concurrency::parallel_for(0, vsize2, [&](int i)
 		//	for(int i = 0; i < vsize2; i++)
 	{
@@ -1510,12 +1388,15 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 		{
 			for(int k = 0; k < vsize2; k++)
 			{
-				ComputeTensorFeature(pmp2, ct2[i], ct2[j], ct2[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
+				ComputeTensorFeature6(pmp2, vFeatures2[i], vFeatures2[j], vFeatures2[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
 			}
 		}
 	}
 	);
 	// invoke matlab for tensor matching
+	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
+	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
+	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
 
 	engPutVariable(ep, "feat1", mxfeat1);
 	engPutVariable(ep, "feat2", mxfeat2);
@@ -1540,13 +1421,15 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 		double *pmax = max_element(pv, pv+vsize1);	// max feature match score
 		int imax = pmax - pv;	// shape 1 feature index
 		MatchPair mpt;
-		mpt.m_idx1 = ct1[imax];
+		mpt.m_idx1 = vFeatures1[imax];
 		int ind = (int)px[imax];		// shape 2 feature index matched to imax
 		//if(ind<0 || ind>vsize2) continue;
-		mpt.m_idx2 = ct2[ind-1];
+		mpt.m_idx2 = vFeatures2[ind-1];
 		mpt.m_score = *pmax;
 
-		cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
+		if (verbose)
+			cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
+		
 		if(*pmax < thresh) 
 			break;
 
@@ -1571,10 +1454,18 @@ double DiffusionShapeMatcher::TensorGraphMatching( Engine *ep, const Differentia
 	// 	mxDestroyArray(score);
 
 	return result;
-
 }
 
-double DiffusionShapeMatcher::TensorGraphMatching2( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& ct1, const std::vector<HKSFeature>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
+double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose /*= false*/ )
+{
+	vector<int> vFeatIdx1(vFeatures1.size()), vFeatIdx2(vFeatures2.size());
+	transform(vFeatures1.begin(), vFeatures1.end(), vFeatIdx1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	transform(vFeatures2.begin(), vFeatures2.end(), vFeatIdx2.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	double matchScore = TensorGraphMatching6(ep, pmp1, pmp2, vFeatIdx1, vFeatIdx2, matched, para_t, para_thresh, verbose);
+	return matchScore;
+}	
+
+double DiffusionShapeMatcher::TensorGraphMatching3( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
 {
 	// generate triangles
 	int vsize1 = (int)ct1.size();	// input feature size 1
@@ -1651,7 +1542,7 @@ double DiffusionShapeMatcher::TensorGraphMatching2( Engine *ep, const Differenti
 		int vi = triangs[i*3];
 		int vj = triangs[i*3+1];
 		int vk = triangs[i*3+2];
-		ComputeTensorFeature(pmp1, ct1[vi].m_index, ct1[vj].m_index, ct1[vk].m_index, t, &pfeat1[i*3]);
+		ComputeTensorFeature3(pmp1, ct1[vi], ct1[vj], ct1[vk], t, &pfeat1[i*3]);
 	}
 
 	for(i=0; i<vsize2; i++)
@@ -1660,7 +1551,7 @@ double DiffusionShapeMatcher::TensorGraphMatching2( Engine *ep, const Differenti
 		{
 			for(k=0; k<vsize2; k++)
 			{
-				ComputeTensorFeature(pmp2, ct2[i].m_index, ct2[j].m_index, ct2[k].m_index, t, &pfeat2[((i*vsize2+j)*vsize2+k)*3]);
+				ComputeTensorFeature3(pmp2, ct2[i], ct2[j], ct2[k], t, &pfeat2[((i*vsize2+j)*vsize2+k)*3]);
 			}
 		}
 	}
@@ -1697,10 +1588,10 @@ double DiffusionShapeMatcher::TensorGraphMatching2( Engine *ep, const Differenti
 
 		result += pv[imax];
 		MatchPair mpt;
-		mpt.m_idx1 = ct1[imax].m_index;
+		mpt.m_idx1 = ct1[imax];
 		int ind = (int)px[imax];		// shape-2 feature index matched to imax
 		//if(ind<0 || ind>vsize2) continue;
-		mpt.m_idx2 = ct2[ind-1].m_index;
+		mpt.m_idx2 = ct2[ind-1];
 		matched.push_back(mpt);
 
 		pv[imax] = 0.0;
@@ -1768,7 +1659,10 @@ void DiffusionShapeMatcher::matchFeaturesTensor( std::ostream& flog, double time
 */
 
 	vector<MatchPair> vPairs;
-	double matchScore = TensorGraphMatching(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vftFine1, vftFine2, vPairs, timescale, thresh);
+	vector<int> vFeatures1(vftFine1.size()), vFeatures2(vftFine2.size());
+	transform(vftFine1.begin(), vftFine1.end(), vFeatures1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	transform(vftFine2.begin(), vftFine2.end(), vFeatures2.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	double matchScore = TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vFeatures1, vFeatures2, vPairs, timescale, thresh);
 	flog << "Match score: " << matchScore << endl;
 
 	forceInitialAnchors(vPairs);
@@ -2082,7 +1976,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 			transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex_const(idx1)->getVID();});
 			transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex_const(idx2)->getVID();});
 			vector<MatchPair> vPairs;
-			TensorGraphMatching(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, 5., 0.9);
+			TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, 5., 0.9);
 
 			for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter)
 			{
@@ -2307,15 +2201,15 @@ void DiffusionShapeMatcher::registerTesting1()
 		vFeatureID2.push_back(iter->m_idx2);
 	}
 
-	vector<int> vSelected[2] = {tmesh1->getNeighborVertexIndex(5934, 1), tmesh2->getNeighborVertexIndex(5934, 1)};
-	//vector<int> vSelected[2] = {vFeatureID1, vFeatureID2};
+	//vector<int> vSelected[2] = {tmesh1->getNeighborVertexIndex(5934, 1), tmesh2->getNeighborVertexIndex(5934, 1)};
+	vector<int> vSelected[2] = {vFeatureID1, vFeatureID2};
 
 
 	ofstream ofs("output/register_test1.csv");
 	
 	vector<double> vt;
 	for (int i = 0; i < 10; ++i)
-		vt.push_back(1 * std::exp((double)i));
+		vt.push_back(10 * pow(2.0, (double)i));
 	ofs << "Time";
 	for (auto iter = vt.begin(); iter != vt.end(); ++iter)
 		ofs << ", " << *iter;
@@ -2396,11 +2290,11 @@ void DiffusionShapeMatcher::regsiterTesting2()
 		for (auto iter1 = vSelected[obj].begin(); iter1 != vSelected[obj].end(); ++iter1)
 		{
 			ofs << "Vertex " << obj+1 << "-" << *iter1;
-			for (auto iter2 = begin(vFeatureID1); iter2 != end(vFeatureID1); ++iter2)
+			for (auto iter2 =vSelected[obj].begin(); iter2 != vSelected[obj].end(); ++iter2)
 			{
-				double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter2, 30);
+				double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter2, 32);
 				//hk = std::log(4.*PI*hk);
-				hk /= pOriginalProcessor[obj]->calHeatTrace(30);
+				hk /= pOriginalProcessor[obj]->calHeatTrace(32);
 				ofs << ", " << hk;
 			}
 			ofs << endl;

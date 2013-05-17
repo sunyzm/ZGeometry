@@ -211,11 +211,11 @@ public:
 	/* helper functions */
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
 	static void PairGraphMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose = false);
-	static double TensorGraphMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& vMatchedPair, double para_t, double para_thresh);
-	static double TensorGraphMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& ct1, const std::vector<HKSFeature>& ct2, std::vector<MatchPair>& matched, double t, double thresh, bool verbose = false);
-	static double TensorGraphMatching2(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& ct1, const std::vector<HKSFeature>& ct2, std::vector<MatchPair>& matched, double t, double thresh);
-	static void ComputeTensorFeature( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
-	static void ComputeTensorFeature2( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
+	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
+	static double TensorGraphMatching3(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double t, double thresh);
+	static void ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static void ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
 	void    prepareHeatRegistration( double regTime );
 	double  computeMatchScore(int idx1, int idx2) const;
 	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );

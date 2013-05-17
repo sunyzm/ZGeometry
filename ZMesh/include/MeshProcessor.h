@@ -47,7 +47,7 @@ public:
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
 	std::vector<MeshFeature*>* getFeatureVector() { return &m_vFeatures; }
 	~MeshFeatureList();
-private:
+
 	int featureType;
 	std::vector<MeshFeature*> m_vFeatures;
 };
@@ -98,6 +98,7 @@ public:
 	bool addProperty(MeshProperty* newProperty);
 	void replaceProperty(MeshProperty* newProperty);
 	MeshProperty* retrievePropertyByID(int rid);
+	const MeshProperty* retrievePropertyByID_const(int rid) const;
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);
 	void removePropertyByName(const std::string& rn);

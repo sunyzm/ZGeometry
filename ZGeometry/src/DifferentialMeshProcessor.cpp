@@ -41,7 +41,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(void)
 {
 	m_ep = NULL;
 	mesh = NULL;
-	pvActiveFeatures = NULL;
+	active_feature_id = FEATURE_ID;
 	m_bLaplacianDecomposed = false;
 	pRef = 0;
 	m_size = 0;
@@ -954,29 +954,26 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 	case HEAT_KERNEL:
 		removePropertyByID(FEATURE_HKS);
 		mfl->setIDandName(FEATURE_HKS, "Feature_HKS");
+		active_feature_id = FEATURE_HKS;
 		break;
 	case MHW_KERNEL:
 		removePropertyByID(FEATURE_MHWS);
 		mfl->setIDandName(FEATURE_MHWS, "Feature_MHWS");
+		active_feature_id = FEATURE_MHWS;
 		break;
 	case SGW_KERNEL:
 		removePropertyByID(FEATURE_SGWS);
 		mfl->setIDandName(FEATURE_SGWS, "Feature_SGWS");
+		active_feature_id = FEATURE_SGWS;
 		break;
 	}
 
 	addProperty(mfl);
-
-	pvActiveFeatures = mfl->getFeatureVector();
 }
 
 void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 {
-	if (retrievePropertyByID(feature_id))
-	{
-		MeshFeatureList* mfl = dynamic_cast<MeshFeatureList*>(retrievePropertyByID(feature_id));
-		pvActiveFeatures = mfl->getFeatureVector();
-	}
+	active_feature_id = feature_id;
 }
 
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
@@ -1202,5 +1199,12 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	removePropertyByID(SIGNATURE_SIMILARITY_MAP);
 	mf->setIDandName(SIGNATURE_SIMILARITY_MAP, "Simialrity_Map_Signature");
 	addProperty(mf);
+}
+
+const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
+{
+	const MeshProperty* feat = retrievePropertyByID_const(active_feature_id);
+	if (feat == NULL) return NULL;
+	else return dynamic_cast<const MeshFeatureList*>(feat);
 }
 

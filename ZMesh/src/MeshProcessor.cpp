@@ -62,6 +62,16 @@ MeshProperty* MeshProcessor::retrievePropertyByID( int rid )
 	return NULL;
 }
 
+const MeshProperty* MeshProcessor::retrievePropertyByID_const( int rid ) const
+{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
+	{
+		if ((*iter)->id == rid)
+			return *iter;
+	}
+	return NULL;
+}
+
 MeshProperty* MeshProcessor::retrievePropertyByName( const std::string& rn )
 {
 	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
