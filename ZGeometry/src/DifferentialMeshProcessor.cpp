@@ -943,10 +943,18 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		vector<int> vFeatures;
 		calKernelSignature(timescales[s], kernelType, vSig);
 		mesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
+
 		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
 		{
-			mfl->addFeature(new MeshFeature(*iter, s));
+			mfl->addFeature(new MeshFeature(*iter, s));			
 		}
+
+// 		if (s == nScales-1)
+// 		{
+// 			cout << "scale " << s << "features:";
+// 			for (auto iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) cout << "  " << *iter;
+// 			cout << endl;
+// 		}
 	}
 
 	switch(kernelType)

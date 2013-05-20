@@ -1,0 +1,1 @@
+register_test_3: partial shape heat kernel using \sum_k{e^(-\lambda_k t)} for normalization

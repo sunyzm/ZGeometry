@@ -140,5 +140,8 @@
     <None Include="meshfiles_debug.cfg">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="doc\matching_experiments.txt">
+      <Filter>Document Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

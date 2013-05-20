@@ -573,36 +573,37 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
-#ifdef DRAW_BOUNDARY
-	/// draw boundary edge
-	//  	glDisable(GL_LIGHTING);
-	//   	if (tmesh->hasBounary())   //highlight boundary edge 
-	//   	{
-	//   		glBegin(GL_LINES);	
-	//   		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
-	//   		{
-	//   			if(!tmesh->m_pHalfEdge[i].isBoundaryEdge()) 
-	//   			{
-	//   				int p1 = tmesh->m_pHalfEdge[i].getVertexIndex(0);
-	//   				int p2 = tmesh->m_pHalfEdge[i].getVertexIndex(1);
-	//   				glLineWidth(2.0);
-	//   				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-	//   				if(tmesh->getVertex_const(p1)->isHole()) 
-	//   				{
-	//   					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
-	//   				}
-	//   				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
-	//   				v1 += shift;
-	//   				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
-	//   				v2 += shift;
-	//   				glVertex3d(v1.x, v1.y, v1.z);
-	//   				glVertex3d(v2.x, v2.y, v2.z);
-	//   			}
-	//   		}
-	//   		glEnd();
-	//   	}
-	//  	glEnable(GL_LIGHTING);
-#endif
+
+	// draw boundary edges in dark color
+	glDisable(GL_LIGHTING);
+	if (tmesh->hasBounary())   //highlight boundary edge 
+	{
+	   	glBegin(GL_LINES);	
+	   	for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
+	   	{
+			const CHalfEdge* hf = tmesh->getHalfEdge_const(i);
+	   		if(hf->isBoundaryEdge()) 
+	   		{
+	   			int p1 = hf->getVertexIndex(0);
+	   			int p2 = hf->getVertexIndex(1);
+	   			glLineWidth(2.0);
+	   			glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+	   			if(tmesh->getVertex_const(p1)->isHole()) 
+	   			{
+	   				glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+	   			}
+	   			Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
+	   			v1 += shift;
+	   			Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
+	   			v2 += shift;
+	   			glVertex3d(v1.x, v1.y, v1.z);
+	   			glVertex3d(v2.x, v2.y, v2.z);
+	   		}
+	   	}
+	   	glEnd();
+	}
+	glEnable(GL_LIGHTING);
+
 
 	//// ----	draw reference point ---- ////
 	if ( m_bShowRefPoint )

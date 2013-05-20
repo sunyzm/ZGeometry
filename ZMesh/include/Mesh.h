@@ -130,7 +130,7 @@ public:
 	int			getVertexIndex(int i) const { return m_iVertex[i]; }
 	double		getLength();
 	bool		isValid() const { return m_bIsValid; }
-
+	int         getIndex() const { return m_eIndex; }
 private:
 	// -- fields -- //
 	CVertex*	m_Vertices[2];	//starting and ending vertices
@@ -241,7 +241,7 @@ public:
 	bool	    Save(std::string sFileName);			// save to file
 	void	    move(Vector3D translation);				// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
-	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so taht the average edge length is 1
+	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 
 	// ---- attributes access ---- //
 	const std::string&	getMeshName() const { return m_meshName; }
@@ -249,6 +249,7 @@ public:
 	const CVertex*		getVertex_const(int i) const { return m_vVertices[i]; }
 	CFace*				getFace(int i) { return &m_pFace[i]; }
 	const CFace*		getFace_const(int i) const { return m_vFaces[i]; }
+	const CHalfEdge*	getHalfEdge_const(int i) const { return m_vHalfEdges[i]; }
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
 	int					getVerticesNum() const { return m_nVertex; }

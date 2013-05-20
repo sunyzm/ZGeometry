@@ -1464,48 +1464,40 @@ void QZGeometryWindow::registerStep()
 
 	int regMethod = g_configMgr.getConfigValueInt("REGISTRATION_METHOD");
 
-	if (true) /*   Testing for data collection */
+	double time_elapsed = time_call([&]{
+		if (regMethod == 1) shapeMatcher.refineRegister(ofstr);
+		else if (regMethod == 2) shapeMatcher.refineRegister2(ofstr);
+	}) / 1000.0;
+
+	int level = shapeMatcher.getAlreadyRegisteredLevel();
+	const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
+	const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
+
+	qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matched:%d; Registered:%d",
+		level, time_elapsed, vf.size(), vr.size()));
+	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
+		double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
+		vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
+	/* ---- evaluation ---- */
+	if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
 	{
-		shapeMatcher.registerTesting1();
-		shapeMatcher.regsiterTesting2();
+		cout << "Features - ";
+		shapeMatcher.evaluateWithGroundTruth(vf, &m_mesh[0], &m_mesh[1]);
+		cout << "Registrations - ";
+		shapeMatcher.evaluateWithGroundTruth(vr, &m_mesh[0], &m_mesh[1]);
 	}
-	else
-	{
-		double time_elapsed = time_call([&]{
-			if (regMethod == 1) shapeMatcher.refineRegister(ofstr);
-			else if (regMethod == 2) shapeMatcher.refineRegister2(ofstr);
-		}) / 1000.0;
 
-		int level = shapeMatcher.getAlreadyRegisteredLevel();
-		const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
-		const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
-
-		qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matched:%d; Registered:%d",
-			level, time_elapsed, vf.size(), vr.size()));
-		qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
-			double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
-			vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
-		/* ---- evaluation ---- */
-		if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
-		{
-			cout << "Features - ";
-			shapeMatcher.evaluateWithGroundTruth(vf, &m_mesh[0], &m_mesh[1]);
-			cout << "Registrations - ";
-			shapeMatcher.evaluateWithGroundTruth(vr, &m_mesh[0], &m_mesh[1]);
-		}
-
-		double vError[3];
-		for(int k = 0; k < 2; ++k)
-		{ 
-			vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
-		}
-
-		qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
-
-		if (!ui.glMeshWidget->m_bDrawRegistration)
-			toggleDrawRegistration();
-		ui.glMeshWidget->update();
+	double vError[3];
+	for(int k = 0; k < 2; ++k)
+	{ 
+		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
 	}
+
+	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
+
+	if (!ui.glMeshWidget->m_bDrawRegistration)
+		toggleDrawRegistration();
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::registerFull()
@@ -1606,7 +1598,10 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacia
 		mp.decomposeLaplacian(nEig, laplacianType);
 		mp.writeMHB(pathMHB, laplacianType);
 		qout.output("MHB saved to " + pathMHB);
+	}
 
+	if (1 == g_configMgr.getConfigValueInt("DUMP_EIG_VAL"))
+	{
 		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
 		mp.getMHB().dumpEigenValues(pathEVL);
 	}
@@ -1898,7 +1893,9 @@ void QZGeometryWindow::loadMatchingResult()
 
 void QZGeometryWindow::registerTest()
 {
-
+	//shapeMatcher.registerTesting1();
+	//shapeMatcher.regsiterTesting2();
+	shapeMatcher.dataTesting1();
 }
 
 

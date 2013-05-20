@@ -1244,29 +1244,53 @@ bool CMesh::saveToM(string sFileName)
 
 void CMesh::findHoles()
 {
-	vector<int> clear_list;
+	set<int> markedVertex;
 	for(int i = 0; i < m_nVertex; i++)
 	{
-		if(!m_pVertex[i].m_bIsBoundary || m_pVertex[i].m_mark > 0) continue;	// not boundary or visited
+		if(!m_vVertices[i]->m_bIsBoundary || markedVertex.find(i) == markedVertex.end()) continue;	// not boundary or visited
 		int vi = i;
-		int eout = m_pVertex[i].m_piEdge[m_pVertex[i].m_nValence - 1];
-		vector<int> v_temp;
-		while(m_pHalfEdge[eout].m_iVertex[1] != i)
+		const CVertex* pvi =  m_vVertices[i];
+		const CHalfEdge* peout = pvi->m_HalfEdges.back();
+		vector<int> vTmp;
+		markedVertex.insert(vi);
+		vTmp.push_back(vi);
+		while(peout->m_Vertices[1]->getIndex() != i && vTmp.size() <= MAX_HOLE_SIZE)
 		{
-			v_temp.push_back(vi);
-			m_pVertex[vi].m_mark = 1;
-			clear_list.push_back(vi);
-			vi = m_pHalfEdge[eout].m_iVertex[1];
-			eout = m_pVertex[vi].m_piEdge[m_pVertex[vi].m_nValence - 1];
+			pvi = peout->m_Vertices[1];
+			vi = pvi->getIndex();
+			peout = pvi->m_HalfEdges.back();
+			markedVertex.insert(vi);
+			vTmp.push_back(vi);
 		}
-		if((int)v_temp.size() > MAX_HOLE_SIZE) 
-			continue; // boundary	
-		for(vector<int>::iterator it_v = v_temp.begin(); it_v != v_temp.end(); it_v++) 
-			m_pVertex[*it_v].m_bIsHole = true;
+		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
+		
+		for(auto it_v = vTmp.begin(); it_v != vTmp.end(); it_v++) 
+			m_vVertices[*it_v]->m_bIsHole = true;
 	}
-	vector<int>::iterator it_vc;	
-	for(it_vc = clear_list.begin(); it_vc != clear_list.end(); it_vc++) 
-		m_pVertex[*it_vc].m_mark = -1;
+
+// 	for(int i = 0; i < m_nVertex; i++)
+// 	{
+// 		if(!m_pVertex[i].m_bIsBoundary || m_pVertex[i].m_mark > 0) continue;	// not boundary or visited
+// 		int vi = i;
+// 		int eout = m_pVertex[i].m_piEdge[m_pVertex[i].m_nValence - 1];
+// 		vector<int> v_temp;
+// 		while(m_pHalfEdge[eout].m_iVertex[1] != i)
+// 		{
+// 			v_temp.push_back(vi);
+// 			m_pVertex[vi].m_mark = 1;
+// 			clear_list.push_back(vi);
+// 			vi = m_pHalfEdge[eout].m_iVertex[1];
+// 			eout = m_pVertex[vi].m_piEdge[m_pVertex[vi].m_nValence - 1];
+// 		}
+// 		if((int)v_temp.size() > MAX_HOLE_SIZE) 
+// 			continue; // boundary	
+// 		for(vector<int>::iterator it_v = v_temp.begin(); it_v != v_temp.end(); it_v++) 
+// 			m_pVertex[*it_v].m_bIsHole = true;
+// 	}
+// 	vector<int>::iterator it_vc;	
+// 	for(it_vc = clear_list.begin(); it_vc != clear_list.end(); it_vc++) 
+// 		m_pVertex[*it_vc].m_mark = -1;
+
 }
 
 bool CMesh::construct()
@@ -1308,8 +1332,6 @@ bool CMesh::construct()
 		for (int j = 0; j < 3; ++j)
 			newFace->m_Vertices.push_back( m_vVertices[m_pFace[i].m_piVertex[j]] );
 
-		newFace->calcNormalAndArea();
-		
 		CHalfEdge* he1 = new CHalfEdge();
 		CHalfEdge* he2 = new CHalfEdge();
 		CHalfEdge* he3 = new CHalfEdge();
@@ -1382,18 +1404,20 @@ bool CMesh::construct()
 			continue;
 		}
 		
-		pV->judgeOnBoundary();
+		//pV->judgeOnBoundary();
 		++iter;
 	} //for each vertex
-
+	
 	assignElementsIndex();
-	gatherStatistics();
 
+	gatherStatistics();
+	findHoles();
+	scaleEdgeLenToUnit();
 	this->m_bIsPointerVectorExist = true;
 	
+
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
-	//findHoles();
 
 	return true;
 }
@@ -3343,8 +3367,8 @@ void CMesh::scaleEdgeLenToUnit()
 		edgeNum++;
 		length += m_vHalfEdges[i]->getLength();
 
-		int twin = m_pHalfEdge[i].m_iTwinEdge;
-		if (twin >= 0) heVisisted[twin] = true;
+		const CHalfEdge* ptwin = m_vHalfEdges[i]->getTwinHalfEdge();
+		if (ptwin != NULL) heVisisted[ptwin->getIndex()] = true;
 	}
 	delete []heVisisted;
 
@@ -3354,7 +3378,7 @@ void CMesh::scaleEdgeLenToUnit()
 	for (int i = 0; i < m_nVertex; ++i)
 	{
 		m_vVertices[i]->translateAndScale(-center, scale);
-		m_pVertex[i].translateAndScale(-center, scale);
+//		m_pVertex[i].translateAndScale(-center, scale);
 	}
 
 }

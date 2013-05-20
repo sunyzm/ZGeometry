@@ -1,0 +1,6 @@
+1. march1_1.obj vs. march1_1_partial.obj
+
+left hand: 4297 - 905
+right hand: 4190 - 798
+head top: 9527 - 6135
+chest: 6863 - 4134

@@ -246,6 +246,7 @@
     <None Include="configs.txt" />
     <None Include="doc\installation_guide.txt" />
     <None Include="doc\manual.txt" />
+    <None Include="doc\matching_experiments.txt" />
     <None Include="meshfiles.cfg" />
     <CustomBuild Include="zgeometry.qrc">
       <FileType>Document</FileType>

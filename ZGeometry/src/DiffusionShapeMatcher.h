@@ -140,6 +140,7 @@ public:
 	void    refineRegister2(std::ostream& flog);
 	void    registerTesting1();
 	void    regsiterTesting2();
+	void    dataTesting1();
 	void	evaluateRegistration();
 
 	/* attributes access */
