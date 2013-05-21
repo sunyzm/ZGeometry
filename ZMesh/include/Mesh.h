@@ -286,7 +286,7 @@ public:
 	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
-	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures) const;
+	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, int avoidBoundary = 1) const;
 	VectorInt	getOriginalVertexIndex() const;
 	VectorInt	getNeighborVertexIndex(int v, int ring) const;
 	VectorInt   getRingVertexIndex(int v, int ring) const;

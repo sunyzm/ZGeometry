@@ -1334,28 +1334,32 @@ void QZGeometryWindow::detectFeatures()
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
 
-	const vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
-	std::map<int, int> feature_count;
-	int count_possible1 = 0;
-	int count_possible0 = 0; 
-	int count_possible2 = 0;
-	for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
+	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1)
 	{
-		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
+		const vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
+		std::map<int, int> feature_count;
+		int count_possible1 = 0;
+		int count_possible0 = 0; 
+		int count_possible2 = 0;
+		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
 		{
-			if (iter1->m_scale == iter2->m_scale && m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 1))
+			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
 			{
-				count_possible1++;
-				if (feature_count.find(iter1->m_index) == feature_count.end())
-					feature_count.insert(make_pair(iter1->m_index, 1));
-				else feature_count[iter1->m_index] += 1;
+				if (iter1->m_scale == iter2->m_scale && m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 1))
+				{
+					count_possible1++;
+					if (feature_count.find(iter1->m_index) == feature_count.end())
+						feature_count.insert(make_pair(iter1->m_index, 1));
+					else feature_count[iter1->m_index] += 1;
 
-				if (iter1->m_index == iter2->m_index) 
-					count_possible0++;
+					if (iter1->m_index == iter2->m_index) 
+						count_possible0++;
+				}
 			}
 		}
+		cout << "-- Potential matches: " << count_possible0 << "/" << count_possible1 << endl;
 	}
-	cout << "-- Potential matches: " << count_possible0 << "/" << count_possible1 << endl;
+
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
 		toggleShowFeatures();
@@ -1444,7 +1448,9 @@ void QZGeometryWindow::matchFeatures()
 	}
 
 	const std::vector<MatchPair>& result = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
-	shapeMatcher.evaluateWithGroundTruth(result, &m_mesh[0], &m_mesh[1]);
+
+	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1)
+		shapeMatcher.evaluateWithGroundTruth(result, &m_mesh[0], &m_mesh[1]);
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();

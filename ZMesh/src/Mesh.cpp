@@ -1409,15 +1409,14 @@ bool CMesh::construct()
 	} //for each vertex
 	
 	assignElementsIndex();
-
-	gatherStatistics();
-	findHoles();
-	scaleEdgeLenToUnit();
 	this->m_bIsPointerVectorExist = true;
-	
 
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
+
+	gatherStatistics();
+	//findHoles();
+//	scaleEdgeLenToUnit();
 
 	return true;
 }
@@ -1847,54 +1846,85 @@ bool CMesh::calVertexArea(vector<double>& Av)
 
 void CMesh::VertexNeighborRing( int i, int ring, std::vector<int>& nbr ) const
 {	
-	if(!nbr.empty()) nbr.clear();
+	nbr.clear();
 	
-	CVertex& notei = m_pVertex[i];
-	notei.m_mark = i;
-
-	int size = notei.m_nValence;
+	const CVertex* notei = m_vVertices[i];
+	set<int> vMarked;
+	vMarked.insert(notei->m_vIndex);
 	vector<int> nbp, nbn;
-
-	/* initialize ring 1 as nbp */
-	for (int j = 0; j < size; j++)
+	for (int j = 0; j < notei->m_nValence; ++j)
 	{
-		int ee = m_pVertex[i].m_piEdge[j];
-		int endv = m_pHalfEdge[ee].m_iVertex[1];
-		m_pVertex[endv].m_mark = i;
-		nbp.push_back(endv);
+		const CVertex* vEnd = notei->m_HalfEdges[j]->m_Vertices[1];
+		int endv = vEnd->m_vIndex;
+		vMarked.insert(endv);
 		nbr.push_back(endv);
 	}
-
-	/* find neighbors of outer rings */ 
-	for (int r = 1; r < ring; r++)
+	nbp = nbr;
+	for (int r = 1; r < ring; ++r)
 	{
-		for (size_t k = 0; k < nbp.size(); k++)
+		for (auto iter = nbp.begin(); iter != nbp.end(); ++iter)
 		{
-			int pos = nbp.at(k);
-			for (int l = 0; l < m_pVertex[pos].m_nValence; l++)
+			int pos = *iter;
+			const CVertex* vStart = m_vVertices[pos];
+			for (int l = 0; l < vStart->m_nValence; ++l)
 			{
-				int ee = m_pVertex[pos].m_piEdge[l];
-				int endv = m_pHalfEdge[ee].m_iVertex[1];
-				if (m_pVertex[endv].m_mark == i) 
-					continue;
-				m_pVertex[endv].m_mark = i;
+				int endv = vStart->m_HalfEdges[l]->m_Vertices[1]->m_vIndex;
+				if (vMarked.find(endv) != vMarked.end()) continue;
+				vMarked.insert(endv);
 				nbn.push_back(endv);
 				nbr.push_back(endv);
 			}
 		}
-		//nbp.clear();
 		nbp = nbn;
 		nbn.clear();
 	}
+	
+// 	CVertex& notei = m_pVertex[i];
+// 	notei.m_mark = i;
+// 
+// 	int size = notei.m_nValence;
+// 	vector<int> nbp, nbn;
+// 	
+// 	/* initialize ring 1 as nbp */
+// 	for (int j = 0; j < size; j++)
+// 	{
+// 		int ee = m_pVertex[i].m_piEdge[j];
+// 		int endv = m_pHalfEdge[ee].m_iVertex[1];
+// 		m_pVertex[endv].m_mark = i;
+// 		nbp.push_back(endv);
+// 		nbr.push_back(endv);
+// 	}
 
-	notei.m_mark = -1;
-
-	/* clear the mark */
-	for (size_t j = 0; j < nbr.size(); j++)
-	{
-		int loc = nbr[j];
-		m_pVertex[loc].m_mark = -1;    
-	}
+// 	/* find neighbors of outer rings */ 
+// 	for (int r = 1; r < ring; r++)
+// 	{
+// 		for (size_t k = 0; k < nbp.size(); k++)
+// 		{
+// 			int pos = nbp.at(k);
+// 			for (int l = 0; l < m_pVertex[pos].m_nValence; l++)
+// 			{
+// 				int ee = m_pVertex[pos].m_piEdge[l];
+// 				int endv = m_pHalfEdge[ee].m_iVertex[1];
+// 				if (m_pVertex[endv].m_mark == i) 
+// 					continue;
+// 				m_pVertex[endv].m_mark = i;
+// 				nbn.push_back(endv);
+// 				nbr.push_back(endv);
+// 			}
+// 		}
+// 		//nbp.clear();
+// 		nbp = nbn;
+// 		nbn.clear();
+// 	}
+// 
+// 	notei.m_mark = -1;
+// 
+// 	/* clear the mark */
+// 	for (size_t j = 0; j < nbr.size(); j++)
+// 	{
+// 		int loc = nbr[j];
+// 		m_pVertex[loc].m_mark = -1;    
+// 	}
 }
 
 double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
@@ -3320,7 +3350,7 @@ void CMesh::gatherStatistics()
 	this->m_avgEdgeLen = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
-	this->m_nBoundaryEdgeNum = getBoundaryNum();
+//	this->m_nBoundaryEdgeNum = getBoundaryNum();
 
 	for (int i = 0; i < m_nVertex; ++i)
 		this->calVertexCurvature(i);
@@ -3575,7 +3605,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	}
 }
 
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures ) const
+void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, int avoidBoundary/* = 1*/ ) const
 {
 	const int STATE_IDLE = 0;
 	const int STATE_MIN	= -1;
@@ -3593,11 +3623,10 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
+		if (m_vVertices[j]->m_bIsBoundary) continue;  // ignore boundary vertex
+		VertexNeighborRing(j, ring, nb);	
+		
 		state = STATE_IDLE;
-		if (m_pVertex[j].m_bIsBoundary) 
-			continue;  // ignore boundary vertex
-
-		VertexNeighborRing(j, ring, nb);			//ring == 2
 		for (size_t k = 0; k < nb.size(); k++)		//for each neighbor 
 		{
 			int ev = nb[k];
