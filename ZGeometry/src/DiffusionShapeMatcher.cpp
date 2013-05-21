@@ -1330,16 +1330,30 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	double t, double thresh, bool verbose/* = false */)
 {
 	// generate triangles
-	int vsize1 = (int)vFeatures1.size();	// input feature size 1
-	int vsize2 = (int)vFeatures2.size();   // input feature size 2
+	const int vsize1 = (int)vFeatures1.size();	// input feature size 1
+	int vsize2 = (int)vFeatures2.size();    // input feature size 2
 
 	vector<int> triangs;
+// 	for (int i = 0; i < vsize1; i++)
+// 	{
+// 		for (int j = i+1; j < vsize1; j++)
+// 		{
+// 			for (int k = j+1; k < vsize1; k++)
+// 			{
+// 				triangs.push_back(i);
+// 				triangs.push_back(j);
+// 				triangs.push_back(k);
+// 			}			
+// 		}
+// 	}
+
 	for (int i = 0; i < vsize1; i++)
 	{
-		for (int j = i+1; j < vsize1; j++)
+		for (int j = 0; j < vsize1; j++)
 		{
-			for (int k = j+1; k < vsize1; k++)
+			for (int k = 0; k < vsize1; k++)
 			{
+				if (i == j || i == k || k == j) continue;
 				triangs.push_back(i);
 				triangs.push_back(j);
 				triangs.push_back(k);
@@ -1394,9 +1408,9 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	}
 	);
 	// invoke matlab for tensor matching
-	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
-	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
-	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
+//	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
+//	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
+//	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
 
 	engPutVariable(ep, "feat1", mxfeat1);
 	engPutVariable(ep, "feat2", mxfeat2);
@@ -1412,6 +1426,24 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	double *ps = mxGetPr(score);
 
 	/* interpret results */
+
+// 	ofstream ofs("output/test_tensor_matching.csv");
+// 	ofs << "pair, score, hks_error1, hks_error2" << endl;
+	vector<double> vTimes;
+	for (int i = 0; i < 5; ++i) vTimes.push_back(10 * pow(1.4, i));
+// 	for (int k = 0; k < vsize1; ++k)
+// 	{
+// 		int i1 = k;
+// 		int i2 = (int)px[i1] - 1;
+// 		int idx1 = vFeatures1[i1];
+// 		int idx2 = vFeatures2[i2];
+// 		ofs << idx1 << '-' << idx2 << ", " << pv[k] 
+// 			 << ", " << calPointHKSSimilarity(pmp1, pmp2, idx1, idx2, vTimes, 0)
+// 			 << ", " << calPointHKSSimilarity(pmp1, pmp2, idx1, idx2, vTimes, 1)
+// 			 << endl;
+// 	}	
+// 	ofs.close();
+
 	double result = ps[0];	// tensor matching score
 	result = 0.0;
 
@@ -1430,8 +1462,13 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 		if (verbose)
 			cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
 		
-		if(*pmax < thresh) 
-			break;
+		if(*pmax < thresh) break;
+
+		if (calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) >= 0.03) 
+		{
+			pv[imax] = 0.;
+			continue;
+		}
 
 		result += pv[imax];
 		matched.push_back(mpt);
@@ -2327,4 +2364,21 @@ void DiffusionShapeMatcher::dataTesting1()
 	}	
 
 	cout << "Collected data saved to \"" << filename << "\"" << endl;
+}
+
+double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
+{
+	double errorSum(0);
+	double maxError(0);
+	for (auto iter = vTimes.begin(); iter != vTimes.end(); ++iter)
+	{
+		double hks1 = std::log(4*PI*(*iter) * pmp1->calHK(i1, i1, *iter));
+		double hks2 = std::log(4*PI*(*iter) * pmp2->calHK(i2, i2, *iter));
+		double error = abs(hks1-hks2);
+		errorSum += error;
+		maxError = max(maxError, error);
+	}
+	if (mode == 0) return maxError;
+	
+	return errorSum / vTimes.size();
 }
