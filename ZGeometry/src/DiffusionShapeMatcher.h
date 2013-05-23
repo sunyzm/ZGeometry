@@ -215,7 +215,7 @@ public:
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
 	static double TensorGraphMatching3(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double t, double thresh);
-	static void ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
+	static void ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang, bool sweep = false);
 	static void ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
 	void    prepareHeatRegistration( double regTime );
 	double  computeMatchScore(int idx1, int idx2) const;

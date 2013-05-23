@@ -260,6 +260,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 	for (int s = nScales-1; s >= 0; --s)
 	{
 		vector<double> hksv;
+		cout << "=== Detection timescale: " << vScaleValues[s] << " ===" << endl;
 //		pMP->calNormalizedKernelSignature(vScaleValues[s], HEAT_KERNEL, hksv);
 		pMP->calKernelSignature(vScaleValues[s], HEAT_KERNEL, hksv); 
  		double sref = 4.0 * PI * vScaleValues[s];
@@ -271,10 +272,10 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 //		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
 		fineMesh->extractExtrema(hksv, ring, vFeatureIdx);
 		
-		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
-		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) 
-			cout << iter->first	<< ", ";
-		cout << '\n';
+// 		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
+// 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) 
+// 			cout << iter->first	<< ", ";
+// 		cout << '\n';
 
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
 			vF.push_back(HKSFeature(iter->first, s, iter->second));
@@ -1193,23 +1194,35 @@ void DiffusionShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcess
 
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void DiffusionShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
 {
-// 	if(i==j || i==k || j==k)		//not a triangle
-// 	{
-// 		sang[0] = -100.0;
-// 		sang[1] = -100.0;
-// 		sang[2] = -100.0;
-// 		return;
-// 	}
+//  	if(i==j || i==k || j==k)		//not a triangle
+//  	{
+//  		sang[0] = -100.0;
+//  		sang[1] = -100.0;
+//  		sang[2] = -100.0;
+// 		sang[3] = sang[4] = sang[5] = -100.;
+//  		return;
+//  	}
 	
 	double d1 = pmp->calHK(i, j, t);
 	double d2 = pmp->calHK(j, k, t);
 	double d3 = pmp->calHK(k, i, t);
+
+// 	if (sweep == true)
+// 	{
+// 		const double thresh = 1e-5;
+// 		if (d1 < thresh && d2 < thresh && d3 < thresh)
+// 		{
+// 			sang[0] = sang[1] = sang[2] = sang[3] = sang[4] = sang[5] = -100.;
+// 		}
+// 		return;
+// 	}
+
 	double s1 = pmp->calHK(i, i, t);
 	double s2 = pmp->calHK(j, j, t);
 	double s3 = pmp->calHK(k, k, t);
-
+	
 	sang[0] = d1;
 	sang[1] = d2;
 	sang[2] = d3;
@@ -1334,26 +1347,22 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	int vsize2 = (int)vFeatures2.size();    // input feature size 2
 
 	vector<int> triangs;
-// 	for (int i = 0; i < vsize1; i++)
-// 	{
-// 		for (int j = i+1; j < vsize1; j++)
-// 		{
-// 			for (int k = j+1; k < vsize1; k++)
-// 			{
-// 				triangs.push_back(i);
-// 				triangs.push_back(j);
-// 				triangs.push_back(k);
-// 			}			
-// 		}
-// 	}
-
 	for (int i = 0; i < vsize1; i++)
 	{
-		for (int j = 0; j < vsize1; j++)
+		for (int j = i+1; j < vsize1; j++)
 		{
-			for (int k = 0; k < vsize1; k++)
+			double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t);
+			for (int k = j+1; k < vsize1; k++)
 			{
-				if (i == j || i == k || k == j) continue;
+					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t),
+					       c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t);
+				int count_valid = 0;
+				if (c1 >= 1e-5) count_valid++;
+				if (c2 >= 1e-5) count_valid++;
+				if (c3 >= 1e-5) count_valid++;
+
+				if (count_valid == 0) continue;
+
 				triangs.push_back(i);
 				triangs.push_back(j);
 				triangs.push_back(k);
@@ -1361,7 +1370,23 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 		}
 	}
 
+// 	for (int i = 0; i < vsize1; i++)
+// 	{
+// 		for (int j = 0; j < vsize1; j++)
+// 		{
+// 			for (int k = 0; k < vsize1; k++)
+// 			{
+// 				if (i == j || i == k || k == j) continue;
+// 				triangs.push_back(i);
+// 				triangs.push_back(j);
+// 				triangs.push_back(k);
+// 			}			
+// 		}
+// 	}
+
 	int tsize1 = (int)triangs.size() / 3;
+
+	cout << "#Total query triangles: " << tsize1 << endl;
 	int tsize2 = vsize2 * vsize2 * vsize2;
 
 	// compute feature descriptors
@@ -1376,7 +1401,7 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	mxnumbs = mxCreateDoubleMatrix(1, 4, mxREAL);
 	double *pnumbs = mxGetPr(mxnumbs);
 
-	const int maxNN = 30;
+	const int maxNN = 32;
 	pnumbs[0] = vsize1; // nP1
 	pnumbs[1] = vsize2; // nP2
 	pnumbs[2] = tsize1; // nT
@@ -1402,15 +1427,19 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 		{
 			for(int k = 0; k < vsize2; k++)
 			{
-				ComputeTensorFeature6(pmp2, vFeatures2[i], vFeatures2[j], vFeatures2[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
+				ComputeTensorFeature6(pmp2, vFeatures2[i], vFeatures2[j], vFeatures2[k], t, pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim, /*sweep=*/true);
 			}
 		}
 	}
 	);
 	// invoke matlab for tensor matching
-//	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
-//	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
-//	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
+	ofstream ofeature("output/high_order_feature.txt");
+	for (double* p = pfeat1; p < pfeat1+FeatureDim*tsize1; p += 6)
+		ofeature << *p << endl << *(p+1) << endl << *(p+2) << endl;
+
+	double ht1 = pmp1->calHeatTrace(t), ht2 = pmp2->calHeatTrace(t);
+	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
+	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
 
 	engPutVariable(ep, "feat1", mxfeat1);
 	engPutVariable(ep, "feat2", mxfeat2);
@@ -1460,15 +1489,17 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 		mpt.m_score = *pmax;
 
 		if (verbose)
-			cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax << endl;
-		
-		if(*pmax < thresh) break;
-
-		if (calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) >= 0.03) 
 		{
-			pv[imax] = 0.;
-			continue;
+			cout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax
+			     << ", Dissimilarity: " << calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) 
+				 << endl;
 		}
+// 		if(*pmax < thresh) break;
+// 		if (calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) >= 0.03) 
+// 		{
+// 			pv[imax] = 0.;
+// 			continue;
+// 		}
 
 		result += pv[imax];
 		matched.push_back(mpt);

@@ -26,8 +26,8 @@ extern GeometryTask g_task;
 
 int QZGeometryWindow::DEFAULT_EIGEN_SIZE = 300;
 int QZGeometryWindow::DEFAULT_DEFORM_RING = 5 ;
-int QZGeometryWindow::LOAD_MHB_CACHE = 1;
-double QZGeometryWindow::MIN_HK_TIMESCALE = 1e-2;
+int QZGeometryWindow::LOAD_MHB_CACHE = 0;
+double QZGeometryWindow::MIN_HK_TIMESCALE = 1;
 double QZGeometryWindow::DEFUALT_HK_TIMESCALE = 40.0;
 double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
 double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
@@ -1433,7 +1433,7 @@ void QZGeometryWindow::matchFeatures()
 			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
 			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
 			vector<MatchPair> vPairs;
-			double matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2);
+			double matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
 			cout << "Tensor match score: " << matchScore << endl;
 			shapeMatcher.forceInitialAnchors(vPairs);
 		}

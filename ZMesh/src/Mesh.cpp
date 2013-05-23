@@ -3618,8 +3618,8 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	int state_c = STATE_IDLE;
 	vector<int> nb;
 
-	double pz = 1e-5;		//1e-5
-	double nz = -1e-5;
+	double pz = 0;		//1e-5
+	double nz = -0;
 
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
@@ -3631,14 +3631,14 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 		{
 			int ev = nb[k];
 			state_c = STATE_IDLE;
-			if( vSigVal[j] - vSigVal[ev] < 0)		// low bound
+			if( vSigVal[j] - vSigVal[ev] < nz)		// low bound
 				state_c = STATE_MIN;
-			else if( vSigVal[j] - vSigVal[ev] > 0)	// high bound
+			else if( vSigVal[j] - vSigVal[ev] > pz)	// high bound
 				state_c = STATE_MAX;
 
 			if(state == STATE_IDLE)				    // two-step change
 				state = state_c;
-			else if( state * state_c <= 0 ) 
+			else if( state != state_c ) 
 			{
 				state = STATE_IDLE;
 				break;
