@@ -1730,8 +1730,9 @@ void DiffusionShapeMatcher::matchFeaturesTensor( std::ostream& flog, double time
 	vector<int> vFeatures1(vftFine1.size()), vFeatures2(vftFine2.size());
 	transform(vftFine1.begin(), vftFine1.end(), vFeatures1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
 	transform(vftFine2.begin(), vftFine2.end(), vFeatures2.begin(), [](const HKSFeature& feat){ return feat.m_index; });
-	double matchScore = TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vFeatures1, vFeatures2, vPairs, timescale, thresh);
-	flog << "Match score: " << matchScore << endl;
+	
+ 	double matchScore = TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vFeatures1, vFeatures2, vPairs, timescale, thresh);
+ 	flog << "Match score: " << matchScore << endl;
 
 	forceInitialAnchors(vPairs);
 }
@@ -2412,4 +2413,85 @@ double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshPr
 	if (mode == 0) return maxError;
 	
 	return errorSum / vTimes.size();
+}
+
+void DiffusionShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
+{
+	matchedResult.clear();
+
+	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
+	int tsize = vTimes.size();
+	vector<VectorND> vSig1(vsize1), vSig2(vsize2);
+
+	vector<double> vTrace1(tsize), vTrace2(tsize);
+	for (int s = 0; s < tsize; ++s)
+	{
+		vTrace1[s] = pmp1->calHeatTrace(vTimes[s]);
+		vTrace2[s] = pmp2->calHeatTrace(vTimes[s]);
+	}
+
+	for (int i = 0; i < vsize1; ++i) 
+	{
+		vSig1[i].reserve(tsize);
+		for (int j = 0; j < tsize; ++j)
+			vSig1[i].m_vec[j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+	}
+	for (int i = 0; i < vsize2; ++i) 
+	{
+		vSig2[i].reserve(tsize);
+		for (int j = 0; j < tsize; ++j)
+			vSig2[i].m_vec[j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+	}
+	
+	double *hksSim = new double[vsize1 * vsize2];
+
+	for (int i = 0; i < vsize1; ++i)
+	{
+		for (int j = 0; j <= i; ++j)
+			hksSim[i * vsize2 + j] = vSig1[i].calDistance2(vSig2[j]);
+		for (int j = i+1; j < vsize2; ++j)
+			hksSim[i* vsize2 + j] = 1e10;
+	}
+
+	double vMin = 1e10 - 1;
+	while (vMin < 1e10 - 0.1)
+	{
+		double *pMin = min_element(hksSim, hksSim + vsize1 * vsize2);
+		vMin = *pMin;
+		size_t pos = distance(hksSim, pMin);
+		int i2 = pos % vsize2;
+		int i1 = pos / vsize2;
+		matchedResult.push_back(MatchPair(vFeatures1[i1], vFeatures2[i2], vMin));
+
+		if (verbose)
+		{
+			cout << matchedResult.size() << "(" << matchedResult.back().m_idx1 << " - " << matchedResult.back().m_idx2 << "), score: " << matchedResult.back().m_score	<< endl;
+		}
+
+		for (int k = 0; k < vsize1; ++k)
+			hksSim[k*vsize2 + i2] = 1e10;
+		for (int k = 0; k < vsize2; ++k)
+			hksSim[i1*vsize2 + k] = 1e10;
+	}
+	
+	delete []hksSim;
+}
+
+void DiffusionShapeMatcher::matchFeatureSimple()
+{
+	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
+	const vector<HKSFeature>& vftFine1 = m_vFeatures[0];
+	const vector<HKSFeature>& vftFine2 = m_vFeatures[1];
+	vector<MatchPair> vPairs;
+	vector<int> vFeatures1(vftFine1.size()), vFeatures2(vftFine2.size());
+	transform(vftFine1.begin(), vftFine1.end(), vFeatures1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	transform(vftFine2.begin(), vftFine2.end(), vFeatures2.begin(), [](const HKSFeature& feat){ return feat.m_index; });
+	
+	vector<double> vTimes;
+	for(int i = 0; i < 10; ++i)
+		vTimes.push_back(10. * pow(2., i/2.));
+
+	SimplePointMatching(pOriginalProcessor[0], pOriginalProcessor[1], vFeatures1, vFeatures2, vTimes, vPairs, true);
+
+	forceInitialAnchors(vPairs);
 }

@@ -344,7 +344,7 @@ void VectorND::calSubtract(VectorND& v1, VectorND& v2)
 
 double VectorND::calDistance2(const VectorND &v) const
 {
-	assert(m_size == v.m_size);
+	assert(this->m_size == v.m_size);
 	double d = 0.0;
 	for(int i = 0; i < m_size; i++)
 	{

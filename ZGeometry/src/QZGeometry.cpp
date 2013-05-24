@@ -1417,18 +1417,17 @@ void QZGeometryWindow::matchFeatures()
 
 	if (!alreadyMached)
 	{
-		bool use_tensor = (g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING") == 1);
+		int matching_method = g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING");
 		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
 		qout.output("-- Match initial features --");
 		ofstream ofstr(log_filename.c_str(), ios::trunc);
 		CStopWatch timer;
 		timer.startTimer();
-		if (use_tensor)
+		if (matching_method == 2)	//tensor
 		{
 			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
 			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
-			//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 
 			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
 			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
@@ -1436,11 +1435,17 @@ void QZGeometryWindow::matchFeatures()
 			double matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
 			cout << "Tensor match score: " << matchScore << endl;
 			shapeMatcher.forceInitialAnchors(vPairs);
+
+			//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 		}
-		else	// traditional pair-based matching
+		else if (matching_method == 1)	// traditional pair-based matching
 		{
 			double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
 			shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
+		}
+		else // point based
+		{
+			shapeMatcher.matchFeatureSimple();
 		}
 		timer.stopTimer();
 		ofstr.close();

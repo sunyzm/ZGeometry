@@ -135,6 +135,7 @@ public:
 	void	constructPyramid(int n, double ratio, std::ostream& ostr);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
+	void    matchFeatureSimple();
 	void	matchFeaturesTensor(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
 	void    refineRegister2(std::ostream& flog);
@@ -211,6 +212,7 @@ private:
 public:
 	/* helper functions */
 	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
+	static void SimplePointMatching(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& machedResult, bool verbose = false);
 	static void PairGraphMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose = false);
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
