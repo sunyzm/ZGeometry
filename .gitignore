@@ -2,7 +2,6 @@
 *.slo
 *.lo
 *.o
-*.obj
 #*.exe
 
 # Compiled Dynamic libraries
