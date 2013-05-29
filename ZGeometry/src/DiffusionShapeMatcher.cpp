@@ -2400,9 +2400,20 @@ void DiffusionShapeMatcher::regsiterTesting2()
 
 }
 
+void printVectorMatchPair(const vector<MatchPair>& vPairs, ostream& os)
+{
+	for_each(vPairs.begin(), vPairs.end(), [&](const MatchPair& mp) { os << '(' << mp.m_idx1 << ',' << mp.m_idx2 << ") ";});
+	os << endl;
+}
+
+int countValidMatchPair(const vector<MatchPair>& vPairs)
+{
+	return count_if(vPairs.begin(), vPairs.end(), [](const MatchPair& mp){return mp.m_idx1 == mp.m_idx2;});
+}
+
 void DiffusionShapeMatcher::dataTesting1()
 {
-	vector<int> vFeatureID1, vFeatureID2;
+/*	vector<int> vFeatureID1, vFeatureID2;
 	vFeatureID1.push_back(4297);
 	vFeatureID1.push_back(4190);
 	vFeatureID1.push_back(9527);
@@ -2446,6 +2457,139 @@ void DiffusionShapeMatcher::dataTesting1()
 	}	
 
 	cout << "Collected data saved to \"" << filename << "\"" << endl;
+	*/
+
+	int vsize = pOriginalMesh[0]->getMeshSize();
+	double outlier_ratio = 0.2;
+	ofstream ofs("output/evaluate_hkt.txt");
+	ofstream ofs2("output/result_hkt.csv");
+
+	vector<int> vN;
+	//for (int n = 5; n <= 9; ++n) vN.push_back(n);
+	for (int n = 5; n <= 40; n+=5) vN.push_back(n);
+	const int groupNum = 5;
+	for (auto iter_N = vN.begin(); iter_N != vN.end(); ++iter_N)
+	{
+		cout << "## N = " << *iter_N << " ##" << endl;
+		ofs << "## N = " << *iter_N << " ##" << endl;
+		int N = *iter_N;
+
+		vector<vector<int> > vvInput1(groupNum), vvInput2(groupNum);
+		for (int group = 0; group < groupNum; ++group)
+		{
+			ofs << "  group #" << group << endl;
+
+			vector<int> vToMatch(N), vOutlier1(outlier_ratio*N), vOutlier2(outlier_ratio*N);
+			generate(vToMatch.begin(), vToMatch.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+			generate(vOutlier1.begin(), vOutlier1.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+			generate(vOutlier2.begin(), vOutlier2.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+
+			vvInput1[group].insert(vvInput1[group].begin(), vToMatch.begin(), vToMatch.end());
+			vvInput2[group].insert(vvInput2[group].begin(), vToMatch.begin(), vToMatch.end());
+			vvInput1[group].insert(vvInput1[group].end(), vOutlier1.begin(), vOutlier1.end());
+			vvInput2[group].insert(vvInput2[group].end(), vOutlier2.begin(), vOutlier2.end());
+
+			ofs << "  input " << group << "-1: ";
+			for_each(vvInput1[group].begin(), vvInput1[group].end(), [&](int v){ ofs << v << ' '; });
+			ofs << '\n';
+			ofs << "  input " << group << "-2: ";
+			for_each(vvInput2[group].begin(), vvInput2[group].end(), [&](int v){ ofs << v << ' '; });
+			ofs << '\n';
+		}
+
+		double sum_ratio_matched[6] = {0.}, sum_ratio_correct[6]= {0.};
+
+		CStopWatch timer;
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			vector<MatchPair> vMatched;
+			int validMatched;
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {40, 0.7, 80};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
+			ofs << "  Match results(method=" << 3 << ",t=" << 40 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[0] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[0] += 0.;
+			else sum_ratio_correct[0] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			vector<MatchPair> vMatched;
+			int validMatched;
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+
+			double vPara[] = {40, 0.7};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
+			ofs << "  Match results(method=" << 1 << ",t=" << 40 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[1] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[1] += 0.;
+			else sum_ratio_correct[1] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			vector<MatchPair> vMatched;
+			int validMatched;
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+
+			double vPara[] = {40, 0.7};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 0, vPara, cout);
+			ofs << "  Match results(method=" << 1 << ",t=" << 80 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[2] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[2] += 0.;
+			else sum_ratio_correct[2] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+
+// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
+// 			ofs << "  Match results(method=" << 3 << ",t=" << 80 << "): "; 
+// 			printVectorMatchPair(vMatched, ofs);
+// 			validMatched = countValidMatchPair(vMatched);
+// 			sum_ratio_matched[2] += (double)validMatched/(double)N;
+// 			if (vMatched.empty()) sum_ratio_correct[2] += 0.;
+// 			else sum_ratio_correct[2] += (double)validMatched/(double)vMatched.size();
+
+//			vPara[0] = 160;
+
+// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
+// 			ofs << "  Match results(method=" << 0 << ",t=" << 80 << "): "; 
+// 			printVectorMatchPair(vMatched, ofs);
+// 			validMatched = countValidMatchPair(vMatched);
+// 			sum_ratio_matched[4] += (double)validMatched/(double)N;
+// 			if (vMatched.empty()) sum_ratio_correct[4] += 0.;
+// 			else sum_ratio_correct[4] += (double)validMatched/(double)vMatched.size();
+// 
+// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
+// 			ofs << "  Match results(method=" << 1 << ",t=" << 80 << "): "; 
+// 			printVectorMatchPair(vMatched, ofs);
+// 			validMatched = countValidMatchPair(vMatched);
+// 			sum_ratio_matched[5] += (double)validMatched/(double)N;
+// 			if (vMatched.empty()) sum_ratio_correct[5] += 0.;
+// 			else sum_ratio_correct[5] += (double)validMatched/(double)vMatched.size();
+		
+		ofs2 << N;
+		for (int i = 0; i < 4; ++i)
+		{
+			ofs2 << ", " << sum_ratio_matched[i] / (double)groupNum << ", " << sum_ratio_correct[i] / (double)groupNum;
+		}
+		ofs2 << endl;
+	}
+
 }
 
 double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
@@ -2546,10 +2690,7 @@ void DiffusionShapeMatcher::matchFeatureSimple()
 	forceInitialAnchors(vPairs);
 }
 
-double DiffusionShapeMatcher::TensorMatchingExt( 
-	Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2,
-	const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, 
-	std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout )
+double DiffusionShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/******************************
 	* featureType = 0 ---- original angle based triangle construction
@@ -2565,6 +2706,11 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 	** vPara[1]: thresh
 	** vPara[2]: anchor 1-1
 	** vPara[3]: anchor 1-2
+
+	* featureType = 3 ---- 12-tuple
+	** vPara[0]: timescale 1
+	** vPara[1]: thresh
+	** vPara[2]: timescale 2
 
 	******************************/
 	vMatchedPairs.clear();
@@ -2628,17 +2774,18 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 			}
 		}
 	}
-	else //highOrderFeatureType 2 or 3
+	else if (highOrderFeatureType == 1 || highOrderFeatureType == 2)
 	{
+		double t = vPara[0];
 		for (int i = 0; i < vsize1; i++)
 		{
 			for (int j = i+1; j < vsize1; j++)
 			{
-				double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], vPara[0]);
+				double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t);
 				for (int k = j+1; k < vsize1; k++)
 				{
-					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], vPara[0]),
-						   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], vPara[0]);
+					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t),
+						   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t);
 					int count_valid = 0;
 					if (c1 >= 1e-5) count_valid++;
 					if (c2 >= 1e-5) count_valid++;
@@ -2652,6 +2799,40 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 				}			
 			}
 		}
+	}
+	else if (highOrderFeatureType == 3)
+	{
+		double t1 = vPara[0], t2 = vPara[2];
+		for (int i = 0; i < vsize1; i++)
+		{
+			for (int j = i+1; j < vsize1; j++)
+			{
+				double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t1);
+				double d1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t2);
+				for (int k = j+1; k < vsize1; k++)
+				{
+					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t1),
+						   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t1);
+					double d2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t2),
+						   d3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t2);
+					int count_valid1 = 0;
+					if (c1 >= 1e-5) count_valid1++;
+					if (c2 >= 1e-5) count_valid1++;
+					if (c3 >= 1e-5) count_valid1++;
+					int count_valid2 = 0;
+					if (d1 >= 1e-5) count_valid2++;
+					if (d2 >= 1e-5) count_valid2++;
+					if (d3 >= 1e-5) count_valid2++;
+
+					if (count_valid1 == 0 || count_valid2 == 0) continue;
+
+					triangs.push_back(i);
+					triangs.push_back(j);
+					triangs.push_back(k);
+				}			
+			}
+		}
+
 		// 	for (int i = 0; i < vsize1; i++)
 		// 	{
 		// 		for (int j = 0; j < vsize1; j++)
@@ -2675,7 +2856,9 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 
 	int tsize1 = (int)triangs.size() / 3;
 
-	logout << "#Total query triangles: " << tsize1 << endl;
+	if (verbose)
+		logout << "#Total query triangles: " << tsize1 << endl;
+	
 	int tsize2 = vsize2 * vsize2 * vsize2;
 
 	// compute feature descriptors
@@ -2685,6 +2868,7 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 	case 0: FeatureDim = 3; break;
 	case 1: FeatureDim = 6; break;
 	case 2: FeatureDim = 6; break;
+	case 3: FeatureDim = 12; break;
 	}
 	
 	mxArray *mxfeat1, *mxfeat2, *mxtris, *mxnumbs, *mX2, *vX2, *score;
@@ -2777,6 +2961,30 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 				}
 			}
 			);
+			break;
+		}
+	case 3:
+		{
+			Concurrency::parallel_for(0, tsize1, [&](int i)
+			{
+				int vi = triangs[i*3];
+				int vj = triangs[i*3+1];
+				int vk = triangs[i*3+2];
+				ComputeTensorFeature12(pmp1, vFeatures1[vi], vFeatures1[vj], vFeatures1[vk], vPara[0], vPara[2], pfeat1 + i*FeatureDim);
+			}
+			);
+			Concurrency::parallel_for(0, vsize2, [&](int i)
+			{
+				for(int j = 0; j < vsize2; j++)
+				{
+					for(int k = 0; k < vsize2; k++)
+					{
+						ComputeTensorFeature12(pmp2, vFeatures2[i], vFeatures2[j], vFeatures2[k], vPara[0], vPara[2], pfeat2 + ((i*vsize2+j)*vsize2+k)*FeatureDim);
+					}
+				}
+			}
+			);
+			break;
 		}
 	}
 
@@ -2840,9 +3048,10 @@ double DiffusionShapeMatcher::TensorMatchingExt(
 		mpt.m_idx2 = vFeatures2[ind-1];
 		mpt.m_score = *pmax;
 
-		logout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax
-		//	<< ", Dissimilarity: " << calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) 
-			<< endl;
+		if (verbose)
+			logout << imax << "(" << mpt.m_idx1 << " - " << mpt.m_idx2 << "), score: " << *pmax
+			//	<< ", Dissimilarity: " << calPointHksDissimilarity(pmp1, pmp2, mpt.m_idx1, mpt.m_idx2, vTimes, 1) 
+				<< endl;
 		
 
 		if(*pmax < vPara[1]) break;
@@ -2902,4 +3111,20 @@ void DiffusionShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshPr
 	sang[3] = s1;
 	sang[4] = s2;
 	sang[5] = s3;
+}
+
+void DiffusionShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t1, double t2, double* sang )
+{
+	sang[0] = pmp->calHK(i, j, t1);
+	sang[1] = pmp->calHK(j, k, t1);
+	sang[2] = pmp->calHK(k, i, t1);
+	sang[3] = pmp->calHK(i, i, t1);
+	sang[4] = pmp->calHK(j, j, t1);
+	sang[5] = pmp->calHK(k, k, t1);
+	sang[6] = pmp->calHK(i, j, t2);
+	sang[7] = pmp->calHK(j, k, t2);
+	sang[8] = pmp->calHK(k, i, t2);
+	sang[9] = pmp->calHK(i, i, t2);
+	sang[10] = pmp->calHK(j, j, t2);
+	sang[11] = pmp->calHK(k, k, t2);
 }
