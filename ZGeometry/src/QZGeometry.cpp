@@ -315,9 +315,14 @@ bool QZGeometryWindow::initialize()
 		string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
+		
+		registerTest();
 	}
 
 //	evalDistance();
+
+	
+
 	return true;
 }
 
@@ -364,6 +369,24 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	case Qt::Key_F:
 		if (event->modifiers() & Qt::AltModifier)
 			toggleShowFeatures();
+		break;
+
+	case Qt::Key_J:
+		// a temporary hack
+		if (vMP[0].getActiveFeatures()->id == FEATURE_DEMO)
+		{
+			vMP[0].setActiveFeaturesByID(FEATURE_DEMO2);
+			vMP[1].setActiveFeaturesByID(FEATURE_DEMO2);
+			shapeMatcher.swapMP();
+		}
+		else if (vMP[0].getActiveFeatures()->id == FEATURE_DEMO2)
+		{
+			vMP[0].setActiveFeaturesByID(FEATURE_DEMO);
+			vMP[1].setActiveFeaturesByID(FEATURE_DEMO);
+			shapeMatcher.swapMP();
+		}
+		
+		ui.glMeshWidget->update();
 		break;
 
 	case Qt::Key_L:
@@ -1908,6 +1931,8 @@ void QZGeometryWindow::registerTest()
 	//shapeMatcher.regsiterTesting2();
 	//shapeMatcher.dataTesting1();
 	shapeMatcher.sparseMatchingTesting();
+	//shapeMatcher.localCorrespondenceTesting();
+	ui.glMeshWidget->update();
 }
 
 

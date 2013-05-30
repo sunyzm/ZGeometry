@@ -35,9 +35,10 @@ class MeshFeature
 public:
 	int m_index;
 	int m_scale;
-	MeshFeature() : m_index(-1), m_scale(-1) {}
-	MeshFeature(int i) : m_index(i), m_scale(0) {}
-	MeshFeature(int i, int s) : m_index(i), m_scale(s) {}
+	int m_note;
+	MeshFeature() : m_index(-1), m_scale(-1), m_note(0) {}
+	MeshFeature(int i) : m_index(i), m_scale(0), m_note(0) {}
+	MeshFeature(int i, int s) : m_index(i), m_scale(s), m_note(0) {}
 	virtual ~MeshFeature() {}
 };
 

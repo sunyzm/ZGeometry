@@ -642,8 +642,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		const float *feature_color1 = RGBColors[COLOR_MAGENTA];
 		const float *feature_color2 = RGBColors[COLOR_GREEN];		
 		GLUquadric* quadric = gluNewQuadric();
-		bool is_hks_feature = (feature_list->featureType == FEATURE_MULTI_HKS);
-
+		bool is_hks_feature = (feature_list->id == FEATURE_MULTI_HKS);
+		bool is_demo_feature = (feature_list->id == FEATURE_DEMO || feature_list->id == FEATURE_DEMO2);
 		for (auto iter = feature_list->m_vFeatures.begin(); iter != feature_list->m_vFeatures.end(); ++iter)
 		{
 		 	Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
@@ -655,6 +655,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				else
 					glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
 			}
+			else if (is_demo_feature)
+			{
+				if ((*iter)->m_note == 1)
+					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
+				else if ((*iter)->m_note == -1)
+					//glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
+					glColor4f(0.5,0.5,0.5, 1);
+				else 
+					glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
+			}
 			else
 			{
 				int color_index = (*iter)->m_scale % gFeatureColorNum;
@@ -663,7 +673,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 *(*iter)->m_scale), 16, 8);
+			if (is_hks_feature)
+				gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 *(*iter)->m_scale), 16, 8);
+			else 
+				gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 		gluDeleteQuadric(quadric);
@@ -838,6 +851,10 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 
 			if (m_bShowCorrespondenceLine)
 			{
+				if (vmp[i].m_note != -1)
+					glColor4f(1.0, 0, 0, 1.0);
+				else
+					glColor4f(0.0, 0.0, 0.0, 1.0);
 				glDisable(GL_LIGHTING);
 				glBegin(GL_LINES);
 				glVertex3d(x1, y1, z1);

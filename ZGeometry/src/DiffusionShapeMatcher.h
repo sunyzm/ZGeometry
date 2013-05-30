@@ -85,7 +85,7 @@ public:
 	int		m_tn;	    // num of scales; log_2(tu/tl)
 	int     minOrMax;	// -1:min; 1:max
 public:
-	HKSFeature() { m_index = 0; m_scale = -1; m_tu = m_tl = 0.0; m_tn = 0; }
+	HKSFeature() : MeshFeature() { m_index = 0; m_scale = -1; m_tu = m_tl = 0.0; m_tn = 0; }
 	HKSFeature(int i, int s, int state = 1) : minOrMax(state) { m_index = i; m_scale = s; m_tu = m_tl = 0.0; m_tn = 0; }
 	HKSFeature(int x, double tl, double tu) { m_index = x; m_tl = tl; m_tu = tu; m_tn = 0; }
 	HKSFeature(int x, double tl, int n) { m_index = x; m_tn = n; m_tu = tl; }
@@ -123,9 +123,8 @@ public:
 class DiffusionShapeMatcher
 {
 public:
-	struct Cluster{
-		std::vector<int> m_member;
-	};
+	std::vector<MatchPair> mpSwap;
+	void swapMP() { std::swap(m_vFeatureMatchingResults[m_nAlreadyMatchedLevel], mpSwap); }
 public:
 	DiffusionShapeMatcher();
 	~DiffusionShapeMatcher();
@@ -220,6 +219,7 @@ public:
 	static void HKSMatchingExt(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
 	static double PairMatchingExt(Engine* ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
 	static double TensorMatchingExt(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose = false);
+	static void HKCMatching(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh);
 
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
 	static double TensorGraphMatching6(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
