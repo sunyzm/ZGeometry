@@ -1906,7 +1906,8 @@ void QZGeometryWindow::registerTest()
 {
 	//shapeMatcher.registerTesting1();
 	//shapeMatcher.regsiterTesting2();
-	shapeMatcher.dataTesting1();
+	//shapeMatcher.dataTesting1();
+	shapeMatcher.sparseMatchingTesting();
 }
 
 

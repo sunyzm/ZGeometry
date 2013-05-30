@@ -118,6 +118,45 @@ void ParamManager::para_computeHKS( const std::vector<double>& times )
 	});
 }
 
+double distHKS2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, double tl, int tn)
+{
+// 	if (tu < tl) return 1.0;
+// 	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
+
+	VectorND v1(tn), v2(tn);
+	double t = tl;
+	for(int i = 0; i < tn; i++)
+	{
+		v1.m_vec[i] = pmp1->calHK(i1, i1, t) / pmp1->calHeatTrace(t);
+		v2.m_vec[i] = pmp2->calHK(i2, i2, t) / pmp2->calHeatTrace(t);
+		t *= 2.0;
+	}
+
+	return v1.calDistance2(v2) / tn;
+}
+
+double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const MatchPair& mp1, const MatchPair& mp2, double tl, double tu)
+{
+	if (tu < tl) return 1.0;
+	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	
+
+	int x1 = mp1.m_idx1;
+	int x2 = mp1.m_idx2;
+	int y1 = mp2.m_idx1;
+	int y2 = mp2.m_idx2;
+
+	VectorND v1(tn), v2(tn);
+	double t = tl;
+	for(int i = 0; i < tn; i++)
+	{
+		v1.m_vec[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
+		v2.m_vec[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
+		t *= 2.0;
+	}
+
+	return v1.calDistance2(v2) / tn;
+}
+
 double distHksFeature2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const HKSFeature& hf1, const HKSFeature& hf2, double& tl, int& tn)
 {
 	tl = max(hf1.m_tl, hf2.m_tl);	// now both are 10.0
@@ -2413,7 +2452,7 @@ int countValidMatchPair(const vector<MatchPair>& vPairs)
 
 void DiffusionShapeMatcher::dataTesting1()
 {
-/*	vector<int> vFeatureID1, vFeatureID2;
+	vector<int> vFeatureID1, vFeatureID2;
 	vFeatureID1.push_back(4297);
 	vFeatureID1.push_back(4190);
 	vFeatureID1.push_back(9527);
@@ -2457,139 +2496,6 @@ void DiffusionShapeMatcher::dataTesting1()
 	}	
 
 	cout << "Collected data saved to \"" << filename << "\"" << endl;
-	*/
-
-	int vsize = pOriginalMesh[0]->getMeshSize();
-	double outlier_ratio = 0.2;
-	ofstream ofs("output/evaluate_hkt.txt");
-	ofstream ofs2("output/result_hkt.csv");
-
-	vector<int> vN;
-	//for (int n = 5; n <= 9; ++n) vN.push_back(n);
-	for (int n = 5; n <= 40; n+=5) vN.push_back(n);
-	const int groupNum = 5;
-	for (auto iter_N = vN.begin(); iter_N != vN.end(); ++iter_N)
-	{
-		cout << "## N = " << *iter_N << " ##" << endl;
-		ofs << "## N = " << *iter_N << " ##" << endl;
-		int N = *iter_N;
-
-		vector<vector<int> > vvInput1(groupNum), vvInput2(groupNum);
-		for (int group = 0; group < groupNum; ++group)
-		{
-			ofs << "  group #" << group << endl;
-
-			vector<int> vToMatch(N), vOutlier1(outlier_ratio*N), vOutlier2(outlier_ratio*N);
-			generate(vToMatch.begin(), vToMatch.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
-			generate(vOutlier1.begin(), vOutlier1.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
-			generate(vOutlier2.begin(), vOutlier2.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
-
-			vvInput1[group].insert(vvInput1[group].begin(), vToMatch.begin(), vToMatch.end());
-			vvInput2[group].insert(vvInput2[group].begin(), vToMatch.begin(), vToMatch.end());
-			vvInput1[group].insert(vvInput1[group].end(), vOutlier1.begin(), vOutlier1.end());
-			vvInput2[group].insert(vvInput2[group].end(), vOutlier2.begin(), vOutlier2.end());
-
-			ofs << "  input " << group << "-1: ";
-			for_each(vvInput1[group].begin(), vvInput1[group].end(), [&](int v){ ofs << v << ' '; });
-			ofs << '\n';
-			ofs << "  input " << group << "-2: ";
-			for_each(vvInput2[group].begin(), vvInput2[group].end(), [&](int v){ ofs << v << ' '; });
-			ofs << '\n';
-		}
-
-		double sum_ratio_matched[6] = {0.}, sum_ratio_correct[6]= {0.};
-
-		CStopWatch timer;
-		timer.startTimer();
-		for (int group = 0; group < groupNum; ++group)
-		{
-			vector<MatchPair> vMatched;
-			int validMatched;
-			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
-			double vPara[] = {40, 0.7, 80};
-			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
-			ofs << "  Match results(method=" << 3 << ",t=" << 40 << "): "; 
-			printVectorMatchPair(vMatched, ofs);
-			validMatched = countValidMatchPair(vMatched);
-			sum_ratio_matched[0] += (double)validMatched/(double)N;
-			if (vMatched.empty()) sum_ratio_correct[0] += 0.;
-			else sum_ratio_correct[0] += (double)validMatched/(double)vMatched.size();
-		}
-		timer.stopTimer();
-		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
-
-		timer.startTimer();
-		for (int group = 0; group < groupNum; ++group)
-		{
-			vector<MatchPair> vMatched;
-			int validMatched;
-			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
-
-			double vPara[] = {40, 0.7};
-			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
-			ofs << "  Match results(method=" << 1 << ",t=" << 40 << "): "; 
-			printVectorMatchPair(vMatched, ofs);
-			validMatched = countValidMatchPair(vMatched);
-			sum_ratio_matched[1] += (double)validMatched/(double)N;
-			if (vMatched.empty()) sum_ratio_correct[1] += 0.;
-			else sum_ratio_correct[1] += (double)validMatched/(double)vMatched.size();
-		}
-		timer.stopTimer();
-		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
-
-		timer.startTimer();
-		for (int group = 0; group < groupNum; ++group)
-		{
-			vector<MatchPair> vMatched;
-			int validMatched;
-			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
-
-			double vPara[] = {40, 0.7};
-			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 0, vPara, cout);
-			ofs << "  Match results(method=" << 1 << ",t=" << 80 << "): "; 
-			printVectorMatchPair(vMatched, ofs);
-			validMatched = countValidMatchPair(vMatched);
-			sum_ratio_matched[2] += (double)validMatched/(double)N;
-			if (vMatched.empty()) sum_ratio_correct[2] += 0.;
-			else sum_ratio_correct[2] += (double)validMatched/(double)vMatched.size();
-		}
-		timer.stopTimer();
-		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
-
-// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
-// 			ofs << "  Match results(method=" << 3 << ",t=" << 80 << "): "; 
-// 			printVectorMatchPair(vMatched, ofs);
-// 			validMatched = countValidMatchPair(vMatched);
-// 			sum_ratio_matched[2] += (double)validMatched/(double)N;
-// 			if (vMatched.empty()) sum_ratio_correct[2] += 0.;
-// 			else sum_ratio_correct[2] += (double)validMatched/(double)vMatched.size();
-
-//			vPara[0] = 160;
-
-// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
-// 			ofs << "  Match results(method=" << 0 << ",t=" << 80 << "): "; 
-// 			printVectorMatchPair(vMatched, ofs);
-// 			validMatched = countValidMatchPair(vMatched);
-// 			sum_ratio_matched[4] += (double)validMatched/(double)N;
-// 			if (vMatched.empty()) sum_ratio_correct[4] += 0.;
-// 			else sum_ratio_correct[4] += (double)validMatched/(double)vMatched.size();
-// 
-// 			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
-// 			ofs << "  Match results(method=" << 1 << ",t=" << 80 << "): "; 
-// 			printVectorMatchPair(vMatched, ofs);
-// 			validMatched = countValidMatchPair(vMatched);
-// 			sum_ratio_matched[5] += (double)validMatched/(double)N;
-// 			if (vMatched.empty()) sum_ratio_correct[5] += 0.;
-// 			else sum_ratio_correct[5] += (double)validMatched/(double)vMatched.size();
-		
-		ofs2 << N;
-		for (int i = 0; i < 4; ++i)
-		{
-			ofs2 << ", " << sum_ratio_matched[i] / (double)groupNum << ", " << sum_ratio_correct[i] / (double)groupNum;
-		}
-		ofs2 << endl;
-	}
-
 }
 
 double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
@@ -2608,6 +2514,8 @@ double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshPr
 	
 	return errorSum / vTimes.size();
 }
+
+
 
 void DiffusionShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
 {
@@ -2737,44 +2645,58 @@ double DiffusionShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialM
 
 	// generate triangles
 	vector<int> triangs;
-	if (highOrderFeatureType == 0)
+	if (highOrderFeatureType == -1)
 	{
-		if(vsize1>8) 
+// 		if(vsize1>8) 
+// 		{
+// 			for(int i=0; i<vsize1; i++)
+// 			{
+// 				for(int j=0; j<8; j++)
+// 				{
+// 					if(i==j) continue;
+// 					for(int k=vsize1-1; k>vsize1-9; k--)
+// 					{
+// 						if(i==k || j==k) continue;
+// 						triangs.push_back(i);
+// 						triangs.push_back(j);
+// 						triangs.push_back(k);
+// 					}
+// 				}
+// 			}
+// 		}
+// 		else
+// 		{
+// 			for(int i=0; i<vsize1; i++)
+// 			{
+// 				for(int j=0; j<vsize1; j++)
+// 				{
+// 					if(i==j) continue;
+// 					for(int k=0; k<vsize1; k++)
+// 					{
+// 						if(i==k || j==k) continue;
+// 						triangs.push_back(i);
+// 						triangs.push_back(j);
+// 						triangs.push_back(k);
+// 					}
+// 				}
+// 			}
+// 		}
+		for (int i = 0; i < vsize1; i++)
 		{
-			for(int i=0; i<vsize1; i++)
-			{
-				for(int j=0; j<8; j++)
-				{
-					if(i==j) continue;
-					for(int k=vsize1-1; k>vsize1-9; k--)
-					{
-						if(i==k || j==k) continue;
-						triangs.push_back(i);
-						triangs.push_back(j);
-						triangs.push_back(k);
-					}
-				}
-			}
-		}
-		else
-		{
-			for(int i=0; i<vsize1; i++)
-			{
-				for(int j=0; j<vsize1; j++)
-				{
-					if(i==j) continue;
-					for(int k=0; k<vsize1; k++)
-					{
-						if(i==k || j==k) continue;
-						triangs.push_back(i);
-						triangs.push_back(j);
-						triangs.push_back(k);
-					}
-				}
-			}
+			for (int j = 0; j < vsize1; j++)
+		 	{
+				if (i == j) continue;
+		 		for (int k = 0; k < vsize1; k++)
+		 		{
+		 			if (i == k || k == j) continue;
+		 			triangs.push_back(i);
+		 			triangs.push_back(j);
+		 			triangs.push_back(k);
+		 		}			
+		 	}
 		}
 	}
-	else if (highOrderFeatureType == 1 || highOrderFeatureType == 2)
+	else if (highOrderFeatureType == 1 || highOrderFeatureType == 2 || highOrderFeatureType == 0)
 	{
 		double t = vPara[0];
 		for (int i = 0; i < vsize1; i++)
@@ -3127,4 +3049,463 @@ void DiffusionShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProces
 	sang[9] = pmp->calHK(i, i, t2);
 	sang[10] = pmp->calHK(j, j, t2);
 	sang[11] = pmp->calHK(k, k, t2);
+}
+
+double DiffusionShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+{
+	/**** method = 0
+	 ** vPara[0] = thresh1
+	 ** vPara[1] = thresh2
+	 ** vPara[2] = thresh3
+	*/
+	vMatchedPair.clear();
+	int size1 = (int)vFeatures1.size();
+	int size2 = (int)vFeatures2.size();
+	double thresh1 = vPara[0];	//0.52
+	double thresh2 = vPara[1];  //0.02, 0.1
+	double thresh3 = vPara[2];  //0.01, 0.1
+
+	vector<MatchPair> vTmpMatchPairs;
+	
+	double sigma1 = 4.0 * thresh1;
+	double sigma2 = thresh2; //0.02;	//0.02; 0.1
+
+	vector<double> vTimes;
+	vector<double> vHT1, vHT2;
+	const double tl = 10, tn = 8;
+	for (int i = 0; i < tn; ++i)
+	{
+		vTimes.push_back(tl * pow(2.0,i));
+		vHT1.push_back(pmp1->calHeatTrace(vTimes.back()));
+		vHT2.push_back(pmp2->calHeatTrace(vTimes.back()));
+	}
+
+	double *tmpScores = new double[size1*size2];
+//	for (int i = 0; i < size1; ++i)
+	Concurrency::parallel_for(0, size1, [&](int i)
+	{
+		for(int j = 0; j < size2; j++)
+		{
+			VectorND v1(tn), v2(tn);
+			for(int k = 0; k < tn; k++)
+			{
+				v1.m_vec[k] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[k]) / vHT1[k];
+				v2.m_vec[k] = pmp2->calHK(vFeatures2[j], vFeatures2[j], vTimes[k]) / vHT2[k];
+			}
+			double d = v1.calDistance2(v2) / tn;
+			tmpScores[i*size2+j] = d;
+		}
+	}
+	);
+
+	for (int i = 0; i < size1; ++i)
+	{
+		for (int j = 0; j < size2; ++j)
+		{
+			if (tmpScores[i*size2+j] < thresh1)
+			{
+				double score = std::exp(-tmpScores[i*size2+j]/sigma1);
+				vTmpMatchPairs.push_back(MatchPair(vFeatures1[i], vFeatures2[j], tl, tn, score));
+			}
+		}
+	}
+	delete []tmpScores;
+
+	/* ---- create affinity matrix (compatibility of each candidate match) ---- */
+	const int affinitySize = (int)vTmpMatchPairs.size();
+	mxArray *AM, *VM, *VA;
+	AM = mxCreateDoubleMatrix(affinitySize, affinitySize, mxREAL);
+	double *am = mxGetPr(AM);
+	Concurrency::parallel_for(0, affinitySize, [&](int i)
+	{
+		am[i*affinitySize+i] = vTmpMatchPairs[i].m_score; // diagonal
+
+		for(int j = i+1; j < affinitySize; j++)
+		{
+			if((vTmpMatchPairs[i].m_idx1 == vTmpMatchPairs[j].m_idx1)^(vTmpMatchPairs[i].m_idx2 == vTmpMatchPairs[j].m_idx2)) // xor conflict; 1-to-multiple not desired? 
+			{
+				am[i*affinitySize+j] = am[j*affinitySize+i] = 0.0;
+				continue;
+			}
+
+			int x1 = vTmpMatchPairs[i].m_idx1;
+			int x2 = vTmpMatchPairs[i].m_idx2;
+			int y1 = vTmpMatchPairs[j].m_idx1;
+			int y2 = vTmpMatchPairs[j].m_idx2;
+
+			VectorND v1(tn), v2(tn);
+			double t = tl;
+			for(int k = 0; k < tn; k++)
+			{
+				v1.m_vec[k] = pmp1->calHK(x1, y1, vTimes[k]) / vHT1[k];
+				v2.m_vec[k] = pmp2->calHK(x2, y2, vTimes[k]) / vHT2[k];
+			}
+
+			double ds = v1.calDistance2(v2) / tn;
+			am[i*affinitySize+j] = am[j*affinitySize+i] = exp(-ds/sigma2);
+		}
+	});
+
+	/* ---- solving the greatest eigenvector (PCA?) ---- */
+	engPutVariable(ep, "AM", AM);
+	engEvalString(ep, "[VM,VA] = spectral_embedding(AM);");	//computing leading eigenvector of A using svd
+	VM = engGetVariable(ep, "VM");
+	double *vm = mxGetPr(VM);
+	VA = engGetVariable(ep, "VA");
+	double *va = mxGetPr(VA);		//?? not referenced?
+
+	const double c_thresh = thresh3;	//0.01;	//was 0.1
+	std::vector<MatchPair> mpc1;
+
+	std::transform(vm, vm+affinitySize, vm, [](double v){ return abs(v); });
+
+	double totalMatchScore(0.);
+
+	while(1)
+	{
+		int i_max = -1;
+		double v_max = -1;
+		for(int i = 0; i < affinitySize; i++)
+		{
+			if(vm[i] > v_max)
+			{
+				v_max = vm[i];
+				i_max = i;
+			}
+		}
+
+		if (v_max <= c_thresh) 
+		{
+			if (verbose) logout << "-- Discarded v_max: " << v_max << endl;
+			break;
+		}
+
+		totalMatchScore += v_max;
+
+		const int curMatchSize = (int)mpc1.size();		
+		if (verbose) logout << "\t" << curMatchSize << ": " << i_max << ',' << v_max << endl;
+
+		vm[i_max] = 0.0;
+		mpc1.push_back(vTmpMatchPairs[i_max]);
+
+		// now a max candidate is found, remove conflicting candidates
+		for(int j = 0; j < affinitySize; j++)
+		{
+			if((vTmpMatchPairs[i_max].m_idx1 == vTmpMatchPairs[j].m_idx1) ^ (vTmpMatchPairs[i_max].m_idx2 == vTmpMatchPairs[j].m_idx2)) // xor, conflict
+				vm[j] = 0.0;
+		}
+	} // end of while()
+
+	mxDestroyArray(VM);
+	mxDestroyArray(VA);
+	mxDestroyArray(AM);
+
+	vMatchedPair = mpc1;
+	if (verbose) logout << "Pair graph matching computed!" << endl;
+
+	return totalMatchScore;
+}
+
+void DiffusionShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+{
+	/*********************************
+	1. method = 0 (HKS similarity)
+	** vPara[0] = tl
+	** vPara[1] = tu
+	** vPara[2] = thresh
+	2. method = 1 (HKM)
+	** vPara[0] = tl
+	** vPara[1] = tu
+	** vPara[2] = thresh
+	** vPara[3] = anchor1
+	** vPara[4] = anchor2 (may not be necessary)
+	*********************************/
+	double tl = vPara[0];
+	double tu = vPara[1];
+	double thresh = vPara[2];	//0.1
+
+	vMatchedPair.clear();
+
+	if (tu < tl) return;
+	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
+	vector<double> vTimes;
+	for (int i = 0; i < tn; ++i)
+	{
+		vTimes.push_back(tl * pow(2.,i));
+	}
+	
+	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
+	int tsize = vTimes.size();
+	vector<VectorND> vSig1(vsize1), vSig2(vsize2);
+
+	vector<double> vTrace1(tsize), vTrace2(tsize);
+	for (int s = 0; s < tsize; ++s)
+	{
+		vTrace1[s] = pmp1->calHeatTrace(vTimes[s]);
+		vTrace2[s] = pmp2->calHeatTrace(vTimes[s]);
+	}
+
+	if (method == 0)
+	{
+		for (int i = 0; i < vsize1; ++i) 
+		{
+			vSig1[i].reserve(tsize);
+			for (int j = 0; j < tsize; ++j)
+				vSig1[i].m_vec[j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+		}
+		for (int i = 0; i < vsize2; ++i) 
+		{
+			vSig2[i].reserve(tsize);
+			for (int j = 0; j < tsize; ++j)
+				vSig2[i].m_vec[j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+		}
+	}
+	else if (method == 1)
+	{
+		int anchor = (int)vPara[3];
+		for (int i = 0; i < vsize1; ++i) 
+		{
+			vSig1[i].reserve(tsize);
+			for (int j = 0; j < tsize; ++j)
+				vSig1[i].m_vec[j] = pmp1->calHK(anchor, vFeatures1[i], vTimes[j]) / vTrace1[j];
+		}
+		for (int i = 0; i < vsize2; ++i) 
+		{
+			vSig2[i].reserve(tsize);
+			for (int j = 0; j < tsize; ++j)
+				vSig2[i].m_vec[j] = pmp2->calHK(anchor, vFeatures2[i], vTimes[j]) / vTrace2[j];
+		}
+	}
+
+	double *hksSim = new double[vsize1 * vsize2];
+
+	for (int i = 0; i < vsize1; ++i)
+	{
+		for (int j = 0; j <= i; ++j)
+			hksSim[i * vsize2 + j] = vSig1[i].calDistance2(vSig2[j]) / tsize;
+		for (int j = i+1; j < vsize2; ++j)
+			hksSim[i* vsize2 + j] = 1e10;
+	}
+
+	double vMin = 1e10 - 1;
+	while (vMin < 1e10 - 0.1)
+	{
+		double *pMin = min_element(hksSim, hksSim + vsize1 * vsize2);
+		vMin = *pMin;
+
+		if (vMin > thresh) break;
+
+		size_t pos = pMin - hksSim;
+		int i2 = pos % vsize2;
+		int i1 = pos / vsize2;
+		vMatchedPair.push_back(MatchPair(vFeatures1[i1], vFeatures2[i2], vMin));
+
+		if (verbose)
+		{
+			logout << vMatchedPair.size() << "(" << vMatchedPair.back().m_idx1 << " - " << vMatchedPair.back().m_idx2 << "), score: " << vMatchedPair.back().m_score	<< endl;
+		}
+
+		for (int k = 0; k < vsize1; ++k)
+			hksSim[k*vsize2 + i2] = 1e10;
+		for (int k = 0; k < vsize2; ++k)
+			hksSim[i1*vsize2 + k] = 1e10;
+	}
+
+	delete []hksSim;
+}
+
+void DiffusionShapeMatcher::sparseMatchingTesting()
+{
+	int vsize = pOriginalMesh[0]->getMeshSize();
+	double outlier_ratio = 0.2;
+	ofstream ofs("output/evaluate_hkt.txt");
+	ofstream ofs2("output/result_hkt.csv");
+
+	vector<int> vN;
+	for (int n = 5; n <= 75; n+=5) vN.push_back(n);
+	const int groupNum = 8;
+	for (auto iter_N = vN.begin(); iter_N != vN.end(); ++iter_N)
+	{
+		cout << "## N = " << *iter_N << " ##" << endl;
+		ofs << "## N = " << *iter_N << " ##" << endl;
+		const int N = *iter_N;
+
+		/*   generate random test input    */
+		vector<vector<int> > vvInput1(groupNum), vvInput2(groupNum);
+		for (int group = 0; group < groupNum; ++group)
+		{
+			ofs << "  group #" << group << endl;
+
+			vector<int> vToMatch(N), vOutlier1(outlier_ratio*N), vOutlier2(outlier_ratio*N);
+			generate(vToMatch.begin(), vToMatch.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+			generate(vOutlier1.begin(), vOutlier1.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+			generate(vOutlier2.begin(), vOutlier2.end(), [&](){ return double(rand())/double(RAND_MAX)*vsize;});
+
+			vvInput1[group].insert(vvInput1[group].begin(), vToMatch.begin(), vToMatch.end());
+			vvInput2[group].insert(vvInput2[group].begin(), vToMatch.begin(), vToMatch.end());
+			vvInput1[group].insert(vvInput1[group].end(), vOutlier1.begin(), vOutlier1.end());
+			vvInput2[group].insert(vvInput2[group].end(), vOutlier2.begin(), vOutlier2.end());
+
+			ofs << "  input " << group << "-1: ";
+			for_each(vvInput1[group].begin(), vvInput1[group].end(), [&](int v){ ofs << v << ' '; });
+			ofs << '\n';
+			ofs << "  input " << group << "-2: ";
+			for_each(vvInput2[group].begin(), vvInput2[group].end(), [&](int v){ ofs << v << ' '; });
+			ofs << '\n';
+		}
+
+
+		double sum_ratio_matched[8] = {0.}, sum_ratio_correct[8]= {0.};
+		int test_cat = 0;
+		vector<MatchPair> vMatched;
+		int validMatched;
+		CStopWatch timer;
+#ifdef HIGH_ORDER
+		/*-------------------------------------------------------------*/
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {40, 0.7, 80};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 3, vPara, cout);
+			ofs << "  Match results(method=3, t=40,80): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		test_cat++;
+
+		/*-------------------------------------------------------------*/
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {40, 0.7};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
+			ofs << "  Match results(method=" << 1 << ",t=" << 40 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		test_cat++;
+
+		/*-------------------------------------------------------------*/
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {80, 0.7};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout);
+			ofs << "  Match results(method=" << 1 << ",t=" << 80 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		test_cat++;
+
+		/*-------------------------------------------------------------*/
+
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {40, 0.7};
+			TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 0, vPara, cout);
+			ofs << "  Match results(method=" << 1 << ",t=" << 40 << "): "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+
+		test_cat++;
+
+		/*-------------------------------------------------------------*/
+		if (N <= 30)
+		{
+			timer.startTimer();
+			for (int group = 0; group < groupNum; ++group)
+			{
+				const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+				double vPara[] = {0.52, 0.02, 0.01};
+				PairMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 0, vPara, cout, false);
+				ofs << "  Match results(method=PairGraph: "; 
+				printVectorMatchPair(vMatched, ofs);
+				validMatched = countValidMatchPair(vMatched);
+				sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+				if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+				else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+			}
+			timer.stopTimer();
+			cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		}	
+		test_cat++;
+#endif
+		/*-------------------------------------------------------------*/
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			double vPara[] = {10, 1280, 0.52};
+			// 			vector<double> vTimes;
+			// 			for (int i = 0; i < 8; ++i) vTimes.push_back(10 * pow(2.,i));
+			// 			SimplePointMatching(pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vTimes, vMatched, false);
+			HKSMatchingExt(pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 0, vPara, cout, false);
+			ofs << "  Match results(method=Simple: "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		test_cat++;
+		/*-------------------------------------------------------------*/
+
+		/*-------------------------------------------------------------*/
+		timer.startTimer();
+		for (int group = 0; group < groupNum; ++group)
+		{
+			const vector<int>& vinput1 = vvInput1[group], &vinput2 = vvInput2[group];
+			int anchor = double(rand())/double(RAND_MAX) * vsize;
+			double vPara[] = {10, 1280, 0.52, anchor};
+			// 			vector<double> vTimes;
+			// 			for (int i = 0; i < 8; ++i) vTimes.push_back(10 * pow(2.,i));
+			// 			SimplePointMatching(pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vTimes, vMatched, false);
+			HKSMatchingExt(pOriginalProcessor[0], pOriginalProcessor[1], vinput1, vinput2, vMatched, 1, vPara, cout, false);
+			ofs << "  Match results(method=Simple: "; 
+			printVectorMatchPair(vMatched, ofs);
+			validMatched = countValidMatchPair(vMatched);
+			sum_ratio_matched[test_cat] += (double)validMatched/(double)N;
+			if (vMatched.empty()) sum_ratio_correct[test_cat] += 0.;
+			else sum_ratio_correct[test_cat] += (double)validMatched/(double)vMatched.size();
+		}
+		timer.stopTimer();
+		cout << "Average time: " << timer.getElapsedTime()/groupNum << endl;
+		test_cat++;
+		/*-------------------------------------------------------------*/
+
+		ofs2 << int(N * (1.+outlier_ratio));
+		for (int i = 0; i < test_cat; ++i)
+		{
+			ofs2 << ", " << sum_ratio_matched[i] / (double)groupNum << ", " << sum_ratio_correct[i] / (double)groupNum;
+		}
+		ofs2 << endl;
+	}
 }
