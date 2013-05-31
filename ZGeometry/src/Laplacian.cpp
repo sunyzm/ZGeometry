@@ -9,6 +9,8 @@
 
 using namespace std;
 
+//#define PARTIAL_SCALING
+
 void ManifoldHarmonics::write( const std::string& meshPath, bool binaryMode /*= true*/ ) const
 {
 	if (binaryMode)
@@ -406,7 +408,10 @@ void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
 	vWeights.clear();
 
 	tmesh->calLBO(vII, vJJ, vSS, vWeights);
-
+#ifdef PARTIAL_SCALING
+	double scaling = (tmesh->getAvgEdgeLength() * tmesh->getAvgEdgeLength())/2;
+	transform(vWeights.begin(), vWeights.end(), vWeights.begin(), [&](double v){return v/scaling;});
+#endif
 	m_bMatrixBuilt = true;
 	m_laplacianType = CotFormula;
 }

@@ -316,6 +316,7 @@ bool QZGeometryWindow::initialize()
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 		
+		shapeMatcher.setRegistrationLevels(1);
 		registerTest();
 	}
 
@@ -1359,16 +1360,62 @@ void QZGeometryWindow::detectFeatures()
 
 	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1)
 	{
-		const vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
+		vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
 		std::map<int, int> feature_count;
 		int count_possible1 = 0;
 		int count_possible0 = 0; 
 		int count_possible2 = 0;
+
+		vector<double> vTimes;
+		vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
+		double sim1(0.);
+
+		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); )
+		{
+			bool candFound = false;
+			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
+			{
+// 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
+// 				if (sim < 0.20) {candFound = true; break;}
+
+				if (m_mesh[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2))
+				{
+					candFound = true; break;
+				}
+			}
+			if (!candFound)
+			{
+				iter1 = vf1.erase(iter1);
+				continue;
+			}
+			else ++iter1;
+		}
+
+		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); )
+		{
+			bool candFound = false;
+			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
+			{
+// 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
+// 				if (sim < 0.20) {candFound = true; break;}
+				if (m_mesh[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2))
+				{
+					candFound = true; break;
+				}
+			}
+			if (!candFound)
+			{
+				iter2 = vf2.erase(iter2);
+				continue;
+			}
+			else ++iter2;
+		}
+
 		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
 		{
 			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
 			{
-				if (iter1->m_scale == iter2->m_scale && m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 1))
+				if (m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2))
 				{
 					count_possible1++;
 					if (feature_count.find(iter1->m_index) == feature_count.end())
@@ -1376,11 +1423,20 @@ void QZGeometryWindow::detectFeatures()
 					else feature_count[iter1->m_index] += 1;
 
 					if (iter1->m_index == iter2->m_index) 
+					{
 						count_possible0++;
+					}
+
+// 					double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
+// 					cout << "corresponded sim: " << sim << endl;
+// 					sim1 += sim;
 				}
+				
 			}
 		}
+		cout << "v1: " << vf1.size() << "  v2: " << vf2.size() << endl;
 		cout << "-- Potential matches: " << count_possible0 << "/" << count_possible1 << endl;
+//		cout << "Average similarity of matched: " << sim1 / double(count_possible1) << endl;
 	}
 
 
@@ -1440,7 +1496,7 @@ void QZGeometryWindow::matchFeatures()
 
 	if (!alreadyMached)
 	{
-		int matching_method = g_configMgr.getConfigValueInt("USE_TENSOR_MATCHING");
+		int matching_method = g_configMgr.getConfigValueInt("FEATURE_MATCHING_METHOD");
 		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
 		qout.output("-- Match initial features --");
@@ -1449,13 +1505,41 @@ void QZGeometryWindow::matchFeatures()
 		timer.startTimer();
 		if (matching_method == 2)	//tensor
 		{
+			cout << "Now do tensor matching!" << endl;
 			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
 			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 
 			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
 			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
+			vector<int> vFeatures1, vFeatures2;
+			for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){vFeatures1.push_back(f.m_index);});
+			for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){vFeatures2.push_back(f.m_index);});
+
 			vector<MatchPair> vPairs;
-			double matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
+			double vPara[] = {40, 0.8, 400};
+			double matchScore;
+			matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
+			//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
+
+			if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
+			{
+				vector<double> vTimes;
+				vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
+				for (auto iter = vPairs.begin(); iter != vPairs.end(); )
+				{
+					if (!m_mesh[1].isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
+						iter->m_note = -1;
+
+					double dissim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
+					if (dissim > 0.18)
+					{
+						iter = vPairs.erase(iter);
+						continue;
+					}
+					else ++iter;
+				}
+			}			
+
 			cout << "Tensor match score: " << matchScore << endl;
 			shapeMatcher.forceInitialAnchors(vPairs);
 
@@ -1521,13 +1605,13 @@ void QZGeometryWindow::registerStep()
 		shapeMatcher.evaluateWithGroundTruth(vr, &m_mesh[0], &m_mesh[1]);
 	}
 
-	double vError[3];
-	for(int k = 0; k < 2; ++k)
-	{ 
-		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
-	}
-
-	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
+// 	double vError[3];
+// 	for(int k = 0; k < 2; ++k)
+// 	{ 
+// 		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
+// 	}
+// 
+// 	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
 
 	if (!ui.glMeshWidget->m_bDrawRegistration)
 		toggleDrawRegistration();
@@ -1930,8 +2014,13 @@ void QZGeometryWindow::registerTest()
 	//shapeMatcher.registerTesting1();
 	//shapeMatcher.regsiterTesting2();
 	//shapeMatcher.dataTesting1();
-	shapeMatcher.sparseMatchingTesting();
+	//shapeMatcher.sparseMatchingTesting();
 	//shapeMatcher.localCorrespondenceTesting();
+
+// 	shapeMatcher.generateExampleMatching(20);
+// 	if (!ui.glMeshWidget->m_bDrawMatching)
+// 		toggleDrawMatching();
+
 	ui.glMeshWidget->update();
 }
 

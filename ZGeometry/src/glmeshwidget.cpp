@@ -841,20 +841,20 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 
 			glPushMatrix();
 			glTranslated(x1, y1, z1);
-//			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslated(x2, y2, z2);
-//			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			if (m_bShowCorrespondenceLine)
 			{
-				if (vmp[i].m_note != -1)
-					glColor4f(1.0, 0, 0, 1.0);
-				else
-					glColor4f(0.0, 0.0, 0.0, 1.0);
+				if (vmp[i].m_note == -1)
+// 					glColor4f(1.0, 0, 0, 1.0);
+// 				else
+ 					glColor4f(0.0, 0.0, 0.0, 1.0);
 				glDisable(GL_LIGHTING);
 				glBegin(GL_LINES);
 				glVertex3d(x1, y1, z1);

@@ -343,8 +343,7 @@ void CFace::calcNormalAndArea()
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
 	m_vNormal = v[0] ^ v[1];
 	m_faceArea = m_vNormal.length() / 2;
-	m_vNormal.normalize();
-	
+	m_vNormal.normalize();	
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -770,10 +769,7 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
 
-	VertexList.clear();
-	FaceList.clear();
-	bool flag = construct();
-	return flag;
+	return construct();
 }
 
 bool CMesh::loadFromPLY( string sFileName )
@@ -1411,12 +1407,13 @@ bool CMesh::construct()
 	assignElementsIndex();
 	this->m_bIsPointerVectorExist = true;
 
+	gatherStatistics();
+
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
+	gatherStatistics2();
 
-	gatherStatistics();
 	//findHoles();
-//	scaleEdgeLenToUnit();
 
 	return true;
 }
@@ -3322,9 +3319,9 @@ void CMesh::gatherStatistics()
 	for (int i = 0; i < m_nVertex; ++i)
 	{
 		m_vVertices[i]->calcNormal();		//calculate vertex normal
-		center_x += m_pVertex[i].m_vPosition.x;
-		center_y += m_pVertex[i].m_vPosition.y;
-		center_z += m_pVertex[i].m_vPosition.z;
+		center_x += m_vVertices[i]->m_vPosition.x;
+		center_y += m_vVertices[i]->m_vPosition.y;
+		center_z += m_vVertices[i]->m_vPosition.z;
 
 		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
 		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
@@ -3350,10 +3347,10 @@ void CMesh::gatherStatistics()
 	this->m_avgEdgeLen = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
-//	this->m_nBoundaryEdgeNum = getBoundaryNum();
+	this->m_nBoundaryEdgeNum = boundaryCount;
 
-	for (int i = 0; i < m_nVertex; ++i)
-		this->calVertexCurvature(i);
+//	for (int i = 0; i < m_nVertex; ++i)
+//		this->calVertexCurvature(i);
 	//cout << "VertexNum: " << m_Vertices.size() << "    FaceNum: " << m_Faces.size() << endl;
 	//cout << "EdgeNum: " << m_HalfEdges.size() 
 	// 	 << "  AvgEdgLen: " << edgeLength << endl;
@@ -3605,7 +3602,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	}
 }
 
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, int avoidBoundary/* = 1*/ ) const
+void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary/* = 1*/ ) const
 {
 	const int STATE_IDLE = 0;
 	const int STATE_MIN	= -1;
@@ -3624,6 +3621,8 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
 		if (m_vVertices[j]->m_bIsBoundary) continue;  // ignore boundary vertex
+		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
+			continue;
 		VertexNeighborRing(j, ring, nb);	
 		
 		state = STATE_IDLE;
@@ -3653,7 +3652,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 bool CMesh::hasBounary() const
 {
-	return m_nBoundaryEdgeNum > 0;
+	return getBoundaryNum() > 0;
 }
 
 void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
@@ -3806,4 +3805,13 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 		vJJ.push_back(i+1);
 		vSS.push_back(diagW[i]);
 	}
+}
+
+void CMesh::gatherStatistics2()
+{
+	assert(m_bIsIndexArrayExist);
+
+	this->m_nBoundaryEdgeNum = getBoundaryNum();
+	for (int i = 0; i < m_nVertex; ++i)
+		this->calVertexCurvature(i);
 }

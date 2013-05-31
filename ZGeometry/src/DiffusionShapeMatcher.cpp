@@ -59,7 +59,7 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
-
+	para_dim = pn;
 	vCoord.resize(fineSize);
 
  	for (int v = 0; v < fineSize; ++v)
@@ -77,6 +77,7 @@ void ParamManager::computeBHParam( const std::vector<int>& anchors )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
+	para_dim = pn;
 	vCoord.resize(fineSize);
 
 	for (int v = 0; v < fineSize; ++v)
@@ -94,21 +95,28 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int pn = (int)anchors.size();
+	para_dim = pn;
 	vCoord.resize(fineSize);
 
-	Concurrency::parallel_for(0, fineSize, [&](int v){
+	//for (int v = 0; v < fineSize; ++v)
+	Concurrency::parallel_for(0, fineSize, [&](int v)
+	{
 	 	PointParam& hkp = vCoord[v];
 	 	hkp.reserve(pn);
 	 	for (int i = 0; i < pn; ++i)
 	 		hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
 	 	hkp.m_votes = hkp.length();
-	});
+	}
+	);
+
+
 }
 
 void ParamManager::para_computeHKS( const std::vector<double>& times )
 {
 	const int fineSize = pMP->getMesh_const()->getVerticesNum();
 	const int sn = (int)times.size();
+	para_dim = sn;;
 	vSignature.resize(fineSize);
 
 	Concurrency::parallel_for(0, fineSize, [&](int v){
@@ -291,7 +299,8 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 	DifferentialMeshProcessor* pMP = pOriginalProcessor[obj];
 	const int fineSize = fineMesh->getVerticesNum();
 	vector<HKSFeature>& vF = m_vFeatures[obj];
-	
+	vF.clear();
+
 	vector<double> vScaleValues(nScales);
 	for (int s = nScales-1; s >= 0; --s) 
 		vScaleValues[s] = baseTvalue * std::pow(talpha, s);
@@ -309,7 +318,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 //		vector<int> vFeatureIdx;
 //		if (s == 0) ring = 3;
 //		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
-		fineMesh->extractExtrema(hksv, ring, vFeatureIdx);
+		fineMesh->extractExtrema(hksv, ring, vFeatureIdx, thresh);
 		
 // 		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
 // 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) 
@@ -317,7 +326,15 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 // 		cout << '\n';
 
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
-			vF.push_back(HKSFeature(iter->first, s, iter->second));
+		{
+			if ( vF.end() == find_if(vF.begin(), vF.end(), 
+				//[&](const HKSFeature& feat){return fineMesh->isInNeighborRing(feat.m_index, iter->first, 1);})
+				[&](const HKSFeature& feat){return feat.m_index == iter->first;})
+			  )
+			{
+				vF.push_back(HKSFeature(iter->first, s, iter->second));
+			}			
+		}
 
 // 		priority_queue<ExtremaPoint, vector<ExtremaPoint>, greater<ExtremaPoint> > extremaPointsQueue;
 // 		for_each (vFeatureIdx.begin(), vFeatureIdx.end(), [&](int idx){
@@ -333,6 +350,8 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 // 			   )
 // 				vF.push_back(HKSFeature(ep.index, s));
 // 		}
+
+
 	}
 
 	/* Begin LOG-FEATURES */
@@ -816,9 +835,7 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 		//iter = matchedPairs.erase(iter);
 	}
 
-	m_bFeatureMatched = true;
-	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
-	m_vFeatureMatchingResults[m_nAlreadyMatchedLevel] = matchedPairsFine;
+	forceInitialAnchors(matchedPairsFine);
 } // DiffusionShapmeMatcher::matchFeatures()
 
 void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig)
@@ -1074,15 +1091,16 @@ void DiffusionShapeMatcher::setRegistrationLevels( int val )
 	m_nRegistrationLevels = min(val, m_nPyramidLevels);
 	m_vFeatureMatchingResults.resize(m_nRegistrationLevels + 1);
 	m_vRegistrationResutls.resize(m_nRegistrationLevels);
-	m_nAlreadyRegisteredLevel = m_nRegistrationLevels;
-	m_nAlreadyMatchedLevel = m_nRegistrationLevels + 1;
+
+	m_nAlreadyRegisteredLevel = m_nRegistrationLevels - 1;
+	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
 }
 
 const std::vector<MatchPair>& DiffusionShapeMatcher::getMatchedFeaturesResults ( int level ) const
 {
  	if (level < -1 || level > m_nRegistrationLevels) 
 		throw logic_error("Selected level out of bound!");
- 	else if (level == -1) return m_vFeatureMatchingResults[m_nRegistrationLevels];
+ 	else if (level == -1) return m_vFeatureMatchingResults.back();
  	else return m_vFeatureMatchingResults[level];	
 }
 
@@ -1090,16 +1108,18 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int
 {
 	if (level < -1 || level >= m_nRegistrationLevels) 
 		throw logic_error("Selected level out of bound!");
-	else if (level == -1) return m_vRegistrationResutls[m_nRegistrationLevels-1];
+	else if (level == -1) return m_vRegistrationResutls.back();
 	else return m_vRegistrationResutls[level];	
 }
 
-double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2 ) const
+double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2, double sigma /*= 0.02*/ ) const
 {
 	const PointParam &hkp1 = m_ParamMgr[0].vCoord[idx1],
 		             &hkp2 = m_ParamMgr[1].vCoord[idx2];
 
-	return std::exp(-hkp1.calDistance(hkp2, 1));
+	double dist = hkp1.calDistance2(hkp2) / hkp1.m_size;
+
+	return std::exp(-dist / sigma);
 }
 
 int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
@@ -1184,7 +1204,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 		int vid_t = tmesh2->getVertex_const(vt)->getVID();
 		if (tmesh2->getVertex_const(vt)->isOnBoundary())
 			continue;
-		double dt = computeMatchScore(vid_i, vid_t);
+		double dt = computeMatchScore(vid_i, vid_t, 12);
 		if(dt > smax)
 		{
 			vmatch = vt;
@@ -1970,14 +1990,15 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		regT = 20;
 		anchorThresh = 2e-4;
 	}
-	regT = 32;
+	regT = 30;
 	anchorThresh = 1e-4;
-	//	thresh = (double)featureMatch.size() * 1e-5;
+	//thresh = (double)featureMatch.size() * 1e-5;
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
 	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	const int fineSize1 = meshPyramids[0].getMesh(0)->getMeshSize(), fineSize2 = meshPyramids[1].getMesh(0)->getMeshSize();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);	// indexed by the vertex index in current level
-	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0); // indexed by the vertex index in current level
+	vector<double> vMatchScore1(coarseSize1, -1), vMatchScore2(coarseSize2, 01); // indexed by the vertex index in current level
 
 	const vector<MatchPair>& oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
 	const vector<MatchPair>& oldReg = (current_level == m_nRegistrationLevels - 1) ? 
@@ -2011,46 +2032,40 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 
 	std::vector<PointParam>& vCoordinates1 = m_ParamMgr[0].vCoord;
 	std::vector<PointParam>& vCoordinates2 = m_ParamMgr[1].vCoord;
-
 	flog << "Multi-anchor coordinates initialized!" << endl;
 
-	if (current_level > 0)
+	tmpReg1 = oldReg;
+	double esum(0.);
+	for (int k = 0; k < 10000; ++k)
 	{
-		set<MatchPair> uniquePairs;
-		for (vector<MatchPair>::const_iterator mpIter = oldReg.begin(); mpIter != oldReg.end(); ++mpIter)
-		{
-			const int vid_i = mpIter->m_idx1, vid_j = mpIter->m_idx2;
-			const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
-
-			// filter out repeated matches
-			if (uniquePairs.find(MatchPair(vi, vj)) == uniquePairs.end())
-			{
-				uniquePairs.insert(MatchPair(vi, vj));
-				tmpReg1.push_back(*mpIter);			
-			}		
-		}
+		int i1 = ((double)rand() / (double)RAND_MAX) * fineSize1;
+		int i2 = ((double)rand() / (double)RAND_MAX) * fineSize2;
+		esum += m_ParamMgr[0].vCoord[i1].calDistance2(m_ParamMgr[1].vCoord[i2]);
 	}
-	else tmpReg1 = oldReg;
+	double hkcSigma = esum / 10000.;
+	cout << "HKC sigma: " << esum << endl;
+
+// 	double avgMatchScore(0.);
+// 	for (int i = 0; i < fineSize1; ++i)
+// 	{
+// 		avgMatchScore += computeMatchScore(i, i, hkcSigma);
+// 	}
+// 	cout << "avg match score: " << avgMatchScore / (double)fineSize1 << endl;
 
 	for (auto iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
 	{
 		const int vid_i = iter->m_idx1, vid_j = iter->m_idx2;
-		const int vi = id2Index(0, vid_i, current_level), vj = id2Index(1, vid_j, current_level);
-
-		if (find(oldAnchorMatch.begin(), oldAnchorMatch.end(), *iter) != oldAnchorMatch.end())
+		if (oldAnchorMatch.end() !=
+			find_if(oldAnchorMatch.begin(), oldAnchorMatch.end(), [=](const MatchPair& omp){ return omp.m_idx1 == vid_i && omp.m_idx2 == vid_j;})
+		)
 		{
 			iter->m_score = 1.;	// inherited matched feature pairs have the highest score 1.0
 		}
 		else
 		{
-			double score = computeMatchScore(iter->m_idx1, iter->m_idx2);
+			double score = computeMatchScore(iter->m_idx1, iter->m_idx2, hkcSigma);
 			iter->m_score = score;
 		}		
-
-		vMatch1[vi] = vj;
-		vMatch2[vj] = vi;
-		vMatchScore1[vi] = iter->m_score;
-		vMatchScore2[vj] = iter->m_score;
 	}
 
 	flog << "\n1. HKC computed!\n" 
@@ -2062,6 +2077,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 	/*              2. Registration                                         */
 	/************************************************************************/
 	NoteQueue qscan1;
+
 	for (auto iter = tmpReg1.begin(); iter != tmpReg1.end(); ++iter)
 	{
 		int vid_1 = iter->m_idx1, vid_2 = iter->m_idx2;
@@ -2070,6 +2086,17 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		//MyNote mn(v1, tmesh1->m_pVertex[v1].m_vParam.m_votes);
 		MyNote mn(v1, v2, vCoordinates1[vid_1].m_votes * iter->m_score);
 		qscan1.push(mn);
+
+		if (vMatch1[v1] == -1 || vMatchScore1[v1] < iter->m_score)
+		{
+			vMatch1[v1] = v2;
+			vMatchScore1[v1] = iter->m_score;
+		}
+		if (vMatch2[v2] == -1 || vMatchScore2[v2] < iter->m_score)
+		{
+			vMatch2[v2] = v1;
+			vMatchScore2[v2] = iter->m_score;
+		}
 	}
 
 	int regCount = 0;
@@ -2080,81 +2107,82 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		qscan1.pop();
 
 		const int vi = qt.m_idx1, vj = qt.m_idx2;		//index on this level
-
-		if (vMatch2[vj] != vi) continue;
-
 		int vid_i = tmesh1->getVertex_const(vi)->getVID(),
 			vid_j = tmesh2->getVertex_const(vj)->getVID();
+		//if (vMatch2[vj] != vi) continue;
 
 		flog << "\n---- Search pair #" << regCount++ << ":(" << vid_i << ',' << vid_j << ") ----" << endl;
-
 		const vector<int> viNeighborIndex = tmesh1->getNeighborVertexIndex(vi, 1);
 		vector<int> viNeighbors = viNeighborIndex;
 		//viNeighbors.push_back(vi);
 		vector<int> vjNeighbors = tmesh2->getNeighborVertexIndex(vj, 1);
 		//vjNeighbors.push_back(vj);
-		for (auto iter = viNeighbors.begin(); iter != viNeighbors.end(); )
-		{
-			if (vMatch1[*iter] >= 0 && vMatch2[vMatch1[*iter]] == *iter)
-				iter = viNeighbors.erase(iter);
-			else ++iter;
-		}
-		for (auto iter = vjNeighbors.begin(); iter != vjNeighbors.end(); )
-		{
-			if (vMatch2[*iter] >= 0 && vMatch1[vMatch2[*iter]] == *iter)
-				iter = vjNeighbors.erase(iter);
-			else ++iter;
-		}
 
-		if (viNeighbors.size() >= 3 && vjNeighbors.size() >= 3
-			&& viNeighbors.size() >= vjNeighbors.size() * 3 / 4 && vjNeighbors.size() >= viNeighbors.size() * 3 / 4
-		)
+		if (current_level == 0)
 		{
-			vector<int> viNeighborId(viNeighbors.size()), vjNeighborId(vjNeighbors.size());
-			transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex_const(idx1)->getVID();});
-			transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex_const(idx2)->getVID();});
-			vector<MatchPair> vPairs;	//absolute id, not index in current level
-			double tensorScore;
- 			double vPara[] = {5., 0.8, vid_i, vid_j};
- 			tensorScore = TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, /*featureType=*/1, vPara, flog);
-			//tensorScore = TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, /*featureType=*/0, vPara, flog);
-			//tensorScore = TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, 5., 0.8, false);
-
-			if (!vPairs.empty())
+			for (auto iter = viNeighbors.begin(); iter != viNeighbors.end(); )
 			{
-				flog << "-- local correspondence (" << vid_i << ',' << vid_j << ") --" << endl;
-				flog << "candidates 1: ";
-				for_each(viNeighborId.begin(), viNeighborId.end(), [&](int i){flog << i << ' ';});
-				flog << endl;
-				flog << "candidates 2: ";
-				for_each(vjNeighborId.begin(), vjNeighborId.end(), [&](int i){flog << i << ' ';});
-				flog << endl;
-				flog << "tensor match score: " << tensorScore << endl;
-				flog << "matched pairs(" << vPairs.size() << "): ";
-				for_each(vPairs.begin(), vPairs.end(), [&](const MatchPair& mp){flog << '<' << mp.m_idx1 << ',' << mp.m_idx2 << "> ";});
-				flog << endl;
+				if (vMatch1[*iter] >= 0 /*&& vMatch2[vMatch1[*iter]] == *iter*/)
+					iter = viNeighbors.erase(iter);
+				else ++iter;
+			}
+			for (auto iter = vjNeighbors.begin(); iter != vjNeighbors.end(); )
+			{
+				if (vMatch2[*iter] >= 0 /*&& vMatch1[vMatch2[*iter]] == *iter*/)
+					iter = vjNeighbors.erase(iter);
+				else ++iter;
 			}
 
-			for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter)
+			if (viNeighbors.size() > 3 && vjNeighbors.size() > 3
+				&& viNeighbors.size() >= vjNeighbors.size() * 3 / 4 && vjNeighbors.size() >= viNeighbors.size() * 3 / 4
+				)
 			{
-				const int vid_t = iter->m_idx1;
-				const int vid_m = iter->m_idx2;
-				const int vt = id2Index(0, vid_t, current_level);
-				const int vm = id2Index(1, vid_m, current_level);
-				vMatch1[vt] = vm;
-				double match_score = computeMatchScore(vid_t, vid_m);
-				vMatchScore1[vt] = match_score;
-				tmpReg1.push_back(MatchPair(vid_t, vid_m, match_score));
+				vector<int> viNeighborId(viNeighbors.size()), vjNeighborId(vjNeighbors.size());
+				transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex_const(idx1)->getVID();});
+				transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex_const(idx2)->getVID();});
+				vector<MatchPair> vPairs;	//absolute id, not index in current level
+				double tensorScore;
+				double vPara[] = {5., 0.6, vid_i, vid_j};
+				tensorScore = TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, /*featureType=*/0, vPara, flog, false);
+				//tensorScore = TensorMatchingExt(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, /*featureType=*/0, vPara, flog);
+				//tensorScore = TensorGraphMatching6(m_ep, pOriginalProcessor[0], pOriginalProcessor[1], viNeighborId, vjNeighborId, vPairs, 5., 0.8, false);
 
-				if (vMatch2[vm] == -1 || vMatchScore2[vm] < match_score)
+				if (!vPairs.empty())
 				{
-					vMatch2[vm] = vt;
-					vMatchScore2[vm] = match_score;
+					flog << "-- local correspondence (" << vid_i << ',' << vid_j << ") --" << endl;
+					flog << "candidates 1: ";
+					for_each(viNeighborId.begin(), viNeighborId.end(), [&](int i){flog << i << ' ';});
+					flog << endl;
+					flog << "candidates 2: ";
+					for_each(vjNeighborId.begin(), vjNeighborId.end(), [&](int i){flog << i << ' ';});
+					flog << endl;
+					flog << "tensor match score: " << tensorScore << endl;
+					flog << "matched pairs(" << vPairs.size() << "): ";
+					for_each(vPairs.begin(), vPairs.end(), [&](const MatchPair& mp){flog << '<' << mp.m_idx1 << ',' << mp.m_idx2 << "> ";});
+					flog << endl;
 				}
-				
-				//MyNote mn(vt, vm, score);
-				MyNote mn(vt, vm, vCoordinates1[vid_t].m_votes * match_score);
-				qscan1.push(mn);
+
+				for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter)
+				{
+					const int vid_t = iter->m_idx1;
+					const int vid_m = iter->m_idx2;
+					const int vt = id2Index(0, vid_t, current_level);
+					const int vm = id2Index(1, vid_m, current_level);
+					vMatch1[vt] = vm;
+					double match_score = computeMatchScore(vid_t, vid_m, hkcSigma);
+					vMatchScore1[vt] = match_score;
+					tmpReg1.push_back(MatchPair(vid_t, vid_m, match_score));
+
+					if (vMatch2[vm] == -1 || vMatchScore2[vm] < match_score)
+					{
+						vMatch2[vm] = vt;
+						vMatchScore2[vm] = match_score;
+					}
+
+					//MyNote mn(vt, vm, score);
+					MyNote mn(vt, vm, vCoordinates1[vid_t].m_votes * match_score);
+					qscan1.push(mn);
+				}
 			}
 		}
 
@@ -2168,7 +2196,8 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 
 			if (tmesh1->getVertex_const(vt)->isOnBoundary())
 				continue;
-			//  if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
+
+			//if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
 			//		continue;	// low priority points skipped
 
 			double score;
@@ -2213,12 +2242,12 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 				tmpReg2.push_back(*iter);
 		}
 
-		priority_queue<MatchPair, vector<MatchPair>, greater<MatchPair> > qReg;
+		priority_queue<MatchPair, vector<MatchPair>, PairScoreCompare > qReg;
 		for (auto iter = begin(tmpReg2); iter != end(tmpReg2); ++iter)
 		{
 			const int vi = iter->m_idx1, vj = iter->m_idx2;
 			double score;
-			const int vm1 = searchVertexMatch(vi, vj, 0, 2, score, current_level);	// vi, vj here are vertex id as well as level-0 index
+			const int vm1 = searchVertexMatch(vi, vj, 0, 1, score, current_level);	// vi, vj here are vertex id as well as level-0 index
 			qReg.push(MatchPair(vi, vm1, vCoordinates1[vi].m_votes * score));
 		}
 
@@ -2241,8 +2270,8 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 			for (auto fiter = newAnchorMatch.begin(); fiter != newAnchorMatch.end(); ++fiter)
 			{
 				if (fiter->m_idx1 == riter->m_idx1 || fiter->m_idx2 == riter->m_idx2 ||
-					pOriginalMesh[0]->isInNeighborRing(fiter->m_idx1, riter->m_idx1, 7) ||
-					pOriginalMesh[1]->isInNeighborRing(fiter->m_idx2, riter->m_idx2, 7)
+					pOriginalMesh[0]->isInNeighborRing(fiter->m_idx1, riter->m_idx1, 6) ||
+					pOriginalMesh[1]->isInNeighborRing(fiter->m_idx2, riter->m_idx2, 6)
 					) 
 				{ 
 					pass = false; 
@@ -2255,13 +2284,16 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		}
 	}
 
-	std::sort(tmpReg1.begin(), tmpReg1.end(), [](const MatchPair& p1, const MatchPair& p2){
-		return p1.m_idx1 < p2.m_idx1 || (p1.m_idx1 == p2.m_idx1 && p1.m_idx2 < p2.m_idx2);
-	});
-	auto it = std::unique(tmpReg1.begin(), tmpReg1.end(), [](const MatchPair& p1, const MatchPair& p2){
-		return p1.m_idx1 == p2.m_idx1 && p1.m_idx2 == p2.m_idx2;
-	});
-	tmpReg1.resize(std::distance(tmpReg1.begin(), it));
+// 	std::sort(tmpReg1.begin(), tmpReg1.end(), [](const MatchPair& p1, const MatchPair& p2){
+// 		return p1.m_idx1 < p2.m_idx1 || (p1.m_idx1 == p2.m_idx1 && p1.m_idx2 < p2.m_idx2);
+// 	});
+// 	auto it = std::unique(tmpReg1.begin(), tmpReg1.end(), [](const MatchPair& p1, const MatchPair& p2){
+// 		return p1.m_idx1 == p2.m_idx1 && p1.m_idx2 == p2.m_idx2;
+// 	});
+// 	tmpReg1.resize(std::distance(tmpReg1.begin(), it));
+
+	
+	//tmpReg1.clear();	
 
 	const vector<MatchPair>& newReg = tmpReg1;
 
@@ -2288,7 +2320,7 @@ void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair
 	int count_valid_strict = 0;
 	for (auto iter = vIdMatchPair.begin(); iter != vIdMatchPair.end(); ++iter)
 	{
-		if (mesh2->isInNeighborRing(iter->m_idx2, iter->m_idx1, 1))
+		if (mesh2->isInNeighborRing(iter->m_idx2, iter->m_idx1, 2))
 			count_valid++;
 		if (iter->m_idx1 == iter->m_idx2)
 			count_valid_strict++;
@@ -2507,12 +2539,11 @@ double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshPr
 		double hks1 = std::log(4*PI*(*iter) * pmp1->calHK(i1, i1, *iter));
 		double hks2 = std::log(4*PI*(*iter) * pmp2->calHK(i2, i2, *iter));
 		double error = abs(hks1-hks2);
-		errorSum += error;
+		errorSum += error*error;
 		maxError = max(maxError, error);
 	}
 	if (mode == 0) return maxError;
-	
-	return errorSum / vTimes.size();
+	else return sqrt(errorSum / vTimes.size());
 }
 
 
@@ -3380,9 +3411,7 @@ void DiffusionShapeMatcher::sparseMatchingTesting()
 					if (iter->m_idx1 == iter->m_idx2) iter->m_note = 1;
 					else iter->m_note = -1;
 				}
-				m_bFeatureMatched = true;
-				m_nAlreadyMatchedLevel = m_nRegistrationLevels;
-				m_vFeatureMatchingResults[m_nAlreadyMatchedLevel] = vMatched;
+				forceInitialAnchors(vMatched);
 
 				MeshFeatureList* mfl1 =new MeshFeatureList;
 				MeshFeatureList* mfl2 = new MeshFeatureList;
@@ -3782,4 +3811,22 @@ void DiffusionShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, 
 	}
 
 	delete []hksSim;
+}
+
+void DiffusionShapeMatcher::generateExampleMatching( int n )
+{
+	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") != 1)
+		return;
+
+	int vsize = pOriginalMesh[0]->getMeshSize();
+
+	const int anchorNum = n;
+	vector<MatchPair> vAnchors;
+	for (int i = 0; i < anchorNum; ++i)
+	{
+		int a = double(rand())/double(RAND_MAX)*vsize;
+		vAnchors.push_back(MatchPair(a, a));
+	}
+	
+	forceInitialAnchors(vAnchors);
 }

@@ -44,6 +44,12 @@ public:
 	}
 };
 
+class PairScoreCompare
+{
+public:
+	bool operator()(const MatchPair& Left, const MatchPair& Right) const { return ( Left.m_score > Right.m_score ); }
+};
+
 class ExtremaPoint
 {
 public:
@@ -107,6 +113,7 @@ class ParamManager
 {
 public:
 	enum ParamType {HKParam, BHParam};
+	int para_dim;
 	std::vector<PointParam> vCoord;
 	std::vector<PointParam> vSignature;
 	void initialize(DifferentialMeshProcessor* p) { pMP = p; }
@@ -138,12 +145,16 @@ public:
 	void	matchFeaturesTensor_deprecate(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
 	void    refineRegister2(std::ostream& flog);
+	
+	void	evaluateRegistration();
+
+	/* testing functions */
 	void    registerTesting1();
 	void    regsiterTesting2();
 	void    dataTesting1();
 	void    sparseMatchingTesting();
+	void    generateExampleMatching(int n); 
 	void    localCorrespondenceTesting();
-	void	evaluateRegistration();
 
 	/* attributes access */
 	DifferentialMeshProcessor* getMeshProcessor(int obj, int level) { return liteMP[obj].at(level); }
@@ -159,7 +170,8 @@ public:
 	const std::vector<MatchPair>& getInitialMatchedFeaturePairs() const;
 	const std::vector<MatchPair>& getMatchedFeaturesResults(int level) const;
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
-	const std::vector<HKSFeature>& getSparseFeatures(int obj) const { return m_vFeatures[obj]; }
+	std::vector<HKSFeature>& getSparseFeatures(int obj) { return m_vFeatures[obj]; }
+	const std::vector<HKSFeature>& getSparseFeatures_const(int obj) const { return m_vFeatures[obj]; }
 	bool loadInitialFeaturePairs(const std::string& filename);
 	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
 
@@ -229,7 +241,7 @@ public:
 	static void ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang);
 	static void ComputeTensorFeatureAnchor(const DifferentialMeshProcessor* pmp, int i, int j, int k, int origin, double t, double* sang);
 	void    prepareHeatRegistration( double regTime );
-	double  computeMatchScore(int idx1, int idx2) const;
+	double computeMatchScore(int idx1, int idx2, double sigma = 0.02) const;
 	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
 	void    getVertexCover(int obj, int vidx, int level, int upper_level, int ring,  std::vector<int>& vCoveredIdx) const;
 	static double  calPointHksDissimilarity(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode = 0);
