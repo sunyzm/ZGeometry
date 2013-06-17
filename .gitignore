@@ -32,6 +32,7 @@ ZGeometry/intermediate/
 ZGeometry/output/
 ZMeshViewer/GeneratedFiles/
 ZMeshViewer/intermediate
+ZMeshMatcher/intermediate
 
 # misc
 *.bak
