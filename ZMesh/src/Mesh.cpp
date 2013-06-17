@@ -666,22 +666,21 @@ bool CMesh::Load(string sFileName)
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
-	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj")
-	{
+	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
 		return loadFromOBJ(sFileName);
 	}
-	else if (ext == ".m" || ext == ".M")
-	{
+	else if (ext == ".m" || ext == ".M") {
 		return loadFromM(sFileName);
 	}
-	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply")
-	{
+	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") {
 		return loadFromPLY(sFileName);
 	}
-	else if (ext == ".vert" || ext == ".VERT")
+	else if (ext == ".vert" || ext == ".VERT") {
 		return loadFromVERT(sFileName);
-	else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
+	}
+	else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
 		return loadFromOFF(sFileName);
+	}
 	else 
 		throw runtime_error("Unrecognizable file extension!");
 	

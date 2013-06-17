@@ -11,7 +11,6 @@
 #include <functional>
 #include <limits>
 
-
 using namespace std;
 
 extern OutputHelper qout;
@@ -108,8 +107,6 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 	 	hkp.m_votes = hkp.length();
 	}
 	);
-
-
 }
 
 void ParamManager::para_computeHKS( const std::vector<double>& times )
@@ -713,7 +710,6 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 //			vnd.m_vec[i] = mesh1->CalGeodesic(restFeat1[j], matchedPairsCoarse[i].m_idx1);
 		}
 	}
-	flog << "!!test ok 3" << endl;
 
 	for (int j = 0; j < restSize2; ++j)
 	{
@@ -725,7 +721,6 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 //			vnd.m_vec[i] = mesh2->CalGeodesic(restFeat2[j], matchedPairsCoarse[i].m_idx2);
 		}
 	}
-	flog << "!!test ok 4" << endl;
 
 	vector<MatchPair> restMatches;
 	for (int i = 0; i < restSize1; ++i)

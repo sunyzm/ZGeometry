@@ -74,6 +74,7 @@ public :
 	double	  length2()		{	return x*x + y*y + z*z;	}
 	Vector3D  normalize();
 	double	  distantFrom( const Vector3D& v )  { return std::sqrt( (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z) ); }
+	bool	  equals(const Vector3D& v2) const { return abs(x-v2.x) < 1e-6 && abs(y-v2.y) < 1e-6 && abs(z-v2.z) < 1e-6; }
 	Vector3D& operator =(const Vector3D& v);
 	Vector3D& operator +=(const Vector3D& v);
 	Vector3D& operator -=(const Vector3D& v);
