@@ -1467,7 +1467,7 @@ void QZGeometryWindow::matchFeatures()
 		}
 		if (string_override != "")
 		{
-			vector<int> idx_override = splitStringToInt(string_override);
+			vector<int> idx_override = ZUtil::splitStringToInt(string_override);
 			if (!idx_override.empty())
 			{
 				vector<MatchPair> vmp;
@@ -1781,7 +1781,7 @@ void QZGeometryWindow::saveSignature()
 		tr("Text Files (*.txt *.dat)"));
 	vector<double> vSig = vRS[0].vOriginalSignature;
 
-	vector2file<double>(fileName.toStdString(), vSig);
+	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
 }
 
 void QZGeometryWindow::addMesh()

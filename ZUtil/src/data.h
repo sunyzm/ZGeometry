@@ -3,6 +3,8 @@
 #include <vector>
 #include <string>
 
+namespace ZUtil
+{
 template<class T>
 void vector2file( const std::string& filepath, const std::vector<T>& data, bool transpose = false )
 {
@@ -23,5 +25,9 @@ void vector2file( const std::string& filepath, const std::vector<T>& data, bool 
 std::vector<int> splitStringToInt(std::string s);
 
 std::vector<double> splitStringToDouble(std::string s);
+
+bool fileExist(const std::string& filename);
+}
+
 
 #endif

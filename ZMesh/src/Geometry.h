@@ -1,7 +1,9 @@
 // Geometry.h: classes of 2D vector and 3D vector and matrix3
 //
 //////////////////////////////////////////////////////////////////////
-#pragma once
+#ifndef ZMESH_GEOMETRY_H
+#define ZMESH_GEOMETRY_H
+
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -133,7 +135,8 @@ VectorND operator-(const VectorND& v1, const VectorND& v2);
 /////////////////////////////////////////////////////////////
 // Matrix3 : 3*3 matrix
 /////////////////////////////////////////////////////////////
-class Matrix3{
+class Matrix3
+{
 private:
 	double data[3][3];
 public:
@@ -164,3 +167,5 @@ Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
 
 Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+
+#endif

@@ -31,12 +31,16 @@ ZUtil/lib/
 ZMesh/intermediate/
 ZMesh/include/
 ZMesh/lib/
+ZNumerics/intermediate/
+ZNumerics/include/
+ZNumerics/lib/
 ZGeometry/GeneratedFiles/
 ZGeometry/intermediate/
 ZGeometry/output/
 ZMeshViewer/GeneratedFiles/
 ZMeshViewer/intermediate/
 ZMeshMatcher/intermediate/
+
 
 # misc
 *.bak
