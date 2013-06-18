@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZUTIL_COLOR_H
+#define ZUTIL_COLOR_H
 
 enum ColorID {COLOR_RED, COLOR_GREEN, COLOR_BLUE, COLOR_YELLOW, COLOR_PURPLE, COLOR_MAGENTA, COLOR_CYAN};
 
@@ -41,3 +42,4 @@ public:
 	void BuildLUT();
 };
 
+#endif

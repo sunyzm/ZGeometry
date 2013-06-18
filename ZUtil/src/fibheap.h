@@ -89,7 +89,7 @@ public:
      long GetNumTrees() { return NumTrees; };
      long GetNumMarkedNodes() { return NumMarkedNodes; };
 
-     void Print(FibHeapNode *Tree = NULL, FibHeapNode *theParent=NULL);
+     void Print(FibHeapNode *Tree = nullptr, FibHeapNode *theParent = nullptr);
 
 private:
 

@@ -44,14 +44,14 @@
 //         if non-zero X returned, then return X>0?1:0   
 //***************************************************************************
 
+#include "fibheap.h"
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
 #include <conio.h>
-#include <fibheap.h>
+
 
 using namespace std;
-
 
 //***************************************************************************
 //=========================================================
@@ -162,13 +162,13 @@ void FibHeapNode::Print()
 // Print()
 //=========================================================
 
-/*
-void FibHeapNode::Print()
-{
-     if (NegInfinityFlag)
-	 cout << "-inf.";
-}
-*/
+
+// void FibHeapNode::Print()
+// {
+//      if (NegInfinityFlag)
+// 	 cout << "-inf.";
+// }
+
 
 //***************************************************************************
 //===========================================================================

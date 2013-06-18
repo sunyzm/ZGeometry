@@ -1,7 +1,8 @@
+#include "MeshProcessor.h"
 #include <stdexcept>
 #include <algorithm>
 #include <cassert>
-#include <MeshProcessor.h>
+
 
 double& MeshFunction::operator[](int idx)
 {

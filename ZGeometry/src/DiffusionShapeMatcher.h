@@ -172,8 +172,9 @@ public:
 	const std::vector<MatchPair>& getRegistrationResults(int level) const;
 	std::vector<HKSFeature>& getSparseFeatures(int obj) { return m_vFeatures[obj]; }
 	const std::vector<HKSFeature>& getSparseFeatures_const(int obj) const { return m_vFeatures[obj]; }
-	bool loadInitialFeaturePairs(const std::string& filename);
+	bool	loadInitialFeaturePairs(const std::string& filename);
 	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
+	void	loadGroundTruth(const std::string& filename);
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;
@@ -209,6 +210,8 @@ private:
 
 	std::vector<std::vector<MatchPair> > m_vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > m_vRegistrationResutls;
+
+	std::map<int, int> m_preloadGroundTruth;
 
 	bool					m_bInitialized;
 	bool					m_bPyramidBuilt;

@@ -1,3 +1,4 @@
+#include "MeshPyramid.h"
 #include <cmath>
 #include <cassert>
 #include <algorithm>
@@ -5,7 +6,7 @@
 #include <exception>
 #include <fstream>
 #include <set>
-#include "MeshPyramid.h"
+
 
 #define SILVER_TRIANGLE_TRHESH 0.05
 #define AVOID_SILVER_TRIANGLE

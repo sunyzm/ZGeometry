@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZUTIL_MISC_H
+#define ZUTIL_MISC_H
 #include <string>
 #include <sstream>
 #include <cmath>
@@ -36,3 +37,5 @@ public:
 };
 
 typedef std::priority_queue<MyNote, std::vector<MyNote>, NoteCompare> NoteQueue;
+
+#endif

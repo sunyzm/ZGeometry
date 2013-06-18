@@ -1,6 +1,4 @@
-//#include <windows.h>
-#include <timer.h>
-
+#include "timer.h"
 
 double CStopWatch::LIToSecs( LARGE_INTEGER & L) const {
 	return (double)L.QuadPart / (double)frequency.QuadPart;

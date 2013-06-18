@@ -1,8 +1,9 @@
 // Quat.cpp: implementation of CQrot class
 //
 //////////////////////////////////////////////////////////////////////
+#include "Quat.h"
 #include <cmath>
-#include <Quat.h>
+
 
 using namespace std;
 

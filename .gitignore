@@ -25,14 +25,18 @@
 bin/
 data/
 lib/
-ZUtil/build/intermediate/
-ZMesh/build/intermediate/
+ZUtil/intermediate/
+ZUtil/include/
+ZUtil/lib/
+ZMesh/intermediate/
+ZMesh/include/
+ZMesh/lib/
 ZGeometry/GeneratedFiles/
 ZGeometry/intermediate/
 ZGeometry/output/
 ZMeshViewer/GeneratedFiles/
-ZMeshViewer/intermediate
-ZMeshMatcher/intermediate
+ZMeshViewer/intermediate/
+ZMeshMatcher/intermediate/
 
 # misc
 *.bak

@@ -1,8 +1,9 @@
-#include <SimpleConfigLoader.h>
+#include "SimpleConfigLoader.h"
 #include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <algorithm>
+
 using namespace std;
 
 void SimpleConfigLoader::load( const std::string& config_file_path )
@@ -69,3 +70,4 @@ double SimpleConfigLoader::getConfigValueDouble( const std::string& query_string
 {
 	return atof(getConfigValue(query_string).c_str());
 }
+

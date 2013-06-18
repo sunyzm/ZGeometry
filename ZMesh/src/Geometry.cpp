@@ -1,12 +1,13 @@
 // Geometry.cpp: implementation of the Vector2D, Vector3D classes.
 //
 //////////////////////////////////////////////////////////////////////
+#include "Geometry.h"
 #include <cassert>
 #include <cstdio>
 #include <memory>
 #include <queue>
 #include <functional>
-#include <Geometry.h>
+
 
 using namespace std;
 //////////////////////////////////////////////////////////////////////

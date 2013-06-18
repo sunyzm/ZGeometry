@@ -1,6 +1,8 @@
-#pragma once
-#include <windows.h>
+#ifndef ZUTIL_TIMER_H
+#define ZUTIL_TIMER_H
+
 #include <string>
+#include <windows.h>
 
 typedef struct 
 {
@@ -30,3 +32,5 @@ __int64 time_call(Function&& f)
 	f();
 	return GetTickCount() - begin;
 }
+
+#endif

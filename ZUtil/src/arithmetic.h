@@ -1,4 +1,6 @@
-#pragma once
+#ifndef ZUTIL_ARITHMETIC_H
+#define ZUTIL_ARITHMETIC_H
+
 #include <vector>
 #include <cmath>
 
@@ -16,3 +18,5 @@ void VectorPointwiseProduct(const std::vector<double>& v1, const std::vector<dou
 void VectorPointwiseDivide(const std::vector<double>& v1, const std::vector<double>& v2, std::vector<double>& v);
 
 void triangleCotan(double a, double b, double c, double &cotan_a, double &cotan_c);
+
+#endif

@@ -316,14 +316,18 @@ bool QZGeometryWindow::initialize()
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 		
+		if (m_mesh[0].getMeshName() == "march1_1_partial") {
+			cout << "Ground truth available!" << endl;
+			string mapFile = "./models/map1.txt";
+			shapeMatcher.loadGroundTruth(mapFile);
+		}
+
 		shapeMatcher.setRegistrationLevels(1);
 		registerTest();
 	}
 
 //	evalDistance();
-
 	
-
 	return true;
 }
 

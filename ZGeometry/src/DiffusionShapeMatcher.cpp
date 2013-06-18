@@ -347,8 +347,6 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 // 			   )
 // 				vF.push_back(HKSFeature(ep.index, s));
 // 		}
-
-
 	}
 
 	/* Begin LOG-FEATURES */
@@ -3824,4 +3822,23 @@ void DiffusionShapeMatcher::generateExampleMatching( int n )
 	}
 	
 	forceInitialAnchors(vAnchors);
+}
+
+void DiffusionShapeMatcher::loadGroundTruth( const std::string& filename )
+{
+	ifstream fin(filename.c_str());
+	if (!fin) {
+		std::cerr << "Ground truth file not available" << std::endl;
+		return;
+	}
+
+	m_preloadGroundTruth.clear();
+
+	int size;
+	fin >> size;
+	for (int i = 0; i < size; ++i) {
+		int v1, v2;
+		fin >> v1 >> v2;
+		m_preloadGroundTruth.insert(std::make_pair(v1, v2));
+	}
 }

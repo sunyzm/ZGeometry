@@ -18,9 +18,9 @@ int main(int argc, char *argv[])
 {
 	QApplication a(argc, argv);
 
-	QGLFormat fmt;
-	fmt.setProfile(QGLFormat::CompatibilityProfile);
-	QGLFormat::setDefaultFormat(fmt);
+// 	QGLFormat fmt;
+// 	fmt.setProfile(QGLFormat::CompatibilityProfile);
+// 	QGLFormat::setDefaultFormat(fmt);
 	
 	g_task = (GeometryTask)g_configMgr.getConfigValueInt("GEOMETRY_TASK");
 

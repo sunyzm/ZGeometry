@@ -1,8 +1,8 @@
+#include "Mesh.h"
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
 #include <set>
-#include <Mesh.h>
 #include <stdexcept>
 #include <algorithm>
 #include <iterator>

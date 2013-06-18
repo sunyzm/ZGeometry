@@ -1,4 +1,6 @@
-#pragma once
+#ifndef ZUTIL_SIMPLE_CONFIG_LOADER_H
+#define ZUTIL_SIMPLE_CONFIG_LOADER_H
+
 #include <string>
 #include <map>
 
@@ -15,3 +17,5 @@ public:
 private:
 	std::map<std::string, std::string> m_config;
 };
+
+#endif
