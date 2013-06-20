@@ -1,4 +1,5 @@
 #include "Mesh.h"
+#include <ZUtil/arithmetic.h>
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
@@ -6,6 +7,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iterator>
+
 using namespace std;
 
 
@@ -3693,8 +3695,8 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	if(vDeformedIdx.size() != vNewPos.size())
 		throw std::logic_error("Error: CMesh::setVertexCoordinates; incompatible parameters");
 
-	int vsize = vDeformedIdx.size();
-	for (int i = 0; i < vsize; ++i)
+	size_t vsize = vDeformedIdx.size();
+	for (size_t i = 0; i < vsize; ++i)
 	{
 		m_pVertex[vDeformedIdx[i]].setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 		

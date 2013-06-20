@@ -1,3 +1,8 @@
+#include "QZGeometry.h"
+#include "common.h"
+#include <ZUtil/ZUtil.h>
+#include <ZUtil/SimpleConfigLoader.h>
+#include <ppl.h>
 #include <cmath>
 #include <fstream>
 #include <string>
@@ -12,11 +17,7 @@
 #include <QFileDialog>
 #include <QTime>
 #include <QProcess>
-#include <ZUtil.h>
-#include <SimpleConfigLoader.h>
-#include <ppl.h>
-#include "QZGeometry.h"
-#include "common.h"
+
 
 using namespace std;
 

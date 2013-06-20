@@ -1,4 +1,9 @@
-﻿#pragma once
+﻿#ifndef ZMESH_MESH_H
+#define ZMESH_MESH_H
+
+#include "Geometry.h"
+#include "Quat.h"
+#include <ZUtil/color.h>
 #include <cstdio>
 #include <cmath>
 #include <list>
@@ -9,13 +14,10 @@
 #include <queue>
 #include <string>
 #include <algorithm>
-#include <ZUtil.h>
-#include "Geometry.h"
-#include "Quat.h"
 
-#define MAX_VERTEX_PER_FACE 20
-#define MAX_RING_NUMBER 15
-#define MAX_HOLE_SIZE 20
+const int MAX_VERTEX_PER_FACE = 20;
+const int MAX_RING_NUMBER = 15;
+const int MAX_HOLE_SIZE = 20;
 
 typedef std::vector<int> VectorInt;
 
@@ -321,3 +323,5 @@ private:
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 
 };	//CMesh
+
+#endif

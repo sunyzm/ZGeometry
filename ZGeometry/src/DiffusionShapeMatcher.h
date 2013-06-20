@@ -6,7 +6,7 @@
 #include <utility>
 #include <engine.h>
 #include "DifferentialMeshProcessor.h"
-#include "MeshPyramid.h"
+#include "ZMesh/MeshPyramid.h"
 
 class MatchPair
 {

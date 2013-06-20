@@ -1,15 +1,15 @@
 #pragma once
 #include "ui_ZGeometry.h"
+#include <vector>
 #include <QtGui/QMainWindow>
 #include <QSignalMapper>
-#include <ZMesh.h>
 #include <engine.h>
-#include <vector>
+#include <ZMesh/ZMesh.h>
+#include <ZUtil/SimpleConfigLoader.h>
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"
-#include "SimpleConfigLoader.h"
 
 
 class QZGeometryWindow : public QMainWindow

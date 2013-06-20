@@ -1,7 +1,4 @@
 #include "DiffusionShapeMatcher.h"
-#include "OutputHelper.h"
-#include "SimpleConfigLoader.h"
-#include <ppl.h>
 #include <fstream>
 #include <sstream>
 #include <exception>
@@ -10,6 +7,12 @@
 #include <cassert>
 #include <functional>
 #include <limits>
+#include <ppl.h>
+#include <ZUtil/SimpleConfigLoader.h>
+#include <ZUtil/arithmetic.h>
+#include <ZUtil/timer.h>
+#include <ZUtil/misc.h>
+#include "OutputHelper.h"
 
 using namespace std;
 

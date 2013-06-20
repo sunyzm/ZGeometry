@@ -1,8 +1,7 @@
 #pragma once
-#include <GL/glew.h>
-#include <QGLWidget>
-#include <ZMesh.h>
 #include <vector>
+#include <QGLWidget>
+#include <ZMesh/ZMesh.h>
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"

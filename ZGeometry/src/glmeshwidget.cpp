@@ -1,13 +1,14 @@
+#include <GL/glew.h>		// must include glew.h first
+#include "glmeshwidget.h"
 #include <cstdlib>
 #include <fstream>
-#include <ZUtil.h>
 #include <vector>
 #include <QFile>
-#include "glmeshwidget.h"
-#include "OutputHelper.h"
-#include "common.h"
 #include <gl/GL.h>
 #include <gl/GLU.h>
+#include <ZUtil/ZUtil.h>
+#include "OutputHelper.h"
+#include "common.h"
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};

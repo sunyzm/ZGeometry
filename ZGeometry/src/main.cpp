@@ -1,8 +1,8 @@
-#include "QZGeometry.h"
 #include <QtGui/QApplication>
 #include <QtGui/QLabel>
 #include <QGLFormat>
-#include <SimpleConfigLoader.h>
+#include <ZUtil/SimpleConfigLoader.h>
+#include "QZGeometry.h"
 #include "OutputHelper.h"
 #include "common.h"
 

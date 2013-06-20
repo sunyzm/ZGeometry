@@ -1,5 +1,5 @@
-#ifndef ZUTIL_H
-#define ZUTIL_H
+#ifndef ZUTIL_ZUTIL_H
+#define ZUTIL_ZUTIL_H
 
 #include "arithmetic.h"
 #include "color.h"

@@ -3,7 +3,7 @@
 #include <vector>
 #include <string>
 #include <engine.h>
-#include <ZMesh.h>
+#include <ZMesh/ZMesh.h>
 
 enum LaplacianType {Umbrella = 0, CotFormula, Anisotropic1,
 	                Anisotropic2, Anisotropic3, IsoApproximate, LaplacianTypeCount};

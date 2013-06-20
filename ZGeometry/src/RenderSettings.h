@@ -1,7 +1,7 @@
 #pragma once
-#include <Geometry.h>
-#include <Quat.h>
 #include <vector>
+#include <ZMesh/Geometry.h>
+#include <ZMesh/Quat.h>
 
 #define Z_POINT 0x1B00
 #define Z_LINE 0x1B01

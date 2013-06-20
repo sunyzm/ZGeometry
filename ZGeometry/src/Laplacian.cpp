@@ -1,3 +1,5 @@
+#include "Laplacian.h"
+#include <ZUtil/arithmetic.h>
 #include <ctime>
 #include <algorithm>
 #include <cstdio>
@@ -5,7 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include "Laplacian.h"
+
 
 using namespace std;
 

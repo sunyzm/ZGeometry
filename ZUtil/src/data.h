@@ -1,4 +1,5 @@
 #ifndef ZUTIL_DATA_H
+#define ZUTIL_DATA_H
 
 #include <vector>
 #include <string>

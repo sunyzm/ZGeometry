@@ -1,11 +1,10 @@
 #pragma once
+#include "Mesh.h"
+#include "Quadric.h"
 #include <vector>
 #include <list>
 #include <map>
 #include <iostream>
-#include "Mesh.h"
-#include "Quadric.h"
-
 
 typedef std::map<int, std::list<int> > VerticesCover;
 

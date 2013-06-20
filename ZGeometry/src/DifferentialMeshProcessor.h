@@ -1,6 +1,6 @@
 #pragma once
 #include <engine.h>
-#include <ZMesh.h>
+#include <ZMesh/ZMesh.h>
 #include <string>
 #include <vector>
 #include <map>
