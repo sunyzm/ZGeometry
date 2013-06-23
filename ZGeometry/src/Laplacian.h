@@ -50,7 +50,6 @@ public:
 
 	virtual void constructFromMesh(const CMesh* tmesh) {}
 	virtual void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
-
 };
 
 class Laplacian : public SparseMeshMatrix

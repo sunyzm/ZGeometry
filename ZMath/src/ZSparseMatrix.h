@@ -33,28 +33,60 @@ class SparseMatrix
 public:
     friend class Laplacian<T>;    
     enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
+	SparseMatrix();
 
-    uint rowCount() const { return mRowCount; }
-    uint colCount() const { return mColCount; }
-    uint nonzeroCount() const { return mNonzeroCount; }
+    unsigned rowCount() const { return mRowCount; }
+    unsigned colCount() const { return mColCount; }
+    unsigned nonzeroCount() const { return mNonzeroCount; }
 
-    const std::vector<TupleCOO<T>>& getCOO() const { return mCOO; } 
+    const std::vector<TupleCOO<T> >& getCOO_const() const { return mCOO; } 
+	//std::vector<TupleCOO<T> >& getCOO { return mCOO; }
+	template<typename U> void loadCOO(unsigned rowCount, unsigned colCount, const std::vector<U>& vRowIdx, const std::vector<U>& vColIdx, const std::vector<T>& vVal);
     template<typename U> void loadCSR(unsigned rowCount, unsigned colCount, T val[], U colIdx[], U rowPtr[]);
     template<typename U> void getCSR(std::vector<T>& val, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
 
     void print(std::ostream& out) const;
     bool testNoEmptyRow() const;
-	bool testSymmetric(double eps = 1e-7) const;
+	bool testSymmetric(T eps = 1e-7) const;
     void truncate(MatrixForm form = MAT_UPPER);
     void symmetrize();
     void fillEmptyDiagonal();       // fill empty diagonal element with 0
     
 private:
     std::vector<TupleCOO<T>> mCOO;
-    uint mRowCount;
-    uint mColCount;
-    uint mNonzeroCount;
+    unsigned int mRowCount;
+    unsigned int mColCount;
+    unsigned int mNonzeroCount;	 
+	bool		 isSingle;
 };
+
+template<typename T>
+ZMath::SparseMatrix<T>::SparseMatrix()
+{
+	if (sizeof(T) == sizeof(float)) this->isSingle = true;
+	else this->isSingle = false;
+}
+
+
+
+template<typename T>
+template<typename U>
+void SparseMatrix<T>::loadCOO( unsigned rowCount, unsigned colCount, const std::vector<U>& vRowIdx, const std::vector<U>& vColIdx, const std::vector<T>& vVal )
+{
+	assert(vRowIdx.size() == vColIdx.size() && vColIdx.size() == vVal.size());
+	int nnz = vVal.size();
+
+	this->mRowCount = rowCount; 
+	this->mColCount = colCount;
+
+	mCOO.resize(nnz);
+	for (int k = 0; k < nnz; ++k) {
+		mCOO[k].i = vRowIdx[k];
+		mCOO[k].j = vColIdx[k];
+		mCOO[k].v = vVal[k];
+	}
+}
+
 
 template<typename T> void
 SparseMatrix<T>::print(std::ostream& out) const
@@ -78,7 +110,7 @@ bool SparseMatrix<T>::testNoEmptyRow() const
 }
 
 template<typename T>
-bool SparseMatrix<T>::testSymmetric(double eps /*= 1e-7*/) const
+bool SparseMatrix<T>::testSymmetric(T eps /*= 1e-7*/) const
 {
     for (unsigned k = 0; k < mNonzeroCount; ++k) {
         if (mCOO[k].i >= mCOO[k].j) continue;
@@ -188,303 +220,8 @@ void SparseMatrix<T>::loadCSR(unsigned rowCount, unsigned colCount, T val[], U c
     }
 }
 
-
-
-
-
-
-
-template<typename T>
-class SparseCSR;
-
-template<typename T>
-class SparseCOO
-{
-public:
-    uint mRowNum, mColNum;
-    uint mNNZ;  // number of non-zero elements
-    
-    std::vector<T> mVal;
-    std::vector<uint> mRowInd, mColInd;
-    
-    int constructFromDiag(const std::vector<T>& vWW); 
-    bool judgeSymmetric() const;
-    int toPackedSymmetricU(T ap[]) const;
-    int toCSR(SparseCSR<T>& csr) const;
-
-    void symmetrize();
-
-    template<typename U> friend std::ostream& operator<< (std::ostream& out, const SparseCOO<U> &coo);
-};
-
-template<typename U> 
-std::ostream& operator<< (std::ostream& out, const SparseCOO<U> &coo)
-{
-    out << "values\t=(";
-    for (std::vector<U>::const_iterator iter = coo.mVal.begin(); iter != coo.mVal.end(); ++iter) 
-        out << *iter << ' ';
-    out << ")\nRowIdx\t=(";
-    for (std::vector<uint>::const_iterator iter = coo.mRowInd.begin(); iter != coo.mRowInd.end(); ++iter)
-        out << *iter << ' ';
-    out << ")\nColIdx\t=(";
-    for (std::vector<uint>::const_iterator iter = coo.mColInd.begin(); iter != coo.mColInd.end(); ++iter)
-        out << *iter << ' ';
-    out << ")" << std::endl;
-        
-    return out;
-}
-
-template<typename T> bool
-SparseCOO<T>::judgeSymmetric() const
-{
-    for (uint k = 0; k < mNNZ; ++k) {
-        if (mRowInd[k] > mColInd[k]) continue;
-        bool symElemFound = false;
-        for (uint l = 0; l < mNNZ; ++l) {
-            if (mRowInd[l] != mColInd[k] || mColInd[l] != mRowInd[k]) continue;
-            if (abs(mVal[l] - mVal[k]) < 1e-7) symElemFound = true;
-            break;
-        }
-        if (!symElemFound) return false;
-   }
-   return true;
-}
-
-template<typename T> void
-SparseCOO<T>::symmetrize()
-{
-    for (uint k = 0; k < mNNZ; ++k) {
-        if (mRowInd[k] != mColInd[k]) {
-            mVal.push_back(mVal[k]);
-            mRowInd.push_back(mColInd[k]);
-            mColInd.push_back(mRowInd[k]);
-        }
-    }
-    mNNZ = mVal.size();
-}
-
-template<typename T>
-class SparseCSR
-{
-public:
-    int constructCSRFromCOO(int nRow, int nCol, const std::vector<uint>& vII, const std::vector<uint>& vJJ, const std::vector<T>& vVV);
-    int constructCSRFromDiag(const std::vector<T>& vDiag);
-    
-    template<typename U>
-    int constructCSRFrom(uint nRow, uint nCol, T a[], U ja[], U ia[]) 
-    {
-        mRowNum = nRow;
-        mColNum = nCol;
-        mNNZ = ia[nRow] - 1;
-    
-        mVal.resize(mNNZ);
-        std::copy(a, a+mNNZ, mVal.begin());
-
-        mColInd.resize(mNNZ);
-        for (uint k = 0; k < mNNZ; ++k) mColInd[k] = ja[k];
-    
-        mRowPtr.resize(nRow+1);
-        for (uint k = 0; k <= nRow; ++k) mRowPtr[k] = ia[k];
-
-        return 0;
-    }
-    int toCOO(SparseCOO<T> &coo) const;
-    
-    uint mRowNum, mColNum;
-    uint mNNZ;
-
-    std::vector<T> mVal;
-    std::vector<uint> mColInd;
-    std::vector<uint> mRowPtr;
-
-    SparseCSR();
-
-    template<typename U> friend std::ostream& operator<< (std::ostream &out, const SparseCSR<U> &csr);
-};
-
-template<typename U>
-std::ostream& operator<< (std::ostream &out, const SparseCSR<U> &csr) {
-    out << "NNZ = " << csr.mNNZ << std::endl;
-    out << "Values=(";
-    for (uint k = 0; k < csr.mNNZ; ++k) 
-        out << csr.mVal[k] << (k < csr.mNNZ-1 ? " " : "");
-    out << ")\nColIdx=(";
-    for (uint k = 0; k < csr.mNNZ; ++k)
-        out << csr.mColInd[k] << (k < csr.mNNZ-1 ? " " : "");
-    out << ")\nRowPtr=(";
-    for (uint k = 0; k < csr.mRowNum; ++k)
-        out << csr.mRowPtr[k] << (k < csr.mRowNum-1 ? " " : "");
-    out << ")" << std::endl; 
-        
-    return out;
-}
-
-template<typename T> int 
-SparseCSR<T>::toCOO(SparseCOO<T> &coo) const
-{
-    coo.mRowNum = this->mRowNum;
-    coo.mColNum = this->mColNum;
-    coo.mNNZ = this->mNNZ;
-    coo.mVal.resize(mNNZ);
-    std::copy(this->mVal.begin(), this->mVal.end(), coo.mVal.begin());
-    coo.mColInd.resize(mNNZ);
-    coo.mRowInd.resize(mNNZ);
-    for (uint k = 0; k < mNNZ; ++k) coo.mColInd[k] = this->mColInd[k];
-    
-    for (uint r = 1; r <= mRowNum; ++r) {
-        for (uint k = mRowPtr[r-1]; k < mRowPtr[r]; ++k) {
-            coo.mRowInd[k-1] = r;
-        }         
-    }       
-
-    return 0;
-}
-
-/*
-template<typename T> 
-template<typename U> int 
-SparseCSR<T>::constructCSRFrom(uint nRow, uint nCol, T a[], U ja[], U ia[])
-{
-    mRowNum = nRow;
-    mColNum = nCol;
-    mNNZ = ia[nRow] - 1;
-    
-    mVal.resize(mNNZ);
-    std::copy(a, a+mNNZ, mVal.begin());
-
-    mColInd.resize(mNNZ);
-    for (uint k = 0; k < mNNZ; ++k) mColInd[k] = ja[k];
-    
-    mRowPtr.resize(nRow+1);
-    for (uint k = 0; k <= nRow; ++k) mRowPtr[k] = ia[k];
-
-    return 0;
-}
-*/
-
-template<typename T> int
-SparseCOO<T>::toPackedSymmetricU(T ap[]) const
-{
-    // ap should has the size of N(N+1)/2
-    uint N = mRowNum;
-    for (uint k = 0; k < N*(N+1)/2; ++k) ap[k] = 0.0;
-    
-    for (uint k = 0; k < mNNZ; ++k) {
-        uint i = mRowInd[k];
-        uint j = mColInd[k];
-        if (i > j) continue;
-        T val = mVal[k];
-        
-        ap[i + j*(j-1)/2 - 1] = val;
-    }
-
-    return 0;
-}
-
-template<typename T> int
-SparseCOO<T>::toCSR(SparseCSR<T>& csr) const
-{
-    csr.constructCSRFromCOO(mRowNum, mColNum, mRowInd, mColInd, mVal);
-
-    return 0;
-}
-
-template<typename T> int
-SparseCOO<T>::constructFromDiag(const std::vector<T>& vWW) 
-{
-    mNNZ = vWW.size();
-    mRowNum = mColNum = vWW.size();
-    mRowInd.resize(mNNZ);
-    mColInd.resize(mNNZ);
-    mVal.resize(mNNZ);    
-
-    for (unsigned k = 0; k < mNNZ; ++k) {
-        mRowInd[k] = k + 1;
-        mColInd[k] = k + 1;
-        mVal[k] = vWW[k];
-    }
-    
-    return 0;
-}
-
-template<typename T>
-SparseCSR<T>::SparseCSR()
-{
-    mRowNum = mColNum = mNNZ = 0;
-}
-
-
-template<typename T> int 
-SparseCSR<T>::constructCSRFromDiag(const std::vector<T>& vDiag)
-{
-    mRowNum = mColNum = mNNZ = vDiag.size();
-    mColInd.resize(mRowNum);
-    mRowPtr.resize(mRowNum);
-    for (uint i = 0; i < mRowNum; ++i) {
-        mVal[i] = vDiag[i];
-        mColInd[i] = i + 1;
-        mRowPtr[i] = i + 1;    
-    }
-    mRowPtr[mRowNum] = mNNZ + 1;
-    return 0;
-}
-
-template<typename T> int 
-SparseCSR<T>::constructCSRFromCOO(int nRow, int nCol, const std::vector<uint>& vII,
-                         const std::vector<uint>& vJJ, const std::vector<T>& vVV) 
-{
-    mRowNum = nRow; mColNum = nCol;
-    std::vector<TupleCOO<T>> vCOO;
-    for (uint k = 0; k < vVV.size(); ++k) {
-        vCOO.push_back(TupleCOO<T>(vII[k],vJJ[k],vVV[k]));
-    }
-    
-    std::sort(vCOO.begin(), vCOO.end(), std::less<TupleCOO<T>>()); 
-
-    std::vector<uint> vColInd, vRowPtr;
-    std::vector<T> vVal;
-    int prevRow = 0;
-    for (typename std::vector<TupleCOO<T>>::iterator iter = vCOO.begin(); iter != vCOO.end(); ++iter) {
-        if (iter->i > iter->j) continue;    //only upper triangle
-        int curRow = iter->i;
-        
-        if (prevRow < curRow) {
-            for (int i = prevRow + 1; i < curRow; ++i) {
-                vVal.push_back(0.);
-                vColInd.push_back(i);
-                vRowPtr.push_back(vVal.size());
-            }
-            if (iter->i < iter->j) {
-                vVal.push_back(0.);
-                vColInd.push_back(curRow);
-                vRowPtr.push_back(vVal.size());
-            }
-        }
-
-        vVal.push_back(iter->v);
-        vColInd.push_back(iter->j);
-        if (iter->i == iter->j) vRowPtr.push_back(vVal.size());
-        
-        prevRow = curRow;
-    }       
-    vRowPtr.push_back(vVal.size()+1);
-    
-
-    mNNZ = vVal.size();
-    mVal = vVal;
-    mColInd = vColInd;
-    mRowPtr = vRowPtr;
-
-    return 0;
-}
-
-template<typename T> void
-printSparseMatrix(const SparseCOO<T>& coo, std::ostream& out)
-{
-    for (uint i = 0; i < coo.mNNZ; ++i) {
-        out << coo.mRowInd[i] << ' ' << coo.mColInd[i] << ' ' << coo.mVal[i] << std::endl;
-    }
-}
+typedef SparseMatrix<double> SparseMatrixD;
+typedef SparseMatrix<float>	 SparseMatrixS;
 
 } //end of namespace ZMath
 

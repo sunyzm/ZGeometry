@@ -1,9 +1,6 @@
 ﻿#ifndef ZMESH_MESH_H
 #define ZMESH_MESH_H
 
-#include "Geometry.h"
-#include "Quat.h"
-#include <ZUtil/color.h>
 #include <cstdio>
 #include <cmath>
 #include <list>
@@ -14,6 +11,9 @@
 #include <queue>
 #include <string>
 #include <algorithm>
+#include <ZUtil/color.h>
+#include "Geometry.h"
+#include "Quat.h"
 
 const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
