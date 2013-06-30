@@ -1,0 +1,4 @@
+#ifndef ZGEOM_TRIGONOMETRY
+#define ZGEOM_TRIGONOMETRY
+
+#endif

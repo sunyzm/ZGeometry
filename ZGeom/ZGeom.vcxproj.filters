@@ -14,10 +14,19 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ZMath.h">
+    <ClInclude Include="src\trigonometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ZSparseMatrix.h">
+    <ClInclude Include="src\SparseMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vec2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vec3.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ZGeom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

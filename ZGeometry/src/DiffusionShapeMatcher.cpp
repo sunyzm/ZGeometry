@@ -216,6 +216,7 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 	pOriginalMesh[0] = pOriginalMesh[1] = NULL;
 	m_bInitialized = false;
 	m_bPyramidBuilt = false;
+	m_bHasGroundTruth = false;
 	m_nAlreadyRegisteredLevel = -1;
 
 	m_vFeatures.resize(2);
@@ -226,13 +227,10 @@ DiffusionShapeMatcher::~DiffusionShapeMatcher()
 	if (!m_bInitialized) return;
 
 	int mpSize1 = liteMP[0].size(), mpSize2 = liteMP[1].size();
-
-	for (int k = 1; k < mpSize1; ++k)
-	{
+	for (int k = 1; k < mpSize1; ++k) {
 		delete liteMP[0][k];
 	}
-	for (int k = 1; k < mpSize2; ++k)
-	{
+	for (int k = 1; k < mpSize2; ++k) {
 		delete liteMP[1][k];
 	}
 }
@@ -261,10 +259,8 @@ void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, Differe
 
 CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 {
-	if (level == 0)
-		return this->pOriginalMesh[obj];
-	else
-		return meshPyramids[obj].getMesh(level);
+	if (level == 0) return this->pOriginalMesh[obj];
+	else return meshPyramids[obj].getMesh(level);
 }
 
 void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
@@ -272,13 +268,10 @@ void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream&
 	assert(n >= 1);
 
 	m_nPyramidLevels = n;
-
 	meshPyramids[0].setLevel(n, ratio);
 	meshPyramids[1].setLevel(n, ratio);
-
 	meshPyramids[0].construct(ostr);
 	meshPyramids[1].construct(ostr);
-
 	for (int k = 1; k < n; ++k)
 	{
 		liteMP[0].push_back(new DifferentialMeshProcessor(meshPyramids[0].getMesh(k), pOriginalMesh[0]));
@@ -305,8 +298,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 	for (int s = nScales-1; s >= 0; --s) 
 		vScaleValues[s] = baseTvalue * std::pow(talpha, s);
 
-	for (int s = nScales-1; s >= 0; --s)
-	{
+	for (int s = nScales-1; s >= 0; --s) {
 		vector<double> hksv;
 		cout << "=== Detection timescale: " << vScaleValues[s] << " ===" << endl;
 //		pMP->calNormalizedKernelSignature(vScaleValues[s], HEAT_KERNEL, hksv);
@@ -315,9 +307,6 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
  		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
 
 		vector<pair<int, int> > vFeatureIdx;	// <index, minOrMax>
-//		vector<int> vFeatureIdx;
-//		if (s == 0) ring = 3;
-//		fineMesh->extractExtrema(hksv, ring, thresh, vFeatureIdx);
 		fineMesh->extractExtrema(hksv, ring, vFeatureIdx, thresh);
 		
 // 		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
@@ -325,14 +314,11 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 // 			cout << iter->first	<< ", ";
 // 		cout << '\n';
 
-		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter)
-		{
+		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) {
 			if ( vF.end() == find_if(vF.begin(), vF.end(), 
 				//[&](const HKSFeature& feat){return fineMesh->isInNeighborRing(feat.m_index, iter->first, 1);})
-				[&](const HKSFeature& feat){return feat.m_index == iter->first;})
-			  )
-			{
-				vF.push_back(HKSFeature(iter->first, s, iter->second));
+				[&](const HKSFeature& feat){return feat.m_index == iter->first;}) )	{
+					vF.push_back(HKSFeature(iter->first, s, iter->second)); 
 			}			
 		}
 
@@ -383,10 +369,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 	}
 
 	MeshFeatureList *mfl = new MeshFeatureList;
-	for (auto iter = vF.begin(); iter != vF.end(); ++iter)
-	{
-		mfl->addFeature(new HKSFeature(*iter));
-	}
+	for (auto iter = vF.begin(); iter != vF.end(); ++iter) mfl->addFeature(new HKSFeature(*iter));
 
 	mfl->setIDandName(FEATURE_MULTI_HKS, "Feature_multiple_hks");
 	pMP->replaceProperty(mfl);
@@ -407,12 +390,10 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	flog << "Before defining vftCoarse" << endl;
 
 	for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){ 
-		if(f.m_scale >= 2) 
-			vftCoarse1.push_back(f); 
+		if(f.m_scale >= 2) vftCoarse1.push_back(f); 
 	});
 	for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){ 
-		if(f.m_scale >= 2)
-			vftCoarse2.push_back(f);
+		if(f.m_scale >= 2) vftCoarse2.push_back(f);
 	});
 
 	std::sort(vftCoarse1.begin(), vftCoarse1.end(), [](const HKSFeature& f1, const HKSFeature& f2) { return f1.m_index < f2.m_index; });
@@ -2310,19 +2291,26 @@ void DiffusionShapeMatcher::forceInitialAnchors( const std::vector<MatchPair>& m
 	m_bFeatureMatched = true;
 }
 
-void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2 )
+void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair>& vIdMatchPair )
 {
+	if (!m_bHasGroundTruth) {
+		std::cout << "No ground truth available for evaluation!" << std::endl;
+	}
+
 	int count_valid = 0;
 	int count_valid_strict = 0;
 	for (auto iter = vIdMatchPair.begin(); iter != vIdMatchPair.end(); ++iter)
 	{
-		if (mesh2->isInNeighborRing(iter->m_idx2, iter->m_idx1, 2))
+		int idx1 = iter->m_idx1, idx2 = iter->m_idx2;
+		if (mMatchGroundTruth.find(idx1) == mMatchGroundTruth.end()) continue;
+		int idx1_map = mMatchGroundTruth[idx1];
+		if (pOriginalMesh[1]->isInNeighborRing(idx1_map, idx2, 2))
 			count_valid++;
-		if (iter->m_idx1 == iter->m_idx2)
+		if (idx1_map == idx2)
 			count_valid_strict++;
 	}
 
-	cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
+	std::cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
 }
 
 const std::vector<MatchPair>& DiffusionShapeMatcher::getInitialMatchedFeaturePairs() const
@@ -3835,13 +3823,25 @@ void DiffusionShapeMatcher::loadGroundTruth( const std::string& filename )
 		return;
 	}
 
-	m_preloadGroundTruth.clear();
+	mMatchGroundTruth.clear();
 
 	int size;
 	fin >> size;
 	for (int i = 0; i < size; ++i) {
 		int v1, v2;
 		fin >> v1 >> v2;
-		m_preloadGroundTruth.insert(std::make_pair(v1, v2));
+		mMatchGroundTruth.insert(std::make_pair(v1, v2));
 	}
+
+	m_bHasGroundTruth = true;
+}
+
+void DiffusionShapeMatcher::autoGroundTruth()
+{
+	int meshSize = pOriginalMesh[0]->getMeshSize();
+	mMatchGroundTruth.clear();
+	for (int i = 0; i , meshSize; ++i)
+		mMatchGroundTruth.insert(std::make_pair(i, i));
+
+	m_bHasGroundTruth = true;
 }

@@ -7,8 +7,9 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
-#define DOUBLE_EPS 1e-16
-#define	EQUALZERO(x)	(std::fabs((x)) < DOUBLE_EPS)
+
+const double DOUBLE_EPS = 1e-16;
+static inline bool	EQUALZERO(double x) { return std::fabs((x)) < DOUBLE_EPS; }
 
 /////////////////////////////////////////////////////////////
 // Vector2D : 2D vector

@@ -175,12 +175,13 @@ public:
 	bool	loadInitialFeaturePairs(const std::string& filename);
 	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
 	void	loadGroundTruth(const std::string& filename);
+	bool	isGroundTruthAvailable() const { return m_bHasGroundTruth; }
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;
 	void	readInRandPair(const std::string& filename);
 	
-	static void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2);
+	void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair);
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 	static double evaluateDistance(const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 
@@ -211,7 +212,8 @@ private:
 	std::vector<std::vector<MatchPair> > m_vFeatureMatchingResults;
 	std::vector<std::vector<MatchPair> > m_vRegistrationResutls;
 
-	std::map<int, int> m_preloadGroundTruth;
+	bool			   m_bHasGroundTruth;
+	std::map<int, int> mMatchGroundTruth;
 
 	bool					m_bInitialized;
 	bool					m_bPyramidBuilt;
@@ -248,4 +250,5 @@ public:
 	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
 	void    getVertexCover(int obj, int vidx, int level, int upper_level, int ring,  std::vector<int>& vCoveredIdx) const;
 	static double  calPointHksDissimilarity(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode = 0);
+	void autoGroundTruth();
 };

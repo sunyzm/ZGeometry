@@ -206,7 +206,7 @@ CHalfEdge::CHalfEdge( const CHalfEdge& e )
 	m_eTwin= m_eNext = m_ePrev = NULL;
 	m_Face = NULL;
 	
-	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0гн>Vertex1
+	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0 -н> Vertex1
 	m_iVertex[1]	= e.m_iVertex[1];
 	m_iTwinEdge		= e.m_iTwinEdge;        // reverse half-edge index, -1 if boundary half edge
 	m_iNextEdge		= e.m_iNextEdge;		// next half-edge index ( counter-clock wise )
@@ -1507,7 +1507,7 @@ int CMesh::getBoundaryNum() const
 			boundaryIndexSet.insert( i );
 	}
 	int currentIndex, nextIndex, edgeIndex;
-	for( int i=0; i<m_nVertex; i++ )
+	for( int i = 0; i<m_nVertex; i++ )
 	{
 		// find boundary loop from boundary vertex i if it is not in any loop 
 		if(	m_pVertex[i].m_bIsBoundary && boundaryIndexSet.find(i)!=boundaryIndexSet.end() )	
@@ -1583,8 +1583,8 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 {
 	double cosa = (b*b+c*c-a*a)/(2.0*b*c);
 	double cosc = (b*b+a*a-c*c)/(2.0*b*a);
-	cotan_a = cosa / sqrt(1-cosa*cosa);
-	cotan_c = cosc / sqrt(1-cosc*cosc);
+	cotan_a = cosa / sqrt(1.0 - cosa*cosa);
+	cotan_c = cosc / sqrt(1.0 - cosc*cosc);
 
 	if (a*a + c*c < b*b)
 	{
@@ -3619,6 +3619,8 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	double pz = 0;		//1e-5
 	double nz = -0;
 
+	vector<double> sigDetected;
+
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
 		if (m_vVertices[j]->m_bIsBoundary) continue;  // ignore boundary vertex
@@ -3627,8 +3629,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 		VertexNeighborRing(j, ring, nb);	
 		
 		state = STATE_IDLE;
-		for (size_t k = 0; k < nb.size(); k++)		//for each neighbor 
-		{
+		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
 			int ev = nb[k];
 			state_c = STATE_IDLE;
 			if( vSigVal[j] - vSigVal[ev] < nz)		// low bound
@@ -3638,8 +3639,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 			if(state == STATE_IDLE)				    // two-step change
 				state = state_c;
-			else if( state != state_c ) 
-			{
+			else if( state != state_c ) {
 				state = STATE_IDLE;
 				break;
 			}
@@ -3647,8 +3647,13 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 		if(state == STATE_IDLE) continue;
 
 		vFeatures.push_back(make_pair(j, state_c));	//max: 1, min: -1
+		sigDetected.push_back(vSigVal[j]);
 	}
 
+	sort(sigDetected.begin(), sigDetected.end(), std::greater<double>());
+	std::cout << "Max Signature: ";
+	for (int i = 0; i < std::min(10, (int)sigDetected.size()); ++i) std::cout << sigDetected[i] << ' ';
+	std::cout << std::endl;
 }
 
 bool CMesh::hasBounary() const
@@ -3702,7 +3707,6 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 		
 		if (m_bIsPointerVectorExist)
 			m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
-
 	}
 }
 

@@ -210,8 +210,7 @@ bool QZGeometryWindow::initialize()
 
 	int eng_open_time = time_call( [&](){ m_ep = engOpen("\0"); });
 
-	if (!m_ep)
-	{
+	if (!m_ep) {
 		qout.output("Can't start MATLAB engine!", OUT_MSGBOX);
 		return false;
 	}
@@ -317,10 +316,14 @@ bool QZGeometryWindow::initialize()
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 		
+		// ground truth 
 		if (m_mesh[0].getMeshName() == "march1_1_partial") {
 			cout << "Ground truth available!" << endl;
 			string mapFile = "./models/map1.txt";
 			shapeMatcher.loadGroundTruth(mapFile);
+		}
+		else if( m_mesh[0].getMeshSize() == m_mesh[1].getMeshSize()) {
+			shapeMatcher.autoGroundTruth();
 		}
 
 		shapeMatcher.setRegistrationLevels(1);
@@ -1354,16 +1357,15 @@ void QZGeometryWindow::detectFeatures()
 	int num_detect_scales = g_configMgr.getConfigValueInt("FEATURE_DETECTION_NUM_SCALES");
 
 	qout.output("-- Detect initial features --");
-//  	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-//  	{
-//  		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
-//  	});
- 	shapeMatcher.detectFeatures(0, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
- 	shapeMatcher.detectFeatures(1, detect_ring, num_detect_scales, feature_detection_timescale, feature_detection_t_multiplier, feature_detection_extrema_thresh);
+  	Concurrency::parallel_for(0, num_meshes, [&](int obj) {
+  		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_timescale, 
+									feature_detection_t_multiplier, feature_detection_extrema_thresh);
+  	});
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
+	std::cout << "Mesh1 features #: " << shapeMatcher.getSparseFeatures(0).size() << "; Mesh 2 features #: " << shapeMatcher.getSparseFeatures(1).size() << std::endl;
 
-	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1)
+	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1) 
 	{
 		vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
 		std::map<int, int> feature_count;
@@ -1375,60 +1377,48 @@ void QZGeometryWindow::detectFeatures()
 		vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
 		double sim1(0.);
 
-		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); )
-		{
+		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ) {
 			bool candFound = false;
-			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
-			{
+			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
 
-				if (m_mesh[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2))
-				{
+				if (m_mesh[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
-			if (!candFound)
-			{
+			if (!candFound) {
 				iter1 = vf1.erase(iter1);
 				continue;
 			}
 			else ++iter1;
 		}
 
-		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); )
-		{
+		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ) {
 			bool candFound = false;
-			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
-			{
+			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
-				if (m_mesh[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2))
-				{
+				if (m_mesh[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
-			if (!candFound)
-			{
+			if (!candFound) {
 				iter2 = vf2.erase(iter2);
 				continue;
 			}
 			else ++iter2;
 		}
 
-		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1)
-		{
-			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2)
-			{
-				if (m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2))
-				{
+		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
+			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
+				if (m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					count_possible1++;
 					if (feature_count.find(iter1->m_index) == feature_count.end())
 						feature_count.insert(make_pair(iter1->m_index, 1));
 					else feature_count[iter1->m_index] += 1;
 
-					if (iter1->m_index == iter2->m_index) 
-					{
+					if (iter1->m_index == iter2->m_index) {
 						count_possible0++;
 					}
 
@@ -1436,17 +1426,14 @@ void QZGeometryWindow::detectFeatures()
 // 					cout << "corresponded sim: " << sim << endl;
 // 					sim1 += sim;
 				}
-				
 			}
 		}
 		cout << "v1: " << vf1.size() << "  v2: " << vf2.size() << endl;
 		cout << "-- Potential matches: " << count_possible0 << "/" << count_possible1 << endl;
 //		cout << "Average similarity of matched: " << sim1 / double(count_possible1) << endl;
 	}
-
-
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
+	
+	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
 
@@ -1566,8 +1553,7 @@ void QZGeometryWindow::matchFeatures()
 
 	const std::vector<MatchPair>& result = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
 
-	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") == 1)
-		shapeMatcher.evaluateWithGroundTruth(result, &m_mesh[0], &m_mesh[1]);
+	shapeMatcher.evaluateWithGroundTruth(result);
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
@@ -1602,12 +1588,12 @@ void QZGeometryWindow::registerStep()
 		double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
 		vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
 	/* ---- evaluation ---- */
-	if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
+	if (shapeMatcher.isGroundTruthAvailable())
 	{
 		cout << "Features - ";
-		shapeMatcher.evaluateWithGroundTruth(vf, &m_mesh[0], &m_mesh[1]);
+		shapeMatcher.evaluateWithGroundTruth(vf);
 		cout << "Registrations - ";
-		shapeMatcher.evaluateWithGroundTruth(vr, &m_mesh[0], &m_mesh[1]);
+		shapeMatcher.evaluateWithGroundTruth(vr);
 	}
 
 // 	double vError[3];
@@ -1682,12 +1668,6 @@ void QZGeometryWindow::evalDistance()
 	timer.stopTimer();
 	cout << "Eval Dist time (ppl): " << timer.getElapsedTime() << endl;
 
-//  timer.startTimer();
-//  cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl;
-// 	cout << "Error biharmonic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl;
-// 	cout << "Error biharmonic2: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 500) << endl;
-//  timer.stopTimer();
-//  cout << "Eval Dist time: " << timer.getElapsedTime() << endl;
 }
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )

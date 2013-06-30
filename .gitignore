@@ -31,9 +31,9 @@ ZUtil/lib/
 ZMesh/intermediate/
 ZMesh/include/
 ZMesh/lib/
-ZMath/intermediate/
-ZMath/include/
-ZMath/lib/
+ZGeom/intermediate/
+ZGeom/include/
+ZGeom/lib/
 ZGeometry/GeneratedFiles/
 ZGeometry/intermediate/
 ZGeometry/output/

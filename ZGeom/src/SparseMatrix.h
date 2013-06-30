@@ -1,12 +1,12 @@
-#ifndef ZMATH_SPARSE_MATRIX_H
-#define ZMATH_SPARSE_MATRIX_H
+#ifndef ZGEOM_SPARSE_MATRIX_H
+#define ZGEOM_SPARSE_MATRIX_H
+
 #include <iostream>
 #include <vector>
 #include <algorithm>
 #include <functional>
 
-namespace ZMath
-{
+namespace ZGeom {
 
 template<typename T> class Laplacian;
 
@@ -61,13 +61,11 @@ private:
 };
 
 template<typename T>
-ZMath::SparseMatrix<T>::SparseMatrix()
+ZGeom::SparseMatrix<T>::SparseMatrix()
 {
 	if (sizeof(T) == sizeof(float)) this->isSingle = true;
 	else this->isSingle = false;
 }
-
-
 
 template<typename T>
 template<typename U>
@@ -223,6 +221,6 @@ void SparseMatrix<T>::loadCSR(unsigned rowCount, unsigned colCount, T val[], U c
 typedef SparseMatrix<double> SparseMatrixD;
 typedef SparseMatrix<float>	 SparseMatrixS;
 
-} //end of namespace ZMath
+} //end of namespace ZGeom
 
 #endif

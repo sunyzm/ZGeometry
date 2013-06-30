@@ -22,7 +22,7 @@
     <ProjectGuid>{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>ZNumerics</RootNamespace>
-    <ProjectName>ZMath</ProjectName>
+    <ProjectName>ZGeom</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -183,8 +183,11 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ZSparseMatrix.h" />
-    <ClInclude Include="src\ZMath.h" />
+    <ClInclude Include="src\trigonometry.h" />
+    <ClInclude Include="src\SparseMatrix.h" />
+    <ClInclude Include="src\Vec2.h" />
+    <ClInclude Include="src\Vec3.h" />
+    <ClInclude Include="src\ZGeom.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
