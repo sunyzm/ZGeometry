@@ -5,25 +5,39 @@
 #include <vector>
 #include <algorithm>
 #include <functional>
+#include "types.h"
+#include "SparseMatrixCSR.h"
 
-namespace ZGeom {
 
+namespace ZGeom 
+{
+
+template<typename T> class MatElem;
+template<typename T> class SparseMatrix;
 template<typename T> class Laplacian;
+template<typename T> bool operator< (const MatElem<T>& t1, const MatElem<T>& t2);
 
 template<typename T>
-struct TupleCOO
+class MatElem
 {
-    TupleCOO() : i(0), j(0), v(0.) {}
-    TupleCOO(int ii, int jj, T vv) : i(ii), j(jj), v(vv){}
-    
-    unsigned int i, j;
-    T v;
-    template<typename U> friend bool operator < (const TupleCOO<U>& t1, const TupleCOO<U>& t2);
+public:
+	friend class SparseMatrix<T>;
+	friend bool operator< <T>(const MatElem<T>& t1, const MatElem<T>& t2);
+
+	MatElem() : mRow(0), mCol(0), mVal(0.) {}
+	MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
+	uint row() const { return mRow; }
+	uint col() const { return mCol; }
+	T val() const { return mVal; }
+
+private:   
+	uint mRow, mCol;
+	T mVal;
 };
 
-template<typename U>
-bool operator < (const TupleCOO<U>& t1, const TupleCOO<U>& t2) {
-    return t1.i < t2.i || (t1.i == t2.i && t1.j < t2.j);
+template<typename T> 
+inline bool operator < (const MatElem<T>& t1, const MatElem<T>& t2) {
+	return t1.mRow < t2.mRow || (t1.mRow == t2.mRow && t1.mCol < t2.mCol);
 }
 
 
@@ -31,195 +45,253 @@ template<typename T>
 class SparseMatrix
 {
 public:
-    friend class Laplacian<T>;    
-    enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
-	SparseMatrix();
+	friend class Laplacian<T>;    
+	enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
 
-    unsigned rowCount() const { return mRowCount; }
-    unsigned colCount() const { return mColCount; }
-    unsigned nonzeroCount() const { return mNonzeroCount; }
+	uint rowCount() const;
+	uint colCount() const;
+	uint nonzeroCount() const;
+	const MatElem<T>& getElem(uint index) const;
+	T getElemVal(uint index) const;
 
-    const std::vector<TupleCOO<T> >& getCOO_const() const { return mCOO; } 
-	//std::vector<TupleCOO<T> >& getCOO { return mCOO; }
-	template<typename U> void loadCOO(unsigned rowCount, unsigned colCount, const std::vector<U>& vRowIdx, const std::vector<U>& vColIdx, const std::vector<T>& vVal);
-    template<typename U> void loadCSR(unsigned rowCount, unsigned colCount, T val[], U colIdx[], U rowPtr[]);
-    template<typename U> void getCSR(std::vector<T>& val, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
+	template<typename U> 
+	void convertFromCSR(uint rowCount, uint colCount, T nzVal[], U colIdx[], U rowPtr[]);
 
-    void print(std::ostream& out) const;
-    bool testNoEmptyRow() const;
-	bool testSymmetric(T eps = 1e-7) const;
-    void truncate(MatrixForm form = MAT_UPPER);
-    void symmetrize();
-    void fillEmptyDiagonal();       // fill empty diagonal element with 0
-    
+	template<typename U> 
+	void convertToCSR(std::vector<T>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
+
+	template<typename U> 
+	void convertToCSR(SparseMatrixCSR<T,U>& MatCSR, MatrixForm form = MAT_UPPER) const;
+
+	template<typename F> 
+	void convertFromFull(F* fullMat, double sparse_eps = 1e-10);
+
+	template<typename F> 
+	void convertToFull(F* fullMat, MatrixForm form = MAT_UPPER) const;
+
+	void truncate(MatrixForm form = MAT_UPPER); // truncate matrix 
+	void symmetrize();              // turn upper or lower matrix into symmetric one
+	void fillEmptyDiagonal();       // fill empty digonal elements with 0
+	void toIdentity(uint order);     // turn into an identity matrix
+	void print(std::ostream& out) const;
+
 private:
-    std::vector<TupleCOO<T>> mCOO;
-    unsigned int mRowCount;
-    unsigned int mColCount;
-    unsigned int mNonzeroCount;	 
-	bool		 isSingle;
+	bool testNoEmptyRow() const;
+	bool testSymmetric() const;
+
+	std::vector< MatElem<T> > mElements;
+	uint mRowCount;
+	uint mColCount;
+	uint mNonzeroCount;
 };
 
+typedef SparseMatrix<double> SparseMatrixD;
+typedef SparseMatrix<double> SparseMatrixF;
+
+
 template<typename T>
-ZGeom::SparseMatrix<T>::SparseMatrix()
+inline uint	SparseMatrix<T>::rowCount() const
 {
-	if (sizeof(T) == sizeof(float)) this->isSingle = true;
-	else this->isSingle = false;
+	return mRowCount;    
 }
 
 template<typename T>
-template<typename U>
-void SparseMatrix<T>::loadCOO( unsigned rowCount, unsigned colCount, const std::vector<U>& vRowIdx, const std::vector<U>& vColIdx, const std::vector<T>& vVal )
+inline uint	SparseMatrix<T>::colCount() const
 {
-	assert(vRowIdx.size() == vColIdx.size() && vColIdx.size() == vVal.size());
-	int nnz = vVal.size();
+	return mColCount;    
+}
 
-	this->mRowCount = rowCount; 
-	this->mColCount = colCount;
+template<typename T>
+inline uint	SparseMatrix<T>::nonzeroCount() const
+{
+	return mNonzeroCount;
+}
 
-	mCOO.resize(nnz);
-	for (int k = 0; k < nnz; ++k) {
-		mCOO[k].i = vRowIdx[k];
-		mCOO[k].j = vColIdx[k];
-		mCOO[k].v = vVal[k];
+template<typename T>
+inline const MatElem<T>& SparseMatrix<T>::getElem(uint index) const
+{   
+	return mElements[index];
+}
+
+template<typename T>
+inline T SparseMatrix<T>::getElemVal(uint index) const
+{
+	return mElements[index].val();
+}
+
+template<typename T>
+inline void SparseMatrix<T>::toIdentity(uint order)
+{
+	mRowCount = mColCount = mNonzeroCount = order;
+	mElements.clear();
+	for (uint k = 0; k < order; ++k) {
+		mElements.push_back(MatElem<T>(k+1, k+1, 1.0));   
+	}    
+}
+
+template<typename T> 
+inline void	SparseMatrix<T>::print(std::ostream& out) const
+{
+	for (typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin(); iter != mElements.end(); ++iter) {
+		out << iter->i << ' ' << iter->j << ' ' << iter->v << std::endl;
+	}    
+}
+
+template<typename T> 
+inline bool SparseMatrix<T>::testNoEmptyRow() const
+{
+	std::vector<bool> rowIsEmpty(mRowCount, true);
+	for (typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin(); iter != mElements.end(); ++iter) {
+		rowIsEmpty[iter->mRow - 1] = false;
 	}
-}
-
-
-template<typename T> void
-SparseMatrix<T>::print(std::ostream& out) const
-{
-    for (typename std::vector<TupleCOO<T>>::const_iterator iter = mCOO.begin(); iter != mCOO.end(); ++iter) {
-        out << iter->i << ' ' << iter->j << ' ' << iter->v << std::endl;
-    }    
-}
-
-template<typename T> 
-bool SparseMatrix<T>::testNoEmptyRow() const
-{
-    std::vector<bool> rowIsEmpty(mRowCount, true);
-    for (typename std::vector<TupleCOO<T>>::const_iterator iter = mCOO.begin(); iter != mCOO.end(); ++iter) {
-        rowIsEmpty[iter->i - 1] = false;
-    }
-    for (uint k = 0; k < mRowCount; ++k) {
-        if (rowIsEmpty[k]) return false;
-    }
-    return true;
+	for (uint k = 0; k < mRowCount; ++k) {
+		if (rowIsEmpty[k]) return false;
+	}
+	return true;
 }
 
 template<typename T>
-bool SparseMatrix<T>::testSymmetric(T eps /*= 1e-7*/) const
+inline bool SparseMatrix<T>::testSymmetric() const
 {
-    for (unsigned k = 0; k < mNonzeroCount; ++k) {
-        if (mCOO[k].i >= mCOO[k].j) continue;
-        bool symElemFound = false;
-        for (unsigned l = 0; l < mNonzeroCount; ++l) {
-            if (mCOO[l].i != mCOO[k].j || mCOO[l].j != mCOO[k].i) continue;
-            if (abs(mCOO[l].v - mCOO[k].v) < eps) symElemFound = true;
-            break;
-        }
-        if (!symElemFound) return false;
-    }
-    return true;
+	assert(mRowCount == mColCount);
+
+	for (uint k = 0; k < mNonzeroCount; ++k) {
+		if (mElements[k].row() >= mElements[k].col()) continue;
+		bool symElemFound = false;
+		for (uint l = 0; l < mNonzeroCount; ++l) {
+			if (mElements[k].row() == mElements[l].col() || mElements[k].col() == mElements[l].row()) { // element in symmetric position found
+				if (fabs(mElements[l].val() - mElements[k].val()) < 1e-7) symElemFound = true;
+				break;
+			}
+		}
+		if (!symElemFound) return false;
+	}
+	return true;
 }
 
 template<typename T> 
-void SparseMatrix<T>::symmetrize() 
+inline void SparseMatrix<T>::symmetrize()   
 {
-    for (unsigned k = 0; k < mNonzeroCount; ++k) {
-        if (mCOO[k].i != mCOO[k].j) mCOO.push_back(TupleCOO<T>(mCOO[k].j, mCOO[k].i, mCOO[k].v));
-    }
-    std::sort(mCOO.begin(), mCOO.end(), std::less<TupleCOO<T>>());
-    mNonzeroCount = mCOO.size();
+	assert(mRowCount == mColCount);
+
+	for (uint k = 0; k < mNonzeroCount; ++k) {
+		if (mElements[k].row() != mElements[k].col()) mElements.push_back(MatElem<T>(mElements[k].col(), mElements[k].row(), mElements[k].val()));
+	}
+	std::sort(mElements.begin(), mElements.end(), std::less<MatElem<T> >());
+	mNonzeroCount = mElements.size();
 }
 
 template<typename T> 
-void SparseMatrix<T>::fillEmptyDiagonal()
+inline void SparseMatrix<T>::fillEmptyDiagonal()
 {
-    assert(mRowCount == mColCount);
+	assert(mRowCount == mColCount);
 
-    std::vector<bool> emptyDiag(mRowCount, true);
-    for (std::vector<TupleCOO<T>>::iterator iter = mCOO.begin(); iter != mCOO.end(); ++iter) {
-        if (iter->i == iter->j) emptyDiag[iter->i - 1] = false;
-    }
-    
-    for (uint k = 0; k < mRowCount; ++k) {
-        if (emptyDiag[k]) mCOO.push_back(TupleCOO<T>(k+1,k+1,0.0)); 
-    }
-    
-    mNonzeroCount = mCOO.size();
+	std::vector<bool> emptyDiag(mRowCount, true);
+	for (typename std::vector< MatElem<T> >::iterator iter = mElements.begin(); iter != mElements.end(); ++iter) {
+		if (iter->row() == iter->col()) emptyDiag[iter->row() - 1] = false;
+	}
+
+	for (uint k = 0; k < mRowCount; ++k) {
+		if (emptyDiag[k]) mElements.push_back(MatElem<T>(k+1,k+1,0.0)); 
+	}
+
+	mNonzeroCount = mElements.size();
 }
 
 template<typename T> 
-void SparseMatrix<T>::truncate(MatrixForm form /*=MAT_UPPER*/)
+inline void SparseMatrix<T>::truncate(MatrixForm form /*=MAT_UPPER*/)
 {
-    assert(mRowCount == mColCount);
-    
-    if (form == MAT_UPPER) {
-        for (typename std::vector<TupleCOO<T>>::iterator iter = mCOO.begin(); iter != mCOO.end(); ) {
-            if (iter->i > iter->j) iter = mCOO.erase(iter);
-            else iter++;
-        }
-    }
-    else if (form == MAT_LOWER) {
-        for (typename std::vector<TupleCOO<T>>::iterator iter = mCOO.begin(); iter != mCOO.end();) {
-            if (iter->i < iter->j) iter = mCOO.erase(iter);
-            else iter++;
-        }
-    }
-    
-    mNonzeroCount = mCOO.size();
+	assert(mRowCount == mColCount);
+
+	if (form == MAT_UPPER) {
+		for (typename std::vector< MatElem<T> >::iterator iter = mElements.begin(); iter != mElements.end(); ) {
+			if (iter->row() > iter->col()) iter = mElements.erase(iter);
+			else iter++;
+		}
+	}
+	else if (form == MAT_LOWER) {
+		for (typename std::vector< MatElem<T> >::iterator iter = mElements.begin(); iter != mElements.end();) {
+			if (iter->row() < iter->col()) iter = mElements.erase(iter);
+			else iter++;
+		}
+	}
+
+	mNonzeroCount = mElements.size();
 }
 
 template<typename T>
 template<typename U>
-void SparseMatrix<T>::getCSR(std::vector<T>& val, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form /*=MAT_UPPER*/) const 
+inline void SparseMatrix<T>::convertToCSR(std::vector<T>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form /*=MAT_UPPER*/) const
 {
-    if (mRowCount != mColCount) {
-        assert(form == MAT_FULL);       // only square matrix has upper or lower CSR
-    }
-    assert (testNoEmptyRow());          // CSR format requires at least one element in each row
+	assert (mRowCount == mColCount || form == MAT_FULL); // only square matrix has upper or lower CSR        
+	assert (testNoEmptyRow());          // CSR format requires at least one element in each row
 
-    val.clear();
-    colIdx.clear();
-    rowPtr.clear();
+	nzVal.clear();
+	colIdx.clear();
+	rowPtr.clear();
 
-    std::sort(mCOO.begin(), mCOO.end(), std::less<TupleCOO<T>>());
-    int prevRow = 0;
-    typename std::vector<TupleCOO<T>>::const_iterator iter = mCOO.begin();
-    for (; iter != mCOO.end(); ++iter) {
-        if (form == MAT_UPPER && iter->i > iter->j) continue;   // only upper triangle elements
-        if (form == MAT_LOWER && iter->i < iter->j) continue;   // only lower triangle elements
+	std::vector< MatElem<T> > sortedElements = mElements;
+	std::sort(sortedElements.begin(), sortedElements.end(), std::less< MatElem<T> >());
+	int prevRow = 0;
+	typename std::vector< MatElem<T> >::const_iterator iter = sortedElements.begin();
+	for (; iter != sortedElements.end(); ++iter) {
+		if (form == MAT_UPPER && iter->row() > iter->col()) continue;   // only upper triangle elements
+		if (form == MAT_LOWER && iter->row() < iter->col()) continue;   // only lower triangle elements
 
-        uint curRow = iter->i;
-        val.push_back(iter->v);
-        colIdx.push_back(iter->j);
-        if (1 == curRow - prevRow) rowPtr.push_back(val.size()); // new row
-        prevRow = curRow;               
-    }
-    rowPtr.push_back(val.size()+1);     // trailing element of rowPtr stores NNZ + 1
+		uint curRow = iter->row();
+		nzVal.push_back(iter->val());
+		colIdx.push_back(iter->col());
+		if (1 == curRow - prevRow) rowPtr.push_back(nzVal.size()); // new row
+		prevRow = curRow;               
+	}
+	rowPtr.push_back(nzVal.size() + 1);     // trailing element of rowPtr stores NNZ + 1
+}
+
+template<typename T>
+template<typename U>
+inline void SparseMatrix<T>::convertToCSR(SparseMatrixCSR<T,U>& matCSR, MatrixForm form) const
+{
+	std::vector<T> nzVal;
+	std::vector<U> colIdx;
+	std::vector<U> rowPtr;
+
+	convertToCSR(nzVal, colIdx, rowPtr, form);
+	matCSR.initialize(nzVal, colIdx, rowPtr);
+}
+
+template<typename T>
+template<typename F>
+inline void SparseMatrix<T>::convertToFull(F* fullMat, MatrixForm form /*= MAT_UPPER*/) const
+{
+	assert (mRowCount == mColCount || form == MAT_FULL);  // only square matrix has upper or lower CSR   
+	for (uint k = 0; k < mRowCount * mColCount; ++k) fullMat[k] = 0.0;
+
+	typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin();
+	for (; iter != mElements.end(); ++iter) {
+		if (form == MAT_UPPER && iter->row() > iter->col()) continue;   // only upper triangle elements
+		if (form == MAT_LOWER && iter->row() < iter->col()) continue;   // only lower triangle elements
+
+		fullMat[iter->row()*mColCount + iter->col()] = iter->val();    
+	}
 }
 
 template<typename T>
 template<typename U> 
-void SparseMatrix<T>::loadCSR(unsigned rowCount, unsigned colCount, T val[], U colIdx[], U rowPtr[])
+inline void SparseMatrix<T>::convertFromCSR(uint rowCount, uint colCount, T nzVal[], U colIdx[], U rowPtr[])
 {
-    mRowCount = rowCount;
-    mColCount = colCount;
-    mNonzeroCount = rowPtr[rowCount] - 1;
+	mRowCount = rowCount;
+	mColCount = colCount;
+	mNonzeroCount = rowPtr[rowCount] - 1;
 
-    mCOO.resize(mNonzeroCount);
-    for (unsigned r = 1; r <= mRowCount; ++r) {
-        for (unsigned k = (unsigned)rowPtr[r-1]; k < (unsigned)rowPtr[r]; ++k) {
-            mCOO[k-1].i = r;
-            mCOO[k-1].j = colIdx[k-1];
-            mCOO[k-1].v = val[k-1];
-        }
-    }
+	mElements.resize(mNonzeroCount);
+	for (uint r = 1; r <= mRowCount; ++r) {
+		for (uint k = (uint)rowPtr[r-1]; k < (uint)rowPtr[r]; ++k) {
+			mElements[k-1].mRow = r;
+			mElements[k-1].mCol = colIdx[k-1];
+			mElements[k-1].mVal = nzVal[k-1];
+		}
+	}
 }
-
-typedef SparseMatrix<double> SparseMatrixD;
-typedef SparseMatrix<float>	 SparseMatrixS;
 
 } //end of namespace ZGeom
 

@@ -14,9 +14,6 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\trigonometry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\SparseMatrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -27,6 +24,18 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\ZGeom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Trigonometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\VecND.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SparseMatrixCSR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

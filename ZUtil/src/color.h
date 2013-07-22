@@ -38,8 +38,10 @@ class FalseColorMap
 {
 public:
 	FalseColorMap();
-	double RedMap[256], GreenMap[256], BlueMap[256];
+	float RedMap[256], GreenMap[256], BlueMap[256];
 	void BuildLUT();
 };
+
+
 
 #endif

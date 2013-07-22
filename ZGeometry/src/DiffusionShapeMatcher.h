@@ -175,7 +175,7 @@ public:
 	bool	loadInitialFeaturePairs(const std::string& filename);
 	void	forceInitialAnchors(const std::vector<MatchPair>& mp);
 	void	loadGroundTruth(const std::string& filename);
-	bool	isGroundTruthAvailable() const { return m_bHasGroundTruth; }
+	bool	hasGroundTruth() const { return m_bHasGroundTruth; }
 
 	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;

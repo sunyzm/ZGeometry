@@ -3,6 +3,7 @@
 
 #include <string>
 #include <windows.h>
+#include <iostream>
 
 typedef struct 
 {
@@ -12,15 +13,17 @@ typedef struct
 
 class CStopWatch 
 {
+public:
+	CStopWatch();
+	void startTimer();
+	void stopTimer();
+	void stopTimer(const std::string& lead, std::ostream& os = std::cout);
+	double getElapsedTime() const;
+
 private:
 	StopWatch timer;
 	LARGE_INTEGER frequency;
 	double LIToSecs( LARGE_INTEGER & L) const;
-public:
-	CStopWatch();
-	void startTimer( );
-	void stopTimer( );
-	double getElapsedTime() const;
 };
 
 // Calls the provided work function and returns the number of milliseconds  
