@@ -2,7 +2,7 @@
 #define ZUTIL_SIMPLE_CONFIG_LOADER_H
 
 #include <string>
-#include <map>
+#include <unordered_map>
 
 class SimpleConfigLoader
 {
@@ -14,8 +14,13 @@ public:
 	std::string getConfigValue(const std::string& query_string) const;
 	int getConfigValueInt(const std::string& query_string) const;
 	double getConfigValueDouble(const std::string& query_string) const;
+
+	bool getConfigValueString(const std::string& query_string, std::string& value_string) const;
+	bool getConfigValueInt(const std::string& query_string, int& value) const;
+	bool getConfigValueDouble(const std::string& query_string, double& value) const;
+
 private:
-	std::map<std::string, std::string> m_config;
+	std::unordered_map<std::string, std::string> m_config;
 };
 
 #endif

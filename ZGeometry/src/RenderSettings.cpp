@@ -2,6 +2,7 @@
 #include <cassert>
 #include <tuple>
 #include "RenderSettings.h"
+
 using namespace std;
 
 

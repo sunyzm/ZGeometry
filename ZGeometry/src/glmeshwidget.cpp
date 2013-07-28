@@ -8,7 +8,7 @@
 #include <gl/GLU.h>
 #include <ZUtil/ZUtil.h>
 #include "OutputHelper.h"
-#include "common.h"
+#include "global.h"
 
 const GLfloat color1[4] = {0.53, 0.70, 0.93, 1.0};
 const GLfloat color2[4] = {0.99, 0.73, 0.62, 1.0}; //{0.63,0.78,0.63,1.0};

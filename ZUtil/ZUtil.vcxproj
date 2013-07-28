@@ -190,6 +190,7 @@
     <ClInclude Include="src\color.h" />
     <ClInclude Include="src\data.h" />
     <ClInclude Include="src\fibheap.h" />
+    <ClInclude Include="src\zutil_io.h" />
     <ClInclude Include="src\misc.h" />
     <ClInclude Include="src\SimpleConfigLoader.h" />
     <ClInclude Include="src\timer.h" />

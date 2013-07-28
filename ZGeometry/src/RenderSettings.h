@@ -3,11 +3,12 @@
 #include <ZMesh/Geometry.h>
 #include <ZMesh/Quat.h>
 
-#define Z_POINT 0x1B00
-#define Z_LINE 0x1B01
-#define Z_FILL 0x1B02
+const int Z_POINT = 0x1B00;
+const int Z_LINE  = 0x1B01;
+const int Z_FILL  = 0x1B02;
 
-const float preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, {0.99, 0.73, 0.62, 1.0}};
+const float preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, 
+								  {0.99, 0.73, 0.62, 1.0}};
 
 class RenderSettings
 {

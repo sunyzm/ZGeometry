@@ -13,11 +13,9 @@
 #include <ZUtil/timer.h>
 #include <ZUtil/misc.h>
 #include "OutputHelper.h"
+#include "global.h"
 
 using namespace std;
-
-extern OutputHelper qout;
-extern SimpleConfigLoader g_configMgr;
 
 const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
@@ -43,12 +41,11 @@ void PointParam::clear()
 {
 	m_size = 0; 
 	m_votes = 0.0; 
-	if(!empty()) 
-		delete m_vec; 
+	if(!empty()) delete m_vec; 
 	m_vec = NULL;
 }
 
-PointParam& PointParam::operator=( const PointParam& hkp )
+PointParam& PointParam::operator= ( const PointParam& hkp )
 {
 	reserve(hkp.m_size);
 	for (int i = 0; i < m_size; ++i)
@@ -100,16 +97,13 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 	para_dim = pn;
 	vCoord.resize(fineSize);
 
-	//for (int v = 0; v < fineSize; ++v)
-	Concurrency::parallel_for(0, fineSize, [&](int v)
-	{
+	Concurrency::parallel_for(0, fineSize, [&](int v) {
 	 	PointParam& hkp = vCoord[v];
 	 	hkp.reserve(pn);
 	 	for (int i = 0; i < pn; ++i)
 	 		hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
 	 	hkp.m_votes = hkp.length();
-	}
-	);
+	});
 }
 
 void ParamManager::para_computeHKS( const std::vector<double>& times )
@@ -206,7 +200,7 @@ double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const Differen
 	}
 
 	return v1.calDistance2(v2) / tn;
-	//	return v1.calDistance2(v2) / (v1.length2() + v2.length2());
+//	return v1.calDistance2(v2) / (v1.length2() + v2.length2());
 }
 
 DiffusionShapeMatcher::DiffusionShapeMatcher()

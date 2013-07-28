@@ -3,9 +3,7 @@
 
 using namespace std;
 
-namespace ZUtil {
-
-std::vector<int> splitStringToInt( std::string s )
+std::vector<int> ZUtil::splitStringToInt( const std::string& s )
 {
 	vector<int> vd;
 	size_t i,j;
@@ -26,7 +24,7 @@ std::vector<int> splitStringToInt( std::string s )
 	return vd;
 }
 
-std::vector<double> ZUtil::splitStringToDouble( std::string s )
+std::vector<double> ZUtil::splitStringToDouble( const std::string& s )
 {
 	vector<double> vd;
 	size_t i,j;
@@ -47,16 +45,3 @@ std::vector<double> ZUtil::splitStringToDouble( std::string s )
 	return vd;
 
 }
-
-bool fileExist( const std::string& filename )
-{
-	std::ifstream ifs(filename.c_str());
-	bool retval = true;
-	if (!ifs) retval = false;
-	ifs.close();
-	return retval;
-}
-
-}
-
-

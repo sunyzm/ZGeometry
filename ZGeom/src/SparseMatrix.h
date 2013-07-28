@@ -8,7 +8,6 @@
 #include "types.h"
 #include "SparseMatrixCSR.h"
 
-
 namespace ZGeom 
 {
 

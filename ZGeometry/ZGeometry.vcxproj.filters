@@ -80,6 +80,9 @@
     <ClCompile Include="src\DiffusionShapeMatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\global.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -117,7 +120,7 @@
     <ClInclude Include="src\DiffusionShapeMatcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\common.h">
+    <ClInclude Include="src\global.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

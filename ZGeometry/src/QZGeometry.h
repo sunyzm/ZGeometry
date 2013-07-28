@@ -1,6 +1,7 @@
 #pragma once
 #include "ui_ZGeometry.h"
 #include <vector>
+#include <string>
 #include <QtGui/QMainWindow>
 #include <QSignalMapper>
 #include <engine.h>
@@ -16,11 +17,11 @@ class QZGeometryWindow : public QMainWindow
 {
 	Q_OBJECT
 
-public:	// methods
-	friend OutputHelper;
+public:
 	QZGeometryWindow(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~QZGeometryWindow();
 	bool initialize();
+
 signals:
 	void refPoint1Changed(int n);
 
@@ -95,20 +96,25 @@ private slots:
 
 	void updateDisplaySignatureMenu();
 
-private:	// methods
+private:	
+	/* methods */
 	void makeConnections();
+	void loadInitialMeshes(const std::string& initial_mesh_list);
+	void initialProcessing();
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
 	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
-	// helper functions
+
+	/* helper functions */
 	void evalDistance();
 	
-private:	// attributes
+private:	
+	/* fields */
 	Ui::ZGeometryClass ui;
 	DeformType deformType;
-	int objSelect;
+	int objInFocus;
 
 	Engine *m_ep;
 	
@@ -132,6 +138,7 @@ private:	// attributes
 	std::vector<QAction*> m_actionComputeSimilarities;
 	QSignalMapper *signatureSignalMapper;
 	std::vector<QAction*> m_actionDisplaySignatures;
+
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;
 	static int DEFAULT_DEFORM_RING; 

@@ -6,6 +6,7 @@
 #include "data.h"
 #include "timer.h"
 #include "SimpleConfigLoader.h"
+#include "zutil_io.h"
 #include "misc.h"
 
 #endif

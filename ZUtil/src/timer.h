@@ -5,12 +5,6 @@
 #include <windows.h>
 #include <iostream>
 
-typedef struct 
-{
-	LARGE_INTEGER start;
-	LARGE_INTEGER stop;
-} StopWatch;
-
 class CStopWatch 
 {
 public:
@@ -21,19 +15,29 @@ public:
 	double getElapsedTime() const;
 
 private:
-	StopWatch timer;
+	LARGE_INTEGER start;
+	LARGE_INTEGER stop;
 	LARGE_INTEGER frequency;
-	double LIToSecs( LARGE_INTEGER & L) const;
+	double LIToSecs(LARGE_INTEGER & L) const;
 };
+
 
 // Calls the provided work function and returns the number of milliseconds  
 // that it takes to call that function. 
-template <class Function>
-__int64 time_call(Function&& f)
+template <class Function> 
+inline __int64 time_call(Function&& f)
 {
 	__int64 begin = GetTickCount();
 	f();
 	return GetTickCount() - begin;
+}
+
+template <class Function>
+inline double time_call_sec(Function&& f)
+{
+	__int64 begin = GetTickCount();
+	f();
+	return (GetTickCount() - begin) / 1e3;
 }
 
 #endif

@@ -15,9 +15,12 @@ public:
 	~VecND() { delete []vec; }
 	T& operator[] (int i) { return vec[i]; }
 	void resize(int n);
+
 	friend VecND<T> operator + (const VecND<T>& v1, const VecND<T>& v2);
 	friend VecND<T> operator * (const VecND<T>& v1, double t);
 	friend VecND<T> operator * (double t, const VecND<T>& v1);
+	friend VecND<T> operator / (const VecND<T>& v1, double t);
+
 private:
 	T *vec;
 	int dim;
@@ -52,6 +55,12 @@ template<typename T>
 VecND<T> operator * (double t, const VecND<T>& v1)
 {
 	return v1 * t;
+}
+
+template<typename T>
+VecND<T> operator / (const VecND<T>& v1, double t)
+{
+	return v1 * (1.0/t);
 }
 
 }// end of namespace

@@ -69,7 +69,6 @@ public:
 		else return false;
 	}
 
-
 	friend bool operator>(const ExtremaPoint& ep1, const ExtremaPoint& ep2)
 	{
 		if (ep1.val > ep2.val) return true;

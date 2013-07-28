@@ -16,7 +16,7 @@ public:
 	void output(const char* msg, int venue = OUT_CONSOLE, double timeout = 0.0); 
 	void output(const QString& msg, int venue = OUT_CONSOLE, double timeout = 0.0); 
 	void output(const std::string& msg, int venue = OUT_CONSOLE, double timeout = 0.0); 
-	void output(char c, int repeat);
+	void output(char c, int repeat, int venue = OUT_CONSOLE);
 	void clearOutput(int venue = OUT_CONSOLE);
 	void outputDateTime(int venue = OUT_CONSOLE);
 private:
