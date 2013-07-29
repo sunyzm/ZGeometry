@@ -61,6 +61,11 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
+
+    m_mesh.resize(5);
+    mesh_valid.resize(5);
+    vMP.resize(5);
+    vRS.resize(5);
 }
 
 QZGeometryWindow::~QZGeometryWindow()
@@ -184,7 +189,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionRegisterStep, SIGNAL(triggered()), this, SLOT(registerStep()));
 	QObject::connect(ui.actionRegisterFull, SIGNAL(triggered()), this, SLOT(registerFull()));
 	QObject::connect(ui.actionRegisterTest, SIGNAL(triggered()), this, SLOT(registerTest()));
-
 }
 
 bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
@@ -196,14 +200,45 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	try	{
 		CStopWatch timer;
 		timer.startTimer();
+
+//        mEngineWrapper.open();
+//        loadInitialMeshes(mesh_list_name);
+        
 		Concurrency::parallel_invoke(
             [&]() {	mEngineWrapper.open(); },
 		    [&]() { loadInitialMeshes(mesh_list_name); }
-		);		
+		);
+        
 		timer.stopTimer("-- Matlab and mesh loading time: ");
 
-		if (num_meshes >= 0) 
+        if (num_meshes > 0) 
 		{
+            for (int obj = 0; obj < num_meshes; ++obj)
+            {
+                CMesh& mesh = m_mesh[obj];
+                Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+                qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
+                qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
+            }
+
+            /* ---- update mesh-dependent ui ---- */
+            if (num_meshes >= 1 && mesh_valid[0])
+            {
+                ui.spinBox1->setMinimum(0);
+                ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
+                ui.horizontalSlider1->setMinimum(0);
+                ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
+                ui.spinBox1->setValue(0);	
+            }
+            if (num_meshes >= 2 && mesh_valid[1])
+            {		
+                ui.spinBox2->setMinimum(0);
+                ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
+                ui.horizontalSlider2->setMinimum(0);
+                ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
+                ui.spinBox2->setValue(0);
+            }
+
 			ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
 
 			for (int obj = 0; obj < num_meshes; ++obj) {
@@ -230,65 +265,32 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	/* ---- load meshes ---- */
 	g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", num_meshes);
 	if (num_meshes <= 0) return;	
-	
-	if (!ZUtil::fileExist(mesh_list_name))
-		throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
+    if (!ZUtil::fileExist(mesh_list_name))
+        throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
+    ifstream meshfiles(mesh_list_name);
+    std::vector<std::string> vMeshFiles;
+    while (!meshfiles.eof())
+    {
+        std::string meshFileName;
+        getline(meshfiles, meshFileName);
+        if (meshFileName == "") continue;
+        if (meshFileName[0] == '#') continue;
+        else if (!ZUtil::fileExist(meshFileName))
+            throw std::runtime_error("Cannot open file " + meshFileName);		
+        vMeshFiles.push_back(meshFileName);
+    }
+    meshfiles.close();
+    if (vMeshFiles.size() < num_meshes)
+        throw std::runtime_error("Not enough meshes in mesh list!");
 
-	ifstream meshfiles(mesh_list_name);
-	std::vector<std::string> vMeshFiles;
-	while (!meshfiles.eof())
-	{
-		std::string meshFileName;
-		getline(meshfiles, meshFileName);
-		if (meshFileName == "") continue;
-		if (meshFileName[0] == '#') continue;
-		else if (!ZUtil::fileExist(meshFileName))
-			throw std::runtime_error("Cannot open file " + meshFileName);		
-		vMeshFiles.push_back(meshFileName);
-	}
-	meshfiles.close();
-	if (vMeshFiles.size() < num_meshes)
-		throw std::runtime_error("Not enough meshes in mesh list!");
-
-	m_mesh.resize(num_meshes);
-	mesh_valid.resize(num_meshes);
-	vMP.resize(num_meshes);
-	vRS.resize(num_meshes);
-
-	Concurrency::parallel_for(0, num_meshes, [&](int obj)
-	{
-		CMesh& mesh = m_mesh[obj];
-		mesh.Load(vMeshFiles[obj]);
-		mesh.scaleEdgeLenToUnit();
-		mesh.gatherStatistics();
-		mesh_valid[obj] = true;
-	});
-
-	for (int obj = 0; obj < num_meshes; ++obj)
-	{
-		CMesh& mesh = m_mesh[obj];
-		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
-		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
-	}
-
-	/* ---- update mesh-dependent ui ---- */
-	if (num_meshes >= 1 && mesh_valid[0])
-	{
-		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
-		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
-		ui.spinBox1->setValue(0);	
-	}
-	if (num_meshes >= 2 && mesh_valid[1])
-	{		
-		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
-		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
-		ui.spinBox2->setValue(0);
-	}	
+    Concurrency::parallel_for(0, num_meshes, [&](int obj)
+    {
+        CMesh& mesh = m_mesh[obj];
+        mesh.Load(vMeshFiles[obj]);
+        mesh.scaleEdgeLenToUnit();
+        mesh.gatherStatistics();
+        mesh_valid[obj] = true;
+    });	
 }
 
 void QZGeometryWindow::initialProcessing()
@@ -303,7 +305,7 @@ void QZGeometryWindow::initialProcessing()
 
 	if (g_task == TASK_REGISTRATION && num_meshes >= 2) {
 		shapeMatcher.initialize(&vMP[0], &vMP[1], mEngineWrapper.getEngine());
-		string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
+		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
 

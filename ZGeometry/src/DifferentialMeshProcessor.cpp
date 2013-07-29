@@ -41,15 +41,15 @@ double mhwTransferFunc1( double lambda, double t )
 
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
-	mpEngineWrapper = nullptr;
-	mesh = nullptr;
+	mpEngineWrapper = NULL;
+	mesh = NULL;
 	active_feature_id = FEATURE_ID;
 	m_bLaplacianDecomposed = false;
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;	
 	constrain_weight = 0.1;
-	m_bSGWComputed = false;
+	m_bSGWComputed = false;   
 }
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)

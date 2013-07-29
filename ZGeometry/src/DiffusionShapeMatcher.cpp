@@ -227,6 +227,8 @@ DiffusionShapeMatcher::~DiffusionShapeMatcher()
 	for (int k = 1; k < mpSize2; ++k) {
 		delete liteMP[1][k];
 	}
+
+    std::cout << "DiffusionShapeMatcher destroyed!" << std::endl;
 }
 
 void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep )
