@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <iterator>
+#include <iostream>
 
 using namespace std;
 
@@ -653,12 +654,15 @@ CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
 
 CMesh::CMesh( const CMesh& oldMesh )
 {
+    std::cout << "CMesh copy constructor is called!" << std::endl;
 	cloneFrom(oldMesh);
+    this->m_meshName = oldMesh.m_meshName;
 }
 
 CMesh::~CMesh()
 {
 	clearMesh();	
+    std::cout << "Mesh '" + m_meshName + "' destroyed!" << std::endl;
 }
 
 bool CMesh::Load(string sFileName)

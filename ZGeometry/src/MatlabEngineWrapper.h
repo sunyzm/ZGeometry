@@ -38,7 +38,7 @@ inline void MatlabEngineWrapper::open(const char* startcmd/*="\0"*/)
 {
 	m_ep = engOpen(startcmd);
 	if (!m_ep) throw std::runtime_error("Fail to open Matlab engine");
-	engOutputBuffer(m_ep, mBuffer, mBufSize);
+	//engOutputBuffer(m_ep, mBuffer, mBufSize);
 }
 
 inline void MatlabEngineWrapper::resizeBuffer(int bufSize) 
