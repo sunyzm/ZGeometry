@@ -3835,7 +3835,7 @@ void DiffusionShapeMatcher::autoGroundTruth()
 	assert(pOriginalMesh[0]->getMeshSize() == pOriginalMesh[1]->getMeshSize());
 	int meshSize = pOriginalMesh[0]->getMeshSize();
 	mMatchGroundTruth.clear();
-	for (int i = 0; i , meshSize; ++i)
+	for (int i = 0; i < meshSize; ++i)
 		mMatchGroundTruth.insert(std::make_pair(i, i));
 
 	m_bHasGroundTruth = true;

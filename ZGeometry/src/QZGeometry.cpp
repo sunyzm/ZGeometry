@@ -28,14 +28,14 @@ double QZGeometryWindow::MAX_HK_TIMESCALE = 2000.0;
 double QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double QZGeometryWindow::DR_THRESH_INCREMENT  = 0.00001;
 
-QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWindow(parent, flags)
+QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) 
+	: QMainWindow(parent, flags), mEngineWrapper(256)
 {
 	/* read in configuration parameters from g_configMgr */
 	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", LOAD_MHB_CACHE);
 	g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", PARAMETER_SLIDER_CENTER);
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", DEFUALT_HK_TIMESCALE);
 
-	m_ep = NULL;
 	num_meshes = 0;
 	objInFocus = -1;
 	m_commonParameter = PARAMETER_SLIDER_CENTER;
@@ -65,8 +65,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) : QMainWin
 
 QZGeometryWindow::~QZGeometryWindow()
 {
-	engClose(m_ep);
-
 	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a;});
 	for_each(m_actionComputeSimilarities.begin(), m_actionComputeSimilarities.end(), [](QAction* a){ delete a;});
 	for_each(m_actionComputeLaplacians.begin(), m_actionComputeLaplacians.end(), [](QAction* a){ delete a;});
@@ -205,21 +203,18 @@ bool QZGeometryWindow::initialize()
 		CStopWatch timer;
 		timer.startTimer();
 		Concurrency::parallel_invoke(
-			[&]() {
-				m_ep = engOpen("\0"); 
-				if (!m_ep) throw runtime_error("Can't start MATLAB engine!");
-			},
-			[&]() { 
-				loadInitialMeshes(mesh_list_name);
-			}
+            [&]() {	mEngineWrapper.open(); },
+		    [&]() { loadInitialMeshes(mesh_list_name); }
 		);		
 		timer.stopTimer("-- Matlab and mesh loading time: ");
 
 		if (num_meshes >= 0) 
 		{
+			ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
+
 			for (int obj = 0; obj < num_meshes; ++obj) {
 				CMesh& mesh = m_mesh[obj];
-				vMP[obj].init(&mesh, m_ep);
+				vMP[obj].init(&mesh, mEngineWrapper.getEngine());
 				vRS[obj].mesh_color = preset_colors[obj%2];
 				ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
 			}
@@ -283,18 +278,17 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
 	}
 
-	// ---- update ui ---- //
+	/* ---- update mesh-dependent ui ---- */
 	if (num_meshes >= 1 && mesh_valid[0])
 	{
-		ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
 		ui.spinBox1->setMinimum(0);
 		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
 		ui.horizontalSlider1->setMinimum(0);
 		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
+		ui.spinBox1->setValue(0);	
 	}
 	if (num_meshes >= 2 && mesh_valid[1])
-	{
-		ui.spinBox1->setValue(0);	
+	{		
 		ui.spinBox2->setMinimum(0);
 		ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
 		ui.horizontalSlider2->setMinimum(0);
@@ -309,13 +303,12 @@ void QZGeometryWindow::initialProcessing()
 	if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianTypeCount)
 	{
 		CStopWatch timer;
-		timer.startTimer();
 		computeLaplacian(init_laplacian_type);
-		timer.stopTimer("Time to decompose initial Laplacian: ");		
+		timer.total("Time to decompose initial Laplacian: ");		
 	}
 
 	if (g_task == TASK_REGISTRATION && num_meshes >= 2) {
-		shapeMatcher.initialize(&vMP[0], &vMP[1], m_ep);
+		shapeMatcher.initialize(&vMP[0], &vMP[1], mEngineWrapper.getEngine());
 		string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 		shapeMatcher.readInRandPair(rand_data_file);
 		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
@@ -968,7 +961,7 @@ void QZGeometryWindow::clone()
 	m_mesh[1].cloneFrom(m_mesh[0]);
 	m_mesh[1].gatherStatistics();
 
-	vMP[1].init(&m_mesh[1], m_ep);
+	vMP[1].init(&m_mesh[1], mEngineWrapper.getEngine());
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", m_mesh[1].getMeshName().c_str(), m_mesh[1].getVerticesNum()));
@@ -1510,7 +1503,7 @@ void QZGeometryWindow::matchFeatures()
 			vector<MatchPair> vPairs;
 			double vPara[] = {40, 0.8, 400};
 			double matchScore;
-			matchScore = DiffusionShapeMatcher::TensorGraphMatching6(m_ep, &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
+			matchScore = DiffusionShapeMatcher::TensorGraphMatching6(mEngineWrapper.getEngine(), &vMP[0], &vMP[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
 			//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
 
 			if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
@@ -1784,7 +1777,7 @@ void QZGeometryWindow::addMesh()
 	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
-	vMP[cur_obj].init(&mesh, m_ep);
+	vMP[cur_obj].init(&mesh, mEngineWrapper.getEngine());
 	vRS[cur_obj].selected = true;
 	vRS[cur_obj].mesh_color = preset_colors[cur_obj%2];
 

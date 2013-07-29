@@ -11,6 +11,7 @@
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"
+#include "MatlabEngineWrapper.h"
 
 
 class QZGeometryWindow : public QMainWindow
@@ -112,31 +113,29 @@ private:
 	
 private:	
 	/* fields */
-	Ui::ZGeometryClass ui;
-	DeformType deformType;
-	int objInFocus;
-
-	Engine *m_ep;
-	
-	int num_meshes;
-	std::vector<CMesh> m_mesh;
-	std::vector<bool> mesh_valid;
-	std::vector<DifferentialMeshProcessor> vMP;
-	std::vector<RenderSettings> vRS;
-
-	DiffusionShapeMatcher shapeMatcher;
+	Ui::ZGeometryClass	ui;
+	MatlabEngineWrapper mEngineWrapper;	
+	DeformType			deformType;
+	int					objInFocus;	
+	int					num_meshes;
+	int					m_commonParameter;
+	std::vector<CMesh>						m_mesh;
+	std::vector<bool>						mesh_valid;
+	std::vector<DifferentialMeshProcessor>	vMP;
+	std::vector<RenderSettings>				vRS;
+	DiffusionShapeMatcher					shapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
-	int m_commonParameter;
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
-		  Compute_SGWS, Compute_SGW, None} current_operation;
+		  Compute_SGWS, Compute_SGW, 
+		  None} current_operation;
 
-	QSignalMapper *laplacianSignalMapper;
+	QSignalMapper*		  laplacianSignalMapper;	
+	QSignalMapper*		  simlaritySignalMapper;	
+	QSignalMapper*		  signatureSignalMapper;
 	std::vector<QAction*> m_actionComputeLaplacians;
-	QSignalMapper *simlaritySignalMapper;
 	std::vector<QAction*> m_actionComputeSimilarities;
-	QSignalMapper *signatureSignalMapper;
 	std::vector<QAction*> m_actionDisplaySignatures;
 
 	/*---- static members as constant parameters ----*/

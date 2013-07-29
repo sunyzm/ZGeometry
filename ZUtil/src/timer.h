@@ -12,13 +12,16 @@ public:
 	void startTimer();
 	void stopTimer();
 	void stopTimer(const std::string& lead, std::ostream& os = std::cout);
+	void total(const std::string& lead, std::ostream& os = std::cout);
 	double getElapsedTime() const;
 
 private:
-	LARGE_INTEGER start;
-	LARGE_INTEGER stop;
+	LARGE_INTEGER mStart;
+	LARGE_INTEGER mStop;
+	LARGE_INTEGER mBegin;
+	LARGE_INTEGER mEnd;
 	LARGE_INTEGER frequency;
-	double LIToSecs(LARGE_INTEGER & L) const;
+	double LIToSecs(LARGE_INTEGER L) const;
 };
 
 

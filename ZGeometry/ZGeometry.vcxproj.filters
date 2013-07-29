@@ -123,6 +123,9 @@
     <ClInclude Include="src\global.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\MatlabEngineWrapper.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="meshfiles.cfg">

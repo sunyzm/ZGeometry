@@ -26,7 +26,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
-    <UseIntelMKL>No</UseIntelMKL>
+    <UseIntelMKL>Parallel</UseIntelMKL>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -217,6 +217,7 @@
     <ClInclude Include="src\global.h" />
     <ClInclude Include="src\DifferentialMeshProcessor.h" />
     <ClInclude Include="src\Laplacian.h" />
+    <ClInclude Include="src\MatlabEngineWrapper.h" />
     <ClInclude Include="src\MatlabWrapper.h" />
     <ClInclude Include="src\OutputHelper.h" />
     <ClInclude Include="src\RenderSettings.h" />
