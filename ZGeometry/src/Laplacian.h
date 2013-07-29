@@ -5,8 +5,8 @@
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
 
-enum LaplacianType {Umbrella = 0, CotFormula, Anisotropic1,
-	                Anisotropic2, Anisotropic3, IsoApproximate, LaplacianTypeCount};
+enum LaplacianType {Umbrella = 0, CotFormula = 1, Anisotropic1 = 2,
+	                Anisotropic2 = 3, IsoApproximate = 4, LaplacianTypeCount};
 
 class ManifoldBasis
 {
@@ -55,6 +55,7 @@ public:
 class Laplacian : public SparseMeshMatrix
 {
 public:
+    static const std::string LaplacianTypeNames[];
 	Laplacian(){}
 	void constructFromMesh(const CMesh* tmesh);
 };

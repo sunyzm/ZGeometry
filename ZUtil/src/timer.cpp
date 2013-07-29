@@ -20,11 +20,11 @@ void CStopWatch::stopTimer()
 	QueryPerformanceCounter(&mStop);
 }
 
-void CStopWatch::stopTimer(const std::string& lead, std::ostream& os)
+void CStopWatch::stopTimer(const std::string& lead, const std::string suffix, std::ostream& os)
 {
 	QueryPerformanceCounter(&mStop);
 	double sec = getElapsedTime();
-	os << lead << sec << std::endl;
+	os << lead << sec << suffix << std::endl;
 }
 
 double CStopWatch::getElapsedTime() const 

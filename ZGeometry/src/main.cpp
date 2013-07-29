@@ -3,16 +3,20 @@
 #include "QZGeometry.h"
 #include "global.h"
 
+#ifdef NDEBUG
+std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
+#else NDEBUG
+std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
+#endif
+
 int main(int argc, char *argv[])
 {
+    g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
+
 	QApplication a(argc, argv);
-	
-	g_task = static_cast<GeometryTask>(g_configMgr.getConfigValueInt("GEOMETRY_TASK"));
-
 	QZGeometryWindow w;
-
-	if (!w.initialize()) std::exit(-1);
-
+	if (!w.initialize(mesh_list_name)) std::exit(-1);
 	w.show();
+
 	return a.exec();
 }

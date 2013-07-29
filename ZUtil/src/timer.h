@@ -11,7 +11,7 @@ public:
 	CStopWatch();
 	void startTimer();
 	void stopTimer();
-	void stopTimer(const std::string& lead, std::ostream& os = std::cout);
+	void stopTimer(const std::string& lead, const std::string suffix = "", std::ostream& os = std::cout);
 	void total(const std::string& lead, std::ostream& os = std::cout);
 	double getElapsedTime() const;
 

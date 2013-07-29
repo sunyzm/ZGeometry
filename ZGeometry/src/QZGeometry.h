@@ -21,7 +21,7 @@ class QZGeometryWindow : public QMainWindow
 public:
 	QZGeometryWindow(QWidget *parent = 0, Qt::WFlags flags = 0);
 	~QZGeometryWindow();
-	bool initialize();
+	bool initialize(const std::string& mesh_list_name);
 
 signals:
 	void refPoint1Changed(int n);

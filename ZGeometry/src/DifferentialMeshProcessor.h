@@ -6,6 +6,7 @@
 #include <map>
 #include <cmath>
 #include "Laplacian.h"
+#include "MatlabEngineWrapper.h"
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
@@ -36,17 +37,18 @@ typedef double (*ScalelessTransferFunc)(double);
 class DifferentialMeshProcessor : public MeshProcessor
 {
 public:
-	DifferentialMeshProcessor(void);
+	DifferentialMeshProcessor();
 	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
-	~DifferentialMeshProcessor(void);
-	void init(CMesh* tm, Engine* e);
+	~DifferentialMeshProcessor();
+
+	void init(CMesh* tm, MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
 	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //
-	void computeLaplacian(LaplacianType laplacianType = CotFormula);
+	void constructLaplacian(LaplacianType laplacianType = CotFormula);
 	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
 	void selectMHB(LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
@@ -98,7 +100,7 @@ public:
 	double constrain_weight;
 	
 private:
-	Engine *m_ep;
+	MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;
 
 	bool m_bSGWComputed;

@@ -187,17 +187,11 @@ void QZGeometryWindow::makeConnections()
 
 }
 
-bool QZGeometryWindow::initialize()
+bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 {
 	qout.output("******** Welcome ********", OUT_CONSOLE);
 	qout.outputDateTime(OUT_CONSOLE);
 	qout.output('*', 24, OUT_CONSOLE);
-
-#ifdef NDEBUG
-	std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
-#else NDEBUG
-	std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
-#endif
 
 	try	{
 		CStopWatch timer;
@@ -214,7 +208,7 @@ bool QZGeometryWindow::initialize()
 
 			for (int obj = 0; obj < num_meshes; ++obj) {
 				CMesh& mesh = m_mesh[obj];
-				vMP[obj].init(&mesh, mEngineWrapper.getEngine());
+				vMP[obj].init(&mesh, &mEngineWrapper);
 				vRS[obj].mesh_color = preset_colors[obj%2];
 				ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
 			}
@@ -961,7 +955,7 @@ void QZGeometryWindow::clone()
 	m_mesh[1].cloneFrom(m_mesh[0]);
 	m_mesh[1].gatherStatistics();
 
-	vMP[1].init(&m_mesh[1], mEngineWrapper.getEngine());
+	vMP[1].init(&m_mesh[1], &mEngineWrapper);
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", m_mesh[1].getMeshName().c_str(), m_mesh[1].getVerticesNum()));
@@ -1777,7 +1771,7 @@ void QZGeometryWindow::addMesh()
 	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
-	vMP[cur_obj].init(&mesh, mEngineWrapper.getEngine());
+	vMP[cur_obj].init(&mesh, &mEngineWrapper);
 	vRS[cur_obj].selected = true;
 	vRS[cur_obj].mesh_color = preset_colors[cur_obj%2];
 

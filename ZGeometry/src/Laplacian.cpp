@@ -13,6 +13,10 @@ using namespace std;
 
 //#define PARTIAL_SCALING
 
+const std::string Laplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
+                                                     "Anisotropic", "Anisotropic2", 
+                                                     "IsoApproximate"};
+
 void ManifoldHarmonics::write( const std::string& meshPath, bool binaryMode /*= true*/ ) const
 {
 	if (binaryMode)

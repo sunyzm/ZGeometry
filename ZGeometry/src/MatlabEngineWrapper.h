@@ -53,6 +53,7 @@ inline MatlabEngineWrapper::~MatlabEngineWrapper()
 {
     delete []mBuffer;
 	engClose(m_ep);
+    std::cout << "MatlabEngineWrapper destroyed!" << std::endl;
 }
 
 inline mxArray* MatlabEngineWrapper::getVariable(const char *name)
