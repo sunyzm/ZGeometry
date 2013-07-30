@@ -1654,75 +1654,63 @@ void QZGeometryWindow::evalDistance()
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (!mMeshValid[obj]) return;
+
 	DifferentialMeshProcessor& mp = vMP[obj];
 	const CMesh& mesh = mMeshes[obj];
-
-	if (!mp.vMHB[laplacianType].empty()) 
-	{
-		mp.setActiveMHB(laplacianType);
-		return;
-	}
+	if (!mp.vMHB[laplacianType].empty()) return;
 
 	CStopWatch timer;
 	timer.startTimer();
 
-	string s_idx = "0";
+	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
-	ifstream ifs(pathMHB.c_str());
-	if (ifs && LOAD_MHB_CACHE)	// MHB cache available for the current mesh
+	
+	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
+        ifstream ifs(pathMHB.c_str());
 		mp.readMHB(pathMHB, laplacianType);
 		ifs.close();
 	}
 	else // need to compute Laplacian and to cache
 	{
 		int nEig = min(DEFAULT_EIGEN_SIZE, mesh.getVerticesNum()-1);
-
 		mp.decomposeLaplacian(nEig, laplacianType);
 		mp.writeMHB(pathMHB, laplacianType);
 		qout.output("MHB saved to " + pathMHB);
 	}
 
+    timer.stopTimer();
+
 	if (1 == g_configMgr.getConfigValueInt("DUMP_EIG_VAL")) {
 		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
 		mp.getMHB().dumpEigenValues(pathEVL);
 	}
-
-	timer.stopTimer();
-	qout.output(QString().sprintf("Laplacian %d decomposed in %f(s)", obj, timer.getElapsedTime()));
+    qout.output(QString().sprintf("Laplacian %d decomposed in %f(s)", obj, timer.getElapsedTime()));
 	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 }
 
 void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (LOAD_MHB_CACHE && mMeshCount == 2 && vMP[0].vMHB[laplacianType].empty() && vMP[1].vMHB[laplacianType].empty())	// special acceleration condition
-	{
-		DifferentialMeshProcessor& mp1 = vMP[0], &mp2 = vMP[1];
-		std::string pathMHB1 = QString().sprintf("output/%s.mhb.%d", mMeshes[0].getMeshName().c_str(), (int)laplacianType).toStdString();
-		std::string pathMHB2 = QString().sprintf("output/%s.mhb.%d", mMeshes[1].getMeshName().c_str(), (int)laplacianType).toStdString();
+    int totalToDecompose = 0;
 
-		ifstream ifs1(pathMHB1.c_str()), ifs2(pathMHB2.c_str());
+    for (int obj = 0; obj < mMeshCount; ++obj) {
+        if (!vMP[obj].isLaplacianConstructed(laplacianType))
+            throw std::logic_error("Laplacian to decompose not available!");
+        if (laplacianRequireDecompose(obj, laplacianType)) 
+            ++totalToDecompose;
+    }
+    std::cout << totalToDecompose << " Laplacians require explicit decomposition" << std::endl;
 
-		if (ifs1 && ifs2)	// both MHB can be read from disk
-		{
-			CStopWatch timer;
-			timer.startTimer();
-
-			Concurrency::parallel_invoke( [&](){ mp1.readMHB(pathMHB1, laplacianType); },
-										  [&](){ mp2.readMHB(pathMHB2, laplacianType); }
-										);
-			timer.stopTimer();
-			qout.output(QString().sprintf("2 Laplacian decomposed in %f(s)", timer.getElapsedTime()));
-
-			return;
-		}		
-	}
-
-	for (int obj = 0; obj < mMeshCount; ++obj)
-	{
-		decomposeSingleLaplacian(obj, laplacianType);
-	}
+    if (totalToDecompose <= 1) {
+        Concurrency::parallel_for(0, mMeshCount, [&](int obj){
+            decomposeSingleLaplacian(obj, laplacianType);    
+        });
+    } else {
+        for(int obj = 0; obj < mMeshCount; ++obj) {
+            decomposeSingleLaplacian(obj, laplacianType);    
+        }
+    }
 
 	for (int l = 0; l < LaplacianTypeCount; ++l)
 		m_actionComputeLaplacians[l]->setChecked(false);
@@ -1918,8 +1906,17 @@ void QZGeometryWindow::registerTest()
 	ui.glMeshWidget->update();
 }
 
+bool QZGeometryWindow::laplacianRequireDecompose( int obj, LaplacianType laplacianType ) const
+{
+    const DifferentialMeshProcessor& mp = vMP[obj];
+    const CMesh& mesh = mMeshes[obj];
+    
+    if (!mp.vMHB[laplacianType].empty()) return false; // already decomposed     
+    if (!LOAD_MHB_CACHE) return true;    
 
+    std::string s_idx = "0";
+    s_idx[0] += (int)laplacianType;
+    std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 
-
-
-
+    return !ZUtil::fileExist(pathMHB);
+}

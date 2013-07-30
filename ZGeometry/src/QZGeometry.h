@@ -107,6 +107,7 @@ private:
 	void updateReferenceMove(int obj);
     void constructLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
+    bool laplacianRequireDecompose(int obj, LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
 
 	/* helper functions */

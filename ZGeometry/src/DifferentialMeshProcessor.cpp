@@ -94,10 +94,11 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
+    assert(isLaplacianConstructed(laplacianType));
     if (!mpEngineWrapper->isOpened())
         throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
+    
     Engine *ep = mpEngineWrapper->getEngine();
-	
     vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
 	mhb = vMHB[laplacianType];
 
