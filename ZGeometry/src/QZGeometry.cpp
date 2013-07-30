@@ -63,7 +63,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	qout.setStatusBar(ui.statusBar);
 
     mMeshes.resize(5);
-    mMeshValid.resize(5);
+    
     vMP.resize(5);
     vRS.resize(5);
 }
@@ -254,7 +254,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
         mesh.Load(vMeshFiles[obj]);
         mesh.scaleEdgeLenToUnit();
         mesh.gatherStatistics();
-        mMeshValid[obj] = true;
+        
     });	
 
     for (int obj = 0; obj < mMeshCount; ++obj)
@@ -270,7 +270,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
     }
 
     /* ---- update mesh-dependent ui ---- */
-    if (mMeshCount >= 1 && mMeshValid[0])
+    if (mMeshCount >= 1)
     {
         ui.spinBox1->setMinimum(0);
         ui.spinBox1->setMaximum(mMeshes[0].getVerticesNum()-1);
@@ -278,7 +278,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
         ui.horizontalSlider1->setMaximum(mMeshes[0].getVerticesNum()-1);
         ui.spinBox1->setValue(0);	
     }
-    if (mMeshCount >= 2 && mMeshValid[1])
+    if (mMeshCount >= 2)
     {		
         ui.spinBox2->setMinimum(0);
         ui.spinBox2->setMaximum(mMeshes[1].getVerticesNum()-1);
@@ -481,8 +481,7 @@ void QZGeometryWindow::computeSGWSFeatures()
 
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mMeshValid[i])
-			vMP[i].computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
+		vMP[i].computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
 	}
 
 	if (!ui.glMeshWidget->m_bShowFeatures)
@@ -811,7 +810,7 @@ void QZGeometryWindow::computeEigenfunction()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed()) 
+		if (vMP[i].isLaplacianDecomposed()) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
@@ -853,7 +852,7 @@ void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i]) 
+		
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			vector<double> vCurvature;
@@ -878,7 +877,7 @@ void QZGeometryWindow::computeCurvatureGauss()
 {
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i]) 
+		
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			vector<double> vCurvature;
@@ -940,7 +939,6 @@ void QZGeometryWindow::clone()
 	if (mMeshCount == 1)
 	{
 		mMeshes.push_back(CMesh());
-		mMeshValid.push_back(false);
 		vMP.push_back(DifferentialMeshProcessor());
 		vRS.push_back(RenderSettings());
 		mMeshCount = 2;
@@ -1101,7 +1099,7 @@ void QZGeometryWindow::computeHKS()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, HEAT_KERNEL);
@@ -1126,7 +1124,7 @@ void QZGeometryWindow::computeHK()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1172,7 +1170,7 @@ void QZGeometryWindow::computeHKSFeatures()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i])
+		
 			vMP[i].computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
 	}
 	
@@ -1190,7 +1188,7 @@ void QZGeometryWindow::computeMHWFeatures()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i])
+		
 			vMP[i].computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
 	}
 
@@ -1211,7 +1209,7 @@ void QZGeometryWindow::computeMHWS()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, MHW_KERNEL);
@@ -1236,7 +1234,7 @@ void QZGeometryWindow::computeSGWS()
 
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, SGW_KERNEL);
@@ -1281,7 +1279,7 @@ void QZGeometryWindow::computeMHW()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1618,7 +1616,7 @@ void QZGeometryWindow::computeBiharmonic()
 {
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
+		if (vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1653,8 +1651,6 @@ void QZGeometryWindow::evalDistance()
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (!mMeshValid[obj]) return;
-
 	DifferentialMeshProcessor& mp = vMP[obj];
 	const CMesh& mesh = mMeshes[obj];
 	if (!mp.vMHB[laplacianType].empty()) return;
@@ -1758,8 +1754,6 @@ void QZGeometryWindow::addMesh()
 	vRS[cur_obj].mesh_color = preset_colors[cur_obj%2];
 
 	ui.glMeshWidget->addMesh(&vMP[cur_obj], &vRS[cur_obj]);
-
-	mMeshValid[cur_obj] = true;
 
 	if (cur_obj == 0)
 	{
