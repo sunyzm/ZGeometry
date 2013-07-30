@@ -116,14 +116,14 @@ private:
 	Ui::ZGeometryClass	ui;
 	MatlabEngineWrapper mEngineWrapper;	
 	DeformType			deformType;
-	int					objInFocus;	
-	int					num_meshes;
-	int					m_commonParameter;
-	std::vector<CMesh>						m_mesh;
-	std::vector<bool>						mesh_valid;
+	int					mObjInFocus;	
+	int					mMeshCount;
+	int					mCommonParameter;
+	std::vector<CMesh>						mMeshes;
+	std::vector<bool>						mMeshValid;
 	std::vector<DifferentialMeshProcessor>	vMP;
 	std::vector<RenderSettings>				vRS;
-	DiffusionShapeMatcher					shapeMatcher;
+	DiffusionShapeMatcher					mShapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 

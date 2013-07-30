@@ -36,9 +36,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", PARAMETER_SLIDER_CENTER);
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", DEFUALT_HK_TIMESCALE);
 
-	num_meshes = 0;
-	objInFocus = -1;
-	m_commonParameter = PARAMETER_SLIDER_CENTER;
+	mMeshCount = 0;
+	mObjInFocus = -1;
+	mCommonParameter = PARAMETER_SLIDER_CENTER;
 	current_operation = None;
 	deformType = Simple;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
@@ -62,8 +62,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);
 
-    m_mesh.resize(5);
-    mesh_valid.resize(5);
+    mMeshes.resize(5);
+    mMeshValid.resize(5);
     vMP.resize(5);
     vRS.resize(5);
 }
@@ -200,58 +200,21 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	try	{
 		CStopWatch timer;
 		timer.startTimer();
+        mEngineWrapper.open();     
+		timer.stopTimer("-- Matlab loading time: ", " --");
 
-        mEngineWrapper.open();
-        loadInitialMeshes(mesh_list_name);
-        
-		//Concurrency::parallel_invoke(
-        //    [&]() {	mEngineWrapper.open(); },
-		//    [&]() { loadInitialMeshes(mesh_list_name); }
-		//);
-        
-		timer.stopTimer("-- Matlab and mesh loading time: ");
+        loadInitialMeshes(mesh_list_name); 
 
-        if (num_meshes > 0) 
-		{
-            for (int obj = 0; obj < num_meshes; ++obj)
+        if (mMeshCount > 0) {
+            int init_laplacian_type = g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE");
+            if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianTypeCount)
             {
-                CMesh& mesh = m_mesh[obj];
-                Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-                qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
-                qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
+                timer.startTimer();
+                computeLaplacian(init_laplacian_type);
+                timer.stopTimer("-- Time to decompose initial Laplacian: ", " --");		
             }
-
-            /* ---- update mesh-dependent ui ---- */
-            if (num_meshes >= 1 && mesh_valid[0])
-            {
-                ui.spinBox1->setMinimum(0);
-                ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
-                ui.horizontalSlider1->setMinimum(0);
-                ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
-                ui.spinBox1->setValue(0);	
-            }
-            if (num_meshes >= 2 && mesh_valid[1])
-            {		
-                ui.spinBox2->setMinimum(0);
-                ui.spinBox2->setMaximum(m_mesh[1].getVerticesNum()-1);
-                ui.horizontalSlider2->setMinimum(0);
-                ui.horizontalSlider2->setMaximum(m_mesh[1].getVerticesNum()-1);
-                ui.spinBox2->setValue(0);
-            }
-
-			ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
-
-			for (int obj = 0; obj < num_meshes; ++obj) {
-				CMesh& mesh = m_mesh[obj];
-				vMP[obj].init(&mesh, &mEngineWrapper);
-				vRS[obj].mesh_color = preset_colors[obj%2];
-				ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
-			}
-			vRS[0].selected = true;
-			objInFocus = 0;
-
-			initialProcessing();
-		}
+            initialProcessing();
+        }
 	} catch (std::exception* e) {
 		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
 		return false;
@@ -263,8 +226,8 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
 	/* ---- load meshes ---- */
-	g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", num_meshes);
-	if (num_meshes <= 0) return;	
+	g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
+	if (mMeshCount <= 0) return;	
     if (!ZUtil::fileExist(mesh_list_name))
         throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
     ifstream meshfiles(mesh_list_name);
@@ -280,46 +243,73 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
         vMeshFiles.push_back(meshFileName);
     }
     meshfiles.close();
-    if (vMeshFiles.size() < num_meshes)
+    if (vMeshFiles.size() < mMeshCount)
         throw std::runtime_error("Not enough meshes in mesh list!");
 
-    Concurrency::parallel_for(0, num_meshes, [&](int obj)
+    Concurrency::parallel_for(0, mMeshCount, [&](int obj)
     {
-        CMesh& mesh = m_mesh[obj];
+        CMesh& mesh = mMeshes[obj];
         mesh.Load(vMeshFiles[obj]);
         mesh.scaleEdgeLenToUnit();
         mesh.gatherStatistics();
-        mesh_valid[obj] = true;
+        mMeshValid[obj] = true;
     });	
+
+    for (int obj = 0; obj < mMeshCount; ++obj)
+    {
+        CMesh& mesh = mMeshes[obj];
+        Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+        qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
+        qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
+        
+        vMP[obj].init(&mesh, &mEngineWrapper);
+        vRS[obj].mesh_color = preset_colors[obj%2];
+        ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
+    }
+
+    /* ---- update mesh-dependent ui ---- */
+    if (mMeshCount >= 1 && mMeshValid[0])
+    {
+        ui.spinBox1->setMinimum(0);
+        ui.spinBox1->setMaximum(mMeshes[0].getVerticesNum()-1);
+        ui.horizontalSlider1->setMinimum(0);
+        ui.horizontalSlider1->setMaximum(mMeshes[0].getVerticesNum()-1);
+        ui.spinBox1->setValue(0);	
+    }
+    if (mMeshCount >= 2 && mMeshValid[1])
+    {		
+        ui.spinBox2->setMinimum(0);
+        ui.spinBox2->setMaximum(mMeshes[1].getVerticesNum()-1);
+        ui.horizontalSlider2->setMinimum(0);
+        ui.horizontalSlider2->setMaximum(mMeshes[1].getVerticesNum()-1);
+        ui.spinBox2->setValue(0);
+    }
+
+    ui.glMeshWidget->fieldView(mMeshes[0].getCenter(), mMeshes[0].getBoundingBox());
+
+    vRS[0].selected = true;
+    mObjInFocus = 0;
 }
 
 void QZGeometryWindow::initialProcessing()
 {
-	int init_laplacian_type = g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE");
-	if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianTypeCount)
-	{
-		CStopWatch timer;
-		computeLaplacian(init_laplacian_type);
-		timer.total("Time to decompose initial Laplacian: ");		
-	}
-
-	if (g_task == TASK_REGISTRATION && num_meshes >= 2) {
-		shapeMatcher.initialize(&vMP[0], &vMP[1], mEngineWrapper.getEngine());
+	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
+		mShapeMatcher.initialize(&vMP[0], &vMP[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
-		shapeMatcher.readInRandPair(rand_data_file);
-		ui.glMeshWidget->setShapeMatcher(&shapeMatcher);
+		mShapeMatcher.readInRandPair(rand_data_file);
+		ui.glMeshWidget->setShapeMatcher(&mShapeMatcher);
 
 		// ground truth 
-		if (m_mesh[0].getMeshName() == "march1_1_partial") {
+		if (mMeshes[0].getMeshName() == "march1_1_partial") {
 			cout << "Ground truth available!" << endl;
 			string mapFile = "./models/map1.txt";
-			shapeMatcher.loadGroundTruth(mapFile);
+			mShapeMatcher.loadGroundTruth(mapFile);
 		}
-		else if(m_mesh[0].getMeshSize() == m_mesh[1].getMeshSize()) {
-			shapeMatcher.autoGroundTruth();
+		else if(mMeshes[0].getMeshSize() == mMeshes[1].getMeshSize()) {
+			mShapeMatcher.autoGroundTruth();
 		}
 
-		shapeMatcher.setRegistrationLevels(1);
+		mShapeMatcher.setRegistrationLevels(1);
 		registerTest();
 	}
 
@@ -377,13 +367,13 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		{
 			vMP[0].setActiveFeaturesByID(FEATURE_DEMO2);
 			vMP[1].setActiveFeaturesByID(FEATURE_DEMO2);
-			shapeMatcher.swapMP();
+			mShapeMatcher.swapMP();
 		}
 		else if (vMP[0].getActiveFeatures()->id == FEATURE_DEMO2)
 		{
 			vMP[0].setActiveFeaturesByID(FEATURE_DEMO);
 			vMP[1].setActiveFeaturesByID(FEATURE_DEMO);
-			shapeMatcher.swapMP();
+			mShapeMatcher.swapMP();
 		}
 		
 		ui.glMeshWidget->update();
@@ -489,7 +479,7 @@ void QZGeometryWindow::computeSGWSFeatures()
 
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mesh_valid[i])
+		if (mMeshValid[i])
 			vMP[i].computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
 	}
 
@@ -525,8 +515,8 @@ void QZGeometryWindow::deformSimple()
 	vector<Vector3D> vNewPos;
 
 	vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
-	m_mesh[1].setVertexCoordinates(vFree, vNewPos);
-	m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
+	mMeshes[1].setVertexCoordinates(vFree, vNewPos);
+	mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
 
 	deformType = Simple;
 	ui.glMeshWidget->update();
@@ -559,8 +549,8 @@ void QZGeometryWindow::deformLaplace()
 	try
 	{
 		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
-		m_mesh[1].setVertexCoordinates(vFree, vNewPos);
-		m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
+		mMeshes[1].setVertexCoordinates(vFree, vNewPos);
+		mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -597,8 +587,8 @@ void QZGeometryWindow::deformSGW()
 	try
 	{
 		vMP[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
-		m_mesh[1].setVertexCoordinates(vFree, vNewPos);
-		m_mesh[1].setVertexCoordinates(vHandle, vHandlePos);
+		mMeshes[1].setVertexCoordinates(vFree, vNewPos);
+		mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -618,29 +608,29 @@ void QZGeometryWindow::selectObject( int index )
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
 		if (vRS.size() >= 1) vRS[0].selected = true;
-		objInFocus = 0;
+		mObjInFocus = 0;
 	}
 	else if (text == "2")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
 		if (vRS.size() >= 2) vRS[1].selected = true;
-		objInFocus = 1;
+		mObjInFocus = 1;
 	}
 	else if (text == "All")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = true; }); 
-		objInFocus = 0;
+		mObjInFocus = 0;
 	}
 	else if (text == "None")
 	{
 		for_each(begin(vRS), end(vRS), [](RenderSettings& rs){rs.selected = false; }); 
-		objInFocus = -1;
+		mObjInFocus = -1;
 	}
 }
 
 void QZGeometryWindow::setRefPoint1( int vn )
 {
-	if (num_meshes < 1) return;
+	if (mMeshCount < 1) return;
 	vMP[0].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(0);
@@ -649,7 +639,7 @@ void QZGeometryWindow::setRefPoint1( int vn )
 
 void QZGeometryWindow::setRefPoint2( int vn )
 {
-	if (num_meshes < 2) return;
+	if (mMeshCount < 2) return;
 
 	vMP[1].setRefPointIndex(vn);
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
@@ -659,17 +649,17 @@ void QZGeometryWindow::setRefPoint2( int vn )
 
 void QZGeometryWindow::setCommonParameter( int p )
 {
-	m_commonParameter = p;
+	mCommonParameter = p;
 
 	if (current_operation == Compute_HKS || current_operation == Compute_HK 
 		|| current_operation == Compute_MHWS || current_operation == Compute_MHW
 		|| current_operation == Compute_SGWS || current_operation == Compute_SGW)
 	{
 		double time_scale;
-		if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-			time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+		if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+			time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 		else 
-			time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+			time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 		qout.output(QString().sprintf("HKS timescale %f", time_scale), OUT_STATUS);
 	}
 }
@@ -815,11 +805,11 @@ void QZGeometryWindow::setDisplayMesh()
 
 void QZGeometryWindow::computeEigenfunction()
 {
-	int select_eig = (m_commonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (m_commonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
+	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed()) 
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed()) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
@@ -859,9 +849,9 @@ void QZGeometryWindow::displayExperimental()
 
 void QZGeometryWindow::computeCurvatureMean()
 {
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i]) 
+		if (mMeshValid[i]) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			vector<double> vCurvature;
@@ -884,9 +874,9 @@ void QZGeometryWindow::computeCurvatureMean()
 
 void QZGeometryWindow::computeCurvatureGauss()
 {
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i]) 
+		if (mMeshValid[i]) 
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			vector<double> vCurvature;
@@ -909,14 +899,14 @@ void QZGeometryWindow::computeCurvatureGauss()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	assert(m_mesh[0].getVerticesNum() == m_mesh[1].getVerticesNum());
-	int size = m_mesh[0].getVerticesNum();
+	assert(mMeshes[0].getVerticesNum() == mMeshes[1].getVerticesNum());
+	int size = mMeshes[0].getVerticesNum();
 	vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
 	{
-		vDiff[i] = (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length() / m_mesh[0].getAvgEdgeLength();
+		vDiff[i] = (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length() / mMeshes[0].getAvgEdgeLength();
 	}
 
 	vRS[0].normalizeSignatureFrom(vDiff);
@@ -943,24 +933,24 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 
 void QZGeometryWindow::clone()
 {
-	if (num_meshes < 1) return;
+	if (mMeshCount < 1) return;
 
-	if (num_meshes == 1)
+	if (mMeshCount == 1)
 	{
-		m_mesh.push_back(CMesh());
-		mesh_valid.push_back(false);
+		mMeshes.push_back(CMesh());
+		mMeshValid.push_back(false);
 		vMP.push_back(DifferentialMeshProcessor());
 		vRS.push_back(RenderSettings());
-		num_meshes = 2;
+		mMeshCount = 2;
 	}
 
-	m_mesh[1].cloneFrom(m_mesh[0]);
-	m_mesh[1].gatherStatistics();
+	mMeshes[1].cloneFrom(mMeshes[0]);
+	mMeshes[1].gatherStatistics();
 
-	vMP[1].init(&m_mesh[1], &mEngineWrapper);
+	vMP[1].init(&mMeshes[1], &mEngineWrapper);
 	vRS[1].mesh_color = preset_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", m_mesh[1].getMeshName().c_str(), m_mesh[1].getVerticesNum()));
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1].getMeshName().c_str(), mMeshes[1].getVerticesNum()));
 	
 	//	vector<double> vx, vy, vz;
 	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -996,20 +986,20 @@ void QZGeometryWindow::clone()
 
 void QZGeometryWindow::reconstructMHB()
 {
-	double ratio = min((double)m_commonParameter/PARAMETER_SLIDER_CENTER, 1.0);
+	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
 	int nEig = vMP[0].getMHB().m_nEigFunc * ratio;
 
 	vector<double> vx, vy, vz;
 	vMP[0].reconstructByMHB(nEig, vx, vy, vz);
-	m_mesh[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1].setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->update();
 
 	double errorSum(0);
-	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
 	{
-		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
 	qout.output("Average position error: " + QString::number(errorSum));
 
@@ -1036,22 +1026,22 @@ void QZGeometryWindow::reconstructSGW()
 	timer.stopTimer();
 	qout.output(QString("SGW reconstruct time: ") + QString::number(timer.getElapsedTime()));
 
-	m_mesh[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1].setVertexCoordinates(vx, vy, vz);
 
 	{
 		int debugIdx = (*vMP[0].mHandles.begin()).first;
-		qout.output("Original pos: " + std::string(m_mesh[0].getVertex(debugIdx)->getPosition()));
+		qout.output("Original pos: " + std::string(mMeshes[0].getVertex(debugIdx)->getPosition()));
 		if (!vMP[0].mHandles.empty())
 			qout.output("Handle pos: " + std::string((*vMP[0].mHandles.begin()).second));
-		qout.output("Deformed pos: " + std::string(m_mesh[1].getVertex(debugIdx)->getPosition()));
+		qout.output("Deformed pos: " + std::string(mMeshes[1].getVertex(debugIdx)->getPosition()));
 	}
 
 	double errorSum(0);
-	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
 	{
-		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1061,14 +1051,14 @@ void QZGeometryWindow::filterExperimental()
 {
 	vector<double> vx, vy, vz;
 	vMP[0].filterBySGW(vx, vy, vz);
-	m_mesh[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1].setVertexCoordinates(vx, vy, vz);
 
 	double errorSum(0);
-	for (int i = 0; i < m_mesh[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
 	{
-		errorSum += (m_mesh[0].getVertex_const(i)->getPosition() - m_mesh[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= m_mesh[0].getVerticesNum() * m_mesh[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1076,7 +1066,7 @@ void QZGeometryWindow::filterExperimental()
 
 void QZGeometryWindow::displayNeighborVertices()
 {
-	int ring = (m_commonParameter > PARAMETER_SLIDER_CENTER) ? (m_commonParameter-PARAMETER_SLIDER_CENTER) : 1;
+	int ring = (mCommonParameter > PARAMETER_SLIDER_CENTER) ? (mCommonParameter-PARAMETER_SLIDER_CENTER) : 1;
 
 	int ref = vMP[0].getRefPointIndex();
 	std::vector<int> vn = vMP[0].getMesh_const()->getNeighborVertexIndex(ref, ring);
@@ -1100,16 +1090,16 @@ void QZGeometryWindow::displayNeighborVertices()
 void QZGeometryWindow::computeHKS()
 {
 	double time_scale;
-	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, HEAT_KERNEL);
@@ -1125,16 +1115,16 @@ void QZGeometryWindow::computeHKS()
 void QZGeometryWindow::computeHK()
 {
 	double time_scale;
-	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1178,9 +1168,9 @@ void QZGeometryWindow::computeHKSFeatures()
 	vTimes.push_back(90);
 	vTimes.push_back(270);
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i])
+		if (mMeshValid[i])
 			vMP[i].computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
 	}
 	
@@ -1196,9 +1186,9 @@ void QZGeometryWindow::computeMHWFeatures()
 	vTimes.push_back(90);
 	vTimes.push_back(270);
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i])
+		if (mMeshValid[i])
 			vMP[i].computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
 	}
 
@@ -1210,16 +1200,16 @@ void QZGeometryWindow::computeMHWFeatures()
 void QZGeometryWindow::computeMHWS()
 {
 	double time_scale;
-	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, MHW_KERNEL);
@@ -1235,16 +1225,16 @@ void QZGeometryWindow::computeMHWS()
 void QZGeometryWindow::computeSGWS()
 {
 	double time_scale;
-	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	qout.output(QString().sprintf("Spectral Graph Wavelet timescale: %f", time_scale));
 
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			mp.computeKernelSignature(time_scale, SGW_KERNEL);
@@ -1259,7 +1249,7 @@ void QZGeometryWindow::computeSGWS()
 
 void QZGeometryWindow::displaySignature( int signatureID )
 {
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
 		DifferentialMeshProcessor& mp = vMP[i];
 		MeshProperty* vs = mp.retrievePropertyByID(signatureID);
@@ -1280,16 +1270,16 @@ void QZGeometryWindow::displaySignature( int signatureID )
 void QZGeometryWindow::computeMHW()
 {
 	double time_scale;
-	if (m_commonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)m_commonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(m_commonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1332,7 +1322,7 @@ void QZGeometryWindow::buildHierarchy()
 	ofstream ostr(log_filename.c_str(), ios::trunc);
 
 	qout.output("-- Build hierarchy --");
-	shapeMatcher.constructPyramid(nLevel, ratio, ostr);
+	mShapeMatcher.constructPyramid(nLevel, ratio, ostr);
 	qout.output("Mesh hierarchy constructed!");
 
 	ostr.close();
@@ -1347,17 +1337,17 @@ void QZGeometryWindow::detectFeatures()
 	int detect_ring = g_configMgr.getConfigValueInt("FEATURE_DETECTION_RING");
 
 	qout.output("-- Detect initial features --");
-  	Concurrency::parallel_for(0, num_meshes, [&](int obj) {
-  		shapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_base_timescale, 
+  	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+  		mShapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_base_timescale, 
 									feature_detection_t_multiplier, feature_detection_extrema_thresh);
   	});
 	qout.output("Multi-scale mesh features detected!");
-	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", shapeMatcher.getSparseFeatures(0).size(), shapeMatcher.getSparseFeatures(1).size()));
-	std::cout << "Mesh1 features #: " << shapeMatcher.getSparseFeatures(0).size() << "; Mesh 2 features #: " << shapeMatcher.getSparseFeatures(1).size() << std::endl;
+	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", mShapeMatcher.getSparseFeatures(0).size(), mShapeMatcher.getSparseFeatures(1).size()));
+	std::cout << "Mesh1 features #: " << mShapeMatcher.getSparseFeatures(0).size() << "; Mesh 2 features #: " << mShapeMatcher.getSparseFeatures(1).size() << std::endl;
 
-	if (shapeMatcher.hasGroundTruth()) 
+	if (mShapeMatcher.hasGroundTruth()) 
 	{
-		vector<HKSFeature>& vf1 = shapeMatcher.getSparseFeatures(0), &vf2 = shapeMatcher.getSparseFeatures(1);
+		vector<HKSFeature>& vf1 = mShapeMatcher.getSparseFeatures(0), &vf2 = mShapeMatcher.getSparseFeatures(1);
 		std::map<int, int> feature_count;
 		int count_strict = 0; 
 		int count_one_neighbor = 0;
@@ -1372,7 +1362,7 @@ void QZGeometryWindow::detectFeatures()
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
 
-				if (m_mesh[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
+				if (mMeshes[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1388,7 +1378,7 @@ void QZGeometryWindow::detectFeatures()
 			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
-				if (m_mesh[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (mMeshes[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1401,7 +1391,7 @@ void QZGeometryWindow::detectFeatures()
 
 		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
-				if (m_mesh[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (mMeshes[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					count_one_neighbor++;
 					if (feature_count.find(iter1->m_index) == feature_count.end())
 						feature_count.insert(make_pair(iter1->m_index, 1));
@@ -1434,11 +1424,11 @@ void QZGeometryWindow::matchFeatures()
 	
 	if (force_matching == 1)
 	{
-		if (m_mesh[0].getMeshName() == "horse0")
+		if (mMeshes[0].getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
 		}
-		else if (m_mesh[0].getMeshName() == "eight")
+		else if (mMeshes[0].getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
 		}
@@ -1452,7 +1442,7 @@ void QZGeometryWindow::matchFeatures()
 				{
 					vmp.push_back(MatchPair(*iter, *iter));
 				}
-				shapeMatcher.forceInitialAnchors(vmp);
+				mShapeMatcher.forceInitialAnchors(vmp);
 				qout.output("!!Matched anchors manually assigned!!");
 				alreadyMached = true;
 			}
@@ -1460,15 +1450,15 @@ void QZGeometryWindow::matchFeatures()
 	}
 	else if (force_matching == 2)
 	{
-		if (m_mesh[0].getMeshName() == "horse0")
+		if (mMeshes[0].getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_HORSE_FILE");
 		}
-		else if (m_mesh[0].getMeshName() == "eight")
+		else if (mMeshes[0].getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_EIGHT_FILE");
 		}
-		if (string_override != "" && shapeMatcher.loadInitialFeaturePairs(string_override))
+		if (string_override != "" && mShapeMatcher.loadInitialFeaturePairs(string_override))
 		{
 			qout.output("!!Matched anchors manually assigned!!");
 			alreadyMached = true;
@@ -1490,8 +1480,8 @@ void QZGeometryWindow::matchFeatures()
 			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
 			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 
-			const vector<HKSFeature>& vftFine1 = shapeMatcher.getSparseFeatures(0);
-			const vector<HKSFeature>& vftFine2 = shapeMatcher.getSparseFeatures(1);
+			const vector<HKSFeature>& vftFine1 = mShapeMatcher.getSparseFeatures(0);
+			const vector<HKSFeature>& vftFine2 = mShapeMatcher.getSparseFeatures(1);
 			vector<int> vFeatures1, vFeatures2;
 			for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){vFeatures1.push_back(f.m_index);});
 			for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){vFeatures2.push_back(f.m_index);});
@@ -1508,10 +1498,10 @@ void QZGeometryWindow::matchFeatures()
 				vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
 				for (auto iter = vPairs.begin(); iter != vPairs.end(); )
 				{
-					if (!m_mesh[1].isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
+					if (!mMeshes[1].isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
 						iter->m_note = -1;
 
-					double dissim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
+					double dissim = mShapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
 					if (dissim > 0.18)
 					{
 						iter = vPairs.erase(iter);
@@ -1522,27 +1512,27 @@ void QZGeometryWindow::matchFeatures()
 			}			
 
 			cout << "Tensor match score: " << matchScore << endl;
-			shapeMatcher.forceInitialAnchors(vPairs);
+			mShapeMatcher.forceInitialAnchors(vPairs);
 
 			//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 		}
 		else if (matching_method == 1)	// traditional pair-based matching
 		{
 			double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
-			shapeMatcher.matchFeatures(ofstr, matching_thresh_1);
+			mShapeMatcher.matchFeatures(ofstr, matching_thresh_1);
 		}
 		else // point based
 		{
-			shapeMatcher.matchFeatureSimple();
+			mShapeMatcher.matchFeatureSimple();
 		}
 		timer.stopTimer();
 		ofstr.close();
-		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
 	}
 
-	const std::vector<MatchPair>& result = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
+	const std::vector<MatchPair>& result = mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel());
 
-	shapeMatcher.evaluateWithGroundTruth(result);
+	mShapeMatcher.evaluateWithGroundTruth(result);
 
 	if (!ui.glMeshWidget->m_bDrawMatching)
 		toggleDrawMatching();
@@ -1552,10 +1542,10 @@ void QZGeometryWindow::registerStep()
 {
 	string log_filename = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
 
-	qout.output(QString().sprintf("-- Register level %d --", shapeMatcher.getAlreadyRegisteredLevel() - 1));
+	qout.output(QString().sprintf("-- Register level %d --", mShapeMatcher.getAlreadyRegisteredLevel() - 1));
 	
 	ofstream ofstr;	
-	if (shapeMatcher.getAlreadyRegisteredLevel() == shapeMatcher.getTotalRegistrationLevels())
+	if (mShapeMatcher.getAlreadyRegisteredLevel() == mShapeMatcher.getTotalRegistrationLevels())
 		ofstr.open(log_filename.c_str(), ios::trunc);
 	else
 		ofstr.open(log_filename.c_str(), ios::app);
@@ -1563,26 +1553,26 @@ void QZGeometryWindow::registerStep()
 	int regMethod = g_configMgr.getConfigValueInt("REGISTRATION_METHOD");
 
 	double time_elapsed = time_call([&]{
-		if (regMethod == 1) shapeMatcher.refineRegister(ofstr);
-		else if (regMethod == 2) shapeMatcher.refineRegister2(ofstr);
+		if (regMethod == 1) mShapeMatcher.refineRegister(ofstr);
+		else if (regMethod == 2) mShapeMatcher.refineRegister2(ofstr);
 	}) / 1000.0;
 
-	int level = shapeMatcher.getAlreadyRegisteredLevel();
-	const vector<MatchPair>& vf = shapeMatcher.getMatchedFeaturesResults(shapeMatcher.getAlreadyMatchedLevel());
-	const vector<MatchPair>& vr = shapeMatcher.getRegistrationResults(shapeMatcher.getAlreadyRegisteredLevel());
+	int level = mShapeMatcher.getAlreadyRegisteredLevel();
+	const vector<MatchPair>& vf = mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel());
+	const vector<MatchPair>& vr = mShapeMatcher.getRegistrationResults(mShapeMatcher.getAlreadyRegisteredLevel());
 
 	qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matched:%d; Registered:%d",
 		level, time_elapsed, vf.size(), vr.size()));
 	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
-		double(vr.size())/shapeMatcher.getMesh(0, level)->getVerticesNum(),
-		vr.size(), shapeMatcher.getMesh(0, level)->getVerticesNum()));
+		double(vr.size())/mShapeMatcher.getMesh(0, level)->getVerticesNum(),
+		vr.size(), mShapeMatcher.getMesh(0, level)->getVerticesNum()));
 	/* ---- evaluation ---- */
-	if (shapeMatcher.hasGroundTruth())
+	if (mShapeMatcher.hasGroundTruth())
 	{
 		cout << "Features - ";
-		shapeMatcher.evaluateWithGroundTruth(vf);
+		mShapeMatcher.evaluateWithGroundTruth(vf);
 		cout << "Registrations - ";
-		shapeMatcher.evaluateWithGroundTruth(vr);
+		mShapeMatcher.evaluateWithGroundTruth(vr);
 	}
 
 // 	double vError[3];
@@ -1600,7 +1590,7 @@ void QZGeometryWindow::registerStep()
 
 void QZGeometryWindow::registerFull()
 {
-	while(shapeMatcher.getAlreadyMatchedLevel() > 0)
+	while(mShapeMatcher.getAlreadyMatchedLevel() > 0)
 		registerStep();
 }
 
@@ -1615,7 +1605,7 @@ void QZGeometryWindow::showFiner()
 
 void QZGeometryWindow::showCoarser()
 {
-	if (ui.glMeshWidget->m_nMeshLevel < shapeMatcher.getPyramidLevels()-1)
+	if (ui.glMeshWidget->m_nMeshLevel < mShapeMatcher.getPyramidLevels()-1)
 		ui.glMeshWidget->m_nMeshLevel++;
 
 	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
@@ -1624,9 +1614,9 @@ void QZGeometryWindow::showCoarser()
 
 void QZGeometryWindow::computeBiharmonic()
 {
-	for (int i = 0; i < num_meshes; ++i)
+	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mesh_valid[i] && vMP[i].isLaplacianDecomposed())
+		if (mMeshValid[i] && vMP[i].isLaplacianDecomposed())
 		{
 			DifferentialMeshProcessor& mp = vMP[i];
 			int refPoint = mp.getRefPointIndex();
@@ -1640,15 +1630,15 @@ void QZGeometryWindow::computeBiharmonic()
 
 void QZGeometryWindow::evalDistance()
 {
-	if (num_meshes < 2) return;
+	if (mMeshCount < 2) return;
 
 	CStopWatch timer;
 	timer.startTimer();
 	Concurrency::parallel_invoke(
-		[&](){ cout << "Error geodesic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl; },
+		[&](){ cout << "Error geodesic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_GEODESIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
 //		[&](){ cout << "Error geodesic2: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 500) << endl; },
-		[&](){ cout << "Error biharmonic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 0) << endl; },
-		[&](){ cout << "Error biharmonic2: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), shapeMatcher.m_randPairs, 500) << endl; }
+		[&](){ cout << "Error biharmonic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
+		[&](){ cout << "Error biharmonic2: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 500) << endl; }
 //		[&](){cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 30.), shapeMatcher.m_randPairs, 0) << endl;},
 //		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 90.), shapeMatcher.m_randPairs, 0) << endl;
 //		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 270.), shapeMatcher.m_randPairs, 0) << endl;
@@ -1661,9 +1651,9 @@ void QZGeometryWindow::evalDistance()
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (!mesh_valid[obj]) return;
+	if (!mMeshValid[obj]) return;
 	DifferentialMeshProcessor& mp = vMP[obj];
-	const CMesh& mesh = m_mesh[obj];
+	const CMesh& mesh = mMeshes[obj];
 
 	if (!mp.vMHB[laplacianType].empty()) 
 	{
@@ -1704,11 +1694,11 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacia
 
 void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (LOAD_MHB_CACHE && num_meshes == 2 && vMP[0].vMHB[laplacianType].empty() && vMP[1].vMHB[laplacianType].empty())	// special acceleration condition
+	if (LOAD_MHB_CACHE && mMeshCount == 2 && vMP[0].vMHB[laplacianType].empty() && vMP[1].vMHB[laplacianType].empty())	// special acceleration condition
 	{
 		DifferentialMeshProcessor& mp1 = vMP[0], &mp2 = vMP[1];
-		std::string pathMHB1 = QString().sprintf("output/%s.mhb.%d", m_mesh[0].getMeshName().c_str(), (int)laplacianType).toStdString();
-		std::string pathMHB2 = QString().sprintf("output/%s.mhb.%d", m_mesh[1].getMeshName().c_str(), (int)laplacianType).toStdString();
+		std::string pathMHB1 = QString().sprintf("output/%s.mhb.%d", mMeshes[0].getMeshName().c_str(), (int)laplacianType).toStdString();
+		std::string pathMHB2 = QString().sprintf("output/%s.mhb.%d", mMeshes[1].getMeshName().c_str(), (int)laplacianType).toStdString();
 
 		ifstream ifs1(pathMHB1.c_str()), ifs2(pathMHB2.c_str());
 
@@ -1727,7 +1717,7 @@ void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotF
 		}		
 	}
 
-	for (int obj = 0; obj < num_meshes; ++obj)
+	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
 		decomposeSingleLaplacian(obj, laplacianType);
 	}
@@ -1759,11 +1749,11 @@ void QZGeometryWindow::addMesh()
 		this, "Select one or more mesh files to open",
 		"../../Data/", "Meshes (*.obj *.off *.ply)");
 
-	int cur_obj = num_meshes++;
+	int cur_obj = mMeshCount++;
 
 	CStopWatch timer;
 	timer.startTimer();
-	CMesh& mesh = m_mesh[cur_obj];
+	CMesh& mesh = mMeshes[cur_obj];
 	mesh.Load(filenames.begin()->toStdString());
 	mesh.scaleEdgeLenToUnit();
 	mesh.gatherStatistics();
@@ -1779,15 +1769,15 @@ void QZGeometryWindow::addMesh()
 
 	ui.glMeshWidget->addMesh(&vMP[cur_obj], &vRS[cur_obj]);
 
-	mesh_valid[cur_obj] = true;
+	mMeshValid[cur_obj] = true;
 
 	if (cur_obj == 0)
 	{
-		ui.glMeshWidget->fieldView(m_mesh[0].getCenter(), m_mesh[0].getBoundingBox());
+		ui.glMeshWidget->fieldView(mMeshes[0].getCenter(), mMeshes[0].getBoundingBox());
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(m_mesh[0].getVerticesNum()-1);
+		ui.spinBox1->setMaximum(mMeshes[0].getVerticesNum()-1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(m_mesh[0].getVerticesNum()-1);
+		ui.horizontalSlider1->setMaximum(mMeshes[0].getVerticesNum()-1);
 	}
 
 	ui.glMeshWidget->update();
@@ -1795,8 +1785,8 @@ void QZGeometryWindow::addMesh()
 
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
-	if (objInFocus < 0) return;
-	const std::vector<MeshProperty*> vProperties = vMP[objInFocus].properties();
+	if (mObjInFocus < 0) return;
+	const std::vector<MeshProperty*> vProperties = vMP[mObjInFocus].properties();
 	vector<MeshFunction*> vSigFunctions;
 	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp)
 	{
@@ -1832,19 +1822,19 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 	switch(simType)
 	{
 	case SIM_TYPE_1:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
 			vMP[obj].computeSimilarityMap1(vMP[obj].getRefPointIndex());
 		});
 		break;
 
 	case SIM_TYPE_2:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
 			vMP[obj].computeSimilarityMap2(vMP[obj].getRefPointIndex());
 		});
 		break;
 
 	case SIM_TYPE_3:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj){
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
 			vMP[obj].computeSimilarityMap3(vMP[obj].getRefPointIndex());
 		});
 		break;
@@ -1860,40 +1850,40 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 	switch(laplacianType)
 	{
 	case Umbrella:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj)
 		{
 			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
 			{
 				cout << "Time to construct Umbrella Laplacian: " << time_call([&](){
-					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&m_mesh[obj]);
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh1(&mMeshes[obj]);
 				}) / 1000. << "(s)" << endl;
 			}
 		});
 		break;
 	
 	case CotFormula:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj)
 		{
 			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
 			{
 				cout << "Time to construct CotFormula Laplacian: " << time_call([&](){
-					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&m_mesh[obj]);
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh2(&mMeshes[obj]);
 				}) / 1000. << "(s)" << endl;
 			}
 		});
 		break;
 
 	case Anisotropic1:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj)
 		{		
 			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
 			{
-				const CMesh* tm = &m_mesh[obj];
+				const CMesh* tm = &mMeshes[obj];
 				cout << "Time to construct Anisotropic_1 kernel: " << time_call([&]()
 				{
 					double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
 					double para2 = para1;
-					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&m_mesh[obj], 1, para1, para2);
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh3(&mMeshes[obj], 1, para1, para2);
 				}) / 1000. << "(s)" << endl;
 				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[Anisotropic1].vSS.size() / double(m_size*m_size) << endl;
 			}	
@@ -1901,16 +1891,16 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 		break;
 
 	case Anisotropic2:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj)
 		{
 			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed		
 			{
-				const CMesh* tm = &m_mesh[obj];
+				const CMesh* tm = &mMeshes[obj];
 				cout << "Time to construct Anisotropic_2 kernel: " << time_call([&]()
 				{
 					double para1 = 2 * tm->getAvgEdgeLength() * tm->getAvgEdgeLength();
 					double para2 = tm->getAvgEdgeLength() / 2;
-					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&m_mesh[obj], 1, para1, para2);
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh4(&mMeshes[obj], 1, para1, para2);
 				}) / 1000. << "(s)" << endl;
 				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
 			}
@@ -1918,13 +1908,13 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 		break;
 
 	case IsoApproximate:
-		Concurrency::parallel_for(0, num_meshes, [&](int obj)
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj)
 		{
 			if (!vMP[obj].isLaplacianConstructed(laplacianType))	// to construct only if not already constructed
 			{
-				const CMesh* tm = &m_mesh[obj];
+				const CMesh* tm = &mMeshes[obj];
 				cout << "Time to construct mesh laplacian: " << time_call([&](){
-					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&m_mesh[obj]);
+					vMP[obj].vMeshLaplacian[laplacianType].constructFromMesh5(&mMeshes[obj]);
 				}) / 1000. << "(s)" << endl;
 				//			cout << "Kernel Sparsity: " << vMP[obj]vMeshLaplacian[laplacianType].vSS.size() / double(m_size*m_size) << endl;
 			}
@@ -1944,7 +1934,7 @@ void QZGeometryWindow::saveMatchingResult()
 {
 	if (g_task != TASK_REGISTRATION) return;
 
-	const vector<MatchPair>& vPairs = shapeMatcher.getInitialMatchedFeaturePairs();
+	const vector<MatchPair>& vPairs = mShapeMatcher.getInitialMatchedFeaturePairs();
 	if (vPairs.empty())
 	{
 		qout.output("No matching result available", OUT_MSGBOX);
@@ -1975,7 +1965,7 @@ void QZGeometryWindow::loadMatchingResult()
 		this, "Select one or more mesh files to open",
 		"./output/", tr("Text Files (*.txt *.dat)"));
 
-	shapeMatcher.loadInitialFeaturePairs(filename.toStdString());
+	mShapeMatcher.loadInitialFeaturePairs(filename.toStdString());
 
 	if (ui.glMeshWidget->m_bDrawMatching)
 		ui.glMeshWidget->update();
