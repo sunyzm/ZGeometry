@@ -41,7 +41,7 @@ private slots:
 
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
-	void computeHK();
+    void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
 	void computeMHW();
@@ -105,6 +105,7 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
+    void constructLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
 
