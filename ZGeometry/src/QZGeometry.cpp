@@ -18,6 +18,7 @@
 #include "global.h"
 
 using namespace std;
+using ZUtil::Int2String;
 
 int QZGeometryWindow::DEFAULT_EIGEN_SIZE = 300;
 int QZGeometryWindow::DEFAULT_DEFORM_RING = 5 ;
@@ -1696,13 +1697,13 @@ void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotF
         if (laplacianRequireDecompose(obj, laplacianType)) 
             ++totalToDecompose;
     }
-    std::cout << totalToDecompose << " Laplacians require explicit decomposition" << std::endl;
+    std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 
     if (totalToDecompose <= 1) {
         Concurrency::parallel_for(0, mMeshCount, [&](int obj){
             decomposeSingleLaplacian(obj, laplacianType);    
         });
-    } else {
+    } else {    // if both need explicit decomposition, then must run in sequence in Matlab
         for(int obj = 0; obj < mMeshCount; ++obj) {
             decomposeSingleLaplacian(obj, laplacianType);    
         }
@@ -1839,7 +1840,6 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 {
 	LaplacianType laplacianType = (LaplacianType)lapType;
 	constructLaplacians(laplacianType);
-
 	decomposeLaplacians(laplacianType);
 }
 

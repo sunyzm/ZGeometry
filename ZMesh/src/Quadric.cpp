@@ -12,7 +12,7 @@ double Quadric::eval( const Vector3D& v )
 	return ret;
 }
 
-Quadric& Quadric::operator *=( double coeff )
+Quadric& Quadric::operator *= ( double coeff )
 {
 	for (int i = 0; i < 10; ++i)		//area doesn't scale
 		*pData[i] *= coeff;
@@ -43,7 +43,7 @@ Quadric::Quadric( double a, double b, double c, double d, double r )
 	area = r;
 }
 
-Quadric& Quadric::operator +=( const Quadric& q1 )
+Quadric& Quadric::operator += ( const Quadric& q1 )
 {
 	for (int i = 0; i < 11; ++i)
 	{
@@ -52,7 +52,7 @@ Quadric& Quadric::operator +=( const Quadric& q1 )
 	return *this;
 }
 
-Quadric& Quadric::operator-=( const Quadric& q1 )
+Quadric& Quadric::operator -= ( const Quadric& q1 )
 {
 	for (int i = 0; i < 11; ++i)
 	{
@@ -94,7 +94,7 @@ Vector3D Quadric::getVector() const
 	return vec;
 }
 
-Quadric& Quadric::operator =( const Quadric& q )
+Quadric& Quadric::operator = ( const Quadric& q )
 {
 	for (int i = 0; i < 11; ++i)
 		*pData[i] = *q.pData[i];
@@ -102,21 +102,21 @@ Quadric& Quadric::operator =( const Quadric& q )
 }
 
 
-Quadric operator +(const Quadric& q1, const Quadric& q2)
+Quadric operator + (const Quadric& q1, const Quadric& q2)
 {
 	Quadric q(q1);
 	q += q2;
 	return q;
 }
 
-Quadric operator -(const Quadric& q1, const Quadric& q2)
+Quadric operator - (const Quadric& q1, const Quadric& q2)
 {
 	Quadric q(q1);
 	q -= q2;
 	return q;
 }
 
-Quadric operator *(const Quadric& q1, double coeff)
+Quadric operator * (const Quadric& q1, double coeff)
 {
 	Quadric q;
 	q *= coeff;

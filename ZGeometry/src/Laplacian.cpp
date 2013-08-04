@@ -8,14 +8,13 @@
 #include <sstream>
 #include <stdexcept>
 
-
 using namespace std;
 
 //#define PARTIAL_SCALING
 
-const std::string Laplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
-                                                     "Anisotropic", "Anisotropic2", 
-                                                     "IsoApproximate"};
+const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
+                                                         "Anisotropic", "Anisotropic2", 
+                                                         "IsoApproximate"};
 
 void ManifoldHarmonics::write( const std::string& meshPath, bool binaryMode /*= true*/ ) const
 {
@@ -148,44 +147,6 @@ void ManifoldHarmonics::dumpEigenValues( const std::string& pathEVL ) const
 	ofs.close();
 }
 
-//: computer inner product of two manifold functions induced by the Laplacian matrix
-double SparseMeshMatrix::innerProduct( const std::vector<double>& vf, const std::vector<double>& vg ) const
-{
-	assert(vf.size() == vg.size() && vf.size() == vWeights.size() && (int)vWeights.size() == this->m_size);
-
-	double sum = 0;
-	for (int i = 0; i < m_size; ++i)
-	{
-		sum += vf[i] * vWeights[i] * vg[i];
-	}
-	return sum;
-}
-
-void SparseMeshMatrix::multiply( Engine *ep, const std::vector<double>& func, std::vector<double>& result ) const
-{
-	assert(func.size() == m_size);
-	/*	
-	mxArray *II, *JJ, *SS, *AA, *evecs, *evals;
-
-	int ns = (int) vII.size();
-	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	double *ii = mxGetPr(II);
-	double *jj = mxGetPr(JJ);
-	double *ss = mxGetPr(SS);
-	std::copy(vII.begin(), vII.end(), ii);
-	std::copy(vJJ.begin(), vJJ.end(), jj);
-	std::copy(vSS.begin(), vSS.end(), ss);
-
-	engPutVariable(ep, "II", II);
-	engPutVariable(ep, "JJ", JJ);
-	engPutVariable(ep, "SS", SS);
-
-	//TODO: to finish the multiplication
-	*/
-}
-
 void SparseMeshMatrix::getSparseMatrix( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const
 {
 	II = vII;
@@ -273,20 +234,6 @@ void SparseMeshMatrix::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep )
 	mxDestroyArray(JJ);
 	mxDestroyArray(SS);
 	mxDestroyArray(NUMV);
-}
-
-void Laplacian::constructFromMesh( const CMesh* tmesh )
-{
-	this->m_size = tmesh->getVerticesNum();
-
-	this->vII.clear();
-	this->vJJ.clear();
-	this->vSS.clear();
-	this->vWeights.clear();
-
-	tmesh->calLBO(vII, vJJ, vSS, vWeights);
-
-	m_bMatrixBuilt = true;
 }
 
 bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc )
@@ -414,10 +361,10 @@ void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
 	vWeights.clear();
 
 	tmesh->calLBO(vII, vJJ, vSS, vWeights);
-#ifdef PARTIAL_SCALING
+/*
 	double scaling = (tmesh->getAvgEdgeLength() * tmesh->getAvgEdgeLength())/2;
 	transform(vWeights.begin(), vWeights.end(), vWeights.begin(), [&](double v){return v/scaling;});
-#endif
+*/
 	m_bMatrixBuilt = true;
 	m_laplacianType = CotFormula;
 }

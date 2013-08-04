@@ -75,9 +75,9 @@ inline void SparseMatrixCSR<T,U>::initialize(const std::vector<T>& vVal, const s
 template<typename T, typename U>
 inline void	SparseMatrixCSR<T,U>::clear()
 {
-	if (mVal != NULL)       delete []mVal;
-	if (mColIdx != NULL)    delete []mColIdx;
-	if (mRowPtr != NULL)    delete []mRowPtr;
+	delete []mVal;
+	delete []mColIdx;
+	delete []mRowPtr;
 }
 
 } //end of namespace ZGeom

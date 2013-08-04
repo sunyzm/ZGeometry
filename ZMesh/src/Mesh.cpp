@@ -3757,10 +3757,10 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 				bs = e2;		// find the last edge incident to vi
 			}
 			// get edge lengths
-			double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
-			double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-			double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
-			double cota11(0.), cota12(0.), cota21(0.), cota22(0.);
+			double len0 = getHalfEdgeLen(e0);
+			double len1 = getHalfEdgeLen(e1);
+			double len2 = getHalfEdgeLen(e2);
+			double cota11(0), cota12(0), cota21(0), cota22(0);
 
 			amix += calAreaMixed(len0, len1, len2, cota11, cota12);
 
@@ -3771,8 +3771,8 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 				e1 = m_pHalfEdge[e0].m_iNextEdge;
 				e2 = m_pHalfEdge[e1].m_iNextEdge;
 				/* get edge lengths */
-				len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-				len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+				len1 = getHalfEdgeLen(e1);
+				len2 = getHalfEdgeLen(e2);
 				/* compute corner angle by cotangent law */
 				triangleCotan(len0, len1, len2, cota21, cota22);
 			}
@@ -3791,9 +3791,9 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			int vj = m_pHalfEdge[e2].m_iVertex[1];
 			assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 			/* get edge lengths */
-			double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
-			double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-			double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+			double len0 = getHalfEdgeLen(bs);
+			double len1 = getHalfEdgeLen(e1);
+			double len2 = getHalfEdgeLen(e2);
 			/* compute corner angle by cotangent law */
 			double cota1, cota2;
 			triangleCotan(len0, len1, len2, cota1, cota2);

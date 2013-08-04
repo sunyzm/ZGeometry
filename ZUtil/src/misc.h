@@ -2,23 +2,8 @@
 #define ZUTIL_MISC_H
 
 #include <string>
-#include <sstream>
 #include <cmath>
 #include <queue>
-
-inline std::string Int2String(int i)
-{
-	std::ostringstream ostr;
-	ostr << i << std::flush;
-	return ostr.str();
-}
-
-inline std::string Double2String(double f)
-{
-	std::ostringstream ostr;
-	ostr << f << std::flush;
-	return ostr.str();
-}
 
 class MyNote
 {

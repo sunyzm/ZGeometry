@@ -4,6 +4,7 @@
 #include <string>
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
+#include <ZGeom/SparseMatrix.h>
 
 enum LaplacianType {Umbrella = 0, CotFormula = 1, Anisotropic1 = 2,
 	                Anisotropic2 = 3, IsoApproximate = 4, LaplacianTypeCount};
@@ -30,6 +31,12 @@ public:
 	int m_nEigFunc; // number of basis < shape size
 };
 
+class ManifoldLaplaceHarmonics : public ManifoldHarmonics
+{
+public:
+    bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc);
+};
+
 class SparseMeshMatrix
 {
 public:
@@ -41,9 +48,7 @@ public:
 
 public:
 	SparseMeshMatrix() : m_size(0), m_bMatrixBuilt(false) {}
-	double innerProduct(const std::vector<double>& vf, const std::vector<double>& vg) const;
 	const std::vector<double>& getVerticesWeight() const { return vWeights; };
-	void multiply(Engine *ep, const std::vector<double>& func, std::vector<double>& result) const;
 	int getNonzeroNum() const { return vSS.size(); }
 	void getSparseMatrix(std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS) const;
 	void dumpMatrix(const std::string& path) const;
@@ -52,29 +57,18 @@ public:
 	virtual void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
 };
 
-class Laplacian : public SparseMeshMatrix
-{
-public:
-    static const std::string LaplacianTypeNames[];
-	Laplacian(){}
-	void constructFromMesh(const CMesh* tmesh);
-};
 
-class ManifoldLaplaceHarmonics : public ManifoldHarmonics
-{
-public:
-	bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc);
-};
 
 class MeshLaplacian : public SparseMeshMatrix
 {
 public:
+    static const std::string LaplacianTypeNames[];
+    LaplacianType m_laplacianType;
+
 	MeshLaplacian() {}
 	void constructFromMesh1(const CMesh* tmesh);	// graph Laplacian
 	void constructFromMesh2(const CMesh* tmesh);	// Cot formula
 	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
-	void constructFromMesh5(const CMesh* tmesh);	
-
-	LaplacianType m_laplacianType;
+	void constructFromMesh5(const CMesh* tmesh);		
 };

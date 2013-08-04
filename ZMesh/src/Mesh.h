@@ -102,7 +102,6 @@ private:
 
 	double					m_LocalGeodesic;	// geodesic from local vertex
 	bool					m_inheap;			// in heap or not
-//	int						m_vMatched;
 	int						m_mark;
 };
 
