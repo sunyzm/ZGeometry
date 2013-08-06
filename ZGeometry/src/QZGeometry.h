@@ -121,10 +121,10 @@ private:
 	int					mObjInFocus;	
 	int					mMeshCount;
 	int					mCommonParameter;
-	std::vector<CMesh>						mMeshes;
-	
-	std::vector<DifferentialMeshProcessor>	vMP;
-	std::vector<RenderSettings>				vRS;
+
+	std::vector<CMesh>	                    mMeshes;
+	std::vector<DifferentialMeshProcessor>	mProcessors;
+	std::vector<RenderSettings>				mRenderManagers;
 	DiffusionShapeMatcher					mShapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
