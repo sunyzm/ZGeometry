@@ -92,7 +92,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 	posRef = mesh->getVertex(0)->getPosition();
 }
 
-void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
+void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
     assert(isLaplacianConstructed(laplacianType));
     if (!mpEngineWrapper->isOpened())
@@ -105,14 +105,14 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType 
 	this->m_bLaplacianDecomposed = true;
 }
 
-void DifferentialMeshProcessor::readMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
+void DifferentialMeshProcessor::readMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
 	vMHB[laplacianType].read(path, binaryMode);
 	mhb = vMHB[laplacianType];
 	this->m_bLaplacianDecomposed = true;
 }
 
-void DifferentialMeshProcessor::writeMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
+void DifferentialMeshProcessor::writeMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
 	const ManifoldHarmonics& mh = vMHB[laplacianType];
 	mh.write(path, binaryMode);
@@ -267,7 +267,7 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 {
     Engine *ep = mpEngineWrapper->getEngine();
 
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
 
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -278,7 +278,8 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
-	vector<double> vWeight = mLaplacian.getVerticesWeight();
+	vector<double> vWeight;
+    mLaplacian.getW().getDiagonal(vWeight);
 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
 	VectorPointwiseProduct(vxcoord0, vWeight, xWeightedCoord);
 	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
@@ -402,7 +403,7 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 
 void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
 {
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
 
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -413,7 +414,8 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 
-	vector<double> vWeight = mLaplacian.getVerticesWeight();
+	vector<double> vWeight;
+    mLaplacian.getW().getDiagonal(vWeight);
 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
 	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
 	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
@@ -446,7 +448,7 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 
 void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /* =false */ ) const
 {
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
 
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -467,7 +469,7 @@ void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& 
 
 	vector<int> vII, vJJ;
 	vector<double> vSS;
-	mLaplacian.getSparseMatrix(vII, vJJ, vSS);
+	mLaplacian.getLS().convertToCOO(vII, vJJ, vSS);
 
 	int sparseLapSize = vII.size();
 	for (int n = 0; n < sparseLapSize; ++n)
@@ -633,7 +635,7 @@ void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vecto
 
 void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
 {
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[CotFormula];
+	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
 
 	if (vHandleIdx.size() != vHandlePos.size())
 		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
@@ -672,9 +674,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			m = n + vHandleIdx.size();
 				
 		int nz_laplacian = vI.size();
-		vI = mLaplacian.vII;
-		vJ = mLaplacian.vJJ;
-		vS = mLaplacian.vSS;
+        mLaplacian.getLS().convertToCOO(vI, vJ, vS);
 		
 		vector<double> xCoord, yCoord, zCoord;
 		mesh->getCoordinateFunction(0, xCoord);
@@ -1232,21 +1232,21 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 	else return dynamic_cast<const MeshFeatureList*>(feat);
 }
 
-void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
+void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
     if (isLaplacianConstructed(laplacianType)) return;
     
     switch(laplacianType)
     {
-    case Umbrella:
+    case MeshLaplacian::Umbrella:
         vMeshLaplacian[laplacianType].constructFromMesh1(mesh);
         break;
 
-    case CotFormula:
+    case MeshLaplacian::CotFormula:
         vMeshLaplacian[laplacianType].constructFromMesh2(mesh);   
         break;
 
-    case Anisotropic1:
+    case MeshLaplacian::Anisotropic1:
         {
             double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
             double para2 = para1;
@@ -1254,7 +1254,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
         }
         break;
 
-    case Anisotropic2:
+    case MeshLaplacian::Anisotropic2:
         {
             double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
             double para2 = mesh->getAvgEdgeLength() / 2;
@@ -1262,7 +1262,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
         }
         break;
 
-    case IsoApproximate:
+    case MeshLaplacian::IsoApproximate:
         vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
         break;
     }       

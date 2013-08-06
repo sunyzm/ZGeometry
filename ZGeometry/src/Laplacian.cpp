@@ -10,8 +10,6 @@
 
 using namespace std;
 
-//#define PARTIAL_SCALING
-
 const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
                                                          "Anisotropic", "Anisotropic2", 
                                                          "IsoApproximate"};
@@ -56,17 +54,6 @@ void ManifoldHarmonics::write( const std::string& meshPath, bool binaryMode /*= 
 
 void ManifoldHarmonics::read( const std::string& meshPath, bool binaryMode /*= true*/ )
 {
-	// 	FILE* file = NULL;
-	// 	fopen_s(&file, meshPath.c_str(), "rb");
-	// 	int MAX = 536870912;
-	// 	char *buffer = new char[MAX];
-	// 	setvbuf(file, NULL, _IOFBF, 1024);
-	// 	while (!feof(file)) 
-	// 	{
-	// 		fread(buffer, 0x1, MAX, file);
-	// 	}
-	// 	fclose(file);
-
 	if (binaryMode)
 	{
 		ifstream ifs(meshPath.c_str(), ios::binary);
@@ -108,20 +95,6 @@ void ManifoldHarmonics::read( const std::string& meshPath, bool binaryMode /*= t
 				iss >>m_func[i].m_vec[j];
 		}
 		delete []buffer;
-	/*
-		ifstream ifs(meshPath.c_str());
-		ifs >> m_nEigFunc;
-		ifs >> m_size;
-		m_func.resize(m_nEigFunc);
-	
-		for (int i = 0; i < m_nEigFunc; ++i)
-		{
-			m_func[i].m_vec.resize(m_size);
-			ifs >> m_func[i].m_val;
-			for (int j = 0; j < m_size; ++j)
-				ifs >>m_func[i].m_vec[j];
-		}
-	*/
 	}
 	
 	cout << "MHB loaded from " << meshPath << endl;
@@ -147,94 +120,6 @@ void ManifoldHarmonics::dumpEigenValues( const std::string& pathEVL ) const
 	ofs.close();
 }
 
-void SparseMeshMatrix::getSparseMatrix( std::vector<int>& II, std::vector<int>& JJ, std::vector<double>& SS ) const
-{
-	II = vII;
-	JJ = vJJ;
-	SS = vSS;
-	int nz = II.size();
-
-	for (int k = 0; k < nz; ++k)
-	{
-		SS[k] /= vWeights[II[k]];
-	}
-}
-
-void SparseMeshMatrix::dumpMatrix( const std::string& path ) const
-{
-	int nz = vII.size();
-	ofstream lout(path.c_str());
-	for (int i = 0; i < nz; ++i)
-	{
-		lout << vII[i] << ',' << vJJ[i] << ',' << vSS[i] << '\n';
-	}
-	lout.close();
-}
-
-void SparseMeshMatrix::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
-{
-	assert(m_bMatrixBuilt);
-	assert(nEig > 0);
-
-	mhb.m_func.clear();
-	mhb.m_size = this->m_size;
-	mhb.m_nEigFunc = min(mhb.m_size, nEig);
-
-	mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
-
-	AA = mxCreateDoubleMatrix(m_size, 1, mxREAL);
-	double *aa = mxGetPr(AA);
-	assert((int)vWeights.size() == m_size);
-	std::copy(vWeights.begin(), vWeights.end(), aa);
-
-	NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);
-	double *numv = mxGetPr(NUMV);	
-	numv[0] = mhb.m_nEigFunc;			// number of eigen vectors to be computed
-
-	int ns = (int) vII.size();
-	II = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
-	double *ii = mxGetPr(II);
-	double *jj = mxGetPr(JJ);
-	double *ss = mxGetPr(SS);
-	std::copy(vII.begin(), vII.end(), ii);
-	std::copy(vJJ.begin(), vJJ.end(), jj);
-	std::copy(vSS.begin(), vSS.end(), ss);
-
-	engPutVariable(ep, "II", II);
-	engPutVariable(ep, "JJ", JJ);
-	engPutVariable(ep, "SS", SS);
-	engPutVariable(ep, "AA", AA);
-	engPutVariable(ep, "Numv", NUMV);
-
-	engEvalString(ep, "[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
-
-	evecs = engGetVariable(ep, "evecs");		
-	double *evec = mxGetPr(evecs);				//eigenvectors
-	evals = engGetVariable(ep, "evals");		
-	double *eval = mxGetPr(evals);				//eigenvalues
-
-	mhb.m_func.reserve(mhb.m_nEigFunc);
-	for(int i = 0; i < mhb.m_nEigFunc; i++)
-	{
-		mhb.m_func.push_back(ManifoldBasis());
-		mhb.m_func[i].m_vec.reserve(m_size);
-		for(int j = 0; j < m_size; j++)
-		{
-			mhb.m_func[i].m_vec.push_back(evec[i*m_size+j]);
-		}
-		mhb.m_func[i].m_val = std::fabs(eval[i]);		// always non-negative
-	}
-
-	mxDestroyArray(evecs);
-	mxDestroyArray(evals);
-	mxDestroyArray(AA);
-	mxDestroyArray(II);
-	mxDestroyArray(JJ);
-	mxDestroyArray(SS);
-	mxDestroyArray(NUMV);
-}
 
 bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc )
 {
@@ -318,16 +203,84 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 	return true;
 }
 
+void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
+{
+    assert(mLaplacianConsructed);
+    assert(nEig > 0);
+
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS, vWeights;
+    mLS.convertToCOO(vII, vJJ, vSS, ZGeom::SparseMatrix<double>::MAT_FULL);
+    mW.getDiagonal(vWeights);
+
+    mhb.m_func.clear();
+    mhb.m_size = this->mOrder;
+    mhb.m_nEigFunc = min(mhb.m_size, nEig);
+
+    mxArray *II, *JJ, *SS, *AA, *evecs, *evals, *NUMV;
+
+    AA = mxCreateDoubleMatrix(mOrder, 1, mxREAL);
+    double *aa = mxGetPr(AA);
+    assert((int)vWeights.size() == m_size);
+    std::copy(vWeights.begin(), vWeights.end(), aa);
+
+    NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);
+    double *numv = mxGetPr(NUMV);	
+    numv[0] = mhb.m_nEigFunc;			// number of eigen vectors to be computed
+
+    int ns = (int) vII.size();
+    II = mxCreateDoubleMatrix(ns, 1, mxREAL);
+    JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
+    SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
+    double *ii = mxGetPr(II);
+    double *jj = mxGetPr(JJ);
+    double *ss = mxGetPr(SS);
+    std::copy(vII.begin(), vII.end(), ii);
+    std::copy(vJJ.begin(), vJJ.end(), jj);
+    std::copy(vSS.begin(), vSS.end(), ss);
+
+    engPutVariable(ep, "II", II);
+    engPutVariable(ep, "JJ", JJ);
+    engPutVariable(ep, "SS", SS);
+    engPutVariable(ep, "AA", AA);
+    engPutVariable(ep, "Numv", NUMV);
+
+    engEvalString(ep, "[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
+
+    evecs = engGetVariable(ep, "evecs");		
+    double *evec = mxGetPr(evecs);				//eigenvectors
+    evals = engGetVariable(ep, "evals");		
+    double *eval = mxGetPr(evals);				//eigenvalues
+
+    mhb.m_func.reserve(mhb.m_nEigFunc);
+    for(int i = 0; i < mhb.m_nEigFunc; i++)
+    {
+        mhb.m_func.push_back(ManifoldBasis());
+        mhb.m_func[i].m_vec.reserve(mOrder);
+        for(int j = 0; j < mOrder; j++)
+        {
+            mhb.m_func[i].m_vec.push_back(evec[i*mOrder+j]);
+        }
+        mhb.m_func[i].m_val = std::fabs(eval[i]);		// always non-negative
+    }
+
+    mxDestroyArray(evecs);
+    mxDestroyArray(evals);
+    mxDestroyArray(AA);
+    mxDestroyArray(II);
+    mxDestroyArray(JJ);
+    mxDestroyArray(SS);
+    mxDestroyArray(NUMV);
+}
+
 void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
 {
-	this->m_size = tmesh->getVerticesNum();
+	mOrder = tmesh->getVerticesNum();
 
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-	vWeights.clear();
+    std::vector<unsigned> vII, vJJ;
+    std::vector<double> vSS;
 
-	for (int i = 0; i < m_size; ++i)
+	for (int i = 0; i < mOrder; ++i)
 	{
 		const CVertex* vi = tmesh->getVertex_const(i);
 		vector<int> vNeighbors;
@@ -338,53 +291,58 @@ void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
 		{
 			vII.push_back(i+1);
 			vJJ.push_back(vNeighbors[j]+1);
-			vSS.push_back(-1.0);
+			vSS.push_back(1.0);
 		}
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
-		vSS.push_back(valence);
+		vSS.push_back(-valence);
 	}
 
-	vWeights.resize(m_size, 1.0);
+	std::vector<double> vWeights(mOrder, 1.0);
 
-	m_bMatrixBuilt = true;
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mW.convertFromDiagonal(vWeights);
+
+	mLaplacianConsructed = true;
 	m_laplacianType = Umbrella;
 }
 
 void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
 {
-	this->m_size = tmesh->getVerticesNum();
+    mOrder = tmesh->getVerticesNum();
 
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
-	vWeights.clear();
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS;
+	std::vector<double> vWeights;
 
 	tmesh->calLBO(vII, vJJ, vSS, vWeights);
 /*
 	double scaling = (tmesh->getAvgEdgeLength() * tmesh->getAvgEdgeLength())/2;
 	transform(vWeights.begin(), vWeights.end(), vWeights.begin(), [&](double v){return v/scaling;});
 */
-	m_bMatrixBuilt = true;
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mW.convertFromDiagonal(vWeights);
+
+	mLaplacianConsructed = true;
 	m_laplacianType = CotFormula;
 }
 
 void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
 {
 	// curvature difference based
+    mOrder = tmesh->getVerticesNum();
 
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS;
+    std::vector<double> vWeights;
 
-	this->m_size = tmesh->getMeshSize();
 	vector<std::tuple<int,int,double> > vSparseElements;
 
 	ringT = 1;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
-	for (int vi = 0; vi < m_size; ++vi)
+	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
@@ -411,7 +369,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 		}
 	}
 
-	vector<double> vDiag(m_size, 0.);
+	vector<double> vDiag(mOrder, 0.);
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
 		int ii, jj; double ss;
@@ -424,7 +382,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < m_size; ++i)
+	for (int i = 0; i < mOrder; ++i)
 	{
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
@@ -436,20 +394,23 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 		vSS[k] /= vDiag[vII[k]-1];
 	}
 
-	vWeights.resize(m_size, 1.0);	
+	vWeights.resize(mOrder, 1.0);	
 
-	m_bMatrixBuilt = true;
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mW.convertFromDiagonal(vWeights);
+
+	mLaplacianConsructed = true;
 }
 
 void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
 {
 	// similar to bilateral filtering
-	
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
+    mOrder = tmesh->getVerticesNum();
 
-	this->m_size = tmesh->getMeshSize();
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS;
+    std::vector<double> vWeights;
+
 	vector<std::tuple<int,int,double> > vSparseElements;
 
 	ringT = 1;
@@ -457,7 +418,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
 
-	for (int vi = 0; vi < m_size; ++vi)
+	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
@@ -486,7 +447,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 		}
 	}
 
-	vector<double> vDiag(m_size, 0.);
+	vector<double> vDiag(mOrder, 0.);
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
 		int ii, jj; double ss;
@@ -499,7 +460,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < m_size; ++i)
+	for (int i = 0; i < mOrder; ++i)
 	{
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
@@ -511,24 +472,25 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 		vSS[k] /= vDiag[vII[k]-1];
 	}
 
-	vWeights.resize(m_size, 1.0);	
-
-	m_bMatrixBuilt = true;
+	vWeights.resize(mOrder, 1.0);	
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mW.convertFromDiagonal(vWeights);
+	mLaplacianConsructed = true;
 }
 
 void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 {
-	vII.clear();
-	vJJ.clear();
-	vSS.clear();
+    mOrder = tmesh->getVerticesNum();
 
-	this->m_size = tmesh->getMeshSize();
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS;
+    std::vector<double> vWeights;
 	vector<std::tuple<int,int,double> > vSparseElements;
 
 	int ringT = 5;
 	double hPara1 = std::pow(tmesh->getAvgEdgeLength()*2, 2);
 	
-	for (int vi = 0; vi < m_size; ++vi)
+	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex_const(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
@@ -550,7 +512,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 		}
 	}
 
-	vector<double> vDiag(m_size, 0.);
+	vector<double> vDiag(mOrder, 0.);
 	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
 	{
 		int ii, jj; double ss;
@@ -563,7 +525,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < m_size; ++i)
+	for (int i = 0; i < mOrder; ++i)
 	{
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
@@ -575,8 +537,9 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 		vSS[k] /= vDiag[vII[k]-1];
 	}
 
-	vWeights.resize(m_size, 1.0);	
+	vWeights.resize(mOrder, 1.0);	
 
-	m_bMatrixBuilt = true;
-
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mW.convertFromDiagonal(vWeights);
+	mLaplacianConsructed = true;
 }

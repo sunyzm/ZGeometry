@@ -203,21 +203,22 @@ namespace ZGeom
     }
 
     template<typename T>
-    void
-        SparseMatrix<T>::getDiagonal(std::vector<T>& diag) const
+    template<typename F>
+    void SparseMatrix<T>::getDiagonal(std::vector<F>& diag) const
     {
         assert(mRowCount == mColCount);
 
         diag.resize(mRowCount, 0.0);
         typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin();
         for (; iter != mElements.end(); ++iter) {
-            if (iter->row() == iter->col()) diag[iter->row()-1] = iter->val();
+            if (iter->row() == iter->col()) 
+                diag[iter->row() - 1] = iter->val();
         }
     }
 
     template<typename T>
-    void
-        SparseMatrix<T>::convertFromDiagonal(const std::vector<T>& diag)
+    template<typename F>
+    void SparseMatrix<T>::convertFromDiagonal(const std::vector<F>& diag)
     {
         mRowCount = mColCount = mNonzeroCount = diag.size();
         mElements.resize(mRowCount);
@@ -228,8 +229,27 @@ namespace ZGeom
     }
 
     template<typename T>
-    template<typename U>
-    inline void SparseMatrix<T>::convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd,std::vector<T>& val, MatrixForm form) const
+    template<typename U, typename F>
+    void SparseMatrix<T>::convertFromCOO( uint rowCount, uint colCount, const std::vector<U>& rowInd, std::vector<U>& colInd, const std::vector<F>& val )
+    {
+        assert(rowInd.size() == colInd.size() && rowInd.size() == val.size());
+
+        mRowCount = rowCount; 
+        mColCount = colCount;
+        mNonzeroCount = val.size();
+        
+        mElements.clear();
+        mElements.reserve(mNonzeroCount);
+        for (uint k = 0; k < mNonzeroCount; ++k) {
+            assert(rowInd[k] > 0 && colInd[k] > 0);
+            assert(rowInd[k] <= rowCount && colInd[k] <= colCount);
+            mElements.push_back(MatElem<T>(rowInd[k], colInd[k], val[k]));
+        }
+    }
+
+    template<typename T>
+    template<typename U, typename F>
+    inline void SparseMatrix<T>::convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd,std::vector<F>& val, MatrixForm form) const
     {
         assert (mRowCount == mColCount || form == MAT_FULL); // only square matrix has upper or lower CSR
 
@@ -249,8 +269,8 @@ namespace ZGeom
     }
 
     template<typename T>
-    template<typename U>
-    inline void SparseMatrix<T>::convertToCOO(U* rowInd, U* colInd, T* val, int& nonzeroCount, MatrixForm form) const
+    template<typename U, typename F>
+    inline void SparseMatrix<T>::convertToCOO(U* rowInd, U* colInd, F* val, int& nonzeroCount, MatrixForm form) const
     {
         assert (mRowCount == mColCount || form == MAT_FULL); // only square matrix has upper or lower CSR
 
@@ -269,8 +289,8 @@ namespace ZGeom
     }
 
     template<typename T>
-    template<typename U>
-    inline void SparseMatrix<T>::convertToCSR(std::vector<T>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form /*=MAT_UPPER*/) const
+    template<typename U, typename F>
+    inline void SparseMatrix<T>::convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form /*=MAT_UPPER*/) const
     {
         assert (mRowCount == mColCount || form == MAT_FULL); // only square matrix has upper or lower CSR        
         assert (testNoEmptyRow());          // CSR format requires at least one element in each row
@@ -297,9 +317,9 @@ namespace ZGeom
     }
 
     template<typename T>
-    template<typename U>
+    template<typename U, typename F>
     inline void 
-        SparseMatrix<T>::convertToCSR(SparseMatrixCSR<T,U>& matCSR, MatrixForm form) const
+        SparseMatrix<T>::convertToCSR(SparseMatrixCSR<F,U>& matCSR, MatrixForm form) const
     {
         std::vector<T> nzVal;
         std::vector<U> colIdx;
@@ -327,9 +347,9 @@ namespace ZGeom
     }
 
     template<typename T>
-    template<typename U> 
+    template<typename U, typename F> 
     inline void 
-        SparseMatrix<T>::convertFromCSR(uint rowCount, uint colCount, T nzVal[], U colIdx[], U rowPtr[])
+        SparseMatrix<T>::convertFromCSR(uint rowCount, uint colCount, F nzVal[], U colIdx[], U rowPtr[])
     {
         mRowCount = rowCount;
         mColCount = colCount;

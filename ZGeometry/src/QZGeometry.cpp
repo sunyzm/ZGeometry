@@ -83,9 +83,10 @@ QZGeometryWindow::~QZGeometryWindow()
 void QZGeometryWindow::makeConnections()
 {	
 	/*  actionComputeLaplacians  */
-	m_actionComputeLaplacians.resize(LaplacianTypeCount);
+    int laplacianTypeCount = MeshLaplacian::LaplacianTypeCount;
+	m_actionComputeLaplacians.resize(laplacianTypeCount);
 	laplacianSignalMapper = new QSignalMapper(this);
-	for (int t = 0; t < LaplacianTypeCount; ++t)
+	for (int t = 0; t < laplacianTypeCount; ++t)
 	{
 		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
 		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
@@ -207,9 +208,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
         loadInitialMeshes(mesh_list_name); 
 
         if (mMeshCount > 0) {
-            int init_laplacian_type = CotFormula;
+            int init_laplacian_type = MeshLaplacian::CotFormula;
             g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
-            if (init_laplacian_type >= 0 && init_laplacian_type < LaplacianTypeCount)
+            if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount)
             {
                 timer.startTimer();
                 computeLaplacian(init_laplacian_type);
@@ -266,7 +267,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
         qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
         
         vMP[obj].init(&mesh, &mEngineWrapper);
-        vRS[obj].mesh_color = preset_colors[obj%2];
+        vRS[obj].mesh_color = preset_mesh_colors[obj%2];
         ui.glMeshWidget->addMesh(&vMP[obj], &vRS[obj]);
     }
 
@@ -949,7 +950,7 @@ void QZGeometryWindow::clone()
 	mMeshes[1].gatherStatistics();
 
 	vMP[1].init(&mMeshes[1], &mEngineWrapper);
-	vRS[1].mesh_color = preset_colors[1];
+	vRS[1].mesh_color = preset_mesh_colors[1];
 	ui.glMeshWidget->addMesh(&vMP[1], &vRS[1]);
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1].getMeshName().c_str(), mMeshes[1].getVerticesNum()));
 	
@@ -1650,7 +1651,7 @@ void QZGeometryWindow::evalDistance()
 
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeSingleLaplacian( int obj, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
 	DifferentialMeshProcessor& mp = vMP[obj];
 	const CMesh& mesh = mMeshes[obj];
@@ -1687,7 +1688,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, LaplacianType laplacia
 	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 }
 
-void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
     int totalToDecompose = 0;
 
@@ -1709,7 +1710,7 @@ void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotF
         }
     }
 
-	for (int l = 0; l < LaplacianTypeCount; ++l)
+	for (int l = 0; l < MeshLaplacian::LaplacianTypeCount; ++l)
 		m_actionComputeLaplacians[l]->setChecked(false);
 	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
@@ -1752,7 +1753,7 @@ void QZGeometryWindow::addMesh()
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
 	vMP[cur_obj].init(&mesh, &mEngineWrapper);
 	vRS[cur_obj].selected = true;
-	vRS[cur_obj].mesh_color = preset_colors[cur_obj%2];
+	vRS[cur_obj].mesh_color = preset_mesh_colors[cur_obj%2];
 
 	ui.glMeshWidget->addMesh(&vMP[cur_obj], &vRS[cur_obj]);
 
@@ -1829,7 +1830,7 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 	updateDisplaySignatureMenu();
 }
 
-void QZGeometryWindow::constructLaplacians( LaplacianType laplacianType )
+void QZGeometryWindow::constructLaplacians( MeshLaplacian::LaplacianType laplacianType )
 {
     Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
         vMP[obj].constructLaplacian(laplacianType);
@@ -1838,7 +1839,7 @@ void QZGeometryWindow::constructLaplacians( LaplacianType laplacianType )
 
 void QZGeometryWindow::computeLaplacian( int lapType )
 {
-	LaplacianType laplacianType = (LaplacianType)lapType;
+	MeshLaplacian::LaplacianType laplacianType = (MeshLaplacian::LaplacianType)lapType;
 	constructLaplacians(laplacianType);
 	decomposeLaplacians(laplacianType);
 }
@@ -1900,7 +1901,7 @@ void QZGeometryWindow::registerTest()
 	ui.glMeshWidget->update();
 }
 
-bool QZGeometryWindow::laplacianRequireDecompose( int obj, LaplacianType laplacianType ) const
+bool QZGeometryWindow::laplacianRequireDecompose( int obj, MeshLaplacian::LaplacianType laplacianType ) const
 {
     const DifferentialMeshProcessor& mp = vMP[obj];
     const CMesh& mesh = mMeshes[obj];

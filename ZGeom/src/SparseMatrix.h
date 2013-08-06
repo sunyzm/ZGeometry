@@ -57,23 +57,29 @@ namespace ZGeom
         void insertElem(uint row, uint col, T val);
         void removeElem(uint row, uint col);   
 
-        void getDiagonal(std::vector<T>& diag) const;
-        void convertFromDiagonal(const std::vector<T>& diag);    
+        template<typename F>
+        void getDiagonal(std::vector<F>& diag) const;
 
-        template<typename U>
-        void convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd, std::vector<T>& val, MatrixForm form = MAT_UPPER) const;
+        template<typename F>
+        void convertFromDiagonal(const std::vector<F>& diag);    
 
-        template<typename U>
-        void convertToCOO(U* rowInd, U* colInd, T* val, int& nonzeroCount, MatrixForm form = MAT_UPPER) const;    
+        template<typename U, typename F>
+        void convertFromCOO(uint rowCount, uint colCount, const std::vector<U>& rowInd, std::vector<U>& colInd, const std::vector<F>& val);
 
-        template<typename U> 
-        void convertFromCSR(uint rowCount, uint colCount, T nzVal[], U colIdx[], U rowPtr[]);
+        template<typename U, typename F>
+        void convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd, std::vector<F>& val, MatrixForm form = MAT_UPPER) const;
 
-        template<typename U> 
-        void convertToCSR(std::vector<T>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
+        template<typename U, typename F>
+        void convertToCOO(U* rowInd, U* colInd, F* val, int& nonzeroCount, MatrixForm form = MAT_UPPER) const;    
 
-        template<typename U> 
-        void convertToCSR(SparseMatrixCSR<T,U>& MatCSR, MatrixForm form = MAT_UPPER) const;
+        template<typename U, typename F> 
+        void convertFromCSR(uint rowCount, uint colCount, F nzVal[], U colIdx[], U rowPtr[]);
+
+        template<typename U, typename F> 
+        void convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
+
+        template<typename U, typename F> 
+        void convertToCSR(SparseMatrixCSR<F,U>& MatCSR, MatrixForm form = MAT_UPPER) const;
 
         template<typename F> 
         void convertFromFull(F* fullMat, double sparse_eps = 1e-10);

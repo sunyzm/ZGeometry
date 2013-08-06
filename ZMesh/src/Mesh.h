@@ -11,6 +11,7 @@
 #include <queue>
 #include <string>
 #include <algorithm>
+#include <functional>
 #include <ZUtil/color.h>
 #include "Geometry.h"
 #include "Quat.h"
@@ -29,6 +30,7 @@ public:
 public:
 	GeoNote(int mid, double geo) {m_id = mid; m_geodesic = geo;}
 	GeoNote& operator = (const GeoNote& note) { m_id=note.m_id; m_geodesic = note.m_geodesic; return(*this); }
+    friend bool operator > (const GeoNote& note1, const GeoNote& note2) { return note1.m_geodesic > note2.m_geodesic; }
 };
 
 class GeoCompare 
@@ -37,7 +39,7 @@ public:
 	bool operator()(const GeoNote& Left, const GeoNote& Right) const { return ( Left.m_geodesic > Right.m_geodesic ); }
 };
 
-typedef std::priority_queue<GeoNote, std::vector<GeoNote>, GeoCompare> GeoQueue;
+typedef std::priority_queue<GeoNote, std::vector<GeoNote>, /*GeoCompare*/std::greater<GeoNote> > GeoQueue;
 
 class CFace;
 class CHalfEdge;

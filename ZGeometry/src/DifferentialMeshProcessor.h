@@ -43,14 +43,14 @@ public:
 
 	void init(CMesh* tm, MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
-	void readMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
-	void writeMHB(const std::string& path, LaplacianType laplacianType = CotFormula, bool binaryMode = true);
+	void readMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
+	void writeMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //
-	void constructLaplacian(LaplacianType laplacianType = CotFormula);
-	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
-	void selectMHB(LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
+	void constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void selectMHB(MeshLaplacian::LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
@@ -82,9 +82,9 @@ public:
 	
 	// ---- boolean query ---- //
 	bool isSGWComputed() const { return m_bSGWComputed; }
-	bool isLaplacianConstructed(LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].m_bMatrixBuilt; }
+	bool isLaplacianConstructed(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed() const { return  m_bLaplacianDecomposed; }
-	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
+	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
@@ -93,7 +93,7 @@ public:
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id);
-	void setActiveMHB(LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
+	void setActiveMHB(MeshLaplacian::LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
 public:
 	int active_handle;
 	std::map<int, Vector3D> mHandles;
@@ -109,8 +109,8 @@ private:
 	ManifoldHarmonics mhb;	
 
 public:
-	MeshLaplacian vMeshLaplacian[LaplacianTypeCount];
-	ManifoldHarmonics vMHB[LaplacianTypeCount];
+	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
+	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
 private:	
 	int pRef;
 	Vector3D posRef;

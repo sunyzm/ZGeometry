@@ -8,15 +8,16 @@ const int Z_POINT = 0x1B00;
 const int Z_LINE  = 0x1B01;
 const int Z_FILL  = 0x1B02;
 
-const float preset_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, 
-								  {0.99, 0.73, 0.62, 1.0}};
+const float preset_mesh_colors[][4] = {{0.53, 0.70, 0.93, 1.0}, 
+								       {0.99, 0.73, 0.62, 1.0},
+                                       {0.63, 0.78, 0.63, 1.0}};
 
 class RenderSettings
 {    
 public:
     enum {PointCloud, Wireframe, Mesh, None} displayType;
 
-    RenderSettings() : mesh_color(preset_colors[0]), displayType(Mesh), 
+    RenderSettings() : mesh_color(preset_mesh_colors[0]), displayType(Mesh), 
 		               showFeatures(false), showRefPoint(false), 
 					   showColorSignature(false), selected(false), 
 					   glPolygonMode(Z_FILL), display_shift(0, 0, 0),

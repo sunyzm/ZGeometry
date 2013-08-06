@@ -105,10 +105,10 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-    void constructLaplacians(LaplacianType laplacianType = CotFormula);
-	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
-    bool laplacianRequireDecompose(int obj, LaplacianType laplacianType) const;
-	void decomposeSingleLaplacian(int obj, LaplacianType laplacianType = CotFormula);
+    void constructLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void decomposeLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+    bool laplacianRequireDecompose(int obj, MeshLaplacian::LaplacianType laplacianType) const;
+	void decomposeSingleLaplacian(int obj, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 
 	/* helper functions */
 	void evalDistance();
