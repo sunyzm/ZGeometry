@@ -122,7 +122,7 @@ private:
 	int					mMeshCount;
 	int					mCommonParameter;
 
-	std::vector<CMesh>	                    mMeshes;
+	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor>	mProcessors;
 	std::vector<RenderSettings>				mRenderManagers;
 	DiffusionShapeMatcher					mShapeMatcher;

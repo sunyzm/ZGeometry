@@ -67,6 +67,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 
 QZGeometryWindow::~QZGeometryWindow()
 {
+    for_each(mMeshes.begin(), mMeshes.end(), [](CMesh* m){ delete m; });
+
 	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a;});
 	for_each(m_actionComputeSimilarities.begin(), m_actionComputeSimilarities.end(), [](QAction* a){ delete a;});
 	for_each(m_actionComputeLaplacians.begin(), m_actionComputeLaplacians.end(), [](QAction* a){ delete a;});
@@ -252,7 +254,8 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
     Concurrency::parallel_for(0, mMeshCount, [&](int obj)
     {
-        CMesh& mesh = mMeshes[obj];
+        mMeshes[obj] = new CMesh();
+        CMesh& mesh = *mMeshes[obj];
         mesh.Load(vMeshFiles[obj]);
         mesh.scaleEdgeLenToUnit();
         mesh.gatherStatistics();
@@ -261,7 +264,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
     for (int obj = 0; obj < mMeshCount; ++obj)
     {
-        CMesh& mesh = mMeshes[obj];
+        CMesh& mesh = *mMeshes[obj];
         Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
         qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
         qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
@@ -275,21 +278,21 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
     if (mMeshCount >= 1)
     {
         ui.spinBox1->setMinimum(0);
-        ui.spinBox1->setMaximum(mMeshes[0].getVerticesNum()-1);
+        ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
         ui.horizontalSlider1->setMinimum(0);
-        ui.horizontalSlider1->setMaximum(mMeshes[0].getVerticesNum()-1);
+        ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
         ui.spinBox1->setValue(0);	
     }
     if (mMeshCount >= 2)
     {		
         ui.spinBox2->setMinimum(0);
-        ui.spinBox2->setMaximum(mMeshes[1].getVerticesNum()-1);
+        ui.spinBox2->setMaximum(mMeshes[1]->getVerticesNum()-1);
         ui.horizontalSlider2->setMinimum(0);
-        ui.horizontalSlider2->setMaximum(mMeshes[1].getVerticesNum()-1);
+        ui.horizontalSlider2->setMaximum(mMeshes[1]->getVerticesNum()-1);
         ui.spinBox2->setValue(0);
     }
 
-    ui.glMeshWidget->fieldView(mMeshes[0].getCenter(), mMeshes[0].getBoundingBox());
+    ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
 
     mRenderManagers[0].selected = true;
     mObjInFocus = 0;
@@ -304,12 +307,12 @@ void QZGeometryWindow::initialProcessing()
 		ui.glMeshWidget->setShapeMatcher(&mShapeMatcher);
 
 		// ground truth 
-		if (mMeshes[0].getMeshName() == "march1_1_partial") {
+		if (mMeshes[0]->getMeshName() == "march1_1_partial") {
 			cout << "Ground truth available!" << endl;
 			string mapFile = "./models/map1.txt";
 			mShapeMatcher.loadGroundTruth(mapFile);
 		}
-		else if(mMeshes[0].getMeshSize() == mMeshes[1].getMeshSize()) {
+		else if(mMeshes[0]->getMeshSize() == mMeshes[1]->getMeshSize()) {
 			mShapeMatcher.autoGroundTruth();
 		}
 
@@ -518,8 +521,8 @@ void QZGeometryWindow::deformSimple()
 	vector<Vector3D> vNewPos;
 
 	mProcessors[0].deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
-	mMeshes[1].setVertexCoordinates(vFree, vNewPos);
-	mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
+	mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
+	mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
 
 	deformType = Simple;
 	ui.glMeshWidget->update();
@@ -552,8 +555,8 @@ void QZGeometryWindow::deformLaplace()
 	try
 	{
 		mProcessors[0].deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
-		mMeshes[1].setVertexCoordinates(vFree, vNewPos);
-		mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
+		mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
+		mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -590,8 +593,8 @@ void QZGeometryWindow::deformSGW()
 	try
 	{
 		mProcessors[0].deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
-		mMeshes[1].setVertexCoordinates(vFree, vNewPos);
-		mMeshes[1].setVertexCoordinates(vHandle, vHandlePos);
+		mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
+		mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
 	}
 	catch (runtime_error* e)
 	{
@@ -902,14 +905,14 @@ void QZGeometryWindow::computeCurvatureGauss()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	assert(mMeshes[0].getVerticesNum() == mMeshes[1].getVerticesNum());
-	int size = mMeshes[0].getVerticesNum();
+	assert(mMeshes[0]->getVerticesNum() == mMeshes[1]->getVerticesNum());
+	int size = mMeshes[0]->getVerticesNum();
 	vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
 	{
-		vDiff[i] = (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length() / mMeshes[0].getAvgEdgeLength();
+		vDiff[i] = (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
 	mRenderManagers[0].normalizeSignatureFrom(vDiff);
@@ -940,19 +943,19 @@ void QZGeometryWindow::clone()
 
 	if (mMeshCount == 1)
 	{
-		mMeshes.push_back(CMesh());
+		mMeshes.push_back(new CMesh());
 		mProcessors.push_back(DifferentialMeshProcessor());
 		mRenderManagers.push_back(RenderSettings());
 		mMeshCount = 2;
 	}
 
-	mMeshes[1].cloneFrom(mMeshes[0]);
-	mMeshes[1].gatherStatistics();
+	mMeshes[1]->cloneFrom(mMeshes[0]);
+	mMeshes[1]->gatherStatistics();
 
-	mProcessors[1].init(&mMeshes[1], &mEngineWrapper);
+	mProcessors[1].init(mMeshes[1], &mEngineWrapper);
 	mRenderManagers[1].mesh_color = preset_mesh_colors[1];
 	ui.glMeshWidget->addMesh(&mProcessors[1], &mRenderManagers[1]);
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1].getMeshName().c_str(), mMeshes[1].getVerticesNum()));
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->getVerticesNum()));
 	
 	//	vector<double> vx, vy, vz;
 	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
@@ -993,15 +996,15 @@ void QZGeometryWindow::reconstructMHB()
 
 	vector<double> vx, vy, vz;
 	mProcessors[0].reconstructByMHB(nEig, vx, vy, vz);
-	mMeshes[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
 	ui.glMeshWidget->update();
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
 	{
-		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
 	qout.output("Average position error: " + QString::number(errorSum));
 
@@ -1028,22 +1031,22 @@ void QZGeometryWindow::reconstructSGW()
 	timer.stopTimer();
 	qout.output(QString("SGW reconstruct time: ") + QString::number(timer.getElapsedTime()));
 
-	mMeshes[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
 
 	{
 		int debugIdx = (*mProcessors[0].mHandles.begin()).first;
-		qout.output("Original pos: " + std::string(mMeshes[0].getVertex(debugIdx)->getPosition()));
+		qout.output("Original pos: " + std::string(mMeshes[0]->getVertex(debugIdx)->getPosition()));
 		if (!mProcessors[0].mHandles.empty())
 			qout.output("Handle pos: " + std::string((*mProcessors[0].mHandles.begin()).second));
-		qout.output("Deformed pos: " + std::string(mMeshes[1].getVertex(debugIdx)->getPosition()));
+		qout.output("Deformed pos: " + std::string(mMeshes[1]->getVertex(debugIdx)->getPosition()));
 	}
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
 	{
-		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1053,14 +1056,14 @@ void QZGeometryWindow::filterExperimental()
 {
 	vector<double> vx, vy, vz;
 	mProcessors[0].filterBySGW(vx, vy, vz);
-	mMeshes[1].setVertexCoordinates(vx, vy, vz);
+	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0].getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
 	{
-		errorSum += (mMeshes[0].getVertex_const(i)->getPosition() - mMeshes[1].getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0].getVerticesNum() * mMeshes[0].getAvgEdgeLength();
+	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1364,7 +1367,7 @@ void QZGeometryWindow::detectFeatures()
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
 
-				if (mMeshes[1].isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
+				if (mMeshes[1]->isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1380,7 +1383,7 @@ void QZGeometryWindow::detectFeatures()
 			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
-				if (mMeshes[0].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (mMeshes[0]->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1393,7 +1396,7 @@ void QZGeometryWindow::detectFeatures()
 
 		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
-				if (mMeshes[1].isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (mMeshes[1]->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					count_one_neighbor++;
 					if (feature_count.find(iter1->m_index) == feature_count.end())
 						feature_count.insert(make_pair(iter1->m_index, 1));
@@ -1426,11 +1429,11 @@ void QZGeometryWindow::matchFeatures()
 	
 	if (force_matching == 1)
 	{
-		if (mMeshes[0].getMeshName() == "horse0")
+		if (mMeshes[0]->getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
 		}
-		else if (mMeshes[0].getMeshName() == "eight")
+		else if (mMeshes[0]->getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
 		}
@@ -1452,11 +1455,11 @@ void QZGeometryWindow::matchFeatures()
 	}
 	else if (force_matching == 2)
 	{
-		if (mMeshes[0].getMeshName() == "horse0")
+		if (mMeshes[0]->getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_HORSE_FILE");
 		}
-		else if (mMeshes[0].getMeshName() == "eight")
+		else if (mMeshes[0]->getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_EIGHT_FILE");
 		}
@@ -1500,7 +1503,7 @@ void QZGeometryWindow::matchFeatures()
 				vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
 				for (auto iter = vPairs.begin(); iter != vPairs.end(); )
 				{
-					if (!mMeshes[1].isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
+					if (!mMeshes[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
 						iter->m_note = -1;
 
 					double dissim = mShapeMatcher.calPointHksDissimilarity(&mProcessors[0], &mProcessors[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
@@ -1654,7 +1657,7 @@ void QZGeometryWindow::evalDistance()
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
 	DifferentialMeshProcessor& mp = mProcessors[obj];
-	const CMesh& mesh = mMeshes[obj];
+	const CMesh& mesh = *mMeshes[obj];
 	if (!mp.vMHB[laplacianType].empty()) return;
 
 	CStopWatch timer;
@@ -1741,7 +1744,8 @@ void QZGeometryWindow::addMesh()
 
 	CStopWatch timer;
 	timer.startTimer();
-	CMesh& mesh = mMeshes[cur_obj];
+    mMeshes.push_back(new CMesh());
+	CMesh& mesh = *mMeshes[cur_obj];
 	mesh.Load(filenames.begin()->toStdString());
 	mesh.scaleEdgeLenToUnit();
 	mesh.gatherStatistics();
@@ -1759,11 +1763,11 @@ void QZGeometryWindow::addMesh()
 
 	if (cur_obj == 0)
 	{
-		ui.glMeshWidget->fieldView(mMeshes[0].getCenter(), mMeshes[0].getBoundingBox());
+		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0].getVerticesNum()-1);
+		ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0].getVerticesNum()-1);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
 	}
 
 	ui.glMeshWidget->update();
@@ -1904,7 +1908,7 @@ void QZGeometryWindow::registerTest()
 bool QZGeometryWindow::laplacianRequireDecompose( int obj, MeshLaplacian::LaplacianType laplacianType ) const
 {
     const DifferentialMeshProcessor& mp = mProcessors[obj];
-    const CMesh& mesh = mMeshes[obj];
+    const CMesh& mesh = *mMeshes[obj];
     
     if (!mp.vMHB[laplacianType].empty()) return false; // already decomposed     
     if (!LOAD_MHB_CACHE) return true;    
