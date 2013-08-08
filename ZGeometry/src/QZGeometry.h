@@ -109,6 +109,7 @@ private:
 	void decomposeLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
     bool laplacianRequireDecompose(int obj, MeshLaplacian::LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+    void allocateStorage(int newMeshCount);
 
 	/* helper functions */
 	void evalDistance();
@@ -123,8 +124,8 @@ private:
 	int					mCommonParameter;
 
 	std::vector<CMesh*>	                    mMeshes;
-	std::vector<DifferentialMeshProcessor>	mProcessors;
-	std::vector<RenderSettings>				mRenderManagers;
+	std::vector<DifferentialMeshProcessor*>	mProcessors;
+	std::vector<RenderSettings*>			mRenderManagers;
 	DiffusionShapeMatcher					mShapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
