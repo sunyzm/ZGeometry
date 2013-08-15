@@ -38,31 +38,31 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\arithmetic.h">
+    <ClInclude Include="include\ZUtil\arithmetic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\color.h">
+    <ClInclude Include="include\ZUtil\color.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\data.h">
+    <ClInclude Include="include\ZUtil\data.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\fibheap.h">
+    <ClInclude Include="include\ZUtil\fibheap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\misc.h">
+    <ClInclude Include="include\ZUtil\misc.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SimpleConfigLoader.h">
+    <ClInclude Include="include\ZUtil\SimpleConfigLoader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\timer.h">
+    <ClInclude Include="include\ZUtil\timer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ZUtil.h">
+    <ClInclude Include="include\ZUtil\ZUtil.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\zutil_io.h">
+    <ClInclude Include="include\ZUtil\zutil_io.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

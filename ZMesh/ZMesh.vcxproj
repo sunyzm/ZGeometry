@@ -31,14 +31,14 @@
     <ClCompile Include="src\Quat.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\arcball.h" />
-    <ClInclude Include="src\Geometry.h" />
-    <ClInclude Include="src\Mesh.h" />
-    <ClInclude Include="src\MeshProcessor.h" />
-    <ClInclude Include="src\MeshPyramid.h" />
-    <ClInclude Include="src\Quadric.h" />
-    <ClInclude Include="src\Quat.h" />
-    <ClInclude Include="src\ZMesh.h" />
+    <ClInclude Include="include\ZMesh\arcball.h" />
+    <ClInclude Include="include\ZMesh\Geometry.h" />
+    <ClInclude Include="include\ZMesh\Mesh.h" />
+    <ClInclude Include="include\ZMesh\MeshProcessor.h" />
+    <ClInclude Include="include\ZMesh\MeshPyramid.h" />
+    <ClInclude Include="include\ZMesh\Quadric.h" />
+    <ClInclude Include="include\ZMesh\Quat.h" />
+    <ClInclude Include="include\ZMesh\ZMesh.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{EB01899C-48D4-48C7-AE60-A8371D3329AD}</ProjectGuid>
@@ -85,36 +85,36 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)d</TargetName>
     <LibraryPath>$(ICInstallDir)compiler\lib\$(IntelPlatform);$(LibraryPath)</LibraryPath>
-    <SourcePath>$(SolutionDir)ZUtil\src;$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
+    <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)d</TargetName>
     <LibraryPath>$(ICInstallDir)compiler\lib\$(IntelPlatform);$(LibraryPath)</LibraryPath>
-    <SourcePath>$(SolutionDir)ZUtil\src;$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
+    <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)</TargetName>
     <LibraryPath>$(ICInstallDir)compiler\lib\$(IntelPlatform);$(LibraryPath)</LibraryPath>
-    <SourcePath>$(SolutionDir)ZUtil\src;$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
+    <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)</TargetName>
     <LibraryPath>$(ICInstallDir)compiler\lib\$(IntelPlatform);$(LibraryPath)</LibraryPath>
-    <SourcePath>$(SolutionDir)ZUtil\src;$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
+    <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -139,7 +139,8 @@
       </AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -165,7 +166,8 @@
       </AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -195,7 +197,8 @@
       </AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ZMesh\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -225,7 +228,8 @@
       </AdditionalDependencies>
     </Lib>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -255,8 +255,8 @@ namespace ZGeom
         colInd.clear();
         val.clear();
 
-        typename std::vector< MatElem<T> >::const_iterator iter = sortedElements.begin();
-        for (; iter != sortedElements.end(); ++iter) {
+        typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin();
+        for (; iter != mElements.end(); ++iter) {
             if (form == MAT_UPPER && iter->row() > iter->col()) continue;   // only upper triangle elements
             if (form == MAT_LOWER && iter->row() < iter->col()) continue;   // only lower triangle elements
 

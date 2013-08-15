@@ -26,13 +26,10 @@ bin/
 data/
 lib/
 ZUtil/intermediate/
-ZUtil/include/
 ZUtil/lib/
 ZMesh/intermediate/
-ZMesh/include/
 ZMesh/lib/
 ZGeom/intermediate/
-ZGeom/include/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/
 ZGeometry/intermediate/

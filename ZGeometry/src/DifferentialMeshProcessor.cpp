@@ -6,7 +6,7 @@
 #include <ppl.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZUtil/arithmetic.h>
-#include "mkl.h"
+#include <mkl.h>
 
 using namespace std;
 

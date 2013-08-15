@@ -41,28 +41,28 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\arcball.h">
+    <ClInclude Include="include\ZMesh\arcball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Geometry.h">
+    <ClInclude Include="include\ZMesh\Geometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Mesh.h">
+    <ClInclude Include="include\ZMesh\Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\MeshProcessor.h">
+    <ClInclude Include="include\ZMesh\MeshProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\MeshPyramid.h">
+    <ClInclude Include="include\ZMesh\MeshPyramid.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Quadric.h">
+    <ClInclude Include="include\ZMesh\Quadric.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Quat.h">
+    <ClInclude Include="include\ZMesh\Quat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ZMesh.h">
+    <ClInclude Include="include\ZMesh\ZMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

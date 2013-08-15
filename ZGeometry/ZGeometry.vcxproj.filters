@@ -36,9 +36,6 @@
     <Filter Include="Document Files">
       <UniqueIdentifier>{205f414f-e346-4df8-83d5-4a42900278ed}</UniqueIdentifier>
     </Filter>
-    <Filter Include="ZGeom">
-      <UniqueIdentifier>{1691b794-f461-46d2-88bd-9697101c9b31}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="GeneratedFiles\qrc_zgeometry.cpp">
@@ -129,12 +126,6 @@
     <ClInclude Include="src\MatlabEngineWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\ZGeom\src\SparseMatrix.h">
-      <Filter>ZGeom</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ZGeom\src\SparseMatrixCSR.h">
-      <Filter>ZGeom</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="meshfiles.cfg">
@@ -157,9 +148,6 @@
     </None>
     <None Include="doc\matching_experiments.txt">
       <Filter>Document Files</Filter>
-    </None>
-    <None Include="..\ZGeom\src\SparseMatrix.inl">
-      <Filter>ZGeom</Filter>
     </None>
   </ItemGroup>
 </Project>

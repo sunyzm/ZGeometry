@@ -213,8 +213,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ZGeom\src\SparseMatrix.h" />
-    <ClInclude Include="..\ZGeom\src\SparseMatrixCSR.h" />
     <ClInclude Include="GeneratedFiles\ui_ZGeometry.h" />
     <ClInclude Include="src\global.h" />
     <ClInclude Include="src\DifferentialMeshProcessor.h" />
@@ -262,7 +260,6 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\ZGeom\src\SparseMatrix.inl" />
     <None Include="configs.txt" />
     <None Include="doc\installation_guide.txt" />
     <None Include="doc\manual.txt" />

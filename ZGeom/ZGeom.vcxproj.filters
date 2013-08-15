@@ -2,7 +2,7 @@
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <None Include="ReadMe.txt" />
-    <None Include="src\SparseMatrix.inl">
+    <None Include="include\ZGeom\SparseMatrix.inl">
       <Filter>Source Files</Filter>
     </None>
   </ItemGroup>
@@ -17,28 +17,28 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\SparseMatrix.h">
+    <ClInclude Include="include\ZGeom\SparseMatrix.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Vec2.h">
+    <ClInclude Include="include\ZGeom\SparseMatrixCSR.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Vec3.h">
+    <ClInclude Include="include\ZGeom\Trigonometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\ZGeom.h">
+    <ClInclude Include="include\ZGeom\types.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Trigonometry.h">
+    <ClInclude Include="include\ZGeom\Vec2.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\VecND.h">
+    <ClInclude Include="include\ZGeom\Vec3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\SparseMatrixCSR.h">
+    <ClInclude Include="include\ZGeom\VecND.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\types.h">
+    <ClInclude Include="include\ZGeom\ZGeom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

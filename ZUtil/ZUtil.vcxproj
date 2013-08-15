@@ -70,13 +70,13 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include/ZUtil;$(IncludePath)</IncludePath>
     <TargetExt>.lib</TargetExt>
     <TargetName>ZUtil$(PlatformArchitecture)d</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include/ZUtil;$(IncludePath)</IncludePath>
     <TargetExt>.lib</TargetExt>
     <TargetName>ZUtil$(PlatformArchitecture)d</TargetName>
   </PropertyGroup>
@@ -88,14 +88,14 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include/ZUtil;$(IncludePath)</IncludePath>
     <TargetName>ZUtil$(PlatformArchitecture)</TargetName>
     <CustomBuildAfterTargets>
     </CustomBuildAfterTargets>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <IncludePath>$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include/ZUtil;$(IncludePath)</IncludePath>
     <TargetName>ZUtil$(PlatformArchitecture)</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -111,7 +111,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ZUtil\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -127,7 +128,8 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ZUtil\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -151,7 +153,8 @@
       </Command>
     </CustomBuildStep>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ZUtil\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -171,7 +174,8 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
     <PostBuildEvent>
-      <Command>copy src\*.h include\ZUtil\ /y</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
@@ -186,15 +190,15 @@
     <ClCompile Include="src\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\arithmetic.h" />
-    <ClInclude Include="src\color.h" />
-    <ClInclude Include="src\data.h" />
-    <ClInclude Include="src\fibheap.h" />
-    <ClInclude Include="src\zutil_io.h" />
-    <ClInclude Include="src\misc.h" />
-    <ClInclude Include="src\SimpleConfigLoader.h" />
-    <ClInclude Include="src\timer.h" />
-    <ClInclude Include="src\ZUtil.h" />
+    <ClInclude Include="include\ZUtil\arithmetic.h" />
+    <ClInclude Include="include\ZUtil\color.h" />
+    <ClInclude Include="include\ZUtil\data.h" />
+    <ClInclude Include="include\ZUtil\fibheap.h" />
+    <ClInclude Include="include\ZUtil\misc.h" />
+    <ClInclude Include="include\ZUtil\SimpleConfigLoader.h" />
+    <ClInclude Include="include\ZUtil\timer.h" />
+    <ClInclude Include="include\ZUtil\ZUtil.h" />
+    <ClInclude Include="include\ZUtil\zutil_io.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
