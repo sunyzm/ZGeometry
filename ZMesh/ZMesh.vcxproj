@@ -34,6 +34,7 @@
     <ClInclude Include="include\ZMesh\arcball.h" />
     <ClInclude Include="include\ZMesh\Geometry.h" />
     <ClInclude Include="include\ZMesh\Mesh.h" />
+    <ClInclude Include="include\ZMesh\MeshAttr.h" />
     <ClInclude Include="include\ZMesh\MeshProcessor.h" />
     <ClInclude Include="include\ZMesh\MeshPyramid.h" />
     <ClInclude Include="include\ZMesh\Quadric.h" />

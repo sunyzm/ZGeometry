@@ -531,8 +531,8 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 			{
 				int selectIdx = refIndex[i];
 				const MatchPair &mp1 = mpc1[selectIdx], &mp2 = vTmpMatchPairs[i_max];
-				double geodist1 = mesh1->getGeodesic(mp1.m_idx1, mp2.m_idx1),
-					   geodist2 = mesh2->getGeodesic(mp1.m_idx2, mp2.m_idx2);
+				double geodist1 = mesh1->calGeodesic(mp1.m_idx1, mp2.m_idx1),
+					   geodist2 = mesh2->calGeodesic(mp1.m_idx2, mp2.m_idx2);
 				double distError = std::abs(geodist1 - geodist2);
 
 				if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 3*mesh1->getAvgEdgeLength() : 0.3*geodist1) )
@@ -568,8 +568,8 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 						int selectIdx = refIndex[i];
 
 						const MatchPair &mp1 = mpc1[selectIdx], &mp2 = vTmpMatchPairs[mpCandidates[k].index];
-						double geodist1 = mesh1->getGeodesic(mp1.m_idx1, mp2.m_idx1),
-							   geodist2 = mesh2->getGeodesic(mp1.m_idx2, mp2.m_idx2);
+						double geodist1 = mesh1->calGeodesic(mp1.m_idx1, mp2.m_idx1),
+							   geodist2 = mesh2->calGeodesic(mp1.m_idx2, mp2.m_idx2);
 						double distError = std::abs(geodist1 - geodist2);
 
 						if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 3*mesh1->getAvgEdgeLength() : 0.3*geodist1) )
@@ -736,8 +736,8 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 				int selectIdx = int( double(matchSize)/5.0 * (k + double(rand()/double(RAND_MAX)))); 
 				//				int selectIdx = rand() % matchSize;
 				const MatchPair &mp1 = matchedPairsFine[selectIdx];
-				double geodist1 = mesh1->getGeodesic(mp1.m_idx1, maxIdx1),
-					   geodist2 = mesh2->getGeodesic(mp1.m_idx2, maxIdx2);
+				double geodist1 = mesh1->calGeodesic(mp1.m_idx1, maxIdx1),
+					   geodist2 = mesh2->calGeodesic(mp1.m_idx2, maxIdx2);
 				double distError = std::abs(geodist1 - geodist2);
 
 				if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 2*mesh1->getAvgEdgeLength() : 0.2*geodist1) ) 
@@ -1890,7 +1890,7 @@ double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& 
 
 		if (idx_11 == idx_21) continue;
 
-		double dist1 = mesh1->getGeodesic(idx_11, idx_21), dist2 = mesh2->getGeodesic(idx_12, idx_22) * avg_len_ratio;
+		double dist1 = mesh1->calGeodesic(idx_11, idx_21), dist2 = mesh2->calGeodesic(idx_12, idx_22) * avg_len_ratio;
 
 		distortSum += abs(dist1 - dist2)/dist1;
 		count++;
@@ -1910,7 +1910,7 @@ double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor&
 	{
 	case DISTANCE_GEODESIC:
 		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) { 
-			return mp.getMesh_const()->getGeodesic(v1, v2) / mp.getMesh_const()->getAvgEdgeLength(); };
+			return mp.getMesh_const()->calGeodesic(v1, v2) / mp.getMesh_const()->getAvgEdgeLength(); };
 		break;
 	case DISTANCE_HK:
 		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) {

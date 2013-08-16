@@ -65,5 +65,8 @@
     <ClInclude Include="include\ZMesh\ZMesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZMesh\MeshAttr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

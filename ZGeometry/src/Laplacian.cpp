@@ -221,7 +221,7 @@ void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) co
 
     AA = mxCreateDoubleMatrix(mOrder, 1, mxREAL);
     double *aa = mxGetPr(AA);
-    assert((int)vWeights.size() == m_size);
+    assert((int)vWeights.size() == mhb.m_size);
     std::copy(vWeights.begin(), vWeights.end(), aa);
 
     NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);

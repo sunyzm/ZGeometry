@@ -652,7 +652,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 		double distMax = 0;
 		for (int i = 0; i < nFreeVertices; ++i)
 		{
-			double dist = mesh->getGeodesic(hIdx, vFreeIdx[i]);
+			double dist = mesh->calGeodesic(hIdx, vFreeIdx[i]);
 			vDist2Handle.push_back(dist);
 			if (dist > distMax) distMax = dist;
 		}

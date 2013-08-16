@@ -17,8 +17,7 @@ using namespace std;
 //////////////////////////////////////////////////////
 CVertex::~CVertex()
 {
-	if(m_piEdge != NULL)
-		delete[] m_piEdge;
+    delete[] m_piEdge;
 }
 
 CVertex::CVertex()
@@ -79,8 +78,7 @@ CVertex::CVertex( const CVertex& v )
 }
 
 CVertex& CVertex::operator= ( const CVertex& v )
-{
-	
+{	
 	clone(v);
 	return *this;
 }
@@ -593,6 +591,10 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 //////////////////////////////////////////////////////
 void CMesh::clearMesh()
 {
+    for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
+        delete iter->second;
+    mAttributes.clear();
+
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
 
 	if (m_bIsIndexArrayExist)
@@ -625,7 +627,9 @@ CMesh::CMesh() :
 	m_meshName(""),
 	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
 {
-
+//     addAttr<std::string>("Test Attribute Content", UNIFORM, "test attribute");
+//     const std::string& str = getAttrValue<std::string>("test attribute");
+//     std::cout << str << std::endl;
 }
 
 CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
@@ -1200,7 +1204,7 @@ bool CMesh::saveToOBJ(string sFileName)
 
 // Gu Mesh is used as a possible way to keep parameterizations
 // and the mesh together
-bool CMesh::saveToM(string sFileName)
+bool CMesh::saveToM(const std::string& sFileName)
 {
 
 	FILE* fp;
@@ -1425,39 +1429,39 @@ bool CMesh::construct()
 
 void CMesh::calFaceNormalAndArea(int i)
 {
-Vector3D v[2];
+    Vector3D v[2];
  
-//get the vector
-v[0] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[0]].m_vPosition;
+    //get the vector
+    v[0] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[0]].m_vPosition;
  
-if(m_pFace[i].m_nType == 3)
- 	v[1] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
-else
- 	v[1] = m_pVertex[m_pFace[i].m_piVertex[3]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
+    if(m_pFace[i].m_nType == 3)
+ 	    v[1] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
+    else
+ 	    v[1] = m_pVertex[m_pFace[i].m_piVertex[3]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
  
-m_pFace[i].m_vNormal = v[0] ^ v[1];
-m_pFace[i].m_faceArea = m_pFace[i].m_vNormal.length() / 2;
-m_pFace[i].m_vNormal.normalize();
+    m_pFace[i].m_vNormal = v[0] ^ v[1];
+    m_pFace[i].m_faceArea = m_pFace[i].m_vNormal.length() / 2;
+    m_pFace[i].m_vNormal.normalize();
 }
  
 void CMesh::calVertexNormal(int i)
 {
-Vector3D v;
-int iFace;
-short valence = m_pVertex[i].m_nValence;
-if(valence < 1)
- 	return;
-for(short j = 0; j < valence; j++)
-{
- 	iFace = m_pHalfEdge[m_pVertex[i].m_piEdge[j]].m_iFace;
- 	int* fv = m_pFace[iFace].m_piVertex;
- 	Vector3D cv = (m_pVertex[fv[0]].m_vPosition + m_pVertex[fv[1]].m_vPosition + m_pVertex[fv[2]].m_vPosition)/3.0;
- 	double wt = 1.0/(cv-m_pVertex[i].m_vPosition).length();
- 	v += m_pFace[iFace].m_vNormal * wt;
-}
-//v/=(double)valence;
-v.normalize();
-m_pVertex[i].m_vNormal = v;
+    Vector3D v;
+    int iFace;
+    short valence = m_pVertex[i].m_nValence;
+    if(valence < 1)
+ 	    return;
+    for(short j = 0; j < valence; j++)
+    {
+ 	    iFace = m_pHalfEdge[m_pVertex[i].m_piEdge[j]].m_iFace;
+ 	    int* fv = m_pFace[iFace].m_piVertex;
+ 	    Vector3D cv = (m_pVertex[fv[0]].m_vPosition + m_pVertex[fv[1]].m_vPosition + m_pVertex[fv[2]].m_vPosition)/3.0;
+ 	    double wt = 1.0/(cv-m_pVertex[i].m_vPosition).length();
+ 	    v += m_pFace[iFace].m_vNormal * wt;
+    }
+    //v/=(double)valence;
+    v.normalize();
+    m_pVertex[i].m_vNormal = v;
 }
 
 double CMesh::getHalfEdgeLen( int iEdge ) const
@@ -2106,7 +2110,7 @@ bool CMesh::VertexNeighborGeo(int i, double ring, vector<GeoNote>& nbg)
 	return flag;
 }
 
-double CMesh::getGeodesic( int s, int t ) const
+double CMesh::calGeodesic( int s, int t ) const
 {
 	if(s == t) return 0.0;
 
@@ -3415,7 +3419,7 @@ void CMesh::scaleEdgeLenToUnit()
 
 }
 
-std::vector<int> CMesh::getOriginalVertexIndex() const
+VectorInt CMesh::getOriginalVertexIndex() const
 {
 	vector<int> vret;
 	for (vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)

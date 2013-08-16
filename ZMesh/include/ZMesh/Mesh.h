@@ -12,9 +12,11 @@
 #include <string>
 #include <algorithm>
 #include <functional>
+#include <unordered_map>
 #include <ZUtil/color.h>
 #include "Geometry.h"
 #include "Quat.h"
+#include "MeshAttr.h"
 
 const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
@@ -228,16 +230,17 @@ private:
 	CFace*		m_pFace;				// array pointer of faces
 
 	std::string m_meshName;				// name of the mesh
+    std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
 ////////////////    methods    ////////////////
 public:
-	// ---- constructors ---- //
+	/* ---- constructors ---- */
 	CMesh();
 	CMesh(const CMesh* pMesh);
 	CMesh(const CMesh& oldMesh);
 	virtual ~CMesh();
 
-	// ---- Mesh IO and processing ---- //
+	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh);
 	void		cloneFrom(const CMesh* oldMesh);
 	bool	    Load(std::string sFileName);			// load from file
@@ -246,7 +249,7 @@ public:
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 
-	// ---- attributes access ---- //
+	/* ---- attributes access ---- */
 	const std::string&	getMeshName() const { return m_meshName; }
 	CVertex*			getVertex(int i) { return m_vVertices[i]; }
 	const CVertex*		getVertex_const(int i) const { return m_vVertices[i]; }
@@ -261,12 +264,56 @@ public:
 	int					getFaceNum() { return m_nFace; }
 	double				getAvgEdgeLength() const { return m_avgEdgeLen; }
 	int					getEdgeNum();		// get number of edges ( not half-edge! )
-	int					getBoundaryNum() const;    // get number of boundaries
+	int					getBoundaryNum() const;    // get number of boundary edges
 	int					getBoundaryVertexNum() const; // get number of boundary vertices
 	const Vector3D&		getBoundingBox() const { return m_bBox; }
 	const Vector3D&		getCenter() const { return m_Center; }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
 
+    VectorInt           getOriginalVertexIndex() const;
+    VectorInt	        getNeighborVertexIndex(int v, int ring) const;
+    VectorInt           getRingVertexIndex(int v, int ring) const;
+    VectorInt	        getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
+    void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+    void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+    void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+
+    template<typename T> 
+    void addAttr(AttrRate rate, const std::string& name) {
+        auto iter = mAttributes.find(name);
+        if (iter != mAttributes.end()) {
+            delete iter->second;
+            mAttributes.erase(iter);
+        }
+        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));        
+    }
+
+    template<typename T> 
+    void addAttr(const T& data, AttrRate rate, const std::string& name) {
+        auto iter = mAttributes.find(name);
+        if (iter != mAttributes.end()) {
+            delete iter->second;
+            mAttributes.erase(iter);
+        }
+        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
+    }
+
+    template<typename T>
+    MeshAttr<T>* getAttr(const std::string& name) {
+        auto iter = mAttributes.find(name);
+        if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
+        else return nullptr;
+    }
+
+    template<typename T>
+    T& getAttrValue(const std::string& name) {
+        auto iter = mAttributes.find(name);
+        if (iter != mAttributes.end()) 
+            return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
+        else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
+    }
+
+    /* geometry query and processing */
 	void	    gatherStatistics();
 	void        gatherStatistics2();
 	bool        hasBounary() const;
@@ -280,8 +327,7 @@ public:
 	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 	void		VertexNeighborRing(int i, int ring, std::vector<int>& nbr) const;
 	bool		isInNeighborRing(int ref, int query, int ring) const;
-	double		calGeodesic(int s, int t) const;	// thread-safe version of computing pairwise geodesic
-	double		getGeodesic(int s, int t) const;
+	double		calGeodesic(int s, int t) const;
 	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	double		getVolume();	// calculate volume (area) of a surface
@@ -291,13 +337,6 @@ public:
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
-	VectorInt	getOriginalVertexIndex() const;
-	VectorInt	getNeighborVertexIndex(int v, int ring) const;
-	VectorInt   getRingVertexIndex(int v, int ring) const;
-	VectorInt	getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
-	void        getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
-	void        setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
-	void		setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
@@ -311,7 +350,7 @@ private:
 	bool	loadFromPLY(std::string sFileName);	// load mesh from .ply files
 	bool	loadFromOFF(std::string sFileName);
 	bool	saveToOBJ(std::string sFileName);	// save mesh to .obj file
-	bool    saveToM( std::string sFileName );    // save mesh to .m file
+	bool    saveToM(const std::string& sFileName );    // save mesh to .m file
 
 	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
 	void	calVertexNormal(int i);					// compute i-th vertex's normal
