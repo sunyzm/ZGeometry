@@ -1,5 +1,5 @@
-#ifndef ZGEOM_TRIGONOMETRY
-#define ZGEOM_TRIGONOMETRY
+#ifndef ZGEOM_TRIGONOMETRY_H
+#define ZGEOM_TRIGONOMETRY_H
 
 #include <cmath>
 #include "Vec3.h"

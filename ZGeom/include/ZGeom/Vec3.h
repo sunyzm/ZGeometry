@@ -5,6 +5,7 @@
 #include <cassert>
 
 namespace ZGeom {
+
 template<typename T>
 class Vec3
 {
@@ -26,8 +27,8 @@ public:
 
 	const Vec3<T>& operator += (const Vec3<T>& v2);
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
-	const Vec3<T>& operator *= (T lambda);
-	const Vec3<T>& operator /= (T lambda);
+	const Vec3<T>& operator *= (T coeff);
+	const Vec3<T>& operator /= (T coeff);
 	T& operator [] (unsigned i) const;
 	T length() const;
 		
@@ -42,7 +43,7 @@ private:
 };
 
 template<typename T>
-T& Vec3<T>::operator[]( unsigned i ) const
+inline T& Vec3<T>::operator[]( unsigned i ) const
 {
 	assert(i == 0 || i == 1 || i == 2);
 	switch (i) {
@@ -53,31 +54,31 @@ T& Vec3<T>::operator[]( unsigned i ) const
 }
 
 template<typename T>
-T Vec3<T>::length() const
+inline T Vec3<T>::length() const
 {
 	return std::sqrt(x*x + y*y + z*z);
 }
 
 template<typename T>
-const Vec3<T>& Vec3<T>::operator/=( T lambda )
+inline const Vec3<T>& Vec3<T>::operator /= ( T coeff )
 {
-	this->x /= lambda;
-	this->y /= lambda;
-	this->z /= lambda;
+	this->x /= coeff;
+	this->y /= coeff;
+	this->z /= coeff;
 	return *this;
 }
 
 template<typename T>
-const Vec3<T>& Vec3<T>::operator*=( T lambda )
+inline const Vec3<T>& Vec3<T>::operator *= ( T coeff )
 {
-	this->x *= lambda;
-	this->y *= lambda;
-	this->z *= lambda;
+	this->x *= coeff;
+	this->y *= coeff;
+	this->z *= coeff;
 	return *this;
 }
 
 template<typename T>
-const Vec3<T>& Vec3<T>::operator-=( const Vec3<T>& v2 )
+inline const Vec3<T>& Vec3<T>::operator -= ( const Vec3<T>& v2 )
 {
 	this->x -= v2.x;
 	this->y -= v2.y;
@@ -86,7 +87,7 @@ const Vec3<T>& Vec3<T>::operator-=( const Vec3<T>& v2 )
 }
 
 template<typename T>
-const Vec3<T>& Vec3<T>::operator+=( const Vec3<T>& v2 )
+inline const Vec3<T>& Vec3<T>::operator += ( const Vec3<T>& v2 )
 {
 	this->x += v2.x;
 	this->y += v2.y;
@@ -95,50 +96,50 @@ const Vec3<T>& Vec3<T>::operator+=( const Vec3<T>& v2 )
 }
 
 template<typename T>
-Vec3<T> operator - (const Vec3<T>& v)
+inline Vec3<T> operator - (const Vec3<T>& v)
 {
 	return Vec3<T>(-v.x, -v.y, -v.z);
 }
 
 template<typename T>
-Vec3<T> operator + (const Vec3<T>& v1, const Vec3<T>& v2)
+inline Vec3<T> operator + (const Vec3<T>& v1, const Vec3<T>& v2)
 {
 	return Vec3<T>(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
 }
 
 template<typename T>
-Vec3<T> operator - (const Vec3<T>& v1, const Vec3<T>& v2)
+inline Vec3<T> operator - (const Vec3<T>& v1, const Vec3<T>& v2)
 {
 	return Vec3<T>(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
 }
 
 template<typename T>
-Vec3<T> operator * (const Vec3<T>& v, T lambda)
+inline Vec3<T> operator * (const Vec3<T>& v, T coeff)
 {
-	return Vec3<T>(v1.x * lambda, v1.y * lambda, v1.z * lambda);
+	return Vec3<T>(v1.x * coeff, v1.y * coeff, v1.z * coeff);
 }
 
 template<typename T>
-Vec3<T> operator / (const Vec3<T>& v, T lambda)
+inline Vec3<T> operator / (const Vec3<T>& v, T coeff)
 {
-	return Vec3<T>(v1.x / lambda, v1.y / lambda, v1.z / lambda);
+	return Vec3<T>(v1.x / coeff, v1.y / coeff, v1.z / coeff);
 }
 
-template<typename T> inline
-T dot(const Vec3<T>& v1, const Vec3<T>& v2)
+template<typename T> 
+inline T dot(const Vec3<T>& v1, const Vec3<T>& v2)
 {
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
 template<typename T> inline
-Vec3<T> cross( const Vec3<T>& v1, const Vec3<T>& v2 )
+inline Vec3<T> cross( const Vec3<T>& v1, const Vec3<T>& v2 )
 {
 	return Vec3<T>(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
 }
 
 
-typedef Vec3<float> Vec2s;
-typedef Vec3<double> Vec2d;
+typedef Vec3<float>  Vec3f;
+typedef Vec3<double> Vec3d;
 
 } //end of namespace ZGeom
 

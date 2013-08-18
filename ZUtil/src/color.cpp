@@ -11,6 +11,10 @@ void FalseColorMap::BuildLUT()
 		else GreenMap[i] = 1.0f - (i-128.0f) / 127.0f;
 		BlueMap[i] = 1.0f - i / 255.0f;
 	}
+    
+    RedMap[256] = RedMap[255];
+    GreenMap[256] = GreenMap[255];
+    BlueMap[256] = BlueMap[255];
 }
 
 FalseColorMap::FalseColorMap()

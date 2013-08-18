@@ -17,7 +17,8 @@ class RGBf
 {
 public :
 	float r, g, b;
-	// constructions
+
+	// constructors
 	RGBf()	{ r = 0; g = 0; b = 0; } 
 	RGBf(float x, float y, float z)	 {r = x; g = y; b = z; }
 	RGBf(const RGBf& v)	{ r = v.r; g = v.g; b = v.b; }
@@ -31,14 +32,14 @@ public :
 
 	operator float () const { return rgb2gray(); }
 
-	RGBf& operator=(const RGBf& v) {r = v.r; g = v.g; b = v.b; return (*this);}
+	const RGBf& operator=(const RGBf& v) {r = v.r; g = v.g; b = v.b; return (*this);}
 };
 
 class FalseColorMap
 {
 public:
 	FalseColorMap();
-	float RedMap[256], GreenMap[256], BlueMap[256];
+	float RedMap[257], GreenMap[257], BlueMap[257];
 	void BuildLUT();
 };
 

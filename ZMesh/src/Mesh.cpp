@@ -152,7 +152,7 @@ bool CVertex::judgeOnBoundary()
 	return false;
 }
 
-void CVertex::translateAndScale( Vector3D translation, double s )
+void CVertex::translateAndScale( const Vector3D& translation, double s )
 {
 	m_vPosition += translation;
 	m_vPosition *= s;
@@ -206,7 +206,7 @@ CHalfEdge::CHalfEdge( const CHalfEdge& e )
 	m_Face = NULL;
 	
 	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0 -­> Vertex1
-	m_iVertex[1]	= e.m_iVertex[1];
+	m_iVertex[1]	= e.m_iVertex[1];       //
 	m_iTwinEdge		= e.m_iTwinEdge;        // reverse half-edge index, -1 if boundary half edge
 	m_iNextEdge		= e.m_iNextEdge;		// next half-edge index ( counter-clock wise )
 	m_iPrevEdge		= e.m_iPrevEdge;		// previous half-edge index (cc)
@@ -627,9 +627,6 @@ CMesh::CMesh() :
 	m_meshName(""),
 	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
 {
-//     addAttr<std::string>("Test Attribute Content", UNIFORM, "test attribute");
-//     const std::string& str = getAttrValue<std::string>("test attribute");
-//     std::cout << str << std::endl;
 }
 
 CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
@@ -1825,7 +1822,6 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 
 	Av = amix;
 	return true;
-
 }
 
 bool CMesh::calVertexArea(vector<double>& Av)
@@ -3368,7 +3364,7 @@ void CMesh::gatherStatistics()
 	//cout << "Boundary Num: " << boundaryCount << endl;
 }
 
-void CMesh::move( Vector3D translation )
+void CMesh::move( const Vector3D& translation )
 {
 	for (int i = 0; i < m_nVertex; ++i)
 	{

@@ -8,7 +8,7 @@ class MeshAttrBase
 {
 public:
     MeshAttrBase(AttrRate rate, const std::string& attrName) : mRate(rate), mAttrName(attrName) {}
-    virtual ~MeshAttrBase() = 0 { std::cout << "Destroy MeshAttrBase!" << std::endl; };
+    virtual ~MeshAttrBase() = 0 {};
     const std::string& getAttrName() const { return mAttrName; }
     void setAttrName(const std::string& attrName) { mAttrName = attrName; }
 
@@ -23,7 +23,7 @@ class MeshAttr : public MeshAttrBase
 public:
     MeshAttr(AttrRate rate, const std::string& attrName) :  MeshAttrBase(rate, attrName){}
     MeshAttr(const T& data, AttrRate rate, const std::string& attrName) : MeshAttrBase(rate, attrName), mData(data) {}
-    virtual ~MeshAttr(){ std::cout << "Destroy MeshAttr!" << std::endl; }
+    virtual ~MeshAttr(){}
 
     T getValue() const { return mData; }
     T& getValue() { return mData; }

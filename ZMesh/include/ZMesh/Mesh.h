@@ -84,14 +84,14 @@ public:
 	bool				isHole() const { return m_bIsHole; }
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
-	void				translateAndScale(Vector3D translation, double s);
+    void                translateAndScale(const Vector3D& translation, double s);
 	void                setPosition( double x, double y, double z );
 
 private:
 	void clone(const CVertex& v);
 	// ---- fields ---- //
-	int						m_vIndex;
-	int						m_vid;				// ID of the vertex from original mesh
+	int						m_vIndex;           // index of the vertex 0-based
+	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
@@ -245,7 +245,7 @@ public:
 	void		cloneFrom(const CMesh* oldMesh);
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
-	void	    move(Vector3D translation);				// translate mesh
+    void        move(const Vector3D& translation);				// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 
@@ -279,23 +279,26 @@ public:
     void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
     template<typename T> 
-    void addAttr(AttrRate rate, const std::string& name) {
+    MeshAttr<T>& addAttr(AttrRate rate, const std::string& name) {
+        removeAttr(name);
+        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));
         auto iter = mAttributes.find(name);
-        if (iter != mAttributes.end()) {
-            delete iter->second;
-            mAttributes.erase(iter);
-        }
-        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));        
+        return dynamic_cast<MeshAttr<T>*>(iter->second);        
     }
 
     template<typename T> 
     void addAttr(const T& data, AttrRate rate, const std::string& name) {
+        removeAttr(name);
+        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
+    }
+
+    template<typename T>
+    void removeAttr(const std::string& name) {
         auto iter = mAttributes.find(name);
         if (iter != mAttributes.end()) {
             delete iter->second;
             mAttributes.erase(iter);
         }
-        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
     }
 
     template<typename T>

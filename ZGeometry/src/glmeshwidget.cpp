@@ -28,7 +28,7 @@ extern GeometryTask g_task;
 FalseColorMap falseColorMap;
 void glFalseColor(float v, float p)
 {
-	int floor = v * 255.0;
+	int floor = static_cast<int>(v * 256.0f);
 	glColor4f(falseColorMap.RedMap[floor], falseColorMap.GreenMap[floor], falseColorMap.BlueMap[floor], p);
 }
 
@@ -799,8 +799,7 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
 {
-	if (shapeMatcher == NULL || g_task != TASK_REGISTRATION)
-		return;
+	if (shapeMatcher == NULL || g_task != TASK_REGISTRATION) return;
 
 	const CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
 

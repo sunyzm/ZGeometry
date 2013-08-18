@@ -35,10 +35,10 @@
     <ClInclude Include="include\ZGeom\Vec3.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\VecND.h">
+    <ClInclude Include="include\ZGeom\ZGeom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\ZGeom.h">
+    <ClInclude Include="include\ZGeom\VecN.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

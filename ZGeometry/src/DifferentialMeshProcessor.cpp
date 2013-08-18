@@ -4,9 +4,10 @@
 #include <set>
 #include <algorithm>
 #include <ppl.h>
+#include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZUtil/arithmetic.h>
-#include <mkl.h>
+
 
 using namespace std;
 
