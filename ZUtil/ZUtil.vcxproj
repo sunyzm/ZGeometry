@@ -182,7 +182,6 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\data.cpp" />
     <ClCompile Include="src\fibheap.cpp" />
     <ClCompile Include="src\SimpleConfigLoader.cpp" />

@@ -1,9 +1,10 @@
 #ifndef ZMESH_MESH_ATTR_H
 #define ZMESH_MESH_ATTR_H
+
 #include <string>
 #include <iostream>
 
-enum AttrRate {UNIFORM, FACE, EDGE, VERTEX};
+enum AttrRate {UNIFORM, FACE, EDGE, VERTEX, FACE_VERT};
 class MeshAttrBase
 {
 public:
