@@ -6,10 +6,13 @@
 #include <ppl.h>
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
-#include <ZUtil/arithmetic.h>
+#include <ZGeom/arithmetic.h>
 
 
 using namespace std;
+using ZGeom::MatlabEngineWrapper;
+using ZGeom::VectorPointwiseProduct;
+using ZGeom::VectorDotProduct;
 
 extern SimpleConfigLoader g_configMgr;
 

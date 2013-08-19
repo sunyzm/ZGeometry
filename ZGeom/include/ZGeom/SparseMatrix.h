@@ -98,7 +98,7 @@ namespace ZGeom
 
     private:
         bool testNoEmptyRow() const;
-        bool testSymmetric() const;
+        bool testSymmetric(double eps = 1e-7) const;
 
         std::vector< MatElem<T> > mElements;
         uint mRowCount;

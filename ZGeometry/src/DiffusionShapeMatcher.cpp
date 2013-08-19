@@ -9,13 +9,15 @@
 #include <limits>
 #include <ppl.h>
 #include <ZUtil/SimpleConfigLoader.h>
-#include <ZUtil/arithmetic.h>
 #include <ZUtil/timer.h>
 #include <ZUtil/misc.h>
+#include <ZGeom/arithmetic.h>
 #include "OutputHelper.h"
 #include "global.h"
 
 using namespace std;
+using ZGeom::VectorPointwiseProduct;
+using ZGeom::PI;
 
 const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;

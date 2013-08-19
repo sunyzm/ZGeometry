@@ -7,6 +7,7 @@
 #include <gl/GL.h>
 #include <gl/GLU.h>
 #include <ZUtil/ZUtil.h>
+#include <ZGeom/arithmetic.h>
 #include "OutputHelper.h"
 #include "global.h"
 
@@ -353,7 +354,7 @@ void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
 	if (bbox.z > len) len = bbox.z;
 
 	g_myAngle = 2.0 * atan2(len, g_EyeZ);
-	g_myAngle = (g_myAngle * 180.0) / PI + 2.0;
+	g_myAngle = (g_myAngle * 180.0) / ZGeom::PI + 2.0;
 }
 
 void GLMeshWidget::resizeGL( int width, int height )
@@ -440,74 +441,6 @@ void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
 	qrot.convert( rot );
 	glMultMatrixd(( GLdouble*)rot );
 }
-
-/*
-void GLMeshWidget::drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color)
-{
-	if(!tmesh) return;
-
-	float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-//  glMateriali(GL_FRONT, GL_SHININESS, 96);
-
-	glPushMatrix();
-	setupObject(rot, trans);
-
-	glEnable(GL_POLYGON_OFFSET_FILL);
-	glPolygonOffset(1.0, 1.0);
-
-	{	// just display mesh in single color
-		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->getFaceNum(); i++)
-		{
-			if(NULL == tmesh->m_pFace[i].m_piEdge) continue;
-			for (int j = 0; j < 3; j++)
-			{
-				glColor4f(color[0], color[1], color[2], color[3]); 
-				int pi = tmesh->m_pFace[i].m_piVertex[j];
-				Vector3D norm = tmesh->m_pVertex[pi].getNormal();
-				glNormal3f(norm.x, norm.y, norm.z);
-				Vector3D vt = tmesh->m_pVertex[pi].getPosition();
-				//vt -= tmesh->m_Center;
-				glVertex3f(vt.x, vt.y, vt.z);
-			}
-		}
-		glEnd();
-	}
-	glDisable(GL_POLYGON_OFFSET_FILL);
-
-
-	if (tmesh->hasBounary())   //highlight boundary edge 
-	{
-		glDisable(GL_LIGHTING);
-		glBegin(GL_LINES);	
-		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
-		{
-			if(tmesh->m_pHalfEdge[i].m_iTwinEdge < 0) 
-			{
-				int p1 = tmesh->m_pHalfEdge[i].m_iVertex[0];
-				int p2 = tmesh->m_pHalfEdge[i].m_iVertex[1];
-				glLineWidth(2.0);
-				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-				if(tmesh->m_pVertex[p1].m_bIsHole) 
-				{
-					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
-				}
-				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
-				//v1 -= tmesh->m_Center;
-				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
-				//v2 -= tmesh->m_Center;
-				glVertex3d(v1.x, v1.y, v1.z);
-				glVertex3d(v2.x, v2.y, v2.z);
-			}
-		}
-		glEnd();
-		glEnable(GL_LIGHTING);
-	}
-	
-	glPopMatrix();
-}
-*/
 
 void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
 {
@@ -639,7 +572,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		//glEnd();
 		//glPointSize(2.0);
 
-		// draw as gluSphere 
+		/* draw as gluSphere */ 
 		const float *feature_color1 = RGBColors[COLOR_MAGENTA];
 		const float *feature_color2 = RGBColors[COLOR_GREEN];		
 		GLUquadric* quadric = gluNewQuadric();
@@ -794,7 +727,6 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 	}
 
 	return false;
-
 }
 
 void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
@@ -953,17 +885,4 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 		gluDeleteQuadric(quadric);
 	}
 }
-
-void GLMeshWidget::updateMP_RS( std::vector<DifferentialMeshProcessor>& vMP, std::vector<RenderSettings>& vRS )
-{
-	m_num_meshes = vMP.size();
-	vpMP.resize(m_num_meshes);
-	vpRS.resize(m_num_meshes);
-
-	for (int i = 0; i < m_num_meshes; ++i)
-		vpMP[i] = &vMP[i];
-	for (int i = 0; i < m_num_meshes; ++i)
-		vpRS[i] = &vRS[i];
-}
-
 

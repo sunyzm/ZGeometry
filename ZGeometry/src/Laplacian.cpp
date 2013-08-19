@@ -1,5 +1,5 @@
 #include "Laplacian.h"
-#include <ZUtil/arithmetic.h>
+#include <ZGeom/arithmetic.h>
 #include <ctime>
 #include <algorithm>
 #include <cstdio>
@@ -9,6 +9,7 @@
 #include <stdexcept>
 
 using namespace std;
+using ZGeom::PI;
 
 const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
                                                          "Anisotropic", "Anisotropic2", 

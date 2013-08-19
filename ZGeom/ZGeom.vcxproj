@@ -188,14 +188,20 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\ZGeom\arithmetic.h" />
+    <ClInclude Include="include\ZGeom\EigenSystem.h" />
+    <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
     <ClInclude Include="include\ZGeom\SparseMatrix.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCSR.h" />
-    <ClInclude Include="include\ZGeom\Trigonometry.h" />
+    <ClInclude Include="include\ZGeom\trigonometry.h" />
     <ClInclude Include="include\ZGeom\types.h" />
     <ClInclude Include="include\ZGeom\Vec2.h" />
     <ClInclude Include="include\ZGeom\Vec3.h" />
     <ClInclude Include="include\ZGeom\VecN.h" />
     <ClInclude Include="include\ZGeom\ZGeom.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="src\arithmetic.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

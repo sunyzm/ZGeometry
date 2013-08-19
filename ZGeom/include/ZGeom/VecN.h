@@ -100,6 +100,7 @@ inline void VecN<T>::resize(int n)
 	if (mInternalStorage) delete []mVec;
 	this->mDim = n;
 	mVec = new T[mDim];
+    mInternalStorage = true;
 }
 
 template<typename T>

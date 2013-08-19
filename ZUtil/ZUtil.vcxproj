@@ -182,7 +182,6 @@
     <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\arithmetic.cpp" />
     <ClCompile Include="src\color.cpp" />
     <ClCompile Include="src\data.cpp" />
     <ClCompile Include="src\fibheap.cpp" />
@@ -190,7 +189,6 @@
     <ClCompile Include="src\timer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="include\ZUtil\arithmetic.h" />
     <ClInclude Include="include\ZUtil\color.h" />
     <ClInclude Include="include\ZUtil\data.h" />
     <ClInclude Include="include\ZUtil\fibheap.h" />

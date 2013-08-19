@@ -133,14 +133,14 @@ namespace ZGeom
     }
 
     template<typename T>
-    inline bool SparseMatrix<T>::testSymmetric() const
+    inline bool SparseMatrix<T>::testSymmetric(double eps/*=1e-7*/) const
     {
         for (uint k = 0; k < mNonzeroCount; ++k) {
             if (mElements[k].row() >= mElements[k].col()) continue;
             bool symElemFound = false;
             for (uint l = 0; l < mNonzeroCount; ++l) {
                 if (mElements[k].row() == mElements[l].col() && mElements[k].col() == mElements[l].row()) { // element in symmetric position found
-                    if (fabs(mElements[l].val() - mElements[k].val()) < 1e-7) symElemFound = true;
+                    if (fabs(mElements[l].val() - mElements[k].val()) < eps) symElemFound = true;
                     break;
                 }
             }

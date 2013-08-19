@@ -19,6 +19,7 @@
 
 using namespace std;
 using ZUtil::Int2String;
+using ZGeom::MatlabEngineWrapper;
 
 int     QZGeometryWindow::DEFAULT_EIGEN_SIZE      = 300;
 int     QZGeometryWindow::DEFAULT_DEFORM_RING     = 5 ;

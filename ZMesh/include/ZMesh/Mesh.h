@@ -245,7 +245,7 @@ public:
 	void		cloneFrom(const CMesh* oldMesh);
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
-    void        move(const Vector3D& translation);				// translate mesh
+    void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 

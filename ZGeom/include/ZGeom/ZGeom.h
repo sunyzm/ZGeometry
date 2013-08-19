@@ -3,7 +3,7 @@
 #include "Vec2.h"
 #include "Vec3.h"
 #include "VecN.h"
-#include "Trigonometry.h"
+#include "trigonometry.h"
 #include "SparseMatrix.h"
 
 #endif

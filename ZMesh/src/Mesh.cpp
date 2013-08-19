@@ -1,5 +1,5 @@
 #include "Mesh.h"
-#include <ZUtil/arithmetic.h>
+#include <ZGeom/arithmetic.h>
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
@@ -3774,7 +3774,7 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 				len1 = getHalfEdgeLen(e1);
 				len2 = getHalfEdgeLen(e2);
 				/* compute corner angle by cotangent law */
-				triangleCotan(len0, len1, len2, cota21, cota22);
+				ZGeom::triangleCotan(len0, len1, len2, cota21, cota22);
 			}
 			double cota = (cota11 + cota21) / 2.0;
 
@@ -3796,7 +3796,7 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 			double len2 = getHalfEdgeLen(e2);
 			/* compute corner angle by cotangent law */
 			double cota1, cota2;
-			triangleCotan(len0, len1, len2, cota1, cota2);
+			ZGeom::triangleCotan(len0, len1, len2, cota1, cota2);
 			double cota = cota1 / 2.0;		
 
 			vII.push_back(i+1);

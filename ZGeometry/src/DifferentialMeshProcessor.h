@@ -1,12 +1,13 @@
 #pragma once
-#include <engine.h>
-#include <ZMesh/ZMesh.h>
+
 #include <string>
 #include <vector>
 #include <map>
 #include <cmath>
+#include <engine.h>
+#include <ZMesh/ZMesh.h>
+#include <ZGeom/MatlabEngineWrapper.h>
 #include "Laplacian.h"
-#include "MatlabEngineWrapper.h"
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};
@@ -41,7 +42,7 @@ public:
 	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
 	~DifferentialMeshProcessor();
 
-	void init(CMesh* tm, MatlabEngineWrapper* e);
+	void init(CMesh* tm, ZGeom::MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	void readMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
 	void writeMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
@@ -100,7 +101,7 @@ public:
 	double constrain_weight;
 	
 private:
-	MatlabEngineWrapper *mpEngineWrapper;
+	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;
 
 	bool m_bSGWComputed;

@@ -27,7 +27,6 @@ public:
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
-	void updateMP_RS(std::vector<DifferentialMeshProcessor>& vMP, std::vector<RenderSettings>& vRS);
 	void setShapeMatcher(DiffusionShapeMatcher* p) { pDSM = p; }
 	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
 protected:

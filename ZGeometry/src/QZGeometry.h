@@ -7,11 +7,12 @@
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
 #include <ZUtil/SimpleConfigLoader.h>
+#include <ZGeom/MatlabEngineWrapper.h>
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"
-#include "MatlabEngineWrapper.h"
+
 
 
 class QZGeometryWindow : public QMainWindow
@@ -117,7 +118,7 @@ private:
 private:	
 	/* fields */
 	Ui::ZGeometryClass	ui;
-	MatlabEngineWrapper mEngineWrapper;	
+	ZGeom::MatlabEngineWrapper mEngineWrapper;	
 	DeformType			deformType;
 	int					mObjInFocus;	
 	int					mMeshCount;

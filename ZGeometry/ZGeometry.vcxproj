@@ -87,9 +87,9 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)ZMesh\lib\;$(SolutionDir)ZUtil\lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)ZGeom\lib\;$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)ZMesh\lib\;$(SolutionDir)ZUtil\lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>glew32.lib;ZUtil32d.lib;ZMesh32d.lib;libeng.lib;libmx.lib;libmat.lib;qtmaind.lib;QtCored4.lib;QtGuid4.lib;QtOpenGLd4.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;ZUtil32d.lib;ZMesh32d.lib;ZGeom32d.lib;libeng.lib;libmx.lib;libmat.lib;qtmaind.lib;QtCored4.lib;QtGuid4.lib;QtOpenGLd4.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>copy $(SolutionDir)thirdparty\glew-1.9.0\bin\glew32.dll $(OutDir)</Command>
@@ -126,9 +126,9 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <OutputFile>$(OutDir)$(TargetName)$(TargetExt)</OutputFile>
-      <AdditionalLibraryDirectories>$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)ZMesh\lib\;$(SolutionDir)ZUtil\lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(SolutionDir)ZGeom\lib\;$(MatlabDir)extern\lib\win32\microsoft;$(SolutionDir)thirdparty\glew-1.9.0\lib;$(SolutionDir)ZMesh\lib\;$(SolutionDir)ZUtil\lib\;$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <AdditionalDependencies>glew32.lib;ZUtil32.lib;ZMesh32.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;QtCore4.lib;QtGui4.lib;QtOpenGL4.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glew32.lib;ZUtil32.lib;ZMesh32.lib;ZGeom32.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;QtCore4.lib;QtGui4.lib;QtOpenGL4.lib;opengl32.lib;glu32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
@@ -218,7 +218,6 @@
     <ClInclude Include="src\global.h" />
     <ClInclude Include="src\DifferentialMeshProcessor.h" />
     <ClInclude Include="src\Laplacian.h" />
-    <ClInclude Include="src\MatlabEngineWrapper.h" />
     <ClInclude Include="src\MatlabWrapper.h" />
     <ClInclude Include="src\OutputHelper.h" />
     <ClInclude Include="src\RenderSettings.h" />
