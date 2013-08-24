@@ -15,6 +15,7 @@
 #include <QTime>
 #include <QProcess>
 #include <ZUtil/ZUtil.h>
+#include <ZGeom/SparseSymMatVecSolver.h>
 #include "global.h"
 
 using namespace std;
@@ -37,6 +38,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", LOAD_MHB_CACHE);
 	g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", PARAMETER_SLIDER_CENTER);
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", DEFUALT_HK_TIMESCALE);
+    g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", DEFAULT_EIGEN_SIZE);
 
 	mMeshCount = 0;
 	mObjInFocus = -1;
@@ -291,6 +293,15 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
 void QZGeometryWindow::initialProcessing()
 {
+    for (int i = 0; i < mMeshCount; ++i) {
+        double hkSum(0);
+        for (int v = 0; v < mMeshes[i]->getVerticesNum(); ++v) {
+            hkSum += mProcessors[i]->calHK(1000, v, 30);
+        }
+        cout << "HK sum " << i << ": " << hkSum << std::endl;
+        //cout << "Heat trace " << i << ": " << mProcessors[i]->calHeatTrace(30) << std::endl;
+    }
+
 	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");

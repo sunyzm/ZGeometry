@@ -1,5 +1,4 @@
 #include "Laplacian.h"
-#include <ZGeom/arithmetic.h>
 #include <ctime>
 #include <algorithm>
 #include <cstdio>
@@ -7,6 +6,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <ZGeom/arithmetic.h>
 
 using namespace std;
 using ZGeom::PI;
@@ -211,7 +211,7 @@ void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) co
 
     std::vector<int> vII, vJJ;
     std::vector<double> vSS, vWeights;
-    mLS.convertToCOO(vII, vJJ, vSS, ZGeom::SparseMatrix<double>::MAT_FULL);
+    mLS.convertToCOO(vII, vJJ, vSS, ZGeom::MAT_FULL);
     mW.getDiagonal(vWeights);
 
     mhb.m_func.clear();

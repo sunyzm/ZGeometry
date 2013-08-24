@@ -6,7 +6,7 @@ namespace ZGeom
 
     typedef unsigned int uint;
 
-} //end of namespace ZGeom
+} 
 
 
 #endif

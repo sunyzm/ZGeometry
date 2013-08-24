@@ -1,6 +1,7 @@
 #ifndef ZGEOM_SPARSE_MATRIX_CSR_H
 #define ZGEOM_SPARSE_MATRIX_CSR_H
 
+#include <cassert>
 #include <algorithm>
 #include <vector>
 #include "types.h"

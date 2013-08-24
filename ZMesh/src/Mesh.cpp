@@ -1,5 +1,4 @@
 #include "Mesh.h"
-#include <ZGeom/arithmetic.h>
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
@@ -8,6 +7,7 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <ZGeom/arithmetic.h>
 
 using namespace std;
 

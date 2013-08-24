@@ -6,9 +6,6 @@
 #include <vector>
 #include "types.h"
 
-#ifdef USE_MKL
-#include <mkl.h>
-#endif
 #ifdef USE_PPL
 #include <ppl.h>
 #endif
@@ -16,26 +13,34 @@
 namespace ZGeom
 {
 
+template<typename T> class VecN;
+template<typename T> class SparseMatrix;
+template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+
 template<typename T>
 class VecN
 {
 public:
+    friend class SparseMatrix<T>;
+
 	VecN() : mVec(NULL), mDim(0), mInternalStorage(true) {}
 	VecN(uint n) : mVec(NULL), mInternalStorage(true) { resize(n); }
     VecN(uint n, T val) : mVec(NULL), mInternalStorage(true) { resize(n, val); }
     template<typename F> VecN(const VecN<F>& v2);
     VecN(T* vec, uint n, bool copyValues = true);
     VecN(const std::vector<T>& vec);
-
 	~VecN() { if (mInternalStorage) delete []mVec; }
+
+    T operator [] (uint i) const { return mVec[i]; }
+    T operator () (uint i) const { return mVec[i-1]; }
 	T& operator [] (uint i) { return mVec[i]; }
     T& operator () (uint i) { return mVec[i-1]; }
-    T& c_ptr() const { return mVec; } 
+    T* c_ptr() const { return mVec; } 
+    std::vector<T> toStdVector() const { return std::vector<T>(mVec, mVec + mDim); }
+    std::vector<T> operator() () const { return std::vector<T>(mVec, mVec + mDim); }
+    uint size() const { return mDim; }
 	void resize(int n);
     void resize(int n, T val);
-    uint size() const { return mDim; }
-
-    T normEuclidean() const;
 
     const VecN<T>& operator += (const VecN<T>& v2);
     const VecN<T>& operator -= (const VecN<T>& v2) { return (*this) += -v2; }
@@ -49,12 +54,11 @@ public:
     VecN<T> operator - (const VecN<T>& v2) const { return *this + (-v2); }
     VecN<T> operator * (T coeff) const { VecN<T> v3(*this); v3 *= coeff; return v3; }
     VecN<T> operator / (T coeff) const { return (*this) * coeff; }
-	friend VecN<T> operator * (T t, const VecN<T>& v1);
+	friend VecN<T> operator * (T t, const VecN<T>& v1);    
 
     T dot(const VecN<T>& v2) const;
-
-    std::vector<T> toStdVector() const { return std::vector<T>(mVec, mVec + mDim); }
-    std::vector<T> operator() () const { return std::vector<T>(mVec, mVec + mDim); }
+    T normEuclidean() const;
+    friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 private:
 	T *mVec;
@@ -67,7 +71,7 @@ template<typename T>
 template<typename F>
 inline VecN<T>::VecN(const VecN<F>& v2) : mVec(NULL), mInternalStorage(true)
 {
-    resize(v2.mDim);
+    this->resize(v2.mDim);
     for (int i = 0; i < mDim; ++i) mVec[i] = static_cast<T>(v2.mVec[i]);
 }
 
@@ -164,20 +168,6 @@ inline const VecN<T>& VecN<T>::operator += (T trans)
 #endif
 
 /* definitions for operator*= */
-#ifdef USE_MKL
-template<>
-inline const VecN<double>& VecN<double>::operator *= (double scale)
-{
-    cblas_dscal(mDim, scale, mVec, 1);
-    return *this;
-}
-template<>
-inline const VecN<float>& VecN<float>::operator *= (float scale)
-{
-    cblas_sscal(mDim, scale, mVec, 1);
-    return *this;
-}
-#else
 #ifdef USE_PPL
 template<typename T>
 inline const VecN<T>& VecN<T>::operator *= (T scale)
@@ -197,23 +187,8 @@ inline const VecN<T>& VecN<T>::operator *= (T scale)
     return *this;
 }
 #endif
-#endif
 
 /* definitions for dot product */
-#ifdef USE_MKL
-template<>
-inline float VecN<float>::dot(const VecN<float>& v2) const
-{
-    assert(mDim == v2.mDim);
-    return cblas_sdot(mDim, mVec, 1, v2.mVec, 1);
-}
-template<>
-inline double VecN<double>::dot(const VecN<double>& v2) const
-{
-    assert(mDim == v2.mDim);
-    return cblas_ddot(mDim, mVec, 1, v2.mVec, 1);
-}
-#else
 template<typename T>
 inline T VecN<T>::dot(const VecN<T>& v2) const
 {
@@ -222,13 +197,10 @@ inline T VecN<T>::dot(const VecN<T>& v2) const
     for (int i = 0; i < mDim; ++i) sum += mVec[i] * v2.mVec[i];
     return sum;
 }
-#endif
 
+typedef VecN<float>  VecNs;
 typedef VecN<double> VecNd;
-typedef VecN<float>  VecNf;
 
 }// end of namespace ZGeom
-
-
 
 #endif

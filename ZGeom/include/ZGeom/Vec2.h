@@ -115,7 +115,7 @@ T dot(const Vec2<T>& v1, const Vec2<T>& v2)
 	return v1.x * v2.x + v1.y * v2.y;
 }
 
-typedef Vec2<float> Vec2f;
+typedef Vec2<float> Vec2s;
 typedef Vec2<double> Vec2d;
 
 } //end of namespace ZGeom

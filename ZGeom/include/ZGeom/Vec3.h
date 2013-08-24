@@ -138,7 +138,7 @@ inline Vec3<T> cross( const Vec3<T>& v1, const Vec3<T>& v2 )
 }
 
 
-typedef Vec3<float>  Vec3f;
+typedef Vec3<float>  Vec3s;
 typedef Vec3<double> Vec3d;
 
 } //end of namespace ZGeom

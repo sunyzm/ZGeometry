@@ -8,7 +8,7 @@
 namespace ZUtil
 {
 	template<class T>
-	void vector2file( const std::string& filepath, const std::vector<T>& data, bool transpose = false )
+	inline void vector2file( const std::string& filepath, const std::vector<T>& data, bool transpose = false )
 	{
 		std::ofstream ofs(filepath.c_str());
 		if (transpose)	// output as row vector

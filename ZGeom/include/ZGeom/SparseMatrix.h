@@ -9,16 +9,20 @@
 namespace ZGeom
 {
     template<typename T> class MatElem;
-    template<typename T> class SparseMatrix;
+    template<typename T> class VecN;
+    template<typename T> class SparseMatrix;    
     template<typename T> class Laplacian;
     template<typename T> bool operator < (const MatElem<T>& t1, const MatElem<T>& t2);
+    template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+
+    enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
 
     template<typename T>
     class MatElem
     {
     public:
         friend class SparseMatrix<T>;
-        friend bool operator< <T>(const MatElem<T>& t1, const MatElem<T>& t2);
+        friend bool operator< (const MatElem<T>& t1, const MatElem<T>& t2);
 
         MatElem() : mRow(0), mCol(0), mVal(0.) {}
         MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
@@ -32,7 +36,8 @@ namespace ZGeom
     };
 
     template<typename T> 
-    inline bool operator < (const MatElem<T>& t1, const MatElem<T>& t2) {
+    inline bool operator < (const MatElem<T>& t1, const MatElem<T>& t2)
+    {
         return t1.mRow < t2.mRow || (t1.mRow == t2.mRow && t1.mCol < t2.mCol);
     }
 
@@ -41,8 +46,7 @@ namespace ZGeom
     class SparseMatrix
     {
     public:
-        friend class Laplacian<T>;    
-        enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
+        friend class Laplacian<T>;      
 
         uint rowCount() const { return mRowCount; }
         uint colCount() const { return mColCount; }
@@ -95,6 +99,7 @@ namespace ZGeom
         void read(std::istream& in);
 
         const SparseMatrix<T>& operator *= (double coeff);
+        friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
     private:
         bool testNoEmptyRow() const;
