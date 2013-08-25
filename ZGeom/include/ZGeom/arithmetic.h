@@ -4,11 +4,10 @@
 #include <vector>
 #include <cmath>
 #include <cassert>
+#include "common.h"
 
 namespace ZGeom
 {
-    const double PI = 3.14159265358979323846;
-
     inline double sinc(double x)
     {
         if (fabs(x) < 1e-10) return 1.0;
@@ -68,7 +67,6 @@ namespace ZGeom
         cotan_c = cosc / std::sqrt(1-cosc*cosc);
     }
 
-    void dummy();
 }
 
 

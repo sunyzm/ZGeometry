@@ -4,7 +4,7 @@
 #include <cassert>
 #include <algorithm>
 #include <vector>
-#include "types.h"
+#include "common.h"
 
 #ifdef USE_PPL
 #include <ppl.h>

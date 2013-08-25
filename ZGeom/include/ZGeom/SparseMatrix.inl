@@ -3,7 +3,6 @@
 #include <vector>
 #include <functional>
 #include <algorithm>
-#include "SparseMatrixCSR.h"
 
 namespace ZGeom
 {

@@ -3,8 +3,9 @@
 
 #include <iostream>
 #include <vector>
+#include "common.h"
+#include "SparseMatrixCOO.h"
 #include "SparseMatrixCSR.h"
-#include "types.h"
 
 namespace ZGeom
 {
@@ -12,7 +13,6 @@ namespace ZGeom
     template<typename T> class VecN;
     template<typename T> class SparseMatrix;    
     template<typename T> class Laplacian;
-    template<typename T> bool operator < (const MatElem<T>& t1, const MatElem<T>& t2);
     template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
     enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
@@ -22,7 +22,7 @@ namespace ZGeom
     {
     public:
         friend class SparseMatrix<T>;
-        friend bool operator< (const MatElem<T>& t1, const MatElem<T>& t2);
+        bool operator< (const MatElem<T>& t2) const;
 
         MatElem() : mRow(0), mCol(0), mVal(0.) {}
         MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
@@ -36,11 +36,10 @@ namespace ZGeom
     };
 
     template<typename T> 
-    inline bool operator < (const MatElem<T>& t1, const MatElem<T>& t2)
+    inline bool MatElem<T>::operator < (const MatElem<T>& t2) const
     {
-        return t1.mRow < t2.mRow || (t1.mRow == t2.mRow && t1.mCol < t2.mCol);
+        return this->mRow < t2.mRow || (this->mRow == t2.mRow && this->mCol < t2.mCol);
     }
-
 
     template<typename T>
     class SparseMatrix

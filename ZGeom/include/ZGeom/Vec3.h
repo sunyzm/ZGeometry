@@ -45,7 +45,7 @@ private:
 template<typename T>
 inline T& Vec3<T>::operator[]( unsigned i ) const
 {
-	assert(i == 0 || i == 1 || i == 2);
+	assert(0 <= i && i <= 2);
 	switch (i) {
 	case 0: return this->x;
 	case 1: return this->y;
@@ -131,12 +131,11 @@ inline T dot(const Vec3<T>& v1, const Vec3<T>& v2)
 	return v1.x * v2.x + v1.y * v2.y + v1.z * v2.z;
 }
 
-template<typename T> inline
+template<typename T>
 inline Vec3<T> cross( const Vec3<T>& v1, const Vec3<T>& v2 )
 {
 	return Vec3<T>(v1.y*v2.z - v1.z*v2.y, v1.z*v2.x - v1.x*v2.z, v1.x*v2.y - v1.y*v2.x);
 }
-
 
 typedef Vec3<float>  Vec3s;
 typedef Vec3<double> Vec3d;
