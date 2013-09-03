@@ -5,6 +5,7 @@
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
 #include <ZGeom/SparseMatrix.h>
+#include <ZGeom/EigenSystem.h>
 
 class ManifoldBasis
 {
@@ -22,19 +23,14 @@ public:
 	MeshFunction getManifoldHarmonic(int k) const;
 	void dumpEigenValues(const std::string& evlPath) const;
 	bool empty() const { return m_func.empty(); }
+    int eigVecSize() const { return m_size; }
+    int eigVecCount() const { return m_nEigFunc; } 
 
 public:
 	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
 	int m_size;	    // shape size
 	int m_nEigFunc; // number of basis < shape size
 };
-
-class ManifoldLaplaceHarmonics : public ManifoldHarmonics
-{
-public:
-    bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc);
-};
-
 
 class MeshLaplacian
 {

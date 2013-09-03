@@ -36,7 +36,8 @@ public:
  		return mp2 < mp1;
  	}
 
-	static std::vector<std::pair<int, int> > ToPairVector(const std::vector<MatchPair>& vmp) {
+	static std::vector<std::pair<int, int> > ToPairVector(const std::vector<MatchPair>& vmp)
+    {
 		std::vector<std::pair<int, int> > vp;
 		for (auto iter = vmp.begin(); iter != vmp.end(); ++iter) 
 			vp.push_back( (std::pair<int, int>)(*iter) );

@@ -68,6 +68,7 @@ public:
 	void setValue(int idx, double val) { m_function[idx] = val; }
 	double& operator[](int idx);
 	void copyValues(const std::vector<double>& values);
+
 protected:
 	int m_size;		// vertex number of the mesh
 	std::vector<double> m_function;

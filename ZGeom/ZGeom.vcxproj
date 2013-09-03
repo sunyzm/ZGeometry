@@ -123,6 +123,13 @@
       <Command>
       </Command>
     </PostBuildEvent>
+    <Lib>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <Verbose>false</Verbose>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -140,6 +147,13 @@
       <Command>
       </Command>
     </PostBuildEvent>
+    <Lib>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <Verbose>false</Verbose>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -161,6 +175,13 @@
       <Command>
       </Command>
     </PostBuildEvent>
+    <Lib>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <Verbose>false</Verbose>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -182,10 +203,16 @@
       <Command>
       </Command>
     </PostBuildEvent>
+    <Lib>
+      <IgnoreSpecificDefaultLibraries>
+      </IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>
+      </IgnoreAllDefaultLibraries>
+      <Verbose>false</Verbose>
+    </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
     <None Include="include\ZGeom\SparseMatrix.inl" />
-    <None Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ZGeom\arithmetic.h" />
@@ -193,6 +220,7 @@
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h" />
     <ClInclude Include="include\ZGeom\MatVecFunctor.h" />
+    <ClInclude Include="include\ZGeom\Mesh.h" />
     <ClInclude Include="include\ZGeom\SparseMatrix.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCOO.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCSR.h" />
@@ -211,6 +239,7 @@
     <ClCompile Include="src\arithmetic.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\MatVecArithmetic.cpp" />
+    <ClCompile Include="src\SparseMatrixCSR.cpp" />
     <ClCompile Include="src\SparseMatVecMultiplier.cpp" />
     <ClCompile Include="src\VecN.cpp" />
   </ItemGroup>

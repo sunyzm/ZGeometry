@@ -128,6 +128,7 @@ inline VecN<T> operator * (T t, const VecN<T>& v1)
 	return v1 * t;
 }
 
+
 /* definitions for operator+= */
 #ifdef USE_PPL
 template<typename T>
@@ -167,6 +168,7 @@ inline const VecN<T>& VecN<T>::operator += (T trans)
 }
 #endif
 
+
 /* definitions for operator*= */
 #ifdef USE_PPL
 template<typename T>
@@ -187,6 +189,7 @@ inline const VecN<T>& VecN<T>::operator *= (T scale)
     return *this;
 }
 #endif
+
 
 /* definitions for dot product */
 template<typename T>

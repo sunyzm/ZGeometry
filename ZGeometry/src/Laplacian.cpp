@@ -121,6 +121,12 @@ void ManifoldHarmonics::dumpEigenValues( const std::string& pathEVL ) const
 	ofs.close();
 }
 
+/*
+class ManifoldLaplaceHarmonics : public ManifoldHarmonics
+{
+public:
+    bool decompLaplacian(Engine *ep, const CMesh *tmesh, int nEigFunc);
+};
 
 bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, int nEigFunc )
 {
@@ -203,6 +209,7 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 
 	return true;
 }
+*/
 
 void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {

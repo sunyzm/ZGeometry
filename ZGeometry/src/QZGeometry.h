@@ -108,8 +108,8 @@ private:
 	void updateReferenceMove(int obj);
     void constructLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void decomposeLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-    bool laplacianRequireDecompose(int obj, MeshLaplacian::LaplacianType laplacianType) const;
-	void decomposeSingleLaplacian(int obj, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+    bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
+	void decomposeSingleLaplacian(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
     void allocateStorage(int newMeshCount);
 
 	/* helper functions */

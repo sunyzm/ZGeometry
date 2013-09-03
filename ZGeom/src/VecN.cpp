@@ -5,7 +5,7 @@ namespace ZGeom
 {
 #ifdef USE_MKL
 #include <mkl.h>
-    /* specialization for operator*= */
+    /* specialization for operator *= */
     template<>
     const VecN<double>& VecN<double>::operator *= (double scale)
     {

@@ -1,7 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <None Include="ReadMe.txt" />
     <None Include="include\ZGeom\SparseMatrix.inl">
       <Filter>Source Files</Filter>
     </None>
@@ -71,6 +70,9 @@
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -86,6 +88,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\MatVecArithmetic.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SparseMatrixCSR.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -34,7 +34,7 @@ namespace ZGeom
         MatrixForm matForm = (isSymmetric ? MAT_UPPER : MAT_FULL);
         mat.convertToCOO(vRowInd, vColInd, vVal, matForm);
 
-        mNonzeroCount = vVal.size();
+        mNonzeroCount = (int)vVal.size();
         mRowInd = new MKL_INT[mNonzeroCount];
         mColInd = new MKL_INT[mNonzeroCount];
         mVal    = new double[mNonzeroCount];
@@ -66,5 +66,5 @@ namespace ZGeom
         }
     }
 
-} // end of namespace mm_laplace
+} // end of namespace ZGeom
 

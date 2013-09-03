@@ -1644,16 +1644,14 @@ void QZGeometryWindow::evalDistance()
 
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-	DifferentialMeshProcessor& mp = *mProcessors[obj];
-	const CMesh& mesh = *mMeshes[obj];
-	if (!mp.vMHB[laplacianType].empty()) return;
+    DifferentialMeshProcessor& mp = *mProcessors[obj];
+    const CMesh& mesh = *mMeshes[obj];
+    assert(nEigVec < mesh.getMeshSize());
 
-	CStopWatch timer;
-	timer.startTimer();
-
-	std::string s_idx = "0";
+    if (!mp.vMHB[laplacianType].empty()) return;
+    std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
@@ -1665,41 +1663,38 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, MeshLaplacian::Laplaci
 	}
 	else // need to compute Laplacian and to cache
 	{
-		int nEig = min(DEFAULT_EIGEN_SIZE, mesh.getVerticesNum()-1);
-		mp.decomposeLaplacian(nEig, laplacianType);
+		mp.decomposeLaplacian(nEigVec, laplacianType);
 		mp.writeMHB(pathMHB, laplacianType);
 		qout.output("MHB saved to " + pathMHB);
 	}
-
-    timer.stopTimer();
 
 	if (1 == g_configMgr.getConfigValueInt("DUMP_EIG_VAL")) {
 		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
 		mp.getMHB().dumpEigenValues(pathEVL);
 	}
-    qout.output(QString().sprintf("Laplacian %d decomposed in %f(s)", obj, timer.getElapsedTime()));
 	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
 }
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
     int totalToDecompose = 0;
+    int nEigVec = DEFAULT_EIGEN_SIZE;
 
     for (int obj = 0; obj < mMeshCount; ++obj) {
         if (!mProcessors[obj]->isLaplacianConstructed(laplacianType))
-            throw std::logic_error("Laplacian to decompose not available!");
-        if (laplacianRequireDecompose(obj, laplacianType)) 
+            throw std::logic_error("Laplacian type not valid!");
+        if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
             ++totalToDecompose;
     }
     std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
-
-    if (totalToDecompose <= 1) {
+        
+    if (totalToDecompose <= 1) {        
         Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-            decomposeSingleLaplacian(obj, laplacianType);    
+            decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
         });
     } else {    // if both need explicit decomposition, then must run in sequence in Matlab
         for(int obj = 0; obj < mMeshCount; ++obj) {
-            decomposeSingleLaplacian(obj, laplacianType);    
+            decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
         }
     }
 
@@ -1897,7 +1892,7 @@ void QZGeometryWindow::registerTest()
 	ui.glMeshWidget->update();
 }
 
-bool QZGeometryWindow::laplacianRequireDecompose( int obj, MeshLaplacian::LaplacianType laplacianType ) const
+bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType ) const
 {
     const DifferentialMeshProcessor& mp = *mProcessors[obj];
     const CMesh& mesh = *mMeshes[obj];
@@ -1909,7 +1904,17 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, MeshLaplacian::Laplac
     s_idx[0] += (int)laplacianType;
     std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 
-    return !ZUtil::fileExist(pathMHB);
+    if (!ZUtil::fileExist(pathMHB)) return true;
+
+    ifstream ifs(pathMHB.c_str(), ios::binary);
+    int nEig, nSize;
+    ifs.read((char*)&nEig, sizeof(int));
+    ifs.read((char*)&nSize, sizeof(int));
+    ifs.close();
+
+    if (nEig != nEigVec || nSize != mesh.getMeshSize()) return true;
+
+    return false;
 }
 
 void QZGeometryWindow::allocateStorage( int newMeshCount )

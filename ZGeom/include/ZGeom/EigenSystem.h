@@ -24,7 +24,7 @@ namespace ZGeom
         void evalGeneralError(MatVecFunctor* A, MatVecFunctor* M, std::vector<double>& vErrors) const;
         void inverseEigVals();
 
-    private:
+    protected:
         int mOrder;
         int mEvCount;
         std::vector<double> mEigVals;
