@@ -7,6 +7,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <ZGeom/arithmetic.h>
+#include <ZGeom/EigenCompute.h>
 
 using namespace std;
 using ZGeom::PI;
@@ -213,7 +214,7 @@ bool ManifoldLaplaceHarmonics::decompLaplacian( Engine *ep, const CMesh *tmesh, 
 
 void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) const
 {
-    assert(mLaplacianConsructed);
+    assert(mLaplacianConstructed);
     assert(nEig > 0);
 
     std::vector<int> vII, vJJ;
@@ -281,6 +282,12 @@ void MeshLaplacian::decompose( ManifoldHarmonics& mhb, int nEig, Engine *ep ) co
     mxDestroyArray(NUMV);
 }
 
+void MeshLaplacian::decompose(int nEig, const ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys)
+{
+    ZGeom::EigenCompute eigenCompute(ep);
+    eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
+}
+
 void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
 {
 	mOrder = tmesh->getVerticesNum();
@@ -311,7 +318,7 @@ void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
     mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
     mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConsructed = true;
+	mLaplacianConstructed = true;
 	m_laplacianType = Umbrella;
 }
 
@@ -331,7 +338,7 @@ void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
     mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
     mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConsructed = true;
+	mLaplacianConstructed = true;
 	m_laplacianType = CotFormula;
 }
 
@@ -407,7 +414,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
     mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
     mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConsructed = true;
+	mLaplacianConstructed = true;
 }
 
 void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
@@ -483,7 +490,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	vWeights.resize(mOrder, 1.0);	
     mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
     mW.convertFromDiagonal(vWeights);
-	mLaplacianConsructed = true;
+	mLaplacianConstructed = true;
 }
 
 void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
@@ -549,5 +556,5 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 
     mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
     mW.convertFromDiagonal(vWeights);
-	mLaplacianConsructed = true;
+	mLaplacianConstructed = true;
 }

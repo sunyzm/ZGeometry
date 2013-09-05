@@ -6,6 +6,7 @@
 #include <ZMesh/ZMesh.h>
 #include <ZGeom/SparseMatrix.h>
 #include <ZGeom/EigenSystem.h>
+#include <ZGeom/MatlabEngineWrapper.h>
 
 class ManifoldBasis
 {
@@ -41,20 +42,21 @@ public:
                         LaplacianTypeCount} m_laplacianType;
         
 
-	MeshLaplacian() : mLaplacianConsructed(false) {}
+	MeshLaplacian() : mLaplacianConstructed(false) {}
 	void constructFromMesh1(const CMesh* tmesh);	// graph Laplacian
 	void constructFromMesh2(const CMesh* tmesh);	// Cot formula
 	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
 
-    bool isLaplacianConstructed() const { return mLaplacianConsructed; }
-    void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+    bool isLaplacianConstructed() const { return mLaplacianConstructed; }
     const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
     const ZGeom::SparseMatrix<double>& getW() const { return mW; }
+    void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+    void decompose(int nEig, const ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys);
 
 private:
     int mOrder;
     ZGeom::SparseMatrix<double> mLS, mW;
-    bool mLaplacianConsructed;
+    bool mLaplacianConstructed;
 };

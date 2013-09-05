@@ -808,14 +808,11 @@ void QZGeometryWindow::computeEigenfunction()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed()) 
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-			mf->copyValues(mp.getMHB().m_func[select_eig].m_vec);
-			mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
-			mp.replaceProperty(mf);			
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+		mf->copyValues(mp.getMHB().m_func[select_eig].m_vec);
+		mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
+		mp.replaceProperty(mf);			
 	}
 
 	displaySignature(SIGNATURE_EIG_FUNC);
@@ -1094,11 +1091,8 @@ void QZGeometryWindow::computeHKS()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			mp.computeKernelSignature(time_scale, HEAT_KERNEL);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		mp.computeKernelSignature(time_scale, HEAT_KERNEL);
 	}
 	
 	displaySignature(SIGNATURE_HKS);
@@ -1119,12 +1113,9 @@ void QZGeometryWindow::computeHK()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			int refPoint = mp.getRefPointIndex();
-			mp.computeKernelDistanceSignature(time_scale, HEAT_KERNEL, refPoint);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		int refPoint = mp.getRefPointIndex();
+		mp.computeKernelDistanceSignature(time_scale, HEAT_KERNEL, refPoint);
 	}
 
 	displaySignature(SIGNATURE_HK);
@@ -1204,11 +1195,8 @@ void QZGeometryWindow::computeMHWS()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			mp.computeKernelSignature(time_scale, MHW_KERNEL);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		mp.computeKernelSignature(time_scale, MHW_KERNEL);
 	}
 
 	displaySignature(SIGNATURE_MHWS);
@@ -1229,11 +1217,8 @@ void QZGeometryWindow::computeSGWS()
 
 	for (int i = 0; i < 2; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			mp.computeKernelSignature(time_scale, SGW_KERNEL);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		mp.computeKernelSignature(time_scale, SGW_KERNEL);
 	}
 
 	displaySignature(SIGNATURE_SGWS);
@@ -1274,12 +1259,9 @@ void QZGeometryWindow::computeMHW()
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			int refPoint = mp.getRefPointIndex();
-			mp.computeKernelDistanceSignature(time_scale, MHW_KERNEL, refPoint);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		int refPoint = mp.getRefPointIndex();
+		mp.computeKernelDistanceSignature(time_scale, MHW_KERNEL, refPoint);
 	}
 
 	displaySignature(SIGNATURE_MHW);
@@ -1611,12 +1593,9 @@ void QZGeometryWindow::computeBiharmonic()
 {
 	for (int i = 0; i < mMeshCount; ++i)
 	{
-		if (mProcessors[i]->isLaplacianDecomposed())
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			int refPoint = mp.getRefPointIndex();
-			mp.computeBiharmonicDistanceSignature(refPoint);
-		}
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		int refPoint = mp.getRefPointIndex();
+		mp.computeBiharmonicDistanceSignature(refPoint);
 	}
 
 	displaySignature(SIGNATURE_BIHARMONIC_DISTANCE);

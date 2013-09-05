@@ -7,6 +7,7 @@
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZGeom/arithmetic.h>
+#include <ZGeom/EigenSystem.h>
 
 
 using namespace std;
@@ -48,7 +49,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor()
 	mpEngineWrapper = NULL;
 	mesh = NULL;
 	active_feature_id = FEATURE_ID;
-	m_bLaplacianDecomposed = false;
 	pRef = 0;
 	m_size = 0;
 	active_handle = -1;	
@@ -61,7 +61,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalM
     mpEngineWrapper = nullptr;
     mesh = nullptr;
     active_feature_id = FEATURE_ID;
-    m_bLaplacianDecomposed = false;
     pRef = 0;
     m_size = 0;
     active_handle = -1;
@@ -106,14 +105,14 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
     vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
 	mhb = vMHB[laplacianType];
 
-	this->m_bLaplacianDecomposed = true;
+    //ZGeom::EigenSystem eigSys;
+    //vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
 }
 
 void DifferentialMeshProcessor::readMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
 	vMHB[laplacianType].read(path, binaryMode);
 	mhb = vMHB[laplacianType];
-	this->m_bLaplacianDecomposed = true;
 }
 
 void DifferentialMeshProcessor::writeMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
@@ -837,7 +836,6 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
-	if (!m_bLaplacianDecomposed) return;
 	values.resize(m_size);
 
 	TransferFunc pTF = &heatKernelTransferFunc;	// default as heat kernel
@@ -891,8 +889,6 @@ void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, Kerne
 
 void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
 {
-	if (!m_bLaplacianDecomposed) return;
-
 	MeshFunction *mf = new MeshFunction(m_size);
 
 	switch(kernelType)
@@ -916,7 +912,6 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 
 void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale, KernelType kernelType, int refPoint )
 {
-	if (!m_bLaplacianDecomposed) return;
 	if (refPoint < 0 || refPoint >= m_size)
 		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
 
@@ -1036,7 +1031,6 @@ double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 
 void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint )
 {
-	if (!m_bLaplacianDecomposed) return;
 	if (refPoint < 0 || refPoint >= m_size)
 		throw runtime_error("Error computeBiharmonicDistanceSignature: invalid reference point");
 

@@ -29,6 +29,7 @@ public:
 	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
 	void setShapeMatcher(DiffusionShapeMatcher* p) { pDSM = p; }
 	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
+
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
@@ -44,9 +45,11 @@ protected:
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
 	void drawCorrespondences(const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
+
 signals:
 	void vertexPicked1(int pRef);
 	void vertexPicked2(int pRef);
+
 private:
 	void drawGL();
 	void setupViewport(int width, int height);

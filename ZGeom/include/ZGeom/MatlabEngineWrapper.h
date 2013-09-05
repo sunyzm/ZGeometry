@@ -2,6 +2,7 @@
 #define ZGEOM_MATLAB_EINGINE_WRAPPER_H
 
 #include <stdexcept>
+#include <iostream>
 #include <engine.h>
 
 namespace ZGeom
@@ -15,13 +16,13 @@ namespace ZGeom
         void open(const char* startcmd = "\0");
         bool isOpened() const { return (m_ep != NULL); }
         Engine* getEngine() const { return m_ep; }
-        void eval(const std::string& str) { engEvalString(m_ep, str.c_str()); }
+        void eval(const std::string& str) const { engEvalString(m_ep, str.c_str()); }
         const char* getOutput() const { return mBuffer; }
         void resizeBuffer(int bufSize);
         /* Get a variable with the specified name from MATLAB's workspace  */
-        mxArray* getVariable(const char *name);
+        mxArray* getVariable(const char *name) const;
         /* Put a variable into MATLAB's workspace with the specified name */
-        int putVariable(const char *var_name, const mxArray *ap);    
+        int putVariable(const char *var_name, const mxArray *ap) const;    
 
     private:
         char *mBuffer;
@@ -58,13 +59,13 @@ namespace ZGeom
         mBuffer[bufSize] = '\0';
     }
 
-    inline mxArray* MatlabEngineWrapper::getVariable(const char *name)
+    inline mxArray* MatlabEngineWrapper::getVariable(const char *name) const
     {
         assert(m_ep);
         return engGetVariable(m_ep, name);
     }
 
-    inline int MatlabEngineWrapper::putVariable(const char *var_name, const mxArray *ap)
+    inline int MatlabEngineWrapper::putVariable( const char *var_name, const mxArray *ap ) const
     {
         assert(m_ep);
         return engPutVariable(m_ep, var_name, ap);

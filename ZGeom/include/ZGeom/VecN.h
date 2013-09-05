@@ -6,6 +6,8 @@
 #include <vector>
 #include "common.h"
 
+#define USE_PPL
+
 #ifdef USE_PPL
 #include <ppl.h>
 #endif
@@ -35,7 +37,8 @@ public:
     T operator () (uint i) const { return mVec[i-1]; }
 	T& operator [] (uint i) { return mVec[i]; }
     T& operator () (uint i) { return mVec[i-1]; }
-    T* c_ptr() const { return mVec; } 
+    T* c_ptr() const { return mVec; }
+    T* c_ptr_end() const { return mVec + mDim; }
     std::vector<T> toStdVector() const { return std::vector<T>(mVec, mVec + mDim); }
     std::vector<T> operator() () const { return std::vector<T>(mVec, mVec + mDim); }
     uint size() const { return mDim; }

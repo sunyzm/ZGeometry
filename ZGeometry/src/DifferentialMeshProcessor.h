@@ -84,7 +84,6 @@ public:
 	// ---- boolean query ---- //
 	bool isSGWComputed() const { return m_bSGWComputed; }
 	bool isLaplacianConstructed(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
-	bool isLaplacianDecomposed() const { return  m_bLaplacianDecomposed; }
 	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
 	// ---- attribute access --- //
@@ -105,7 +104,6 @@ private:
 	MatlabWrapper matlabWrapper;
 
 	bool m_bSGWComputed;
-	bool m_bLaplacianDecomposed;		// mhb available
 
 	ManifoldHarmonics mhb;	
 
