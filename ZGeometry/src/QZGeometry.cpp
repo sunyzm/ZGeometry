@@ -810,7 +810,7 @@ void QZGeometryWindow::computeEigenfunction()
 	{
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-		mf->copyValues(mp.getMHB().m_func[select_eig].m_vec);
+		mf->copyValues(mp.getMHB().getEigVec(select_eig).toStdVector());
 		mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
 		mp.replaceProperty(mf);			
 	}
@@ -979,7 +979,7 @@ void QZGeometryWindow::clone()
 void QZGeometryWindow::reconstructMHB()
 {
 	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
-	int nEig = mProcessors[0]->getMHB().m_nEigFunc * ratio;
+	int nEig = mProcessors[0]->getMHB().eigVecCount() * ratio;
 
 	vector<double> vx, vy, vz;
 	mProcessors[0]->reconstructByMHB(nEig, vx, vy, vz);
@@ -1649,9 +1649,9 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 
 	if (1 == g_configMgr.getConfigValueInt("DUMP_EIG_VAL")) {
 		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
-		mp.getMHB().dumpEigenValues(pathEVL);
+		mp.getMHB().printEigVals(pathEVL);
 	}
-	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().m_func.front().m_val, mp.getMHB().m_func.back().m_val));
+	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().getEigVals().front(), mp.getMHB().getEigVals().back()));
 }
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )

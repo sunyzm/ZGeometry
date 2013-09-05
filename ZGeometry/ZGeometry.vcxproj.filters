@@ -146,5 +146,8 @@
     <None Include="doc\matching_experiments.txt">
       <Filter>Document Files</Filter>
     </None>
+    <None Include="doc\code_recylce.txt">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

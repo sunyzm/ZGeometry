@@ -102,7 +102,8 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
         throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
     
     Engine *ep = mpEngineWrapper->getEngine();
-    vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
+    //vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
+    vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
 	mhb = vMHB[laplacianType];
 
     //ZGeom::EigenSystem eigSys;
@@ -111,14 +112,14 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 
 void DifferentialMeshProcessor::readMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
-	vMHB[laplacianType].read(path, binaryMode);
+	vMHB[laplacianType].load(path);
 	mhb = vMHB[laplacianType];
 }
 
 void DifferentialMeshProcessor::writeMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
 {
 	const ManifoldHarmonics& mh = vMHB[laplacianType];
-	mh.write(path, binaryMode);
+	mh.save(path);
 }
 
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
@@ -159,10 +160,10 @@ void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& v
 		for (int i = 0; i < m_size; ++i)
 		{
 			double sum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			for (int k = 0; k < mhb.eigVecCount(); ++k)
 			{
-				double coef = mhb.m_func[k].m_val * scale;
-				sum += mhb.m_func[k].m_val  * exp(-mhb.m_func[k].m_val * scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
+				double coef = mhb.getEigVal(k) * scale;
+				sum += mhb.getEigVal(k)  * exp(-mhb.getEigVal(k) * scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
 			}
 			vMHW[i] = sum;
 		}
@@ -172,10 +173,10 @@ void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& v
 		for (int i = 0; i < m_size; ++i)
 		{
 			double sum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			for (int k = 0; k < mhb.eigVecCount(); ++k)
 			{
-				double coef = pow(mhb.m_func[k].m_val * scale, 2.0);
-				sum += coef * exp(-coef) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
+				double coef = pow(mhb.getEigVal(k) * scale, 2.0);
+				sum += coef * exp(-coef) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
 			}
 			vMHW[i] = sum;
 		}
@@ -189,19 +190,19 @@ void DifferentialMeshProcessor::computeExperimentalWavelet( std::vector<double>&
 	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
-			double coef = mhb.m_func[k].m_val * scale;
-			sum += mhb.m_func[k].m_val * scale * exp(-mhb.m_func[k].m_val * scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[pRef];
+			double coef = mhb.getEigVal(k) * scale;
+			sum += mhb.getEigVal(k) * scale * exp(-mhb.getEigVal(k) * scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
 		}
 		vExp[i] = sum;
 	}
 
 	ofstream fout("output/frequency.txt", ios::trunc);
-	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
-		double coef = pow(mhb.m_func[k].m_val * scale, 1.0);
-		fout << coef * exp(-coef) /* * mhb.m_func[k].m_vec[pRef]*/ << " ";
+		double coef = pow(mhb.getEigVal(k) * scale, 1.0);
+		fout << coef * exp(-coef) /* * mhb.getEigVec(k)[pRef]*/ << " ";
 	}
 	fout << "\n";
 	fout.close();
@@ -224,7 +225,7 @@ void DifferentialMeshProcessor::calGeometryDWT()
 	ofs.close();
 
 	int totalScales = 4;
-	double lambdaMax = mhb.m_func.back().m_val;
+	double lambdaMax = mhb.getEigVal(mhb.eigVecCount()-1);
 	double lambdaMin = lambdaMax / pow(3.0, totalScales-1);
 	vector<double> vScales;
 	vScales.push_back(2.0/lambdaMin);
@@ -240,10 +241,10 @@ void DifferentialMeshProcessor::calGeometryDWT()
 		for (int y = 0; y < m_size; ++y)
 		{
 			double itemSum = 0;
-			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+			for (int k = 0; k < mhb.eigVecCount(); ++k)
 			{
-//				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//				itemSum += exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+				itemSum += exp(-1.0) * exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
 			}
 			ofs << itemSum << ' ';
 		}
@@ -254,10 +255,10 @@ void DifferentialMeshProcessor::calGeometryDWT()
 			for (int y = 0; y < m_size; ++y)
 			{
 				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				for (int k = 0; k < mhb.eigVecCount(); ++k)
 				{
-//					itemSum += TransferFunc1(mhb.m_func[k].m_val * vScales[l]) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
-					itemSum += pow(mhb.m_func[k].m_val * vScales[l], 2) * exp(-pow(mhb.m_func[k].m_val * vScales[l],2)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+//					itemSum += TransferFunc1(mhb.getEigVal(k) * vScales[l]) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+					itemSum += pow(mhb.getEigVal(k) * vScales[l], 2) * exp(-pow(mhb.getEigVal(k) * vScales[l],2)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
 				}
 				ofs << itemSum << ' ';
 			}
@@ -301,11 +302,11 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
  		for (int y = 0; y < m_size; ++y)
  		{
  			double itemSum = 0;
- 			for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 			for (int k = 0; k < mhb.eigVecCount(); ++k)
  			{
- //				itemSum += exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
- //				itemSum += exp(-1.0) * exp(-pow(mhb.m_func[k].m_val / (0.6*lambdaMin), 4)) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
- 				itemSum += exp(-1.0) * exp(-mhb.m_func[k].m_val) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+ //				itemSum += exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+ //				itemSum += exp(-1.0) * exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+ 				itemSum += exp(-1.0) * exp(-mhb.getEigVal(k)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
  			}
  			SGW.back().at(y) = itemSum;
  		}
@@ -322,10 +323,10 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
  			for (int y = 0; y < m_size; ++y)
  			{
  				double itemSum = 0;
- 				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+ 				for (int k = 0; k < mhb.eigVecCount(); ++k)
  				{
-					double coef = mhb.m_func[k].m_val * t_scales[s];
- 					itemSum += coef * exp(-coef) * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					double coef = mhb.getEigVal(k) * t_scales[s];
+ 					itemSum += coef * exp(-coef) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
  				}
  				SGW.back().at(y) = itemSum;
  			}
@@ -425,12 +426,12 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
 
 	vector<double> xCoeff, yCoeff, zCoeff;
-	int approxN = min(aN, mhb.m_nEigFunc);
+	int approxN = min(aN, mhb.eigVecCount());
 	for (int k = 0; k < approxN; ++k)
 	{
-		xCoeff.push_back(VectorDotProduct(xWeightedCoord, mhb.m_func[k].m_vec));
-		yCoeff.push_back(VectorDotProduct(yWeightedCoord, mhb.m_func[k].m_vec));
-		zCoeff.push_back(VectorDotProduct(zWeightedCoord, mhb.m_func[k].m_vec));
+		xCoeff.push_back(VectorDotProduct(xWeightedCoord, mhb.getEigVec(k).toStdVector()));
+		yCoeff.push_back(VectorDotProduct(yWeightedCoord, mhb.getEigVec(k).toStdVector()));
+		zCoeff.push_back(VectorDotProduct(zWeightedCoord, mhb.getEigVec(k).toStdVector()));
 	}
 
 	for (int i = 0; i < m_size; ++i)
@@ -438,9 +439,9 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 		double sumX(0), sumY(0), sumZ(0);
 		for (int k = 0; k < approxN; ++k)
 		{
-			sumX += xCoeff[k] * mhb.m_func[k].m_vec[i];
-			sumY += yCoeff[k] * mhb.m_func[k].m_vec[i];
-			sumZ += zCoeff[k] * mhb.m_func[k].m_vec[i];
+			sumX += xCoeff[k] * mhb.getEigVec(k)[i];
+			sumY += yCoeff[k] * mhb.getEigVec(k)[i];
+			sumZ += zCoeff[k] * mhb.getEigVec(k)[i];
 		}
 		vx[i] = sumX; 
 		vy[i] = sumY;
@@ -795,10 +796,10 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 			for (int y = 0; y <= x; ++y)
 			{
 				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				for (int k = 0; k < mhb.eigVecCount(); ++k)
 				{
-					double transfer = (*transferScaling)(mhb.m_func[k].m_val);
-					itemSum +=  transfer * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					double transfer = (*transferScaling)(mhb.getEigVal(k));
+					itemSum +=  transfer * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
 				}
 				m_vSGW[x][y] = m_vSGW[y][x] = itemSum;
 			}
@@ -821,10 +822,10 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 			for (int y = 0; y <= x; ++y)
 			{
 				double itemSum = 0;
-				for (int k = 0; k < mhb.m_nEigFunc; ++k)
+				for (int k = 0; k < mhb.eigVecCount(); ++k)
 				{
-					double transfer = (*transferWavelet)(mhb.m_func[k].m_val, m_vTimescales[s]);
-					itemSum += transfer * mhb.m_func[k].m_vec[x] * mhb.m_func[k].m_vec[y];
+					double transfer = (*transferWavelet)(mhb.getEigVal(k), m_vTimescales[s]);
+					itemSum += transfer * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
 				}
 				m_vSGW[offset + x][y] = m_vSGW[offset + y][x] = itemSum;
 			}
@@ -857,9 +858,9 @@ void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType ker
 //	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
-			sum += (*pTF)(mhb.m_func[k].m_val, scale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[i];
+			sum += (*pTF)(mhb.getEigVal(k), scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[i];
 		}
 		values[i] = sum;
 	}
@@ -877,9 +878,9 @@ void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, Kerne
 	}
 
 	double normalize_factor2 = 0.;
-	for (auto iter = mhb.m_func.begin(); iter != mhb.m_func.end(); ++iter)
+	for (auto iter = mhb.getEigVals().begin(); iter != mhb.getEigVals().end(); ++iter)
 	{
-		normalize_factor2 += std::exp(-iter->m_val * scale);
+		normalize_factor2 += std::exp(-*iter * scale);
 	}
 	cout << "factor1 = " << normalize_factor << ", " << "factor2 = " << normalize_factor2 << endl;
 
@@ -937,9 +938,9 @@ void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale
 	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
-			sum += (*pTF)(mhb.m_func[k].m_val, timescale) * mhb.m_func[k].m_vec[i] * mhb.m_func[k].m_vec[refPoint];
+			sum += (*pTF)(mhb.getEigVal(k), timescale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[refPoint];
 		}
 		mf->setValue(i, sum);
 	}
@@ -1002,9 +1003,9 @@ void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
 	double sum = 0;
-	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
-		sum += std::exp(-mhb.m_func[k].m_val * timescale) * mhb.m_func[k].m_vec[v1] * mhb.m_func[k].m_vec[v2];
+		sum += std::exp(-mhb.getEigVal(k) * timescale) * mhb.getEigVec(k)[v1] * mhb.getEigVec(k)[v2];
 	}
 	return sum;
 }
@@ -1012,9 +1013,9 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
 	double sum = 0;
-	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
-		sum += std::exp(-mhb.m_func[k].m_val * timescale);
+		sum += std::exp(-mhb.getEigVal(k) * timescale);
 	}
 	return sum;
 }
@@ -1022,9 +1023,9 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
 	double sum = 0;
-	for (int k = 0; k < mhb.m_nEigFunc; ++k)
+	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
-		sum += pow( (mhb.m_func[k].m_vec[v1] - mhb.m_func[k].m_vec[v2]) / mhb.m_func[k].m_val, 2 );
+		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
 	}
 	return sum;
 }
@@ -1039,9 +1040,9 @@ void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint
 	for (int i = 0; i < m_size; ++i)
 	{
 		double sum = 0;
-		for (int k = 0; k < mhb.m_nEigFunc; ++k)
+		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
-			sum += pow((mhb.m_func[k].m_vec[i] - mhb.m_func[k].m_vec[refPoint]) / mhb.m_func[k].m_val, 2);
+			sum += pow((mhb.getEigVec(k)[i] - mhb.getEigVec(k)[refPoint]) / mhb.getEigVal(k), 2);
 		}
 		mf->setValue(i, sum);
 	}

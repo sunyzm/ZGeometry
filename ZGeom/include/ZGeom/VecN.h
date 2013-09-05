@@ -25,18 +25,20 @@ class VecN
 public:
     friend class SparseMatrix<T>;
 
-	VecN() : mVec(NULL), mDim(0), mInternalStorage(true) {}
-	VecN(uint n) : mVec(NULL), mInternalStorage(true) { resize(n); }
-    VecN(uint n, T val) : mVec(NULL), mInternalStorage(true) { resize(n, val); }
-    template<typename F> VecN(const VecN<F>& v2);
-    VecN(T* vec, uint n, bool copyValues = true);
+	VecN() : mVec(NULL), mDim(0) {}
+	VecN(uint n) : mVec(NULL) { resize(n); }
+    VecN(uint n, T val) : mVec(NULL) { resize(n, val); }
+    VecN(const VecN<T>& v2);
+    VecN(T* vec, uint n);
     VecN(const std::vector<T>& vec);
-	~VecN() { if (mInternalStorage) delete []mVec; }
+	~VecN() { delete []mVec; }
 
     T operator [] (uint i) const { return mVec[i]; }
     T operator () (uint i) const { return mVec[i-1]; }
 	T& operator [] (uint i) { return mVec[i]; }
     T& operator () (uint i) { return mVec[i-1]; }
+    const VecN<T>& operator=(const VecN<T>& v2);
+
     T* c_ptr() const { return mVec; }
     T* c_ptr_end() const { return mVec + mDim; }
     std::vector<T> toStdVector() const { return std::vector<T>(mVec, mVec + mDim); }
@@ -66,48 +68,49 @@ public:
 private:
 	T *mVec;
 	int mDim;
-    bool mInternalStorage;
 };
 
 /* defining constructors */
 template<typename T>
-template<typename F>
-inline VecN<T>::VecN(const VecN<F>& v2) : mVec(NULL), mInternalStorage(true)
+inline VecN<T>::VecN(const VecN<T>& v2) : mDim(v2.mDim)
 {
-    this->resize(v2.mDim);
-    for (int i = 0; i < mDim; ++i) mVec[i] = static_cast<T>(v2.mVec[i]);
+    mVec = new T[mDim];
+    for (int i = 0; i < mDim; ++i) mVec[i] = v2.mVec[i];
 }
 
 template<typename T>
-inline VecN<T>::VecN(T* vec, uint n, bool copyValues /* = true */) 
-    : mVec(NULL), mInternalStorage(copyValues)
+inline VecN<T>::VecN(T* vec, uint n) 
+    : mDim(n)
 {
-    if (mInternalStorage) {
-        resize(n);
-        std::copy(vec, vec + n, mVec);
-    }
-    else {
-        mDim = n;
-        mVec = vec;
-    }
+    mVec = new T[mDim];
+    std::copy(vec, vec + n, mVec);
 }
 
 template<typename T>
-inline VecN<T>::VecN(const std::vector<T>& vec) : mVec(NULL), mInternalStorage(true)
+inline VecN<T>::VecN(const std::vector<T>& vec)
 {
-    resize(vec.size());
-    std::copy(vec.begin(), vec.end(), mVec);
+    mDim = vec.size();
+    mVec = new T[mDim];
+    std::copy_n(vec.begin(), mDim, mVec);
 }
 /* end of defining constructors */
 
+template<typename T>
+inline const VecN<T>& VecN<T>::operator = (const VecN<T>& v2)
+{
+    delete []mVec;
+    mDim = v2.size();
+    mVec = new T[mDim];
+    std::copy_n(v2.c_ptr(), mDim, mVec);
+    return *this;
+}
 
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
-	if (mInternalStorage) delete []mVec;
+	delete []mVec;
 	this->mDim = n;
 	mVec = new T[mDim];
-    mInternalStorage = true;
 }
 
 template<typename T>

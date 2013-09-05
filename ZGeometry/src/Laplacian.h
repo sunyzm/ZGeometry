@@ -15,22 +15,8 @@ public:
 	double m_val;			    // eigenvalue
 };
 
-class ManifoldHarmonics
+class ManifoldHarmonics : public ZGeom::EigenSystem
 {
-public:
-	ManifoldHarmonics() : m_size(0), m_nEigFunc(0) {}
-	void write(const std::string& meshPath, bool binaryMode = true) const;
-	void read(const std::string& meshPath, bool binaryMode = true);
-	MeshFunction getManifoldHarmonic(int k) const;
-	void dumpEigenValues(const std::string& evlPath) const;
-	bool empty() const { return m_func.empty(); }
-    int eigVecSize() const { return m_size; }
-    int eigVecCount() const { return m_nEigFunc; } 
-
-public:
-	std::vector<ManifoldBasis> m_func;	// manifold harmonic basis
-	int m_size;	    // shape size
-	int m_nEigFunc; // number of basis < shape size
 };
 
 class MeshLaplacian
@@ -52,7 +38,7 @@ public:
     bool isLaplacianConstructed() const { return mLaplacianConstructed; }
     const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
     const ZGeom::SparseMatrix<double>& getW() const { return mW; }
-    void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
+    //void decompose(ManifoldHarmonics& mhb, int nEig, Engine *ep) const;
     void decompose(int nEig, const ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys);
 
 private:

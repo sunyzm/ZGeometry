@@ -261,6 +261,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="configs.txt" />
+    <None Include="doc\code_recylce.txt" />
     <None Include="doc\installation_guide.txt" />
     <None Include="doc\manual.txt" />
     <None Include="doc\matching_experiments.txt" />
