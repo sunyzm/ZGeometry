@@ -44,8 +44,8 @@ public:
 
 	void init(CMesh* tm, ZGeom::MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
-	void readMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
-	void writeMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula, bool binaryMode = true);
+    void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+    void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void addNewHandle(int hIdx);
 
 	// ---- computation ---- //
@@ -88,12 +88,16 @@ public:
 
 	// ---- attribute access --- //
 	const ManifoldHarmonics& getMHB() const { return mhb; }
-	int  getRefPointIndex() const { return pRef; }
+    const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return vMHB[laplacianType]; }
+    const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return vMeshLaplacian[laplacianType]; }
+
+    int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id);
 	void setActiveMHB(MeshLaplacian::LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
+    
 public:
 	int active_handle;
 	std::map<int, Vector3D> mHandles;
@@ -104,13 +108,11 @@ private:
 	MatlabWrapper matlabWrapper;
 
 	bool m_bSGWComputed;
-
 	ManifoldHarmonics mhb;	
 
-public:
 	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
 	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
-private:	
+
 	int pRef;
 	Vector3D posRef;
 	int active_feature_id;

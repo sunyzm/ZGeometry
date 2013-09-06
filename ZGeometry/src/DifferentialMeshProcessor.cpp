@@ -110,13 +110,13 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
     //vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
 }
 
-void DifferentialMeshProcessor::readMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
+void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
 	vMHB[laplacianType].load(path);
 	mhb = vMHB[laplacianType];
 }
 
-void DifferentialMeshProcessor::writeMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/, bool binaryMode /*= true*/ )
+void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
 	const ManifoldHarmonics& mh = vMHB[laplacianType];
 	mh.save(path);

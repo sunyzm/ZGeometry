@@ -13,8 +13,6 @@
 #include "RenderSettings.h"
 #include "DiffusionShapeMatcher.h"
 
-
-
 class QZGeometryWindow : public QMainWindow
 {
 	Q_OBJECT
@@ -114,7 +112,8 @@ private:
 
 	/* helper functions */
 	void evalDistance();
-	
+	void computeFunctionMaps(int num);
+
 private:	
 	/* fields */
 	Ui::ZGeometryClass	ui;

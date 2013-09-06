@@ -17,6 +17,7 @@
 #include <ZUtil/ZUtil.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
+#include <ZGeom/DenseMatrix.h>
 #include "global.h"
 
 using namespace std;
@@ -295,6 +296,8 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 void QZGeometryWindow::initialProcessing()
 {
     if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
+        computeFunctionMaps(45);
+
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 		mShapeMatcher.readInRandPair(rand_data_file);
@@ -1629,7 +1632,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
     const CMesh& mesh = *mMeshes[obj];
     assert(nEigVec < mesh.getMeshSize());
 
-    if (!mp.vMHB[laplacianType].empty()) return;
+    if (!mp.getMHB(laplacianType).empty()) return;
     std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
@@ -1637,13 +1640,13 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
         ifstream ifs(pathMHB.c_str());
-		mp.readMHB(pathMHB, laplacianType);
+		mp.loadMHB(pathMHB, laplacianType);
 		ifs.close();
 	}
 	else // need to compute Laplacian and to cache
 	{
 		mp.decomposeLaplacian(nEigVec, laplacianType);
-		mp.writeMHB(pathMHB, laplacianType);
+		mp.saveMHB(pathMHB, laplacianType);
 		qout.output("MHB saved to " + pathMHB);
 	}
 
@@ -1876,7 +1879,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLapl
     const DifferentialMeshProcessor& mp = *mProcessors[obj];
     const CMesh& mesh = *mMeshes[obj];
     
-    if (!mp.vMHB[laplacianType].empty()) return false; // already decomposed     
+    if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
     if (!LOAD_MHB_CACHE) return true;    
 
     std::string s_idx = "0";
@@ -1909,4 +1912,31 @@ void QZGeometryWindow::allocateStorage( int newMeshCount )
     }
 
     mMeshCount = newMeshCount;
+}
+
+void QZGeometryWindow::computeFunctionMaps( int num )
+{
+    ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
+    const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(MeshLaplacian::CotFormula);
+    const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(MeshLaplacian::CotFormula);
+    const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(MeshLaplacian::CotFormula);
+    const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(MeshLaplacian::CotFormula);
+    ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
+    lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
+    lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
+
+    for (int i = 0; i < num; ++i)
+    {
+        const ZGeom::VecNd& eig1i = mhb1.getEigVec(i);
+        const ZGeom::VecNd& eig2i = mhb2.getEigVec(i);
+        for (int j = 0; j < num; ++j) {
+            const ZGeom::VecNd& eig1j = mhb1.getEigVec(j);
+            const ZGeom::VecNd& eig2j = mhb2.getEigVec(j);
+            funcMap1(i,j) = ZGeom::innerProductSym(eig2i, csrMat1, eig1j);
+            funcMap2(i,j) = ZGeom::innerProductSym(eig1i, csrMat2, eig2j);
+        }
+    }
+    
+    funcMap1.print("output/funcmap1.txt");
+    funcMap2.print("output/funcmap2.txt");
 }

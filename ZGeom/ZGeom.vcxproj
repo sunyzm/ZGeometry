@@ -216,6 +216,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ZGeom\arithmetic.h" />
+    <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
