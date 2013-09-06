@@ -229,7 +229,6 @@
     <ClInclude Include="include\ZGeom\SparseMatVecMultiplier.h" />
     <ClInclude Include="include\ZGeom\SparseSymMatVecSolver.h" />
     <ClInclude Include="include\ZGeom\SparseSymSolver.h" />
-    <ClInclude Include="include\ZGeom\trigonometry.h" />
     <ClInclude Include="include\ZGeom\common.h" />
     <ClInclude Include="include\ZGeom\Vec2.h" />
     <ClInclude Include="include\ZGeom\Vec3.h" />

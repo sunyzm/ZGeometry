@@ -85,14 +85,14 @@ MeshProperty* MeshProcessor::retrievePropertyByName( const std::string& rn )
 
 void MeshProcessor::removePropertyByID( int rid )
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
+	for (auto iter = vProperties.begin(); iter != vProperties.end();)
 	{
 		if ((*iter)->id == rid)
 		{
 			delete *iter;
-			vProperties.erase(iter);
-			break;
+			iter = vProperties.erase(iter);
 		}
+        else ++iter;
 	}
 }
 

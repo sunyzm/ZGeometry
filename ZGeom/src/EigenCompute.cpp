@@ -60,4 +60,17 @@ namespace ZGeom
         mxDestroyArray(NUMV);
     }
 
+    double computeHeatKernel( const EigenSystem& eigSys, uint x, uint y, double t )
+    {
+        double sum(0);
+        for (uint k = 0; k < eigSys.eigVecCount(); ++k) {
+            double lambda = eigSys.getEigVal(k);
+            double* phi = eigSys.getEigVec(k).c_ptr();
+            sum += std::exp(- lambda * t) * phi[x] * phi[y];
+        }
+        return sum;
+    }
+
+
+
 }//end of namespace

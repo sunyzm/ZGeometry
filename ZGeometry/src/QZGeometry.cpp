@@ -296,7 +296,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 void QZGeometryWindow::initialProcessing()
 {
     if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
-        computeFunctionMaps(45);
+        computeFunctionMaps(40);
 
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
@@ -805,25 +805,6 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::computeEigenfunction()
-{
-	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
-
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-		mf->copyValues(mp.getMHB().getEigVec(select_eig).toStdVector());
-		mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
-		mp.replaceProperty(mf);			
-	}
-
-	displaySignature(SIGNATURE_EIG_FUNC);
-	qout.output("Show eigenfunction" + Int2String(select_eig));
-
-	updateDisplaySignatureMenu();
-}
-
 void QZGeometryWindow::displayExperimental()
 {
 	DifferentialMeshProcessor& mp = *mProcessors[0];
@@ -874,20 +855,17 @@ void QZGeometryWindow::computeCurvatureMean()
 void QZGeometryWindow::computeCurvatureGauss()
 {
 	for (int i = 0; i < mMeshCount; ++i)
-	{
-		
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			vector<double> vCurvature;
-			mp.computeCurvature(vCurvature, 1);
-			auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-			qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
+	{		
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		vector<double> vCurvature;
+		mp.computeCurvature(vCurvature, 1);
+		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 			
-			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-			mf->copyValues(vCurvature);
-			mf->setIDandName(SIGNATURE_GAUSS_CURVATURE, "Gauss Curvature");
-			mp.replaceProperty(mf);			
-		}
+		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+		mf->copyValues(vCurvature);
+		mf->setIDandName(SIGNATURE_GAUSS_CURVATURE, "Gauss Curvature");
+		mp.replaceProperty(mf);			
 	}
 
 	displaySignature(SIGNATURE_GAUSS_CURVATURE);
@@ -1082,25 +1060,52 @@ void QZGeometryWindow::displayNeighborVertices()
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::computeEigenfunction()
+{
+	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
+
+	for (int i = 0; i < mMeshCount; ++i)
+	{
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+		mf->copyValues(mp.getMHB().getEigVec(select_eig).toStdVector());
+		mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
+		mp.replaceProperty(mf);			
+	}
+
+	displaySignature(SIGNATURE_EIG_FUNC);
+    current_operation = Compute_EIG_FUNC;
+	qout.output("Show eigenfunction" + Int2String(select_eig));
+	updateDisplaySignatureMenu();
+}
+
 void QZGeometryWindow::computeHKS()
 {
 	double time_scale;
 	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
 		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-
-	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
+        time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		mp.computeKernelSignature(time_scale, HEAT_KERNEL);
+        int meshSize = mp.getMesh_const()->getMeshSize();
+        MeshFunction *mf = new MeshFunction(meshSize);
+        mf->setIDandName(SIGNATURE_HKS, "HKS");
+
+        const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+        std::vector<double>& values = mf->getMeshFunction();
+        Concurrency::parallel_for (0, meshSize, [&](int k) {
+            values[k] = mhb.heatKernel(k, k, time_scale);
+        });
+
+        mp.replaceProperty(mf);	
 	}
 	
 	displaySignature(SIGNATURE_HKS);
-
 	current_operation = Compute_HKS;
+    qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 }
 
@@ -1131,6 +1136,9 @@ void QZGeometryWindow::repeatOperation()
 {
 	switch(current_operation)
 	{
+    case Compute_EIG_FUNC:
+        computeEigenfunction();
+        break;
 	case Compute_HKS:
 		computeHKS();
 		break;
@@ -1176,9 +1184,8 @@ void QZGeometryWindow::computeMHWFeatures()
 	vTimes.push_back(270);
 
 	for (int i = 0; i < mMeshCount; ++i)
-	{
-		
-			mProcessors[i]->computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
+	{	
+		mProcessors[i]->computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
 	}
 
 	if (!ui.glMeshWidget->m_bShowFeatures)

@@ -67,6 +67,25 @@ namespace ZGeom
         cotan_c = cosc / std::sqrt(1-cosc*cosc);
     }
 
+    /// compute cosine of the angle opposite to e3
+    ///
+    inline double cosTriSides(double e1, double e2, double e3)
+    {
+        assert(e1 > 0 && e2 > 0 && e3 > 0 && 
+            e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1);
+
+        return (e1*e1 + e2*e2 - e3*e3) / (2.0*e1*e2);
+    }
+
+    inline double triArea(double e1, double e2, double e3)
+    {
+        assert(e1 > 0 && e2 > 0 && e3 > 0 && 
+            e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1);
+
+        double p = (e1 + e2 + e3) / 2.0;
+        return std::sqrt(p*(p-e1)*(p-e2)*(p-e3));
+    }
+
 }
 
 

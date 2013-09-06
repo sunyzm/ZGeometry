@@ -14,4 +14,7 @@ namespace ZGeom
     private:
         const MatlabEngineWrapper* m_ep;
     };
+
+    double computeHeatKernel(const EigenSystem& eigSys, uint x, uint y, double t);
+
 }

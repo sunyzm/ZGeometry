@@ -131,7 +131,8 @@ private:
 	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
-		  Compute_SGWS, Compute_SGW, 
+		  Compute_SGWS, Compute_SGW,
+          Compute_EIG_FUNC,
 		  None} current_operation;
 
 	QSignalMapper*		  laplacianSignalMapper;	

@@ -12,7 +12,7 @@ tris = int32(tris);
 tmp=repmat(1:nT,nNN,1);
 indH = tris(:,tmp(:))'*nP2 + [k(:)-1 j(:)-1 i(:)-1];
 valH = exp(-dists(:)/mean(dists(:)));
-%initiatialize X
+%initialize X
 X=1/nP2*ones(nP2,nP1);
 
 %power iteration

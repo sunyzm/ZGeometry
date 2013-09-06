@@ -15,8 +15,8 @@ namespace ZGeom
 
         void setSize(int order, int nev);
         bool empty() const { return mEvCount == 0 ; }
-        int eigVecSize() const { return mOrder; }
-        int eigVecCount() const { return mEvCount; }
+        uint eigVecSize() const { return mOrder; }
+        uint eigVecCount() const { return mEvCount; }
         void setValues(int index, double eigVal, double eigVec[]);
         void setValues(int index, double eigVal, const std::vector<double>& eigVec);
         const std::vector<double>& getEigVals() const { return mEigVals; }
@@ -33,9 +33,11 @@ namespace ZGeom
         void evalGeneralError(MatVecFunctor* A, MatVecFunctor* M, std::vector<double>& vErrors) const;
         void inverseEigVals();
 
+        double heatKernel(uint x, uint y, double t) const;
+
     protected:
-        int mOrder;
-        int mEvCount;
+        uint mOrder;
+        uint mEvCount;
         std::vector<double> mEigVals;
         std::vector<VecNd> mEigVecs;
     };

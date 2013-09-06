@@ -61,8 +61,10 @@ public:
     VecN<T> operator / (T coeff) const { return (*this) * coeff; }
 	friend VecN<T> operator * (T t, const VecN<T>& v1);    
 
+    T norm1() const;
+    T norm2() const;
+    T normEuclidean() const { return norm2(); }
     T dot(const VecN<T>& v2) const;
-    T normEuclidean() const;
     friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 private:
@@ -196,6 +198,21 @@ inline const VecN<T>& VecN<T>::operator *= (T scale)
 }
 #endif
 
+template<typename T>
+inline T VecN<T>::norm1() const 
+{
+    T sum(0);
+    for (int i = 0; i < mDim; ++i) sum += std::fabs(mVec[i]);
+    return sum;
+}
+
+template<typename T>
+inline T VecN<T>::norm2() const 
+{
+    T sum(0);
+    for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), 2);
+    return std::sqrt(sum);
+}
 
 /* definitions for dot product */
 template<typename T>

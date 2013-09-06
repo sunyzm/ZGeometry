@@ -3,6 +3,8 @@
 
 #include <cmath>
 #include <cassert>
+#include <stdexcept>
+#include "common.h"
 
 namespace ZGeom {
 
@@ -21,15 +23,12 @@ public:
 	friend T dot(const Vec3<T>& v1, const Vec3<T>& v2);
 	friend Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2);
 
-	T x() const { return this->x; }
-	T y() const { return this->y; }
-	T z() const { return this->z; }
-
 	const Vec3<T>& operator += (const Vec3<T>& v2);
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
 	const Vec3<T>& operator *= (T coeff);
 	const Vec3<T>& operator /= (T coeff);
-	T& operator [] (unsigned i) const;
+    T operator [] (uint i) const;
+	T& operator [] (uint i);
 	T length() const;
 		
 	template<typename U>
@@ -43,13 +42,24 @@ private:
 };
 
 template<typename T>
-inline T& Vec3<T>::operator[]( unsigned i ) const
+inline T Vec3<T>::operator[]( uint i ) const
 {
-	assert(0 <= i && i <= 2);
+    switch (i) {
+    case 0: return this->x;
+    case 1: return this->y;
+    case 2: return this->z;
+    default: throw std::logic_error("Invalid Vec3 subscript");
+    }
+}
+
+template<typename T>
+inline T& Vec3<T>::operator[]( uint i )
+{
 	switch (i) {
 	case 0: return this->x;
 	case 1: return this->y;
 	case 2: return this->z;
+    default: throw std::logic_error("Invalid Vec3 subscript");
 	}
 }
 

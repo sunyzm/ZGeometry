@@ -13,7 +13,7 @@ namespace ZGeom
         mEvCount = nev;
         mEigVals.resize(mEvCount);
         mEigVecs.resize(mEvCount);
-        for (int k = 0; k < mEvCount; ++k)
+        for (uint k = 0; k < mEvCount; ++k)
             mEigVecs[k].resize(mOrder);
     }
 
@@ -32,9 +32,9 @@ namespace ZGeom
     void EigenSystem::print(const std::string& file1, const std::string& file2) const
     {
         std::ofstream ofs1(file1.c_str()), ofs2(file2.c_str());
-        for (int k = 0; k < mEvCount; ++k) {
+        for (uint k = 0; k < mEvCount; ++k) {
             ofs1 << mEigVals[k] << '\n';
-            for (int l = 0; l < mOrder; ++l) {
+            for (uint l = 0; l < mOrder; ++l) {
                 ofs2 << mEigVecs[k][l] << ' ';
             }
             ofs2 << '\n';
@@ -57,10 +57,10 @@ namespace ZGeom
 
         std::cout << "Standard eigen-decomposition error: ";
 
-        for (int k = 0; k < mEvCount; ++k) {
+        for (uint k = 0; k < mEvCount; ++k) {
             double *in = mEigVecs[k].c_ptr();
             (*A)(in, left);
-            for (int i = 0; i < mOrder; ++i)
+            for (uint i = 0; i < mOrder; ++i)
                 diff[i] = std::abs(left[i] - mEigVals[k] * in[i]);
             double maxDiff = *std::max_element(diff, diff + mOrder);
             vErrors[k] = maxDiff;
@@ -84,11 +84,11 @@ namespace ZGeom
 
         std::cout << "General eigen-decomposition error: ";
 
-        for (int k = 0; k < mEvCount; ++k) {
+        for (uint k = 0; k < mEvCount; ++k) {
             double* in = mEigVecs[k].c_ptr();
             (*A)(in, left);
             (*M)(in, right);
-            for (int i = 0; i < mOrder; ++i)
+            for (uint i = 0; i < mOrder; ++i)
                 diff[i] = std::abs(left[i] - mEigVals[k] * right[i]);
             double maxDiff = *std::max_element(diff, diff + mOrder);
             vErrors[k] = maxDiff;
@@ -101,13 +101,12 @@ namespace ZGeom
         delete []left;
         delete []right;
         delete []diff;
-
     }
 
     void EigenSystem::printEigVals( const std::string& file1 ) const
     {
         std::ofstream ofs1(file1.c_str());
-        for (int k = 0; k < mEvCount; ++k) {
+        for (uint k = 0; k < mEvCount; ++k) {
             ofs1 << mEigVals[k] << '\n';
         }
         ofs1.close();
@@ -120,7 +119,7 @@ namespace ZGeom
         ofs.write((char*)&mOrder, sizeof(int));
 
         ofs.write((char*)&mEigVals[0], sizeof(double)*mEvCount);
-        for (int i = 0; i < mEvCount; ++i)
+        for (uint i = 0; i < mEvCount; ++i)
             ofs.write((char*)mEigVecs[i].c_ptr(), sizeof(double)*mOrder);
 
         ofs.close();
@@ -134,10 +133,22 @@ namespace ZGeom
 
         setSize(mOrder, mEvCount);
         ifs.read((char*)&mEigVals[0], sizeof(double)*mEvCount);
-        for (int i = 0; i < mEvCount; ++i)
+        for (uint i = 0; i < mEvCount; ++i)
             ifs.read((char*)mEigVecs[i].c_ptr(), sizeof(double)*mOrder);
 
         ifs.close();
     }
+
+    double EigenSystem::heatKernel( uint x, uint y, double t ) const
+    {
+        double sum(0);
+        for (uint k = 0; k < mEvCount; ++k) {
+            double lambda = mEigVals[k];
+            double* phi = mEigVecs[k].c_ptr();
+            sum += std::exp(-lambda * t) * phi[x] * phi[y];
+        }
+        return sum;
+    }
+
 
 } //end of namespace 

@@ -40,9 +40,6 @@
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\trigonometry.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\arithmetic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
