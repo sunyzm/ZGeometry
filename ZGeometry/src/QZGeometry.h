@@ -2,7 +2,7 @@
 #include "ui_ZGeometry.h"
 #include <vector>
 #include <string>
-#include <QtGui/QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QSignalMapper>
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
@@ -18,7 +18,7 @@ class QZGeometryWindow : public QMainWindow
 	Q_OBJECT
 
 public:
-	QZGeometryWindow(QWidget *parent = 0, Qt::WFlags flags = 0);
+	QZGeometryWindow(QWidget *parent = 0,  Qt::WindowFlags flags = 0);
 	~QZGeometryWindow();
 	bool initialize(const std::string& mesh_list_name);
 
@@ -40,7 +40,7 @@ private slots:
 
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
-    void computeHK();
+	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
 	void computeMHW();
@@ -104,11 +104,11 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-    void constructLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void constructLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void decomposeLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-    bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
+	bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-    void allocateStorage(int newMeshCount);
+	void allocateStorage(int newMeshCount);
 
 	/* helper functions */
 	void evalDistance();
@@ -132,7 +132,7 @@ private:
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
-          Compute_EIG_FUNC,
+		  Compute_EIG_FUNC,
 		  None} current_operation;
 
 	QSignalMapper*		  laplacianSignalMapper;	

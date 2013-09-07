@@ -1,6 +1,6 @@
 #pragma once
-#include <QtGui/QStatusBar>
-#include <QtGui/QPlainTextEdit>
+#include <QtWidgets/QStatusBar>
+#include <QtWidgets/QPlainTextEdit>
 #include <string>
 #include <vector>
 

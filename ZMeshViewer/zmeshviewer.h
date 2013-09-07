@@ -1,7 +1,7 @@
 #ifndef ZMESHVIEWER_H
 #define ZMESHVIEWER_H
 
-#include <QtGui/QMainWindow>
+#include <QtWidgets/QMainWindow>
 #include <QProcess>
 #include "ui_zmeshviewer.h"
 
@@ -10,7 +10,7 @@ class ZMeshViewer : public QMainWindow
 	Q_OBJECT
 
 public:
-	ZMeshViewer(QWidget *parent = 0, Qt::WFlags flags = 0);
+	ZMeshViewer(QWidget *parent = 0);
 	~ZMeshViewer();
 
 private:

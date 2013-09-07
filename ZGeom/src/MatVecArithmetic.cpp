@@ -24,7 +24,7 @@ namespace ZGeom
             std::vector<MKL_INT> rows, cols;
             mat.convertToCOO(rows, cols, vals, MAT_FULL);
             char transa = 'N';
-            MKL_INT nnz = vals.size();
+            MKL_INT nnz = (int)vals.size();
             mkl_dcoogemv (&transa, &order, &vals[0], &rows[0], &cols[0], &nnz, vec.c_ptr(), rv.c_ptr());
         }
 
@@ -51,7 +51,7 @@ namespace ZGeom
             std::vector<MKL_INT> rows, cols;
             mat.convertToCOO(rows, cols, vals, MAT_FULL);
             char transa = 'N';
-            MKL_INT nnz = vals.size();
+            MKL_INT nnz = (int)vals.size();
             mkl_scoogemv (&transa, &order, &vals[0], &rows[0], &cols[0], &nnz, vec.c_ptr(), rv.c_ptr());
         }
 
@@ -62,7 +62,7 @@ namespace ZGeom
     {
         assert(v1.size() == v2.size());
 
-        MKL_INT n = v1.size();
+        MKL_INT n = (int)v1.size();
         MKL_INT xinc = 1, yinc = 1;
 
         return ddot(&n, &v1[0], &xinc, &v2[0], &yinc);
@@ -71,7 +71,7 @@ namespace ZGeom
     double innerProductSym(const std::vector<double>& v1, SparseMatVecMultiplier* mulA, const std::vector<double>& v2)
     {
         assert(v1.size() == mulA->getOrder() && v1.size() == v2.size());
-        MKL_INT m = v1.size();
+        MKL_INT m = (int)v1.size();
         double *pv1 = const_cast<double*>(&v1[0]);
         double *pv2 = const_cast<double*>(&v2[0]);
 
@@ -86,7 +86,7 @@ namespace ZGeom
     {
         assert(v1.size() == A.rowCount() && A.rowCount() == v2.size());
 
-        MKL_INT m = v1.size();
+        MKL_INT m = (int)v1.size();
         MKL_INT *ja = A.colIdx();
         MKL_INT *ia = A.rowPtr();
         double *a = A.nzVal();

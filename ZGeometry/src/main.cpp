@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <QtGui/QApplication>
+#include <QtWidgets/QApplication>
 #include "QZGeometry.h"
 #include "global.h"
 
@@ -11,7 +11,7 @@ std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 
 int main(int argc, char *argv[])
 {
-    g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
+	g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
 
 	QApplication a(argc, argv);
 	QZGeometryWindow w;

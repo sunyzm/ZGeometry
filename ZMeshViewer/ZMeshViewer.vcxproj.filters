@@ -61,10 +61,8 @@
     <CustomBuild Include="zmeshviewer.qrc">
       <Filter>Resource Files</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="GeneratedFiles\ui_zmeshviewer.h">
+    <CustomBuild Include="GeneratedFiles\ui_zmeshviewer.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
+    </CustomBuild>
   </ItemGroup>
 </Project>

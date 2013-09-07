@@ -10,7 +10,7 @@
 #include <exception>
 #include <stdexcept>
 #include <ppl.h>
-#include <QtGui/QMessageBox>
+#include <QtWidgets/QMessageBox>
 #include <QFileDialog>
 #include <QTime>
 #include <QProcess>
@@ -33,14 +33,14 @@ double  QZGeometryWindow::MAX_HK_TIMESCALE        = 2000.0;
 double  QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
 double  QZGeometryWindow::DR_THRESH_INCREMENT     = 0.00001;
 
-QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags) 
+QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) 
 	: QMainWindow(parent, flags), mEngineWrapper(256)
 {
 	/* read in configuration parameters from g_configMgr */
 	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", LOAD_MHB_CACHE);
 	g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", PARAMETER_SLIDER_CENTER);
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", DEFUALT_HK_TIMESCALE);
-    g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", DEFAULT_EIGEN_SIZE);
+	g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", DEFAULT_EIGEN_SIZE);
 
 	mMeshCount = 0;
 	mObjInFocus = -1;
@@ -70,9 +70,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent, Qt::WFlags flags)
 
 QZGeometryWindow::~QZGeometryWindow()
 {
-    for_each(mMeshes.begin(), mMeshes.end(), [](CMesh* m){ delete m; });
-    for_each(mProcessors.begin(), mProcessors.end(), [](DifferentialMeshProcessor* p){ delete p; });
-    for_each(mRenderManagers.begin(), mRenderManagers.end(), [](RenderSettings* rs){ delete rs; });
+	for_each(mMeshes.begin(), mMeshes.end(), [](CMesh* m){ delete m; });
+	for_each(mProcessors.begin(), mProcessors.end(), [](DifferentialMeshProcessor* p){ delete p; });
+	for_each(mRenderManagers.begin(), mRenderManagers.end(), [](RenderSettings* rs){ delete rs; });
 
 	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a;});
 	for_each(m_actionComputeSimilarities.begin(), m_actionComputeSimilarities.end(), [](QAction* a){ delete a;});
@@ -86,7 +86,7 @@ QZGeometryWindow::~QZGeometryWindow()
 void QZGeometryWindow::makeConnections()
 {	
 	/*  actionComputeLaplacians  */
-    int laplacianTypeCount = MeshLaplacian::LaplacianTypeCount;
+	int laplacianTypeCount = MeshLaplacian::LaplacianTypeCount;
 	m_actionComputeLaplacians.resize(laplacianTypeCount);
 	laplacianSignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < laplacianTypeCount; ++t)
@@ -205,23 +205,23 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	try	{
 		CStopWatch timer;
 		timer.startTimer();
-        mEngineWrapper.open();     
+		mEngineWrapper.open();     
 		timer.stopTimer("-- Matlab loading time: ", " --");
 
-        loadInitialMeshes(mesh_list_name); 
+		loadInitialMeshes(mesh_list_name); 
 
-        if (mMeshCount > 0) {
-            int init_laplacian_type = MeshLaplacian::CotFormula;
-            g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
-            if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount)
-            {
-                timer.startTimer();
-                computeLaplacian(init_laplacian_type);
-                timer.stopTimer("-- Time to decompose initial Laplacian: ", " --");		
-            }
+		if (mMeshCount > 0) {
+			int init_laplacian_type = MeshLaplacian::CotFormula;
+			g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
+			if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount)
+			{
+				timer.startTimer();
+				computeLaplacian(init_laplacian_type);
+				timer.stopTimer("-- Time to decompose initial Laplacian: ", " --");		
+			}
 
-            initialProcessing();
-        }
+			initialProcessing();
+		}
 	} catch (std::exception* e) {
 		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
 		return false;
@@ -235,68 +235,68 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	/* ---- load meshes ---- */
 	g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
 	if (mMeshCount <= 0) return;	
-    if (!ZUtil::fileExist(mesh_list_name))
-        throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
-    ifstream meshfiles(mesh_list_name);
-    std::vector<std::string> vMeshFiles;
-    while (!meshfiles.eof()) {
-        std::string meshFileName;
-        getline(meshfiles, meshFileName);
-        if (meshFileName == "") continue;
-        if (meshFileName[0] == '#') continue;
-        else if (!ZUtil::fileExist(meshFileName))
-            throw std::runtime_error("Cannot open file " + meshFileName);		
-        vMeshFiles.push_back(meshFileName);
-    }
-    meshfiles.close();
-    if (vMeshFiles.size() < mMeshCount)
-        throw std::runtime_error("Not enough meshes in mesh list!");
+	if (!ZUtil::fileExist(mesh_list_name))
+		throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
+	ifstream meshfiles(mesh_list_name);
+	std::vector<std::string> vMeshFiles;
+	while (!meshfiles.eof()) {
+		std::string meshFileName;
+		getline(meshfiles, meshFileName);
+		if (meshFileName == "") continue;
+		if (meshFileName[0] == '#') continue;
+		else if (!ZUtil::fileExist(meshFileName))
+			throw std::runtime_error("Cannot open file " + meshFileName);		
+		vMeshFiles.push_back(meshFileName);
+	}
+	meshfiles.close();
+	if (vMeshFiles.size() < mMeshCount)
+		throw std::runtime_error("Not enough meshes in mesh list!");
 
-    allocateStorage(mMeshCount);
+	allocateStorage(mMeshCount);
 
-    Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-        CMesh& mesh = *mMeshes[obj];
-        mesh.Load(vMeshFiles[obj]);
-        mesh.scaleEdgeLenToUnit();
-        mesh.gatherStatistics();        
-    });	
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj){
+		CMesh& mesh = *mMeshes[obj];
+		mesh.Load(vMeshFiles[obj]);
+		mesh.scaleEdgeLenToUnit();
+		mesh.gatherStatistics();        
+	});	
 
-    for (int obj = 0; obj < mMeshCount; ++obj) {
-        CMesh& mesh = *mMeshes[obj];
-        Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-        qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
-        qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
-        
-        mProcessors[obj]->init(&mesh, &mEngineWrapper);
-        mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
-        ui.glMeshWidget->addMesh(mProcessors[obj], mRenderManagers[obj]);
-    }
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		CMesh& mesh = *mMeshes[obj];
+		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
+		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
+		
+		mProcessors[obj]->init(&mesh, &mEngineWrapper);
+		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
+		ui.glMeshWidget->addMesh(mProcessors[obj], mRenderManagers[obj]);
+	}
 
-    /* ---- update mesh-dependent ui ---- */
-    if (mMeshCount >= 1) {
-        ui.spinBox1->setMinimum(0);
-        ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
-        ui.horizontalSlider1->setMinimum(0);
-        ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
-        ui.spinBox1->setValue(0);	
-    }
-    if (mMeshCount >= 2) {		
-        ui.spinBox2->setMinimum(0);
-        ui.spinBox2->setMaximum(mMeshes[1]->getVerticesNum()-1);
-        ui.horizontalSlider2->setMinimum(0);
-        ui.horizontalSlider2->setMaximum(mMeshes[1]->getVerticesNum()-1);
-        ui.spinBox2->setValue(0);
-    }
-    ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
+	/* ---- update mesh-dependent ui ---- */
+	if (mMeshCount >= 1) {
+		ui.spinBox1->setMinimum(0);
+		ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.horizontalSlider1->setMinimum(0);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.spinBox1->setValue(0);	
+	}
+	if (mMeshCount >= 2) {		
+		ui.spinBox2->setMinimum(0);
+		ui.spinBox2->setMaximum(mMeshes[1]->getVerticesNum()-1);
+		ui.horizontalSlider2->setMinimum(0);
+		ui.horizontalSlider2->setMaximum(mMeshes[1]->getVerticesNum()-1);
+		ui.spinBox2->setValue(0);
+	}
+	ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
 
-    mRenderManagers[0]->selected = true;
-    mObjInFocus = 0;
+	mRenderManagers[0]->selected = true;
+	mObjInFocus = 0;
 }
 
 void QZGeometryWindow::initialProcessing()
 {
-    if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
-        computeFunctionMaps(40);
+	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
+		computeFunctionMaps(40);
 
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
@@ -559,7 +559,7 @@ void QZGeometryWindow::deformLaplace()
 	{
 		qout.output(e->what(), OUT_MSGBOX);
 	}
-    
+	
 	deformType = Laplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
@@ -809,10 +809,10 @@ void QZGeometryWindow::displayExperimental()
 {
 	DifferentialMeshProcessor& mp = *mProcessors[0];
 
- 	vector<double> vExp;
- 	mp.computeExperimentalWavelet(vExp, 30); 
+	vector<double> vExp;
+	mp.computeExperimentalWavelet(vExp, 30); 
 
- 	mRenderManagers[0]->normalizeSignatureFrom(vExp);
+	mRenderManagers[0]->normalizeSignatureFrom(vExp);
 
 	if (!ui.glMeshWidget->m_bShowSignature)
 		toggleShowSignature();
@@ -914,7 +914,7 @@ void QZGeometryWindow::clone()
 
 	if (mMeshCount == 1)
 	{
-        allocateStorage(2);
+		allocateStorage(2);
 	}
 
 	mMeshes[1]->cloneFrom(mMeshes[0]);
@@ -1074,7 +1074,7 @@ void QZGeometryWindow::computeEigenfunction()
 	}
 
 	displaySignature(SIGNATURE_EIG_FUNC);
-    current_operation = Compute_EIG_FUNC;
+	current_operation = Compute_EIG_FUNC;
 	qout.output("Show eigenfunction" + Int2String(select_eig));
 	updateDisplaySignatureMenu();
 }
@@ -1085,27 +1085,27 @@ void QZGeometryWindow::computeHKS()
 	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
 		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
 	else 
-        time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
 	for (int i = 0; i < mMeshCount; ++i)
 	{
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-        int meshSize = mp.getMesh_const()->getMeshSize();
-        MeshFunction *mf = new MeshFunction(meshSize);
-        mf->setIDandName(SIGNATURE_HKS, "HKS");
+		int meshSize = mp.getMesh_const()->getMeshSize();
+		MeshFunction *mf = new MeshFunction(meshSize);
+		mf->setIDandName(SIGNATURE_HKS, "HKS");
 
-        const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
-        std::vector<double>& values = mf->getMeshFunction();
-        Concurrency::parallel_for (0, meshSize, [&](int k) {
-            values[k] = mhb.heatKernel(k, k, time_scale);
-        });
+		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		std::vector<double>& values = mf->getMeshFunction();
+		Concurrency::parallel_for (0, meshSize, [&](int k) {
+			values[k] = mhb.heatKernel(k, k, time_scale);
+		});
 
-        mp.replaceProperty(mf);	
+		mp.replaceProperty(mf);	
 	}
 	
 	displaySignature(SIGNATURE_HKS);
 	current_operation = Compute_HKS;
-    qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
+	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 }
 
@@ -1136,9 +1136,9 @@ void QZGeometryWindow::repeatOperation()
 {
 	switch(current_operation)
 	{
-    case Compute_EIG_FUNC:
-        computeEigenfunction();
-        break;
+	case Compute_EIG_FUNC:
+		computeEigenfunction();
+		break;
 	case Compute_HKS:
 		computeHKS();
 		break;
@@ -1324,10 +1324,10 @@ void QZGeometryWindow::detectFeatures()
 	int detect_ring = g_configMgr.getConfigValueInt("FEATURE_DETECTION_RING");
 
 	qout.output("-- Detect initial features --");
-  	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-  		mShapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_base_timescale, 
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+		mShapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_base_timescale, 
 									feature_detection_t_multiplier, feature_detection_extrema_thresh);
-  	});
+	});
 	qout.output("Multi-scale mesh features detected!");
 	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", mShapeMatcher.getSparseFeatures(0).size(), mShapeMatcher.getSparseFeatures(1).size()));
 	std::cout << "Mesh1 features #: " << mShapeMatcher.getSparseFeatures(0).size() << "; Mesh 2 features #: " << mShapeMatcher.getSparseFeatures(1).size() << std::endl;
@@ -1635,18 +1635,18 @@ void QZGeometryWindow::evalDistance()
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-    DifferentialMeshProcessor& mp = *mProcessors[obj];
-    const CMesh& mesh = *mMeshes[obj];
-    assert(nEigVec < mesh.getMeshSize());
+	DifferentialMeshProcessor& mp = *mProcessors[obj];
+	const CMesh& mesh = *mMeshes[obj];
+	assert(nEigVec < mesh.getMeshSize());
 
-    if (!mp.getMHB(laplacianType).empty()) return;
-    std::string s_idx = "0";
+	if (!mp.getMHB(laplacianType).empty()) return;
+	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
 	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
-        ifstream ifs(pathMHB.c_str());
+		ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
 		ifs.close();
 	}
@@ -1666,26 +1666,26 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-    int totalToDecompose = 0;
-    int nEigVec = DEFAULT_EIGEN_SIZE;
+	int totalToDecompose = 0;
+	int nEigVec = DEFAULT_EIGEN_SIZE;
 
-    for (int obj = 0; obj < mMeshCount; ++obj) {
-        if (!mProcessors[obj]->isLaplacianConstructed(laplacianType))
-            throw std::logic_error("Laplacian type not valid!");
-        if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
-            ++totalToDecompose;
-    }
-    std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
-        
-    if (totalToDecompose <= 1) {        
-        Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-            decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-        });
-    } else {    // if both need explicit decomposition, then must run in sequence in Matlab
-        for(int obj = 0; obj < mMeshCount; ++obj) {
-            decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-        }
-    }
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		if (!mProcessors[obj]->isLaplacianConstructed(laplacianType))
+			throw std::logic_error("Laplacian type not valid!");
+		if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
+			++totalToDecompose;
+	}
+	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
+		
+	if (totalToDecompose <= 1) {        
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
+			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
+		});
+	} else {    // if both need explicit decomposition, then must run in sequence in Matlab
+		for(int obj = 0; obj < mMeshCount; ++obj) {
+			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
+		}
+	}
 
 	for (int l = 0; l < MeshLaplacian::LaplacianTypeCount; ++l)
 		m_actionComputeLaplacians[l]->setChecked(false);
@@ -1715,7 +1715,7 @@ void QZGeometryWindow::addMesh()
 		"../../Data/", "Meshes (*.obj *.off *.ply)");
 
 	int cur_obj = mMeshCount;
-    allocateStorage(++mMeshCount);
+	allocateStorage(++mMeshCount);
 
 	CStopWatch timer;
 	timer.startTimer();
@@ -1812,9 +1812,9 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 
 void QZGeometryWindow::constructLaplacians( MeshLaplacian::LaplacianType laplacianType )
 {
-    Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-        mProcessors[obj]->constructLaplacian(laplacianType);
-    });
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+		mProcessors[obj]->constructLaplacian(laplacianType);
+	});
 }
 
 void QZGeometryWindow::computeLaplacian( int lapType )
@@ -1883,67 +1883,67 @@ void QZGeometryWindow::registerTest()
 
 bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType ) const
 {
-    const DifferentialMeshProcessor& mp = *mProcessors[obj];
-    const CMesh& mesh = *mMeshes[obj];
-    
-    if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
-    if (!LOAD_MHB_CACHE) return true;    
+	const DifferentialMeshProcessor& mp = *mProcessors[obj];
+	const CMesh& mesh = *mMeshes[obj];
+	
+	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
+	if (!LOAD_MHB_CACHE) return true;    
 
-    std::string s_idx = "0";
-    s_idx[0] += (int)laplacianType;
-    std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
+	std::string s_idx = "0";
+	s_idx[0] += (int)laplacianType;
+	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 
-    if (!ZUtil::fileExist(pathMHB)) return true;
+	if (!ZUtil::fileExist(pathMHB)) return true;
 
-    ifstream ifs(pathMHB.c_str(), ios::binary);
-    int nEig, nSize;
-    ifs.read((char*)&nEig, sizeof(int));
-    ifs.read((char*)&nSize, sizeof(int));
-    ifs.close();
+	ifstream ifs(pathMHB.c_str(), ios::binary);
+	int nEig, nSize;
+	ifs.read((char*)&nEig, sizeof(int));
+	ifs.read((char*)&nSize, sizeof(int));
+	ifs.close();
 
-    if (nEig != nEigVec || nSize != mesh.getMeshSize()) return true;
+	if (nEig != nEigVec || nSize != mesh.getMeshSize()) return true;
 
-    return false;
+	return false;
 }
 
 void QZGeometryWindow::allocateStorage( int newMeshCount )
 {
-    int existingMeshCount = mMeshes.size();
+	int existingMeshCount = mMeshes.size();
 
-    assert(newMeshCount > existingMeshCount);
+	assert(newMeshCount > existingMeshCount);
 
-    for (int k = 0; k < newMeshCount - existingMeshCount; ++k) {
-        mMeshes.push_back(new CMesh());
-        mProcessors.push_back(new DifferentialMeshProcessor());
-        mRenderManagers.push_back(new RenderSettings());
-    }
+	for (int k = 0; k < newMeshCount - existingMeshCount; ++k) {
+		mMeshes.push_back(new CMesh());
+		mProcessors.push_back(new DifferentialMeshProcessor());
+		mRenderManagers.push_back(new RenderSettings());
+	}
 
-    mMeshCount = newMeshCount;
+	mMeshCount = newMeshCount;
 }
 
 void QZGeometryWindow::computeFunctionMaps( int num )
 {
-    ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
-    const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(MeshLaplacian::CotFormula);
-    const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(MeshLaplacian::CotFormula);
-    const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(MeshLaplacian::CotFormula);
-    const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(MeshLaplacian::CotFormula);
-    ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
-    lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
-    lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
+	ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
+	const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(MeshLaplacian::CotFormula);
+	const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(MeshLaplacian::CotFormula);
+	ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
+	lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
+	lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
 
-    for (int i = 0; i < num; ++i)
-    {
-        const ZGeom::VecNd& eig1i = mhb1.getEigVec(i);
-        const ZGeom::VecNd& eig2i = mhb2.getEigVec(i);
-        for (int j = 0; j < num; ++j) {
-            const ZGeom::VecNd& eig1j = mhb1.getEigVec(j);
-            const ZGeom::VecNd& eig2j = mhb2.getEigVec(j);
-            funcMap1(i,j) = ZGeom::innerProductSym(eig2i, csrMat1, eig1j);
-            funcMap2(i,j) = ZGeom::innerProductSym(eig1i, csrMat2, eig2j);
-        }
-    }
-    
-    funcMap1.print("output/funcmap1.txt");
-    funcMap2.print("output/funcmap2.txt");
+	for (int i = 0; i < num; ++i)
+	{
+		const ZGeom::VecNd& eig1i = mhb1.getEigVec(i);
+		const ZGeom::VecNd& eig2i = mhb2.getEigVec(i);
+		for (int j = 0; j < num; ++j) {
+			const ZGeom::VecNd& eig1j = mhb1.getEigVec(j);
+			const ZGeom::VecNd& eig2j = mhb2.getEigVec(j);
+			funcMap1(i,j) = ZGeom::innerProductSym(eig2i, csrMat1, eig1j);
+			funcMap2(i,j) = ZGeom::innerProductSym(eig1i, csrMat2, eig2j);
+		}
+	}
+	
+	funcMap1.print("output/funcmap1.txt");
+	funcMap2.print("output/funcmap2.txt");
 }

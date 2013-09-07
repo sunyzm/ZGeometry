@@ -1,8 +1,8 @@
 #include "zmeshviewer.h"
 
 
-ZMeshViewer::ZMeshViewer(QWidget *parent, Qt::WFlags flags)
-	: QMainWindow(parent, flags)
+ZMeshViewer::ZMeshViewer(QWidget *parent)
+	: QMainWindow(parent)
 {
 	ui.setupUi(this);
 }

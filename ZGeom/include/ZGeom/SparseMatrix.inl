@@ -298,7 +298,7 @@ namespace ZGeom
 
         std::vector< MatElem<T> > sortedElements = mElements;
         std::sort(sortedElements.begin(), sortedElements.end(), std::less< MatElem<T> >());
-        int prevRow = 0;
+        uint prevRow = 0;
         typename std::vector< MatElem<T> >::const_iterator iter = sortedElements.begin();
         for (; iter != sortedElements.end(); ++iter) {
             if (form == MAT_UPPER && iter->row() > iter->col()) continue;   // only upper triangle elements
@@ -307,10 +307,10 @@ namespace ZGeom
             uint curRow = iter->row();
             nzVal.push_back(iter->val());
             colIdx.push_back(iter->col());
-            if (1 == curRow - prevRow) rowPtr.push_back(nzVal.size()); // new row
+            if (1 == curRow - prevRow) rowPtr.push_back((int)nzVal.size()); // new row
             prevRow = curRow;               
         }
-        rowPtr.push_back(nzVal.size() + 1);     // trailing element of rowPtr stores NNZ + 1
+        rowPtr.push_back((int)nzVal.size() + 1);     // trailing element of rowPtr stores NNZ + 1
     }
 
     template<typename T>

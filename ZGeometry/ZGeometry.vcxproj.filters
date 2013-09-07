@@ -97,57 +97,53 @@
     <CustomBuild Include="src\QZGeometry.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="GeneratedFiles\ui_ZGeometry.h">
+    <CustomBuild Include="src\global.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\DifferentialMeshProcessor.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\Laplacian.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\MatlabWrapper.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\OutputHelper.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\RenderSettings.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\DiffusionShapeMatcher.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="configs.txt">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="doc\code_recylce.txt">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="meshfiles.cfg">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="meshfiles_debug.cfg">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="random_num.dat">
+      <Filter>Resource Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="GeneratedFiles\ui_ZGeometry.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\OutputHelper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DifferentialMeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Laplacian.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MatlabWrapper.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\RenderSettings.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\DiffusionShapeMatcher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\global.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="meshfiles.cfg">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="doc\manual.txt">
+    </CustomBuild>
+    <CustomBuild Include="doc\installation_guide.txt">
       <Filter>Document Files</Filter>
-    </None>
-    <None Include="doc\installation_guide.txt">
+    </CustomBuild>
+    <CustomBuild Include="doc\manual.txt">
       <Filter>Document Files</Filter>
-    </None>
-    <None Include="configs.txt">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="random_num.dat">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="meshfiles_debug.cfg">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="doc\matching_experiments.txt">
+    </CustomBuild>
+    <CustomBuild Include="doc\matching_experiments.txt">
       <Filter>Document Files</Filter>
-    </None>
-    <None Include="doc\code_recylce.txt">
-      <Filter>Resource Files</Filter>
-    </None>
+    </CustomBuild>
   </ItemGroup>
 </Project>

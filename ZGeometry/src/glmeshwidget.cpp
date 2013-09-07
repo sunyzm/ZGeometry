@@ -15,11 +15,11 @@ using ZUtil::Int2String;
 
 const GLfloat color_handle[4] = {1.0, 0.5, 0.5, 1};
 const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
-                                    {0.0, 1.0, 0.0, 1.0},	//green
-                                    {0.0, 0.0, 1.0, 0.0},	//blue
-                                    {1.0, 1.0, 0.0, 1.0},	//yellow
-                                    {1.0, 0.0, 1.0, 1.0},	//magenta
-                                    {0.0, 1.0, 1.0, 1.0}};	//cyan
+									{0.0, 1.0, 0.0, 1.0},	//green
+									{0.0, 0.0, 1.0, 0.0},	//blue
+									{1.0, 1.0, 0.0, 1.0},	//yellow
+									{1.0, 0.0, 1.0, 1.0},	//magenta
+									{0.0, 1.0, 1.0, 1.0}};	//cyan
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
 
@@ -365,9 +365,9 @@ void GLMeshWidget::resizeGL( int width, int height )
 void GLMeshWidget::drawGL()
 {
 	makeCurrent();
- 	glPushAttrib(GL_ALL_ATTRIB_BITS);
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glMatrixMode(GL_MODELVIEW);
- 	glPushMatrix();
+	glPushMatrix();
 
 	GLfloat diffuse[] = {1, 1, 1, 1};
 	GLfloat global_ambient[] = {.2, .2, .2, 1};
@@ -428,9 +428,9 @@ void GLMeshWidget::drawGL()
 			drawCorrespondences(pDSM, vpRS[0], vpRS[1]);
 	}
 	
- 	glMatrixMode(GL_MODELVIEW);
- 	glPopMatrix();
- 	glPopAttrib();
+	glMatrixMode(GL_MODELVIEW);
+	glPopMatrix();
+	glPopAttrib();
 }
 
 void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
@@ -512,29 +512,29 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
-	   	glBegin(GL_LINES);	
-	   	for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
-	   	{
+		glBegin(GL_LINES);	
+		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
+		{
 			const CHalfEdge* hf = tmesh->getHalfEdge_const(i);
-	   		if(hf->isBoundaryEdge()) 
-	   		{
-	   			int p1 = hf->getVertexIndex(0);
-	   			int p2 = hf->getVertexIndex(1);
-	   			glLineWidth(2.0);
-	   			glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-	   			if(tmesh->getVertex_const(p1)->isHole()) 
-	   			{
-	   				glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
-	   			}
-	   			Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
-	   			v1 += shift;
-	   			Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
-	   			v2 += shift;
-	   			glVertex3d(v1.x, v1.y, v1.z);
-	   			glVertex3d(v2.x, v2.y, v2.z);
-	   		}
-	   	}
-	   	glEnd();
+			if(hf->isBoundaryEdge()) 
+			{
+				int p1 = hf->getVertexIndex(0);
+				int p2 = hf->getVertexIndex(1);
+				glLineWidth(2.0);
+				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
+				if(tmesh->getVertex_const(p1)->isHole()) 
+				{
+					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
+				}
+				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
+				v1 += shift;
+				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
+				v2 += shift;
+				glVertex3d(v1.x, v1.y, v1.z);
+				glVertex3d(v2.x, v2.y, v2.z);
+			}
+		}
+		glEnd();
 	}
 	glEnable(GL_LIGHTING);
 
@@ -580,8 +580,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		bool is_demo_feature = (feature_list->id == FEATURE_DEMO || feature_list->id == FEATURE_DEMO2);
 		for (auto iter = feature_list->m_vFeatures.begin(); iter != feature_list->m_vFeatures.end(); ++iter)
 		{
-		 	Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
-		 	vt += shift;
+			Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
+			vt += shift;
 			if (is_hks_feature)
 			{
 				if (dynamic_cast<HKSFeature*>(*iter)->minOrMax == 1)
@@ -686,7 +686,7 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 	drawGL();
 
 	if (m_bShowLegend && vpRS[0]->vDisplaySignature.empty())
- 	drawLegend(&painter);
+	drawLegend(&painter);
 }
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
@@ -786,7 +786,7 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 				if (vmp[i].m_note == -1)
 // 					glColor4f(1.0, 0, 0, 1.0);
 // 				else
- 					glColor4f(0.0, 0.0, 0.0, 1.0);
+					glColor4f(0.0, 0.0, 0.0, 1.0);
 				glDisable(GL_LIGHTING);
 				glBegin(GL_LINES);
 				glVertex3d(x1, y1, z1);

@@ -32,7 +32,7 @@ public:
 public:
 	GeoNote(int mid, double geo) {m_id = mid; m_geodesic = geo;}
 	GeoNote& operator = (const GeoNote& note) { m_id=note.m_id; m_geodesic = note.m_geodesic; return(*this); }
-    friend bool operator > (const GeoNote& note1, const GeoNote& note2) { return note1.m_geodesic > note2.m_geodesic; }
+	friend bool operator > (const GeoNote& note1, const GeoNote& note2) { return note1.m_geodesic > note2.m_geodesic; }
 };
 
 class GeoCompare 
@@ -84,7 +84,7 @@ public:
 	bool				isHole() const { return m_bIsHole; }
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
-    void                translateAndScale(const Vector3D& translation, double s);
+	void                translateAndScale(const Vector3D& translation, double s);
 	void                setPosition( double x, double y, double z );
 
 private:
@@ -230,7 +230,7 @@ private:
 	CFace*		m_pFace;				// array pointer of faces
 
 	std::string m_meshName;				// name of the mesh
-    std::unordered_map<std::string, MeshAttrBase*> mAttributes;
+	std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
 ////////////////    methods    ////////////////
 public:
@@ -245,7 +245,7 @@ public:
 	void		cloneFrom(const CMesh* oldMesh);
 	bool	    Load(std::string sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
-    void        move(const Vector3D& translation);		// translate mesh
+	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 
@@ -270,53 +270,53 @@ public:
 	const Vector3D&		getCenter() const { return m_Center; }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
 
-    VectorInt           getOriginalVertexIndex() const;
-    VectorInt	        getNeighborVertexIndex(int v, int ring) const;
-    VectorInt           getRingVertexIndex(int v, int ring) const;
-    VectorInt	        getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
-    void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
-    void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
-    void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+	VectorInt           getOriginalVertexIndex() const;
+	VectorInt	        getNeighborVertexIndex(int v, int ring) const;
+	VectorInt           getRingVertexIndex(int v, int ring) const;
+	VectorInt	        getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
+	void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
-    template<typename T> 
-    MeshAttr<T>& addAttr(AttrRate rate, const std::string& name) {
-        removeAttr(name);
-        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));
-        auto iter = mAttributes.find(name);
-        return dynamic_cast<MeshAttr<T>*>(iter->second);        
-    }
+	template<typename T> 
+	MeshAttr<T>& addAttr(AttrRate rate, const std::string& name) {
+		removeAttr(name);
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));
+		auto iter = mAttributes.find(name);
+		return dynamic_cast<MeshAttr<T>*>(iter->second);        
+	}
 
-    template<typename T> 
-    void addAttr(const T& data, AttrRate rate, const std::string& name) {
-        removeAttr(name);
-        mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
-    }
+	template<typename T> 
+	void addAttr(const T& data, AttrRate rate, const std::string& name) {
+		removeAttr(name);
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
+	}
 
-    template<typename T>
-    void removeAttr(const std::string& name) {
-        auto iter = mAttributes.find(name);
-        if (iter != mAttributes.end()) {
-            delete iter->second;
-            mAttributes.erase(iter);
-        }
-    }
+	template<typename T>
+	void removeAttr(const std::string& name) {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) {
+			delete iter->second;
+			mAttributes.erase(iter);
+		}
+	}
 
-    template<typename T>
-    MeshAttr<T>* getAttr(const std::string& name) {
-        auto iter = mAttributes.find(name);
-        if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
-        else return nullptr;
-    }
+	template<typename T>
+	MeshAttr<T>* getAttr(const std::string& name) {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
+		else return nullptr;
+	}
 
-    template<typename T>
-    T& getAttrValue(const std::string& name) {
-        auto iter = mAttributes.find(name);
-        if (iter != mAttributes.end()) 
-            return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
-        else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
-    }
+	template<typename T>
+	T& getAttrValue(const std::string& name) {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) 
+			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
+		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
+	}
 
-    /* geometry query and processing */
+	/* geometry query and processing */
 	void	    gatherStatistics();
 	void        gatherStatistics2();
 	bool        hasBounary() const;
