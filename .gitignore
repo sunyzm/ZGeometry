@@ -37,7 +37,10 @@ ZGeometry/output/
 ZMeshViewer/GeneratedFiles/
 ZMeshViewer/intermediate/
 MeshMatch/intermediate/
-
+thirdparty/matlab/mex/
+thirdparty/matlab/tensor/ann_mwrapper/private/
+*.mexw32
+*.mexw64
 
 # misc
 *.bak
