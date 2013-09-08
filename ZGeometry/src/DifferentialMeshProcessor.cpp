@@ -58,21 +58,21 @@ DifferentialMeshProcessor::DifferentialMeshProcessor()
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
 {
-    mpEngineWrapper = nullptr;
-    mesh = nullptr;
-    active_feature_id = FEATURE_ID;
-    pRef = 0;
-    m_size = 0;
-    active_handle = -1;
-    constrain_weight = 0.1;
-    m_bSGWComputed = false;
+	mpEngineWrapper = nullptr;
+	mesh = nullptr;
+	active_feature_id = FEATURE_ID;
+	pRef = 0;
+	m_size = 0;
+	active_handle = -1;
+	constrain_weight = 0.1;
+	m_bSGWComputed = false;
 
 	init_lite(tm, originalMesh);
 }
 
 DifferentialMeshProcessor::~DifferentialMeshProcessor()
 {
-    std::cout << "DifferentialMeshProcessor destroyed!" << std::endl;
+	std::cout << "DifferentialMeshProcessor destroyed!" << std::endl;
 }
 
 void DifferentialMeshProcessor::init(CMesh* tm, MatlabEngineWrapper* e)
@@ -97,17 +97,17 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-    assert(isLaplacianConstructed(laplacianType));
-    if (!mpEngineWrapper->isOpened())
-        throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
-    
-    Engine *ep = mpEngineWrapper->getEngine();
-    //vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
-    vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
+	assert(isLaplacianConstructed(laplacianType));
+	if (!mpEngineWrapper->isOpened())
+		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
+	
+	Engine *ep = mpEngineWrapper->getEngine();
+	//vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
+	vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
 	mhb = vMHB[laplacianType];
 
-    //ZGeom::EigenSystem eigSys;
-    //vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
+	//ZGeom::EigenSystem eigSys;
+	//vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
@@ -269,7 +269,7 @@ void DifferentialMeshProcessor::calGeometryDWT()
 
 void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
 {
-    Engine *ep = mpEngineWrapper->getEngine();
+	Engine *ep = mpEngineWrapper->getEngine();
 
 	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
 
@@ -283,58 +283,58 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
 	vector<double> vWeight;
-    mLaplacian.getW().getDiagonal(vWeight);
+	mLaplacian.getW().getDiagonal(vWeight);
 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
 	VectorPointwiseProduct(vxcoord0, vWeight, xWeightedCoord);
 	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
 	VectorPointwiseProduct(vzcoord0, vWeight, zWeightedCoord);
 
- 	int scales = 1;
- 	double t_scales[4] = {80, 40, 20, 10};
- 	vector<vector<double> > SGW;
- 	
+	int scales = 1;
+	double t_scales[4] = {80, 40, 20, 10};
+	vector<vector<double> > SGW;
+	
 //	scaling function
- 	for (int x = 0; x < m_size; ++x)
- 	{
- 		SGW.push_back(vector<double>());
+	for (int x = 0; x < m_size; ++x)
+	{
+		SGW.push_back(vector<double>());
 		SGW.back().resize(m_size);
  
- 		for (int y = 0; y < m_size; ++y)
- 		{
- 			double itemSum = 0;
- 			for (int k = 0; k < mhb.eigVecCount(); ++k)
- 			{
+		for (int y = 0; y < m_size; ++y)
+		{
+			double itemSum = 0;
+			for (int k = 0; k < mhb.eigVecCount(); ++k)
+			{
  //				itemSum += exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
  //				itemSum += exp(-1.0) * exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
- 				itemSum += exp(-1.0) * exp(-mhb.getEigVal(k)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
- 			}
- 			SGW.back().at(y) = itemSum;
- 		}
- 	}
+				itemSum += exp(-1.0) * exp(-mhb.getEigVal(k)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+			}
+			SGW.back().at(y) = itemSum;
+		}
+	}
  
 //	wavelet functions
- 	for (int s = 0; s < scales; ++s)
- 	{
- 		for (int x = 0; x < m_size; ++x)
- 		{
+	for (int s = 0; s < scales; ++s)
+	{
+		for (int x = 0; x < m_size; ++x)
+		{
 			SGW.push_back(vector<double>());
 			SGW.back().resize(m_size);
  
- 			for (int y = 0; y < m_size; ++y)
- 			{
- 				double itemSum = 0;
- 				for (int k = 0; k < mhb.eigVecCount(); ++k)
- 				{
+			for (int y = 0; y < m_size; ++y)
+			{
+				double itemSum = 0;
+				for (int k = 0; k < mhb.eigVecCount(); ++k)
+				{
 					double coef = mhb.getEigVal(k) * t_scales[s];
- 					itemSum += coef * exp(-coef) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
- 				}
- 				SGW.back().at(y) = itemSum;
- 			}
- 		}
- 	}
+					itemSum += coef * exp(-coef) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
+				}
+				SGW.back().at(y) = itemSum;
+			}
+		}
+	}
  
 	int sizeCoeff = (scales + 1) * m_size;
- 	vector<double> vxCoeff, vyCoeff, vzCoeff;
+	vector<double> vxCoeff, vyCoeff, vzCoeff;
 	vxCoeff.resize(sizeCoeff);
 	vyCoeff.resize(sizeCoeff);
 	vzCoeff.resize(sizeCoeff);
@@ -419,7 +419,7 @@ void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& v
 	mesh->getCoordinateFunction(2, vzcoord0);
 
 	vector<double> vWeight;
-    mLaplacian.getW().getDiagonal(vWeight);
+	mLaplacian.getW().getDiagonal(vWeight);
 	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
 	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
 	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
@@ -463,8 +463,8 @@ void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& 
 	mesh->getCoordinateFunction(1, vycoord0);
 	mesh->getCoordinateFunction(2, vzcoord0);
 	
- 	vector<vector<double> > sysM;
- 	
+	vector<vector<double> > sysM;
+	
 	for (int i = 0; i < m_size; ++i)
 	{
 		sysM.push_back(vector<double>());
@@ -512,7 +512,7 @@ void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& 
 		vzCoeff.push_back(posRef.z * weightI);
 	}
 	
-    Engine *ep = mpEngineWrapper->getEngine();
+	Engine *ep = mpEngineWrapper->getEngine();
 	matlab_scgls(ep, sysM, vxCoeff, vx);
 	matlab_scgls(ep, sysM, vyCoeff, vy);
 	matlab_scgls(ep, sysM, vzCoeff, vz);	
@@ -531,8 +531,8 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	
 	if (!m_bSGWComputed)
 		throw logic_error("SGW not computed!");
-	 	
- 	vector<vector<double> > SGW = m_vSGW;
+		
+	vector<vector<double> > SGW = m_vSGW;
 	int scales = m_vTimescales.size();
 
 	int sizeCoeff = SGW.size();
@@ -570,7 +570,7 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 		}
 	}
 
- 	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
+	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
 	matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vy);
 	matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vz);
 
@@ -623,15 +623,15 @@ void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vecto
 		vzCoeff[i] = itemSumZ;
 
 //		if ( i >= m_size && i < m_size * 2)
- 		if ( i >= sizeCoeff - m_size )
- 		{
- 			vxCoeff[i] *= 0.5;
- 			vyCoeff[i] *= 0.5;
- 			vzCoeff[i] *= 0.5;
- 		}
- 	}
+		if ( i >= sizeCoeff - m_size )
+		{
+			vxCoeff[i] *= 0.5;
+			vyCoeff[i] *= 0.5;
+			vzCoeff[i] *= 0.5;
+		}
+	}
 
-    Engine* ep = mpEngineWrapper->getEngine();
+	Engine* ep = mpEngineWrapper->getEngine();
 	matlab_scgls(ep, SGW, vxCoeff, vx);
 	matlab_scgls(ep, SGW, vyCoeff, vy);
 	matlab_scgls(ep, SGW, vzCoeff, vz);
@@ -678,7 +678,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			m = n + vHandleIdx.size();
 				
 		int nz_laplacian = vI.size();
-        mLaplacian.getLS().convertToCOO(vI, vJ, vS);
+		mLaplacian.getLS().convertToCOO(vI, vJ, vS);
 		
 		vector<double> xCoord, yCoord, zCoord;
 		mesh->getCoordinateFunction(0, xCoord);
@@ -1233,37 +1233,37 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 
 void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-    if (isLaplacianConstructed(laplacianType)) return;
-    
-    switch(laplacianType)
-    {
-    case MeshLaplacian::Umbrella:
-        vMeshLaplacian[laplacianType].constructFromMesh1(mesh);
-        break;
+	if (isLaplacianConstructed(laplacianType)) return;
+	
+	switch(laplacianType)
+	{
+	case MeshLaplacian::Umbrella:
+		vMeshLaplacian[laplacianType].constructFromMesh1(mesh);
+		break;
 
-    case MeshLaplacian::CotFormula:
-        vMeshLaplacian[laplacianType].constructFromMesh2(mesh);   
-        break;
+	case MeshLaplacian::CotFormula:
+		vMeshLaplacian[laplacianType].constructFromMesh2(mesh);   
+		break;
 
-    case MeshLaplacian::Anisotropic1:
-        {
-            double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
-            double para2 = para1;
-            vMeshLaplacian[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
-        }
-        break;
+	case MeshLaplacian::Anisotropic1:
+		{
+			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
+			double para2 = para1;
+			vMeshLaplacian[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
+		}
+		break;
 
-    case MeshLaplacian::Anisotropic2:
-        {
-            double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
-            double para2 = mesh->getAvgEdgeLength() / 2;
-            vMeshLaplacian[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
-        }
-        break;
+	case MeshLaplacian::Anisotropic2:
+		{
+			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
+			double para2 = mesh->getAvgEdgeLength() / 2;
+			vMeshLaplacian[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
+		}
+		break;
 
-    case MeshLaplacian::IsoApproximate:
-        vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
-        break;
-    }       
+	case MeshLaplacian::IsoApproximate:
+		vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
+		break;
+	}       
 }
 

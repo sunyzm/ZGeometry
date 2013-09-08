@@ -7,7 +7,6 @@
 #include <vector>
 #include <deque>
 #include <set>
-#include <exception>
 #include <stdexcept>
 #include <ppl.h>
 #include <QtWidgets/QMessageBox>
@@ -72,13 +71,13 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 
 QZGeometryWindow::~QZGeometryWindow()
 {
-	for_each(mMeshes.begin(), mMeshes.end(), [](CMesh* m){ delete m; });
-	for_each(mProcessors.begin(), mProcessors.end(), [](DifferentialMeshProcessor* p){ delete p; });
-	for_each(mRenderManagers.begin(), mRenderManagers.end(), [](RenderSettings* rs){ delete rs; });
+	for (CMesh* m : mMeshes) delete m;
+	for (DifferentialMeshProcessor* p : mProcessors) delete p;
+	for (RenderSettings* rs : mRenderManagers) delete rs;
 
-	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [](QAction* a){ delete a;});
-	for_each(m_actionComputeSimilarities.begin(), m_actionComputeSimilarities.end(), [](QAction* a){ delete a;});
-	for_each(m_actionComputeLaplacians.begin(), m_actionComputeLaplacians.end(), [](QAction* a){ delete a;});
+	for (QAction* a : m_actionDisplaySignatures) delete a;
+	for (QAction* a : m_actionComputeSimilarities) delete a;
+	for (QAction* a : m_actionComputeLaplacians) delete a;
 
 	delete simlaritySignalMapper;
 	delete laplacianSignalMapper;
@@ -499,14 +498,11 @@ void QZGeometryWindow::computeSGW()
 
 	double timescales[] = {20}; //{5, 10, 20, 40};
 	int nScales = sizeof (timescales) / sizeof(double);
-	vector<double> vTimes;
-	vTimes.resize(nScales);
-	std::copy(timescales, timescales + nScales, vTimes.begin());
+	vector<double> vTimes(timescales, timescales + nScales);
 
 	mProcessors[0]->computeSGW(vTimes, &transferFunc1, true, &transferScalingFunc1);
 
-	timer.stopTimer();
-	qout.output(QString("Time for compute SGW: ") + QString::number(timer.getElapsedTime()));
+	timer.stopTimer("Time for compute SGW: ");
 }
 
 void QZGeometryWindow::deformSimple()
@@ -551,14 +547,11 @@ void QZGeometryWindow::deformLaplace()
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
 
-	try
-	{
+	try {
 		mProcessors[0]->deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
 		mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
 		mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
-	}
-	catch (runtime_error* e)
-	{
+	} catch (runtime_error* e) {
 		qout.output(e->what(), OUT_MSGBOX);
 	}
 	
@@ -578,24 +571,20 @@ void QZGeometryWindow::deformSGW()
 	vector<int> vFree;
 
 	std::set<int> sFreeIdx;
-	for (auto iter = mProcessors[0]->mHandles.begin(); iter!= mProcessors[0]->mHandles.end(); ++iter)
-	{
-		vHandle.push_back(iter->first);
-		vHandlePos.push_back(iter->second);
+	for (auto handle : mProcessors[0]->mHandles) {
+		vHandle.push_back(handle.first);
+		vHandlePos.push_back(handle.second);
 
-		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(handle.first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());	
 
-	try
-	{
+	try	{
 		mProcessors[0]->deform(vHandle, vHandlePos, vFree, vNewPos, SGW);
 		mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
 		mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
-	}
-	catch (runtime_error* e)
-	{
+	} catch (runtime_error* e) {
 		qout.output(e->what(), OUT_MSGBOX);
 	}
 
@@ -831,26 +820,21 @@ void QZGeometryWindow::displayExperimental()
 
 void QZGeometryWindow::computeCurvatureMean()
 {
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		
-		{
-			DifferentialMeshProcessor& mp = *mProcessors[i];
-			vector<double> vCurvature;
-			mp.computeCurvature(vCurvature, 0);
-			auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-			qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
+	for (int i = 0; i < mMeshCount; ++i) {
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		vector<double> vCurvature;
+		mp.computeCurvature(vCurvature, 0);
+		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
+		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 
-			MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-			mf->copyValues(vCurvature);
-			mf->setIDandName(SIGNATURE_MEAN_CURVATURE, "Mean Curvature");
-			mp.replaceProperty(mf);			
-		}
+		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
+		mf->copyValues(vCurvature);
+		mf->setIDandName(SIGNATURE_MEAN_CURVATURE, "Mean Curvature");
+		mp.replaceProperty(mf);			
 	}
 
 	displaySignature(SIGNATURE_MEAN_CURVATURE);
 	qout.output("Show Mean curvature");
-
 	updateDisplaySignatureMenu();
 }
 
@@ -1220,9 +1204,7 @@ void QZGeometryWindow::displaySignature( int signatureID )
 		}
 	}
 
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-	
+	if (!ui.glMeshWidget->m_bShowSignature) toggleShowSignature();	
 	ui.glMeshWidget->update();
 }
 
@@ -1286,21 +1268,22 @@ void QZGeometryWindow::buildHierarchy()
 
 void QZGeometryWindow::detectFeatures()
 {
-	double feature_detection_base_timescale = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_BASE_TIMESCALE");
-	double feature_detection_t_multiplier = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_T_MULTIPLIER");
-	int num_detect_scales = g_configMgr.getConfigValueInt("FEATURE_DETECTION_NUM_SCALES");
-	double feature_detection_extrema_thresh = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_EXTREMA_THRESH");
-	int detect_ring = g_configMgr.getConfigValueInt("FEATURE_DETECTION_RING");
+	double featureDetectionBaseTimescale = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_BASE_TIMESCALE");
+	double featureDetectionTMultiplier = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_T_MULTIPLIER");
+	int numDetectScales = g_configMgr.getConfigValueInt("FEATURE_DETECTION_NUM_SCALES");
+	double featureDetectionExtremaThresh = g_configMgr.getConfigValueDouble("FEATURE_DETECTION_EXTREMA_THRESH");
+	int detectRing = g_configMgr.getConfigValueInt("FEATURE_DETECTION_RING");
 
 	qout.output("-- Detect initial features --");
 	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-		mShapeMatcher.detectFeatures(obj, detect_ring, num_detect_scales, feature_detection_base_timescale, 
-									feature_detection_t_multiplier, feature_detection_extrema_thresh);
+		mShapeMatcher.detectFeatures(obj, detectRing, numDetectScales, featureDetectionBaseTimescale, 
+									featureDetectionTMultiplier, featureDetectionExtremaThresh);
 	});
 	qout.output("Multi-scale mesh features detected!");
-	qout.output(QString().sprintf("Mesh1 features#: %d; Mesh2 features#: %d", mShapeMatcher.getSparseFeatures(0).size(), mShapeMatcher.getSparseFeatures(1).size()));
-	std::cout << "Mesh1 features #: " << mShapeMatcher.getSparseFeatures(0).size() << "; Mesh 2 features #: " << mShapeMatcher.getSparseFeatures(1).size() << std::endl;
+	std::cout << "Mesh1 features #: " << mShapeMatcher.getSparseFeatures(0).size() 
+		      << "; Mesh 2 features #: " << mShapeMatcher.getSparseFeatures(1).size() << std::endl;
 
+#if 0	
 	if (mShapeMatcher.hasGroundTruth()) 
 	{
 		vector<HKSFeature>& vf1 = mShapeMatcher.getSparseFeatures(0), &vf2 = mShapeMatcher.getSparseFeatures(1);
@@ -1367,7 +1350,8 @@ void QZGeometryWindow::detectFeatures()
 		cout << "-- Potential matches: " << count_strict << "/" << count_one_neighbor << endl;
 //		cout << "Average similarity of matched: " << sim1 / double(count_possible1) << endl;
 	}
-	
+#endif	
+
 	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
@@ -1377,7 +1361,8 @@ void QZGeometryWindow::matchFeatures()
 	int force_matching = g_configMgr.getConfigValueInt("FORCE_MATCHING");
 	string string_override = "";
 	bool alreadyMached = false;
-	
+
+#if 0	
 	if (force_matching == 1)
 	{
 		if (mMeshes[0]->getMeshName() == "horse0")
@@ -1420,78 +1405,76 @@ void QZGeometryWindow::matchFeatures()
 			alreadyMached = true;
 		}
 	}
+#endif
+	
+	int matching_method = g_configMgr.getConfigValueInt("FEATURE_MATCHING_METHOD");
+	std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
-	if (!alreadyMached)
+	qout.output("-- Match initial features --");
+	ofstream ofstr(log_filename.c_str(), ios::trunc);
+	CStopWatch timer;
+	timer.startTimer();
+	if (matching_method == 2)	//tensor
 	{
-		int matching_method = g_configMgr.getConfigValueInt("FEATURE_MATCHING_METHOD");
-		std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
+		std::cout << "Now do tensor matching!" << endl;
+		double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
+		double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
 
-		qout.output("-- Match initial features --");
-		ofstream ofstr(log_filename.c_str(), ios::trunc);
-		CStopWatch timer;
-		timer.startTimer();
-		if (matching_method == 2)	//tensor
+		const vector<HKSFeature>& vftFine1 = mShapeMatcher.getSparseFeatures(0);
+		const vector<HKSFeature>& vftFine2 = mShapeMatcher.getSparseFeatures(1);
+		vector<int> vFeatures1, vFeatures2;
+		for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){vFeatures1.push_back(f.m_index);});
+		for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){vFeatures2.push_back(f.m_index);});
+
+		vector<MatchPair> vPairs;
+		double vPara[] = {40, 0.8, 400};
+		double matchScore;
+		matchScore = DiffusionShapeMatcher::TensorGraphMatching6(mEngineWrapper.getEngine(), mProcessors[0], mProcessors[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
+		//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
+
+		if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
 		{
-			cout << "Now do tensor matching!" << endl;
-			double matching_thresh_2 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_2");
-			double tensor_matching_timescasle = g_configMgr.getConfigValueDouble("TENSOR_MATCHING_TIMESCALE");
-
-			const vector<HKSFeature>& vftFine1 = mShapeMatcher.getSparseFeatures(0);
-			const vector<HKSFeature>& vftFine2 = mShapeMatcher.getSparseFeatures(1);
-			vector<int> vFeatures1, vFeatures2;
-			for_each(vftFine1.begin(), vftFine1.end(), [&](const HKSFeature& f){vFeatures1.push_back(f.m_index);});
-			for_each(vftFine2.begin(), vftFine2.end(), [&](const HKSFeature& f){vFeatures2.push_back(f.m_index);});
-
-			vector<MatchPair> vPairs;
-			double vPara[] = {40, 0.8, 400};
-			double matchScore;
-			matchScore = DiffusionShapeMatcher::TensorGraphMatching6(mEngineWrapper.getEngine(), mProcessors[0], mProcessors[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
-			//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
-
-			if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
+			vector<double> vTimes;
+			vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
+			for (auto iter = vPairs.begin(); iter != vPairs.end(); )
 			{
-				vector<double> vTimes;
-				vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
-				for (auto iter = vPairs.begin(); iter != vPairs.end(); )
+				if (!mMeshes[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
+					iter->m_note = -1;
+
+				double dissim = mShapeMatcher.calPointHksDissimilarity(mProcessors[0], mProcessors[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
+				if (dissim > 0.18)
 				{
-					if (!mMeshes[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
-						iter->m_note = -1;
-
-					double dissim = mShapeMatcher.calPointHksDissimilarity(mProcessors[0], mProcessors[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
-					if (dissim > 0.18)
-					{
-						iter = vPairs.erase(iter);
-						continue;
-					}
-					else ++iter;
+					iter = vPairs.erase(iter);
+					continue;
 				}
-			}			
+				else ++iter;
+			}
+		}			
 
-			cout << "Tensor match score: " << matchScore << endl;
-			mShapeMatcher.forceInitialAnchors(vPairs);
+		std::cout << "Tensor match score: " << matchScore << endl;
+		mShapeMatcher.forceInitialAnchors(vPairs);
 
-			//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
-		}
-		else if (matching_method == 1)	// traditional pair-based matching
-		{
-			double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
-			mShapeMatcher.matchFeatures(ofstr, matching_thresh_1);
-		}
-		else // point based
-		{
-			mShapeMatcher.matchFeatureSimple();
-		}
-		timer.stopTimer();
-		ofstr.close();
-		qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+		//shapeMatcher.matchFeaturesTensor(ofstr, tensor_matching_timescasle, matching_thresh_2);
 	}
+	else if (matching_method == 1)	// traditional pair-based matching
+	{
+		double matching_thresh_1 = g_configMgr.getConfigValueDouble("MATCHING_THRESH_1");
+		mShapeMatcher.matchFeatures(ofstr, matching_thresh_1);
+	}
+	else // point based
+	{
+		mShapeMatcher.matchFeatureSimple();
+	}
+	timer.stopTimer();
+	ofstr.close();
+	qout.output(QString().sprintf("Initial features matched! Matched#:%d. Time elapsed:%f", mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel()).size(), timer.getElapsedTime()));
+
 
 	const std::vector<MatchPair>& result = mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel());
 
 	mShapeMatcher.evaluateWithGroundTruth(result);
 
-	if (!ui.glMeshWidget->m_bDrawMatching)
-		toggleDrawMatching();
+	if (!ui.glMeshWidget->m_bDrawMatching) toggleDrawMatching();
 }
 
 void QZGeometryWindow::registerStep()
@@ -1626,11 +1609,8 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 		qout.output("MHB saved to " + pathMHB);
 	}
 
-	if (1 == g_configMgr.getConfigValueInt("DUMP_EIG_VAL")) {
-		std::string pathEVL = "output/" + mp.getMesh_const()->getMeshName() + ".evl";	//dump eigenvalues
-		mp.getMHB().printEigVals(pathEVL);
-	}
-	qout.output(QString().sprintf("Min EigVal: %f, Max EigVal: %f", mp.getMHB().getEigVals().front(), mp.getMHB().getEigVals().back()));
+	std::cout << "Min EigVal: " << mp.getMHB().getEigVals().front() 
+			  << "; Max EigVal: " << mp.getMHB().getEigVals().back() << std::endl;
 }
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
@@ -1901,8 +1881,7 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
 	lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
 
-	for (int i = 0; i < num; ++i)
-	{
+	for (int i = 0; i < num; ++i) {
 		const ZGeom::VecNd& eig1i = mhb1.getEigVec(i);
 		const ZGeom::VecNd& eig2i = mhb2.getEigVec(i);
 		for (int j = 0; j < num; ++j) {
@@ -1915,4 +1894,12 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	
 	funcMap1.print("output/funcmap1.txt");
 	funcMap2.print("output/funcmap2.txt");
+
+	lap1.getLS().print("output/Ls1.txt");
+	lap1.getW().print("output/W1.txt");
+	lap2.getLS().print("output/Ls2.txt");
+	lap2.getW().print("output/W2.txt");
+
+	mhb1.printEigVals("output/eigvals1.txt");
+	mhb2.printEigVals("output/eigvals2.txt");
 }

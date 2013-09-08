@@ -124,14 +124,14 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
 				else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
 			}
-			else if (vpRS[0]->selected)
-				obj_index = 0;
+			else if (vpRS[0]->selected) obj_index = 0;
 
 			if (obj_index >= 0 && glPick(x, y, p, obj_index))
 			{
 				double dmin = 1e10;
 				int hIdx = -1;
-				for (int vi = 0; vi < vpMP[obj_index]->getMesh_const()->getVerticesNum(); ++vi)
+				int vertCount = vpMP[obj_index]->getMesh_const()->getVerticesNum();
+				for (int vi = 0; vi < vertCount; ++vi)
 				{
 					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex_const(vi)->getPosition());
 					if (d < dmin) 
@@ -537,7 +537,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glEnd();
 	}
 	glEnable(GL_LIGHTING);
-
 
 	//// ----	draw reference point ---- ////
 	if ( m_bShowRefPoint )

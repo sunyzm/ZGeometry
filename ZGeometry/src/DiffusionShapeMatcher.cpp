@@ -8,9 +8,7 @@
 #include <functional>
 #include <limits>
 #include <ppl.h>
-#include <ZUtil/SimpleConfigLoader.h>
-#include <ZUtil/timer.h>
-#include <ZUtil/misc.h>
+#include <ZUtil/ZUtil.h>
 #include <ZGeom/arithmetic.h>
 #include "OutputHelper.h"
 #include "global.h"
@@ -270,8 +268,7 @@ void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream&
 	meshPyramids[1].setLevel(n, ratio);
 	meshPyramids[0].construct(ostr);
 	meshPyramids[1].construct(ostr);
-	for (int k = 1; k < n; ++k)
-	{
+	for (int k = 1; k < n; ++k) {
 		liteMP[0].push_back(new DifferentialMeshProcessor(meshPyramids[0].getMesh(k), pOriginalMesh[0]));
 		liteMP[1].push_back(new DifferentialMeshProcessor(meshPyramids[1].getMesh(k), pOriginalMesh[1]));
 	}
@@ -283,7 +280,7 @@ void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream&
 
 void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
 {
-	assert(obj == 0 || obj == 1);
+	ZUtil::logic_assert(obj == 0 || obj == 1);
 	m_vFeatures[obj].clear();
 
 	const CMesh* fineMesh = pOriginalMesh[obj];
@@ -306,11 +303,6 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 
 		vector<pair<int, int> > vFeatureIdx;	// <index, minOrMax>
 		fineMesh->extractExtrema(hksv, ring, vFeatureIdx, thresh);
-		
-// 		cout << "[Raw Features] obj " << obj << ", scale_parameter = " << vScaleValues[s] << '\n';
-// 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) 
-// 			cout << iter->first	<< ", ";
-// 		cout << '\n';
 
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) {
 			if ( vF.end() == find_if(vF.begin(), vF.end(), 

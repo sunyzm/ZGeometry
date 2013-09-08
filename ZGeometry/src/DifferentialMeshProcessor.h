@@ -86,10 +86,9 @@ public:
 	bool isLaplacianConstructed(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
-	// ---- attribute access --- //
-	const ManifoldHarmonics& getMHB() const { return mhb; }
-    const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return vMHB[laplacianType]; }
-    const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return vMeshLaplacian[laplacianType]; }
+	// ---- attributes access --- //
+	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMeshLaplacian[laplacianType]; }
+	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMHB[laplacianType]; }
 
     int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }

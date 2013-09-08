@@ -8,8 +8,7 @@ using namespace std;
 
 void RenderSettings::normalizeSignatureFrom( const std::vector<double>& vFrom )
 {
-	if (vFrom.empty()) return;	
-
+	if (vFrom.empty()) return;
 	importSignature(vFrom);
 	normalizeSignature();
 }
@@ -19,10 +18,8 @@ void RenderSettings::logNormalizeSignatureFrom( const std::vector<double>& vFrom
 	if (vFrom.empty()) return;	
 
 	importSignature(vFrom);
-	if (sigMin <= 0)
-		normalizeSignature();
-	else
-		logNormalizeSignature();
+	if (sigMin <= 0) normalizeSignature();
+	else logNormalizeSignature();
 }
 
 void RenderSettings::bandCurveSignatureFrom( const std::vector<double>& vFrom, double lowend, double highend )
@@ -51,8 +48,11 @@ void RenderSettings::normalizeSignature()
 	const double sMin = sigMin, sMax = sigMax;
 
 	vDisplaySignature.resize(vOriginalSignature.size());
-	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), vDisplaySignature.begin(),
-		[=](double v){ return (v-sMin)/(sMax-sMin); });
+	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), 
+				   vDisplaySignature.begin(),
+				   [=](double v){ return (v-sMin)/(sMax-sMin); });
+
+	std::cout << "sigMin: " << sigMin << "sigMax: " << sigMax << std::endl;
 }
 
 void RenderSettings::logNormalizeSignature()
