@@ -80,10 +80,14 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(SolutionDir)ZGeom\include;$(SolutionDir)ZMesh\include;$(SolutionDir)ZUtil\include;C:\MATLAB\R2010b\extern\include;D:\dev\boost_1_54_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZGeom\lib;$(SolutionDir)ZMesh\lib;$(SolutionDir)ZUtil\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
+    <LinkIncremental>
+    </LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(SolutionDir)ZGeom\include;$(SolutionDir)ZMesh\include;$(SolutionDir)ZUtil\include;C:\MATLAB\R2010b\extern\include;D:\dev\boost_1_54_0;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZGeom\lib;$(SolutionDir)ZMesh\lib;$(SolutionDir)ZUtil\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
+    <LinkIncremental>
+    </LinkIncremental>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -124,6 +128,7 @@
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalDependencies>glew32.lib;ZUtil64d.lib;ZMesh64d.lib;ZGeom64d.lib;libeng.lib;libmx.lib;libmat.lib;qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;opengl32.lib;glu32.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -168,6 +173,7 @@
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <AdditionalDependencies>ZUtil64.lib;ZMesh64.lib;ZGeom64.lib;glew32.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;opengl32.lib;glu32.lib;Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

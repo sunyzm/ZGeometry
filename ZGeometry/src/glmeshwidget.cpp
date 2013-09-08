@@ -13,6 +13,9 @@
 
 using ZUtil::Int2String;
 
+extern OutputHelper qout;
+extern GeometryTask g_task;
+
 const GLfloat color_handle[4] = {1.0, 0.5, 0.5, 1};
 const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
 									{0.0, 1.0, 0.0, 1.0},	//green
@@ -22,11 +25,8 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
 									{0.0, 1.0, 1.0, 1.0}};	//cyan
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
-
-extern OutputHelper qout;
-extern GeometryTask g_task;
-
 FalseColorMap falseColorMap;
+
 void glFalseColor(float v, float p)
 {
 	int floor = static_cast<int>(v * 256.0f);

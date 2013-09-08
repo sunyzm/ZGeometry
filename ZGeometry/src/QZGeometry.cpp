@@ -22,6 +22,8 @@
 
 using namespace std;
 using ZUtil::Int2String;
+using ZUtil::logic_assert;
+using ZUtil::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
 
 int     QZGeometryWindow::DEFAULT_EIGEN_SIZE      = 300;
@@ -604,30 +606,30 @@ void QZGeometryWindow::deformSGW()
 
 void QZGeometryWindow::selectObject( int index )
 {
-	QString text = ui.boxObjSelect->itemText(index);
-	qout.output("Selected object(s): " + text);
+	QString text = ui.boxObjSelect->itemText(index);	
+	for (auto iter = mRenderManagers.begin(); iter != mRenderManagers.end(); ++iter) (*iter)->selected = false;	
+	
 	if (text == "1") 
-	{
-		for_each(begin(mRenderManagers), end(mRenderManagers), [](RenderSettings* rs){ rs->selected = false; }); 
+	{			 
 		if (mRenderManagers.size() >= 1) mRenderManagers[0]->selected = true;
 		mObjInFocus = 0;
 	}
 	else if (text == "2")
 	{
-		for_each(begin(mRenderManagers), end(mRenderManagers), [](RenderSettings* rs){ rs->selected = false; }); 
 		if (mRenderManagers.size() >= 2) mRenderManagers[1]->selected = true;
 		mObjInFocus = 1;
 	}
 	else if (text == "All")
 	{
-		for_each(begin(mRenderManagers), end(mRenderManagers), [](RenderSettings* rs){ rs->selected = true; }); 
+		for (auto iter = mRenderManagers.begin(); iter != mRenderManagers.end(); ++iter) (*iter)->selected = true;	 
 		mObjInFocus = 0;
 	}
 	else if (text == "None")
 	{
-		for_each(begin(mRenderManagers), end(mRenderManagers), [](RenderSettings* rs){ rs->selected = false; }); 
 		mObjInFocus = -1;
 	}
+
+	qout.output("Selected object(s): " + text);
 }
 
 void QZGeometryWindow::setRefPoint1( int vn )
@@ -876,7 +878,7 @@ void QZGeometryWindow::computeCurvatureGauss()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	assert(mMeshes[0]->getVerticesNum() == mMeshes[1]->getVerticesNum());
+	runtime_assert(mMeshes[0]->getVerticesNum() == mMeshes[1]->getVerticesNum());
 	int size = mMeshes[0]->getVerticesNum();
 	vector<double> vDiff;
 	vDiff.resize(size);
@@ -910,50 +912,17 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 
 void QZGeometryWindow::clone()
 {
-	if (mMeshCount < 1) return;
+	if (mMeshCount != 1) return;
 
-	if (mMeshCount == 1)
-	{
-		allocateStorage(2);
-	}
-
+	allocateStorage(2);
 	mMeshes[1]->cloneFrom(mMeshes[0]);
 	mMeshes[1]->gatherStatistics();
-
 	mProcessors[1]->init(mMeshes[1], &mEngineWrapper);
 	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
 	ui.glMeshWidget->addMesh(mProcessors[1], mRenderManagers[1]);
+
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->getVerticesNum()));
 	
-	//	vector<double> vx, vy, vz;
-	//	vMP[0].reconstructByMHB(300, vx, vy, vz);
-	//	vMP[0].reconstructByDifferential(vx, vy, vz);
-	//	vMP[0].reconstructExperimental1(vx, vy, vz);
-	//	mesh2.setVertexCoordinates(vx, vy, vz);
-
-	/*  to prove the effect of scalar product   
-	
-	ofstream ofs1("output/dotproduct.dat"), ofs2("output/scalarproduct.dat");
-	for (int i = 0; i < vMP[0].mhb.m_nEigFunc; ++i)
-	{
-	for (int j = 0; j < vMP[0].mhb.m_nEigFunc; ++j)
-	{
-	const vector<double> &ef1 = vMP[0].mhb.m_func[i].m_vec, 
-	&ef2 = vMP[0].mhb.m_func[j].m_vec;
-	const vector<double> &sc = vMP[0].mLaplacian.getVerticesWeight();
-
-	ofs1 << VectorDotProduct(ef1, ef2) << ' ';
-	ofs2 << VectorScalarProduct(ef1, ef2, sc) << ' ';
-	}
-	ofs1 << endl;
-	ofs2 << endl;
-	if (i % 10 == 0)
-	qout.output("Row " + QString::number(i) + " finished!"); 
-	}
-	ofs1.close();
-	ofs2.close();
-	*/
-
 	ui.glMeshWidget->update();
 }
 

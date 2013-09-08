@@ -6,6 +6,7 @@
 #include "timer.h"
 #include "SimpleConfigLoader.h"
 #include "zutil_io.h"
+#include "zassert.h"
 #include "misc.h"
 
 #endif
