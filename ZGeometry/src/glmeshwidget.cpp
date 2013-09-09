@@ -175,7 +175,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		else if (vpRS[0]->selected)
 			obj_index = 0;
 
-		if (obj_index >= 0 && !vpMP[obj_index]->mHandles.empty())
+		if (obj_index >= 0 && !vpMP[obj_index]->getHandles().empty())
 		{
 			Vector3D p;
 			if (glPick(x, y, p, obj_index))
@@ -184,12 +184,12 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				DifferentialMeshProcessor* pMP = vpMP[obj_index];
 				int imin(-1);
 				double d, dmin(1e10);
-				for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
+				for (auto handle : pMP->getHandles())
 				{
-					d = iter->second.distantFrom(p);
-					if (d < dmin) { dmin = d; imin = iter->first; }
+					d = handle.second.distantFrom(p);
+					if (d < dmin) { dmin = d; imin = handle.first; }
 				}
-				pMP->active_handle = imin;
+				pMP->setActiveHandle(imin);
 			}
 		}
 	}
@@ -256,7 +256,8 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			obj_index = 0;
 		else return;
 
-		if ( obj_index >= 0 && vpMP[obj_index]->active_handle != -1 && vpMP[obj_index]->mHandles.find(vpMP[obj_index]->active_handle) != vpMP[obj_index]->mHandles.end() )
+		if ( obj_index >= 0 && vpMP[obj_index]->getActiveHandle() != -1 
+			 && vpMP[obj_index]->getHandles().find(vpMP[obj_index]->getActiveHandle()) != vpMP[obj_index]->getHandles().end() )
 		{
 			DifferentialMeshProcessor* pMP = vpMP[obj_index];
 
@@ -275,12 +276,12 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			glGetDoublev(GL_PROJECTION_MATRIX, projection);
 			glGetIntegerv(GL_VIEWPORT, viewport);
 
-			const Vector3D& handlePos = pMP->mHandles[pMP->active_handle];
+			const Vector3D& handlePos = pMP->getHandles()[pMP->getActiveHandle()];
 			int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
 			GLdouble ox, oy, oz, wx, wy, wz;
 			gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
 			gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
-			pMP->mHandles[pMP->active_handle] = Vector3D(ox, oy, oz);
+			pMP->getHandles()[pMP->getActiveHandle()] = Vector3D(ox, oy, oz);
 
 			glPopMatrix();	
 		}	
@@ -616,11 +617,11 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	//// ---- draw handle points ---- ////
-	if (!pMP->mHandles.empty())
+	if (!pMP->getHandles().empty())
 	{
-		for (auto iter = pMP->mHandles.begin(); iter != pMP->mHandles.end(); ++iter)
+		for (auto handle :pMP->getHandles())
 		{
-			Vector3D vt = iter->second;
+			Vector3D vt = handle.second;
 			vt += shift;
 			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
 			GLUquadric* quadric = gluNewQuadric();

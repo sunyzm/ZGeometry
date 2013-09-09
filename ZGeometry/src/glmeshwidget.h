@@ -65,7 +65,6 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
-
 	double			m_dFeatureSphereRadius;
 	double			m_dMeshPointSize;
 };

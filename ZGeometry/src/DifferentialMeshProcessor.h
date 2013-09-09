@@ -44,14 +44,12 @@ public:
 
 	void init(CMesh* tm, ZGeom::MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
-    void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-    void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void addNewHandle(int hIdx);
-
+	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	
 	// ---- computation ---- //
 	void constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void selectMHB(MeshLaplacian::LaplacianType laplacianType) { if (!vMHB[laplacianType].empty()) mhb = vMHB[laplacianType]; };
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
@@ -73,6 +71,7 @@ public:
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
 	
 	// ---- editing ---- //
+	void addNewHandle(int hIdx);
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void calGeometryDWT();
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
@@ -89,33 +88,32 @@ public:
 	// ---- attributes access --- //
 	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMeshLaplacian[laplacianType]; }
 	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMHB[laplacianType]; }
-
-    int  getRefPointIndex() const { return pRef; }
+	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
+	int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
 	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id);
-	void setActiveMHB(MeshLaplacian::LaplacianType laplacianType) { mhb = vMHB[laplacianType]; }
-    
-public:
-	int active_handle;
-	std::map<int, Vector3D> mHandles;
-	double constrain_weight;
-	
+	int getActiveHandle() const { return active_handle; }
+	void setActiveHandle(int h) { active_handle = h; }
+	int getConstrainWeight() const { return constrain_weight; }
+	void setConstrainWeight(double w) { constrain_weight = w; }
+	std::map<int, Vector3D>& getHandles() { return mHandles; }
+	const std::map<int, Vector3D>& getHandles() const { return mHandles; }
+		
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;
-
-	bool m_bSGWComputed;
-	ManifoldHarmonics mhb;	
-
 	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
 	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
-
+	MeshLaplacian::LaplacianType mActiveLaplacianType;
+	bool m_bSGWComputed;
 	int pRef;
 	Vector3D posRef;
 	int active_feature_id;
-
+	std::map<int, Vector3D> mHandles;
+	int active_handle;
+	double constrain_weight;
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
 };

@@ -5,51 +5,9 @@
 #include <fstream>
 #include <utility>
 #include <engine.h>
-#include "DifferentialMeshProcessor.h"
 #include "ZMesh/MeshPyramid.h"
-
-class MatchPair
-{
-public:
-	int		m_idx1;
-	int		m_idx2;
-	double	m_tl;		//lower time
-	double	m_tu;		//upper time
-	int		m_tn;
-	double  m_score;
-	int		m_note;		
-
-public:
-	MatchPair() { m_idx1 = -1; m_idx2 = -1; }
-	MatchPair(int i1, int i2, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_score = score; m_tl = 0.0; m_tn = 0;  m_note = 0;}
-	MatchPair(int i1, int i2, double tl, int tn, double score = 0) { m_idx1 = i1; m_idx2 = i2; m_tl = tl; m_tn = tn; m_tu = m_tl * pow(2., tn-1); m_score = score; m_note = 0;}
-	operator std::pair<int, int>() const { return std::make_pair(m_idx1, m_idx2); }
-	
-	friend bool operator== (const MatchPair& mp1, const MatchPair& mp2) { return (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 == mp2.m_idx2); }
- 	friend bool operator< (const MatchPair& mp1, const MatchPair& mp2)
- 	{
- 		return mp1.m_idx1 < mp2.m_idx1 || (mp1.m_idx1 == mp2.m_idx1 && mp1.m_idx2 < mp2.m_idx2);
- 	}
- 
- 	friend bool operator> (const MatchPair& mp1, const MatchPair& mp2)
- 	{
- 		return mp2 < mp1;
- 	}
-
-	static std::vector<std::pair<int, int> > ToPairVector(const std::vector<MatchPair>& vmp)
-    {
-		std::vector<std::pair<int, int> > vp;
-		for (auto iter = vmp.begin(); iter != vmp.end(); ++iter) 
-			vp.push_back( (std::pair<int, int>)(*iter) );
-		return vp;
-	}
-};
-
-class PairScoreCompare
-{
-public:
-	bool operator()(const MatchPair& Left, const MatchPair& Right) const { return ( Left.m_score > Right.m_score ); }
-};
+#include "DifferentialMeshProcessor.h"
+#include "matching.h"
 
 class ExtremaPoint
 {
@@ -144,10 +102,9 @@ public:
 	void    matchFeatureSimple();
 	void	matchFeaturesTensor_deprecate(std::ostream& flog, double timescale, double thresh);
 	void	refineRegister(std::ostream& flog);
-	void    refineRegister2(std::ostream& flog);
-	
+	void    refineRegister2(std::ostream& flog);	
 	void	evaluateRegistration();
-
+	
 	/* testing functions */
 	void    registerTesting1();
 	void    regsiterTesting2();
@@ -181,6 +138,8 @@ public:
 	void    dumpIndexMap(const std::string& filename) const;
 	void	readInRandPair(const std::string& filename);
 	
+	/* evaluations */
+	void evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const;
 	void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair);
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 	static double evaluateDistance(const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);

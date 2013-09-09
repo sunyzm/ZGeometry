@@ -52,7 +52,7 @@ void RenderSettings::normalizeSignature()
 				   vDisplaySignature.begin(),
 				   [=](double v){ return (v-sMin)/(sMax-sMin); });
 
-	std::cout << "sigMin: " << sigMin << "sigMax: " << sigMax << std::endl;
+	std::cout << "sigMin: " << sigMin << "; sigMax: " << sigMax << std::endl;
 }
 
 void RenderSettings::logNormalizeSignature()

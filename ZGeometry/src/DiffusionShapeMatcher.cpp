@@ -48,8 +48,7 @@ void PointParam::clear()
 PointParam& PointParam::operator= ( const PointParam& hkp )
 {
 	reserve(hkp.m_size);
-	for (int i = 0; i < m_size; ++i)
-		m_vec[i] = hkp.m_vec[i];
+	for (int i = 0; i < m_size; ++i) m_vec[i] = hkp.m_vec[i];
 	m_votes = hkp.m_votes;
 	return *this;
 }
@@ -61,8 +60,7 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 	para_dim = pn;
 	vCoord.resize(fineSize);
 
-	for (int v = 0; v < fineSize; ++v)
-	{
+	for (int v = 0; v < fineSize; ++v) {
 		PointParam& hkp = vCoord[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
@@ -79,8 +77,7 @@ void ParamManager::computeBHParam( const std::vector<int>& anchors )
 	para_dim = pn;
 	vCoord.resize(fineSize);
 
-	for (int v = 0; v < fineSize; ++v)
-	{
+	for (int v = 0; v < fineSize; ++v) {
 		PointParam& hkp = vCoord[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
@@ -97,7 +94,7 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 	para_dim = pn;
 	vCoord.resize(fineSize);
 
-	Concurrency::parallel_for(0, fineSize, [&](int v) {
+	Concurrency::parallel_for(0, fineSize, [&](int v){
 		PointParam& hkp = vCoord[v];
 		hkp.reserve(pn);
 		for (int i = 0; i < pn; ++i)
@@ -127,8 +124,7 @@ double distHKS2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshPro
 
 	VectorND v1(tn), v2(tn);
 	double t = tl;
-	for(int i = 0; i < tn; i++)
-	{
+	for(int i = 0; i < tn; i++) {
 		v1.m_vec[i] = pmp1->calHK(i1, i1, t) / pmp1->calHeatTrace(t);
 		v2.m_vec[i] = pmp2->calHK(i2, i2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
@@ -149,8 +145,7 @@ double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMesh
 
 	VectorND v1(tn), v2(tn);
 	double t = tl;
-	for(int i = 0; i < tn; i++)
-	{
+	for(int i = 0; i < tn; i++) {
 		v1.m_vec[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
 		v2.m_vec[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
@@ -168,8 +163,7 @@ double distHksFeature2(const DifferentialMeshProcessor* pmp1, const Differential
 
 	VectorND v1(tn), v2(tn);
 	double t = tl;
-	for(int i = 0; i < tn; i++)
-	{
+	for(int i = 0; i < tn; i++) {
 		v1.m_vec[i] = pmp1->calHK(hf1.m_index, hf1.m_index, t) / pmp1->calHeatTrace(t);
 		v2.m_vec[i] = pmp2->calHK(hf2.m_index, hf2.m_index, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
@@ -192,8 +186,7 @@ double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const Differen
 
 	VectorND v1(tn), v2(tn);
 	double t = tl;
-	for(int i = 0; i < tn; i++)
-	{
+	for(int i = 0; i < tn; i++) {
 		v1.m_vec[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
 		v2.m_vec[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
@@ -221,13 +214,9 @@ DiffusionShapeMatcher::~DiffusionShapeMatcher()
 	if (!m_bInitialized) return;
 
 	int mpSize1 = liteMP[0].size(), mpSize2 = liteMP[1].size();
-	for (int k = 1; k < mpSize1; ++k) {
-		delete liteMP[0][k];
-	}
-	for (int k = 1; k < mpSize2; ++k) {
-		delete liteMP[1][k];
-	}
-
+	for (int k = 1; k < mpSize1; ++k) delete liteMP[0][k];
+	for (int k = 1; k < mpSize2; ++k) delete liteMP[1][k];
+	
 	std::cout << "DiffusionShapeMatcher destroyed!" << std::endl;
 }
 
@@ -2201,26 +2190,23 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 	newAnchorMatch = oldAnchorMatch;
 //	if(current_level > 0)
 	{
-		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter)
-		{
+		for (auto iter = begin(tmpReg1); iter != end(tmpReg1); ++iter) {
 			int vid_1 = iter->m_idx1, vid_2 = iter->m_idx2;
 			int v1 = id2Index(0, vid_1, current_level), v2 = id2Index(1, vid_2, current_level);
 			if (vMatch1[v1] == v2 && vMatch2[v2] == v1)		// select only the pair considered best mutually
 				tmpReg2.push_back(*iter);
 		}
 
-		priority_queue<MatchPair, vector<MatchPair>, PairScoreCompare > qReg;
-		for (auto iter = begin(tmpReg2); iter != end(tmpReg2); ++iter)
-		{
-			const int vi = iter->m_idx1, vj = iter->m_idx2;
+		priority_queue<MatchPair, vector<MatchPair>, decltype(PairScoreCompare) > qReg;
+		for (const MatchPair& mp : tmpReg2) {
+			const int vi = mp.m_idx1, vj = mp.m_idx2;
 			double score;
 			const int vm1 = searchVertexMatch(vi, vj, 0, 1, score, current_level);	// vi, vj here are vertex id as well as level-0 index
 			qReg.push(MatchPair(vi, vm1, vCoordinates1[vi].m_votes * score));
 		}
 
 		tmpReg2.clear();
-		while(!qReg.empty())
-		{
+		while(!qReg.empty()) {
 			tmpReg2.push_back(qReg.top());
 			qReg.pop();
 		}
@@ -2303,6 +2289,39 @@ void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair
 	std::cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
 }
 
+void DiffusionShapeMatcher::evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const
+{
+	const std::map<int,int>& resultMap = result.mMatchedPairs;
+	const std::map<int,int>& groundTruthMap = groundtruth.mMatchedPairs;
+	int countValid0 = 0, countValid1 = 0, countValid2 = 0;
+	int largeErrorCount = 0;
+	double errorSum(0);		
+	int countCandidates(0);
+	eval.mMatchedCount = resultMap.size();
+
+	for (auto iter = resultMap.begin(); iter != groundTruthMap.end(); ++iter) {
+		int idx1 = iter->first, idx2 = iter->second;
+		if (groundTruthMap.find(idx1) == groundTruthMap.end()) continue;
+		countCandidates++;
+
+		int idxTrue = groundTruthMap.at(idx1);
+		if (idx2 == idxTrue) { countValid0++; countValid1++; countValid2++; }
+		else if (pOriginalMesh[1]->isInNeighborRing(idxTrue, idx2, 1)) { countValid1++; countValid2++; }
+		else if (pOriginalMesh[1]->isInNeighborRing(idxTrue, idx2, 2)) { countValid2++; }
+
+		double error = pOriginalMesh[1]->calGeodesic(idxTrue, idx2) / pOriginalMesh[1]->getAvgEdgeLength();
+		if (error > 5) largeErrorCount++;
+		errorSum += error;
+	}
+	errorSum /= countCandidates;
+
+	eval.mMatch0Count = countValid0;
+	eval.mMatch1Count = countValid1;
+	eval.mMatch2Count = countValid2;
+	eval.mLargeErrorCount = largeErrorCount;
+	eval.mAvgErrInEdgeLength = errorSum;
+}
+
 const std::vector<MatchPair>& DiffusionShapeMatcher::getInitialMatchedFeaturePairs() const
 {
 	return m_vFeatureMatchingResults[m_nRegistrationLevels];
@@ -2345,7 +2364,6 @@ void DiffusionShapeMatcher::registerTesting1()
 
 	//vector<int> vSelected[2] = {tmesh1->getNeighborVertexIndex(5934, 1), tmesh2->getNeighborVertexIndex(5934, 1)};
 	vector<int> vSelected[2] = {vFeatureID1, vFeatureID2};
-
 
 	ofstream ofs("output/register_test1.csv");
 	
@@ -3633,8 +3651,6 @@ void DiffusionShapeMatcher::localCorrespondenceTesting()
 	for (int n = 0; n < groupNum; ++n)
 	{
 		const int vi = vTest[n];
-		//vector<int> vNeighbor1 = pOriginalMesh[0]->getRingVertexIndex(vi, 2);
-		//vector<int> vNeighbor2 = pOriginalMesh[1]->getRingVertexIndex(vi, 2);
 		vector<int> vNeighbor1 = pOriginalMesh[0]->getNeighborVertexIndex(vi, 1);
 		vector<int> vNeighbor2 = pOriginalMesh[1]->getNeighborVertexIndex(vi, 1);
 		if (vNeighbor1.size() != vNeighbor2.size())

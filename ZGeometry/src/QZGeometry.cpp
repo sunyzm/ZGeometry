@@ -440,13 +440,13 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_Minus:
-		this->mProcessors[0]->constrain_weight /= 2;
-		qout.output("Constrain weight: " + QString::number(mProcessors[0]->constrain_weight));
+		mProcessors[0]->setConstrainWeight(mProcessors[0]->getConstrainWeight()*0.5);
+		qout.output("Constrain weight: " + QString::number(mProcessors[0]->getConstrainWeight()));
 		break;
 
 	case Qt::Key_Equal:
-		this->mProcessors[0]->constrain_weight *= 2;
-		qout.output("Constrain weight: " + QString::number(mProcessors[0]->constrain_weight));
+		mProcessors[0]->setConstrainWeight(mProcessors[0]->getConstrainWeight()*2);
+		qout.output("Constrain weight: " + QString::number(mProcessors[0]->getConstrainWeight()));
 		break;
 
 	case Qt::Key_X:
@@ -507,11 +507,11 @@ void QZGeometryWindow::computeSGW()
 
 void QZGeometryWindow::deformSimple()
 {
-	int activeHandle = mProcessors[0]->active_handle; 
+	int activeHandle = mProcessors[0]->getActiveHandle(); 
 	vector<int> vHandle;
 	vHandle.push_back(activeHandle);
 	vector<Vector3D> vHandlePos;
-	vHandlePos.push_back(mProcessors[0]->mHandles[activeHandle]);
+	vHandlePos.push_back(mProcessors[0]->getHandles()[activeHandle]);
 	vector<int> vFree = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(activeHandle, DEFAULT_DEFORM_RING);
 	vector<Vector3D> vNewPos;
 
@@ -537,12 +537,12 @@ void QZGeometryWindow::deformLaplace()
 	//	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
 
 	std::set<int> sFreeIdx;
-	for (auto iter = mProcessors[0]->mHandles.begin(); iter!= mProcessors[0]->mHandles.end(); ++iter)
+	for (auto handle :mProcessors[0]->getHandles())
 	{
-		vHandle.push_back(iter->first);
-		vHandlePos.push_back(iter->second);
+		vHandle.push_back(handle.first);
+		vHandlePos.push_back(handle.second);
 
-		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(iter->first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(handle.first, DEFAULT_DEFORM_RING);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
@@ -571,7 +571,7 @@ void QZGeometryWindow::deformSGW()
 	vector<int> vFree;
 
 	std::set<int> sFreeIdx;
-	for (auto handle : mProcessors[0]->mHandles) {
+	for (auto handle : mProcessors[0]->getHandles()) {
 		vHandle.push_back(handle.first);
 		vHandlePos.push_back(handle.second);
 
@@ -940,12 +940,9 @@ void QZGeometryWindow::reconstructSGW()
 	vector<double> vx, vy, vz;
 	CStopWatch timer;
 	timer.startTimer();
-	try
-	{
+	try {
 		mProcessors[0]->reconstructBySGW(vx, vy, vz, true);
-	}
-	catch (logic_error* e)
-	{
+	} catch (logic_error* e) {
 		qout.output(e->what(), OUT_MSGBOX);
 		return;
 	}
@@ -955,10 +952,10 @@ void QZGeometryWindow::reconstructSGW()
 	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
 
 	{
-		int debugIdx = (*mProcessors[0]->mHandles.begin()).first;
+		int debugIdx = mProcessors[0]->getHandles().begin()->first;
 		qout.output("Original pos: " + std::string(mMeshes[0]->getVertex(debugIdx)->getPosition()));
-		if (!mProcessors[0]->mHandles.empty())
-			qout.output("Handle pos: " + std::string((*mProcessors[0]->mHandles.begin()).second));
+		if (!mProcessors[0]->getHandles().empty())
+			qout.output("Handle pos: " + std::string(mProcessors[0]->getHandles().begin()->second));
 		qout.output("Deformed pos: " + std::string(mMeshes[1]->getVertex(debugIdx)->getPosition()));
 	}
 
@@ -1659,10 +1656,8 @@ void QZGeometryWindow::saveSignature()
 
 void QZGeometryWindow::addMesh()
 {
-	QStringList filenames =  QFileDialog::getOpenFileNames(
-		this, "Select one or more mesh files to open",
-		"../../Data/", "Meshes (*.obj *.off *.ply)");
-
+	QStringList filenames =  QFileDialog::getOpenFileNames(this, "Select one or more mesh files to open",
+														   "../../Data/", "Meshes (*.obj *.off *.ply)");
 	int cur_obj = mMeshCount;
 	allocateStorage(++mMeshCount);
 
@@ -1703,15 +1698,13 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 	if (mObjInFocus < 0) return;
 	const std::vector<MeshProperty*> vProperties = mProcessors[mObjInFocus]->properties();
 	vector<MeshFunction*> vSigFunctions;
-	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp)
-	{
+	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp) {
 		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_COUNT)
 			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
 	});
 
 	QList<QAction*> signatureActions = ui.menuSignature->actions();
-	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* qa)
-	{
+	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* qa) {
 		if (vSigFunctions.end() == find_if(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* mf){ return mf->name == qa->text().toStdString();}))
 		{
 			ui.menuSignature->removeAction(qa);
@@ -1719,8 +1712,7 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 		}
 	});
 
-	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf)
-	{
+	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf) {
 		if (m_actionDisplaySignatures.end() == find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == pmf->name;}))
 		{
 			QAction* newDisplayAction = new QAction(pmf->name.c_str(), this);
@@ -1778,22 +1770,19 @@ void QZGeometryWindow::saveMatchingResult()
 	if (g_task != TASK_REGISTRATION) return;
 
 	const vector<MatchPair>& vPairs = mShapeMatcher.getInitialMatchedFeaturePairs();
-	if (vPairs.empty())
-	{
+	if (vPairs.empty()) {
 		qout.output("No matching result available", OUT_MSGBOX);
 		return;
 	}
 
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Matching Result to File"),
-		"./output/matching.txt",
-		tr("Text Files (*.txt *.dat)"));
+													"./output/matching.txt",
+													tr("Text Files (*.txt *.dat)"));
 	
 	ofstream ofs(fileName.toStdString().c_str(), ios::trunc);
 
 	ofs << vPairs.size() << endl;
-
-	for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter)
-	{
+	for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter) {
 		ofs << iter->m_idx1 << ' ' << iter->m_idx2 << ' ' << iter->m_score << endl;
 	}
 
@@ -1804,9 +1793,8 @@ void QZGeometryWindow::loadMatchingResult()
 {
 	if (g_task != TASK_REGISTRATION) return;
 
-	QString filename =  QFileDialog::getOpenFileName(
-		this, "Select one or more mesh files to open",
-		"./output/", tr("Text Files (*.txt *.dat)"));
+	QString filename =  QFileDialog::getOpenFileName(this, "Select one or more mesh files to open",
+													 "./output/", tr("Text Files (*.txt *.dat)"));
 
 	mShapeMatcher.loadInitialFeaturePairs(filename.toStdString());
 

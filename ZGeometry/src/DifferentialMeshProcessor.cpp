@@ -8,14 +8,12 @@
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenSystem.h>
-
+#include "global.h"
 
 using namespace std;
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::VectorDotProduct;
-
-extern SimpleConfigLoader g_configMgr;
 
 double transferScalingFunc1( double lambda )
 {
@@ -104,7 +102,7 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 	Engine *ep = mpEngineWrapper->getEngine();
 	//vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
 	vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
-	mhb = vMHB[laplacianType];
+	//mhb = vMHB[laplacianType];
 
 	//ZGeom::EigenSystem eigSys;
 	//vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
@@ -113,7 +111,7 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
 	vMHB[laplacianType].load(path);
-	mhb = vMHB[laplacianType];
+	//mhb = vMHB[laplacianType];
 }
 
 void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
@@ -147,12 +145,12 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	if (iter != mHandles.end())
 		mHandles.erase(iter);
 	else
-		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPosition();
-	 
+		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPosition();	 
 }
 
 void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	vMHW.resize(m_size);
 
 	if (wtype == 1)
@@ -185,6 +183,8 @@ void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& v
 
 void DifferentialMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, double scale )
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	vExp.resize(m_size);
 	
 	for (int i = 0; i < m_size; ++i)
@@ -212,6 +212,7 @@ void DifferentialMeshProcessor::calGeometryDWT()
 {
 // output: 1. coordinates of all vertices
 //         2. wavelets coefficients of the x-coordinates
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 
 	ofstream ofs("output/coord.dat");
 	for (int i = 0; i < m_size; ++i)
@@ -269,6 +270,8 @@ void DifferentialMeshProcessor::calGeometryDWT()
 
 void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	Engine *ep = mpEngineWrapper->getEngine();
 
 	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
@@ -408,6 +411,7 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
 {
 	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 
 	vx.resize(m_size);
 	vy.resize(m_size);
@@ -778,6 +782,8 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 
 void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescales, double (*transferWavelet)(double, double) /*= &transferFunc1*/, bool withScaling /*= false*/, double (*transferScaling)(double) /*= &transferScalingFunc1*/ )
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	m_vTimescales = timescales;
 	int nScales = m_vTimescales.size();
 
@@ -837,6 +843,8 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	values.resize(m_size);
 
 	TransferFunc pTF = &heatKernelTransferFunc;	// default as heat kernel
@@ -869,6 +877,8 @@ void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType ker
 
 void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	calKernelSignature(scale, kernelType, normalized_values);
 
 	double normalize_factor = 0.;
@@ -913,6 +923,8 @@ void DifferentialMeshProcessor::computeKernelSignature( double timescale, Kernel
 
 void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale, KernelType kernelType, int refPoint )
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	if (refPoint < 0 || refPoint >= m_size)
 		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
 
@@ -1002,6 +1014,8 @@ void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
@@ -1012,6 +1026,8 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 
 double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
@@ -1022,6 +1038,8 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)
 	{
@@ -1032,6 +1050,8 @@ double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 
 void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint )
 {
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
 	if (refPoint < 0 || refPoint >= m_size)
 		throw runtime_error("Error computeBiharmonicDistanceSignature: invalid reference point");
 
