@@ -50,7 +50,7 @@ MeshProcessor::MeshProcessor()
 void MeshProcessor::setMesh( CMesh* newMesh )
 {
 	mesh = newMesh;
-	m_size = mesh->getVerticesNum();
+	m_size = mesh->vertCount();
 }
 
 MeshProperty* MeshProcessor::retrievePropertyByID( int rid )

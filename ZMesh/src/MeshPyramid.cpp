@@ -49,7 +49,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	{
 		CFace* pFace = originalMesh->m_vFaces[i];
 		vector<double> funcPara = pFace->getPlaneFunction();
-		Quadric q(funcPara[0], funcPara[1], funcPara[2], funcPara[3], pFace->getArea());
+		Quadric q(funcPara[0], funcPara[1], funcPara[2], funcPara[3], pFace->computeArea());
 		q *= q.getArea();
 		m_FaceQuadrics[i] = q;
 	}
@@ -317,7 +317,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			{
 				CHalfEdge* eDel[3] = {vRemove->m_HalfEdges[0], vRemove->m_HalfEdges[0]->m_eNext, vRemove->m_HalfEdges[0]->m_ePrev};
 				CVertex *v1 = vRemove->m_HalfEdges[0]->m_Vertices[1],
-					    *v2 = vRemove->m_HalfEdges[0]->m_ePrev->m_Vertices[0];
+						*v2 = vRemove->m_HalfEdges[0]->m_ePrev->m_Vertices[0];
 				/* remove obsolete half-edges from vertex */
 				{
 					vector<CHalfEdge*>::iterator he_iter1 = find(v1->m_HalfEdges.begin(), v1->m_HalfEdges.end(), eDel[1]);
@@ -408,9 +408,9 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 
 			// ---- update verticesCover ---- //			
 			VerticesCover::iterator iterKeepFull = meshLevel.verticesCoverFull.find(idKeep),
- 					                iterRemoveFull = meshLevel.verticesCoverFull.find(idRemove);
- 			iterKeepFull->second.insert(iterKeepFull->second.end(), iterRemoveFull->second.begin(), iterRemoveFull->second.end());
- 			meshLevel.verticesCoverFull.erase(iterRemoveFull);
+									iterRemoveFull = meshLevel.verticesCoverFull.find(idRemove);
+			iterKeepFull->second.insert(iterKeepFull->second.end(), iterRemoveFull->second.begin(), iterRemoveFull->second.end());
+			meshLevel.verticesCoverFull.erase(iterRemoveFull);
 
 			VerticesCover::iterator iterKeep = meshLevel.verticesCover.find(idKeep);
 			if (iterKeep == meshLevel.verticesCover.end())
@@ -624,11 +624,11 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			int matchedIdx = -1;
 			for (int j = 0; j < mesh_l->m_nVertex; ++j)
 			{
-			 	if (mesh_l->getVertex_const(j)->m_vid == cvid)
-			 	{
-			 		matchedIdx = j;
-			 		break;
-			 	}
+				if (mesh_l->getVertex(j)->m_vid == cvid)
+				{
+					matchedIdx = j;
+					break;
+				}
 			}
 			if (matchedIdx == -1)
 			{
@@ -723,7 +723,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 
 	for (int i = 0; i < tmesh->m_nVertex; ++i)
 	{
-		valOut << i << '\t' << tmesh->m_vVertices[i]->m_nValence << '\t' << tmesh->getVertex_const(i)->m_nValence << endl;
+		valOut << i << '\t' << tmesh->m_vVertices[i]->m_nValence << '\t' << tmesh->getVertex(i)->m_nValence << endl;
 	}
 
 	valOut.close();
@@ -735,7 +735,7 @@ std::list<int> MeshPyramid::getCoveredVertexList( int level, int idx ) const
 
 	const VerticesCover& coverMap = m_vMeshes[level+1].verticesCover;
 	const CMesh* tmesh = getMesh(level);
-	int v_id = tmesh->getVertex_const(idx)->m_vid;
+	int v_id = tmesh->getVertex(idx)->m_vid;
 	map<int, list<int> >::const_iterator viter = coverMap.find(v_id);
 	
 	list<int> retlist;

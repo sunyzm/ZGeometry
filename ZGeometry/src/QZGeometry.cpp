@@ -255,17 +255,17 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
 	allocateStorage(mMeshCount);
 
-	Concurrency::parallel_for(0, mMeshCount, [&](int obj){
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
 		CMesh& mesh = *mMeshes[obj];
 		mesh.Load(vMeshFiles[obj]);
-		mesh.scaleEdgeLenToUnit();
+		mesh.scaleAreaToVertexNum();
 		mesh.gatherStatistics();        
 	});	
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh& mesh = *mMeshes[obj];
 		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_TERMINAL);
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
 		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
 		
 		mProcessors[obj]->init(&mesh, &mEngineWrapper);
@@ -276,16 +276,16 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	/* ---- update mesh-dependent ui ---- */
 	if (mMeshCount >= 1) {
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
 		ui.spinBox1->setValue(0);	
 	}
 	if (mMeshCount >= 2) {		
 		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(mMeshes[1]->getVerticesNum()-1);
+		ui.spinBox2->setMaximum(mMeshes[1]->vertCount()-1);
 		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(mMeshes[1]->getVerticesNum()-1);
+		ui.horizontalSlider2->setMaximum(mMeshes[1]->vertCount()-1);
 		ui.spinBox2->setValue(0);
 	}
 	ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
@@ -298,6 +298,7 @@ void QZGeometryWindow::initialProcessing()
 {
 	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
 		computeFunctionMaps(40);
+		//verifyAreas();
 
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
@@ -326,24 +327,21 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	switch (event->key())
 	{
 	case Qt::Key_1:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
+		if (event->modifiers() & Qt::ControlModifier) {
 			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("1"));
 			selectObject(ui.boxObjSelect->findText("1"));
 		}
 		break;
 
 	case Qt::Key_2:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
+		if (event->modifiers() & Qt::ControlModifier) {
 			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("2"));
 			selectObject(ui.boxObjSelect->findText("2"));
 		}
 		break;
 
 	case Qt::Key_0:
-		if (event->modifiers() & Qt::ControlModifier)
-		{
+		if (event->modifiers() & Qt::ControlModifier) {
 			ui.boxObjSelect->setCurrentIndex(ui.boxObjSelect->findText("All"));
 			selectObject(ui.boxObjSelect->findText("All"));
 		}
@@ -368,14 +366,11 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	case Qt::Key_J:
 		// a temporary hack
-		if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO)
-		{
+		if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO) {
 			mProcessors[0]->setActiveFeaturesByID(FEATURE_DEMO2);
 			mProcessors[1]->setActiveFeaturesByID(FEATURE_DEMO2);
 			mShapeMatcher.swapMP();
-		}
-		else if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO2)
-		{
+		} else if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO2) {
 			mProcessors[0]->setActiveFeaturesByID(FEATURE_DEMO);
 			mProcessors[1]->setActiveFeaturesByID(FEATURE_DEMO);
 			mShapeMatcher.swapMP();
@@ -390,8 +385,7 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_R:
-		if (event->modifiers() & Qt::AltModifier)
-		{
+		if (event->modifiers() & Qt::AltModifier) {
 			toggleShowRefPoint();
 		}
 		else repeatOperation();
@@ -482,8 +476,7 @@ void QZGeometryWindow::computeSGWSFeatures()
 	vTimes.push_back(90);
 	vTimes.push_back(270);
 
-	for (int i = 0; i < 2; ++i)
-	{
+	for (int i = 0; i < 2; ++i) {
 		mProcessors[i]->computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
 	}
 
@@ -862,14 +855,14 @@ void QZGeometryWindow::computeCurvatureGauss()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	runtime_assert(mMeshes[0]->getVerticesNum() == mMeshes[1]->getVerticesNum());
-	int size = mMeshes[0]->getVerticesNum();
+	runtime_assert(mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
+	int size = mMeshes[0]->vertCount();
 	vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
 	{
-		vDiff[i] = (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
+		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
 	mRenderManagers[0]->normalizeSignatureFrom(vDiff);
@@ -885,7 +878,7 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	DifferentialMeshProcessor& mp = *mProcessors[obj]; 
 
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
-	Vector3D originalPos = mp.getMesh_const()->getVertex_const(mp.getRefPointIndex())->getPosition();
+	Vector3D originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->getPosition();
 	
 	mp.setRefPointPosition(originalPos.x + unitMove * refMove.xMove,
 						   originalPos.y + unitMove * refMove.yMove,
@@ -905,7 +898,7 @@ void QZGeometryWindow::clone()
 	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
 	ui.glMeshWidget->addMesh(mProcessors[1], mRenderManagers[1]);
 
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->getVerticesNum()));
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
 	
 	ui.glMeshWidget->update();
 }
@@ -921,11 +914,11 @@ void QZGeometryWindow::reconstructMHB()
 	ui.glMeshWidget->update();
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
 	{
-		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
+	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
 	qout.output("Average position error: " + QString::number(errorSum));
 
@@ -960,11 +953,11 @@ void QZGeometryWindow::reconstructSGW()
 	}
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
 	{
-		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
+	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -977,11 +970,11 @@ void QZGeometryWindow::filterExperimental()
 	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
 
 	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->getVerticesNum(); ++i)
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
 	{
-		errorSum += (mMeshes[0]->getVertex_const(i)->getPosition() - mMeshes[1]->getVertex_const(i)->getPosition()).length();
+		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
 	}
-	errorSum /= mMeshes[0]->getVerticesNum() * mMeshes[0]->getAvgEdgeLength();
+	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
@@ -1500,8 +1493,8 @@ void QZGeometryWindow::registerStep()
 	qout.output(QString().sprintf("Registration level %d finished! Time elapsed:%f\n-Features Matched:%d; Registered:%d",
 		level, time_elapsed, vf.size(), vr.size()));
 	qout.output(QString().sprintf("Registered ratio: %f (%d/%d)", 
-		double(vr.size())/mShapeMatcher.getMesh(0, level)->getVerticesNum(),
-		vr.size(), mShapeMatcher.getMesh(0, level)->getVerticesNum()));
+		double(vr.size())/mShapeMatcher.getMesh(0, level)->vertCount(),
+		vr.size(), mShapeMatcher.getMesh(0, level)->vertCount()));
 	/* ---- evaluation ---- */
 	if (mShapeMatcher.hasGroundTruth())
 	{
@@ -1671,7 +1664,7 @@ void QZGeometryWindow::addMesh()
 	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
 
 	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.getVerticesNum()), OUT_CONSOLE);
+	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
 
 	mProcessors[cur_obj]->init(&mesh, &mEngineWrapper);
@@ -1685,9 +1678,9 @@ void QZGeometryWindow::addMesh()
 	{
 		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->getVerticesNum() - 1);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
 	}
 
 	ui.glMeshWidget->update();
@@ -1890,4 +1883,22 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 
 	mhb1.printEigVals("output/eigvals1.txt");
 	mhb2.printEigVals("output/eigvals2.txt");
+}
+
+void QZGeometryWindow::verifyAreas() const
+{
+	for (int obj = 0; obj < 2; ++obj) {
+		double areaSum(0);
+		for (int i = 0; i < mMeshes[obj]->faceCount(); ++i) {
+			areaSum += mMeshes[obj]->calFaceArea(i);
+		}
+		double weightSum(0);
+		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(MeshLaplacian::CotFormula);
+		for (int i = 0; i < mMeshes[obj]->vertCount(); ++i) {
+			weightSum += laplacian.getW().getElemByIndex(i);
+		}
+		std::cout << "Vert count: " << mMeshes[obj]->vertCount() << std::endl;
+		std::cout << "Total surface area: " << areaSum << std::endl;
+		std::cout << "Total vert weight: " << weightSum << std::endl;
+	}
 }

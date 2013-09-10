@@ -261,7 +261,6 @@ CFace::CFace( const CFace& f )
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
 	m_vNormal	= f.m_vNormal;
-	m_faceArea	= f.m_faceArea;
 
 	m_piVertex = NULL;
 	m_piEdge = NULL;
@@ -286,7 +285,6 @@ CFace& CFace::operator =(const CFace& f)
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
 	m_vNormal	= f.m_vNormal;
-	m_faceArea	= f.m_faceArea;
 
 	if (f.m_piVertex && f.m_piEdge)
 	{
@@ -343,7 +341,6 @@ void CFace::calcNormalAndArea()
 	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
 	m_vNormal = v[0] ^ v[1];
-	m_faceArea = m_vNormal.length() / 2;
 	m_vNormal.normalize();	
 }
 
@@ -1437,7 +1434,6 @@ void CMesh::calFaceNormalAndArea(int i)
 		v[1] = m_pVertex[m_pFace[i].m_piVertex[3]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
  
 	m_pFace[i].m_vNormal = v[0] ^ v[1];
-	m_pFace[i].m_faceArea = m_pFace[i].m_vNormal.length() / 2;
 	m_pFace[i].m_vNormal.normalize();
 }
  
@@ -1472,7 +1468,7 @@ double CMesh::getHalfEdgeLen( int iEdge ) const
 	return v.length();
 }
 
-int CMesh::getEdgeNum(  )
+int CMesh::calEdgeCount(  )
 {
 	if (this->m_bIsPointerVectorExist)
 	{
@@ -2871,7 +2867,7 @@ std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx, int ring /*= 1*/ 
 	set<int> setMarkedFaces;
 	for (auto iter = begin(vNeighbors); iter != end(vNeighbors); ++iter)
 	{
-		const CVertex* pv = getVertex_const(*iter);
+		const CVertex* pv = getVertex(*iter);
 		for (int he = 0; he < pv->getValence(); ++he)
 		{
 			const CFace* pf = pv->getHalfEdge_const(he)->getAttachedFace_const();
@@ -3244,20 +3240,16 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 	list<CHalfEdge*> v1HeList, v2HeList;
 	list<CVertex*> v1VList, v2VList;
 
-	for (vector<CHalfEdge*>::const_iterator iter = v1->m_HalfEdges.begin(); iter != v1->m_HalfEdges.end(); ++iter)
-	{
+	for (vector<CHalfEdge*>::const_iterator iter = v1->m_HalfEdges.begin(); iter != v1->m_HalfEdges.end(); ++iter) {
 		v1HeList.push_back((*iter)->m_eNext);
 		v1VList.push_back((*iter)->m_Vertices[1]);
 	}
-	for (vector<CHalfEdge*>::const_iterator iter = v2->m_HalfEdges.begin(); iter != v2->m_HalfEdges.end(); ++iter)
-	{
+	for (vector<CHalfEdge*>::const_iterator iter = v2->m_HalfEdges.begin(); iter != v2->m_HalfEdges.end(); ++iter) {
 		v2HeList.push_back((*iter)->m_eNext);
 		v2VList.push_back((*iter)->m_Vertices[1]);
 	}
-	for (list<CHalfEdge*>::iterator iter1 = v1HeList.begin(); iter1 != v1HeList.end(); ++iter1)
-	{
-		for (list<CHalfEdge*>::iterator iter2 = v2HeList.begin(); iter2 != v2HeList.end(); ++iter2)
-		{
+	for (list<CHalfEdge*>::iterator iter1 = v1HeList.begin(); iter1 != v1HeList.end(); ++iter1) {
+		for (list<CHalfEdge*>::iterator iter2 = v2HeList.begin(); iter2 != v2HeList.end(); ++iter2) {
 			if (*iter1 == *iter2)
 				return false;
 		}
@@ -3290,8 +3282,7 @@ void CMesh::scaleAreaToVertexNum()
 	center /= m_nVertex;
 
 	double totalSufaceArea(0);
-	for (int i = 0; i < m_nFace; ++i)
-		totalSufaceArea += m_pFace[i].getArea();
+	for (int i = 0; i < m_nFace; ++i) totalSufaceArea += calFaceArea(i);
 	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
 
 	for (int i = 0; i < m_nVertex; ++i)
@@ -3823,4 +3814,10 @@ void CMesh::gatherStatistics2()
 	this->m_nBoundaryEdgeNum = getBoundaryNum();
 	for (int i = 0; i < m_nVertex; ++i)
 		this->calVertexCurvature(i);
+}
+
+double CMesh::calFaceArea( int i ) const
+{
+	const CFace* f = m_vFaces[i];
+	return f->computeArea();
 }

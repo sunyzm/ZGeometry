@@ -79,7 +79,7 @@ void DifferentialMeshProcessor::init(CMesh* tm, MatlabEngineWrapper* e)
 	ori_mesh = tm;
 	mpEngineWrapper = e;
 	//matlabWrapper.setEngine(e);
-	m_size = mesh->getVerticesNum();
+	m_size = mesh->vertCount();
 	pRef = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	posRef = mesh->getVertex(pRef)->getPosition();
 }
@@ -88,7 +88,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 {
 	mesh = tm;
 	ori_mesh = originalMesh;
-	m_size = mesh->getVerticesNum();
+	m_size = mesh->vertCount();
 	pRef = 0;
 	posRef = mesh->getVertex(0)->getPosition();
 }
@@ -145,7 +145,7 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	if (iter != mHandles.end())
 		mHandles.erase(iter);
 	else
-		mHandles[hIdx] = mesh->getVertex_const(hIdx)->getPosition();	 
+		mHandles[hIdx] = mesh->getVertex(hIdx)->getPosition();	 
 }
 
 void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
@@ -653,7 +653,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	if (dfType == Simple)
 	{
 		int hIdx = vHandleIdx[0];		// only use the first handle to deform
-		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex_const(hIdx)->getPosition();
+		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex(hIdx)->getPosition();
 		
 		int nFreeVertices = vFreeIdx.size();
 		vector<double> vDist2Handle;
@@ -667,7 +667,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 				
 		for (int i = 0; i < nFreeVertices; ++i)
 		{
-			Vector3D newPos = mesh->getVertex_const(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+			Vector3D newPos = mesh->getVertex(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 			vDeformedPos.push_back(newPos);
 		}
 		
@@ -1074,27 +1074,27 @@ void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint
 
 void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex_const(refPoint); 
+	const CVertex* pvi = mesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
 //	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
-	vFaces.resize(mesh->getFaceNum());
-	for (int f = 0; f < mesh->getFaceNum(); ++f)
+	vFaces.resize(mesh->faceCount());
+	for (int f = 0; f < mesh->faceCount(); ++f)
 		vFaces[f] = f;
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->getVerticesNum(), 1.0);
+	vSimilarities.resize(mesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->getVerticesNum(), 0.);
+	vAreas.resize(mesh->vertCount(), 0.);
 
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
-		const CFace* pfi = mesh->getFace_const(vFaces[fi]);
-		double face_area = pfi->getArea();
+		const CFace* pfi = mesh->getFace(vFaces[fi]);
+		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k)
 		{
 			int vki = pfi->getVertexIndex(k);
@@ -1131,27 +1131,27 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex_const(refPoint); 
+	const CVertex* pvi = mesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
 	//	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
-	vFaces.resize(mesh->getFaceNum());
-	for (int f = 0; f < mesh->getFaceNum(); ++f)
+	vFaces.resize(mesh->faceCount());
+	for (int f = 0; f < mesh->faceCount(); ++f)
 		vFaces[f] = f;
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->getVerticesNum(), 1.0);
+	vSimilarities.resize(mesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->getVerticesNum(), 0.);
+	vAreas.resize(mesh->vertCount(), 0.);
 
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
-		const CFace* pfi = mesh->getFace_const(vFaces[fi]);
-		double face_area = pfi->getArea();
+		const CFace* pfi = mesh->getFace(vFaces[fi]);
+		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k)
 		{
 			int vki = pfi->getVertexIndex(k);
@@ -1188,19 +1188,19 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex_const(refPoint); 
+	const CVertex* pvi = mesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
-	vFaces.resize(mesh->getFaceNum());
-	for (int f = 0; f < mesh->getFaceNum(); ++f)
+	vFaces.resize(mesh->faceCount());
+	for (int f = 0; f < mesh->faceCount(); ++f)
 		vFaces[f] = f;
 //	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->getVerticesNum(), 1.0);
+	vSimilarities.resize(mesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->getVerticesNum(), 0.);
+	vAreas.resize(mesh->vertCount(), 0.);
 
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 //	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
@@ -1208,8 +1208,8 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
-		const CFace* pfi = mesh->getFace_const(vFaces[fi]);
-		double face_area = pfi->getArea();
+		const CFace* pfi = mesh->getFace(vFaces[fi]);
+		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k)
 		{
 			int vki = pfi->getVertexIndex(k);

@@ -113,6 +113,7 @@ private:
 	/* helper functions */
 	void evalDistance();
 	void computeFunctionMaps(int num);
+	void verifyAreas() const;
 
 private:	
 	/* fields */

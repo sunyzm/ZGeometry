@@ -130,10 +130,10 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			{
 				double dmin = 1e10;
 				int hIdx = -1;
-				int vertCount = vpMP[obj_index]->getMesh_const()->getVerticesNum();
+				int vertCount = vpMP[obj_index]->getMesh_const()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi)
 				{
-					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex_const(vi)->getPosition());
+					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->getPosition());
 					if (d < dmin) 
 					{
 						dmin = d;
@@ -467,18 +467,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
-	if (m_bShowSignature && pRS->vDisplaySignature.size() == tmesh->getVerticesNum())
+	if (m_bShowSignature && pRS->vDisplaySignature.size() == tmesh->vertCount())
 	{
 		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->getFaceNum(); i++)
-		{
-			if(!tmesh->getFace_const(i)->hasHalfEdge()) continue;
-			for (int j = 0; j < 3; j++)
-			{
-				int pi = tmesh->getFace_const(i)->getVertexIndex(j);					 				
-				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
+		for (int i = 0; i < tmesh->faceCount(); i++) {
+			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
+			for (int j = 0; j < 3; j++) {
+				int pi = tmesh->getFace(i)->getVertexIndex(j);					 				
+				Vector3D norm = tmesh->getVertex(pi)->getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);	 				
-				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
+				Vector3D vt = tmesh->getVertex(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
 				glFalseColor(pRS->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
 				glVertex3f(vt.x, vt.y, vt.z);
@@ -490,15 +488,13 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	{
 		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
 		glBegin(GL_TRIANGLES);
-		for (int i = 0; i < tmesh->getFaceNum(); i++)
-		{
-			if(!tmesh->getFace_const(i)->hasHalfEdge()) continue;
-			for (int j = 0; j < 3; j++)
-			{
-				int pi = tmesh->getFace_const(i)->getVertexIndex(j);					 				
-				Vector3D norm = tmesh->getVertex_const(pi)->getNormal();
+		for (int i = 0; i < tmesh->faceCount(); i++) {
+			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
+			for (int j = 0; j < 3; j++) {
+				int pi = tmesh->getFace(i)->getVertexIndex(j);					 				
+				Vector3D norm = tmesh->getVertex(pi)->getNormal();
 				glNormal3f(norm.x, norm.y, norm.z);	 				
-				Vector3D vt = tmesh->getVertex_const(pi)->getPosition();
+				Vector3D vt = tmesh->getVertex(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
@@ -514,22 +510,19 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	if (tmesh->hasBounary())   //highlight boundary edge 
 	{
 		glBegin(GL_LINES);	
-		for(int i = 0; i < tmesh->getHalfEdgeNum(); i++)
-		{
-			const CHalfEdge* hf = tmesh->getHalfEdge_const(i);
-			if(hf->isBoundaryEdge()) 
-			{
+		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
+			const CHalfEdge* hf = tmesh->getHalfEdge(i);
+			if(hf->isBoundaryEdge()) {
 				int p1 = hf->getVertexIndex(0);
 				int p2 = hf->getVertexIndex(1);
 				glLineWidth(2.0);
 				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-				if(tmesh->getVertex_const(p1)->isHole()) 
-				{
+				if(tmesh->getVertex(p1)->isHole()) {
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
-				Vector3D v1 = tmesh->getVertex_const(p1)->getPosition();
+				Vector3D v1 = tmesh->getVertex(p1)->getPosition();
 				v1 += shift;
-				Vector3D v2 = tmesh->getVertex_const(p2)->getPosition();
+				Vector3D v2 = tmesh->getVertex(p2)->getPosition();
 				v2 += shift;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
@@ -540,9 +533,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glEnable(GL_LIGHTING);
 
 	//// ----	draw reference point ---- ////
-	if ( m_bShowRefPoint )
-	{
-		Vector3D vt = tmesh->getVertex_const(pMP->getRefPointIndex())->getPosition();
+	if ( m_bShowRefPoint ) {
+		Vector3D vt = tmesh->getVertex(pMP->getRefPointIndex())->getPosition();
 		vt += shift;
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();
@@ -578,49 +570,39 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		GLUquadric* quadric = gluNewQuadric();
 		bool is_hks_feature = (feature_list->id == FEATURE_MULTI_HKS);
 		bool is_demo_feature = (feature_list->id == FEATURE_DEMO || feature_list->id == FEATURE_DEMO2);
-		for (auto iter = feature_list->m_vFeatures.begin(); iter != feature_list->m_vFeatures.end(); ++iter)
-		{
-			Vector3D vt = ori_mesh->getVertex_const((*iter)->m_index)->getPosition();
+		for (MeshFeature* feature : feature_list->m_vFeatures) {
+			Vector3D vt = ori_mesh->getVertex(feature->m_index)->getPosition();
 			vt += shift;
-			if (is_hks_feature)
-			{
-				if (dynamic_cast<HKSFeature*>(*iter)->minOrMax == 1)
+			if (is_hks_feature) {
+				if (dynamic_cast<HKSFeature*>(feature)->minOrMax == 1)
 					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
 				else
 					glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-			}
-			else if (is_demo_feature)
-			{
-				if ((*iter)->m_note == 1)
+			} else if (is_demo_feature) {
+				if (feature->m_note == 1)
 					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
-				else if ((*iter)->m_note == -1)
+				else if (feature->m_note == -1)
 					//glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
 					glColor4f(0.5,0.5,0.5, 1);
 				else 
 					glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
-			}
-			else
-			{
-				int color_index = (*iter)->m_scale % gFeatureColorNum;
+			} else {
+				int color_index = feature->m_scale % gFeatureColorNum;
 				glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
 			}			
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			if (is_hks_feature)
-				gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 *(*iter)->m_scale), 16, 8);
-			else 
-				gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			if (is_hks_feature) gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 * feature->m_scale), 16, 8);
+			else gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 		gluDeleteQuadric(quadric);
 	}
 
 	//// ---- draw handle points ---- ////
-	if (!pMP->getHandles().empty())
-	{
-		for (auto handle :pMP->getHandles())
-		{
+	if (!pMP->getHandles().empty()) {
+		for (auto handle :pMP->getHandles()) {
 			Vector3D vt = handle.second;
 			vt += shift;
 			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
@@ -803,8 +785,8 @@ void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatche
 		const std::vector<MatchPair>& vdr = shapeMatcher->getRegistrationResults(shapeMatcher->getAlreadyRegisteredLevel());
 		const int size = vdr.size();
 		std::vector<int> colorClass1, colorClass2;
-		colorClass1.resize(tmesh1->getVerticesNum(), -1);
-		colorClass2.resize(tmesh2->getVerticesNum(), -1);
+		colorClass1.resize(tmesh1->vertCount(), -1);
+		colorClass2.resize(tmesh2->vertCount(), -1);
 		
 		GLUquadric* quadric = gluNewQuadric();
 		gluQuadricDrawStyle(quadric, GLU_FILL);

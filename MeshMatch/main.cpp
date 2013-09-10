@@ -24,9 +24,9 @@ int main(int argc, char *argv[])
 
 	int meshSize1 = mesh1.getMeshSize(), meshSize2 = mesh2.getMeshSize();
 	for (int i = 0; i < meshSize1; ++i) {
-		const Vector3D& v1 = mesh1.getVertex_const(i)->getPosition();
+		const Vector3D& v1 = mesh1.getVertex(i)->getPosition();
 		for (int j = 0; j < meshSize2; ++j) {
-			const Vector3D& v2 = mesh2.getVertex_const(j)->getPosition();
+			const Vector3D& v2 = mesh2.getVertex(j)->getPosition();
 			if (v1.equals(v2)) {
 				matchPairs.push_back(std::make_pair(i,j));
 				break;

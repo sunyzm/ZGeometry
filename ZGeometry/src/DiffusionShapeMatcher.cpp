@@ -55,7 +55,7 @@ PointParam& PointParam::operator= ( const PointParam& hkp )
 
 void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
 {
-	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int fineSize = pMP->getMesh_const()->vertCount();
 	const int pn = (int)anchors.size();
 	para_dim = pn;
 	vCoord.resize(fineSize);
@@ -72,7 +72,7 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 
 void ParamManager::computeBHParam( const std::vector<int>& anchors )
 {
-	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int fineSize = pMP->getMesh_const()->vertCount();
 	const int pn = (int)anchors.size();
 	para_dim = pn;
 	vCoord.resize(fineSize);
@@ -89,7 +89,7 @@ void ParamManager::computeBHParam( const std::vector<int>& anchors )
 
 void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*= 30.0*/ )
 {
-	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int fineSize = pMP->getMesh_const()->vertCount();
 	const int pn = (int)anchors.size();
 	para_dim = pn;
 	vCoord.resize(fineSize);
@@ -105,7 +105,7 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 
 void ParamManager::para_computeHKS( const std::vector<double>& times )
 {
-	const int fineSize = pMP->getMesh_const()->getVerticesNum();
+	const int fineSize = pMP->getMesh_const()->vertCount();
 	const int sn = (int)times.size();
 	para_dim = sn;;
 	vSignature.resize(fineSize);
@@ -274,7 +274,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 
 	const CMesh* fineMesh = pOriginalMesh[obj];
 	DifferentialMeshProcessor* pMP = pOriginalProcessor[obj];
-	const int fineSize = fineMesh->getVerticesNum();
+	const int fineSize = fineMesh->vertCount();
 	vector<HKSFeature>& vF = m_vFeatures[obj];
 	vF.clear();
 
@@ -830,7 +830,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 //	thresh = (double)featureMatch.size() * 1e-5;
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
-	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	const int coarseSize1 = tmesh1->vertCount(), coarseSize2 = tmesh2->vertCount();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
 	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
 
@@ -932,19 +932,19 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 		if (vMatch2[vj] != vi) continue;
 
-		int vid_i = tmesh1->getVertex_const(vi)->getVID(),
-			vid_j = tmesh2->getVertex_const(vj)->getVID();
+		int vid_i = tmesh1->getVertex(vi)->getVID(),
+			vid_j = tmesh2->getVertex(vj)->getVID();
 
-		for (int ei = 0; ei < tmesh1->getVertex_const(vi)->getValence(); ei++)
+		for (int ei = 0; ei < tmesh1->getVertex(vi)->getValence(); ei++)
 		{
-			const CHalfEdge* he = tmesh1->getVertex_const(vi)->getHalfEdge_const(ei);
+			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge_const(ei);
 			const int vt = he->getVertexIndex(1);
-			const int vid_t = tmesh1->getVertex_const(vt)->getVID();
+			const int vid_t = tmesh1->getVertex(vt)->getVID();
 
 			if( vMatch1[vt] >= 0 && vMatch1[vt] < coarseSize2 ) 
 				continue;  // already registered
 
-			if (tmesh1->getVertex_const(vt)->isOnBoundary())
+			if (tmesh1->getVertex(vt)->isOnBoundary())
 				continue;
 			//  if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
 			//		continue;	// low priority points skipped
@@ -953,7 +953,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 			int vm = searchVertexMatch(vt, vj, current_level, 2, score);
 			if(vm >= 0) 
 			{
-				int vid_m = tmesh2->getVertex_const(vm)->getVID();
+				int vid_m = tmesh2->getVertex(vm)->getVID();
 				vMatch1[vt] = vm;
 				vMatchScore1[vt] = score;
 				tmpReg1.push_back(MatchPair(vid_t, vid_m, score));
@@ -1085,8 +1085,8 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 	// search vi's match in vj's neighborhood
 	const CMesh* tmesh1 = getMesh(0, level);
 	const CMesh* tmesh2 = getMesh(1, level);
-	int vid_i = tmesh1->getVertex_const(vt)->getVID();
-	int vid_j = tmesh2->getVertex_const(vj)->getVID();
+	int vid_i = tmesh1->getVertex(vt)->getVID();
+	int vid_j = tmesh2->getVertex(vj)->getVID();
 
 	/* find vj's neighbors/covered vertices */
 	list<int> vNeighbor;
@@ -1108,7 +1108,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 				list<int> idxCovered = getMeshPyramid(1).getCoveredVertexList(l, idxL);
 				for (list<int>::iterator citer = idxCovered.begin(); citer != idxCovered.end(); ++citer)
 				{
-					int newId = getMesh(1, l)->getVertex_const(*citer)->getVID();
+					int newId = getMesh(1, l)->getVertex(*citer)->getVID();
 					vCoverTmp.push_back(newId);
 				}
 			}
@@ -1133,9 +1133,9 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh2->getVertex_const(idx)->getValence(); ++l)
+			for (int l = 0; l < tmesh2->getVertex(idx)->getValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh2->getVertex_const(idx)->getHalfEdge_const(l);
+				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -1157,8 +1157,8 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 		int vt = *iter;
 // 		if (tmesh2->m_pVertex[vt].m_vMatched >= 0 && tmesh2->m_pVertex[vt].m_vMatched < tmesh1->m_nVertex)
 // 			continue;	//injection, not a good idea
-		int vid_t = tmesh2->getVertex_const(vt)->getVID();
-		if (tmesh2->getVertex_const(vt)->isOnBoundary())
+		int vid_t = tmesh2->getVertex(vt)->getVID();
+		if (tmesh2->getVertex(vt)->isOnBoundary())
 			continue;
 		double dt = computeMatchScore(vid_i, vid_t, 12);
 		if(dt > smax)
@@ -1770,7 +1770,7 @@ void DiffusionShapeMatcher::matchFeaturesTensor_deprecate( std::ostream& flog, d
 void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const
 {
 	const CMesh* tmesh = getMesh(obj, level);
-	int vid = tmesh->getVertex_const(vidx)->getVID();
+	int vid = tmesh->getVertex(vidx)->getVID();
 
 	list<int> vNeighbor;
 	set<int> marked_set;
@@ -1791,7 +1791,7 @@ void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int up
 				list<int> idxCovered = getMeshPyramid(obj).getCoveredVertexList(l, idxL);
 				for (list<int>::iterator citer = idxCovered.begin(); citer != idxCovered.end(); ++citer)
 				{
-					int newId = getMesh(obj, l)->getVertex_const(*citer)->getVID();
+					int newId = getMesh(obj, l)->getVertex(*citer)->getVID();
 					vCoverTmp.push_back(newId);
 				}
 			}
@@ -1816,9 +1816,9 @@ void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int up
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh->getVertex_const(idx)->getValence(); ++l)
+			for (int l = 0; l < tmesh->getVertex(idx)->getValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh->getVertex_const(idx)->getHalfEdge_const(l);
+				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -1884,7 +1884,7 @@ double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& 
 
 double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
 {
-	int mesh_size = mp1.getMesh_const()->getVerticesNum();
+	int mesh_size = mp1.getMesh_const()->vertCount();
 	int rand_size = vRandPair.size();
 	
 	std::function<double(const DifferentialMeshProcessor&, int, int, const std::vector<double>&)> fDist;
@@ -1951,7 +1951,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 	//thresh = (double)featureMatch.size() * 1e-5;
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
-	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	const int coarseSize1 = tmesh1->vertCount(), coarseSize2 = tmesh2->vertCount();
 	const int fineSize1 = meshPyramids[0].getMesh(0)->getMeshSize(), fineSize2 = meshPyramids[1].getMesh(0)->getMeshSize();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);	// indexed by the vertex index in current level
 	vector<double> vMatchScore1(coarseSize1, -1), vMatchScore2(coarseSize2, 01); // indexed by the vertex index in current level
@@ -2063,8 +2063,8 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		qscan1.pop();
 
 		const int vi = qt.m_idx1, vj = qt.m_idx2;		//index on this level
-		int vid_i = tmesh1->getVertex_const(vi)->getVID(),
-			vid_j = tmesh2->getVertex_const(vj)->getVID();
+		int vid_i = tmesh1->getVertex(vi)->getVID(),
+			vid_j = tmesh2->getVertex(vj)->getVID();
 		//if (vMatch2[vj] != vi) continue;
 
 		flog << "\n---- Search pair #" << regCount++ << ":(" << vid_i << ',' << vid_j << ") ----" << endl;
@@ -2094,8 +2094,8 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 				)
 			{
 				vector<int> viNeighborId(viNeighbors.size()), vjNeighborId(vjNeighbors.size());
-				transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex_const(idx1)->getVID();});
-				transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex_const(idx2)->getVID();});
+				transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex(idx1)->getVID();});
+				transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex(idx2)->getVID();});
 				vector<MatchPair> vPairs;	//absolute id, not index in current level
 				double tensorScore;
 				double vPara[] = {5., 0.6, vid_i, vid_j};
@@ -2145,12 +2145,12 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 		for (auto iterNeighbor = viNeighborIndex.begin(); iterNeighbor != viNeighborIndex.end(); ++iterNeighbor)
 		{
 			const int vt = *iterNeighbor;
-			const int vid_t = tmesh1->getVertex_const(vt)->getVID();
+			const int vid_t = tmesh1->getVertex(vt)->getVID();
 
 			if( vMatch1[vt] >= 0 ) 
 				continue;  // already registered
 
-			if (tmesh1->getVertex_const(vt)->isOnBoundary())
+			if (tmesh1->getVertex(vt)->isOnBoundary())
 				continue;
 
 			//if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
@@ -2160,7 +2160,7 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 			int vm = searchVertexMatch(vt, vj, current_level, /*ring=*/1, score);
 			if(vm >= 0) 
 			{
-				int vid_m = tmesh2->getVertex_const(vm)->getVID();
+				int vid_m = tmesh2->getVertex(vm)->getVID();
 				vMatch1[vt] = vm;
 				vMatchScore1[vt] = score;
 				tmpReg1.push_back(MatchPair(vid_t, vid_m, score));
@@ -2350,7 +2350,7 @@ void DiffusionShapeMatcher::registerTesting1()
 	const int current_level = max(m_nAlreadyRegisteredLevel - 1, 0);	//the registration level we currently working on
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
-	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	const int coarseSize1 = tmesh1->vertCount(), coarseSize2 = tmesh2->vertCount();
 
 	const vector<MatchPair>& oldAnchorMatch = getMatchedFeaturesResults(m_nAlreadyMatchedLevel);
 	const vector<MatchPair>& oldReg = (current_level == m_nRegistrationLevels - 1) ? oldAnchorMatch : getRegistrationResults(m_nAlreadyRegisteredLevel);
@@ -2412,7 +2412,7 @@ void DiffusionShapeMatcher::regsiterTesting2()
 	//	thresh = (double)featureMatch.size() * 1e-5;
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
-	const int coarseSize1 = tmesh1->getVerticesNum(), coarseSize2 = tmesh2->getVerticesNum();
+	const int coarseSize1 = tmesh1->vertCount(), coarseSize2 = tmesh2->vertCount();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);
 	vector<double> vMatchScore1(coarseSize1, 0), vMatchScore2(coarseSize2, 0);
 

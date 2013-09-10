@@ -177,7 +177,6 @@ public:
 	CVertex*				getVertex(int i) { return m_Vertices[i]; }
 	const CVertex*			getVertex_const(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
-	double					getArea() const { return m_faceArea; }
 	double					computeArea() const { return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()); }
 	void					calcNormalAndArea();
 	Vector3D				getNormal() const { return m_vNormal; }
@@ -188,7 +187,6 @@ public:
 private:
 	// ---- fields ---- // 
 	Vector3D				m_vNormal;		// normalized face normal
-	double					m_faceArea;		// face area
 	int						m_fIndex;
 	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
@@ -251,25 +249,23 @@ public:
 
 	/* ---- attributes access ---- */
 	const std::string&	getMeshName() const { return m_meshName; }
+	int					vertCount() const { return m_nVertex; }
+	int					faceCount() const { return m_nFace; }
+	int					halfEdgeCount() const { return m_nHalfEdge; }
 	CVertex*			getVertex(int i) { return m_vVertices[i]; }
-	const CVertex*		getVertex_const(int i) const { return m_vVertices[i]; }
+	const CVertex*		getVertex(int i) const { return m_vVertices[i]; }
 	CFace*				getFace(int i) { return &m_pFace[i]; }
-	const CFace*		getFace_const(int i) const { return m_vFaces[i]; }
-	const CHalfEdge*	getHalfEdge_const(int i) const { return m_vHalfEdges[i]; }
+	const CFace*		getFace(int i) const { return m_vFaces[i]; }
+	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
+	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
-	int					getVerticesNum() const { return m_nVertex; }
-	int					getFaceNum() const { return m_nFace; }
-	int					getHalfEdgeNum() const { return m_nHalfEdge; }
-	int					getFaceNum() { return m_nFace; }
 	double				getAvgEdgeLength() const { return m_avgEdgeLen; }
-	int					getEdgeNum();		// get number of edges ( not half-edge! )
 	int					getBoundaryNum() const;    // get number of boundary edges
 	int					getBoundaryVertexNum() const; // get number of boundary vertices
 	const Vector3D&		getBoundingBox() const { return m_bBox; }
 	const Vector3D&		getCenter() const { return m_Center; }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
-
 	VectorInt           getOriginalVertexIndex() const;
 	VectorInt	        getNeighborVertexIndex(int v, int ring) const;
 	VectorInt           getRingVertexIndex(int v, int ring) const;
@@ -278,6 +274,10 @@ public:
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
+	/*	analysis and processing */
+	int					calEdgeCount();		// get number of edges ( not half-edge! )
+
+	/* MeshAttr functions */
 	template<typename T> 
 	MeshAttr<T>& addAttr(AttrRate rate, const std::string& name) {
 		removeAttr(name);
@@ -340,6 +340,7 @@ public:
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
+	double	    calFaceArea(int i) const;
 
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
