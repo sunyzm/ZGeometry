@@ -223,7 +223,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 			initialProcessing();
 		}
-	} catch (std::exception* e) {
+	} catch (std::runtime_error* e) {
 		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
 		return false;
 	}

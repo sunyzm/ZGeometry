@@ -4,6 +4,9 @@
 #include <cassert>
 #include <algorithm>
 #include <vector>
+#include <numeric>
+#include <stdexcept>
+#include <iterator>
 #include "common.h"
 
 #define USE_PPL
@@ -24,6 +27,60 @@ class VecN
 {
 public:
 	friend class SparseMatrix<T>;
+	class iterator
+	{
+	public:
+		iterator() : mVecN(nullptr), mPos(0) {}
+		iterator(const iterator& iter) : mVecN(iter.mVecN), mPos(iter.mPos) {}
+
+		iterator(VecN<T>* vec, int pos) : mVecN(vec) { 
+			if (pos < 0 || pos > mVecN->mDim) throw std::runtime_error("Invalid VecN subscript"); 
+			mPos = pos;
+		}
+
+		iterator& operator = (const iterator iter) { 
+			mVecN = iter.mVecN; 
+			mPos = iter.mPos;
+			return *this; 
+		}
+
+		bool operator == (const iterator& iter) const {
+			return mVecN == iter.mVecN && mPos == iter.mPos;
+		}
+
+		bool operator != (const iterator& iter) const {
+			return mVecN != iter.mVecN || mPos != iter.mPos;
+		}
+
+		T& operator * () {  return mVecN->at(mPos); }
+		bool operator () () { return mPos < mVecN->mDim; }
+
+		iterator operator ++ (int) { //postfix ++
+			VecN<T>::iterator iter(*this); 
+			if (mPos < mVecN->mDim) mPos++; 
+			return iter; 
+		}
+
+		iterator& operator ++ () { //prefix --	
+			if (mPos < mVecN->mDim) ++mPos; 
+			return *this; 
+		}
+
+		iterator operator -- (int) { //postfix --
+			iterator iter(*this); 
+			if (mPos > 0) mPos--;
+			return iter; 
+		}
+
+		iterator& operator -- () { //prefix --
+			if (mPos > 0) --mPos; 
+			return *this; 
+		}
+
+	private:
+		VecN<T>* mVecN;
+		int mPos;
+	};
 
 	VecN() : mVec(NULL), mDim(0) {}
 	VecN(uint n) : mVec(NULL) { resize(n); }
@@ -32,12 +89,14 @@ public:
 	VecN(T* vec, uint n);
 	VecN(const std::vector<T>& vec);
 	~VecN() { delete []mVec; }
+	const VecN<T>& operator=(const VecN<T>& v2);
 
 	T operator [] (uint i) const { return mVec[i]; }
 	T operator () (uint i) const { return mVec[i-1]; }
 	T& operator [] (uint i) { return mVec[i]; }
 	T& operator () (uint i) { return mVec[i-1]; }
-	const VecN<T>& operator=(const VecN<T>& v2);
+	T at(int i) const { if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); return mVec[i]; }
+	T& at(int i) { if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); return mVec[i]; }
 
 	T* c_ptr() const { return mVec; }
 	T* c_ptr_end() const { return mVec + mDim; }
@@ -65,7 +124,13 @@ public:
 	T norm2() const;
 	T normEuclidean() const { return norm2(); }
 	T dot(const VecN<T>& v2) const;
+	T sum() const;
+	T partial_sum(int a, int b) const;
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+
+	/* iterator operations */
+	iterator begin() { return iterator(this, 0); };
+	iterator end() { return iterator(this, mDim); }
 
 private:
 	T *mVec;
@@ -121,6 +186,7 @@ inline void VecN<T>::resize(int n, T val)
 	resize(n);
 	for (int i = 0; i < mDim; ++i) mVec[i] = val;
 }
+
 
 template<typename T>
 inline VecN<T> VecN<T>::operator - () const
@@ -210,7 +276,7 @@ template<typename T>
 inline T VecN<T>::norm2() const 
 {
 	T sum(0);
-	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), 2);
+	for (int i = 0; i < mDim; ++i) sum += std::pow(mVec[i], 2);
 	return std::sqrt(sum);
 }
 
@@ -218,10 +284,24 @@ inline T VecN<T>::norm2() const
 template<typename T>
 inline T VecN<T>::dot(const VecN<T>& v2) const
 {
-	assert(mDim == v2.mDim);
-	T sum(0.0);
-	for (int i = 0; i < mDim; ++i) sum += mVec[i] * v2.mVec[i];
-	return sum;
+	assert(mDim == v2.mDim);	
+	return std::inner_product(mVec, mVec + mDim, v2.mVec, 0);
+	//T sum(0.0);
+	//for (int i = 0; i < mDim; ++i) sum += mVec[i] * v2.mVec[i];
+	//return sum;
+}
+
+template<typename T>
+inline T VecN<T>::sum() const
+{
+	return std::accumulate(mVec, mVec + mDim, 0);
+}
+
+template<typename T>
+inline T VecN<T>::partial_sum(int a, int b) const 
+{
+	assert(a >= 0 && a <= b && b <= mDim);
+	return std::accumulate(mVec + a, mVec + b, 0);
 }
 
 typedef VecN<float>  VecNs;

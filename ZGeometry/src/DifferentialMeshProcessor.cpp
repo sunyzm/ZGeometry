@@ -3,6 +3,7 @@
 #include <stdexcept>
 #include <set>
 #include <algorithm>
+#include <functional>
 #include <ppl.h>
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
@@ -14,6 +15,9 @@ using namespace std;
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::VectorDotProduct;
+
+std::function<double(double)> transferScaling1 = [](double lambda) { return std::exp(-std::pow(lambda, 2)); };
+std::function<double(double, double)> transferHeatKernel = [](double lambda, double t) { return std::exp(-lambda*t); };
 
 double transferScalingFunc1( double lambda )
 {
@@ -100,39 +104,29 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
 	Engine *ep = mpEngineWrapper->getEngine();
-	//vMeshLaplacian[laplacianType].decompose(vMHB[laplacianType], nEigFunc, ep);
 	vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
-	//mhb = vMHB[laplacianType];
-
-	//ZGeom::EigenSystem eigSys;
-	//vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, eigSys);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
 	vMHB[laplacianType].load(path);
-	//mhb = vMHB[laplacianType];
 }
 
 void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
-	const ManifoldHarmonics& mh = vMHB[laplacianType];
-	mh.save(path);
+	vMHB[laplacianType].save(path);	
 }
 
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
 {
 	vCurvature.resize(m_size);
-	if (curvatureType == 0)
-	{
-		for (int i = 0; i < m_size; ++i)
-		{
+	if (curvatureType == 0) {
+		for (int i = 0; i < m_size; ++i) {
 //			mesh->calVertexCurvature(i);
 			vCurvature[i] = mesh->getVertex(i)->getMeanCurvature();
 		}
 	}
-	else if (curvatureType == 1)
-	{
+	else if (curvatureType == 1) {
 		for (int i = 0; i < m_size; ++i)
 			vCurvature[i] = mesh->getVertex(i)->getGaussCurvature();
 	}
@@ -142,10 +136,8 @@ void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvatur
 void DifferentialMeshProcessor::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
-	if (iter != mHandles.end())
-		mHandles.erase(iter);
-	else
-		mHandles[hIdx] = mesh->getVertex(hIdx)->getPosition();	 
+	if (iter != mHandles.end()) mHandles.erase(iter);
+	else mHandles[hIdx] = mesh->getVertex(hIdx)->getPosition();	 
 }
 
 void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
@@ -1029,8 +1021,7 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 
 	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k)
-	{
+	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += std::exp(-mhb.getEigVal(k) * timescale);
 	}
 	return sum;
@@ -1041,8 +1032,7 @@ double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 
 	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k)
-	{
+	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
 	}
 	return sum;
@@ -1057,11 +1047,9 @@ void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint
 
 	MeshFunction *mf = new MeshFunction(m_size);
 	
-	for (int i = 0; i < m_size; ++i)
-	{
+	for (int i = 0; i < m_size; ++i) {
 		double sum = 0;
-		for (int k = 0; k < mhb.eigVecCount(); ++k)
-		{
+		for (int k = 0; k < mhb.eigVecCount(); ++k) {
 			sum += pow((mhb.getEigVec(k)[i] - mhb.getEigVec(k)[refPoint]) / mhb.getEigVal(k), 2);
 		}
 		mf->setValue(i, sum);
@@ -1091,12 +1079,10 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 
-	for (int fi = 0; fi < vFaces.size(); ++fi)
-	{
+	for (int fi = 0; fi < vFaces.size(); ++fi) {
 		const CFace* pfi = mesh->getFace(vFaces[fi]);
 		double face_area = pfi->computeArea();
-		for (int k = 0; k < 3; ++k)
-		{
+		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 //			if (vki == refPoint) continue;
 			const CVertex* pvk = pfi->getVertex_const(k);
@@ -1119,8 +1105,7 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 	MeshFunction *mf = new MeshFunction(m_size);
 
-	for (int i = 0; i < m_size; ++i)
-	{
+	for (int i = 0; i < m_size; ++i) {
 		mf->setValue(i, vSimilarities[i]);
 	}
 
@@ -1136,8 +1121,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 	vector<int> vFaces;
 	//	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
 	vFaces.resize(mesh->faceCount());
-	for (int f = 0; f < mesh->faceCount(); ++f)
-		vFaces[f] = f;
+	for (int f = 0; f < mesh->faceCount(); ++f) vFaces[f] = f;
 
 	vector<double> vSimilarities;
 	vSimilarities.resize(mesh->vertCount(), 1.0);
@@ -1148,12 +1132,10 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 
-	for (int fi = 0; fi < vFaces.size(); ++fi)
-	{
+	for (int fi = 0; fi < vFaces.size(); ++fi) {
 		const CFace* pfi = mesh->getFace(vFaces[fi]);
 		double face_area = pfi->computeArea();
-		for (int k = 0; k < 3; ++k)
-		{
+		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 			//			if (vki == refPoint) continue;
 			const CVertex* pvk = pfi->getVertex_const(k);
@@ -1176,8 +1158,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 	MeshFunction *mf = new MeshFunction(m_size);
 
-	for (int i = 0; i < m_size; ++i)
-	{
+	for (int i = 0; i < m_size; ++i) {
 		mf->setValue(i, vSimilarities[i]);
 	}
 
