@@ -9,7 +9,7 @@
 #include <iterator>
 #include "common.h"
 
-#define USE_PPL
+//#define USE_PPL
 
 #ifdef USE_PPL
 #include <ppl.h>
@@ -27,6 +27,12 @@ class VecN
 {
 public:
 	friend class SparseMatrix<T>;
+
+	typedef int difference_type;
+	typedef size_t size_type;
+	typedef T value_type;
+	typedef T* pointer;
+	typedef T& reference;
 	class iterator
 	{
 	public:
@@ -285,10 +291,7 @@ template<typename T>
 inline T VecN<T>::dot(const VecN<T>& v2) const
 {
 	assert(mDim == v2.mDim);	
-	return std::inner_product(mVec, mVec + mDim, v2.mVec, 0);
-	//T sum(0.0);
-	//for (int i = 0; i < mDim; ++i) sum += mVec[i] * v2.mVec[i];
-	//return sum;
+	return std::inner_product(mVec, mVec + mDim, v2.mVec, 0.0);
 }
 
 template<typename T>

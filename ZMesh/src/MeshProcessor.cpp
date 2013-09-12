@@ -92,7 +92,7 @@ void MeshProcessor::removePropertyByID( int rid )
 			delete *iter;
 			iter = vProperties.erase(iter);
 		}
-        else ++iter;
+		else ++iter;
 	}
 }
 
