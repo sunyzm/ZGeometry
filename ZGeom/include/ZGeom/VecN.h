@@ -33,76 +33,31 @@ public:
 	typedef T value_type;
 	typedef T* pointer;
 	typedef T& reference;
-	class iterator
-	{
-	public:
-		iterator() : mVecN(nullptr), mPos(0) {}
-		iterator(const iterator& iter) : mVecN(iter.mVecN), mPos(iter.mPos) {}
-
-		iterator(VecN<T>* vec, int pos) : mVecN(vec) { 
-			if (pos < 0 || pos > mVecN->mDim) throw std::runtime_error("Invalid VecN subscript"); 
-			mPos = pos;
-		}
-
-		iterator& operator = (const iterator iter) { 
-			mVecN = iter.mVecN; 
-			mPos = iter.mPos;
-			return *this; 
-		}
-
-		bool operator == (const iterator& iter) const {
-			return mVecN == iter.mVecN && mPos == iter.mPos;
-		}
-
-		bool operator != (const iterator& iter) const {
-			return mVecN != iter.mVecN || mPos != iter.mPos;
-		}
-
-		T& operator * () {  return mVecN->at(mPos); }
-		bool operator () () { return mPos < mVecN->mDim; }
-
-		iterator operator ++ (int) { //postfix ++
-			VecN<T>::iterator iter(*this); 
-			if (mPos < mVecN->mDim) mPos++; 
-			return iter; 
-		}
-
-		iterator& operator ++ () { //prefix --	
-			if (mPos < mVecN->mDim) ++mPos; 
-			return *this; 
-		}
-
-		iterator operator -- (int) { //postfix --
-			iterator iter(*this); 
-			if (mPos > 0) mPos--;
-			return iter; 
-		}
-
-		iterator& operator -- () { //prefix --
-			if (mPos > 0) --mPos; 
-			return *this; 
-		}
-
-	private:
-		VecN<T>* mVecN;
-		int mPos;
-	};
+	class iterator;
 
 	VecN() : mVec(NULL), mDim(0) {}
 	VecN(uint n) : mVec(NULL) { resize(n); }
 	VecN(uint n, T val) : mVec(NULL) { resize(n, val); }
 	VecN(const VecN<T>& v2);
+	VecN(VecN<T>&& v2);
 	VecN(T* vec, uint n);
 	VecN(const std::vector<T>& vec);
 	~VecN() { delete []mVec; }
-	const VecN<T>& operator=(const VecN<T>& v2);
+	const VecN<T>& operator = (const VecN<T>& v2);
+	VecN<T>& operator = (VecN<T>&& v2);
 
 	T operator [] (uint i) const { return mVec[i]; }
 	T operator () (uint i) const { return mVec[i-1]; }
 	T& operator [] (uint i) { return mVec[i]; }
 	T& operator () (uint i) { return mVec[i-1]; }
-	T at(int i) const { if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); return mVec[i]; }
-	T& at(int i) { if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); return mVec[i]; }
+	T at(int i) const { 
+		if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); 
+		return mVec[i]; 
+	}
+	T& at(int i) {
+		if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!");
+		return mVec[i]; 
+	}
 
 	T* c_ptr() const { return mVec; }
 	T* c_ptr_end() const { return mVec + mDim; }
@@ -143,12 +98,78 @@ private:
 	int mDim;
 };
 
-/* defining constructors */
+template<typename T>
+class VecN<T>::iterator
+{
+public:
+	iterator() : mVecN(nullptr), mPos(0) {}
+	iterator(const iterator& iter) : mVecN(iter.mVecN), mPos(iter.mPos) {}
+
+	iterator(VecN<T>* vec, int pos) : mVecN(vec) { 
+		if (pos < 0 || pos > mVecN->mDim) throw std::runtime_error("Invalid VecN subscript"); 
+		mPos = pos;
+	}
+
+	iterator& operator = (const iterator iter) { 
+		mVecN = iter.mVecN; 
+		mPos = iter.mPos;
+		return *this; 
+	}
+
+	bool operator == (const iterator& iter) const {
+		return mVecN == iter.mVecN && mPos == iter.mPos;
+	}
+
+	bool operator != (const iterator& iter) const {
+		return mVecN != iter.mVecN || mPos != iter.mPos;
+	}
+
+	T& operator * () {  return mVecN->at(mPos); }
+	bool operator () () { return mPos < mVecN->mDim; }
+
+	iterator operator ++ (int) { //postfix ++
+		VecN<T>::iterator iter(*this); 
+		if (mPos < mVecN->mDim) mPos++; 
+		return iter; 
+	}
+
+	iterator& operator ++ () { //prefix --	
+		if (mPos < mVecN->mDim) ++mPos; 
+		return *this; 
+	}
+
+	iterator operator -- (int) { //postfix --
+		iterator iter(*this); 
+		if (mPos > 0) mPos--;
+		return iter; 
+	}
+
+	iterator& operator -- () { //prefix --
+		if (mPos > 0) --mPos; 
+		return *this; 
+	}
+
+private:
+	VecN<T>* mVecN;
+	int mPos;
+};
+
+/* defining constructors and assignment operator */
 template<typename T>
 inline VecN<T>::VecN(const VecN<T>& v2) : mDim(v2.mDim)
 {
 	mVec = new T[mDim];
-	for (int i = 0; i < mDim; ++i) mVec[i] = v2.mVec[i];
+	std::copy_n(v2.mVec, v2.mDim, mVec);
+}
+
+template<typename T>
+inline VecN<T>::VecN(VecN<T>&& v2) : mDim(0), mVec(nullptr)
+{
+	mDim = v2.mDim;
+	mVec = v2.mVec;
+
+	v2.mDim = 0;
+	v2.mVec = nullptr;
 }
 
 template<typename T>
@@ -166,17 +187,33 @@ inline VecN<T>::VecN(const std::vector<T>& vec)
 	mVec = new T[mDim];
 	std::copy_n(vec.begin(), mDim, mVec);
 }
-/* end of defining constructors */
 
 template<typename T>
 inline const VecN<T>& VecN<T>::operator = (const VecN<T>& v2)
 {
-	delete []mVec;
-	mDim = v2.size();
-	mVec = new T[mDim];
-	std::copy_n(v2.c_ptr(), mDim, mVec);
+	if (this != &v2) {
+		delete []mVec;
+		mDim = v2.mDim;
+		mVec = new T[mDim];
+		std::copy_n(v2.c_ptr(), mDim, mVec);
+	}
 	return *this;
 }
+
+template<typename T>
+inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
+{
+	if (this != &v2) {
+		delete []mVec;
+		mDim = v2.mDim;
+		mVec = v2.mVec;
+		v2.mDim = 0;
+		v2.mVec = nullptr;
+	}
+	return *this;
+}
+
+/* end of defining constructors and assignment operator */
 
 template<typename T>
 inline void VecN<T>::resize(int n)
@@ -233,7 +270,7 @@ template<typename T>
 inline const VecN<T>& VecN<T>::operator += (const VecN<T>& v2)
 {
 	assert(mDim == v2.mDim);
-	for(int i = 0; i < mDim, ++i) {
+	for(int i = 0; i < mDim; ++i) {
 		mVec[i] += v2.mVec[i];
 	}
 	return *this;
@@ -241,7 +278,7 @@ inline const VecN<T>& VecN<T>::operator += (const VecN<T>& v2)
 template<typename T>
 inline const VecN<T>& VecN<T>::operator += (T trans)
 {
-	for(int i = 0; i < mDim; ++i){
+	for(int i = 0; i < mDim; ++i) {
 		mVec[i] += trans;
 	}
 	return *this;
@@ -263,7 +300,7 @@ inline const VecN<T>& VecN<T>::operator *= (T scale)
 template<typename T>
 inline const VecN<T>& VecN<T>::operator *= (T scale)
 {
-	for(int i = 0; i < mDim; ++i){
+	for(int i = 0; i < mDim; ++i) {
 		mVec[i] *= scale;
 	}
 	return *this;

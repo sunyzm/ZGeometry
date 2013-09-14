@@ -27,7 +27,7 @@ public:
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
 	const Vec3<T>& operator *= (T coeff);
 	const Vec3<T>& operator /= (T coeff);
-    T operator [] (uint i) const;
+	T operator [] (uint i) const;
 	T& operator [] (uint i);
 	T length() const;
 		
@@ -44,12 +44,12 @@ private:
 template<typename T>
 inline T Vec3<T>::operator[]( uint i ) const
 {
-    switch (i) {
-    case 0: return this->x;
-    case 1: return this->y;
-    case 2: return this->z;
-    default: throw std::logic_error("Invalid Vec3 subscript");
-    }
+	switch (i) {
+	case 0: return this->x;
+	case 1: return this->y;
+	case 2: return this->z;
+	default: throw std::logic_error("Invalid Vec3 subscript");
+	}
 }
 
 template<typename T>
@@ -59,7 +59,7 @@ inline T& Vec3<T>::operator[]( uint i )
 	case 0: return this->x;
 	case 1: return this->y;
 	case 2: return this->z;
-    default: throw std::logic_error("Invalid Vec3 subscript");
+	default: throw std::logic_error("Invalid Vec3 subscript");
 	}
 }
 

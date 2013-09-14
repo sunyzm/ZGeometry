@@ -18,6 +18,7 @@ using ZGeom::VectorDotProduct;
 
 std::function<double(double)> transferScaling1 = [](double lambda) { return std::exp(-std::pow(lambda, 2)); };
 std::function<double(double, double)> transferHeatKernel = [](double lambda, double t) { return std::exp(-lambda*t); };
+std::function<double(double, double)> transferMHW = [](double lambda, double t) { return lambda * std::exp(-lambda*t); };
 
 double transferScalingFunc1( double lambda )
 {

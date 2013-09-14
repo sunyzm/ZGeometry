@@ -90,8 +90,7 @@ void QZGeometryWindow::makeConnections()
 	int laplacianTypeCount = MeshLaplacian::LaplacianTypeCount;
 	m_actionComputeLaplacians.resize(laplacianTypeCount);
 	laplacianSignalMapper = new QSignalMapper(this);
-	for (int t = 0; t < laplacianTypeCount; ++t)
-	{
+	for (int t = 0; t < laplacianTypeCount; ++t) {
 		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
 		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
 		laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
@@ -102,8 +101,7 @@ void QZGeometryWindow::makeConnections()
 	/*  actionComputeSimilarities  */
 	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
 	simlaritySignalMapper = new QSignalMapper(this);
-	for (int t = 0; t < SIM_TYPE_COUNT; ++t)
-	{
+	for (int t = 0; t < SIM_TYPE_COUNT; ++t) {
 		m_actionComputeSimilarities[t] = new QAction(QString("Similarity type ") + QString::number(t), this);
 		ui.menuComputeSimilarityMap->addAction(m_actionComputeSimilarities[t]);
 		simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
@@ -214,8 +212,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 		if (mMeshCount > 0) {
 			int init_laplacian_type = MeshLaplacian::CotFormula;
 			g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
-			if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount)
-			{
+			if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount) { 
 				timer.startTimer();
 				computeLaplacian(init_laplacian_type);
 				timer.stopTimer("-- Time to decompose initial Laplacian: ", " --");		
@@ -298,7 +295,6 @@ void QZGeometryWindow::initialProcessing()
 {
 	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
 		computeFunctionMaps(40);
-		//verifyAreas();
 
 		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");

@@ -11,9 +11,8 @@ using ZGeom::VecNd;
 
 int main()
 {
-
 	CStopWatch timer;
-	const int testSize(1000000);
+	const int testSize(100000);
 	VecNd v1(testSize), v2(testSize);
 	
 	double *va = new double[testSize], *vb = new double[testSize], *vc = new double[testSize];
@@ -27,7 +26,6 @@ int main()
 	}
 
 	double prod1(0), prod2(0), prod3(0);
-
 	timer.startTimer();
 	prod1 = std::inner_product(va, va + testSize, vb, 0.0);
 	timer.stopTimer("Method 1: ");
