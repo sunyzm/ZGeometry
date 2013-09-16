@@ -1012,6 +1012,10 @@ void QZGeometryWindow::computeEigenfunction()
 		mp.replaceProperty(mf);			
 	}
 
+	double *data = mProcessors[0]->getMHB().getEigVec(select_eig).c_ptr();
+	int count = mProcessors[0]->getMesh()->getMeshSize();
+	mEngineWrapper.addVariable(data, count, 1, "eig1");
+
 	displaySignature(SIGNATURE_EIG_FUNC);
 	current_operation = Compute_EIG_FUNC;
 	qout.output("Show eigenfunction" + Int2String(select_eig));

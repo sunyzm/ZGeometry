@@ -16,7 +16,7 @@ const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula
 														 "Anisotropic", "Anisotropic2", 
 														 "IsoApproximate"};
 
-void MeshLaplacian::decompose(int nEig, const ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys)
+void MeshLaplacian::decompose( int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys )
 {
 	ZGeom::EigenCompute eigenCompute(ep);
 	eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);

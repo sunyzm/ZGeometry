@@ -38,7 +38,7 @@ public:
 	bool isLaplacianConstructed() const { return mLaplacianConstructed; }
 	const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
 	const ZGeom::SparseMatrix<double>& getW() const { return mW; }
-	void decompose(int nEig, const ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys);
+	void decompose(int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys);
 
 private:
 	int mOrder;
