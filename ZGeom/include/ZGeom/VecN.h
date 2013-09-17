@@ -28,11 +28,6 @@ class VecN
 public:
 	friend class SparseMatrix<T>;
 
-	typedef int difference_type;
-	typedef size_t size_type;
-	typedef T value_type;
-	typedef T* pointer;
-	typedef T& reference;
 	class iterator;
 
 	VecN() : mVec(NULL), mDim(0) {}
@@ -99,7 +94,7 @@ private:
 };
 
 template<typename T>
-class VecN<T>::iterator
+class VecN<T>::iterator : std::iterator<std::bidirectional_iterator_tag, T>
 {
 public:
 	iterator() : mVecN(nullptr), mPos(0) {}
