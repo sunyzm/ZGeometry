@@ -1003,8 +1003,7 @@ void QZGeometryWindow::computeEigenfunction()
 {
 	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{
+	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
 		mf->copyValues(mp.getMHB().getEigVec(select_eig).toStdVector());
@@ -1012,9 +1011,12 @@ void QZGeometryWindow::computeEigenfunction()
 		mp.replaceProperty(mf);			
 	}
 
-	double *data = mProcessors[0]->getMHB().getEigVec(select_eig).c_ptr();
-	int count = mProcessors[0]->getMesh()->getMeshSize();
-	mEngineWrapper.addVariable(data, count, 1, "eig1");
+	double *data1 = mProcessors[0]->getMHB().getEigVec(select_eig).c_ptr();
+	int count1 = mProcessors[0]->getMesh()->getMeshSize();
+	mEngineWrapper.addVariable(data1, count1, 1, "eig1");
+	double *data2 = mProcessors[1]->getMHB().getEigVec(select_eig).c_ptr();
+	int count2 = mProcessors[1]->getMesh()->getMeshSize();
+	mEngineWrapper.addVariable(data2, count2, 1, "eig2");
 
 	displaySignature(SIGNATURE_EIG_FUNC);
 	current_operation = Compute_EIG_FUNC;
@@ -1030,8 +1032,7 @@ void QZGeometryWindow::computeHKS()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{
+	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		int meshSize = mp.getMesh_const()->getMeshSize();
 		MeshFunction *mf = new MeshFunction(meshSize);
@@ -1062,8 +1063,7 @@ void QZGeometryWindow::computeHK()
 
 	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{
+	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		int refPoint = mp.getRefPointIndex();
 		mp.computeKernelDistanceSignature(time_scale, HEAT_KERNEL, refPoint);
@@ -1107,15 +1107,13 @@ void QZGeometryWindow::computeHKSFeatures()
 	vTimes.push_back(30);
 	vTimes.push_back(90);
 	vTimes.push_back(270);
+	
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		
-			mProcessors[i]->computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
+	for (int i = 0; i < mMeshCount; ++i) {
+		mProcessors[i]->computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
 	}
 	
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
+	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 }
 
 void QZGeometryWindow::computeMHWFeatures()

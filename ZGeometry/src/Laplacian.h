@@ -23,14 +23,16 @@ class MeshLaplacian
 {
 public:
 	static const std::string LaplacianTypeNames[];
-	enum LaplacianType {Umbrella = 0, CotFormula = 1, Anisotropic1 = 2,
-						Anisotropic2 = 3, IsoApproximate = 4, 
+	enum LaplacianType {Tutte = 0, Umbrella,  CotFormula, SymCot, Anisotropic1,
+						Anisotropic2, IsoApproximate, 
 						LaplacianTypeCount} m_laplacianType;
 		
 
 	MeshLaplacian() : mLaplacianConstructed(false) {}
-	void constructFromMesh1(const CMesh* tmesh);	// graph Laplacian
-	void constructFromMesh2(const CMesh* tmesh);	// Cot formula
+	void constructUmbrella(const CMesh* tmesh);		// symmetric graph Laplacian 
+	void constructTutte(const CMesh* tmesh);		// asymmetric graph Laplacian
+	void constructCotFormula(const CMesh* tmesh);	// Cotangent formula
+	void constructSymCot(const CMesh* tmesh);		// symmetric cotangent formula
 	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		

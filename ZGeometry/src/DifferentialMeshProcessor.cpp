@@ -1240,11 +1240,11 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 	switch(laplacianType)
 	{
 	case MeshLaplacian::Umbrella:
-		vMeshLaplacian[laplacianType].constructFromMesh1(mesh);
+		vMeshLaplacian[laplacianType].constructUmbrella(mesh);
 		break;
 
 	case MeshLaplacian::CotFormula:
-		vMeshLaplacian[laplacianType].constructFromMesh2(mesh);   
+		vMeshLaplacian[laplacianType].constructCotFormula(mesh);   
 		break;
 
 	case MeshLaplacian::Anisotropic1:

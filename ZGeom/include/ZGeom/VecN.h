@@ -27,7 +27,6 @@ class VecN
 {
 public:
 	friend class SparseMatrix<T>;
-
 	class iterator;
 
 	VecN() : mVec(NULL), mDim(0) {}
@@ -94,7 +93,7 @@ private:
 };
 
 template<typename T>
-class VecN<T>::iterator : std::iterator<std::bidirectional_iterator_tag, T>
+class VecN<T>::iterator : public std::iterator<std::bidirectional_iterator_tag, T>
 {
 public:
 	iterator() : mVecN(nullptr), mPos(0) {}

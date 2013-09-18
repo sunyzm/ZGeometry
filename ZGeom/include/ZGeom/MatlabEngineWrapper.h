@@ -51,6 +51,7 @@ public:
 	mxArray* getVariable(const char *name) const;
 	/* Put a variable into MATLAB's workspace with the specified name */
 	int putVariable(const char *var_name, const mxArray *ap) const;    
+
 	void addVariable(double* data, int row, int col, const std::string& name) {
 		mVariables.push_back(new MatlabArrayWrapper(m_ep, data, row, col, name));
 	}
@@ -62,7 +63,7 @@ public:
 		delete []buf;
 	}
 
-	double* retrieveVariable(const std::string& name) {
+	double* getVariablePtr(const std::string& name) {
 		mxArray *arr = getVariable(name.c_str());
 		return mxGetPr(arr);
 	}

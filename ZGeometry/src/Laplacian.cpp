@@ -11,6 +11,7 @@
 
 using namespace std;
 using ZGeom::PI;
+using ZGeom::uint;
 
 const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
 														 "Anisotropic", "Anisotropic2", 
@@ -22,22 +23,20 @@ void MeshLaplacian::decompose( int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::
 	eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
 }
 
-void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
+void MeshLaplacian::constructTutte( const CMesh* tmesh )
 {
 	mOrder = tmesh->vertCount();
-
-	std::vector<unsigned> vII, vJJ;
+	std::vector<uint> vII, vJJ;
 	std::vector<double> vSS;
+	std::vector<double> vWeights(mOrder);
 
-	for (int i = 0; i < mOrder; ++i)
-	{
+	for (int i = 0; i < mOrder; ++i) {
 		const CVertex* vi = tmesh->getVertex(i);
 		vector<int> vNeighbors;
 		tmesh->VertexNeighborRing(i, 1, vNeighbors);
 		int valence = vNeighbors.size();
 
-		for (int j = 0; j < valence; ++j)
-		{
+		for (int j = 0; j < valence; ++j) {
 			vII.push_back(i+1);
 			vJJ.push_back(vNeighbors[j]+1);
 			vSS.push_back(1.0);
@@ -45,35 +44,45 @@ void MeshLaplacian::constructFromMesh1( const CMesh* tmesh )
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
 		vSS.push_back(-valence);
+		vWeights[i] = valence;
 	}
-
-	std::vector<double> vWeights(mOrder, 1.0);
 
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
 	mLaplacianConstructed = true;
+	m_laplacianType = Tutte;
+}
+
+void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
+{
+	this->constructTutte(tmesh);
+
+	mW.setToIdentity(mOrder);
 	m_laplacianType = Umbrella;
 }
 
-void MeshLaplacian::constructFromMesh2( const CMesh* tmesh )
+void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 {
 	mOrder = tmesh->vertCount();
-
 	std::vector<int> vII, vJJ;
 	std::vector<double> vSS;
 	std::vector<double> vWeights;
 
 	tmesh->calLBO(vII, vJJ, vSS, vWeights);
-/*
-	double scaling = (tmesh->getAvgEdgeLength() * tmesh->getAvgEdgeLength())/2;
-	transform(vWeights.begin(), vWeights.end(), vWeights.begin(), [&](double v){return v/scaling;});
-*/
+
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
 	mLaplacianConstructed = true;
 	m_laplacianType = CotFormula;
+}
+
+void MeshLaplacian::constructSymCot( const CMesh* tmesh )
+{
+	constructCotFormula(tmesh);
+	mW.setToIdentity(mOrder);
+	m_laplacianType = SymCot;
 }
 
 void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )

@@ -151,5 +151,29 @@ namespace ZGeom
 		return sum;
 	}
 
+	double EigenSystem::kernel( uint x, uint y, double t, std::function<double(double, double)> transferFunc ) const
+	{
+		double sum(0);
+		for (uint k = 0; k < mEvCount; ++k) {
+			double lambda = mEigVals[k];
+			double *phi = mEigVecs[k].c_ptr();
+			double term = transferFunc(lambda, t) * phi[x] * phi[y];
+			sum += term;
+		}
+		return sum;
+	}
+
+	double EigenSystem::kernel( uint x, uint y, std::function<double(double)> transferFunc ) const
+	{
+		double sum(0);
+		for (uint k = 0; k < mEvCount; ++k) {
+			double lambda = mEigVals[k];
+			double *phi = mEigVecs[k].c_ptr();
+			double term = transferFunc(lambda) * phi[x] * phi[y];
+			sum += term;
+		}
+		return sum;
+	}
+
 
 } //end of namespace 
