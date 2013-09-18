@@ -100,7 +100,7 @@ private:
 	/* methods */
 	void makeConnections();
 	void loadInitialMeshes(const std::string& initial_mesh_list);
-	void initialProcessing();
+	void registerPreprocess();
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);

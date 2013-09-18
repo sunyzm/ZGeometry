@@ -9,6 +9,7 @@
 #include <set>
 #include <stdexcept>
 #include <ppl.h>
+#include <boost/lexical_cast.hpp>
 #include <QtWidgets/QMessageBox>
 #include <QFileDialog>
 #include <QTime>
@@ -207,20 +208,38 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 		mEngineWrapper.open();     
 		timer.stopTimer("-- Matlab loading time: ", " --");
 
+		switch (g_task)
+		{
+		case TASK_VIEWING:
+			g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
+			if (mMeshCount <= 0) return true;
+			break;
+		case TASK_REGISTRATION:
+			mMeshCount = 2;
+			break;
+		case TASK_EDITING:
+			mMeshCount = 1;
+			break;
+		default:
+			break;
+		}
+
 		loadInitialMeshes(mesh_list_name); 
 
-		if (mMeshCount > 0) {
-			int init_laplacian_type = MeshLaplacian::CotFormula;
-			g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
-			if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount) { 
-				timer.startTimer();
-				computeLaplacian(init_laplacian_type);
-				timer.stopTimer("-- Time to decompose initial Laplacian: ", " --");		
-			}
-
-			initialProcessing();
+		/* compute and decompose mesh Laplacians */
+		int init_laplacian_type = MeshLaplacian::CotFormula;
+		g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
+		if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount) { 
+			timer.startTimer();
+			computeLaplacian(init_laplacian_type);
+			timer.stopTimer("-- Time to decompose initial Laplacians: ", " --");		
+		} else {
+			std::cout << "Unrecognized Laplacian type; Nothing is done.";
 		}
-	} catch (std::runtime_error* e) {
+
+		if (g_task == TASK_REGISTRATION) registerPreprocess();
+		
+	} catch (std::exception* e) {
 		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
 		return false;
 	}
@@ -231,8 +250,6 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
 	/* ---- load meshes ---- */
-	g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
-	if (mMeshCount <= 0) return;	
 	if (!ZUtil::fileExist(mesh_list_name))
 		throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
 	ifstream meshfiles(mesh_list_name);
@@ -291,31 +308,29 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	mObjInFocus = 0;
 }
 
-void QZGeometryWindow::initialProcessing()
+void QZGeometryWindow::registerPreprocess()
 {
-	if (g_task == TASK_REGISTRATION && mMeshCount >= 2) {
-		computeFunctionMaps(40);
+	if (g_task != TASK_REGISTRATION || mMeshCount != 2) return;
 
-		mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
-		std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
-		mShapeMatcher.readInRandPair(rand_data_file);
-		ui.glMeshWidget->setShapeMatcher(&mShapeMatcher);
+	computeFunctionMaps(40);
+	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
+	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
+	mShapeMatcher.readInRandPair(rand_data_file);
+	ui.glMeshWidget->setShapeMatcher(&mShapeMatcher);
 
-		// ground truth 
-		if (mMeshes[0]->getMeshName() == "march1_1_partial") {
-			cout << "Ground truth available!" << endl;
-			string mapFile = "./models/map1.txt";
-			mShapeMatcher.loadGroundTruth(mapFile);
-		}
-		else if(mMeshes[0]->getMeshSize() == mMeshes[1]->getMeshSize()) {
-			mShapeMatcher.autoGroundTruth();
-		}
-
-		mShapeMatcher.setRegistrationLevels(1);
-		registerTest();
+	// ground truth 
+	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
+		cout << "Ground truth available!" << endl;
+		string mapFile = "./models/map1.txt";
+		mShapeMatcher.loadGroundTruth(mapFile);
+	}
+	else if(mMeshes[0]->getMeshSize() == mMeshes[1]->getMeshSize()) {
+		mShapeMatcher.autoGroundTruth();
 	}
 
-	//	evalDistance();
+	mShapeMatcher.setRegistrationLevels(1);
+	registerTest();
+//	evalDistance();
 }
 
 void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
@@ -1011,12 +1026,12 @@ void QZGeometryWindow::computeEigenfunction()
 		mp.replaceProperty(mf);			
 	}
 
-	double *data1 = mProcessors[0]->getMHB().getEigVec(select_eig).c_ptr();
-	int count1 = mProcessors[0]->getMesh()->getMeshSize();
-	mEngineWrapper.addVariable(data1, count1, 1, "eig1");
-	double *data2 = mProcessors[1]->getMHB().getEigVec(select_eig).c_ptr();
-	int count2 = mProcessors[1]->getMesh()->getMeshSize();
-	mEngineWrapper.addVariable(data2, count2, 1, "eig2");
+	for (int i = 0; i < mMeshCount; ++i) {
+		double *data = mProcessors[i]->getMHB().getEigVec(select_eig).c_ptr();
+		int count = mProcessors[i]->getMesh()->getMeshSize();
+		std::string varName = "eig" + boost::lexical_cast<std::string>(i);
+		mEngineWrapper.addVariable(data, count, 1, varName);
+	}
 
 	displaySignature(SIGNATURE_EIG_FUNC);
 	current_operation = Compute_EIG_FUNC;
@@ -1107,7 +1122,6 @@ void QZGeometryWindow::computeHKSFeatures()
 	vTimes.push_back(30);
 	vTimes.push_back(90);
 	vTimes.push_back(270);
-	
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		mProcessors[i]->computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);

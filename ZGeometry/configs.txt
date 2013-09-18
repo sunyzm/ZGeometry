@@ -1,9 +1,9 @@
 ## global settings ##
 # GEOMETRY_TASK #
-# 0: viewving
+# 0: viewing
 # 1: registration
 # 2: editing
-GEOMETRY_TASK = 1
+GEOMETRY_TASK = 2
 
 DEFAULT_DEFORM_RING = 5 
 MIN_HK_TIMESCALE = 1e-2

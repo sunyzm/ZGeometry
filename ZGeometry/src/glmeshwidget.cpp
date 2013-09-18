@@ -411,22 +411,19 @@ void GLMeshWidget::drawGL()
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
-	if (g_task == TASK_EDITING)
-	{
-		for (int obj = 0; obj < m_num_meshes; ++obj)
-		{
+	if (g_task == TASK_EDITING || g_task == TASK_VIEWING) {
+		for (int obj = 0; obj < m_num_meshes; ++obj) {
 			drawMeshExt(vpMP[obj], vpRS[obj]);
 		}		
 	}
-	else if (g_task == TASK_REGISTRATION)
-	{
+	else if (g_task == TASK_REGISTRATION) {
 		assert(m_num_meshes >= 2);
-
 		drawMeshExt(pDSM->getMeshProcessor(0, m_nMeshLevel), vpRS[0]);
 		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
 
-		if (m_bDrawMatching || m_bDrawRegistration)
+		if (m_bDrawMatching || m_bDrawRegistration) {
 			drawCorrespondences(pDSM, vpRS[0], vpRS[1]);
+		}
 	}
 	
 	glMatrixMode(GL_MODELVIEW);
@@ -503,7 +500,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	glDisable(GL_POLYGON_OFFSET_FILL);
-
 
 	// draw boundary edges in dark color
 	glDisable(GL_LIGHTING);
