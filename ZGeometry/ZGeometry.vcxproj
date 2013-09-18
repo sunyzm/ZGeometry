@@ -213,7 +213,7 @@
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
     <ClCompile Include="src\RenderSettings.cpp" />
-    <ClCompile Include="src\DiffusionShapeMatcher.cpp" />
+    <ClCompile Include="src\ShapeMatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -447,7 +447,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="src\DiffusionShapeMatcher.h">
+    <CustomBuild Include="src\ShapeMatcher.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Performing Custom Build Tools</Message>
@@ -778,6 +778,7 @@
   <ItemGroup>
     <ClInclude Include="matching.h" />
     <ClInclude Include="MatchTestCase.h" />
+    <ClInclude Include="ShapeEditor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

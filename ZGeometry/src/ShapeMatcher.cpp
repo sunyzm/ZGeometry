@@ -1,4 +1,4 @@
-#include "DiffusionShapeMatcher.h"
+#include "ShapeMatcher.h"
 #include <fstream>
 #include <sstream>
 #include <exception>
@@ -17,18 +17,18 @@ using namespace std;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::PI;
 
-const double DiffusionShapeMatcher::DEFAULT_C_RATIO				= 0.2;
-const double DiffusionShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
-const double DiffusionShapeMatcher::SPARSIFY_EPSILON			= 1e-6;
-const double DiffusionShapeMatcher::DEFAULT_FEATURE_TIMESCALE	= 30.0;
-const double DiffusionShapeMatcher::DEFAULT_T_MULTIPLIER		= 3.0;
-const double DiffusionShapeMatcher::DEFAULT_MATCH_TIME_LOW		= 10.0;
-const double DiffusionShapeMatcher::DEFAULT_MATCH_THRESH        = 0.52;
-const double DiffusionShapeMatcher::DEFAULT_EXTREAMA_THRESH     = 0.04;
-const double DiffusionShapeMatcher::DEFAULT_REGISTER_TIMESCALE	= 80;
-const int	 DiffusionShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
-const int	 DiffusionShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
-const int	 DiffusionShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
+const double ShapeMatcher::DEFAULT_C_RATIO				= 0.2;
+const double ShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
+const double ShapeMatcher::SPARSIFY_EPSILON			= 1e-6;
+const double ShapeMatcher::DEFAULT_FEATURE_TIMESCALE	= 30.0;
+const double ShapeMatcher::DEFAULT_T_MULTIPLIER		= 3.0;
+const double ShapeMatcher::DEFAULT_MATCH_TIME_LOW		= 10.0;
+const double ShapeMatcher::DEFAULT_MATCH_THRESH        = 0.52;
+const double ShapeMatcher::DEFAULT_EXTREAMA_THRESH     = 0.04;
+const double ShapeMatcher::DEFAULT_REGISTER_TIMESCALE	= 80;
+const int	 ShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
+const int	 ShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
+const int	 ShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
 
 double findTmax( const CMesh* tmesh, int s )
 {
@@ -196,7 +196,7 @@ double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const Differen
 //	return v1.calDistance2(v2) / (v1.length2() + v2.length2());
 }
 
-DiffusionShapeMatcher::DiffusionShapeMatcher()
+ShapeMatcher::ShapeMatcher()
 {
 	m_ep = NULL;
 	pOriginalProcessor[0] = pOriginalProcessor[1] = NULL; 
@@ -209,7 +209,7 @@ DiffusionShapeMatcher::DiffusionShapeMatcher()
 	m_vFeatures.resize(2);
 }
 
-DiffusionShapeMatcher::~DiffusionShapeMatcher()
+ShapeMatcher::~ShapeMatcher()
 {
 	if (!m_bInitialized) return;
 
@@ -220,7 +220,7 @@ DiffusionShapeMatcher::~DiffusionShapeMatcher()
 	std::cout << "DiffusionShapeMatcher destroyed!" << std::endl;
 }
 
-void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep )
+void ShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep )
 {
 	m_ep = ep;
 	pOriginalProcessor[0] = pMP1;
@@ -242,13 +242,13 @@ void DiffusionShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, Differe
 	m_bInitialized = true;
 }
 
-CMesh* DiffusionShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
+CMesh* ShapeMatcher::getMesh( int obj, int level /*= 0*/ ) const
 {
 	if (level == 0) return this->pOriginalMesh[obj];
 	else return meshPyramids[obj].getMesh(level);
 }
 
-void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
+void ShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
 {
 	assert(n >= 1);
 
@@ -267,7 +267,7 @@ void DiffusionShapeMatcher::constructPyramid( int n, double ratio, std::ostream&
 	setRegistrationLevels(n);
 }
 
-void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
+void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
 {
 	ZUtil::logic_assert(obj == 0 || obj == 1);
 	m_vFeatures[obj].clear();
@@ -357,7 +357,7 @@ void DiffusionShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScal
 	m_bFeatureDetected = true;
 }
 
-void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEFAULT_MATCH_THRESH*/ )
+void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEFAULT_MATCH_THRESH*/ )
 {
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = m_vFeatures[0];
@@ -794,7 +794,7 @@ void DiffusionShapeMatcher::matchFeatures( std::ostream& flog, double matchThres
 	forceInitialAnchors(matchedPairsFine);
 } // DiffusionShapmeMatcher::matchFeatures()
 
-void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig)
+void ShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig)
 {
 	double t = hf.m_tl;
 	sig.reserve(hf.m_tn);
@@ -806,7 +806,7 @@ void DiffusionShapeMatcher::calVertexSignature( const DifferentialMeshProcessor*
 	}
 }
 
-void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
+void ShapeMatcher::refineRegister( std::ostream& flog )
 {
 	if (m_nAlreadyRegisteredLevel == 0) return;
 
@@ -1042,7 +1042,7 @@ void DiffusionShapeMatcher::refineRegister( std::ostream& flog )
 
 } // refineRegister
 
-void DiffusionShapeMatcher::setRegistrationLevels( int val )
+void ShapeMatcher::setRegistrationLevels( int val )
 {
 	m_nRegistrationLevels = min(val, m_nPyramidLevels);
 	m_vFeatureMatchingResults.resize(m_nRegistrationLevels + 1);
@@ -1052,7 +1052,7 @@ void DiffusionShapeMatcher::setRegistrationLevels( int val )
 	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
 }
 
-const std::vector<MatchPair>& DiffusionShapeMatcher::getMatchedFeaturesResults ( int level ) const
+const std::vector<MatchPair>& ShapeMatcher::getMatchedFeaturesResults ( int level ) const
 {
 	if (level < -1 || level > m_nRegistrationLevels) 
 		throw logic_error("Selected level out of bound!");
@@ -1060,7 +1060,7 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getMatchedFeaturesResults (
 	else return m_vFeatureMatchingResults[level];	
 }
 
-const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int level ) const
+const std::vector<MatchPair>& ShapeMatcher::getRegistrationResults( int level ) const
 {
 	if (level < -1 || level >= m_nRegistrationLevels) 
 		throw logic_error("Selected level out of bound!");
@@ -1068,7 +1068,7 @@ const std::vector<MatchPair>& DiffusionShapeMatcher::getRegistrationResults( int
 	else return m_vRegistrationResutls[level];	
 }
 
-double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2, double sigma /*= 0.02*/ ) const
+double ShapeMatcher::computeMatchScore( int idx1, int idx2, double sigma /*= 0.02*/ ) const
 {
 	const PointParam &hkp1 = m_ParamMgr[0].vCoord[idx1],
 					 &hkp2 = m_ParamMgr[1].vCoord[idx2];
@@ -1078,7 +1078,7 @@ double DiffusionShapeMatcher::computeMatchScore( int idx1, int idx2, double sigm
 	return std::exp(-dist / sigma);
 }
 
-int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
+int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
 {
 	assert( level < m_nRegistrationLevels);
 
@@ -1172,7 +1172,7 @@ int DiffusionShapeMatcher::searchVertexMatch( const int vt, const int vj, const 
 	return vmatch;
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void ShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
 {
 
 	if(i==j || i==k || j==k)		//not a triangle
@@ -1209,7 +1209,7 @@ void DiffusionShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcess
 
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
+void ShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
 {
 //  	if(i==j || i==k || j==k)		//not a triangle
 //  	{
@@ -1247,7 +1247,7 @@ void DiffusionShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcess
 }
 
 
-void DiffusionShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose /*= false*/ )
+void ShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose /*= false*/ )
 {
 	int size1 = (int) vFeatures1.size();
 	int size2 = (int) vFeatures2.size();
@@ -1347,7 +1347,7 @@ void DiffusionShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMes
 	if (verbose) cout << "Pair graph matching computed!" << endl;
 }
 
-double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep, 
+double ShapeMatcher::TensorGraphMatching6( Engine *ep, 
 	const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, 
 	const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, 
 	double para_t, double para_thresh, bool verbose/* = false */)
@@ -1554,7 +1554,7 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep,
 	return result;
 }
 
-double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose /*= false*/ )
+double ShapeMatcher::TensorGraphMatching6( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose /*= false*/ )
 {
 	vector<int> vFeatIdx1(vFeatures1.size()), vFeatIdx2(vFeatures2.size());
 	transform(vFeatures1.begin(), vFeatures1.end(), vFeatIdx1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
@@ -1563,7 +1563,7 @@ double DiffusionShapeMatcher::TensorGraphMatching6( Engine *ep, const Differenti
 	return matchScore;
 }	
 
-double DiffusionShapeMatcher::TensorGraphMatching3( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
+double ShapeMatcher::TensorGraphMatching3( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
 {
 	// generate triangles
 	int vsize1 = (int)ct1.size();	// input feature size 1
@@ -1713,7 +1713,7 @@ double DiffusionShapeMatcher::TensorGraphMatching3( Engine *ep, const Differenti
 }
 
 
-void DiffusionShapeMatcher::matchFeaturesTensor_deprecate( std::ostream& flog, double timescale, double thresh )
+void ShapeMatcher::matchFeaturesTensor_deprecate( std::ostream& flog, double timescale, double thresh )
 {
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = m_vFeatures[0];
@@ -1767,7 +1767,7 @@ void DiffusionShapeMatcher::matchFeaturesTensor_deprecate( std::ostream& flog, d
 	forceInitialAnchors(vPairs);
 }
 
-void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const
+void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const
 {
 	const CMesh* tmesh = getMesh(obj, level);
 	int vid = tmesh->getVertex(vidx)->getVID();
@@ -1838,7 +1838,7 @@ void DiffusionShapeMatcher::getVertexCover( int obj, int vidx, int level, int up
 	}
 }
 
-void DiffusionShapeMatcher::readInRandPair( const std::string& filename )
+void ShapeMatcher::readInRandPair( const std::string& filename )
 {
 	m_randPairs.clear();
 	ifstream ifs(filename.c_str());
@@ -1856,7 +1856,7 @@ void DiffusionShapeMatcher::readInRandPair( const std::string& filename )
 	cout << "## rand pair size: " << m_randPairs.size() << endl;
 }
 
-double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+double ShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
 {
 	int matchSize = vIdMatchPair.size(), rand_size = vRandPair.size();
 	
@@ -1882,7 +1882,7 @@ double DiffusionShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& 
 	return distortSum / double(count);
 }
 
-double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+double ShapeMatcher::evaluateDistance( const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
 {
 	int mesh_size = mp1.getMesh_const()->vertCount();
 	int rand_size = vRandPair.size();
@@ -1928,7 +1928,7 @@ double DiffusionShapeMatcher::evaluateDistance( const DifferentialMeshProcessor&
 	return distort_sum / count;
 }
 
-void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
+void ShapeMatcher::refineRegister2( std::ostream& flog )
 {
 	const int current_level = max(m_nAlreadyRegisteredLevel - 1, 0);	//the registration level we currently working on
 
@@ -2260,14 +2260,14 @@ void DiffusionShapeMatcher::refineRegister2( std::ostream& flog )
 
 }
 
-void DiffusionShapeMatcher::forceInitialAnchors( const std::vector<MatchPair>& mp )
+void ShapeMatcher::forceInitialAnchors( const std::vector<MatchPair>& mp )
 {
 	m_nAlreadyMatchedLevel = m_nRegistrationLevels;
 	m_vFeatureMatchingResults[m_nAlreadyMatchedLevel] = mp;
 	m_bFeatureMatched = true;
 }
 
-void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair>& vIdMatchPair )
+void ShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair>& vIdMatchPair )
 {
 	if (!m_bHasGroundTruth) {
 		std::cout << "No ground truth available for evaluation!" << std::endl;
@@ -2289,7 +2289,7 @@ void DiffusionShapeMatcher::evaluateWithGroundTruth( const std::vector<MatchPair
 	std::cout << "#Valid Matches: " << count_valid_strict << '/' << count_valid << '/' << vIdMatchPair.size() << endl;
 }
 
-void DiffusionShapeMatcher::evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const
+void ShapeMatcher::evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const
 {
 	const std::map<int,int>& resultMap = result.mMatchedPairs;
 	const std::map<int,int>& groundTruthMap = groundtruth.mMatchedPairs;
@@ -2322,12 +2322,12 @@ void DiffusionShapeMatcher::evaluateWithGroundTruth(const MatchResult& result, c
 	eval.mAvgErrInEdgeLength = errorSum;
 }
 
-const std::vector<MatchPair>& DiffusionShapeMatcher::getInitialMatchedFeaturePairs() const
+const std::vector<MatchPair>& ShapeMatcher::getInitialMatchedFeaturePairs() const
 {
 	return m_vFeatureMatchingResults[m_nRegistrationLevels];
 }
 
-bool DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename )
+bool ShapeMatcher::loadInitialFeaturePairs( const std::string& filename )
 {
 	ifstream ifs(filename.c_str());
 	if (!ifs) return false;
@@ -2345,7 +2345,7 @@ bool DiffusionShapeMatcher::loadInitialFeaturePairs( const std::string& filename
 	return true;
 }
 
-void DiffusionShapeMatcher::registerTesting1()
+void ShapeMatcher::registerTesting1()
 {
 	const int current_level = max(m_nAlreadyRegisteredLevel - 1, 0);	//the registration level we currently working on
 
@@ -2392,7 +2392,7 @@ void DiffusionShapeMatcher::registerTesting1()
 	}	
 }
 
-void DiffusionShapeMatcher::regsiterTesting2()
+void ShapeMatcher::regsiterTesting2()
 {
 	const int current_level = max(m_nAlreadyRegisteredLevel - 1, 0);	//the registration level we currently working on
 
@@ -2474,7 +2474,7 @@ int countValidMatchPair(const vector<MatchPair>& vPairs)
 	return count_if(vPairs.begin(), vPairs.end(), [](const MatchPair& mp){return mp.m_idx1 == mp.m_idx2;});
 }
 
-void DiffusionShapeMatcher::dataTesting1()
+void ShapeMatcher::dataTesting1()
 {
 	vector<int> vFeatureID1, vFeatureID2;
 	vFeatureID1.push_back(4297);
@@ -2522,7 +2522,7 @@ void DiffusionShapeMatcher::dataTesting1()
 	cout << "Collected data saved to \"" << filename << "\"" << endl;
 }
 
-double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
+double ShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
 {
 	double errorSum(0);
 	double maxError(0);
@@ -2540,7 +2540,7 @@ double DiffusionShapeMatcher::calPointHksDissimilarity( const DifferentialMeshPr
 
 
 
-void DiffusionShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
+void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
 {
 	matchedResult.clear();
 
@@ -2602,7 +2602,7 @@ void DiffusionShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor
 	delete []hksSim;
 }
 
-void DiffusionShapeMatcher::matchFeatureSimple()
+void ShapeMatcher::matchFeatureSimple()
 {
 	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = m_vFeatures[0];
@@ -2621,7 +2621,7 @@ void DiffusionShapeMatcher::matchFeatureSimple()
 	forceInitialAnchors(vPairs);
 }
 
-double DiffusionShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/******************************
 	* featureType = 0 ---- original angle based triangle construction
@@ -3031,7 +3031,7 @@ double DiffusionShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialM
 	return result;
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshProcessor* pmp, int i, int j, int k, int origin, double t, double* sang )
+void ShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshProcessor* pmp, int i, int j, int k, int origin, double t, double* sang )
 {
 	double d1 = pmp->calHK(i, j, t);
 	double d2 = pmp->calHK(j, k, t);
@@ -3059,7 +3059,7 @@ void DiffusionShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshPr
 	sang[5] = s3;
 }
 
-void DiffusionShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t1, double t2, double* sang )
+void ShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t1, double t2, double* sang )
 {
 	sang[0] = pmp->calHK(i, j, t1);
 	sang[1] = pmp->calHK(j, k, t1);
@@ -3075,7 +3075,7 @@ void DiffusionShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProces
 	sang[11] = pmp->calHK(k, k, t2);
 }
 
-double DiffusionShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/**** method = 0
 	 ** vPara[0] = thresh1
@@ -3230,7 +3230,7 @@ double DiffusionShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMes
 	return totalMatchScore;
 }
 
-void DiffusionShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/*********************************
 	1. method = 0 (HKS similarity)
@@ -3337,7 +3337,7 @@ void DiffusionShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp
 	delete []hksSim;
 }
 
-void DiffusionShapeMatcher::sparseMatchingTesting()
+void ShapeMatcher::sparseMatchingTesting()
 {
 	int vsize = pOriginalMesh[0]->getMeshSize();
 	double outlier_ratio = 0.2;
@@ -3622,7 +3622,7 @@ void DiffusionShapeMatcher::sparseMatchingTesting()
 	}
 }
 
-void DiffusionShapeMatcher::localCorrespondenceTesting()
+void ShapeMatcher::localCorrespondenceTesting()
 {
 	assert(pOriginalMesh[0]->getMeshSize() == pOriginalMesh[1]->getMeshSize());
 	int vsize = pOriginalMesh[0]->getMeshSize();
@@ -3743,7 +3743,7 @@ void DiffusionShapeMatcher::localCorrespondenceTesting()
 	
 }
 
-void DiffusionShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh )
+void ShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh )
 {
 	vMatchedPair.clear();
 
@@ -3803,7 +3803,7 @@ void DiffusionShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, 
 	delete []hksSim;
 }
 
-void DiffusionShapeMatcher::generateExampleMatching( int n )
+void ShapeMatcher::generateExampleMatching( int n )
 {
 	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") != 1)
 		return;
@@ -3821,7 +3821,7 @@ void DiffusionShapeMatcher::generateExampleMatching( int n )
 	forceInitialAnchors(vAnchors);
 }
 
-void DiffusionShapeMatcher::loadGroundTruth( const std::string& filename )
+void ShapeMatcher::loadGroundTruth( const std::string& filename )
 {
 	ifstream fin(filename.c_str());
 	if (!fin) {
@@ -3842,7 +3842,7 @@ void DiffusionShapeMatcher::loadGroundTruth( const std::string& filename )
 	m_bHasGroundTruth = true;
 }
 
-void DiffusionShapeMatcher::autoGroundTruth()
+void ShapeMatcher::autoGroundTruth()
 {
 	assert(pOriginalMesh[0]->getMeshSize() == pOriginalMesh[1]->getMeshSize());
 	int meshSize = pOriginalMesh[0]->getMeshSize();

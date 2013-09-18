@@ -707,7 +707,7 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 	return false;
 }
 
-void GLMeshWidget::drawCorrespondences( const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
+void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
 {
 	if (shapeMatcher == NULL || g_task != TASK_REGISTRATION) return;
 

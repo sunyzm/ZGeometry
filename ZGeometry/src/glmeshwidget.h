@@ -4,7 +4,7 @@
 #include <ZMesh/ZMesh.h>
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
-#include "DiffusionShapeMatcher.h"
+#include "ShapeMatcher.h"
 
 class GLMeshWidget : public QGLWidget
 {
@@ -27,7 +27,7 @@ public:
 	~GLMeshWidget();
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
-	void setShapeMatcher(DiffusionShapeMatcher* p) { pDSM = p; }
+	void setShapeMatcher(ShapeMatcher* p) { pDSM = p; }
 	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
 
 protected:
@@ -43,7 +43,7 @@ protected:
 	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
-	void drawCorrespondences(const DiffusionShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
+	void drawCorrespondences(const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
 
 signals:
 	void vertexPicked1(int pRef);
@@ -56,7 +56,7 @@ private:
 
 	std::vector<DifferentialMeshProcessor*> vpMP;
 	std::vector<RenderSettings*> vpRS;
-	DiffusionShapeMatcher* pDSM;
+	ShapeMatcher* pDSM;
 	int m_num_meshes;
 
 	CArcball		g_arcball;

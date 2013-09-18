@@ -11,7 +11,8 @@
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
-#include "DiffusionShapeMatcher.h"
+#include "ShapeMatcher.h"
+#include "ShapeEditor.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -127,7 +128,7 @@ private:
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
-	DiffusionShapeMatcher					mShapeMatcher;
+	ShapeMatcher					mShapeMatcher;
 
 	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 

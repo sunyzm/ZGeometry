@@ -85,14 +85,14 @@ public:
 	void para_computeHKS(const std::vector<double>& times);
 };
 
-class DiffusionShapeMatcher
+class ShapeMatcher
 {
 public:
 	std::vector<MatchPair> mpSwap;
 	void swapMP() { std::swap(m_vFeatureMatchingResults[m_nAlreadyMatchedLevel], mpSwap); }
 public:
-	DiffusionShapeMatcher();
-	~DiffusionShapeMatcher();
+	ShapeMatcher();
+	~ShapeMatcher();
 
 	/* core functions */
 	void    initialize(DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep);
