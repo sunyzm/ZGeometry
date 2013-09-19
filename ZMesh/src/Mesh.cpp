@@ -132,8 +132,7 @@ std::vector<const CFace*> CVertex::getAdjacentFaces() const
 void CVertex::calcNormal()
 {
 	Vector3D v;
-	for (int j = 0; j < m_nValence; ++j)
-	{
+	for (int j = 0; j < m_nValence; ++j) {
 		CFace* pF = m_HalfEdges[j]->getAttachedFace();
 		Vector3D cv = (pF->getVertex(0)->getPosition() + pF->getVertex(1)->getPosition() + pF->getVertex(2)->getPosition()) / 3.0;
 		double wt = 1.0 / (cv - m_vPosition).length();
@@ -145,10 +144,8 @@ void CVertex::calcNormal()
 
 bool CVertex::judgeOnBoundary()
 {
-	for (vector<CHalfEdge*>::const_iterator iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter)
-	{
-		if ((*iter)->getTwinHalfEdge() == NULL || false == (*iter)->getTwinHalfEdge()->isValid())
-		{
+	for (auto iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter) {
+		if ((*iter)->getTwinHalfEdge() == NULL || false == (*iter)->getTwinHalfEdge()->isValid()) {
 			m_bIsBoundary = true;
 			return true;
 		}
@@ -632,36 +629,39 @@ CMesh::CMesh( const CMesh& oldMesh )
 
 CMesh::~CMesh()
 {
+	std::cout << "Destroying Mesh '" + m_meshName << "'... ";
 	clearMesh();	
-	std::cout << "Mesh '" + m_meshName + "' destroyed!" << std::endl;
+	std::cout << "Finished!" << std::endl;
 }
 
-bool CMesh::Load(string sFileName)
+bool CMesh::Load( const std::string& sFileName )
 {
 	clearMesh();
 	
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
+
+	bool retVal = false;
 	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
-		return loadFromOBJ(sFileName);
+		retVal = loadFromOBJ(sFileName);
 	}
 	else if (ext == ".m" || ext == ".M") {
-		return loadFromM(sFileName);
+		retVal = loadFromM(sFileName);
 	}
 	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") {
-		return loadFromPLY(sFileName);
+		retVal = loadFromPLY(sFileName);
 	}
 	else if (ext == ".vert" || ext == ".VERT") {
-		return loadFromVERT(sFileName);
+		retVal = loadFromVERT(sFileName);
 	}
 	else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
-		return loadFromOFF(sFileName);
+		retVal = loadFromOFF(sFileName);
 	}
 	else 
 		throw runtime_error("Unrecognizable file extension!");
 	
-	return false;
+	return retVal;
 }
 
 bool CMesh::loadFromOBJ(std::string sFileName)
@@ -745,7 +745,8 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
 
-	return construct();
+	bool retVal = construct();
+	return retVal;
 }
 
 bool CMesh::loadFromPLY( string sFileName )
@@ -1369,13 +1370,11 @@ bool CMesh::construct()
 		if(pV->m_nValence != pV->m_HalfEdges.size())
 			throw logic_error("Error: CMesh::construct; pV->m_nValence != pV->m_HalfEdges.size()");
 
-		if (pV->m_nValence == 0)
-		{
+		if (pV->m_nValence == 0) {
 			delete pV;
 			iter = m_vVertices.erase(iter);
 			continue;
-		}
-		
+		}		
 		//pV->judgeOnBoundary();
 		++iter;
 	} //for each vertex
@@ -1383,11 +1382,8 @@ bool CMesh::construct()
 	assignElementsIndex();
 	this->m_bIsPointerVectorExist = true;
 
-	gatherStatistics();
-
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
-	gatherStatistics2();
 
 	//findHoles();
 
@@ -1578,9 +1574,49 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	}
 }
 
+void CMesh::calVertexCurvature( int vIndex )
+{
+	const double pi = ZGeom::PI;
+	double sum = 0.0;		// sum of attaching corner's angle
+	double amix = 0.0;
+	Vector3D kh;
+	CVertex* vi = m_vVertices[vIndex];
+
+	if(vi->isOnBoundary()) {
+	// boundary vertex has zero curvature
+		vi->m_vGaussCurvature = 0.0;	//(pi - sum)/amix;
+		vi->m_vMeanCurvature = 0.0;
+		return;
+	}
+
+	for( int j = 0; j < vi->m_nValence; j++ ) {
+		CHalfEdge* e0 = vi->getHalfEdge(j);
+		CHalfEdge* e1 = e0->m_eNext;
+		CHalfEdge* e2 = e1->m_eNext;
+		double len0 = e0->getLength();
+		double len1 = e1->getLength();
+		double len2 = e2->getLength();
+
+		// compute corner angle by cosine law 
+		double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
+		sum += corner;
+		double cota, cotc;
+		amix += calAreaMixed(len0, len1, len2, cota, cotc);
+
+		CVertex* pt1 = e1->vert(0);
+		CVertex* pt2 = e1->vert(1);
+		kh += (vi->getPosition() - pt1->getPosition()) * cota + (vi->getPosition() - pt2->getPosition()) * cotc;
+	}
+
+	vi->m_vGaussCurvature = (2.0 * pi - sum) / amix;
+	kh = kh / (2.0 * amix);
+	vi->m_vMeanCurvature = kh.length() / 2.0;
+}
+
+#if 0
 bool CMesh::calVertexCurvature(int vi)
 {
-	const double pi = 3.14159265358979323846;
+	const double pi = ZGeom::PI;
 	double sum = 0.0;		// sum of attaching corner's angle
 	double amix = 0.0;
 	Vector3D kh;
@@ -1617,6 +1653,7 @@ bool CMesh::calVertexCurvature(int vi)
 	}
 	return true;
 }
+#endif
 
 double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
 {
@@ -3266,8 +3303,7 @@ void CMesh::gatherStatistics()
 	double center_x = 0.0, center_y = 0.0, center_z = 0.0;
 	Vector3D boundBox(0.0, 0.0, 0.0);
 
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i) {
 		m_vVertices[i]->calcNormal();		//calculate vertex normal
 		center_x += m_vVertices[i]->m_vPosition.x;
 		center_y += m_vVertices[i]->m_vPosition.y;
@@ -3288,8 +3324,7 @@ void CMesh::gatherStatistics()
 	boundBox.y = abs(boundBox.y - center_y);
 	boundBox.z = abs(boundBox.z - center_z);
 
-	for (int i = 0; i < m_nHalfEdge; ++i)
-	{
+	for (int i = 0; i < m_nHalfEdge; ++i) {
 		edgeLength += m_vHalfEdges[i]->getLength();
 	}
 	edgeLength /= m_vHalfEdges.size();
@@ -3298,6 +3333,9 @@ void CMesh::gatherStatistics()
 	addAttr(boundaryCount, UNIFORM, StrAttrBoundaryEdgeCount);
 	addAttr(Vector3D(center_x, center_y, center_z), UNIFORM, StrAttrMeshCenter);
 	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
+
+	for (int i = 0; i < m_nVertex; ++i)
+		this->calVertexCurvature(i);
 
 //	for (int i = 0; i < m_nVertex; ++i)
 //		this->calVertexCurvature(i);
@@ -3763,13 +3801,6 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 		vJJ.push_back(i+1);
 		vSS.push_back(diagW[i]);
 	}
-}
-
-void CMesh::gatherStatistics2()
-{
-	assert(m_bIsIndexArrayExist);
-	for (int i = 0; i < m_nVertex; ++i)
-		this->calVertexCurvature(i);
 }
 
 double CMesh::calFaceArea( int i ) const

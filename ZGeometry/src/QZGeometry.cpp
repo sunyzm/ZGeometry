@@ -1670,7 +1670,7 @@ void QZGeometryWindow::addMesh()
 	timer.startTimer();
 	CMesh& mesh = *mMeshes[cur_obj];
 	mesh.Load(filenames.begin()->toStdString());
-	mesh.scaleEdgeLenToUnit();
+	mesh.scaleAreaToVertexNum();
 	mesh.gatherStatistics();
 	timer.stopTimer();
 	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;

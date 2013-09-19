@@ -279,7 +279,7 @@ public:
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh);
 	void		cloneFrom(const CMesh* oldMesh);
-	bool	    Load(std::string sFileName);			// load from file
+	bool Load(const std::string& sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
@@ -382,7 +382,6 @@ public:
 
 	/* geometry query and processing */
 	void	    gatherStatistics();
-	void        gatherStatistics2();
 	bool        hasBoundary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
@@ -400,7 +399,7 @@ public:
 	double		getVolume();	// calculate volume (area) of a surface
 	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	bool		calVertexCurvature( int i );			// calculate number i-th vertex's Gaussian and mean curvature
+	void		calVertexCurvature( int vIndex );			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
