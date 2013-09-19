@@ -6,6 +6,7 @@
 #include <cmath>
 #include <engine.h>
 #include <ZMesh/ZMesh.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include "Laplacian.h"
 #include "MatlabWrapper.h"

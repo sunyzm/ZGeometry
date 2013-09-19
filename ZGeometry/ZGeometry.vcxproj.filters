@@ -80,10 +80,13 @@
     <ClCompile Include="src\global.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="matching.cpp">
+    <ClCompile Include="src\ShapeMatcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\ShapeMatcher.cpp">
+    <ClCompile Include="src\ShapeEditor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\matching.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -150,13 +153,13 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="MatchTestCase.h">
+    <ClInclude Include="src\ShapeEditor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="matching.h">
+    <ClInclude Include="src\matching.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ShapeEditor.h">
+    <ClInclude Include="src\MatchTestCase.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

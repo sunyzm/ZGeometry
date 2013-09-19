@@ -98,7 +98,7 @@
     <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(SolutionDir)ZGeom\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)d</TargetName>
@@ -114,7 +114,7 @@
     <SourcePath>$(VCInstallDir)atlmfc\src\mfc;$(VCInstallDir)atlmfc\src\mfcm;$(VCInstallDir)atlmfc\src\atl;$(VCInstallDir)crt\src;</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZMesh;$(SolutionDir)ZUtil\include;$(SolutionDir)ZGeom\include;$(IncludePath)</IncludePath>
     <OutDir>$(ProjectDir)lib\</OutDir>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
     <TargetName>ZMesh$(PlatformArchitecture)</TargetName>
@@ -153,7 +153,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_SCL_SECURE_NO_WARNINGS;WIN32;_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ZUtil\include;$(SolutionDir)ZGeom\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -209,7 +210,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>$(SolutionDir)ZUtil\include;$(SolutionDir)ZGeom\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

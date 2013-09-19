@@ -7,9 +7,12 @@
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <ZUtil/zassert.h>
 #include <ZGeom/arithmetic.h>
 
 using namespace std;
+
+const std::string CMesh::StrAttrBoundaryEdgeCount = "boundary_edge_count";
 
 
 //////////////////////////////////////////////////////
@@ -1497,22 +1500,19 @@ int CMesh::calEdgeCount(  )
 	return -1;
 }
 
-int CMesh::getBoundaryNum() const
+int CMesh::calBoundaryNum()
 {
 	int boundaryNum = 0;
-
 	std::set<int> boundaryIndexSet;
-	for( int i = 0; i < m_nVertex; i++ )
-	{
-		if( m_pVertex[i].m_bIsBoundary )
+	for( int i = 0; i < m_nVertex; i++ ) {
+		if( m_vVertices[i]->m_bIsBoundary )
 			boundaryIndexSet.insert( i );
 	}
+
 	int currentIndex, nextIndex, edgeIndex;
-	for( int i = 0; i<m_nVertex; i++ )
-	{
+	for( int i = 0; i < m_nVertex; i++ ) {
 		// find boundary loop from boundary vertex i if it is not in any loop 
-		if(	m_pVertex[i].m_bIsBoundary && boundaryIndexSet.find(i)!=boundaryIndexSet.end() )	
-		{
+		if( m_vVertices[i]->m_bIsBoundary && boundaryIndexSet.find(i) != boundaryIndexSet.end()) {
 			currentIndex = i;
 			nextIndex = i;
 			do {
@@ -1520,17 +1520,22 @@ int CMesh::getBoundaryNum() const
 				std::set<int>::iterator it;
 				it = boundaryIndexSet.find( currentIndex );
 				boundaryIndexSet.erase( it );
-				for( short j=0; j<m_pVertex[currentIndex].m_nValence; j++ )
+				
+				for( int j = 0; j < m_vVertices[i]->m_nValence; j++ )
 				{
-					edgeIndex = m_pVertex[currentIndex].m_piEdge[j];
-					if( m_pHalfEdge[edgeIndex].m_iTwinEdge==-1 )
+					CHalfEdge* he = m_vVertices[i]->getHalfEdge(j);
+					if( he->getTwinHalfEdge() == NULL ) {
+						edgeIndex = he->getIndex();
 						break;
+					}
 				}
-				nextIndex = m_pHalfEdge[edgeIndex].m_iVertex[1];
-			} while( nextIndex!=i );
+				nextIndex = m_vHalfEdges[edgeIndex]->vert(1)->getIndex();
+			} while( nextIndex != i );
 			boundaryNum++;
 		}
 	}
+
+	addAttr(boundaryNum, UNIFORM, StrAttrBoundaryEdgeCount);
 	return boundaryNum;
 }
 
@@ -1575,7 +1580,7 @@ int CMesh::getEulerNum(  )
 
 int CMesh::getMeshGenus(  )
 {
-	int b = getBoundaryNum();
+	int b = calBoundaryNum();
 	int euler_number = getEulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
@@ -3157,44 +3162,32 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 	m_bBox = oldMesh->m_bBox;
 	m_avgEdgeLen = oldMesh->m_avgEdgeLen;
 
-	assert(oldMesh->m_bIsPointerVectorExist);
-	
+	assert(oldMesh->m_bIsPointerVectorExist);	
 	m_bIsPointerVectorExist = true;
-
-	if (m_bIsPointerVectorExist)
+	if (m_bIsPointerVectorExist) 
 	{
-		assert(m_nVertex == oldMesh->m_vVertices.size()
-			&& m_nHalfEdge == oldMesh->m_vHalfEdges.size()
-			&& m_nFace == oldMesh->m_vFaces.size());
-
-		for (int i = 0; i < m_nVertex; ++i)
-		{
+		for (int i = 0; i < m_nVertex; ++i) {
 			this->m_vVertices.push_back(new CVertex(*oldMesh->m_vVertices[i]));
 		}
-		for (int i = 0; i < m_nFace; ++i)
-		{
+		for (int i = 0; i < m_nFace; ++i) {
 			this->m_vFaces.push_back(new CFace(*oldMesh->m_vFaces[i]));
 		}
-		for (int i = 0; i < m_nHalfEdge; ++i)
-		{
+		for (int i = 0; i < m_nHalfEdge; ++i) {
 			this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh->m_vHalfEdges[i]));
 		}
-		for (int i = 0; i < m_nVertex; ++i)
-		{
+
+		for (int i = 0; i < m_nVertex; ++i) {
 			CVertex* curV = this->m_vVertices[i];
 			const CVertex* oldV = oldMesh->m_vVertices[i];
-			for (int j = 0; j < oldV->m_nValence; ++j)
-			{
+			for (int j = 0; j < oldV->m_nValence; ++j) {
 				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
 				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
-		for (int i = 0; i < m_nFace; ++i)
-		{
+		for (int i = 0; i < m_nFace; ++i) {
 			CFace* curF = this->m_vFaces[i];
 			const CFace* oldF = oldMesh->m_vFaces[i];
-			for (int j = 0; j < oldF->m_nType; ++j)
-			{
+			for (int j = 0; j < oldF->m_nType; ++j) {
 				int vidx = oldF->m_Vertices[j]->m_vIndex;
 				int eidx = oldF->m_HalfEdges[j]->m_eIndex;
 
@@ -3204,8 +3197,7 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 				curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
-		for (int i = 0; i < m_nHalfEdge; ++i)
-		{
+		for (int i = 0; i < m_nHalfEdge; ++i) {
 			CHalfEdge* curE = this->m_vHalfEdges[i];
 			const CHalfEdge* oldE = oldMesh->m_vHalfEdges[i];
 			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
@@ -3221,8 +3213,7 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 			curE->m_eNext = this->m_vHalfEdges[neidx];
 			curE->m_ePrev = this->m_vHalfEdges[peidx];
 			curE->m_Face = this->m_vFaces[fidx];
-			if (oldE->m_eTwin != NULL)
-			{
+			if (oldE->m_eTwin != NULL) {
 				int teidx = oldE->m_eTwin->m_eIndex;
 				curE->m_eTwin = this->m_vHalfEdges[teidx];
 			}
@@ -3343,7 +3334,8 @@ void CMesh::gatherStatistics()
 	this->m_avgEdgeLen = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
-	this->m_nBoundaryEdgeNum = boundaryCount;
+
+	addAttr(boundaryCount, UNIFORM, StrAttrBoundaryEdgeCount);
 
 //	for (int i = 0; i < m_nVertex; ++i)
 //		this->calVertexCurvature(i);
@@ -3651,9 +3643,13 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	std::cout << std::endl;
 }
 
-bool CMesh::hasBounary() const
+bool CMesh::hasBoundary() const
 {
-	return getBoundaryNum() > 0;
+	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryEdgeCount);
+	if ( attrBoundary == NULL)
+		return true;	
+	else 
+		return attrBoundary->getValue() > 0;
 }
 
 void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
@@ -3810,8 +3806,6 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 void CMesh::gatherStatistics2()
 {
 	assert(m_bIsIndexArrayExist);
-
-	this->m_nBoundaryEdgeNum = getBoundaryNum();
 	for (int i = 0; i < m_nVertex; ++i)
 		this->calVertexCurvature(i);
 }
@@ -3821,3 +3815,29 @@ double CMesh::calFaceArea( int i ) const
 	const CFace* f = m_vFaces[i];
 	return f->computeArea();
 }
+
+void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
+{
+	coords.resize(m_nVertex);
+	std::vector<double>& vx = coords.getCoordFunc(0);
+	std::vector<double>& vy = coords.getCoordFunc(1);
+	std::vector<double>& vz = coords.getCoordFunc(2);
+
+	for (int i = 0; i < m_nVertex; ++i) {
+		const Vector3D& vCoord = m_vVertices[i]->getPosition();
+		vx[i] = vCoord.x;
+		vy[i] = vCoord.y;
+		vz[i] = vCoord.z;
+	}
+}
+
+void CMesh::setVertCoordinates( const MeshCoordinates& coords )
+{
+	ZUtil::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
+	const std::vector<double>& vx = coords.getCoordFunc(0);
+	const std::vector<double>& vy = coords.getCoordFunc(1);
+	const std::vector<double>& vz = coords.getCoordFunc(2);
+	
+	setVertexCoordinates(vx, vy, vz);
+}
+

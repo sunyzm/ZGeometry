@@ -203,16 +203,17 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="matching.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\global.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\DifferentialMeshProcessor.cpp" />
+    <ClCompile Include="src\matching.cpp" />
     <ClCompile Include="src\MatlabWrapper.cpp" />
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
     <ClCompile Include="src\RenderSettings.cpp" />
+    <ClCompile Include="src\ShapeEditor.cpp" />
     <ClCompile Include="src\ShapeMatcher.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -776,9 +777,9 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="matching.h" />
-    <ClInclude Include="MatchTestCase.h" />
-    <ClInclude Include="ShapeEditor.h" />
+    <ClInclude Include="src\matching.h" />
+    <ClInclude Include="src\MatchTestCase.h" />
+    <ClInclude Include="src\ShapeEditor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

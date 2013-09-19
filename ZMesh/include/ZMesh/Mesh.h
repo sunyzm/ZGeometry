@@ -14,6 +14,7 @@
 #include <functional>
 #include <unordered_map>
 #include <ZUtil/color.h>
+#include "ZGeom/Vec3.h"
 #include "Geometry.h"
 #include "Quat.h"
 #include "MeshAttr.h"
@@ -23,6 +24,42 @@ const int MAX_RING_NUMBER = 15;
 const int MAX_HOLE_SIZE = 20;
 
 typedef std::vector<int> VectorInt;
+
+class MeshCoordinates
+{
+public:
+	int size() const { return mSize; }
+	void resize(int n) {mSize = n; mCoordX.resize(mSize); mCoordY.resize(mSize); mCoordZ.resize(mSize); }
+
+	const std::vector<double>& getCoordFunc(int i) const {
+		switch (i)
+		{
+		case 0: return mCoordX;
+		case 1: return mCoordY;
+		case 2: return mCoordZ;
+		default: throw std::logic_error("Invalid mesh coordinate");
+		}
+	}
+
+	std::vector<double>& getCoordFunc(int i) {
+		switch (i)
+		{
+		case 0: return mCoordX;
+		case 1: return mCoordY;
+		case 2: return mCoordZ;
+		default: throw std::logic_error("Invalid mesh coordinate");
+		}
+	}
+
+	ZGeom::Vec3d getCoordinate(int k) const {
+		if (k < 0 || k >= mSize) throw std::logic_error("Vertex index out of bound!");
+		return ZGeom::Vec3d(mCoordX[k], mCoordY[k], mCoordZ[k]);
+	}
+
+private:
+	int mSize;
+	std::vector<double> mCoordX, mCoordY, mCoordZ;
+};
 
 class GeoNote
 {
@@ -136,6 +173,8 @@ public:
 	double		getLength();
 	bool		isValid() const { return m_bIsValid; }
 	int         getIndex() const { return m_eIndex; }
+	CVertex*	vert(int i) const { return m_Vertices[i]; }
+
 private:
 	// -- fields -- //
 	CVertex*	m_Vertices[2];	//starting and ending vertices
@@ -202,7 +241,9 @@ private:
 //////////////////////////////////////////////////////
 class CMesh 
 {
+public:
 	friend class MeshPyramid;
+	static const std::string StrAttrBoundaryEdgeCount;
 
 ////////////////   fields    ////////////////
 private:
@@ -213,7 +254,6 @@ private:
 	bool		m_bIsPointerVectorExist;		// pointer vectors representation
 	bool		m_bIsIndexArrayExist;			// index array representation
 	bool		m_bSeparateStorage;		
-	int			m_nBoundaryEdgeNum;
 
 	int		    m_nVertex;				// number of vertices
 	int		    m_nHalfEdge;			// number of half-edges
@@ -261,7 +301,7 @@ public:
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
 	double				getAvgEdgeLength() const { return m_avgEdgeLen; }
-	int					getBoundaryNum() const;    // get number of boundary edges
+	int					calBoundaryNum();    // compute number of boundary edges
 	int					getBoundaryVertexNum() const; // get number of boundary vertices
 	const Vector3D&		getBoundingBox() const { return m_bBox; }
 	const Vector3D&		getCenter() const { return m_Center; }
@@ -271,6 +311,8 @@ public:
 	VectorInt           getRingVertexIndex(int v, int ring) const;
 	VectorInt	        getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
 	void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+	void				getVertCoordinates(MeshCoordinates& coords) const;
+	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
@@ -288,7 +330,7 @@ public:
 
 	template<typename T> 
 	void addAttr(const T& data, AttrRate rate, const std::string& name) {
-		removeAttr(name);
+		removeAttr<T>(name);
 		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
 	}
 
@@ -309,7 +351,22 @@ public:
 	}
 
 	template<typename T>
+	const MeshAttr<T>* getAttr(const std::string& name) const {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
+		else return nullptr;
+	}
+
+	template<typename T>
 	T& getAttrValue(const std::string& name) {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) 
+			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
+		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
+	}
+
+	template<typename T>
+	const T& getAttrValue(const std::string& name) const {
 		auto iter = mAttributes.find(name);
 		if (iter != mAttributes.end()) 
 			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
@@ -319,7 +376,7 @@ public:
 	/* geometry query and processing */
 	void	    gatherStatistics();
 	void        gatherStatistics2();
-	bool        hasBounary() const;
+	bool        hasBoundary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices

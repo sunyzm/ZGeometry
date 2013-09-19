@@ -503,7 +503,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
 	// draw boundary edges in dark color
 	glDisable(GL_LIGHTING);
-	if (tmesh->hasBounary())   //highlight boundary edge 
+	if (tmesh->hasBoundary())   //highlight boundary edge 
 	{
 		glBegin(GL_LINES);	
 		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {

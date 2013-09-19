@@ -10,8 +10,8 @@ template<typename T>
 class Vec2
 {
 public:
-	Vec2() : x(0.), y(0.) {}
-	Vec2(T x1, T y1) : x(x1), y(y1) {}
+	Vec2() : m_x(0.), m_y(0.) {}
+	Vec2(T x1, T y1) : m_x(x1), m_y(y1) {}
 
 	friend Vec2<T> operator + (const Vec2<T>& v1, const Vec2<T>& v2);
 	friend Vec2<T> operator - (const Vec2<T>& v1, const Vec2<T>& v2);
@@ -20,8 +20,10 @@ public:
 	friend Vec2<T> operator - (const Vec2<T>& v);
 	friend T dot(const Vec2<T>& v1, const Vec2<T>& v2);
 
-	T x() const { return this->x; }
-	T y() const { return this->y; }
+	T x() const { return m_x; }
+	T& x() { return m_x; }
+	T y() const { return m_y; }
+	T& y() { return m_y; }
 	const Vec2<T>& operator += (const Vec2<T>& v2);
 	const Vec2<T>& operator -= (const Vec2<T>& v2);
 	const Vec2<T>& operator *= (T lambda);
@@ -30,52 +32,52 @@ public:
 	T length() const;
 
 private:
-	T x, y;
+	T m_x, m_y;
 };
 
 template<typename T>
 T& Vec2<T>::operator[]( unsigned i ) const
 {
 	assert(i == 0 || i == 1);
-	if (i == 0) return this->x;
-	else if (i == 1) return this->y;
+	if (i == 0) return this->m_x;
+	else if (i == 1) return this->m_y;
 }
 
 template<typename T>
 T Vec2<T>::length() const
 {
-	return std::sqrt(x*x + y*y);
+	return std::sqrt(m_x*m_x + m_y*m_y);
 }
 
 template<typename T>
 const Vec2<T>& Vec2<T>::operator/=( T lambda )
 {
-	this->x /= lambda;
-	this->y /= lambda;
+	this->m_x /= lambda;
+	this->m_y /= lambda;
 	return *this;
 }
 
 template<typename T>
 const Vec2<T>& Vec2<T>::operator*=( T lambda )
 {
-	this->x *= lambda;
-	this->y *= lambda;
+	this->m_x *= lambda;
+	this->m_y *= lambda;
 	return *this;
 }
 
 template<typename T>
 const Vec2<T>& Vec2<T>::operator-=( const Vec2<T>& v2 )
 {
-	this->x -= v2.x;
-	this->y -= v2.y;
+	this->m_x -= v2.x;
+	this->m_y -= v2.y;
 	return *this;
 }
 
 template<typename T>
 const Vec2<T>& Vec2<T>::operator+=( const Vec2<T>& v2 )
 {
-	this->x += v2.x;
-	this->y += v2.y;
+	this->m_x += v2.x;
+	this->m_y += v2.y;
 	return *this;
 }
 

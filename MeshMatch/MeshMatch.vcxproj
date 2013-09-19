@@ -76,7 +76,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -90,7 +90,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
