@@ -129,6 +129,7 @@ private:
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
 	ShapeMatcher					mShapeMatcher;
+	ShapeEditor						mShapeEditor;
 
 	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 

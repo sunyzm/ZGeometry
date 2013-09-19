@@ -13,6 +13,7 @@
 using namespace std;
 
 const std::string CMesh::StrAttrBoundaryEdgeCount = "boundary_edge_count";
+const std::string CMesh::StrAttrAvgEdgeLength     = "average_edge_length";
 
 
 //////////////////////////////////////////////////////
@@ -627,30 +628,6 @@ CMesh::CMesh() :
 	m_meshName(""),
 	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
 {
-}
-
-CMesh::CMesh(const CMesh* pMesh) : m_bIsPointerVectorExist(false)
-{
-	m_nVertex = pMesh->m_nVertex;				//number of vertices
-	m_pVertex = new CVertex[m_nVertex];			//array of vertices
-	for(int i = 0; i < m_nVertex; i++)
-		m_pVertex[i] = pMesh->m_pVertex[i];
-
-	m_nHalfEdge = pMesh->m_nHalfEdge;					//number of half-edges
-	m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 			//array of half-edges
-	for(int i = 0; i < m_nHalfEdge; i++)
-		m_pHalfEdge[i] = pMesh->m_pHalfEdge[i];
-
-	m_nFace = pMesh->m_nFace;	 				//number of mesh faces
-	m_pFace = new CFace[m_nFace];				//array of faces
-	for(int i = 0; i < m_nFace; i++)
-		m_pFace[i] = pMesh->m_pFace[i];
-
-	m_Center = pMesh->m_Center;
-	m_bBox = pMesh->m_bBox;
-	m_avgEdgeLen = pMesh->m_avgEdgeLen;
-
-	//buildConnectivity();
 }
 
 CMesh::CMesh( const CMesh& oldMesh )
@@ -1671,6 +1648,7 @@ double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
 bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>& Sv, double& Av, vector<double>& tw) const
 {
 	if( i < 0 || i >= m_nVertex) return false;
+	double avgEdgeLen = getAvgEdgeLength();
 	double amix = 0.0;		// mixed area
 	int bs = -1;
 	for( int j = 0; j < m_pVertex[i].m_nValence; j++ ) 
@@ -1685,9 +1663,9 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 			bs = e2;
 		}
 		// get edge lengths
-		double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
-		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+		double len0 = getHalfEdgeLen(e0) / avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 		double cota, cota1 = 0, cota2 = 0;
 		amix += calHalfAreaMixed(len0, len1, len2, cota1);
 
@@ -1698,8 +1676,8 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 			e1 = m_pHalfEdge[e0].m_iNextEdge;
 			e2 = m_pHalfEdge[e1].m_iNextEdge;
 			// get edge lengths
-			len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-			len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+			len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+			len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 			// compute corner angle by cotangent law 
 			amix += calHalfAreaMixed(len0, len1, len2, cota2);
 		}
@@ -1723,9 +1701,9 @@ bool CMesh::calVertexLBO(int i, vector<int>& Iv, vector<int>& Jv, vector<double>
 		int vj = m_pHalfEdge[e2].m_iVertex[1];
 		assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 		// get edge lengths
-		double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
-		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+		double len0 = getHalfEdgeLen(bs) / avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 		// compute corner angle by cotangent law 
 		double cota2;
 		amix += calHalfAreaMixed(len0, len1, len2, cota2);
@@ -1750,6 +1728,7 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 {
 	if( i < 0 || i >= m_nVertex) return false;
 
+	double avgEdgeLen = getAvgEdgeLength();
 	double amix = 0.0;		// mixed area
 	int bs = -1;
 	for( int j = 0; j < m_pVertex[i].m_nValence; j++ ) 
@@ -1764,9 +1743,9 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 			bs = e2;
 		}
 		// get edge lengths
-		double len0 = getHalfEdgeLen(e0) / m_avgEdgeLen;
-		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+		double len0 = getHalfEdgeLen(e0) / avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 		double cota, cota1 = 0, cota2 = 0;
 		amix += calHalfAreaMixed(len0, len1, len2, cota1);
 
@@ -1777,8 +1756,8 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 			e1 = m_pHalfEdge[e0].m_iNextEdge;
 			e2 = m_pHalfEdge[e1].m_iNextEdge;
 			// get edge lengths
-			len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-			len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+			len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+			len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 			// compute corner angle by cotangent law 
 			amix += calHalfAreaMixed(len0, len1, len2, cota2);
 		}
@@ -1802,9 +1781,9 @@ bool CMesh::calVertexLBO2( int i, std::vector<int>& Iv, std::vector<int>& Jv, st
 		int vj = m_pHalfEdge[e2].m_iVertex[1];
 		assert(vj == m_pHalfEdge[bs].m_iVertex[0]);
 		// get edge lengths
-		double len0 = getHalfEdgeLen(bs) / m_avgEdgeLen;
-		double len1 = getHalfEdgeLen(e1) / m_avgEdgeLen;
-		double len2 = getHalfEdgeLen(e2) / m_avgEdgeLen;
+		double len0 = getHalfEdgeLen(bs) / avgEdgeLen;
+		double len1 = getHalfEdgeLen(e1) / avgEdgeLen;
+		double len2 = getHalfEdgeLen(e2) / avgEdgeLen;
 		// compute corner angle by cotangent law 
 		double cota2;
 		amix += calHalfAreaMixed(len0, len1, len2, cota2);
@@ -3008,20 +2987,17 @@ void CMesh::assignElementsIndex()
 	for (int i = 0; i < m_nFace; ++i)
 		m_vFaces[i]->m_fIndex = i;
 
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i) {
 		CVertex* pv = m_vVertices[i];
 		if (pv->m_piEdge)
 			delete []pv->m_piEdge;
 		pv->m_piEdge = new int[pv->m_nValence];
-		for (int j = 0; j < pv->m_nValence; ++j)
-		{
+		for (int j = 0; j < pv->m_nValence; ++j) {
 			pv->m_piEdge[j] = pv->m_HalfEdges[j]->m_eIndex;
 		}
 	}
 
-	for (int i = 0; i < m_nHalfEdge; ++i)
-	{
+	for (int i = 0; i < m_nHalfEdge; ++i) {
 		CHalfEdge* he = m_vHalfEdges[i];
 		he->m_iVertex[0] = he->m_Vertices[0]->m_vIndex;
 		he->m_iVertex[1] = he->m_Vertices[1]->m_vIndex;
@@ -3031,11 +3007,9 @@ void CMesh::assignElementsIndex()
 		he->m_iFace = he->m_Face->m_fIndex;
 	}
 
-	for (int i = 0; i < m_nFace; ++i)
-	{
+	for (int i = 0; i < m_nFace; ++i) {
 		CFace *pf = m_vFaces[i];
-		for (int j = 0; j < pf->m_nType; ++j)
-		{
+		for (int j = 0; j < pf->m_nType; ++j) {
 			pf->m_piVertex[j] = pf->m_Vertices[j]->m_vIndex;
 			pf->m_piEdge[j] = pf->m_HalfEdges[j]->m_eIndex;
 		}
@@ -3056,10 +3030,11 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 
 	m_Center = oldMesh.m_Center;
 	m_bBox = oldMesh.m_bBox;
-	m_avgEdgeLen = oldMesh.m_avgEdgeLen;
-
+	
 	m_bIsPointerVectorExist = oldMesh.m_bIsPointerVectorExist;
 	m_bIsIndexArrayExist = oldMesh.m_bIsIndexArrayExist;
+
+	copyAttributes(oldMesh.mAttributes);
 
 	if (m_bIsPointerVectorExist)
 	{
@@ -3160,7 +3135,8 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 
 	m_Center = oldMesh->m_Center;
 	m_bBox = oldMesh->m_bBox;
-	m_avgEdgeLen = oldMesh->m_avgEdgeLen;
+	copyAttributes(oldMesh->mAttributes);
+
 
 	assert(oldMesh->m_bIsPointerVectorExist);	
 	m_bIsPointerVectorExist = true;
@@ -3331,10 +3307,10 @@ void CMesh::gatherStatistics()
 	}
 	edgeLength /= m_vHalfEdges.size();
 
-	this->m_avgEdgeLen = edgeLength;		//necessary
 	this->m_bBox = boundBox;
 	this->m_Center  = Vector3D(center_x, center_y, center_z);
 
+	addAttr(edgeLength, UNIFORM, StrAttrAvgEdgeLength);
 	addAttr(boundaryCount, UNIFORM, StrAttrBoundaryEdgeCount);
 
 //	for (int i = 0; i < m_nVertex; ++i)
@@ -3839,5 +3815,12 @@ void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 	const std::vector<double>& vz = coords.getCoordFunc(2);
 	
 	setVertexCoordinates(vx, vy, vz);
+}
+
+double CMesh::getAvgEdgeLength() const
+{
+	const MeshAttr<double>* attrAvgEdgeLen = getAttr<double>(StrAttrAvgEdgeLength);
+	if (attrAvgEdgeLen == NULL) throw std::logic_error("Attribute of average edge length not available!");
+	return attrAvgEdgeLen->getValue();
 }
 

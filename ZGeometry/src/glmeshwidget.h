@@ -5,6 +5,7 @@
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"
+#include "ShapeEditor.h"
 
 class GLMeshWidget : public QGLWidget
 {
@@ -25,10 +26,16 @@ public:
 
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
-	void fieldView(const Vector3D &center, const Vector3D &bbox);
-	void addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS);
-	void setShapeMatcher(ShapeMatcher* p) { pDSM = p; }
+
+	void setup(std::vector<DifferentialMeshProcessor*>* processors, std::vector<RenderSettings*>* rs, ShapeMatcher* matcher, ShapeEditor* editor) {
+		mProcessors = processors;
+		mRenderSettings = rs;
+		mMatcher = matcher;
+		mEditor = editor;
+	}
+
 	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
+	void fieldView(const Vector3D &center, const Vector3D &bbox);
 
 protected:
 	void initializeGL();
@@ -54,10 +61,10 @@ private:
 	void setupViewport(int width, int height);
 	bool glPick(int x, int y, Vector3D& _p, int obj = 0);
 
-	std::vector<DifferentialMeshProcessor*> vpMP;
-	std::vector<RenderSettings*> vpRS;
-	ShapeMatcher* pDSM;
-	int m_num_meshes;
+	std::vector<DifferentialMeshProcessor*>* mProcessors;
+	std::vector<RenderSettings*>* mRenderSettings;
+	ShapeMatcher* mMatcher;
+	ShapeEditor* mEditor;
 
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;

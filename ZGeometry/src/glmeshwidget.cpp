@@ -68,7 +68,6 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bDrawRegistration = false;
 
 	m_nMeshLevel = 0;
-	m_num_meshes = 0;
 
 	setAutoFillBackground(false);
 }
@@ -78,17 +77,14 @@ GLMeshWidget::~GLMeshWidget()
 
 }
 
-void GLMeshWidget::addMesh(DifferentialMeshProcessor* pMP, RenderSettings* pRS)
-{
-	vpMP.push_back(pMP);
-	vpRS.push_back(pRS);
-	m_num_meshes = vpMP.size();
-}
-
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
+
+	std::vector<DifferentialMeshProcessor*>& vpMP = *mProcessors;
+	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	int meshCount = vpMP.size();
 
 	if (editMode == QZ_MOVE)
 	{
@@ -119,7 +115,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			Vector3D p;
 			int obj_index = -1;
 
-			if (m_num_meshes >= 2)
+			if (meshCount >= 2)
 			{
 				if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
 				else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
@@ -167,7 +163,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		/// for picking up a vertex
 		int obj_index = -1;
 		
-		if (m_num_meshes >= 2)
+		if (meshCount >= 2)
 		{
 			if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
 			else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
@@ -201,7 +197,10 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
-	
+	std::vector<DifferentialMeshProcessor*>& vpMP = *mProcessors;
+	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	int meshCount = vpMP.size();
+
 	if (editMode == QZ_PICK) return;
 	else if (editMode == QZ_MOVE)
 	{	
@@ -211,7 +210,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		if (gButton == Qt::LeftButton) 
 		{
 			rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-			for (int i = 0; i < m_num_meshes; ++i)
+			for (int i = 0; i < meshCount; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_rot = rot * vpRS[i]->obj_rot;
@@ -223,7 +222,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < m_num_meshes; ++i)
+			for (int i = 0; i < meshCount; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -235,7 +234,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < m_num_meshes; ++i)
+			for (int i = 0; i < meshCount; ++i)
 			{
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -245,14 +244,14 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	else if (editMode == QZ_DRAG)
 	{
 		int obj_index = -1;
-		if (m_num_meshes >= 2)
+		if (meshCount >= 2)
 		{
 			if (vpRS[0]->selected && !vpRS[1]->selected)
 				obj_index = 0;
 			else if (!vpRS[0]->selected && vpRS[1]->selected)
 				obj_index = 1;
 		}
-		else if (m_num_meshes == 1 && vpRS[0]->selected) 
+		else if (meshCount == 1 && vpRS[0]->selected) 
 			obj_index = 0;
 		else return;
 
@@ -300,13 +299,16 @@ void GLMeshWidget::mouseReleaseEvent( QMouseEvent *event )
 
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
 {
+	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	int meshCount = mProcessors->size();
+
 	if (event->modifiers() & Qt::ControlModifier)
 	{
 		int numSteps = event->delta();
-		float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / this->height();
+		float scale = 5.0 * (*mProcessors)[0]->getMesh_const()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		for (int i = 0; i < m_num_meshes; ++i)
+		for (int i = 0; i < meshCount; ++i)
 		{
 			if (vpRS[i]->selected)
 				vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
@@ -412,17 +414,18 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (g_task == TASK_EDITING || g_task == TASK_VIEWING) {
-		for (int obj = 0; obj < m_num_meshes; ++obj) {
-			drawMeshExt(vpMP[obj], vpRS[obj]);
+		int meshCount = mProcessors->size();
+		for (int obj = 0; obj < meshCount; ++obj) {
+			drawMeshExt(mProcessors->at(obj), mRenderSettings->at(obj));
 		}		
 	}
 	else if (g_task == TASK_REGISTRATION) {
-		assert(m_num_meshes >= 2);
-		drawMeshExt(pDSM->getMeshProcessor(0, m_nMeshLevel), vpRS[0]);
-		drawMeshExt(pDSM->getMeshProcessor(1, m_nMeshLevel), vpRS[1]);
+		assert(mProcessors->size() == 2);
+		drawMeshExt(mMatcher->getMeshProcessor(0, m_nMeshLevel), mRenderSettings->at(0));
+		drawMeshExt(mMatcher->getMeshProcessor(1, m_nMeshLevel), mRenderSettings->at(1));
 
 		if (m_bDrawMatching || m_bDrawRegistration) {
-			drawCorrespondences(pDSM, vpRS[0], vpRS[1]);
+			drawCorrespondences(mMatcher, mRenderSettings->at(0), mRenderSettings->at(1));
 		}
 	}
 	
@@ -630,8 +633,8 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
 	}
 	painter->setPen(QPen(Qt::black, Qt::SolidLine));
-	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(vpRS[0]->sigMin));
-	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(vpRS[0]->sigMax));
+	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
+	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
 }
 
 // void GLMeshWidget::showEvent( QShowEvent *event )
@@ -663,13 +666,16 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 	QPainter painter(this);
 	drawGL();
 
-	if (m_bShowLegend && vpRS[0]->vDisplaySignature.empty())
-	drawLegend(&painter);
+	if (m_bShowLegend && mRenderSettings->at(0)->vDisplaySignature.empty()) 
+		drawLegend(&painter);
 }
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {
-	if (obj >= m_num_meshes || vpRS[obj]->selected == false) 
+	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	int meshCount = mProcessors->size();
+
+	if (obj >= meshCount || vpRS[obj]->selected == false) 
 		return false;
 
 	GLdouble  modelview[16], projection[16];

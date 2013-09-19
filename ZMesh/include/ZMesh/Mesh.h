@@ -244,6 +244,7 @@ class CMesh
 public:
 	friend class MeshPyramid;
 	static const std::string StrAttrBoundaryEdgeCount;
+	static const std::string StrAttrAvgEdgeLength;
 
 ////////////////   fields    ////////////////
 private:
@@ -253,7 +254,7 @@ private:
 
 	bool		m_bIsPointerVectorExist;		// pointer vectors representation
 	bool		m_bIsIndexArrayExist;			// index array representation
-	bool		m_bSeparateStorage;		
+	bool		m_bSeparateStorage;				// indicate wheather the point vectors and index arrays are stored separately 
 
 	int		    m_nVertex;				// number of vertices
 	int		    m_nHalfEdge;			// number of half-edges
@@ -261,7 +262,6 @@ private:
 
 	Vector3D    m_Center;
 	Vector3D    m_bBox;
-	double		m_avgEdgeLen;			// average edge length
 
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
@@ -274,7 +274,6 @@ private:
 public:
 	/* ---- constructors ---- */
 	CMesh();
-	CMesh(const CMesh* pMesh);
 	CMesh(const CMesh& oldMesh);
 	virtual ~CMesh();
 
@@ -300,7 +299,7 @@ public:
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
-	double				getAvgEdgeLength() const { return m_avgEdgeLen; }
+	double				getAvgEdgeLength() const;
 	int					calBoundaryNum();    // compute number of boundary edges
 	int					getBoundaryVertexNum() const; // get number of boundary vertices
 	const Vector3D&		getBoundingBox() const { return m_bBox; }
@@ -371,6 +370,15 @@ public:
 		if (iter != mAttributes.end()) 
 			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
 		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
+	}
+
+	void copyAttributes(const std::unordered_map<std::string, MeshAttrBase*>& attributeMaps) {
+		if (&mAttributes == &attributeMaps) return;
+
+		for (auto ma : attributeMaps) {
+			MeshAttrBase* a = ma.second->clone();
+			mAttributes.insert(std::make_pair(a->getAttrName(), a));
+		}
 	}
 
 	/* geometry query and processing */

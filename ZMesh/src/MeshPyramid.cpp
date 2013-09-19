@@ -127,7 +127,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 		MeshLevel meshLevel;
 		meshLevel.mesh = new CMesh;
 		CMesh* currentMesh = meshLevel.mesh;
-		currentMesh->cloneFrom(m_vMeshes[level-1].mesh);
+		currentMesh->cloneFrom(*m_vMeshes[level-1].mesh);
 		
 		m_ostr << "Clone level finished!" << endl;
 

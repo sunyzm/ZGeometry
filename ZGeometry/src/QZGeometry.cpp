@@ -54,7 +54,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	/* setup ui and connections */
 	ui.setupUi(this);
 	ui.centralWidget->setLayout(ui.mainLayout);
-	
+	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	
 	ui.spinBoxParameter->setMinimum(0);
@@ -284,7 +284,6 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		
 		mProcessors[obj]->init(&mesh, &mEngineWrapper);
 		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
-		ui.glMeshWidget->addMesh(mProcessors[obj], mRenderManagers[obj]);
 	}
 
 	/* ---- update mesh-dependent ui ---- */
@@ -316,7 +315,6 @@ void QZGeometryWindow::registerPreprocess()
 	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], mEngineWrapper.getEngine());
 	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 	mShapeMatcher.readInRandPair(rand_data_file);
-	ui.glMeshWidget->setShapeMatcher(&mShapeMatcher);
 
 	// ground truth 
 	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
@@ -900,14 +898,16 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 
 void QZGeometryWindow::clone()
 {
-	if (mMeshCount != 1) return;
+	if (mMeshCount != 1) {
+		std::cout << "One and only one mesh should exist for cloning" << std::endl;
+		return;
+	}
 
 	allocateStorage(2);
-	mMeshes[1]->cloneFrom(mMeshes[0]);
+	mMeshes[1]->cloneFrom(*mMeshes[0]);
 	mMeshes[1]->gatherStatistics();
 	mProcessors[1]->init(mMeshes[1], &mEngineWrapper);
 	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
-	ui.glMeshWidget->addMesh(mProcessors[1], mRenderManagers[1]);
 
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
 	
@@ -1000,8 +1000,7 @@ void QZGeometryWindow::displayNeighborVertices()
 //	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
 
-	for (auto iter = vn.begin(); iter != vn.end(); ++iter)
-	{
+	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
 		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
 		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
@@ -1683,8 +1682,6 @@ void QZGeometryWindow::addMesh()
 
 	mRenderManagers[cur_obj]->selected = true;
 	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
-
-	ui.glMeshWidget->addMesh(mProcessors[cur_obj], mRenderManagers[cur_obj]);
 
 	if (cur_obj == 0)
 	{
