@@ -278,7 +278,8 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh& mesh = *mMeshes[obj];
-		Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+		Vector3D center = mesh.getCenter();
+		Vector3D bbox = mesh.getBoundingBox();
 		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
 		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
 		

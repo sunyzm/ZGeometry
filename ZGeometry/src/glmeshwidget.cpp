@@ -88,19 +88,14 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 
 	if (editMode == QZ_MOVE)
 	{
-		if (event->button() == Qt::LeftButton)
-		{
+		if (event->button() == Qt::LeftButton) {
 			gButton = Qt::LeftButton;
 			g_arcball = CArcball(width(), height(), x - win_width/2, win_height/2 - y);
-		}
-		else if (event->button() == Qt::MidButton)
-		{
+		} else if (event->button() == Qt::MidButton) {
 			gButton = Qt::MidButton;
 			g_startx = x;
 			g_starty = y;
-		}
-		else if (event->button() == Qt::RightButton)
-		{
+		} else if (event->button() == Qt::RightButton) {
 			gButton = Qt::RightButton;
 			g_startx = event->x();
 			g_starty = event->y();
@@ -109,29 +104,23 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 	
 	else if (editMode == QZ_PICK)
 	{
-		if (event->button() == Qt::LeftButton)
-		{
+		if (event->button() == Qt::LeftButton) {
 			/// for picking up a vertex
 			Vector3D p;
 			int obj_index = -1;
 
-			if (meshCount >= 2)
-			{
+			if (meshCount >= 2) {
 				if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
 				else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
-			}
-			else if (vpRS[0]->selected) obj_index = 0;
+			} 	else if (vpRS[0]->selected) obj_index = 0;
 
-			if (obj_index >= 0 && glPick(x, y, p, obj_index))
-			{
+			if (obj_index >= 0 && glPick(x, y, p, obj_index)) {
 				double dmin = 1e10;
 				int hIdx = -1;
 				int vertCount = vpMP[obj_index]->getMesh_const()->vertCount();
-				for (int vi = 0; vi < vertCount; ++vi)
-				{
+				for (int vi = 0; vi < vertCount; ++vi) {
 					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->getPosition());
-					if (d < dmin) 
-					{
+					if (d < dmin) {
 						dmin = d;
 						hIdx = vi;
 					}
@@ -139,19 +128,13 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				qout.output("Pick coordinates: " + Int2String(x) + "," + Int2String(y), OUT_CONSOLE);
 				qout.output("Pick vertex: #" + Int2String(hIdx), OUT_CONSOLE);
 
-				if (event->modifiers() & Qt::ControlModifier)
-				{
-					if (obj_index == 0)
-					{
+				if (event->modifiers() & Qt::ControlModifier) {
+					if (obj_index == 0) {
 						emit vertexPicked1(hIdx);	// change reference point
-					}
-					else if (obj_index == 1)
-					{
+					} else if (obj_index == 1) {
 						emit vertexPicked2(hIdx);
 					}
-				}
-				else 
-				{
+				} else {
 					vpMP[obj_index]->addNewHandle(hIdx);	// change handle set
 				}				
 			}
@@ -163,27 +146,24 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		/// for picking up a vertex
 		int obj_index = -1;
 		
-		if (meshCount >= 2)
-		{
+		if (meshCount >= 2) {
 			if (vpRS[0]->selected && !vpRS[1]->selected) obj_index = 0;
 			else if (!vpRS[0]->selected && vpRS[1]->selected) obj_index = 1;
-		}
-		else if (vpRS[0]->selected)
-			obj_index = 0;
+		} else if (vpRS[0]->selected) obj_index = 0;
 
-		if (obj_index >= 0 && !vpMP[obj_index]->getHandles().empty())
-		{
+		if (obj_index >= 0 && !vpMP[obj_index]->getHandles().empty()) {
 			Vector3D p;
-			if (glPick(x, y, p, obj_index))
-			{
+			if (glPick(x, y, p, obj_index)) {
 				// find closest handle
 				DifferentialMeshProcessor* pMP = vpMP[obj_index];
 				int imin(-1);
 				double d, dmin(1e10);
-				for (auto handle : pMP->getHandles())
-				{
+				for (auto handle : pMP->getHandles()) {
 					d = handle.second.distantFrom(p);
-					if (d < dmin) { dmin = d; imin = handle.first; }
+					if (d < dmin) { 
+						dmin = d; 
+						imin = handle.first; 
+					}
 				}
 				pMP->setActiveHandle(imin);
 			}
@@ -207,45 +187,37 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		Vector3D trans;
 		CQrot    rot;
 		
-		if (gButton == Qt::LeftButton) 
-		{
+		if (gButton == Qt::LeftButton) {
 			rot = g_arcball.update( x - win_width/2, win_height - y - win_height/2);
-			for (int i = 0; i < meshCount; ++i)
-			{
+			for (int i = 0; i < meshCount; ++i) {
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_rot = rot * vpRS[i]->obj_rot;
 			}
-		}
-		else if (gButton == Qt::MidButton) 
-		{
+		} else if (gButton == Qt::MidButton) {
 			float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / win_height;
 			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < meshCount; ++i)
-			{
+			for (int i = 0; i < meshCount; ++i) {
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
 			}
 		}
-		else if (gButton == Qt::RightButton ) 
-		{
+		else if (gButton == Qt::RightButton ) {
 			float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().y / win_height;
 			trans =  Vector3D(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
-			for (int i = 0; i < meshCount; ++i)
-			{
+			for (int i = 0; i < meshCount; ++i) {
 				if (vpRS[i]->selected)
 					vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
 			}
 		}
 	}
-	else if (editMode == QZ_DRAG)
+	else if (editMode == QZ_DRAG) 
 	{
 		int obj_index = -1;
-		if (meshCount >= 2)
-		{
+		if (meshCount >= 2) {
 			if (vpRS[0]->selected && !vpRS[1]->selected)
 				obj_index = 0;
 			else if (!vpRS[0]->selected && vpRS[1]->selected)
@@ -302,14 +274,12 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
 	int meshCount = mProcessors->size();
 
-	if (event->modifiers() & Qt::ControlModifier)
-	{
+	if (event->modifiers() & Qt::ControlModifier) {
 		int numSteps = event->delta();
 		float scale = 5.0 * (*mProcessors)[0]->getMesh_const()->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
-		for (int i = 0; i < meshCount; ++i)
-		{
+		for (int i = 0; i < meshCount; ++i) {
 			if (vpRS[i]->selected)
 				vpRS[i]->obj_trans = vpRS[i]->obj_trans + trans;
 		}
@@ -320,30 +290,28 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 
 void GLMeshWidget::initializeGL()
 {
-	// initialize GLEW
+	/* initialize GLEW */
 	qout.output("********************", OUT_TERMINAL);
-	if(glewInit() != GLEW_OK)
-		qout.output("glewInit failed", OUT_TERMINAL);
+	if(glewInit() != GLEW_OK) qout.output("glewInit failed", OUT_TERMINAL);
 	else qout.output("glewInit succeeded", OUT_TERMINAL);
-	// print out some info about the graphics drivers
-
+	
+	/* print out some info about the graphics drivers */
 	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
 	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_TERMINAL);
 	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
 	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
+	
+	/* make sure OpenGL version 4.0 API is available */
+	if(!GLEW_VERSION_4_0)
+		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
+	qout.output("********************", OUT_TERMINAL);
 
-//#define MORE_DEBUG
-#ifdef MORE_DEBUG	
+#if 0	
 	std::string strExt = std::string((char*)glGetString(GL_EXTENSIONS));
 	std::ofstream ofs("output/glExt.txt");
 	ofs << strExt;
 	ofs.close();
-//	std::system("python python/sp2ln.py output/glExt.txt");
 #endif
-	// make sure OpenGL version 3.2 API is available
-	if(!GLEW_VERSION_3_2)
-		qout.output("OpenGL 3.2 API is not available.", OUT_TERMINAL);
-	qout.output("********************", OUT_TERMINAL);
 }
 
 void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )

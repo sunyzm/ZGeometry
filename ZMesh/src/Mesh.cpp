@@ -14,7 +14,8 @@ using namespace std;
 
 const std::string CMesh::StrAttrBoundaryEdgeCount = "boundary_edge_count";
 const std::string CMesh::StrAttrAvgEdgeLength     = "average_edge_length";
-
+const std::string CMesh::StrAttrMeshBBox = "mesh_bounding_box";
+const std::string CMesh::StrAttrMeshCenter = "mesh_center";
 
 //////////////////////////////////////////////////////
 //						CVertex						//
@@ -594,32 +595,24 @@ void CMesh::clearMesh()
 {
 	for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
 		delete iter->second;
-	mAttributes.clear();
+	mAttributes.clear();	
+
+	delete[] m_pVertex;   m_pVertex = NULL;
+	delete[] m_pHalfEdge; m_pHalfEdge = NULL;
+	delete[] m_pFace;     m_pFace = NULL;	
+		
+	if (m_bIsPointerVectorExist && m_bSeparateStorage) {
+		for (CVertex* v : m_vVertices)	delete v;
+		for (CHalfEdge* e : m_vHalfEdges) delete e;
+		for (CFace* f : m_vFaces) delete f;
+	}
+	m_vVertices.clear();
+	m_vHalfEdges.clear();
+	m_vFaces.clear();
 
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
-
-	if (m_bIsIndexArrayExist)
-	{
-		if(m_pVertex != NULL)	{delete[] m_pVertex; m_pVertex = NULL;}
-		if(m_pHalfEdge != NULL)	{delete[] m_pHalfEdge; m_pHalfEdge = NULL;}
-		if(m_pFace != NULL)	{delete[] m_pFace; m_pFace = NULL;}
-	}
-		
-	if (m_bIsPointerVectorExist && m_bSeparateStorage)
-	{
-		for (unsigned int i = 0; i < m_vVertices.size(); ++i)
-			delete m_vVertices[i];
-		for (unsigned int i = 0; i < m_vHalfEdges.size(); ++i)
-			delete m_vHalfEdges[i];
-		for (unsigned int i = 0; i < m_vFaces.size(); ++i)
-			delete m_vFaces[i];
-		
-		m_vVertices.clear();
-		m_vHalfEdges.clear();
-		m_vFaces.clear();
-	}
-
 	m_bIsIndexArrayExist = m_bIsPointerVectorExist = false;
+	m_meshName = "";
 }
 
 CMesh::CMesh() : 
@@ -1159,15 +1152,15 @@ bool CMesh::saveToOBJ(string sFileName)
 
 	
 	// vertices
-	int i;
-	for (i = 0; i < m_nVertex; i++)
+	Vector3D center = getCenter();
+	for (int i = 0; i < m_nVertex; i++)
 	{
-		Vector3D vt = m_pVertex[i].m_vPosition - m_Center;
+		Vector3D vt = m_pVertex[i].m_vPosition - center;
 		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
 	}
 
 	// faces
-	for (i = 0; i < m_nFace; i++)
+	for (int i = 0; i < m_nFace; i++)
 		fprintf(f, "f %ld %ld %ld\r\n", m_pFace[i].m_piVertex[0] + 1, m_pFace[i].m_piVertex[1] + 1, m_pFace[i].m_piVertex[2] + 1);
 
 
@@ -3018,19 +3011,14 @@ void CMesh::assignElementsIndex()
 
 void CMesh::cloneFrom( const CMesh& oldMesh )
 {
-	m_pHalfEdge = NULL;
-	m_pFace = NULL;
-	m_pVertex = NULL;
+	if (this == &oldMesh) return;
+	clearMesh();
 
 	m_meshName = oldMesh.m_meshName + "_clone";
-
 	m_nVertex = oldMesh.m_nVertex;
 	m_nFace = oldMesh.m_nFace;
 	m_nHalfEdge = oldMesh.m_nHalfEdge;
 
-	m_Center = oldMesh.m_Center;
-	m_bBox = oldMesh.m_bBox;
-	
 	m_bIsPointerVectorExist = oldMesh.m_bIsPointerVectorExist;
 	m_bIsIndexArrayExist = oldMesh.m_bIsIndexArrayExist;
 
@@ -3121,6 +3109,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 
 }
 
+#if 0
 void CMesh::cloneFrom( const CMesh* oldMesh )
 {
 	m_pHalfEdge = NULL;
@@ -3133,10 +3122,7 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 	m_nFace = oldMesh->m_nFace;
 	m_nHalfEdge = oldMesh->m_nHalfEdge;
 
-	m_Center = oldMesh->m_Center;
-	m_bBox = oldMesh->m_bBox;
 	copyAttributes(oldMesh->mAttributes);
-
 
 	assert(oldMesh->m_bIsPointerVectorExist);	
 	m_bIsPointerVectorExist = true;
@@ -3200,6 +3186,7 @@ void CMesh::cloneFrom( const CMesh* oldMesh )
 	m_bIsIndexArrayExist = false;
 	m_bSeparateStorage = true;
 }
+#endif
 
 bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 {
@@ -3307,11 +3294,10 @@ void CMesh::gatherStatistics()
 	}
 	edgeLength /= m_vHalfEdges.size();
 
-	this->m_bBox = boundBox;
-	this->m_Center  = Vector3D(center_x, center_y, center_z);
-
 	addAttr(edgeLength, UNIFORM, StrAttrAvgEdgeLength);
 	addAttr(boundaryCount, UNIFORM, StrAttrBoundaryEdgeCount);
+	addAttr(Vector3D(center_x, center_y, center_z), UNIFORM, StrAttrMeshCenter);
+	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
 
 //	for (int i = 0; i < m_nVertex; ++i)
 //		this->calVertexCurvature(i);
@@ -3823,4 +3809,6 @@ double CMesh::getAvgEdgeLength() const
 	if (attrAvgEdgeLen == NULL) throw std::logic_error("Attribute of average edge length not available!");
 	return attrAvgEdgeLen->getValue();
 }
+
+
 

@@ -245,6 +245,8 @@ public:
 	friend class MeshPyramid;
 	static const std::string StrAttrBoundaryEdgeCount;
 	static const std::string StrAttrAvgEdgeLength;
+	static const std::string StrAttrMeshCenter;
+	static const std::string StrAttrMeshBBox;
 
 ////////////////   fields    ////////////////
 private:
@@ -254,14 +256,11 @@ private:
 
 	bool		m_bIsPointerVectorExist;		// pointer vectors representation
 	bool		m_bIsIndexArrayExist;			// index array representation
-	bool		m_bSeparateStorage;				// indicate wheather the point vectors and index arrays are stored separately 
+	bool		m_bSeparateStorage;				// indicate whether the point vectors and index arrays are stored separately 
 
 	int		    m_nVertex;				// number of vertices
 	int		    m_nHalfEdge;			// number of half-edges
 	int			m_nFace;	 			// number of faces
-
-	Vector3D    m_Center;
-	Vector3D    m_bBox;
 
 	CVertex*	m_pVertex;				// array pointer of vertices
 	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
@@ -302,8 +301,8 @@ public:
 	double				getAvgEdgeLength() const;
 	int					calBoundaryNum();    // compute number of boundary edges
 	int					getBoundaryVertexNum() const; // get number of boundary vertices
-	const Vector3D&		getBoundingBox() const { return m_bBox; }
-	const Vector3D&		getCenter() const { return m_Center; }
+	const Vector3D&		getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
+	const Vector3D&		getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
 	VectorInt           getOriginalVertexIndex() const;
 	VectorInt	        getNeighborVertexIndex(int v, int ring) const;
