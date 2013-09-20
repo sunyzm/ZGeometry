@@ -414,7 +414,7 @@ void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
 void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
 {
 	if(!pMP->getMesh_const()) return;
-	const CMesh* tmesh = pMP->getMesh_const();
+	CMesh* tmesh = pMP->getMesh();
 	const CMesh* ori_mesh = pMP->getOriMesh_const();
 
 	const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
@@ -435,14 +435,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
 
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+
 	if (m_bShowSignature && pRS->vDisplaySignature.size() == tmesh->vertCount())
 	{
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++) {
-				int pi = tmesh->getFace(i)->getVertexIndex(j);					 				
-				Vector3D norm = tmesh->getVertex(pi)->getNormal();
+				int pi = tmesh->getFace(i)->getVertexIndex(j);	
+				Vector3D norm = vVertNormals[pi];
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2
@@ -460,7 +462,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++) {
 				int pi = tmesh->getFace(i)->getVertexIndex(j);					 				
-				Vector3D norm = tmesh->getVertex(pi)->getNormal();
+				Vector3D norm = vVertNormals[pi];
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertex(pi)->getPosition();
 				vt += shift;	//add some offset to separate object 1 and 2

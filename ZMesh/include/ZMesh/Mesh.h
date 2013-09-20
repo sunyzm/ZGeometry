@@ -105,12 +105,8 @@ public:
 	virtual ~CVertex();
 
 	// ---- operations ---- //
-	void				calcNormal();
 	int					getIndex() const { return m_vIndex; }
 	int					getVID() const { return m_vid; }
-	Vector3D			getNormal() const { return m_vNormal; }
-	double				getMeanCurvature() const { return m_vMeanCurvature; }
-	double				getGaussCurvature() const { return m_vGaussCurvature; }
 	std::vector<const CFace*> getAdjacentFaces() const;
 	CHalfEdge*			getHalfEdge(int ei) { return m_HalfEdges[ei]; }
 	const CHalfEdge*    getHalfEdge_const(int ei) const { return m_HalfEdges[ei]; }
@@ -133,13 +129,10 @@ private:
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
 	Vector3D				m_vPosition;		// vertex coordinates
-	Vector3D				m_vNormal;          // vertex normal
 	RGBf					m_vColor;			// vertex color
 	bool					m_bIsValid;
 	bool					m_bIsBoundary;      // if boundary vertex
 	bool					m_bIsHole;
-	double					m_vMeanCurvature;	// mean curvature
-	double					m_vGaussCurvature;	// Gauss curvature
 
 	double					m_LocalGeodesic;	// geodesic from local vertex
 	bool					m_inheap;			// in heap or not
@@ -217,15 +210,14 @@ public:
 	const CVertex*			getVertex_const(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
 	double					computeArea() const { return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()); }
-	void					calcNormalAndArea();
-	Vector3D				getNormal() const { return m_vNormal; }
+	Vector3D				calcNormal();
 	bool					hasVertex(int vidx) const;
 	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }
+
 private:
 	// ---- fields ---- // 
-	Vector3D				m_vNormal;		// normalized face normal
 	int						m_fIndex;
 	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
@@ -243,10 +235,17 @@ class CMesh
 {
 public:
 	friend class MeshPyramid;
+
+	/* attribute strings */
 	static const std::string StrAttrBoundaryEdgeCount;
 	static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrMeshCenter;
 	static const std::string StrAttrMeshBBox;
+	static const std::string StrAttrVertColors;
+	static const std::string StrAttrVertGaussCurvatures;
+	static const std::string StrAttrVertMeanCurvatures;
+	static const std::string StrAttrVertNormal;
+	static const std::string StrAttrFaceNormal;
 
 ////////////////   fields    ////////////////
 private:
@@ -279,7 +278,7 @@ public:
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh);
 	void		cloneFrom(const CMesh* oldMesh);
-	bool Load(const std::string& sFileName);			// load from file
+	bool		Load(const std::string& sFileName);			// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
@@ -292,7 +291,7 @@ public:
 	int					halfEdgeCount() const { return m_nHalfEdge; }
 	CVertex*			getVertex(int i) { return m_vVertices[i]; }
 	const CVertex*		getVertex(int i) const { return m_vVertices[i]; }
-	CFace*				getFace(int i) { return &m_pFace[i]; }
+	CFace*				getFace(int i) { return m_vFaces[i]; }
 	const CFace*		getFace(int i) const { return m_vFaces[i]; }
 	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
@@ -315,7 +314,6 @@ public:
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
 	/*	analysis and processing */
-	int					calEdgeCount();		// get number of edges ( not half-edge! )
 
 	/* MeshAttr functions */
 	template<typename T> 
@@ -323,22 +321,26 @@ public:
 		removeAttr(name);
 		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));
 		auto iter = mAttributes.find(name);
-		return dynamic_cast<MeshAttr<T>*>(iter->second);        
+		return *dynamic_cast<MeshAttr<T>*>(iter->second);        
 	}
 
 	template<typename T> 
 	void addAttr(const T& data, AttrRate rate, const std::string& name) {
-		removeAttr<T>(name);
+		removeAttr(name);
 		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
 	}
 
-	template<typename T>
 	void removeAttr(const std::string& name) {
 		auto iter = mAttributes.find(name);
 		if (iter != mAttributes.end()) {
 			delete iter->second;
 			mAttributes.erase(iter);
 		}
+	}
+	
+	bool hasAttr(const std::string& name) const {
+		auto iter = mAttributes.find(name);
+		return iter != mAttributes.end();
 	}
 
 	template<typename T>
@@ -382,8 +384,14 @@ public:
 
 	/* geometry query and processing */
 	void	    gatherStatistics();
+	const std::vector<double>& getMeanCurvature();
+	const std::vector<double>& getGaussCurvature();
+	const std::vector<Vector3D>& getFaceNormals();
+	const std::vector<Vector3D>& getVertNormals();
+	const std::vector<Vector3D>& getVertNormals_const() const;
 	bool        hasBoundary() const;
 	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
+	int			calEdgeCount();		    // get number of edges ( not half-edge! )
 	int			getMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
@@ -399,7 +407,7 @@ public:
 	double		getVolume();	// calculate volume (area) of a surface
 	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	void		calVertexCurvature( int vIndex );			// calculate number i-th vertex's Gaussian and mean curvature
+	void		calCurvatures();			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
@@ -419,8 +427,8 @@ private:
 	bool	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	bool    saveToM(const std::string& sFileName );    // save mesh to .m file
 
-	void	calFaceNormalAndArea(int i);			// compute i-th face's normal
-	void	calVertexNormal(int i);					// compute i-th vertex's normal
+	void	calFaceNormals();			// compute face normals
+	void    calVertNormals();			// compute vertex normals
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 

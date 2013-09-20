@@ -70,6 +70,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	}
 
 	//add boundary constraints on every boundary edge
+	const std::vector<Vector3D>& faceNormals = mesh->getFaceNormals();
 	for (int i = 0; i < originalMesh->m_nHalfEdge; ++i)
 	{
 		const CHalfEdge* pHE = originalMesh->m_vHalfEdges[i];
@@ -78,7 +79,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 
 		int bV1 = pHE->m_Vertices[0]->m_vid, bv2 = pHE->m_Vertices[1]->m_vid;
 
-		Vector3D vf = pHE->m_Face->getNormal();
+		Vector3D vf = faceNormals[pHE->m_Face->getFaceIndex()];
 		Vector3D ve = pHE->m_Vertices[1]->getPosition() - pHE->m_Vertices[0]->getPosition();
 		Vector3D vn = vf ^ ve;
 		vn.normalize();

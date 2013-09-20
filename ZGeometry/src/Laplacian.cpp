@@ -99,7 +99,8 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	ringT = 1;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
-
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals_const();
+	
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
@@ -117,7 +118,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
 //				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[vi], pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
 
 				double svalue = w1 * w2;
 				svalue *= face_area;
@@ -175,6 +176,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals_const();
 
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
@@ -195,7 +197,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 				w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
 //				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-				w2 = std::exp(dotProduct3D(pvi->getNormal(), pvk->getPosition() - pvi->getPosition()) / hPara2);
+				w2 = std::exp(dotProduct3D(vVertNormals[vi], pvk->getPosition() - pvi->getPosition()) / hPara2);
 				
 				double svalue = w1 * w2;
 				svalue *= face_area;

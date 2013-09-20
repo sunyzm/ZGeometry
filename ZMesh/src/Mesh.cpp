@@ -3,19 +3,26 @@
 #include <cassert>
 #include <cstdlib>
 #include <set>
+#include <unordered_set>
 #include <stdexcept>
 #include <algorithm>
 #include <iterator>
 #include <iostream>
+#include <numeric>
 #include <ZUtil/zassert.h>
 #include <ZGeom/arithmetic.h>
 
 using namespace std;
 
-const std::string CMesh::StrAttrBoundaryEdgeCount = "boundary_edge_count";
-const std::string CMesh::StrAttrAvgEdgeLength     = "average_edge_length";
+const std::string CMesh::StrAttrBoundaryEdgeCount = "mesh_boundary_edge_count";
+const std::string CMesh::StrAttrAvgEdgeLength     = "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox = "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter = "mesh_center";
+const std::string CMesh::StrAttrVertColors = "vert_color";
+const std::string CMesh::StrAttrVertGaussCurvatures = "vert_gauss_curvature";
+const std::string CMesh::StrAttrVertMeanCurvatures = "vert_mean_curvature";
+const std::string CMesh::StrAttrVertNormal = "vert_normal";
+const std::string CMesh::StrAttrFaceNormal = "face_normal";
 
 //////////////////////////////////////////////////////
 //						CVertex						//
@@ -94,12 +101,9 @@ void CVertex::clone(const CVertex& v)
 	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
 	m_nValence			= v.m_nValence;
-	m_vNormal			= v.m_vNormal;
 	m_bIsBoundary		= v.m_bIsBoundary;
 	m_bIsHole			= v.m_bIsHole;
 	m_vColor			= v.m_vColor;
-	m_vMeanCurvature	= v.m_vMeanCurvature;
-	m_vGaussCurvature	= v.m_vGaussCurvature;
 
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
@@ -127,19 +131,6 @@ std::vector<const CFace*> CVertex::getAdjacentFaces() const
 		pFaces.push_back(m_HalfEdges[i]->getAttachedFace_const());
 	}
 	return pFaces;
-}
-
-void CVertex::calcNormal()
-{
-	Vector3D v;
-	for (int j = 0; j < m_nValence; ++j) {
-		CFace* pF = m_HalfEdges[j]->getAttachedFace();
-		Vector3D cv = (pF->getVertex(0)->getPosition() + pF->getVertex(1)->getPosition() + pF->getVertex(2)->getPosition()) / 3.0;
-		double wt = 1.0 / (cv - m_vPosition).length();
-		v += pF->getNormal() * wt;
-	}
-	v.normalize();
-	this->m_vNormal = v;
 }
 
 bool CVertex::judgeOnBoundary()
@@ -253,7 +244,7 @@ double CHalfEdge::getLength()
 // 	
 // }
 
-CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL), m_vNormal(Vector3D(0.,0.,1.))
+CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
 {
 	m_bIsValid = true;
 }
@@ -262,7 +253,6 @@ CFace::CFace( const CFace& f )
 {
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
-	m_vNormal	= f.m_vNormal;
 
 	m_piVertex = NULL;
 	m_piEdge = NULL;
@@ -286,7 +276,6 @@ CFace& CFace::operator =(const CFace& f)
 {
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
-	m_vNormal	= f.m_vNormal;
 
 	if (f.m_piVertex && f.m_piEdge)
 	{
@@ -318,7 +307,6 @@ CFace::~CFace()
 void CFace::Create(short s)
 {
 	m_nType = s;
-	m_vNormal = Vector3D(0.0,0.0,1.0);
 	m_piEdge = new int[s];
 	m_piVertex = new int[s];
 }
@@ -327,23 +315,25 @@ std::vector<double> CFace::getPlaneFunction()
 {
 	vector<double> para;
 	para.resize(4);
-	para[0] = m_vNormal[0];
-	para[1] = m_vNormal[1];
-	para[2] = m_vNormal[2];
-	double d = m_vNormal * m_Vertices[0]->getPosition();
+	Vector3D vNormal = calcNormal();
+	para[0] = vNormal[0];
+	para[1] = vNormal[1];
+	para[2] = vNormal[2];
+	double d = vNormal * m_Vertices[0]->getPosition();
 	para[3] = -d;
 	return para;
 }
 
-void CFace::calcNormalAndArea()
+Vector3D CFace::calcNormal()
 {
 	Vector3D v[2];
 
 	//get the vector
 	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
-	m_vNormal = v[0] ^ v[1];
-	m_vNormal.normalize();	
+	Vector3D vNormal= v[0] ^ v[1];
+	vNormal.normalize();	
+	return vNormal;
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -1177,19 +1167,18 @@ bool CMesh::saveToM(const std::string& sFileName)
 
 	FILE* fp;
 	fopen_s(&fp, sFileName.c_str(), "w+");
-
-	if (!fp)
-		return false;
-
+	if (!fp) return false;
+	
+	const std::vector<Vector3D>& vVertNormals = getVertNormals();
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
 	for (int i = 0; i < m_nVertex; i++)
 	{
-		Vector3D& pos = m_pVertex[i].m_vPosition;
-		Vector3D& normal = m_pVertex[i].m_vNormal;
+		const Vector3D& pos = m_pVertex[i].m_vPosition;
+		const Vector3D& normal = vVertNormals[i];
 		float r = m_pVertex[i].m_vColor.r;
 		float g = m_pVertex[i].m_vColor.g;
 		float b = m_pVertex[i].m_vColor.b;
-		normal.normalize();
+		
 		fprintf(fp, "Vertex %ld  %.6f %.6f %.6f {rgb=(%.6f %.6f %.6f) normal=(%.6f %.6f %.6f)",
 			i + 1, pos.x, pos.y, pos.z, r, g, b, normal.x, normal.y, normal.z);
 
@@ -1217,7 +1206,7 @@ bool CMesh::saveToM(const std::string& sFileName)
 
 void CMesh::findHoles()
 {
-	set<int> markedVertex;
+	std::unordered_set<int> markedVertex;
 	for(int i = 0; i < m_nVertex; i++)
 	{
 		if(!m_vVertices[i]->m_bIsBoundary || markedVertex.find(i) == markedVertex.end()) continue;	// not boundary or visited
@@ -1390,40 +1379,56 @@ bool CMesh::construct()
 	return true;
 }
 
-void CMesh::calFaceNormalAndArea(int i)
+void CMesh::calFaceNormals()
 {
+	int faceNum = faceCount();
+	std::vector<Vector3D> vFaceNormals(faceNum);
 	Vector3D v[2];
- 
-	//get the vector
-	v[0] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[0]].m_vPosition;
- 
-	if(m_pFace[i].m_nType == 3)
-		v[1] = m_pVertex[m_pFace[i].m_piVertex[2]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
-	else
-		v[1] = m_pVertex[m_pFace[i].m_piVertex[3]].m_vPosition - m_pVertex[m_pFace[i].m_piVertex[1]].m_vPosition;
- 
-	m_pFace[i].m_vNormal = v[0] ^ v[1];
-	m_pFace[i].m_vNormal.normalize();
+	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
+		CFace* face = m_vFaces[fIndex];
+		v[0] = face->getVertex(2)->getPosition() - face->getVertex(0)->getPosition();
+		if (face->m_nType == 3) {
+			v[1] = face->getVertex(2)->getPosition() - face->getVertex(1)->getPosition();
+		} else {
+			v[1] = face->getVertex(3)->getPosition() - face->getVertex(1)->getPosition();
+		}
+
+		vFaceNormals[fIndex] = v[0] ^ v[1];
+		vFaceNormals[fIndex].normalize();
+	}
+	
+	addAttr<std::vector<Vector3D> >(vFaceNormals, FACE, StrAttrFaceNormal);
 }
  
-void CMesh::calVertexNormal(int i)
+void CMesh::calVertNormals()
 {
-	Vector3D v;
-	int iFace;
-	short valence = m_pVertex[i].m_nValence;
-	if(valence < 1)
-		return;
-	for(short j = 0; j < valence; j++)
+	const int vertNum = vertCount();
+	const std::vector<Vector3D>& vFaceNormals = getFaceNormals();
+	std::vector<Vector3D> vVertNormals(vertNum);
+
+	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
 	{
-		iFace = m_pHalfEdge[m_pVertex[i].m_piEdge[j]].m_iFace;
-		int* fv = m_pFace[iFace].m_piVertex;
-		Vector3D cv = (m_pVertex[fv[0]].m_vPosition + m_pVertex[fv[1]].m_vPosition + m_pVertex[fv[2]].m_vPosition)/3.0;
-		double wt = 1.0/(cv-m_pVertex[i].m_vPosition).length();
-		v += m_pFace[iFace].m_vNormal * wt;
+		CVertex* vertex = m_vVertices[vIndex];
+		Vector3D vNormal(0,0,0);
+
+		short valence = vertex->getValence();
+		if(valence < 1) {
+			vVertNormals[vIndex] = Vector3D(0,0,0);
+			continue;
+		}
+
+		for(short j = 0; j < valence; j++) {
+			CFace* face = vertex->getHalfEdge(j)->getAttachedFace();
+			int fIndex = face->getFaceIndex();
+			Vector3D cv = (face->getVertex(0)->getPosition() + face->getVertex(1)->getPosition() + face->getVertex(2)->getPosition()) / 3.0;
+			double wt = 1.0 / (cv - vertex->getPosition()).length();
+			vNormal += vFaceNormals[fIndex] * wt;
+		}
+		vNormal.normalize();
+		vVertNormals[vIndex] = vNormal;
 	}
-	//v/=(double)valence;
-	v.normalize();
-	m_pVertex[i].m_vNormal = v;
+
+	addAttr<std::vector<Vector3D> >(vVertNormals, VERTEX, StrAttrVertNormal);
 }
 
 double CMesh::getHalfEdgeLen( int iEdge ) const
@@ -1574,43 +1579,54 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	}
 }
 
-void CMesh::calVertexCurvature( int vIndex )
+void CMesh::calCurvatures()
 {
 	const double pi = ZGeom::PI;
-	double sum = 0.0;		// sum of attaching corner's angle
-	double amix = 0.0;
-	Vector3D kh;
-	CVertex* vi = m_vVertices[vIndex];
+	const int vertNum = this->vertCount();
+	std::vector<double> vGaussCurvatures(vertNum);
+	std::vector<double> vMeanCurvatures(vertNum);
 
-	if(vi->isOnBoundary()) {
-	// boundary vertex has zero curvature
-		vi->m_vGaussCurvature = 0.0;	//(pi - sum)/amix;
-		vi->m_vMeanCurvature = 0.0;
-		return;
+	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
+	{
+		CVertex* vi = m_vVertices[vIndex];
+
+		double sum = 0.0;		// sum of attaching corner's angle
+		double amix = 0.0;
+		Vector3D kh;
+
+		if(vi->isOnBoundary()) {
+			// boundary vertex has zero curvature
+			vGaussCurvatures[vIndex] = 0.0;	//(pi - sum)/amix;
+			vMeanCurvatures[vIndex] = 0.0;
+			continue;
+		}
+
+		for( int j = 0; j < vi->m_nValence; j++ ) {
+			CHalfEdge* e0 = vi->getHalfEdge(j);
+			CHalfEdge* e1 = e0->m_eNext;
+			CHalfEdge* e2 = e1->m_eNext;
+			double len0 = e0->getLength();
+			double len1 = e1->getLength();
+			double len2 = e2->getLength();
+
+			// compute corner angle by cosine law 
+			double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
+			sum += corner;
+			double cota, cotc;
+			amix += calAreaMixed(len0, len1, len2, cota, cotc);
+
+			CVertex* pt1 = e1->vert(0);
+			CVertex* pt2 = e1->vert(1);
+			kh += (vi->getPosition() - pt1->getPosition()) * cota + (vi->getPosition() - pt2->getPosition()) * cotc;
+		}
+
+		vGaussCurvatures[vIndex] = (2.0 * pi - sum) / amix;
+		kh = kh / (2.0 * amix);
+		vMeanCurvatures[vIndex] = kh.length() / 2.0;
 	}
 
-	for( int j = 0; j < vi->m_nValence; j++ ) {
-		CHalfEdge* e0 = vi->getHalfEdge(j);
-		CHalfEdge* e1 = e0->m_eNext;
-		CHalfEdge* e2 = e1->m_eNext;
-		double len0 = e0->getLength();
-		double len1 = e1->getLength();
-		double len2 = e2->getLength();
-
-		// compute corner angle by cosine law 
-		double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
-		sum += corner;
-		double cota, cotc;
-		amix += calAreaMixed(len0, len1, len2, cota, cotc);
-
-		CVertex* pt1 = e1->vert(0);
-		CVertex* pt2 = e1->vert(1);
-		kh += (vi->getPosition() - pt1->getPosition()) * cota + (vi->getPosition() - pt2->getPosition()) * cotc;
-	}
-
-	vi->m_vGaussCurvature = (2.0 * pi - sum) / amix;
-	kh = kh / (2.0 * amix);
-	vi->m_vMeanCurvature = kh.length() / 2.0;
+	addAttr<std::vector<double> >(vGaussCurvatures, VERTEX, StrAttrVertGaussCurvatures);
+	addAttr<std::vector<double> >(vMeanCurvatures, VERTEX, StrAttrVertMeanCurvatures);
 }
 
 #if 0
@@ -2763,10 +2779,8 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 
 double CMesh::calGaussianCurvatureIntegration()
 {
-	double sum = 0.0;
-	for( int i=0; i<m_nVertex; i++ ) {
-		sum += m_pVertex[i].m_vGaussCurvature;
-	}
+	const std::vector<double>& vGaussCurv = getGaussCurvature();
+	double sum = std::accumulate(vGaussCurv.begin(), vGaussCurv.end(), 0.0);
 	return sum;
 }
 
@@ -3295,8 +3309,8 @@ void CMesh::gatherStatistics()
 	// 6. individual vertex curvature value
 	// necessary stat: m_edge(avg edge length), 
 	
-	for (int i = 0; i < m_nFace; ++i)
-		m_vFaces[i]->calcNormalAndArea();
+	calFaceNormals();
+	calVertNormals();
 
 	int boundaryCount(0);
 	double edgeLength = 0;
@@ -3304,7 +3318,6 @@ void CMesh::gatherStatistics()
 	Vector3D boundBox(0.0, 0.0, 0.0);
 
 	for (int i = 0; i < m_nVertex; ++i) {
-		m_vVertices[i]->calcNormal();		//calculate vertex normal
 		center_x += m_vVertices[i]->m_vPosition.x;
 		center_y += m_vVertices[i]->m_vPosition.y;
 		center_z += m_vVertices[i]->m_vPosition.z;
@@ -3334,8 +3347,7 @@ void CMesh::gatherStatistics()
 	addAttr(Vector3D(center_x, center_y, center_z), UNIFORM, StrAttrMeshCenter);
 	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
 
-	for (int i = 0; i < m_nVertex; ++i)
-		this->calVertexCurvature(i);
+	calCurvatures();
 
 //	for (int i = 0; i < m_nVertex; ++i)
 //		this->calVertexCurvature(i);
@@ -3839,6 +3851,36 @@ double CMesh::getAvgEdgeLength() const
 	const MeshAttr<double>* attrAvgEdgeLen = getAttr<double>(StrAttrAvgEdgeLength);
 	if (attrAvgEdgeLen == NULL) throw std::logic_error("Attribute of average edge length not available!");
 	return attrAvgEdgeLen->getValue();
+}
+
+const std::vector<double>& CMesh::getMeanCurvature()
+{
+	if (!hasAttr(StrAttrVertMeanCurvatures)) calCurvatures();		
+	return getAttrValue<std::vector<double> >(StrAttrVertMeanCurvatures);
+}
+
+const std::vector<double>& CMesh::getGaussCurvature()
+{
+	if (!hasAttr(StrAttrVertGaussCurvatures)) calCurvatures();		
+	return getAttrValue<std::vector<double> >(StrAttrVertGaussCurvatures);
+}
+
+const std::vector<Vector3D>& CMesh::getFaceNormals()
+{
+	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
+	return getAttrValue<std::vector<Vector3D> >(StrAttrFaceNormal);
+}
+
+const std::vector<Vector3D>& CMesh::getVertNormals()
+{
+	if (!hasAttr(StrAttrVertNormal)) calFaceNormals();
+	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
+}
+
+const std::vector<Vector3D>& CMesh::getVertNormals_const() const
+{
+	assert(hasAttr(StrAttrVertNormal));
+	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
 }
 
 

@@ -121,17 +121,10 @@ void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian:
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
 {
 	vCurvature.resize(m_size);
-	if (curvatureType == 0) {
-		for (int i = 0; i < m_size; ++i) {
-//			mesh->calVertexCurvature(i);
-			vCurvature[i] = mesh->getVertex(i)->getMeanCurvature();
-		}
-	}
-	else if (curvatureType == 1) {
-		for (int i = 0; i < m_size; ++i)
-			vCurvature[i] = mesh->getVertex(i)->getGaussCurvature();
-	}
-	
+	if (curvatureType == 0)	
+		vCurvature = mesh->getMeanCurvature();
+	else if (curvatureType == 1) 
+		vCurvature = mesh->getGaussCurvature();
 }
 
 void DifferentialMeshProcessor::addNewHandle( int hIdx )
@@ -1079,6 +1072,7 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
+	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
 
 	for (int fi = 0; fi < vFaces.size(); ++fi) {
 		const CFace* pfi = mesh->getFace(vFaces[fi]);
@@ -1092,7 +1086,7 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+			w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[refPoint], pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
 //			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
 
 			double svalue = w1 * w2;
@@ -1132,9 +1126,12 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
+	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
+	const std::vector<Vector3D>& vFaceNormals = mesh->getFaceNormals();
+	const int faceNum = mesh->faceCount();
 
-	for (int fi = 0; fi < vFaces.size(); ++fi) {
-		const CFace* pfi = mesh->getFace(vFaces[fi]);
+	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
+		const CFace* pfi = mesh->getFace(vFaces[fIndex]);
 		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
@@ -1146,7 +1143,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 //			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
 //			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
+			w2 = std::exp((dotProduct3D(vVertNormals[refPoint], vFaceNormals[fIndex]) - 1) / 1.0);
 
 			double svalue = w1 * w2;
 
@@ -1187,6 +1184,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
 //	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 	double hPara2 = mesh->getAvgEdgeLength();
+	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
 
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
@@ -1202,7 +1200,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 			//			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
 			//			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-			w2 = std::exp(-dotProduct3D(pvi->getNormal(), pvk->getPosition() - pvi->getPosition()) / hPara2);
+			w2 = std::exp(-dotProduct3D(vVertNormals[refPoint], pvk->getPosition() - pvi->getPosition()) / hPara2);
 //			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
 
 			double svalue = w1 * w2;

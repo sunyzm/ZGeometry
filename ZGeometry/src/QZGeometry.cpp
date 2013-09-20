@@ -843,8 +843,7 @@ void QZGeometryWindow::computeCurvatureMean()
 
 void QZGeometryWindow::computeCurvatureGauss()
 {
-	for (int i = 0; i < mMeshCount; ++i)
-	{		
+	for (int i = 0; i < mMeshCount; ++i) {		
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		vector<double> vCurvature;
 		mp.computeCurvature(vCurvature, 1);
