@@ -126,7 +126,7 @@ std::vector<const CFace*> CVertex::getAdjacentFaces() const
 	vector<const CFace*> pFaces;
 	for (unsigned int i = 0; i < m_HalfEdges.size(); ++i)
 	{
-		pFaces.push_back(m_HalfEdges[i]->getAttachedFace_const());
+		pFaces.push_back(m_HalfEdges[i]->getAttachedFace());
 	}
 	return pFaces;
 }
@@ -224,7 +224,7 @@ CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 	return *this;
 }
 
-double CHalfEdge::getLength()
+double CHalfEdge::getLength() const
 {
 	Vector3D v = m_Vertices[0]->getPosition() - m_Vertices[1]->getPosition();
 	return v.length();
@@ -571,6 +571,11 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 
 	return std::sqrt(std::abs(sqrDistance));
 	
+}
+
+double CFace::computeArea() const
+{
+	return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition());
 }
 
 //////////////////////////////////////////////////////
@@ -1538,10 +1543,10 @@ int CMesh::getBoundaryVertexNum(  ) const
 	return -1;
 }
 
-int CMesh::getEulerNum(  )
+int CMesh::calEulerNum(  )
 {
 	int twinedgeNum = 0;
-	for( int i=0; i<m_nHalfEdge; i++ )
+	for( int i = 0; i < m_nHalfEdge; i++ )
 	{
 		if( m_pHalfEdge[i].m_iTwinEdge!=-1 )
 			twinedgeNum++;
@@ -1550,10 +1555,10 @@ int CMesh::getEulerNum(  )
 	return m_nVertex - edgeNum + m_nFace;
 }
 
-int CMesh::getMeshGenus(  )
+int CMesh::calMeshGenus(  )
 {
 	int b = calBoundaryNum();
-	int euler_number = getEulerNum();
+	int euler_number = calEulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
 
@@ -2899,7 +2904,7 @@ std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx, int ring /*= 1*/ 
 		const CVertex* pv = getVertex(*iter);
 		for (int he = 0; he < pv->getValence(); ++he)
 		{
-			const CFace* pf = pv->getHalfEdge_const(he)->getAttachedFace_const();
+			const CFace* pf = pv->getHalfEdge_const(he)->getAttachedFace();
 			setMarkedFaces.insert(pf->getFaceIndex());
 		}		
 	}
@@ -3288,7 +3293,8 @@ void CMesh::scaleAreaToVertexNum()
 	center /= m_nVertex;
 
 	double totalSufaceArea(0);
-	for (int i = 0; i < m_nFace; ++i) totalSufaceArea += calFaceArea(i);
+	for (int i = 0; i < m_nFace; ++i) 
+		totalSufaceArea += calFaceArea(i);
 	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
 
 	for (int i = 0; i < m_nVertex; ++i)

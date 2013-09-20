@@ -1080,7 +1080,7 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 //			if (vki == refPoint) continue;
-			const CVertex* pvk = pfi->getVertex_const(k);
+			const CVertex* pvk = pfi->getVertex(k);
 
 			double w1 = 1., w2 = 1.;
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
@@ -1136,7 +1136,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 			//			if (vki == refPoint) continue;
-			const CVertex* pvk = pfi->getVertex_const(k);
+			const CVertex* pvk = pfi->getVertex(k);
 
 			double w1 = 1., w2 = 1.;
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
@@ -1194,7 +1194,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 		{
 			int vki = pfi->getVertexIndex(k);
 			//			if (vki == refPoint) continue;
-			const CVertex* pvk = pfi->getVertex_const(k);
+			const CVertex* pvk = pfi->getVertex(k);
 
 			double w1 = 1., w2 = 1.;
 			//			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);

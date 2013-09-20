@@ -157,25 +157,25 @@ public:
 
 	// -- operations -- //
 	CHalfEdge& operator = (const CHalfEdge& e);
-	CFace*		getAttachedFace() { return m_Face; }
-	const CFace* getAttachedFace_const() const { return m_Face; }
-	CHalfEdge*  getTwinHalfEdge() { return m_eTwin; }
-	bool		isBoundaryEdge() const { return (m_iTwinEdge == -1); }
+	CFace*		getAttachedFace() const { return m_Face; }
+	CHalfEdge*  getTwinHalfEdge() const { return m_eTwin; }
+	bool		isBoundaryEdge() const { return m_eTwin == NULL; }
 	int			getVertexIndex(int i) const { return m_iVertex[i]; }
-	double		getLength();
+	double		getLength() const;
 	bool		isValid() const { return m_bIsValid; }
 	int         getIndex() const { return m_eIndex; }
 	CVertex*	vert(int i) const { return m_Vertices[i]; }
 
 private:
 	// -- fields -- //
+	int			m_eIndex;		//half-edge id
+	bool		m_bIsValid;
+
 	CVertex*	m_Vertices[2];	//starting and ending vertices
 	CHalfEdge*	m_eTwin;		//reverse half-edge; null if boundary half edge
 	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
 	CHalfEdge*	m_ePrev;
 	CFace*		m_Face;			//attached face
-	int			m_eIndex;		//half-edge id
-	bool		m_bIsValid;
 
 	int			m_iVertex[2];	// starting and ending vertex index
 	int			m_iTwinEdge;	// reverse half-edge index, -1 if boundary half edge
@@ -205,10 +205,9 @@ public:
 	// -- operations -- //
 	void					Create(short s);
 	std::vector<double>		getPlaneFunction();	
-	CVertex*				getVertex(int i) { return m_Vertices[i]; }
-	const CVertex*			getVertex_const(int i) const { return m_Vertices[i]; }
+	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
-	double					computeArea() const { return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()); }
+	double					computeArea() const;
 	Vector3D				calcNormal();
 	bool					hasVertex(int vidx) const;
 	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
@@ -218,11 +217,12 @@ public:
 private:
 	// ---- fields ---- // 
 	int						m_fIndex;
+	bool					m_bIsValid;
+	short					m_nType;		// number of polygon face edges
+
 	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
-	bool					m_bIsValid;
-
-	short					m_nType;		// number of polygon face edges
+		
 	int*					m_piVertex;		// all vertex index
 	int*					m_piEdge;		// all half-edge index
 };
@@ -382,16 +382,16 @@ public:
 	}
 
 	/* geometry query and processing */
-	void	    gatherStatistics();
-	const std::vector<double>& getMeanCurvature();
-	const std::vector<double>& getGaussCurvature();
+	const std::vector<double>&   getMeanCurvature();
+	const std::vector<double>&   getGaussCurvature();
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
 	const std::vector<Vector3D>& getVertNormals_const() const;
+	void	    gatherStatistics();
 	bool        hasBoundary() const;
-	int			getEulerNum();			// get Euler number of mesh: Euler# = v - e + f
+	int			calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			calEdgeCount();		    // get number of edges ( not half-edge! )
-	int			getMeshGenus();			// get mesh genus
+	int			calMeshGenus();			// get mesh genus
 	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
 	bool		calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
@@ -406,7 +406,6 @@ public:
 	double		getVolume();	// calculate volume (area) of a surface
 	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	void		calCurvatures();			// calculate number i-th vertex's Gaussian and mean curvature
 	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
@@ -428,6 +427,8 @@ private:
 
 	void	calFaceNormals();			// compute face normals
 	void    calVertNormals();			// compute vertex normals
+	void	calCurvatures();			// calculate Gaussian and mean curvatures
+
 	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
 

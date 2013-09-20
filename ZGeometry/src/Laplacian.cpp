@@ -113,7 +113,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 			{
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex_const(k);
+				const CVertex* pvk = pfi->getVertex(k);
 
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
@@ -190,7 +190,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 			{
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex_const(k);
+				const CVertex* pvk = pfi->getVertex(k);
 
 				double w1 = 1., w2 = 1.;
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
@@ -262,7 +262,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 			{
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex_const(k);
+				const CVertex* pvk = pfi->getVertex(k);
 
 				double svalue = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / (4 * hPara1));
 				svalue = svalue * face_area / (3 * 4 * PI * hPara1 * hPara1);
