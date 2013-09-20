@@ -114,7 +114,6 @@ public:
 	int					getValence() const { return m_nValence; }
 	bool				judgeOnBoundary();
 	bool				isOnBoundary() const { return m_bIsBoundary; }
-	bool				isHole() const { return m_bIsHole; }
 	bool				isValid() const { return m_bIsValid; }
 	void				invalidate(bool flag) { m_bIsValid = flag; }
 	void                translateAndScale(const Vector3D& translation, double s);
@@ -122,6 +121,7 @@ public:
 
 private:
 	void clone(const CVertex& v);
+
 	// ---- fields ---- //
 	int						m_vIndex;           // index of the vertex 0-based
 	int						m_vid;				// ID of the vertex from original mesh 0-based
@@ -131,7 +131,6 @@ private:
 	Vector3D				m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
 	bool					m_bIsBoundary;      // if boundary vertex
-	bool					m_bIsHole;
 
 	double					m_LocalGeodesic;	// geodesic from local vertex
 	bool					m_inheap;			// in heap or not
@@ -236,7 +235,8 @@ public:
 	friend class MeshPyramid;
 
 	/* attribute strings */
-	static const std::string StrAttrBoundaryEdgeCount;
+	static const std::string StrAttrBoundaryVertCount;
+	static const std::string StrAttrBoundaryCount;
 	static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrMeshCenter;
 	static const std::string StrAttrMeshBBox;
@@ -244,6 +244,8 @@ public:
 	static const std::string StrAttrVertGaussCurvatures;
 	static const std::string StrAttrVertMeanCurvatures;
 	static const std::string StrAttrVertNormal;
+	static const std::string StrAttrVertOnHole;
+	static const std::string StrAttrVertOnBoundary;
 	static const std::string StrAttrFaceNormal;
 
 ////////////////   fields    ////////////////
@@ -296,11 +298,6 @@ public:
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
-	double				getAvgEdgeLength() const;
-	int					calBoundaryNum();    // compute number of boundary edges
-	int					getBoundaryVertexNum() const; // get number of boundary vertices
-	const Vector3D&		getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
-	const Vector3D&		getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
 	VectorInt           getOriginalVertexIndex() const;
 	VectorInt	        getNeighborVertexIndex(int v, int ring) const;
@@ -311,8 +308,7 @@ public:
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
-
-	/*	analysis and processing */
+	/*************************************************************************/
 
 	/* MeshAttr functions */
 	template<typename T> 
@@ -380,6 +376,7 @@ public:
 			mAttributes.insert(std::make_pair(a->getAttrName(), a));
 		}
 	}
+	/*************************************************************************/
 
 	/* geometry query and processing */
 	const std::vector<double>&   getMeanCurvature();
@@ -387,8 +384,17 @@ public:
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
 	const std::vector<Vector3D>& getVertNormals_const() const;
+	const std::vector<bool>& getVertOnHole();
+	const std::vector<bool>&     getVertOnHole_const() const;
+	const std::vector<bool>&	 getVertOnBoundary();
+	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
+	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
+	double						 getAvgEdgeLength() const;
+
 	void	    gatherStatistics();
-	bool        hasBoundary() const;
+	bool		hasBoundary() const;
+	int			calBoundaryNum();    // compute number of (connective) boundaries
+	int			calBoundaryVert();	 // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int			calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int			calEdgeCount();		    // get number of edges ( not half-edge! )
 	int			calMeshGenus();			// get mesh genus
@@ -406,10 +412,12 @@ public:
 	double		getVolume();	// calculate volume (area) of a surface
 	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	void		clearVertexMark();
 	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
 	double	    calFaceArea(int i) const;
+	void		clearVertexMark();
+
+	/*************************************************************************/
 
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
@@ -428,9 +436,8 @@ private:
 	void	calFaceNormals();			// compute face normals
 	void    calVertNormals();			// compute vertex normals
 	void	calCurvatures();			// calculate Gaussian and mean curvatures
-
-	double  calLocalGeodesic(int ia, int ib, int ic) const;
 	void	findHoles();
+	double  calLocalGeodesic(int ia, int ib, int ic) const;	
 
 	void	buildPointerVectors();		//construct vectors of pointers based on array representations
 	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation

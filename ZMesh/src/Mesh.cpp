@@ -14,7 +14,8 @@
 
 using namespace std;
 
-const std::string CMesh::StrAttrBoundaryEdgeCount = "mesh_boundary_edge_count";
+const std::string CMesh::StrAttrBoundaryVertCount = "mesh_boundary_vert_count";
+const std::string CMesh::StrAttrBoundaryCount = "mesh_boundary_count";
 const std::string CMesh::StrAttrAvgEdgeLength     = "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox = "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter = "mesh_center";
@@ -22,6 +23,8 @@ const std::string CMesh::StrAttrVertColors = "vert_color";
 const std::string CMesh::StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string CMesh::StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string CMesh::StrAttrVertNormal = "vert_normal";
+const std::string CMesh::StrAttrVertOnHole = "vert_on_hole";
+const std::string CMesh::StrAttrVertOnBoundary = "vert_on_boundary";
 const std::string CMesh::StrAttrFaceNormal = "face_normal";
 
 //////////////////////////////////////////////////////
@@ -37,7 +40,6 @@ CVertex::CVertex()
 	m_piEdge = NULL;
 	m_nValence = 0;
 	m_bIsBoundary = false;
-	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = false;
@@ -50,7 +52,6 @@ CVertex::CVertex( double x, double y, double z )
 	m_piEdge = NULL; 
 	m_nValence = 0;
 	m_bIsBoundary = false;
-	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = false;
@@ -63,7 +64,6 @@ CVertex::CVertex( const Vector3D& v )
 	m_piEdge = NULL; 
 	m_nValence = 0;
 	m_bIsBoundary = false;
-	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = false;
@@ -76,7 +76,6 @@ CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 	m_piEdge = NULL;
 	m_nValence = 0;
 	m_bIsBoundary = false;
-	m_bIsHole = false;
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = false;
@@ -103,7 +102,6 @@ void CVertex::clone(const CVertex& v)
 	m_vPosition			= v.m_vPosition;
 	m_nValence			= v.m_nValence;
 	m_bIsBoundary		= v.m_bIsBoundary;
-	m_bIsHole			= v.m_bIsHole;
 	m_bIsValid			= v.m_bIsValid;
 
 	m_mark = -1;
@@ -1213,9 +1211,11 @@ bool CMesh::saveToM(const std::string& sFileName)
 void CMesh::findHoles()
 {
 	std::unordered_set<int> markedVertex;
+	std::vector<bool> vIsOnHole(m_nVertex, false);
+
 	for(int i = 0; i < m_nVertex; i++)
 	{
-		if(!m_vVertices[i]->m_bIsBoundary || markedVertex.find(i) == markedVertex.end()) continue;	// not boundary or visited
+		if(!m_vVertices[i]->m_bIsBoundary || markedVertex.find(i) == markedVertex.end()) continue;	// pass if vertex is not boundary or is already visited
 		int vi = i;
 		const CVertex* pvi =  m_vVertices[i];
 		const CHalfEdge* peout = pvi->m_HalfEdges.back();
@@ -1232,9 +1232,11 @@ void CMesh::findHoles()
 		}
 		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
 		
-		for(auto it_v = vTmp.begin(); it_v != vTmp.end(); it_v++) 
-			m_vVertices[*it_v]->m_bIsHole = true;
+		for (int it_v : vTmp) 
+			vIsOnHole[it_v] = true;
 	}
+
+	addAttr<std::vector<bool> >(vIsOnHole, VERTEX, StrAttrVertOnHole);
 
 // 	for(int i = 0; i < m_nVertex; i++)
 // 	{
@@ -1380,8 +1382,6 @@ bool CMesh::construct()
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
 
-	//findHoles();
-
 	return true;
 }
 
@@ -1439,11 +1439,8 @@ void CMesh::calVertNormals()
 
 double CMesh::getHalfEdgeLen( int iEdge ) const
 {
-	CVertex* pVertex[2];
-	pVertex[0] = &(m_pVertex[m_pHalfEdge[iEdge].m_iVertex[0]]);
-	pVertex[1] = &(m_pVertex[m_pHalfEdge[iEdge].m_iVertex[1]]);
-		
-	//get the vector
+	CHalfEdge* he = m_vHalfEdges[iEdge];
+	CVertex* pVertex[2] = {he->m_Vertices[0], he->m_Vertices[1]};
 	Vector3D v = pVertex[0]->m_vPosition - pVertex[1]->m_vPosition;
 	return v.length();
 }
@@ -1508,39 +1505,35 @@ int CMesh::calBoundaryNum()
 				}
 				nextIndex = m_vHalfEdges[edgeIndex]->vert(1)->getIndex();
 			} while( nextIndex != i );
+
 			boundaryNum++;
 		}
 	}
 
-	addAttr(boundaryNum, UNIFORM, StrAttrBoundaryEdgeCount);
+	addAttr(boundaryNum, UNIFORM, StrAttrBoundaryCount);
 	return boundaryNum;
 }
 
-int CMesh::getBoundaryVertexNum(  ) const
+int CMesh::calBoundaryVert()
 {
-	if (m_bIsPointerVectorExist)
+	std::vector<bool> vVertOnBoundary(m_nVertex, false);
+	int bNum = 0;
+	for(int i = 0; i < m_nVertex; ++i)
 	{
-		int bNum = 0;
-		for(vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
-		{
-			//(*iter)->judgeOnBoundary();
-			if( (*iter)->m_bIsBoundary )
-				bNum++;
-		}
-		return bNum;
+		if(m_vVertices[i]->judgeOnBoundary() ) {
+			vVertOnBoundary[i] = true;
+			bNum++;
+		} else vVertOnBoundary[i] = false;
+	}
+	addAttr<std::vector<bool> >(vVertOnBoundary, VERTEX, StrAttrVertOnBoundary);
+	addAttr(bNum, UNIFORM, StrAttrBoundaryVertCount);
+
+	if (m_bIsIndexArrayExist) {
+		for (int i = 0; i < m_nVertex; ++i) 
+			m_pVertex[i].m_bIsBoundary = vVertOnBoundary[i];
 	}
 
-	if (m_bIsIndexArrayExist)
-	{
-		int bNum = 0;
-		for( int i = 0; i < m_nVertex; i++ )
-		{
-			if( m_pVertex[i].m_bIsBoundary )
-				bNum++;
-		}
-		return bNum;
-	}
-	return -1;
+	return bNum;
 }
 
 int CMesh::calEulerNum(  )
@@ -2490,6 +2483,8 @@ double CMesh::getGeodesicToBoundary(int s) const
 	bool stop = false;
 	double geo = 0.0;
 
+	const std::vector<bool>& vVertIsHole = getVertOnHole_const();
+
 	for (j = 0; j < size; j++)
 	{
 		int ee = notei.m_piEdge[j];
@@ -2497,7 +2492,7 @@ double CMesh::getGeodesicToBoundary(int s) const
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
 		double mgeo = vt.length();
 
-		if(m_pVertex[endv].m_bIsBoundary && !m_pVertex[endv].m_bIsHole) {stop=true; geo=mgeo; break;}	// destination reached
+		if(m_pVertex[endv].m_bIsBoundary && !vVertIsHole[endv]) {stop=true; geo=mgeo; break;}	// destination reached
 		m_pVertex[endv].m_inheap = true;
 		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
 		m_pVertex[endv].m_mark = s;
@@ -2537,7 +2532,7 @@ double CMesh::getGeodesicToBoundary(int s) const
 		heapqueue.pop();
 
 		int sg = nt.m_id;
-		if(m_pVertex[sg].m_bIsBoundary && !m_pVertex[sg].m_bIsHole) 
+		if(m_pVertex[sg].m_bIsBoundary && !vVertIsHole[sg]) 
 		{
 			stop = true; 
 			geo = nt.m_geodesic; 
@@ -2549,7 +2544,7 @@ double CMesh::getGeodesicToBoundary(int s) const
 		
 		if(m_pVertex[sg].m_mark == s) continue;  // marched already
 		m_pVertex[sg].m_mark = s;
-		if(m_pVertex[sg].m_bIsHole) continue;
+		if(vVertIsHole[sg]) continue;
 		nbg.push_back(nt);
 		// update adjacent vertices of sg
 		for (k=0; k<m_pVertex[sg].m_nValence; k++)
@@ -2642,6 +2637,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 
 	bool stop = false;
 	double geo = 0.0;
+	const std::vector<bool>& vVertIsHole = getVertOnHole();
 
 	for (j=0; j<size; j++)
 	{
@@ -2650,7 +2646,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
 		double mgeo = vt.length();
 
-		if(m_pVertex[endv].m_bIsBoundary && !m_pVertex[endv].m_bIsHole) {stop=true; geo=mgeo; break;}	// destination reached
+		if(m_pVertex[endv].m_bIsBoundary && !vVertIsHole[endv]) {stop=true; geo=mgeo; break;}	// destination reached
 		m_pVertex[endv].m_inheap = true;
 		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
 		m_pVertex[endv].m_mark = s;
@@ -2693,7 +2689,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		heapqueue.pop();
 
 		int sg = nt.m_id;
-		if(m_pVertex[sg].m_bIsBoundary && !m_pVertex[sg].m_bIsHole) 
+		if(m_pVertex[sg].m_bIsBoundary && !vVertIsHole[sg]) 
 		{
 			stop=true; 
 			geo=nt.m_geodesic; 
@@ -2705,7 +2701,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 		
 		if(m_pVertex[sg].m_mark==s) continue;  // marched already
 		m_pVertex[sg].m_mark = s;
-		if(m_pVertex[sg].m_bIsHole) continue;
+		if(vVertIsHole[sg]) continue;
 
 		nbg.push_back(nt);
 		// update adjacent vertices of sg
@@ -3307,9 +3303,9 @@ void CMesh::scaleAreaToVertexNum()
 void CMesh::gatherStatistics()
 {
 	// collect/compute statistics
-	// 0. individual face area and normal
-	// 1. m_edge (avg edge length)
-	// 2. boundingBox
+	// 0. individual face normal
+	// 1. avg edge length
+	// 2. bounding box
 	// 3. center
 	// 4. boundary vertex number
 	// 5. individual vertex normal
@@ -3318,8 +3314,8 @@ void CMesh::gatherStatistics()
 	
 	calFaceNormals();
 	calVertNormals();
-
-	int boundaryCount(0);
+	calBoundaryVert();
+	
 	double edgeLength = 0;
 	double center_x = 0.0, center_y = 0.0, center_z = 0.0;
 	Vector3D boundBox(0.0, 0.0, 0.0);
@@ -3328,18 +3324,14 @@ void CMesh::gatherStatistics()
 		center_x += m_vVertices[i]->m_vPosition.x;
 		center_y += m_vVertices[i]->m_vPosition.y;
 		center_z += m_vVertices[i]->m_vPosition.z;
-
 		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
 		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
 		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
-
-		if (m_vVertices[i]->judgeOnBoundary()) 
-			boundaryCount++;
 	}
+
 	center_x = center_x / m_nVertex;
 	center_y = center_y / m_nVertex;
 	center_z = center_z / m_nVertex;
-
 	boundBox.x = abs(boundBox.x - center_x);
 	boundBox.y = abs(boundBox.y - center_y);
 	boundBox.z = abs(boundBox.z - center_z);
@@ -3350,14 +3342,12 @@ void CMesh::gatherStatistics()
 	edgeLength /= m_vHalfEdges.size();
 
 	addAttr(edgeLength, UNIFORM, StrAttrAvgEdgeLength);
-	addAttr(boundaryCount, UNIFORM, StrAttrBoundaryEdgeCount);
 	addAttr(Vector3D(center_x, center_y, center_z), UNIFORM, StrAttrMeshCenter);
 	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
 
 	calCurvatures();
+	findHoles();
 
-//	for (int i = 0; i < m_nVertex; ++i)
-//		this->calVertexCurvature(i);
 	//cout << "VertexNum: " << m_Vertices.size() << "    FaceNum: " << m_Faces.size() << endl;
 	//cout << "EdgeNum: " << m_HalfEdges.size() 
 	// 	 << "  AvgEdgLen: " << edgeLength << endl;
@@ -3412,7 +3402,7 @@ void CMesh::scaleEdgeLenToUnit()
 	for (int i = 0; i < m_nVertex; ++i)
 	{
 		m_vVertices[i]->translateAndScale(-center, scale);
-//		m_pVertex[i].translateAndScale(-center, scale);
+		m_pVertex[i].translateAndScale(-center, scale);
 	}
 
 }
@@ -3664,11 +3654,9 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 bool CMesh::hasBoundary() const
 {
-	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryEdgeCount);
-	if ( attrBoundary == NULL)
-		return true;	
-	else 
-		return attrBoundary->getValue() > 0;
+	assert(hasAttr(StrAttrBoundaryVertCount));
+	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryVertCount);
+	return attrBoundary->getValue() > 0;
 }
 
 void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
@@ -3890,5 +3878,20 @@ const std::vector<Vector3D>& CMesh::getVertNormals_const() const
 	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
 }
 
+const std::vector<bool>& CMesh::getVertOnHole()
+{
+	if(!hasAttr(StrAttrVertOnHole)) findHoles();
+	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
+}
 
+const std::vector<bool>& CMesh::getVertOnHole_const() const
+{
+	assert(hasAttr(StrAttrVertOnHole));
+	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
+}
 
+const std::vector<bool>& CMesh::getVertOnBoundary()
+{
+	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
+	return getAttrValue<std::vector<bool> >(StrAttrVertOnBoundary);
+}

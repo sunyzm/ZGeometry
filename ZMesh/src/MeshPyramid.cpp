@@ -111,9 +111,8 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 	m_ostr << "------- Original Mesh --------" << endl;
 	m_ostr << "  Vertex Num: " << originalMesh->m_nVertex << endl
 		   << "  Face Num: " << originalMesh->m_nFace << endl
-		   << "  Half-edge Num: " << originalMesh->m_nHalfEdge << endl
+		   << "  Half-edge Num: " << originalMesh->m_nHalfEdge << endl;
 		 //<< "  Edge Num: " << originalMesh->GetEdgeNum() << endl 
-		   << "  Boundary Vertex Num: " << originalMesh->getBoundaryVertexNum() << endl; 
 	
 	/* construct multi-resolution mesh structure */
 	MeshLevel baseLevel;
@@ -587,9 +586,8 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 		
 		m_ostr << "  Vertex Num: " << currentMesh->m_nVertex << endl
 			   << "  Face Num: " << currentMesh->m_nFace << endl
-			   << "  Half-edge Num: " << currentMesh->m_nHalfEdge << endl
+			   << "  Half-edge Num: " << currentMesh->m_nHalfEdge << endl;
 			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
-			   << "  Boundary Vertex Num: " << currentMesh->getBoundaryVertexNum() << endl; 
 		
 		currentMesh->assignElementsIndex();
 		currentMesh->buildIndexArrays();

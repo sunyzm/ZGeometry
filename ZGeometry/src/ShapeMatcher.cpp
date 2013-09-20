@@ -32,7 +32,7 @@ const int	 ShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
 
 double findTmax( const CMesh* tmesh, int s )
 {
-	if (tmesh->getBoundaryVertexNum() == 0 ) return -1;
+	if (!tmesh->hasBoundary() ) return -1;
 	double geo = tmesh->getGeodesicToBoundary(s) / tmesh->getAvgEdgeLength();	//normalized by average edge length; requires isHole initialized
 	return geo*geo/4.0;
 }

@@ -475,6 +475,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
 	// draw boundary edges in dark color
+	const std::vector<bool>& vVertIsOnHole = tmesh->getVertOnHole();
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBoundary())   //highlight boundary edge 
 	{
@@ -486,7 +487,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				int p2 = hf->getVertexIndex(1);
 				glLineWidth(2.0);
 				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-				if(tmesh->getVertex(p1)->isHole()) {
+				if(vVertIsOnHole[p1]) {
 					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
 				}
 				Vector3D v1 = tmesh->getVertex(p1)->getPosition();
