@@ -73,7 +73,6 @@ CVertex::CVertex( const Vector3D& v )
 CVertex::CVertex( double x, double y, double z, float r, float g, float b )
 {
 	m_vPosition = Vector3D(x,y,z);
-	m_vColor.r = r; m_vColor.g = g; m_vColor.b = b;
 	m_piEdge = NULL;
 	m_nValence = 0;
 	m_bIsBoundary = false;
@@ -89,7 +88,7 @@ CVertex::CVertex( const CVertex& v )
 	clone(v);
 }
 
-CVertex& CVertex::operator= ( const CVertex& v )
+CVertex& CVertex::operator = ( const CVertex& v )
 {	
 	clone(v);
 	return *this;
@@ -97,27 +96,26 @@ CVertex& CVertex::operator= ( const CVertex& v )
 
 void CVertex::clone(const CVertex& v)
 {
+	if (this == &v) return;
+
 	m_vIndex			= v.m_vIndex;
 	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
 	m_nValence			= v.m_nValence;
 	m_bIsBoundary		= v.m_bIsBoundary;
 	m_bIsHole			= v.m_bIsHole;
-	m_vColor			= v.m_vColor;
+	m_bIsValid			= v.m_bIsValid;
 
 	m_mark = -1;
 	m_LocalGeodesic = -1.0;
 	m_inheap = false;
 
-	if (v.m_piEdge != NULL)
-	{
+	if (v.m_piEdge != NULL) {
 		m_piEdge = new int[m_nValence];		// starting half-edge index array
 		for (int i = 0; i < m_nValence; ++i)
 			this->m_piEdge[i] = v.m_piEdge[i];
 	}
 	else m_piEdge = NULL;
-
-	m_bIsValid = v.m_bIsValid;
 }
 
 std::vector<const CFace*> CVertex::getAdjacentFaces() const
@@ -1077,21 +1075,24 @@ bool CMesh::loadFromM(string sFileName)
 	m_pFace = new CFace[m_nFace];
 	if (m_pFace == NULL) { clearMesh(); return false; }//out of memory
 
-	int i;
-
-	for(i = 0; i < m_nVertex; i++)
+	vector<RGBf> vVertColors(m_nVertex);
+	for(int i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition= VertexList[i];  
 		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 
-		m_pVertex[i].m_vColor.r = VertexColorList[3*i];
-		m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
-		m_pVertex[i].m_vColor.b = VertexColorList[3*i+2];
-	}
-		
-	int cc = 0;
+		vVertColors[i].r = VertexColorList[3*i];
+		vVertColors[i].g = VertexColorList[3*i+1];
+		vVertColors[i].b = VertexColorList[3*i+2];
 
-	for(i = 0; i < m_nFace; i++)
+		//m_pVertex[i].m_vColor.r = VertexColorList[3*i];
+		//m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
+		//m_pVertex[i].m_vColor.b = VertexColorList[3*i+2];
+	}
+	
+	addAttr<std::vector<RGBf> >(vVertColors, VERTEX, StrAttrVertColors);
+
+	for(int i = 0; i < m_nFace; i++)
 	{
 		m_pFace[i].Create(3);
 		m_pFace[i].m_piVertex[0] = FaceList[i*3]-1;
@@ -1099,12 +1100,6 @@ bool CMesh::loadFromM(string sFileName)
 		m_pFace[i].m_piVertex[2] = FaceList[i*3+2]-1;
 	}
 
-	VertexList.clear();
-	//VertexIDList.clear();
-	VertexColorList.clear();
-	//VertexNormList.clear();
-	//VertexParamList.clear();
-	FaceList.clear();
 	bool flag = construct();
 	//cout << "construc=" << flag << endl;
 	return flag;
@@ -1171,17 +1166,23 @@ bool CMesh::saveToM(const std::string& sFileName)
 	
 	const std::vector<Vector3D>& vVertNormals = getVertNormals();
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
+	
+	std::vector<RGBf>* vColors = NULL;
+	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue<std::vector<RGBf> >(StrAttrVertColors);	
+
 	for (int i = 0; i < m_nVertex; i++)
 	{
 		const Vector3D& pos = m_pVertex[i].m_vPosition;
 		const Vector3D& normal = vVertNormals[i];
-		float r = m_pVertex[i].m_vColor.r;
-		float g = m_pVertex[i].m_vColor.g;
-		float b = m_pVertex[i].m_vColor.b;
+		float r(.5), g(.5), b(.5);
+		if (vColors) {
+			r = (*vColors)[i].r;
+			g = (*vColors)[i].g;
+			b = (*vColors)[i].b;
+		}
 		
 		fprintf(fp, "Vertex %ld  %.6f %.6f %.6f {rgb=(%.6f %.6f %.6f) normal=(%.6f %.6f %.6f)",
-			i + 1, pos.x, pos.y, pos.z, r, g, b, normal.x, normal.y, normal.z);
-
+			    i + 1, pos.x, pos.y, pos.z, r, g, b, normal.x, normal.y, normal.z);
 		fprintf(fp, "}\n");
 	}
 

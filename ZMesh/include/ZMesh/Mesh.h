@@ -129,7 +129,6 @@ private:
 	int*					m_piEdge;			// half edge indices start from this vertex
 	int						m_nValence;		    // out valence
 	Vector3D				m_vPosition;		// vertex coordinates
-	RGBf					m_vColor;			// vertex color
 	bool					m_bIsValid;
 	bool					m_bIsBoundary;      // if boundary vertex
 	bool					m_bIsHole;
