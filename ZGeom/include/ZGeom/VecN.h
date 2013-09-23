@@ -73,7 +73,9 @@ public:
 	VecN<T> operator - (const VecN<T>& v2) const { return *this + (-v2); }
 	VecN<T> operator * (T coeff) const { VecN<T> v3(*this); v3 *= coeff; return v3; }
 	VecN<T> operator / (T coeff) const { return (*this) * coeff; }
-	friend VecN<T> operator * (T t, const VecN<T>& v1);    
+	friend VecN<T> operator * (T t, const VecN<T>& v1) {
+		return v1 * t;
+	}
 
 	T norm1() const;
 	T norm2() const;
@@ -232,13 +234,6 @@ inline VecN<T> VecN<T>::operator - () const
 	for (int i = 0; i < mDim; ++i) v2.mVec[i] = -mVec[i];
 	return v2;
 }
-
-template<typename T>
-inline VecN<T> operator * (T t, const VecN<T>& v1)
-{
-	return v1 * t;
-}
-
 
 /* definitions for operator+= */
 #ifdef USE_PPL

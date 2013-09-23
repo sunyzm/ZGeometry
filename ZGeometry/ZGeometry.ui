@@ -259,6 +259,7 @@
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
     <addaction name="actionClone"/>
+    <addaction name="actionRevert"/>
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
     <addaction name="menuDeform"/>
@@ -793,6 +794,11 @@
   <action name="actionRegisterTest">
    <property name="text">
     <string>Register Test</string>
+   </property>
+  </action>
+  <action name="actionRevert">
+   <property name="text">
+    <string>Revert</string>
    </property>
   </action>
  </widget>

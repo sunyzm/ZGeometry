@@ -78,10 +78,11 @@ private slots:
 	void toggleDrawRegistration(bool show = false);
 	
 	void clone();
+	void revert();
+	void reconstructMHB();
 	void deformSimple();
 	void deformLaplace();
-	void deformSGW();
-	void reconstructMHB();
+	void deformSGW();	
 	void reconstructSGW();
 	void filterExperimental();
 

@@ -14,6 +14,7 @@
 #include <functional>
 #include <unordered_map>
 #include <ZUtil/color.h>
+#include "ZGeom/VecN.h"
 #include "ZGeom/Vec3.h"
 #include "Geometry.h"
 #include "Quat.h"
@@ -29,9 +30,14 @@ class MeshCoordinates
 {
 public:
 	int size() const { return mSize; }
-	void resize(int n) {mSize = n; mCoordX.resize(mSize); mCoordY.resize(mSize); mCoordZ.resize(mSize); }
+	void resize(int n) {
+		mSize = n; 
+		mCoordX.resize(mSize, 0); 
+		mCoordY.resize(mSize, 0); 
+		mCoordZ.resize(mSize, 0); 
+	}
 
-	const std::vector<double>& getCoordFunc(int i) const {
+	const ZGeom::VecNd& getCoordFunc(int i) const {
 		switch (i)
 		{
 		case 0: return mCoordX;
@@ -41,7 +47,7 @@ public:
 		}
 	}
 
-	std::vector<double>& getCoordFunc(int i) {
+	ZGeom::VecNd& getCoordFunc(int i) {
 		switch (i)
 		{
 		case 0: return mCoordX;
@@ -58,7 +64,7 @@ public:
 
 private:
 	int mSize;
-	std::vector<double> mCoordX, mCoordY, mCoordZ;
+	ZGeom::VecNd mCoordX, mCoordY, mCoordZ;
 };
 
 class GeoNote
@@ -278,8 +284,8 @@ public:
 
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh);
-	void		cloneFrom(const CMesh* oldMesh);
-	bool		Load(const std::string& sFileName);			// load from file
+	//void		cloneFrom(const CMesh* oldMesh);
+	bool		Load(const std::string& sFileName);		// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
@@ -384,7 +390,7 @@ public:
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
 	const std::vector<Vector3D>& getVertNormals_const() const;
-	const std::vector<bool>& getVertOnHole();
+	const std::vector<bool>&	 getVertOnHole();
 	const std::vector<bool>&     getVertOnHole_const() const;
 	const std::vector<bool>&	 getVertOnBoundary();
 	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }

@@ -159,6 +159,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
 	////////	Edit	////////
+	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
@@ -227,18 +228,23 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 		loadInitialMeshes(mesh_list_name); 
 
 		/* compute and decompose mesh Laplacians */
+#if 0		
 		int init_laplacian_type = MeshLaplacian::CotFormula;
 		g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
 		if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount) { 
 			timer.startTimer();
-			computeLaplacian(init_laplacian_type);
+			computeLaplacian(init_laplacian_type);			
 			timer.stopTimer("-- Time to decompose initial Laplacians: ", " --");		
 		} else {
 			std::cout << "Unrecognized Laplacian type; Nothing is done.";
 		}
+#endif
+		computeLaplacian(MeshLaplacian::CotFormula);
+		computeLaplacian(MeshLaplacian::SymCot);
 
 		if (g_task == TASK_REGISTRATION) registerPreprocess();
-		
+		if (g_task == TASK_EDITING) mShapeEditor.init(mProcessors[0]);
+
 	} catch (std::exception* e) {
 		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
 		return false;
@@ -249,10 +255,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
-	/* ---- load meshes ---- */
-	if (!ZUtil::fileExist(mesh_list_name))
-		throw std::runtime_error("Cannot open file" + mesh_list_name + "!");
+	ZUtil::runtime_assert (ZUtil::fileExist(mesh_list_name),  "Cannot open file mesh list file!");
 	ifstream meshfiles(mesh_list_name);
+	
 	std::vector<std::string> vMeshFiles;
 	while (!meshfiles.eof()) {
 		std::string meshFileName;
@@ -917,21 +922,9 @@ void QZGeometryWindow::clone()
 void QZGeometryWindow::reconstructMHB()
 {
 	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
-	int nEig = mProcessors[0]->getMHB().eigVecCount() * ratio;
-
-	vector<double> vx, vy, vz;
-	mProcessors[0]->reconstructByMHB(nEig, vx, vy, vz);
-	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
-	ui.glMeshWidget->update();
-
-	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
-	{
-		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
-	}
-	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
-	qout.output("MHB reconstruction with " + Int2String(nEig) + " MHBs.");
-	qout.output("Average position error: " + QString::number(errorSum));
+	int nEig = mProcessors[0]->getMHB(MeshLaplacian::CotFormula).eigVecCount() * ratio;
+	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
+	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
 	ui.glMeshWidget->update();
 }
@@ -1020,15 +1013,16 @@ void QZGeometryWindow::computeEigenfunction()
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		MeshFunction *mf = new MeshFunction(mp.getMesh_const()->getMeshSize());
-		mf->copyValues(mp.getMHB().getEigVec(select_eig).toStdVector());
+		mf->copyValues(mp.getMHB(MeshLaplacian::CotFormula).getEigVec(select_eig).toStdVector());
 		mf->setIDandName(SIGNATURE_EIG_FUNC, "Eigen_Function");
 		mp.replaceProperty(mf);			
 	}
 
 	for (int i = 0; i < mMeshCount; ++i) {
-		double *data = mProcessors[i]->getMHB().getEigVec(select_eig).c_ptr();
+		double *data = mProcessors[i]->getMHB(MeshLaplacian::SymCot).getEigVec(select_eig).c_ptr();
 		int count = mProcessors[i]->getMesh()->getMeshSize();
-		std::string varName = "eig" + boost::lexical_cast<std::string>(i);
+		std::string varName = "eig" + boost::lexical_cast<std::string>(i) 
+							  + "_" + boost::lexical_cast<std::string>(select_eig);
 		mEngineWrapper.addVariable(data, count, 1, varName);
 	}
 
@@ -1610,8 +1604,8 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 		qout.output("MHB saved to " + pathMHB);
 	}
 
-	std::cout << "Min EigVal: " << mp.getMHB().getEigVals().front() 
-			  << "; Max EigVal: " << mp.getMHB().getEigVals().back() << std::endl;
+	std::cout << "Min EigVal: " << mp.getMHB(MeshLaplacian::CotFormula).getEigVals().front() 
+			  << "; Max EigVal: " << mp.getMHB(MeshLaplacian::CotFormula).getEigVals().back() << std::endl;
 }
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
@@ -1620,7 +1614,7 @@ void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplaci
 	int nEigVec = DEFAULT_EIGEN_SIZE;
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		if (!mProcessors[obj]->isLaplacianConstructed(laplacianType))
+		if (!mProcessors[obj]->hasLaplacian(laplacianType))
 			throw std::logic_error("Laplacian type not valid!");
 		if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
 			++totalToDecompose;
@@ -1910,4 +1904,10 @@ void QZGeometryWindow::verifyAreas() const
 		std::cout << "Total surface area: " << areaSum << std::endl;
 		std::cout << "Total vert weight: " << weightSum << std::endl;
 	}
+}
+
+void QZGeometryWindow::revert()
+{
+	mShapeEditor.revert();
+	ui.glMeshWidget->update();
 }

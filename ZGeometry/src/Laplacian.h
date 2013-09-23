@@ -22,22 +22,30 @@ class ManifoldHarmonics : public ZGeom::EigenSystem
 class MeshLaplacian
 {
 public:
-	static const std::string LaplacianTypeNames[];
 	enum LaplacianType {Tutte = 0, Umbrella,  CotFormula, SymCot, Anisotropic1,
 						Anisotropic2, IsoApproximate, 
 						LaplacianTypeCount} m_laplacianType;
-		
 
-	MeshLaplacian() : mLaplacianConstructed(false) {}
+	typedef void (MeshLaplacian::*MeshLaplacianConstruct)(const CMesh* tmesh);	
+
+	MeshLaplacian() : mConstructed(false) { 
+		mConstructFunc[Tutte] = &MeshLaplacian::constructTutte; 
+		mConstructFunc[Umbrella] = &MeshLaplacian::constructUmbrella;
+		mConstructFunc[CotFormula] = &MeshLaplacian::constructCotFormula;
+		mConstructFunc[SymCot] = &MeshLaplacian::constructSymCot;
+	}
 	void constructUmbrella(const CMesh* tmesh);		// symmetric graph Laplacian 
 	void constructTutte(const CMesh* tmesh);		// asymmetric graph Laplacian
 	void constructCotFormula(const CMesh* tmesh);	// Cotangent formula
 	void constructSymCot(const CMesh* tmesh);		// symmetric cotangent formula
+
 	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
 
-	bool isLaplacianConstructed() const { return mLaplacianConstructed; }
+	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
+
+	bool isLaplacianConstructed() const { return mConstructed; }
 	const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
 	const ZGeom::SparseMatrix<double>& getW() const { return mW; }
 	void decompose(int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys);
@@ -45,5 +53,7 @@ public:
 private:
 	int mOrder;
 	ZGeom::SparseMatrix<double> mLS, mW;
-	bool mLaplacianConstructed;
+	bool mConstructed;
+	MeshLaplacianConstruct mConstructFunc[LaplacianTypeCount];
+
 };

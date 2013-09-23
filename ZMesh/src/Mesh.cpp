@@ -3819,9 +3819,9 @@ double CMesh::calFaceArea( int i ) const
 void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
 {
 	coords.resize(m_nVertex);
-	std::vector<double>& vx = coords.getCoordFunc(0);
-	std::vector<double>& vy = coords.getCoordFunc(1);
-	std::vector<double>& vz = coords.getCoordFunc(2);
+	ZGeom::VecNd& vx = coords.getCoordFunc(0);
+	ZGeom::VecNd& vy = coords.getCoordFunc(1);
+	ZGeom::VecNd& vz = coords.getCoordFunc(2);
 
 	for (int i = 0; i < m_nVertex; ++i) {
 		const Vector3D& vCoord = m_vVertices[i]->getPosition();
@@ -3834,9 +3834,9 @@ void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
 	ZUtil::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
-	const std::vector<double>& vx = coords.getCoordFunc(0);
-	const std::vector<double>& vy = coords.getCoordFunc(1);
-	const std::vector<double>& vz = coords.getCoordFunc(2);
+	const std::vector<double> vx = coords.getCoordFunc(0).toStdVector();
+	const std::vector<double> vy = coords.getCoordFunc(1).toStdVector();
+	const std::vector<double> vz = coords.getCoordFunc(2).toStdVector();
 	
 	setVertexCoordinates(vx, vy, vz);
 }

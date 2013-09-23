@@ -13,10 +13,6 @@ using namespace std;
 using ZGeom::PI;
 using ZGeom::uint;
 
-const std::string MeshLaplacian::LaplacianTypeNames[] = {"Umbrella", "CotFormula", 
-														 "Anisotropic", "Anisotropic2", 
-														 "IsoApproximate"};
-
 void MeshLaplacian::decompose( int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys )
 {
 	ZGeom::EigenCompute eigenCompute(ep);
@@ -50,7 +46,7 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConstructed = true;
+	mConstructed = true;
 	m_laplacianType = Tutte;
 }
 
@@ -74,7 +70,7 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConstructed = true;
+	mConstructed = true;
 	m_laplacianType = CotFormula;
 }
 
@@ -158,7 +154,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
-	mLaplacianConstructed = true;
+	mConstructed = true;
 }
 
 void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
@@ -235,7 +231,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	vWeights.resize(mOrder, 1.0);	
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
-	mLaplacianConstructed = true;
+	mConstructed = true;
 }
 
 void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
@@ -301,5 +297,5 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
-	mLaplacianConstructed = true;
+	mConstructed = true;
 }

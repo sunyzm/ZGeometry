@@ -79,16 +79,15 @@ public:
 	void reconstructBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false);
 	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	void reconstructByDifferential(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
-	void reconstructByMHB(int approxN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz) const;
 	
 	// ---- boolean query ---- //
 	bool isSGWComputed() const { return m_bSGWComputed; }
-	bool isLaplacianConstructed(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
+	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
 	// ---- attributes access --- //
-	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMeshLaplacian[laplacianType]; }
-	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula) const { return vMHB[laplacianType]; }
+	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return vMeshLaplacian[laplacianType]; }
+	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return vMHB[laplacianType]; }
 	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
 	int  getRefPointIndex() const { return pRef; }
 	void setRefPointIndex(int i) { pRef = i; }
@@ -100,8 +99,8 @@ public:
 	int getConstrainWeight() const { return constrain_weight; }
 	void setConstrainWeight(double w) { constrain_weight = w; }
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
-	const std::map<int, Vector3D>& getHandles() const { return mHandles; }
-		
+	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
+
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;

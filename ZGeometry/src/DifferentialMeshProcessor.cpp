@@ -100,7 +100,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-	assert(isLaplacianConstructed(laplacianType));
+	assert(hasLaplacian(laplacianType));
 	if (!mpEngineWrapper->isOpened())
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
@@ -392,52 +392,6 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 //  VectorPointwiseDivide(vx, vWeight, vx);
 //  VectorPointwiseDivide(vy, vWeight, vy);
 //  VectorPointwiseDivide(vz, vWeight, vz);
-}
-
-void DifferentialMeshProcessor::reconstructByMHB( int aN, std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz ) const
-{
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	vx.resize(m_size);
-	vy.resize(m_size);
-	vz.resize(m_size);
-
-	vector<double> vxcoord0, vycoord0, vzcoord0;
-	mesh->getCoordinateFunction(0, vxcoord0);
-	mesh->getCoordinateFunction(1, vycoord0);
-	mesh->getCoordinateFunction(2, vzcoord0);
-
-	vector<double> vWeight;
-	mLaplacian.getW().getDiagonal(vWeight);
-	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
-	VectorPointwiseProduct(vWeight, vxcoord0, xWeightedCoord);
-	VectorPointwiseProduct(vWeight, vycoord0, yWeightedCoord);
-	VectorPointwiseProduct(vWeight, vzcoord0, zWeightedCoord);
-
-	vector<double> xCoeff, yCoeff, zCoeff;
-	int approxN = std::min(aN, (int)mhb.eigVecCount());
-	for (int k = 0; k < approxN; ++k)
-	{
-		xCoeff.push_back(VectorDotProduct(xWeightedCoord, mhb.getEigVec(k).toStdVector()));
-		yCoeff.push_back(VectorDotProduct(yWeightedCoord, mhb.getEigVec(k).toStdVector()));
-		zCoeff.push_back(VectorDotProduct(zWeightedCoord, mhb.getEigVec(k).toStdVector()));
-	}
-
-	for (int i = 0; i < m_size; ++i)
-	{
-		double sumX(0), sumY(0), sumZ(0);
-		for (int k = 0; k < approxN; ++k)
-		{
-			sumX += xCoeff[k] * mhb.getEigVec(k)[i];
-			sumY += yCoeff[k] * mhb.getEigVec(k)[i];
-			sumZ += zCoeff[k] * mhb.getEigVec(k)[i];
-		}
-		vx[i] = sumX; 
-		vy[i] = sumY;
-		vz[i] = sumZ;
-	}
-	
 }
 
 void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /* =false */ ) const
@@ -1233,16 +1187,16 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 
 void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-	if (isLaplacianConstructed(laplacianType)) return;
+	if (hasLaplacian(laplacianType)) return;
 	
+	MeshLaplacian& laplacian = vMeshLaplacian[laplacianType];
 	switch(laplacianType)
 	{
 	case MeshLaplacian::Umbrella:
-		vMeshLaplacian[laplacianType].constructUmbrella(mesh);
-		break;
-
+	case MeshLaplacian::Tutte:
 	case MeshLaplacian::CotFormula:
-		vMeshLaplacian[laplacianType].constructCotFormula(mesh);   
+	case MeshLaplacian::SymCot:
+		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mesh);
 		break;
 
 	case MeshLaplacian::Anisotropic1:
@@ -1264,6 +1218,7 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 	case MeshLaplacian::IsoApproximate:
 		vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
 		break;
+	default: throw std::logic_error("Unrecognized Laplacian type");
 	}       
 }
 
