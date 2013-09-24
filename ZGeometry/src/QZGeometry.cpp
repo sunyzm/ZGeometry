@@ -160,11 +160,12 @@ void QZGeometryWindow::makeConnections()
 
 	////////	Edit	////////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
+	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
+	QObject::connect(ui.actionDeformDifferential, SIGNAL(triggered()), this, SLOT(deformDifferential()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
-	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 	 
@@ -1023,7 +1024,7 @@ void QZGeometryWindow::computeEigenfunction()
 		int count = mProcessors[i]->getMesh()->getMeshSize();
 		std::string varName = "eig" + boost::lexical_cast<std::string>(i) 
 							  + "_" + boost::lexical_cast<std::string>(select_eig);
-		mEngineWrapper.addVariable(data, count, 1, varName);
+		mEngineWrapper.addVariable(data, count, 1, false, varName);
 	}
 
 	displaySignature(SIGNATURE_EIG_FUNC);
@@ -1692,23 +1693,24 @@ void QZGeometryWindow::addMesh()
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
 	if (mObjInFocus < 0) return;
+
 	const std::vector<MeshProperty*> vProperties = mProcessors[mObjInFocus]->properties();
 	vector<MeshFunction*> vSigFunctions;
-	for_each(vProperties.begin(), vProperties.end(), [&](MeshProperty* pp) {
+	for (MeshProperty* pp : vProperties) {
 		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_COUNT)
 			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
-	});
-
+	}
+	
 	QList<QAction*> signatureActions = ui.menuSignature->actions();
-	for_each(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* qa) {
+	for (QAction* qa : m_actionDisplaySignatures) {
 		if (vSigFunctions.end() == find_if(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* mf){ return mf->name == qa->text().toStdString();}))
 		{
 			ui.menuSignature->removeAction(qa);
 			delete qa;			
 		}
-	});
+	}
 
-	for_each(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* pmf) {
+	for (MeshFunction* pmf : vSigFunctions) {
 		if (m_actionDisplaySignatures.end() == find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == pmf->name;}))
 		{
 			QAction* newDisplayAction = new QAction(pmf->name.c_str(), this);
@@ -1716,8 +1718,8 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
 			signatureSignalMapper->setMapping(newDisplayAction, (int)pmf->id);
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), signatureSignalMapper, SLOT(map()));
-		}		
-	});
+		}	
+	}
 }
 
 void QZGeometryWindow::computeSimilarityMap( int simType )
@@ -1909,5 +1911,11 @@ void QZGeometryWindow::verifyAreas() const
 void QZGeometryWindow::revert()
 {
 	mShapeEditor.revert();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::deformDifferential()
+{
+	mShapeEditor.differentialDeform();
 	ui.glMeshWidget->update();
 }

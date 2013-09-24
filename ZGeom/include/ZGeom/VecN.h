@@ -60,6 +60,7 @@ public:
 	uint size() const { return mDim; }
 	void resize(int n);
 	void resize(int n, T val);
+	void expandTo(int n);
 
 	const VecN<T>& operator += (const VecN<T>& v2);
 	const VecN<T>& operator -= (const VecN<T>& v2) { return (*this) += -v2; }
@@ -215,7 +216,7 @@ template<typename T>
 inline void VecN<T>::resize(int n)
 {
 	delete []mVec;
-	this->mDim = n;
+	mDim = n;
 	mVec = new T[mDim];
 }
 
@@ -226,6 +227,19 @@ inline void VecN<T>::resize(int n, T val)
 	for (int i = 0; i < mDim; ++i) mVec[i] = val;
 }
 
+template<typename T>
+inline void ZGeom::VecN<T>::expandTo( int n )
+{
+	if (n < mDim) throw runtime_error("VecN cannot be expanded to a smaller size than before");
+	else if (n == mDim) return;
+	else {
+		T* data = new T[n];
+		if (mDim > 0) std::copy_n(mVec, mDim, data);
+		delete []mVec;
+		mVec = data;
+		mDim = n;
+	}
+}
 
 template<typename T>
 inline VecN<T> VecN<T>::operator - () const

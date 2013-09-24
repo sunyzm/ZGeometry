@@ -4,25 +4,31 @@
 #include <mkl.h>
 #include "MatVecFunctor.h"
 #include "SparseMatrix.h"
+#include "VecN.h"
 
 namespace ZGeom
 {
 
-    class SparseMatVecMultiplier : public MatVecFunctor
-    {
-    public:
-        virtual void operator() (double *in, double* out);    
-        SparseMatVecMultiplier(const SparseMatrix<double>& mat, bool isSymmetric = false);
-        SparseMatVecMultiplier(int order, int nonzeroCount, int* rows, int *cols, double *vals, bool isSymmetric = false);
-        ~SparseMatVecMultiplier();
+	class SparseMatVecMultiplier : public MatVecFunctor
+	{
+	public:
+		virtual void operator() (double *in, double* out) { mul(in, out); }   
+		SparseMatVecMultiplier(const SparseMatrix<double>& mat, bool isSymmetric = false);
+		SparseMatVecMultiplier(int order, int nonzeroCount, int* rows, int *cols, double *vals, bool isSymmetric = false);
+		~SparseMatVecMultiplier();
 
-    private:
-        bool mIsSymmetric;
-        MKL_INT* mRowInd;
-        MKL_INT* mColInd;
-        double* mVal;
-        MKL_INT mNonzeroCount;
-    };
+		void mul(double *in, double *out);
+		void mul(const VecNd& vin, VecNd& vout) { vout.resize(mOrder); mul(vin.c_ptr(), vout.c_ptr()); }
+		VecNd multiply(const VecNd& right);
+		
+
+	private:
+		bool mIsSymmetric;
+		MKL_INT* mRowInd;
+		MKL_INT* mColInd;
+		double* mVal;
+		MKL_INT mNonzeroCount;
+	};
 }
 
 #endif

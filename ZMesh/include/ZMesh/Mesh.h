@@ -24,11 +24,11 @@ const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
 const int MAX_HOLE_SIZE = 20;
 
-typedef std::vector<int> VectorInt;
-
 class MeshCoordinates
 {
 public:
+	MeshCoordinates() : mSize(0) {}
+	MeshCoordinates(int meshSize) { resize(meshSize); }
 	int size() const { return mSize; }
 	void resize(int n) {
 		mSize = n; 
@@ -62,6 +62,8 @@ public:
 		return ZGeom::Vec3d(mCoordX[k], mCoordY[k], mCoordZ[k]);
 	}
 
+	ZGeom::Vec3d operator [] (int k) const { return getCoordinate(k); }
+
 private:
 	int mSize;
 	ZGeom::VecNd mCoordX, mCoordY, mCoordZ;
@@ -78,13 +80,7 @@ public:
 	friend bool operator > (const GeoNote& note1, const GeoNote& note2) { return note1.m_geodesic > note2.m_geodesic; }
 };
 
-class GeoCompare 
-{
-public:
-	bool operator()(const GeoNote& Left, const GeoNote& Right) const { return ( Left.m_geodesic > Right.m_geodesic ); }
-};
-
-typedef std::priority_queue<GeoNote, std::vector<GeoNote>, /*GeoCompare*/std::greater<GeoNote> > GeoQueue;
+typedef std::priority_queue<GeoNote, std::vector<GeoNote>, std::greater<GeoNote> > GeoQueue;
 
 class CFace;
 class CHalfEdge;
@@ -305,10 +301,10 @@ public:
 	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	int					getMeshSize() const { return m_nVertex; }
 	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
-	VectorInt           getOriginalVertexIndex() const;
-	VectorInt	        getNeighborVertexIndex(int v, int ring) const;
-	VectorInt           getRingVertexIndex(int v, int ring) const;
-	VectorInt	        getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
+	std::vector<int>    getOriginalVertexIndex() const;
+	std::vector<int>	getNeighborVertexIndex(int v, int ring) const;
+	std::vector<int>    getRingVertexIndex(int v, int ring) const;
+	std::vector<int>	getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
 	void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void				getVertCoordinates(MeshCoordinates& coords) const;
 	void				setVertCoordinates(const MeshCoordinates& coords);

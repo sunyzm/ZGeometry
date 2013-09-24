@@ -329,8 +329,7 @@ namespace ZGeom
 
 	template<typename T>
 	template<typename F>
-	inline void 
-		SparseMatrix<T>::convertToFull(F* fullMat, MatrixForm form /*= MAT_UPPER*/) const
+	inline void SparseMatrix<T>::convertToFull(F* fullMat, MatrixForm form /*= MAT_UPPER*/) const
 	{
 		assert (mRowCount == mColCount || form == MAT_FULL);  // only square matrix has upper or lower CSR   
 		for (uint k = 0; k < mRowCount * mColCount; ++k) fullMat[k] = 0.0;
@@ -340,7 +339,7 @@ namespace ZGeom
 			if (form == MAT_UPPER && iter->row() > iter->col()) continue;   // only upper triangle elements
 			if (form == MAT_LOWER && iter->row() < iter->col()) continue;   // only lower triangle elements
 
-			fullMat[iter->row()*mColCount + iter->col()] = iter->val();    
+			fullMat[(iter->row()-1) * mColCount + (iter->col()-1)] = iter->val();    
 		}
 	}
 

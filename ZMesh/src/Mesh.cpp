@@ -3407,7 +3407,7 @@ void CMesh::scaleEdgeLenToUnit()
 
 }
 
-VectorInt CMesh::getOriginalVertexIndex() const
+std::vector<int> CMesh::getOriginalVertexIndex() const
 {
 	vector<int> vret;
 	for (vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
@@ -3708,7 +3708,7 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	}
 }
 
-VectorInt CMesh::getRingVertexIndex( int v, int ring ) const
+std::vector<int> CMesh::getRingVertexIndex( int v, int ring ) const
 {
 	if (ring < 1) 
 		throw logic_error("Error: getRingVertex with ring < 1");

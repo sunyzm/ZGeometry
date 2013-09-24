@@ -101,6 +101,8 @@ public:
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
 	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
 
+	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }
+
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;

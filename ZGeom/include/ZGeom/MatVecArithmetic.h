@@ -5,6 +5,7 @@
 #include "VecN.h"
 #include "SparseMatrix.h"
 #include "SparseMatVecMultiplier.h"
+#include "DenseMatVecMultiplier.h"
 
 namespace ZGeom
 {

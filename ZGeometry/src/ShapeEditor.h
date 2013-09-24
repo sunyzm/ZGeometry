@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <ZMesh/Mesh.h>
+#include <ZGeom/MatlabEngineWrapper.h>
 #include "DifferentialMeshProcessor.h"
 
 class ShapeEditor
@@ -13,25 +14,19 @@ public:
 		mProcessor = processor; 
 		mMesh = processor->getMesh();
 		processor->getMesh()->getVertCoordinates(mOldCoord); 
+		mEngine = processor->getMatlabEngineWrapper();
 		std::cout << "Shape editor is initialized!" << std::endl;
 	}
 
 	void revert() { mMesh->setVertCoordinates(mOldCoord); };
 
-	void addNewHandle( int hIdx )
-	{
-		auto iter = mHandles.find(hIdx);
-		if (iter != mHandles.end()) mHandles.erase(iter);
-		else mHandles[hIdx] = mMesh->getVertex(hIdx)->getPosition();	 
-	}
-
 	void manifoldHarmonicsReconstruct(int nEig);
-	void differentialReconstruct(int nEig);
+	void differentialDeform();
 
 private:
 	CMesh* mMesh;
-	DifferentialMeshProcessor* mProcessor;
 	MeshCoordinates mOldCoord;
-	std::map<int, Vector3D> mHandles;
-	int mActiveHandle;
+	DifferentialMeshProcessor* mProcessor;
+	ZGeom::MatlabEngineWrapper* mEngine;
+	
 };

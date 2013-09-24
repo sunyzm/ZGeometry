@@ -14,7 +14,7 @@ namespace ZGeom
 class MatlabArrayWrapper
 {
 public:
-	MatlabArrayWrapper(Engine* ep, double* data, int row, int col, const std::string& name) 
+	MatlabArrayWrapper(Engine* ep, double* data, int row, int col, bool rowMajor, const std::string& name) 
 		: mName(name), mRow(row), mCol(col) 
 	{
 		mData = engGetVariable(ep, name.c_str());
@@ -22,7 +22,14 @@ public:
 
 		mData = mxCreateDoubleMatrix(mRow, mCol, mxREAL);
 		double *aa = mxGetPr(mData);
-		std::copy_n(data, row*col, aa);
+		if (rowMajor) {
+			for (int j = 0; j < col; ++j)
+				for (int i = 0; i < row; ++i)
+					aa[j*row + i] = data[i*col + j];
+		} else {
+			std::copy_n(data, row*col, aa);
+		}
+		
 		engPutVariable(ep, mName.c_str(), mData);
 	}
 
@@ -52,15 +59,23 @@ public:
 	/* Put a variable into MATLAB's workspace with the specified name */
 	int putVariable(const char *var_name, const mxArray *ap) const;    
 
-	void addVariable(double* data, int row, int col, const std::string& name) {
-		mVariables.push_back(new MatlabArrayWrapper(m_ep, data, row, col, name));
+	void addVariable(double* data, int row, int col, bool rowMajor, const std::string& name) {
+		mVariables.push_back(new MatlabArrayWrapper(m_ep, data, row, col, rowMajor, name));
 	}
 
-	void addVariable(int *data, int row, int col, const std::string& name) {
+	void addVariable(int *data, int row, int col, bool rowMajor, const std::string& name) {
 		double *buf = new double[row*col];
 		for (int i = 0; i < row*col; ++i) buf[i] = data[i];
-		addVariable(buf, row, col, name);
+		addVariable(buf, row, col, rowMajor, name);
 		delete []buf;
+	}
+
+	void addColVecVariable(double *data, int row, const std::string& name) {
+		addVariable(data, row, 1, false, name);
+	}
+
+	void addColVecVariable(int *data, int row, const std::string& name) {
+		addVariable(data, row, 1, false, name);
 	}
 
 	double* getVariablePtr(const std::string& name) {

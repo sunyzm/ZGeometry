@@ -80,6 +80,7 @@ private slots:
 	void clone();
 	void revert();
 	void reconstructMHB();
+	void deformDifferential();
 	void deformSimple();
 	void deformLaplace();
 	void deformSGW();	

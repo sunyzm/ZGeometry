@@ -117,7 +117,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			if (obj_index >= 0 && glPick(x, y, p, obj_index)) {
 				double dmin = 1e10;
 				int hIdx = -1;
-				int vertCount = vpMP[obj_index]->getMesh_const()->vertCount();
+				int vertCount = vpMP[obj_index]->getMesh()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi) {
 					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->getPosition());
 					if (d < dmin) {
