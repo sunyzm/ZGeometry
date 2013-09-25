@@ -3,6 +3,8 @@
 #include <ZGeom/SparseMatrixCSR.h>
 #include <ZGeom/VecN.h>
 #include <ZGeom/MatVecArithmetic.h>
+#include <ZUtil/timer.h>
+#include <ZUtil/zassert.h>
 
 void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 {
@@ -15,7 +17,7 @@ void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
-	assert(nEig <= mhb.eigVecCount());
+	ZUtil::logic_assert(nEig <= mhb.eigVecCount(), "Insufficient eigenvectors in mhb");
 
 	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0),
 					   &vy = oldCoord.getCoordFunc(1),
@@ -49,14 +51,15 @@ void ShapeEditor::differentialDeform()
 	}
 
 	const int anchorWeight = 1.0;
-
+	CStopWatch timer;
 	const int vertCount = mMesh->vertCount();
+
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
-	mEngine->addVariable(oldCoord.getCoordFunc(0).c_ptr(), vertCount, 1, false, "ecx");
-	mEngine->addVariable(oldCoord.getCoordFunc(1).c_ptr(), vertCount, 1, false, "ecy");
-	mEngine->addVariable(oldCoord.getCoordFunc(2).c_ptr(), vertCount, 1, false, "ecz");
-
+	mEngine->addVariable(oldCoord.getXCoord().c_ptr(), vertCount, 1, false, "ecx");
+	mEngine->addVariable(oldCoord.getYCoord().c_ptr(), vertCount, 1, false, "ecy");
+	mEngine->addVariable(oldCoord.getZCoord().c_ptr(), vertCount, 1, false, "ecz");
+	
 	std::vector<int> anchorIndex;
 	std::vector<Vector3D> anchorPos;
 	for (auto a : anchors) {
@@ -65,19 +68,11 @@ void ShapeEditor::differentialDeform()
 	}
 
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
-	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);
-	
-	ZGeom::DenseMatrixd denseMat(vertCount, vertCount);
-	matLs.convertToFull<double>(denseMat.raw_ptr(), ZGeom::MAT_FULL);
-	mEngine->addVariable(denseMat.raw_ptr(), vertCount, vertCount, true, "denseLs");
-	ZGeom::DenseMatVecMultiplier denseMulLs(denseMat);
-	
+	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
 	ZGeom::VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(vertCount);
-		denseMulLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);		
-// 		diffCoord[i].resize(vertCount);
-// 		mulLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
+		mulLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
 
 	ZGeom::VecNd solveRHS[3];
@@ -88,32 +83,36 @@ void ShapeEditor::differentialDeform()
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
 		}
 	}
+	mEngine->addColVec(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
+	mEngine->addColVec(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
+	mEngine->addColVec(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
 
-	ZGeom::DenseMatrixd matOpt(vertCount + anchorCount, vertCount);
-	matOpt.copyRows(denseMat, 0);
-	double *matOptData = matOpt.raw_ptr();
-	for (int i = 0; i < anchorCount; ++i) {
-		for (int j = 0; j < vertCount; ++j) matOptData[(vertCount+i)*vertCount+j] = 0.0;
-		matOptData[(vertCount+i)*vertCount + anchorIndex[i]] = anchorWeight;
-	}
+	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount);
+	std::vector<int> rowInd, colInd;
+	std::vector<double> vals;
+	matOptS.copyElements(matLs);
+	for (int a = 0; a < anchorCount; ++a) 
+		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, anchorWeight);
+	matOptS.convertToCOO(rowInd, colInd, vals, ZGeom::MAT_FULL);
+	mEngine->addSparseMat(&rowInd[0], &colInd[0], &vals[0], vertCount + anchorCount, vertCount, matOptS.nonzeroCount(), "matOptS");
+	
 
-	mEngine->addVariable(matOptData, vertCount + anchorCount, vertCount, true, "matOpt");
-	mEngine->addColVecVariable(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
-	mEngine->addColVecVariable(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
-	mEngine->addColVecVariable(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
+	timer.startTimer();	
+	mEngine->eval("lsx=matOptS\\dcx;");
+	mEngine->eval("lsy=matOptS\\dcy;");
+	mEngine->eval("lsz=matOptS\\dcz;");
+	timer.stopTimer("Deformation time: ");
 
-	mEngine->eval("lsx=matOpt\\dcx;");
-	mEngine->eval("lsy=matOpt\\dcy;");
-	mEngine->eval("lsz=matOpt\\dcz;");
 
-	double *lsx = mEngine->getVariablePtr("lsx");
-	double *lsy = mEngine->getVariablePtr("lsy");
-	double *lsz = mEngine->getVariablePtr("lsz");
+	double *lsx = mEngine->getDblVariablePtr("lsx");
+	double *lsy = mEngine->getDblVariablePtr("lsy");
+	double *lsz = mEngine->getDblVariablePtr("lsz");
 
-	MeshCoordinates newCoord(vertCount);
-	std::copy_n(lsx, vertCount, newCoord.getCoordFunc(0).c_ptr());
-	std::copy_n(lsy, vertCount, newCoord.getCoordFunc(1).c_ptr());
-	std::copy_n(lsz, vertCount, newCoord.getCoordFunc(2).c_ptr());
-
+	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::spectralWaveletDeform()
+{
+
 }

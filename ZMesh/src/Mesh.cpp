@@ -1363,7 +1363,7 @@ bool CMesh::construct()
 	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		//--re-arrange each vertex's half-edges clockwise--
 	{
 		CVertex* pV = *iter;
-		
+		if (pV == NULL) throw std::logic_error("Error: null CVertex pointer encountered!");
 		if(pV->m_nValence != pV->m_HalfEdges.size())
 			throw logic_error("Error: CMesh::construct; pV->m_nValence != pV->m_HalfEdges.size()");
 
@@ -1483,18 +1483,18 @@ int CMesh::calBoundaryNum()
 			boundaryIndexSet.insert( i );
 	}
 
-	int currentIndex, nextIndex, edgeIndex;
 	for( int i = 0; i < m_nVertex; i++ ) {
 		// find boundary loop from boundary vertex i if it is not in any loop 
 		if( m_vVertices[i]->m_bIsBoundary && boundaryIndexSet.find(i) != boundaryIndexSet.end()) {
-			currentIndex = i;
-			nextIndex = i;
+			int currentIndex = i;
+			int nextIndex = i;
 			do {
 				currentIndex = nextIndex;
 				std::set<int>::iterator it;
 				it = boundaryIndexSet.find( currentIndex );
 				boundaryIndexSet.erase( it );
 				
+				int edgeIndex = -1;
 				for( int j = 0; j < m_vVertices[i]->m_nValence; j++ )
 				{
 					CHalfEdge* he = m_vVertices[i]->getHalfEdge(j);

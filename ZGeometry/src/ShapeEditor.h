@@ -18,10 +18,11 @@ public:
 		std::cout << "Shape editor is initialized!" << std::endl;
 	}
 
-	void revert() { mMesh->setVertCoordinates(mOldCoord); };
+	void revert() { mMesh->setVertCoordinates(mOldCoord); }
 
 	void manifoldHarmonicsReconstruct(int nEig);
 	void differentialDeform();
+	void spectralWaveletDeform();
 
 private:
 	CMesh* mMesh;

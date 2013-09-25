@@ -20,8 +20,8 @@ namespace ZGeom
 
 		m_ep->eval("[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
 		
-		double *evec = m_ep->getVariablePtr("evecs");
-		double *eval = m_ep->getVariablePtr("evals");
+		double *evec = m_ep->getDblVariablePtr("evecs");
+		double *eval = m_ep->getDblVariablePtr("evals");
 
 		eigSys.setSize(nOrder, nEig);
 		for (int i = 0; i < nEig; ++i) {

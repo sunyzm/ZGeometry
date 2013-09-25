@@ -29,6 +29,12 @@ class MeshCoordinates
 public:
 	MeshCoordinates() : mSize(0) {}
 	MeshCoordinates(int meshSize) { resize(meshSize); }
+	MeshCoordinates(int meshSize, double *cx, double *cy, double *cz) {
+		resize(meshSize);
+		std::copy_n(cx, meshSize, mCoordX.c_ptr());
+		std::copy_n(cy, meshSize, mCoordY.c_ptr());
+		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
+	}
 	int size() const { return mSize; }
 	void resize(int n) {
 		mSize = n; 
@@ -57,11 +63,15 @@ public:
 		}
 	}
 
+	ZGeom::VecNd& getXCoord() { return mCoordX; }
+	ZGeom::VecNd& getYCoord() { return mCoordY; }
+	ZGeom::VecNd& getZCoord() { return mCoordZ; }
+
 	ZGeom::Vec3d getCoordinate(int k) const {
 		if (k < 0 || k >= mSize) throw std::logic_error("Vertex index out of bound!");
 		return ZGeom::Vec3d(mCoordX[k], mCoordY[k], mCoordZ[k]);
 	}
-
+	
 	ZGeom::Vec3d operator [] (int k) const { return getCoordinate(k); }
 
 private:

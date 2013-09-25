@@ -61,7 +61,8 @@ namespace ZGeom
 	template<typename T>
 	inline void SparseMatrix<T>::insertElem( uint row, uint col, T val )
 	{
-		mElements.push_back(MatElem(row, col, val));
+		mElements.push_back(MatElem<T>(row, col, val));
+		mNonzeroCount = mElements.size();
 	}
 
 	template<typename T>
@@ -74,6 +75,7 @@ namespace ZGeom
 			}
 			++iter;
 		}
+		mNonzeroCount = mElements.size();
 	}
 
 	template<typename T>
@@ -213,6 +215,17 @@ namespace ZGeom
 			if (iter->row() == iter->col()) 
 				diag[iter->row() - 1] = iter->val();
 		}
+	}
+
+	template<typename T>
+	inline void ZGeom::SparseMatrix<T>::copyElements( const SparseMatrix<T>& mat2 )
+	{		
+		for (auto elem : mat2.mElements) {
+			if (elem.row() > mRowCount || elem.col() > mColCount) 
+				throw std::runtime_error("SparseMatrix::copyElements encounter invalid element!");
+			mElements = mat2.mElements;
+		}
+		mNonzeroCount = mElements.size();
 	}
 
 	template<typename T>

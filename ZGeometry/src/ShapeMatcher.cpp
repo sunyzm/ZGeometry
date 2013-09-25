@@ -2807,7 +2807,7 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProces
 	int tsize2 = vsize2 * vsize2 * vsize2;
 
 	// compute feature descriptors
-	int FeatureDim;
+	int FeatureDim(3);
 	switch(highOrderFeatureType)
 	{
 	case 0: FeatureDim = 3; break;

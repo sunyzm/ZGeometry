@@ -14,7 +14,10 @@ namespace ZGeom
 	{
 	public:
 		DenseMatrix() : mRow(0), mCol(0), mData(NULL) {}
-		DenseMatrix(uint row, uint col) : mRow(row), mCol(col) { mData = new T[row*col]; }
+		DenseMatrix(uint row, uint col) : mRow(row), mCol(col) { 
+			mData = new T[row*col]; 
+			for (int i = 0; i < row*col; ++i) mData[i] = 0;
+		}
 		DenseMatrix(const DenseMatrix<T>& m2);
 		const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
 		~DenseMatrix() { delete []mData; }

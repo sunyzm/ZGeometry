@@ -33,6 +33,27 @@ public:
 		engPutVariable(ep, mName.c_str(), mData);
 	}
 
+#if 0
+	MatlabArrayWrapper(Engine *ep, int *data, int row, int col, bool rowMajor, const std::string& name) 
+		: mName(name), mRow(row), mCol(col)
+	{
+		mData = engGetVariable(ep, name.c_str());
+		if (mData) mxDestroyArray(mData);
+	
+		mwSize dims[] = {row, col};
+		mData = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
+		int *aa = (int*)mxGetData(mData);
+		if (rowMajor) {
+			for (int j = 0; j < col; ++j)
+				for (int i = 0; i < row; ++i)
+					aa[j*row + i] = data[i*col + j];
+		} else {
+			std::copy_n(data, row*col, aa);
+		}
+		engPutVariable(ep, mName.c_str(), mData);
+	}
+#endif
+
 	~MatlabArrayWrapper() { mxDestroyArray(mData); }
 	const std::string& name() const { return mName; }
 
@@ -70,17 +91,40 @@ public:
 		delete []buf;
 	}
 
-	void addColVecVariable(double *data, int row, const std::string& name) {
+	void addColVec(double *data, int row, const std::string& name) {
 		addVariable(data, row, 1, false, name);
 	}
 
-	void addColVecVariable(int *data, int row, const std::string& name) {
+	void addColVec(int *data, int row, const std::string& name) {
 		addVariable(data, row, 1, false, name);
 	}
 
-	double* getVariablePtr(const std::string& name) {
+	void addDoubleScalar(double value, const std::string& name) {
+		addVariable(&value, 1, 1, false, name);
+	}
+
+	void addSparseMat(int *ii, int *jj, double *ss, int m, int n, int nnz, const std::string& name) {
+		addColVec(ii, nnz, "ii");
+		addColVec(jj, nnz, "jj");
+		addColVec(ss, nnz, "ss");
+		addDoubleScalar(m, "m");
+		addDoubleScalar(n, "n");
+		eval((name + "=sparse(ii,jj,ss,m,n)").c_str());
+		removeVariable("ii");
+		removeVariable("ii");
+		removeVariable("ss");
+		removeVariable("m");
+		removeVariable("n");
+	}
+
+	double* getDblVariablePtr(const std::string& name) {
 		mxArray *arr = getVariable(name.c_str());
 		return mxGetPr(arr);
+	}
+
+	int *getIntVariablePtr(const std::string& name) {
+		mxArray *arr = getVariable(name.c_str());
+		return (int*)mxGetData(arr);
 	}
 
 	void removeVariable(const std::string& varName) {

@@ -394,74 +394,6 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 //  VectorPointwiseDivide(vz, vWeight, vz);
 }
 
-void DifferentialMeshProcessor::reconstructByDifferential( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /* =false */ ) const
-{
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
-
-	vx.resize(m_size);
-	vy.resize(m_size);
-	vz.resize(m_size);
-
-	vector<double> vxcoord0, vycoord0, vzcoord0;
-	mesh->getCoordinateFunction(0, vxcoord0);
-	mesh->getCoordinateFunction(1, vycoord0);
-	mesh->getCoordinateFunction(2, vzcoord0);
-	
-	vector<vector<double> > sysM;
-	
-	for (int i = 0; i < m_size; ++i)
-	{
-		sysM.push_back(vector<double>());
-		sysM.back().resize(m_size, 0.0);
-	}
-
-	vector<int> vII, vJJ;
-	vector<double> vSS;
-	mLaplacian.getLS().convertToCOO(vII, vJJ, vSS);
-
-	int sparseLapSize = vII.size();
-	for (int n = 0; n < sparseLapSize; ++n)
-	{
-		sysM.at(vII[n]-1).at(vJJ[n]-1) += vSS[n];
-	}
-
-	vector<double> vxCoeff, vyCoeff, vzCoeff;
-	vxCoeff.resize(m_size);
-	vyCoeff.resize(m_size);
-	vzCoeff.resize(m_size);
-
-	for (int i = 0; i < m_size; ++i)
-	{
-		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
-		for (int j = 0; j < m_size; ++j)
-		{
-				itemSumX += sysM[i][j] * vxcoord0[j];
-				itemSumY += sysM[i][j] * vycoord0[j];
-				itemSumZ += sysM[i][j] * vzcoord0[j];
-		}
-		vxCoeff[i] = itemSumX;
-		vyCoeff[i] = itemSumY;
-		vzCoeff[i] = itemSumZ;
-	}
-
-	if (withConstraint)
-	{
-		double weightI = 1.0;
-		sysM.push_back(vector<double>());
-		sysM.back().resize(m_size, 0.0);
-		sysM.back().at(pRef) = weightI;
-		
-		vxCoeff.push_back(posRef.x * weightI);
-		vyCoeff.push_back(posRef.y * weightI);
-		vzCoeff.push_back(posRef.z * weightI);
-	}
-	
-	Engine *ep = mpEngineWrapper->getEngine();
-	matlab_scgls(ep, sysM, vxCoeff, vx);
-	matlab_scgls(ep, sysM, vyCoeff, vy);
-	matlab_scgls(ep, sysM, vzCoeff, vz);	
-}
-
 void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ )
 {
 	vx.resize(m_size);
@@ -622,7 +554,7 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			m = n + vHandleIdx.size();
 				
 		int nz_laplacian = vI.size();
-		mLaplacian.getLS().convertToCOO(vI, vJ, vS);
+		mLaplacian.getLS().convertToCOO(vI, vJ, vS, ZGeom::MAT_FULL);
 		
 		vector<double> xCoord, yCoord, zCoord;
 		mesh->getCoordinateFunction(0, xCoord);
