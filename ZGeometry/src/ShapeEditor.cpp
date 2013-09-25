@@ -43,15 +43,15 @@ void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 
 void ShapeEditor::differentialDeform()
 {
-	const std::map<int, Vector3D>& anchors = mProcessor->getHandles();
-	const int anchorCount = anchors.size();
-	if (anchors.size() == 0) {
-		std::cout << "At least one anchor need to be picked!";
-		return;
-	}
+	CStopWatch timer;	
+	timer.startTimer();
+
+	int anchorCount(0);
+	std::vector<int> anchorIndex;
+	std::vector<Vector3D> anchorPos;
+	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 
 	const int anchorWeight = 1.0;
-	CStopWatch timer;
 	const int vertCount = mMesh->vertCount();
 
 	MeshCoordinates oldCoord;
@@ -59,13 +59,6 @@ void ShapeEditor::differentialDeform()
 	mEngine->addVariable(oldCoord.getXCoord().c_ptr(), vertCount, 1, false, "ecx");
 	mEngine->addVariable(oldCoord.getYCoord().c_ptr(), vertCount, 1, false, "ecy");
 	mEngine->addVariable(oldCoord.getZCoord().c_ptr(), vertCount, 1, false, "ecz");
-	
-	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
-	for (auto a : anchors) {
-		anchorIndex.push_back(a.first);
-		anchorPos.push_back(a.second);
-	}
 
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
 	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
@@ -78,7 +71,7 @@ void ShapeEditor::differentialDeform()
 	ZGeom::VecNd solveRHS[3];
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount, 0);
-		std::copy_n(diffCoord[i].c_ptr(), vertCount, solveRHS[i].c_ptr());
+		solveRHS[i].copyElements(diffCoord[i], 0);
 		for (int l = 0; l < anchorCount; ++l) {
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
 		}
@@ -96,13 +89,14 @@ void ShapeEditor::differentialDeform()
 	matOptS.convertToCOO(rowInd, colInd, vals, ZGeom::MAT_FULL);
 	mEngine->addSparseMat(&rowInd[0], &colInd[0], &vals[0], vertCount + anchorCount, vertCount, matOptS.nonzeroCount(), "matOptS");
 	
-
+	timer.stopTimer("Prepare deformation time: ");
 	timer.startTimer();	
+
 	mEngine->eval("lsx=matOptS\\dcx;");
 	mEngine->eval("lsy=matOptS\\dcy;");
 	mEngine->eval("lsz=matOptS\\dcz;");
-	timer.stopTimer("Deformation time: ");
 
+	timer.stopTimer("Deformation time: ");
 
 	double *lsx = mEngine->getDblVariablePtr("lsx");
 	double *lsy = mEngine->getDblVariablePtr("lsy");
@@ -115,4 +109,21 @@ void ShapeEditor::differentialDeform()
 void ShapeEditor::spectralWaveletDeform()
 {
 
+}
+
+void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
+{
+	const std::map<int, Vector3D>& anchors = mProcessor->getHandles();
+	anchorCount = anchors.size();
+	if (anchors.size() == 0) {
+		std::cout << "At least one anchor need to be picked!";
+		return;
+	}
+
+	anchorIndex.clear();
+	anchorPos.clear();
+	for (auto a : anchors) {
+		anchorIndex.push_back(a.first);
+		anchorPos.push_back(a.second);
+	}
 }

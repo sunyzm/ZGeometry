@@ -223,8 +223,8 @@ namespace ZGeom
 		for (auto elem : mat2.mElements) {
 			if (elem.row() > mRowCount || elem.col() > mColCount) 
 				throw std::runtime_error("SparseMatrix::copyElements encounter invalid element!");
-			mElements = mat2.mElements;
 		}
+		mElements = mat2.mElements;
 		mNonzeroCount = mElements.size();
 	}
 

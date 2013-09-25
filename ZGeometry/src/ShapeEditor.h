@@ -23,8 +23,10 @@ public:
 	void manifoldHarmonicsReconstruct(int nEig);
 	void differentialDeform();
 	void spectralWaveletDeform();
-
+	
 private:
+	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
+
 	CMesh* mMesh;
 	MeshCoordinates mOldCoord;
 	DifferentialMeshProcessor* mProcessor;

@@ -61,6 +61,7 @@ public:
 	void resize(int n);
 	void resize(int n, T val);
 	void expandTo(int n);
+	void copyElements(const VecN<T>& v2, int startingPos = 0);
 
 	const VecN<T>& operator += (const VecN<T>& v2);
 	const VecN<T>& operator -= (const VecN<T>& v2) { return (*this) += -v2; }
@@ -94,6 +95,14 @@ private:
 	T *mVec;
 	int mDim;
 };
+
+template<typename T>
+inline void ZGeom::VecN<T>::copyElements( const VecN<T>& v2, int startingPos )
+{
+	if (mDim - startingPos < v2.size())
+		throw std::runtime_error("Error VecN::copyElements: Insufficient size in destination VecN");
+	std::copy_n(v2.mVec, v2.size(), mVec + startingPos);
+}
 
 template<typename T>
 class VecN<T>::iterator : public std::iterator<std::bidirectional_iterator_tag, T>
