@@ -22,6 +22,7 @@ public:
 
 	void manifoldHarmonicsReconstruct(int nEig);
 	void differentialDeform();
+	void deformSimple();
 	void spectralWaveletDeform();
 	
 private:
