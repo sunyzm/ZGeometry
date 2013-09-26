@@ -21,9 +21,9 @@ public:
 	void revert() { mMesh->setVertCoordinates(mOldCoord); }
 
 	void manifoldHarmonicsReconstruct(int nEig);
-	void differentialDeform();
+	void deformDifferential();
 	void deformSimple();
-	void spectralWaveletDeform();
+	void deformSpectralWavelet();
 	
 private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;

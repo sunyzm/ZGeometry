@@ -516,19 +516,6 @@ void QZGeometryWindow::computeSGW()
 
 void QZGeometryWindow::deformSimple()
 {
-/*
-	int activeHandle = mProcessors[0]->getActiveHandle(); 
-	vector<int> vHandle;
-	vHandle.push_back(activeHandle);
-	vector<Vector3D> vHandlePos;
-	vHandlePos.push_back(mProcessors[0]->getHandles()[activeHandle]);
-	vector<int> vFree = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(activeHandle, DEFAULT_DEFORM_RING);
-	vector<Vector3D> vNewPos;
-
-	mProcessors[0]->deform(vHandle, vHandlePos, vFree, vNewPos, Simple);
-	mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
-	mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
-*/
 	mShapeEditor.deformSimple();
 
 	deformType = Simple;
@@ -602,7 +589,7 @@ void QZGeometryWindow::deformSGW()
 	}
 	*/
 
-	mShapeEditor.spectralWaveletDeform();
+	mShapeEditor.deformSpectralWavelet();
 
 	deformType = SGW;
 	ui.glMeshWidget->update();
@@ -1923,6 +1910,6 @@ void QZGeometryWindow::revert()
 
 void QZGeometryWindow::deformDifferential()
 {
-	mShapeEditor.differentialDeform();
+	mShapeEditor.deformDifferential();
 	ui.glMeshWidget->update();
 }

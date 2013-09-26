@@ -17,6 +17,18 @@ ZGeom::Vec3d toVec3d(const Vector3D& v)
 	return ZGeom::Vec3d(v.x, v.y, v.z);
 }
 
+void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
+{
+	const std::map<int, Vector3D>& anchors = mProcessor->getHandles();
+	anchorCount = anchors.size();
+	anchorIndex.clear();
+	anchorPos.clear();
+	for (auto a : anchors) {
+		anchorIndex.push_back(a.first);
+		anchorPos.push_back(a.second);
+	}
+}
+
 void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 {
 	const int vertCount = mMesh->vertCount();
@@ -52,7 +64,61 @@ void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 	mMesh->setVertCoordinates(newCoord);
 }
 
-void ShapeEditor::differentialDeform()
+void ShapeEditor::deformSimple()
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	int anchorCount(0);
+	std::vector<int> anchorIndex;
+	std::vector<Vector3D> anchorPos;
+	prepareAnchors(anchorCount, anchorIndex, anchorPos);
+	if (anchorCount == 0) {
+		std::cout << "At least one anchor need to be picked!";
+		return;
+	}
+
+	const int vertCount = mMesh->vertCount();
+	int hIdx = anchorIndex[0];		// only use the first handle to deform
+	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->getPosition();
+
+	std::vector<int> vFreeIdx;
+	//vFreeIdx = mMesh->getNeighborVertexIndex(hIdx, 5);
+	vFreeIdx.resize(vertCount);
+	for (int i = 0; i < vertCount; ++i) vFreeIdx[i] = i;
+
+	const int freeVertCount = vFreeIdx.size();
+
+	std::vector<double> vDist2Handle(freeVertCount);
+	concurrency::parallel_for (0, freeVertCount, [&](int i) {
+		double dist = mMesh->calGeodesic(hIdx, vFreeIdx[i]);
+		vDist2Handle[i] = dist;
+	});
+	double distMax = *std::max_element(vDist2Handle.begin(), vDist2Handle.end());
+
+	std::vector<Vector3D> vDeformedPos(freeVertCount);
+	for (int i = 0; i < freeVertCount; ++i)
+	{
+		vDeformedPos[i] = mMesh->getVertex(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+	}
+
+	MeshCoordinates newCoord;
+	mMesh->getVertCoordinates(newCoord);
+	ZGeom::VecNd& xNewCoord = newCoord.getXCoord();
+	ZGeom::VecNd& yNewCoord = newCoord.getYCoord();
+	ZGeom::VecNd& zNewCoord = newCoord.getZCoord();
+	
+	for (int i = 0; i < freeVertCount; ++i) {
+		xNewCoord[vFreeIdx[i]] = vDeformedPos[i].x;
+		yNewCoord[vFreeIdx[i]] = vDeformedPos[i].y;
+		zNewCoord[vFreeIdx[i]] = vDeformedPos[i].z;
+	}
+	mMesh->setVertCoordinates(newCoord);
+
+	timer.stopTimer("Deformation time: ");
+}
+
+void ShapeEditor::deformDifferential()
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -121,7 +187,7 @@ void ShapeEditor::differentialDeform()
 	mMesh->setVertCoordinates(newCoord);
 }
 
-void ShapeEditor::spectralWaveletDeform()
+void ShapeEditor::deformSpectralWavelet()
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -143,62 +209,4 @@ void ShapeEditor::spectralWaveletDeform()
 
 	MeshCoordinates newCoord = oldCoord;
 	mMesh->setVertCoordinates(newCoord);
-}
-
-void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
-{
-	const std::map<int, Vector3D>& anchors = mProcessor->getHandles();
-	anchorCount = anchors.size();
-	anchorIndex.clear();
-	anchorPos.clear();
-	for (auto a : anchors) {
-		anchorIndex.push_back(a.first);
-		anchorPos.push_back(a.second);
-	}
-}
-
-void ShapeEditor::deformSimple()
-{
-	CStopWatch timer;	
-	timer.startTimer();
-
-	int anchorCount(0);
-	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
-	prepareAnchors(anchorCount, anchorIndex, anchorPos);
-	if (anchorCount == 0) {
-		std::cout << "At least one anchor need to be picked!";
-		return;
-	}
-
-	const int vertCount = mMesh->vertCount();
-	int hIdx = anchorIndex[0];		// only use the first handle to deform
-	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->getPosition();
-
-	std::vector<double> vDist2Handle(vertCount);
-	concurrency::parallel_for (0, vertCount, [&](int i) {
-		double dist = mMesh->calGeodesic(hIdx, i);
-		vDist2Handle[i] = dist;
-	});
-	double distMax = *std::max_element(vDist2Handle.begin(), vDist2Handle.end());
-
-	std::vector<Vector3D> vDeformedPos(vertCount);
-	for (int i = 0; i < vertCount; ++i)
-	{
-		vDeformedPos[i] = mMesh->getVertex(i)->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
-	}
-
-	MeshCoordinates newCoord(vertCount);
-	ZGeom::VecNd& xNewCoord = newCoord.getXCoord();
-	ZGeom::VecNd& yNewCoord = newCoord.getYCoord();
-	ZGeom::VecNd& zNewCoord = newCoord.getZCoord();
-	
-	for (int i = 0; i < vertCount; ++i) {
-		xNewCoord[i] = vDeformedPos[i].x;
-		yNewCoord[i] = vDeformedPos[i].y;
-		zNewCoord[i] = vDeformedPos[i].z;
-	}
-	mMesh->setVertCoordinates(newCoord);
-
-	timer.stopTimer("Deformation time: ");
 }
