@@ -1,6 +1,5 @@
 ﻿#ifndef ZMESH_MESH_H
 #define ZMESH_MESH_H
-
 #include <cstdio>
 #include <cmath>
 #include <list>
@@ -55,7 +54,7 @@ public:
 	}
 
 	ZGeom::VecNd& getCoordFunc(int i) {
-		switch (i)
+		switch (i) 
 		{
 		case 0: return mCoordX;
 		case 1: return mCoordY;
@@ -120,11 +119,11 @@ public:
 	// ---- operations ---- //
 	int					getIndex() const { return m_vIndex; }
 	int					getVID() const { return m_vid; }
-	std::vector<const CFace*> getAdjacentFaces() const;
+	std::vector<CFace*> getAdjacentFaces() const;
 	CHalfEdge*			getHalfEdge(int ei) { return m_HalfEdges[ei]; }
 	const CHalfEdge*    getHalfEdge_const(int ei) const { return m_HalfEdges[ei]; }
 	const Vector3D&		getPosition() const { return m_vPosition; } 
-	int					getValence() const { return m_nValence; }
+	int					getOutValence() const { return (int)m_HalfEdges.size(); }
 	bool				judgeOnBoundary();
 	bool				isOnBoundary() const { return m_bIsBoundary; }
 	bool				isValid() const { return m_bIsValid; }
@@ -140,7 +139,7 @@ private:
 	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
 	int*					m_piEdge;			// half edge indices start from this vertex
-	int						m_nValence;		    // out valence
+	int						mOutValence;		// out valence
 	Vector3D				m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
 	bool					m_bIsBoundary;      // if boundary vertex
@@ -209,13 +208,13 @@ public:
 
 	// -- constructors -- //
 	CFace();
-	CFace(short s);
+	CFace(int s);
 	CFace(const CFace& oldF);
 	virtual ~CFace();
 	CFace& operator= (const CFace& f);
 
 	// -- operations -- //
-	void					Create(short s);
+	void					Create(int s);
 	std::vector<double>		getPlaneFunction();	
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
@@ -230,7 +229,7 @@ private:
 	// ---- fields ---- // 
 	int						m_fIndex;
 	bool					m_bIsValid;
-	short					m_nType;		// number of polygon face edges
+	int						m_nType;		// number of polygon face edges
 
 	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges

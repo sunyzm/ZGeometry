@@ -56,7 +56,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	m_dFeatureSphereRadius = 1;
+	m_dFeatureSphereRadius = 0.5;
 	m_dMeshPointSize = 2;
 	
 	m_bShowLegend = false;
@@ -74,7 +74,6 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 
 GLMeshWidget::~GLMeshWidget()
 {
-
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)

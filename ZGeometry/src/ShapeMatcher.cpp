@@ -935,7 +935,7 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 		int vid_i = tmesh1->getVertex(vi)->getVID(),
 			vid_j = tmesh2->getVertex(vj)->getVID();
 
-		for (int ei = 0; ei < tmesh1->getVertex(vi)->getValence(); ei++)
+		for (int ei = 0; ei < tmesh1->getVertex(vi)->getOutValence(); ei++)
 		{
 			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge_const(ei);
 			const int vt = he->getVertexIndex(1);
@@ -1133,7 +1133,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh2->getVertex(idx)->getValence(); ++l)
+			for (int l = 0; l < tmesh2->getVertex(idx)->getOutValence(); ++l)
 			{
 				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
@@ -1816,7 +1816,7 @@ void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh->getVertex(idx)->getValence(); ++l)
+			for (int l = 0; l < tmesh->getVertex(idx)->getOutValence(); ++l)
 			{
 				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);

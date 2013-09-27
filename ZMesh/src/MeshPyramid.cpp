@@ -576,7 +576,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			}
 			else
 			{
-				curV->m_nValence = int(curV->m_HalfEdges.size());
+				curV->mOutValence = int(curV->m_HalfEdges.size());
 				curV->judgeOnBoundary();
 				iter++;
 			}
@@ -722,7 +722,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 
 	for (int i = 0; i < tmesh->m_nVertex; ++i)
 	{
-		valOut << i << '\t' << tmesh->m_vVertices[i]->m_nValence << '\t' << tmesh->getVertex(i)->m_nValence << endl;
+		valOut << i << '\t' << tmesh->m_vVertices[i]->mOutValence << '\t' << tmesh->getVertex(i)->mOutValence << endl;
 	}
 
 	valOut.close();
