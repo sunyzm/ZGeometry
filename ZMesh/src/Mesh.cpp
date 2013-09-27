@@ -313,20 +313,18 @@ std::vector<double> CFace::getPlaneFunction()
 Vector3D CFace::calcNormal()
 {
 	Vector3D v[2];
-
-	//get the vector
 	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
 	Vector3D vNormal= v[0] ^ v[1];
 	vNormal.normalize();	
+
 	return vNormal;
 }
 
 bool CFace::hasVertex( int vidx ) const
 {
-	for (vector<CVertex*>::const_iterator iter = m_Vertices.begin(); iter != m_Vertices.end(); ++iter)
-	{
-		if ((*iter)->getIndex() == vidx)
+	for (CVertex* pv : m_Vertices) {
+		if (pv->getIndex() == vidx)	
 			return true;
 	}
 	return false;

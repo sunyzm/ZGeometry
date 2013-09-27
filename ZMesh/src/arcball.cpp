@@ -21,8 +21,8 @@ void CArcball::_plane2sphere( const Vector2D & p, Vector3D & q )
   double l = sqrt( f*f );
 
   if( l > 1.0 ){
-      q = Vector3D( f.x/l, f.y/l,0);
-      return;
+	  q = Vector3D( f.x/l, f.y/l,0);
+	  return;
   }
 
   double fz = sqrt( 1 - l * l );
@@ -32,11 +32,11 @@ void CArcball::_plane2sphere( const Vector2D & p, Vector3D & q )
 
 CQrot CArcball::update( int nx, int ny )
 {
-    Vector3D position;
-    _plane2sphere( Vector2D(nx,ny), position );
-    Vector3D cp = m_position ^ position;
-    CQrot r(m_position * position, cp.x, cp.y, cp.z);
-    m_position = position;
+	Vector3D position;
+	_plane2sphere( Vector2D(nx,ny), position );
+	Vector3D cp = m_position ^ position;
+	CQrot r(m_position * position, cp.x, cp.y, cp.z);
+	m_position = position;
 
-    return r;
+	return r;
 }

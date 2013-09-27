@@ -10,7 +10,6 @@ public:
   CArcball( int width, int height, int ox, int oy );
   CQrot update( int nx, int ny );
 
-
 private:
   void _plane2sphere( const Vector2D & v, Vector3D & r );
 

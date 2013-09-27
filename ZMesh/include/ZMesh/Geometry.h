@@ -9,11 +9,12 @@
 #include <string>
 
 const double DOUBLE_EPS = 1e-16;
-static inline bool	EQUALZERO(double x) { return std::fabs((x)) < DOUBLE_EPS; }
+static inline bool EQUALZERO(double x) { return std::fabs((x)) < DOUBLE_EPS; }
 
 /////////////////////////////////////////////////////////////
 // Vector2D : 2D vector
 /////////////////////////////////////////////////////////////
+
 class Vector2D  
 {
 public :
@@ -53,13 +54,13 @@ public:
 	bool	AtLeft(Vector2D v0,Vector2D v1);
 	bool	OnLine(Vector2D v0,Vector2D v1);
 	double	GetArea(Vector2D v);
-	
-
 };
+
 
 /////////////////////////////////////////////////////////////
 // Vector3D : 3D vector
 /////////////////////////////////////////////////////////////
+
 class Matrix3;
 
 class Vector3D 
@@ -99,9 +100,11 @@ public :
 	friend Vector3D operator*(const Matrix3& mat1, const Vector3D& vec);
 };
 
+
 /////////////////////////////////////////////////////////////
 // VectorND : n-dim vector
 /////////////////////////////////////////////////////////////
+
 class VectorND
 {
 public:
@@ -133,9 +136,11 @@ public:
 
 VectorND operator-(const VectorND& v1, const VectorND& v2);
 
+
 /////////////////////////////////////////////////////////////
 // Matrix3 : 3*3 matrix
 /////////////////////////////////////////////////////////////
+
 class Matrix3
 {
 private:
@@ -165,7 +170,6 @@ public:
 double dotProduct3D(const Vector3D& v1, const Vector3D& v2);
 bool crossProduct3D(const Vector3D&v1, const Vector3D&v2, Vector3D& v3);
 Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
-
 Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 

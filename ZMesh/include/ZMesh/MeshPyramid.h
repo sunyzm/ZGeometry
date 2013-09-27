@@ -1,4 +1,6 @@
-#pragma once
+#ifndef MESH_PYRAMID_H
+#define MESH_PYRAMID_H
+
 #include "Mesh.h"
 #include "Quadric.h"
 #include <vector>
@@ -58,3 +60,5 @@ private:
 	std::vector<Quadric>	m_FaceQuadrics;
 	std::vector<Quadric>	m_VertexQuadrics;
 };
+
+#endif
