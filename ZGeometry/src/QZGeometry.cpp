@@ -541,7 +541,7 @@ void QZGeometryWindow::deformLaplace()
 		vHandle.push_back(handle.first);
 		vHandlePos.push_back(handle.second);
 
-		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(handle.first, DEFAULT_DEFORM_RING);
+		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getVertNeighborVerts(handle.first, DEFAULT_DEFORM_RING, false);
 		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
 	}
 	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
@@ -601,23 +601,19 @@ void QZGeometryWindow::selectObject( int index )
 	QString text = ui.boxObjSelect->itemText(index);	
 	for (auto iter = mRenderManagers.begin(); iter != mRenderManagers.end(); ++iter) (*iter)->selected = false;	
 	
-	if (text == "1") 
-	{			 
+	if (text == "1") {			 
 		if (mRenderManagers.size() >= 1) mRenderManagers[0]->selected = true;
 		mObjInFocus = 0;
 	}
-	else if (text == "2")
-	{
+	else if (text == "2") {
 		if (mRenderManagers.size() >= 2) mRenderManagers[1]->selected = true;
 		mObjInFocus = 1;
 	}
-	else if (text == "All")
-	{
+	else if (text == "All") {
 		for (auto iter = mRenderManagers.begin(); iter != mRenderManagers.end(); ++iter) (*iter)->selected = true;	 
 		mObjInFocus = 0;
 	}
-	else if (text == "None")
-	{
+	else if (text == "None") {
 		mObjInFocus = -1;
 	}
 
@@ -981,10 +977,11 @@ void QZGeometryWindow::filterExperimental()
 
 void QZGeometryWindow::displayNeighborVertices()
 {
-	int ring = (mCommonParameter > PARAMETER_SLIDER_CENTER) ? (mCommonParameter-PARAMETER_SLIDER_CENTER) : 1;
+	int ring = (mCommonParameter > PARAMETER_SLIDER_CENTER) ? (mCommonParameter - PARAMETER_SLIDER_CENTER) : 1;
 
 	int ref = mProcessors[0]->getRefPointIndex();
-	std::vector<int> vn = mProcessors[0]->getMesh_const()->getNeighborVertexIndex(ref, ring);
+	std::vector<int> vn;
+	mProcessors[0]->getMesh_const()->vertRingNeighborVerts(ref, ring, vn, false);
 //	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
 
@@ -992,12 +989,11 @@ void QZGeometryWindow::displayNeighborVertices()
 		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
 		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
-	mProcessors[0]->addProperty(mfl);
+	mProcessors[0]->replaceProperty(mfl);
 
 	mProcessors[0]->setActiveFeaturesByID(FEATURE_NEIGHBORS);
 	
-	if (!ui.actionShowFeatures->isChecked())
-		toggleShowFeatures();
+	if (!ui.actionShowFeatures->isChecked()) toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
 

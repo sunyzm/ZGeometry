@@ -83,12 +83,11 @@ void ShapeEditor::deformSimple()
 	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->getPosition();
 
 	std::vector<int> vFreeIdx;
-	//vFreeIdx = mMesh->getNeighborVertexIndex(hIdx, 5);
+//	mMesh->neighborVertRing(hIdx, 5, vFreeIdx, true);
 	vFreeIdx.resize(vertCount);
 	for (int i = 0; i < vertCount; ++i) vFreeIdx[i] = i;
 
 	const int freeVertCount = vFreeIdx.size();
-
 	std::vector<double> vDist2Handle(freeVertCount);
 	concurrency::parallel_for (0, freeVertCount, [&](int i) {
 		double dist = mMesh->calGeodesic(hIdx, vFreeIdx[i]);
@@ -97,8 +96,7 @@ void ShapeEditor::deformSimple()
 	double distMax = *std::max_element(vDist2Handle.begin(), vDist2Handle.end());
 
 	std::vector<Vector3D> vDeformedPos(freeVertCount);
-	for (int i = 0; i < freeVertCount; ++i)
-	{
+	for (int i = 0; i < freeVertCount; ++i) {
 		vDeformedPos[i] = mMesh->getVertex(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 	}
 

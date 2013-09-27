@@ -1,4 +1,4 @@
-#include "Laplacian.h"
+#include "MeshLaplacian.h"
 #include <ctime>
 #include <algorithm>
 #include <cstdio>
@@ -13,12 +13,6 @@ using namespace std;
 using ZGeom::PI;
 using ZGeom::uint;
 
-void MeshLaplacian::decompose( int nEig, ZGeom::MatlabEngineWrapper* ep, ZGeom::EigenSystem& eigSys )
-{
-	ZGeom::EigenCompute eigenCompute(ep);
-	eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
-}
-
 void MeshLaplacian::constructTutte( const CMesh* tmesh )
 {
 	mOrder = tmesh->vertCount();
@@ -29,7 +23,7 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 	for (int i = 0; i < mOrder; ++i) {
 		const CVertex* vi = tmesh->getVertex(i);
 		vector<int> vNeighbors;
-		tmesh->VertexNeighborRing(i, 1, vNeighbors);
+		tmesh->vertRingNeighborVerts(i, 1, vNeighbors, false);
 		int valence = vNeighbors.size();
 
 		for (int j = 0; j < valence; ++j) {
@@ -100,7 +94,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
@@ -177,7 +171,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
@@ -249,7 +243,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFacesIndex(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);

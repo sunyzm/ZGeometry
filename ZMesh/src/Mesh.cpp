@@ -1871,87 +1871,13 @@ bool CMesh::calVertexArea(vector<double>& Av)
 	return true;
 }
 
-void CMesh::VertexNeighborRing( int i, int ring, std::vector<int>& nbr ) const
+void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::vector<int>& nbr, bool inclusive /*= false*/ ) const
 {	
+	std::set<int> snb;
+	vertRingNeighborVerts(vIndex, ring, snb, inclusive);
+	
 	nbr.clear();
-	
-	const CVertex* notei = m_vVertices[i];
-	set<int> vMarked;
-	vMarked.insert(notei->m_vIndex);
-	vector<int> nbp, nbn;
-	for (int j = 0; j < notei->m_nValence; ++j)
-	{
-		const CVertex* vEnd = notei->m_HalfEdges[j]->m_Vertices[1];
-		int endv = vEnd->m_vIndex;
-		vMarked.insert(endv);
-		nbr.push_back(endv);
-	}
-	nbp = nbr;
-	for (int r = 1; r < ring; ++r)
-	{
-		for (auto iter = nbp.begin(); iter != nbp.end(); ++iter)
-		{
-			int pos = *iter;
-			const CVertex* vStart = m_vVertices[pos];
-			for (int l = 0; l < vStart->m_nValence; ++l)
-			{
-				int endv = vStart->m_HalfEdges[l]->m_Vertices[1]->m_vIndex;
-				if (vMarked.find(endv) != vMarked.end()) continue;
-				vMarked.insert(endv);
-				nbn.push_back(endv);
-				nbr.push_back(endv);
-			}
-		}
-		nbp = nbn;
-		nbn.clear();
-	}
-	
-// 	CVertex& notei = m_pVertex[i];
-// 	notei.m_mark = i;
-// 
-// 	int size = notei.m_nValence;
-// 	vector<int> nbp, nbn;
-// 	
-// 	/* initialize ring 1 as nbp */
-// 	for (int j = 0; j < size; j++)
-// 	{
-// 		int ee = m_pVertex[i].m_piEdge[j];
-// 		int endv = m_pHalfEdge[ee].m_iVertex[1];
-// 		m_pVertex[endv].m_mark = i;
-// 		nbp.push_back(endv);
-// 		nbr.push_back(endv);
-// 	}
-
-// 	/* find neighbors of outer rings */ 
-// 	for (int r = 1; r < ring; r++)
-// 	{
-// 		for (size_t k = 0; k < nbp.size(); k++)
-// 		{
-// 			int pos = nbp.at(k);
-// 			for (int l = 0; l < m_pVertex[pos].m_nValence; l++)
-// 			{
-// 				int ee = m_pVertex[pos].m_piEdge[l];
-// 				int endv = m_pHalfEdge[ee].m_iVertex[1];
-// 				if (m_pVertex[endv].m_mark == i) 
-// 					continue;
-// 				m_pVertex[endv].m_mark = i;
-// 				nbn.push_back(endv);
-// 				nbr.push_back(endv);
-// 			}
-// 		}
-// 		//nbp.clear();
-// 		nbp = nbn;
-// 		nbn.clear();
-// 	}
-// 
-// 	notei.m_mark = -1;
-// 
-// 	/* clear the mark */
-// 	for (size_t j = 0; j < nbr.size(); j++)
-// 	{
-// 		int loc = nbr[j];
-// 		m_pVertex[loc].m_mark = -1;    
-// 	}
+	for (int vn : snb) nbr.push_back(vn);
 }
 
 double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
@@ -1990,7 +1916,7 @@ double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
 	return tc;
 }
 
-bool CMesh::VertexNeighborGeo(int i, double ring, vector<GeoNote>& nbg)
+bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
 {
 	GeoQueue heapqueue;
 
@@ -2888,26 +2814,23 @@ void CMesh::calLengthDifference( const CMesh* tmesh, std::vector<double>& ld ) c
 // 	return faceIndex;
 // }
 
-std::vector<int> CMesh::getVertexAdjacentFacesIndex( int vIdx, int ring /*= 1*/ ) const
+std::vector<int> CMesh::getVertexAdjacentFaces( int vIdx, int ring /*= 1*/ ) const
 {
 	assert(ring >= 1);
-	vector<int> vNeighbors = getNeighborVertexIndex(vIdx, ring-1);
-	vNeighbors.insert(begin(vNeighbors), vIdx);
-
-	set<int> setMarkedFaces;
-	for (auto iter = begin(vNeighbors); iter != end(vNeighbors); ++iter)
-	{
+	vector<int> vNeighbors = getVertNeighborVerts(vIdx, ring-1, true);
+	
+	set<int> markedFaces;
+	for (auto iter = begin(vNeighbors); iter != end(vNeighbors); ++iter) {
 		const CVertex* pv = getVertex(*iter);
-		for (int he = 0; he < pv->getValence(); ++he)
-		{
-			const CFace* pf = pv->getHalfEdge_const(he)->getAttachedFace();
-			setMarkedFaces.insert(pf->getFaceIndex());
+		for (CHalfEdge* he : pv->m_HalfEdges) {
+			const CFace* pf = he->getAttachedFace();
+			markedFaces.insert(pf->getFaceIndex());
 		}		
 	}
 
 	vector<int> vFaces;
-	for(auto iter = begin(setMarkedFaces); iter != end(setMarkedFaces); ++iter)
-		vFaces.push_back(*iter);
+	for(int f : markedFaces)
+		vFaces.push_back(f);
 
 	return vFaces;
 }
@@ -3410,70 +3333,27 @@ void CMesh::scaleEdgeLenToUnit()
 std::vector<int> CMesh::getOriginalVertexIndex() const
 {
 	vector<int> vret;
-	for (vector<CVertex*>::const_iterator iter = m_vVertices.begin(); iter != m_vVertices.end(); ++iter)
-		vret.push_back((*iter)->m_vIndex);
+	for (CVertex* v : m_vVertices) 
+		vret.push_back(v->m_vIndex);
 	return vret;
 }
 
-std::vector<int> CMesh::getNeighborVertexIndex( int v, int ring ) const
+std::vector<int> CMesh::getVertNeighborVerts( int v, int ring, bool inclusive ) const
 {
-	if (ring < 0)
-		throw runtime_error("Error: getNeighboringVertex with ring < 0");
+	if (ring < 0) throw runtime_error("Error: getNeighboringVertex with ring < 0");
 
-	if (ring == 0) return vector<int>();
-
-	list<int> vNeighbor;
-	
-	m_pVertex[v].m_mark = v;
-	vNeighbor.push_back(v);
-		
-	list<int> nb1, nb2;
-	nb1 = vNeighbor;
-		
-	for (int r = 0; r < ring; r++)
-	{
-		nb2.clear();
-		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
-		{
-			int idx = *iter;
-			for (int l = 0; l < m_pVertex[idx].m_nValence; ++l)
-			{
-				int et = m_pVertex[idx].m_piEdge[l];
-				int vt = m_pHalfEdge[et].m_iVertex[1];
-				if (m_pVertex[vt].m_mark == v) continue;
-				else
-				{
-					m_pVertex[vt].m_mark = v;
-					vNeighbor.push_back(vt);
-					nb2.push_back(vt);
-				}				
-			}
-		}
-		nb1 = nb2;
-	}
-
-	vNeighbor.pop_front();	// pop the original vertex
-	m_pVertex[v].m_mark = -1;
-	vector<int> vn;
-	for (list<int>::iterator iter = vNeighbor.begin(); iter != vNeighbor.end(); ++iter)
-	{
-		int vt = *iter;
-		m_pVertex[vt].m_mark = -1;
-		vn.push_back(vt);
-	}	
-	
+	std::vector<int> vn;
+	vertRingNeighborVerts(v, ring, vn, inclusive);
 	return vn;
 }
 
 bool CMesh::isInNeighborRing( int ref, int query, int ring ) const
 {
-	if (ref == query) return true;
 	assert(ring >= 0);
-	if (ring == 0) return ref == query;
-	
-	vector<int> iNeighbor;
-	VertexNeighborRing(ref, ring, iNeighbor);
-	return (find(iNeighbor.begin(), iNeighbor.end(), query) != iNeighbor.end());
+	if (ref == query) return true;
+	std::set<int> iNeighbor;
+	vertRingNeighborVerts(ref, ring, iNeighbor, true);
+	return (iNeighbor.find(ref) != iNeighbor.end());
 }
 
 bool CMesh::loadFromOFF( std::string sFileName )
@@ -3572,12 +3452,12 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 		if (m_pVertex[j].m_bIsBoundary) 
 			continue;  // ignore boundary vertex
 
-		if (vSigVal[j] < lowThresh)				//too small hks discarded
+		if (vSigVal[j] < lowThresh)				//too small signature discarded
 			continue;
 
-		VertexNeighborRing(j, ring, nb);	//ring == 2
-		for (size_t k = 0; k < nb.size(); k++)		//for each neighbor 
-		{
+		vertRingNeighborVerts(j, ring, nb, false);	//ring == 2
+		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
+		
 			int ev = nb[k];
 			state_c = STATE_IDLE;
 			if( vSigVal[j] - vSigVal[ev] < 0)		// low bound
@@ -3587,8 +3467,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 
 			if(state == STATE_IDLE)				    // two-step change
 				state = state_c;
-			else if( state * state_c <= 0 ) 
-			{
+			else if( state * state_c <= 0 ) {
 				state = STATE_IDLE;
 				break;
 			}
@@ -3622,7 +3501,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 		if (m_vVertices[j]->m_bIsBoundary) continue;  // ignore boundary vertex
 		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
 			continue;
-		VertexNeighborRing(j, ring, nb);	
+		vertRingNeighborVerts(j, ring, nb, false);	
 		
 		state = STATE_IDLE;
 		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
@@ -3708,17 +3587,19 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	}
 }
 
-std::vector<int> CMesh::getRingVertexIndex( int v, int ring ) const
+std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
 {
 	if (ring < 1) 
-		throw logic_error("Error: getRingVertex with ring < 1");
-	std::vector<int> v1 = getNeighborVertexIndex(v, ring-1), v2 = getNeighborVertexIndex(v, ring); 
+		throw std::logic_error("Error: CMesh::getRingVertex with ring < 1");
+
+	std::set<int> v1, v2;
+	vertRingNeighborVerts(v, ring-1, v1, true);
+	vertRingNeighborVerts(v, ring, v2, true);
 
 	std::vector<int> v3;
-	for (auto iter = v2.begin(); iter != v2.end(); ++iter)
-	{
-		if (find(v1.begin(), v1.end(), *iter) == v1.end())
-			v3.push_back(*iter);
+	for (int vIdx : v2) {
+		if (v1.find(vIdx) == v1.end())
+			v3.push_back(vIdx);
 	}
 
 	return v3;
@@ -3894,4 +3775,28 @@ const std::vector<bool>& CMesh::getVertOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
 	return getAttrValue<std::vector<bool> >(StrAttrVertOnBoundary);
+}
+
+void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::set<int>& nbr, bool inclusive /*= false*/ ) const
+{
+	const CVertex* notei = m_vVertices[vIndex];
+	nbr.clear();
+	nbr.insert(vIndex);
+
+	std::set<int> nbp = nbr;
+	for (int r = 1; r <= ring; ++r) {
+		std::set<int> nbn;
+		for (int vn : nbp) {
+			const CVertex* vStart = m_vVertices[vn];
+			for (auto he : vStart->m_HalfEdges) {
+				int endv = he->m_Vertices[1]->m_vIndex;
+				if (nbr.find(endv) != nbr.end()) continue;
+				nbr.insert(endv);
+				nbn.insert(endv);
+			}
+		}
+		nbp = nbn;
+	}
+	
+	if (!inclusive) nbr.erase(vIndex);
 }

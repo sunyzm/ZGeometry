@@ -1,3 +1,5 @@
+#ifndef ZGEOM_EIGEN_COMPUTE_H
+#define ZGEOM_EIGEN_COMPUTE_H
 #include "MatlabEngineWrapper.h"
 #include "EigenSystem.h"
 #include "SparseMatrix.h"
@@ -17,4 +19,6 @@ namespace ZGeom
 
     double computeHeatKernel(const EigenSystem& eigSys, uint x, uint y, double t);
 
-}
+}// end of namespace
+
+#endif

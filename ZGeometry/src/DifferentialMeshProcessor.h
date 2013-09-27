@@ -8,7 +8,7 @@
 #include <ZMesh/ZMesh.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatlabEngineWrapper.h>
-#include "Laplacian.h"
+#include "MeshLaplacian.h"
 #include "MatlabWrapper.h"
 
 enum DeformType {Simple, Shell, Laplace, SGW};

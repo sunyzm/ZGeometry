@@ -2068,11 +2068,9 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 		//if (vMatch2[vj] != vi) continue;
 
 		flog << "\n---- Search pair #" << regCount++ << ":(" << vid_i << ',' << vid_j << ") ----" << endl;
-		const vector<int> viNeighborIndex = tmesh1->getNeighborVertexIndex(vi, 1);
+		const vector<int> viNeighborIndex = tmesh1->getVertNeighborVerts(vi, 1, false);
 		vector<int> viNeighbors = viNeighborIndex;
-		//viNeighbors.push_back(vi);
-		vector<int> vjNeighbors = tmesh2->getNeighborVertexIndex(vj, 1);
-		//vjNeighbors.push_back(vj);
+		vector<int> vjNeighbors = tmesh2->getVertNeighborVerts(vj, 1, false);
 
 		if (current_level == 0)
 		{
@@ -3651,8 +3649,8 @@ void ShapeMatcher::localCorrespondenceTesting()
 	for (int n = 0; n < groupNum; ++n)
 	{
 		const int vi = vTest[n];
-		vector<int> vNeighbor1 = pOriginalMesh[0]->getNeighborVertexIndex(vi, 1);
-		vector<int> vNeighbor2 = pOriginalMesh[1]->getNeighborVertexIndex(vi, 1);
+		vector<int> vNeighbor1 = pOriginalMesh[0]->getVertNeighborVerts(vi, 1, false);
+		vector<int> vNeighbor2 = pOriginalMesh[1]->getVertNeighborVerts(vi, 1, false);
 		if (vNeighbor1.size() != vNeighbor2.size())
 		{
 			cout << "Not compatible neighbors!";

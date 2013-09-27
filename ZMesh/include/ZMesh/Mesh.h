@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <set>
 #include <queue>
 #include <string>
 #include <algorithm>
@@ -299,27 +300,68 @@ public:
 
 	/* ---- attributes access ---- */
 	const std::string&	getMeshName() const { return m_meshName; }
-	int					vertCount() const { return m_nVertex; }
-	int					faceCount() const { return m_nFace; }
-	int					halfEdgeCount() const { return m_nHalfEdge; }
+	int					vertCount() const { return (int)m_vVertices.size(); }
+	int					faceCount() const { return (int)m_vFaces.size(); }
+	int					halfEdgeCount() const { return (int)m_vHalfEdges.size(); }
 	CVertex*			getVertex(int i) { return m_vVertices[i]; }
 	const CVertex*		getVertex(int i) const { return m_vVertices[i]; }
 	CFace*				getFace(int i) { return m_vFaces[i]; }
 	const CFace*		getFace(int i) const { return m_vFaces[i]; }
 	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
-	double				getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
-	int					getMeshSize() const { return m_nVertex; }
-	const Vector3D&		getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
-	std::vector<int>    getOriginalVertexIndex() const;
-	std::vector<int>	getNeighborVertexIndex(int v, int ring) const;
-	std::vector<int>    getRingVertexIndex(int v, int ring) const;
-	std::vector<int>	getVertexAdjacentFacesIndex(int vIdx, int ring = 1) const;
+	int					getMeshSize() const { return (int)m_vVertices.size(); }
+	/*************************************************************************/
+	
+	/* geometry query, analysis and processing */
+	const Vector3D&		         getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
+	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
+	double						 calFaceArea(int i) const;
+	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
+	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
+	double						 getAvgEdgeLength() const;
+	const std::vector<double>&   getMeanCurvature();
+	const std::vector<double>&   getGaussCurvature();
+	const std::vector<Vector3D>& getFaceNormals();
+	const std::vector<Vector3D>& getVertNormals();
+	const std::vector<Vector3D>& getVertNormals_const() const;
+	const std::vector<bool>&	 getVertOnHole();
+	const std::vector<bool>&     getVertOnHole_const() const;
+	const std::vector<bool>&	 getVertOnBoundary();
+
+	void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
+	void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
+	bool				isInNeighborRing(int ref, int query, int ring) const;
+	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
+	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;
+	std::vector<int>	getVertexAdjacentFaces(int vIdx, int ring = 1) const;
+	bool				vertGeoNeighborVerts(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
+
 	void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void				getVertCoordinates(MeshCoordinates& coords) const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+	void				gatherStatistics();
+	bool				hasBoundary() const;
+	int					calBoundaryNum();    // compute number of (connective) boundaries
+	int					calBoundaryVert();	 // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
+	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
+	int					calEdgeCount();		    // get number of edges ( not half-edge! )
+	int					calMeshGenus();			// get mesh genus
+	double				calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
+	bool				calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
+	bool				calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
+	void				calLBO(std::vector<int>& vII, std::vector<int>& vJJ, std::vector<double>& vSS, std::vector<double>& vArea) const;
+	bool				calVertexArea(std::vector<double>& Av);
+	double				calGeodesic(int s, int t) const;
+	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
+	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
+	double				getVolume();	// calculate volume (area) of a surface
+	void				calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
+	void				calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
+	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
+	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
+	std::vector<int>    getOriginalVertexIndex() const;
 	/*************************************************************************/
 
 	/* MeshAttr functions */
@@ -390,47 +432,6 @@ public:
 	}
 	/*************************************************************************/
 
-	/* geometry query and processing */
-	const std::vector<double>&   getMeanCurvature();
-	const std::vector<double>&   getGaussCurvature();
-	const std::vector<Vector3D>& getFaceNormals();
-	const std::vector<Vector3D>& getVertNormals();
-	const std::vector<Vector3D>& getVertNormals_const() const;
-	const std::vector<bool>&	 getVertOnHole();
-	const std::vector<bool>&     getVertOnHole_const() const;
-	const std::vector<bool>&	 getVertOnBoundary();
-	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
-	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
-	double						 getAvgEdgeLength() const;
-
-	void	    gatherStatistics();
-	bool		hasBoundary() const;
-	int			calBoundaryNum();    // compute number of (connective) boundaries
-	int			calBoundaryVert();	 // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
-	int			calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
-	int			calEdgeCount();		    // get number of edges ( not half-edge! )
-	int			calMeshGenus();			// get mesh genus
-	double		calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
-	bool		calVertexLBO(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
-	bool		calVertexLBO2(int i, std::vector<int>& Iv, std::vector<int>& Jv, std::vector<double>& Sv, double& Av, std::vector<double>& tw) const;
-	void		calLBO(std::vector<int>& vII, std::vector<int>& vJJ, std::vector<double>& vSS, std::vector<double>& vArea) const;
-	bool		calVertexArea(std::vector<double>& Av);
-	bool		VertexNeighborGeo(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
-	void		VertexNeighborRing(int i, int ring, std::vector<int>& nbr) const;
-	bool		isInNeighborRing(int ref, int query, int ring) const;
-	double		calGeodesic(int s, int t) const;
-	double		getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
-	double		getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
-	double		getVolume();	// calculate volume (area) of a surface
-	void		calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
-	void		calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
-	void		extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
-	void        extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
-	double	    calFaceArea(int i) const;
-	void		clearVertexMark();
-
-	/*************************************************************************/
-
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
 
@@ -455,7 +456,7 @@ private:
 	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
-
+	void	clearVertexMark();
 };	//CMesh
 
 #endif

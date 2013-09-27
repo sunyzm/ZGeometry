@@ -12,7 +12,6 @@ namespace ZGeom
 	template<typename T> class MatElem;
 	template<typename T> class VecN;
 	template<typename T> class SparseMatrix;    
-	template<typename T> class Laplacian;
 	template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 	enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
@@ -48,7 +47,6 @@ namespace ZGeom
 	class SparseMatrix
 	{
 	public:
-		friend class Laplacian<T>;      
 		SparseMatrix() : mRowCount(0), mColCount(0), mNonzeroCount(0) {}
 		SparseMatrix(int row, int col) : mRowCount(row), mColCount(col), mNonzeroCount(0) {}
 
@@ -66,6 +64,8 @@ namespace ZGeom
 		void removeElem(uint row, uint col);   
 
 		void copyElements(const SparseMatrix<T>& mat2);
+
+		void computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const;
 
 		template<typename F>
 		void getDiagonal(std::vector<F>& diag) const;

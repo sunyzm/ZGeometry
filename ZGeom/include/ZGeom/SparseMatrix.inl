@@ -2,6 +2,7 @@
 #include <cassert>
 #include <vector>
 #include <functional>
+#include <unordered_map>
 #include <algorithm>
 
 namespace ZGeom
@@ -218,7 +219,7 @@ namespace ZGeom
 	}
 
 	template<typename T>
-	inline void ZGeom::SparseMatrix<T>::copyElements( const SparseMatrix<T>& mat2 )
+	inline void SparseMatrix<T>::copyElements( const SparseMatrix<T>& mat2 )
 	{		
 		for (auto elem : mat2.mElements) {
 			if (elem.row() > mRowCount || elem.col() > mColCount) 
@@ -227,6 +228,28 @@ namespace ZGeom
 		mElements = mat2.mElements;
 		mNonzeroCount = mElements.size();
 	}
+
+	template<typename T>
+	inline void SparseMatrix<T>::computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const
+	{
+		subMat.mRowCount = subMat.mColCount = vSelected.size();
+		subMat.mElements.clear();
+
+		std::unordered_map<int, int> subIndexMap;
+		for (int i = 0; i < vSelected; ++i) {
+			subIndexMap.insert(vSelected[i], i);
+		}
+
+		for (auto elem : this->mElements) {
+			int rowIdx = elem.mRow - 1, colIdx = elem.mCol - 1;
+			if (subIndexMap.find(rowIdx) != subIndexMap.end() && subIndexMap.find(colIdx) != subIndexMap.end()) {
+				subMat.mElements.push_back(subIndexMap[rowIdx] + 1, subIndexMap[colIdx] + 1, elem.mVal);
+			}
+		}
+
+		subMat.mNonzeroCount = subMat.mElements.size();
+	}
+
 
 	template<typename T>
 	template<typename F>

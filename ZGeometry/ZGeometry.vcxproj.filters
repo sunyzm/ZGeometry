@@ -68,9 +68,6 @@
     <ClCompile Include="src\DifferentialMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Laplacian.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\MatlabWrapper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,6 +84,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\matching.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshLaplacian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -107,9 +107,6 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\DifferentialMeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="src\Laplacian.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\MatlabWrapper.h">
@@ -149,6 +146,9 @@
       <Filter>Document Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\ShapeMatcher.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="src\MeshLaplacian.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
   </ItemGroup>
