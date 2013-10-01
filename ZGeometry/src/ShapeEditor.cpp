@@ -136,9 +136,6 @@ void ShapeEditor::deformLaplacian()
 
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
-	mEngine->addVariable(oldCoord.getXCoord().c_ptr(), vertCount, 1, false, "ecx");
-	mEngine->addVariable(oldCoord.getYCoord().c_ptr(), vertCount, 1, false, "ecy");
-	mEngine->addVariable(oldCoord.getZCoord().c_ptr(), vertCount, 1, false, "ecz");
 
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
 	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
@@ -171,11 +168,9 @@ void ShapeEditor::deformLaplacian()
 	
 	timer.stopTimer("Prepare deformation time: ");
 	timer.startTimer();	
-
 	mEngine->eval("lsx=matOptS\\dcx;");
 	mEngine->eval("lsy=matOptS\\dcy;");
 	mEngine->eval("lsz=matOptS\\dcz;");
-
 	timer.stopTimer("Deformation time: ");
 
 	double *lsx = mEngine->getDblVariablePtr("lsx");
@@ -205,17 +200,11 @@ void ShapeEditor::deformBiLaplacian()
 
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
-	mEngine->addVariable(oldCoord.getXCoord().c_ptr(), vertCount, 1, false, "ecx");
-	mEngine->addVariable(oldCoord.getYCoord().c_ptr(), vertCount, 1, false, "ecy");
-	mEngine->addVariable(oldCoord.getZCoord().c_ptr(), vertCount, 1, false, "ecz");
 
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);
 	
-	mEngine->addSparseMat(matLs, "matL");
-	mEngine->addSparseMat(matBiL, "matBiL");
-
 	ZGeom::SparseMatVecMultiplier mulBiLs(matBiL, true);	
 	ZGeom::VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
@@ -246,11 +235,87 @@ void ShapeEditor::deformBiLaplacian()
 
 	timer.stopTimer("Prepare deformation time: ");
 	timer.startTimer();	
-
 	mEngine->eval("lsx=matOptS\\dcx;");
 	mEngine->eval("lsy=matOptS\\dcy;");
 	mEngine->eval("lsz=matOptS\\dcz;");
+	timer.stopTimer("Deformation time: ");
 
+	double *lsx = mEngine->getDblVariablePtr("lsx");
+	double *lsy = mEngine->getDblVariablePtr("lsy");
+	double *lsz = mEngine->getDblVariablePtr("lsz");
+
+	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
+	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::deformMixedLaplacian(double ks, double kb)
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	int anchorCount(0);
+	std::vector<int> anchorIndex;
+	std::vector<Vector3D> anchorPos;
+	prepareAnchors(anchorCount, anchorIndex, anchorPos);
+	if (anchorCount == 0) {
+		std::cout << "At least one anchor need to be picked!";
+		return;
+	}
+
+	const int anchorWeight = 1.0;
+	const int vertCount = mMesh->vertCount();
+
+	MeshCoordinates oldCoord;
+	mMesh->getVertCoordinates(oldCoord);
+	mEngine->addVariable(oldCoord.getXCoord().c_ptr(), vertCount, 1, false, "ecx");
+	mEngine->addVariable(oldCoord.getYCoord().c_ptr(), vertCount, 1, false, "ecy");
+	mEngine->addVariable(oldCoord.getZCoord().c_ptr(), vertCount, 1, false, "ecz");
+
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+	ZGeom::SparseMatrix<double> matBiL;
+	ZGeom::mulMatMat(matLs, matLs, matBiL);
+	mEngine->addSparseMat(matLs, "matL");
+	mEngine->addSparseMat(matBiL, "matBiL");
+	
+	ZGeom::SparseMatrix<double> matL1(matLs);
+	matL1.scale(-ks);
+	ZGeom::SparseMatrix<double> matMixedL;
+	ZGeom::addMatMat(matL1, matBiL, kb, matMixedL);
+	mEngine->addSparseMat(matMixedL, "matMixedL");
+
+	ZGeom::SparseMatVecMultiplier mulMixedL(matMixedL, true);	
+	ZGeom::VecNd diffCoord[3];
+	for (int i = 0; i < 3; ++i) {
+		diffCoord[i].resize(vertCount);
+		mulMixedL.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
+	}
+
+	ZGeom::VecNd solveRHS[3];
+	for (int i = 0; i < 3; ++i ) {
+		solveRHS[i].resize(vertCount + anchorCount, 0);
+		solveRHS[i].copyElements(diffCoord[i], 0);
+		for (int l = 0; l < anchorCount; ++l) {
+			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
+		}
+	}
+	mEngine->addColVec(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
+	mEngine->addColVec(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
+	mEngine->addColVec(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
+
+	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount);
+	std::vector<int> rowInd, colInd;
+	std::vector<double> vals;
+	matOptS.copyElements(matMixedL);
+	for (int a = 0; a < anchorCount; ++a) 
+		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, anchorWeight);
+	matOptS.convertToCOO(rowInd, colInd, vals, ZGeom::MAT_FULL);
+	mEngine->addSparseMat(&rowInd[0], &colInd[0], &vals[0], vertCount + anchorCount, vertCount, matOptS.nonzeroCount(), "matOptS");
+
+	timer.stopTimer("Prepare deformation time: ");
+	timer.startTimer();	
+	mEngine->eval("lsx=matOptS\\dcx;");
+	mEngine->eval("lsy=matOptS\\dcy;");
+	mEngine->eval("lsz=matOptS\\dcz;");
 	timer.stopTimer("Deformation time: ");
 
 	double *lsx = mEngine->getDblVariablePtr("lsx");
@@ -284,3 +349,4 @@ void ShapeEditor::deformSpectralWavelet()
 	MeshCoordinates newCoord = oldCoord;
 	mMesh->setVertCoordinates(newCoord);
 }
+

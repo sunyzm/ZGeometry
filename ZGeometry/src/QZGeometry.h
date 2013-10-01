@@ -83,6 +83,7 @@ private slots:
 	void deformSimple();
 	void deformLaplace();
 	void deformBiLaplace();
+	void deformMixedLaplace();
 	void deformSGW();	
 	void reconstructSGW();
 	void filterExperimental();

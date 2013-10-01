@@ -164,6 +164,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
+	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
@@ -565,6 +566,15 @@ void QZGeometryWindow::deformBiLaplace()
 	setEditModeMove();
 }
 
+
+void QZGeometryWindow::deformMixedLaplace()
+{
+	double ks = 1.0, kb = 10.0;
+	mShapeEditor.deformMixedLaplacian(ks, kb);
+	deformType = Shell;
+	ui.glMeshWidget->update();
+	setEditModeMove();
+}
 
 void QZGeometryWindow::deformSGW()
 {

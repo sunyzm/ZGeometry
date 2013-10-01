@@ -25,6 +25,7 @@ public:
 	void deformSimple();
 	void deformLaplacian();
 	void deformBiLaplacian();
+	void deformMixedLaplacian(double ks, double kb);
 	void deformSpectralWavelet();
 	
 private:
