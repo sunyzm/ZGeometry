@@ -109,7 +109,7 @@ double* ZGeom::MatlabEngineWrapper::getDblVariablePtr( const std::string& name )
 	return mxGetPr(arr);
 }
 
-int * ZGeom::MatlabEngineWrapper::getIntVariablePtr( const std::string& name )
+int* ZGeom::MatlabEngineWrapper::getIntVariablePtr( const std::string& name )
 {
 	mxArray *arr = getVariable(name.c_str());
 	return (int*)mxGetData(arr);
@@ -118,4 +118,27 @@ int * ZGeom::MatlabEngineWrapper::getIntVariablePtr( const std::string& name )
 void ZGeom::MatlabEngineWrapper::addDoubleScalar( double value, const std::string& name )
 {
 	addVariable(&value, 1, 1, false, name);
+}
+
+void ZGeom::MatlabEngineWrapper::getSparseMat( const std::string& name, SparseMatrix<double>& mat )
+{
+	eval(("[m,n]=size(" + name + ")").c_str());
+	eval(("nonz=nnz("   + name + ")").c_str());
+	eval(("[row,col,v] = find(" + name + ")").c_str());
+	int m = (int)*getDblVariablePtr("m");
+	int n = (int)*getDblVariablePtr("n");
+	int nnz = (int)*getDblVariablePtr("nonz");
+	double *row = getDblVariablePtr("row");
+	double *col = getDblVariablePtr("col");
+	double *v = getDblVariablePtr("v");
+
+	std::vector<int> vRow(nnz), vCol(nnz);
+	for (int i = 0; i < nnz; ++i) {
+		vRow[i] = (int)row[i];
+		vCol[i] = (int)col[i];
+	}
+	std::vector<double> vVal(nnz);
+	std::copy_n(v, nnz, vVal.begin());
+
+	mat.convertFromCOO(m, n, vRow, vCol, vVal);
 }

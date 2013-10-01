@@ -86,7 +86,8 @@ public:
 	void addSparseMat(const SparseMatrix<double>& mat, const std::string& varName);
 
 	double* getDblVariablePtr(const std::string& name);
-	int *getIntVariablePtr(const std::string& name);
+	int* getIntVariablePtr(const std::string& name);
+	void getSparseMat(const std::string& name, SparseMatrix<double>& mat);
 
 	void removeVariable(const std::string& varName);
 	

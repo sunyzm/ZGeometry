@@ -276,7 +276,7 @@ namespace ZGeom
 
 		mRowCount = rowCount; 
 		mColCount = colCount;
-		mNonzeroCount = val.size();
+		mNonzeroCount = (uint)val.size();
 		
 		mElements.clear();
 		mElements.reserve(mNonzeroCount);
