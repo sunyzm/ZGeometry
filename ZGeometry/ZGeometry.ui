@@ -240,9 +240,9 @@
       <string>Deform</string>
      </property>
      <addaction name="actionDeformSimple"/>
-     <addaction name="actionDeformSGW"/>
-     <addaction name="actionDeformDifferential"/>
      <addaction name="actionDeformLaplace"/>
+     <addaction name="actionDeformBiLaplace"/>
+     <addaction name="actionDeformSGW"/>
     </widget>
     <widget class="QMenu" name="menuReconstruct">
      <property name="title">
@@ -811,6 +811,11 @@
   <action name="actionDeformDifferential">
    <property name="text">
     <string>Differential</string>
+   </property>
+  </action>
+  <action name="actionDeformBiLaplace">
+   <property name="text">
+    <string>Bi-Laplace</string>
    </property>
   </action>
  </widget>

@@ -10,19 +10,10 @@
 namespace ZGeom
 {
     template<typename T> 
-    inline T cotVec3(const Vec3<T>& v1, const Vec3<T>& v2)
-    {
-        return ZGeom::dot(v1, v2) / ZGeom::cross(v1, v2).length(); 
-    }
+	VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
-    template<typename T> 
-    inline T cosVec3(const Vec3<T>& v1, const Vec3<T>& v2)
-    {
-        return ZGeom::dot(v1, v2) / (v1.length() * v2.length());
-    }
-
-    template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
-
+	void mulMatMat(const SparseMatrix<double>& mat1, const SparseMatrix<double>& mat2, SparseMatrix<double>& mat3);
+	
     double innerProduct(const std::vector<double>& v1, const std::vector<double>& v2);
 
     double innerProductSym(const std::vector<double>& v1, SparseMatVecMultiplier* mulA, const std::vector<double>& v2);

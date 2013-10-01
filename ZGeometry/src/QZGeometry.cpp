@@ -161,10 +161,10 @@ void QZGeometryWindow::makeConnections()
 	////////	Edit	////////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
-	QObject::connect(ui.actionDeformDifferential, SIGNAL(triggered()), this, SLOT(deformDifferential()));
-	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
-	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
+	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
+	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
+	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
@@ -525,15 +525,11 @@ void QZGeometryWindow::deformSimple()
 
 void QZGeometryWindow::deformLaplace()
 {
+#if 0
 	vector<int> vHandle;
 	vector<Vector3D> vHandlePos;
 	vector<int> vFree;
 	vector<Vector3D> vNewPos;
-
-	// 	int activeHandle = vMP[0].active_handle; 	
-	// 	vHandle.push_back(activeHandle);	
-	// 	vHandlePos.push_back(vMP[0].mHandles[activeHandle]);
-	//	vFree = vMP[0].getMesh()->getNeighboringVertex(activeHandle, DEFAULT_DEFORM_RING);
 
 	std::set<int> sFreeIdx;
 	for (auto handle :mProcessors[0]->getHandles())
@@ -553,11 +549,22 @@ void QZGeometryWindow::deformLaplace()
 	} catch (runtime_error* e) {
 		qout.output(e->what(), OUT_MSGBOX);
 	}
-	
+#endif
+
+	mShapeEditor.deformLaplacian();
 	deformType = Laplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
+
+void QZGeometryWindow::deformBiLaplace()
+{
+	mShapeEditor.deformBiLaplacian();
+	deformType = BiLaplace;
+	ui.glMeshWidget->update();
+	setEditModeMove();
+}
+
 
 void QZGeometryWindow::deformSGW()
 {
@@ -1901,11 +1908,5 @@ void QZGeometryWindow::verifyAreas() const
 void QZGeometryWindow::revert()
 {
 	mShapeEditor.revert();
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::deformDifferential()
-{
-	mShapeEditor.deformDifferential();
 	ui.glMeshWidget->update();
 }

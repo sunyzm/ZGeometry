@@ -7,6 +7,7 @@
 #include <ppl.h>
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
+#include <ZUtil/zassert.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenSystem.h>
 #include "global.h"
@@ -100,7 +101,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
-	assert(hasLaplacian(laplacianType));
+	ZUtil::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
 	if (!mpEngineWrapper->isOpened())
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
@@ -848,13 +849,6 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		{
 			mfl->addFeature(new MeshFeature(*iter, s));			
 		}
-
-// 		if (s == nScales-1)
-// 		{
-// 			cout << "scale " << s << "features:";
-// 			for (auto iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) cout << "  " << *iter;
-// 			cout << endl;
-// 		}
 	}
 
 	switch(kernelType)

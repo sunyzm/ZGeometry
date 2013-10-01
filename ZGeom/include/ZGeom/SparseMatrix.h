@@ -86,10 +86,10 @@ namespace ZGeom
 		void convertFromCSR(uint rowCount, uint colCount, F nzVal[], U colIdx[], U rowPtr[]);
 
 		template<typename U, typename F> 
-		void convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form = MAT_UPPER) const;
+		void convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form) const;
 
 		template<typename U, typename F> 
-		void convertToCSR(SparseMatrixCSR<F,U>& MatCSR, MatrixForm form = MAT_UPPER) const;
+		void convertToCSR(SparseMatrixCSR<F,U>& MatCSR, MatrixForm form) const;
 
 		template<typename F> 
 		void convertFromFull(F* fullMat, double sparse_eps = 1e-10);
@@ -97,10 +97,13 @@ namespace ZGeom
 		template<typename F> 
 		void convertToFull(F* fullMat, MatrixForm form) const;
 
-		void truncate(MatrixForm form = MAT_UPPER); // truncate matrix 
+		void scale(T scalar);
+		void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
 		void symmetrize();              // turn upper or lower matrix into symmetric one
 		void fillEmptyDiagonal();       // fill empty diagonal elements with 0
-		void setToIdentity(uint order);     // turn into an identity matrix
+		void setToIdentity(uint order); // make the matrix an identity matrix
+		void makeLaplacian();	// make matrix a Laplacian by modifying the diagonal; must be square matrix
+
 		void print(std::ostream& out) const;
 		void print(const std::string& paht) const;
 		void read(std::istream& in);
@@ -117,6 +120,7 @@ namespace ZGeom
 		uint mColCount;
 		uint mNonzeroCount;
 	};
+
 } // end of namespace ZGeom
 
 #include "SparseMatrix.inl"

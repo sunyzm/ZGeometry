@@ -13,7 +13,10 @@ namespace ZGeom
 	{
 		const int subSize = (int)vSelected.size();
 		subLaplacian.mOrder = subSize;
+		mW.computeSubMatrix(vSelected, subLaplacian.mW);
+		mLS.computeSubMatrix(vSelected, subLaplacian.mLS);
 
+		subLaplacian.mLS.makeLaplacian();
 
 	}
 

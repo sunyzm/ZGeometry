@@ -21,9 +21,10 @@ public:
 	void revert() { mMesh->setVertCoordinates(mOldCoord); }
 
 	void manifoldHarmonicsReconstruct(int nEig);
-	void deformDifferential();
-	void deformSimple();
 
+	void deformSimple();
+	void deformLaplacian();
+	void deformBiLaplacian();
 	void deformSpectralWavelet();
 	
 private:

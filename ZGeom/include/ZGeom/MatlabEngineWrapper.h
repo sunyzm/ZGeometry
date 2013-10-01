@@ -7,6 +7,7 @@
 #include <vector>
 #include <algorithm>
 #include <engine.h>
+#include "SparseMatrix.h"
 
 namespace ZGeom
 {
@@ -115,6 +116,15 @@ public:
 		removeVariable("ss");
 		removeVariable("m");
 		removeVariable("n");
+	}
+
+	void addSparseMat(const SparseMatrix<double>& mat, const std::string& varName) {
+		std::vector<double> ss;
+		std::vector<int> ii, jj;
+		mat.convertToCOO(ii, jj, ss, MAT_FULL);
+		int m = mat.rowCount(), n = mat.colCount();
+		int nnz = (int)ss.size();
+		addSparseMat(&ii[0], &jj[0], &ss[0], m, n, nnz, varName);
 	}
 
 	double* getDblVariablePtr(const std::string& name) {

@@ -63,7 +63,7 @@ namespace ZGeom
 	inline void SparseMatrix<T>::insertElem( uint row, uint col, T val )
 	{
 		mElements.push_back(MatElem<T>(row, col, val));
-		mNonzeroCount = mElements.size();
+		mNonzeroCount = (int)mElements.size();
 	}
 
 	template<typename T>
@@ -205,6 +205,12 @@ namespace ZGeom
 	}
 
 	template<typename T>
+	void SparseMatrix<T>::scale( T scalar )
+	{
+		std::for_each(mElements.begin(), mElements.end(), [=](MatElem<T>& elem){ elem.mVal *= scalar; });
+	}
+
+	template<typename T>
 	template<typename F>
 	void SparseMatrix<T>::getDiagonal(std::vector<F>& diag) const
 	{
@@ -232,24 +238,23 @@ namespace ZGeom
 	template<typename T>
 	inline void SparseMatrix<T>::computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const
 	{
-		subMat.mRowCount = subMat.mColCount = vSelected.size();
+		subMat.mRowCount = subMat.mColCount = (int)vSelected.size();
 		subMat.mElements.clear();
 
 		std::unordered_map<int, int> subIndexMap;
-		for (int i = 0; i < vSelected; ++i) {
-			subIndexMap.insert(vSelected[i], i);
+		for (size_t i = 0; i < vSelected.size(); ++i) {
+			subIndexMap.insert(std::make_pair(vSelected[i], (int)i));
 		}
 
 		for (auto elem : this->mElements) {
 			int rowIdx = elem.mRow - 1, colIdx = elem.mCol - 1;
 			if (subIndexMap.find(rowIdx) != subIndexMap.end() && subIndexMap.find(colIdx) != subIndexMap.end()) {
-				subMat.mElements.push_back(subIndexMap[rowIdx] + 1, subIndexMap[colIdx] + 1, elem.mVal);
+				subMat.insertElem(subIndexMap[rowIdx] + 1, subIndexMap[colIdx] + 1, elem.mVal);
 			}
 		}
 
-		subMat.mNonzeroCount = subMat.mElements.size();
+		subMat.mNonzeroCount = (int)subMat.mElements.size();
 	}
-
 
 	template<typename T>
 	template<typename F>
@@ -395,5 +400,11 @@ namespace ZGeom
 				mElements[k-1].mVal = nzVal[k-1];
 			}
 		}
+	}
+
+	template<typename T>
+	void SparseMatrix<T>::makeLaplacian() 
+	{
+
 	}
 }// end of namespace ZGeom

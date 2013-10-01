@@ -10,8 +10,8 @@
 #include <ZGeom/MatlabEngineWrapper.h>
 #include "MeshLaplacian.h"
 #include "MatlabWrapper.h"
+#include "global.h"
 
-enum DeformType {Simple, Shell, Laplace, SGW};
 enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
 enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW};
 enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};

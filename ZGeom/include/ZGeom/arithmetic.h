@@ -5,6 +5,7 @@
 #include <cmath>
 #include <cassert>
 #include "common.h"
+#include "Vec3.h"
 
 namespace ZGeom
 {
@@ -59,33 +60,31 @@ namespace ZGeom
 		}
 	}
 
-	inline void triangleCotan( double a, double b, double c, double &cotan_a, double &cotan_c )
-	{
-		double cosa = (b*b+c*c-a*a)/(2.0*b*c);
-		double cosc = (b*b+a*a-c*c)/(2.0*b*a);
-		cotan_a = cosa / std::sqrt(1-cosa*cosa);
-		cotan_c = cosc / std::sqrt(1-cosc*cosc);
+	/// judge whether the given three lengths can form a triangle
+	inline bool validAsTriangle(double e1, double e2, double e3) {
+		return e1 > 0 && e2 > 0 && e3 > 0 && 
+			e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1;
 	}
+
+	void triangleCotan( double a, double b, double c, double &cotan_a, double &cotan_c );
 
 	/// compute cosine of the angle opposite to e3
-	///
-	inline double cosTriSides(double e1, double e2, double e3)
-	{
-		assert(e1 > 0 && e2 > 0 && e3 > 0 && 
-			e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1);
+	double cosTriSides(double e1, double e2, double e3);
 
-		return (e1*e1 + e2*e2 - e3*e3) / (2.0*e1*e2);
+	/// compute the area of the triangle of given side lengths
+	double triArea(double e1, double e2, double e3);
+
+	template<typename T> 
+	inline T cotVec3(const Vec3<T>& v1, const Vec3<T>& v2)
+	{
+		return ZGeom::dot(v1, v2) / ZGeom::cross(v1, v2).length(); 
 	}
 
-	inline double triArea(double e1, double e2, double e3)
+	template<typename T> 
+	inline T cosVec3(const Vec3<T>& v1, const Vec3<T>& v2)
 	{
-		assert(e1 > 0 && e2 > 0 && e3 > 0 && 
-			   e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1);
-
-		double p = (e1 + e2 + e3) / 2.0;
-		return std::sqrt(p*(p-e1)*(p-e2)*(p-e3));
+		return ZGeom::dot(v1, v2) / (v1.length() * v2.length());
 	}
-
 }
 
 
