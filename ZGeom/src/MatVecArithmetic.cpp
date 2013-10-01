@@ -147,8 +147,11 @@ namespace ZGeom
 
 		mkl_dcsrmultcsr(&trans, &request, &sort, &m, &n, &k, &a[0], &ja[0], &ia[0],
 						&b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
-
-		std::cout << "dscrmultcsr error code: " << info << std::endl;
+		if (info != 0) {
+			std::cout << "mkl_dcsrmultcsr error code: " << info;
+			delete []ic;
+			return;
+		}
 
 		nzmax = ic[m] - 1;
 		c = new double[nzmax];
@@ -156,14 +159,68 @@ namespace ZGeom
 		request = 2;
 		
 		mkl_dcsrmultcsr(&trans, &request, &sort, &m, &n, &k, &a[0], &ja[0], &ia[0],
-			&b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
-		std::cout << "dscrmultcsr error code: " << info << std::endl;
+						&b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
+		if (info != 0) {
+			std::cout << "mkl_dcsrmultcsr error code: " << info;
+			delete []c;
+			delete []jc;
+			delete []ic;
+			return;
+		}
 
-		mat3.convertFromCSR(m, k, c, jc, ic);
-		
+		mat3.convertFromCSR(m, k, c, jc, ic);		
 		delete []c;
 		delete []jc;
 		delete []ic;
 	}
 
-}
+	void addMatMat( const SparseMatrix<double>& mat1, const SparseMatrix<double>& mat2, double beta, SparseMatrix<double>& mat3 )
+	{
+		if (mat1.rowCount() != mat2.rowCount() || mat1.colCount() != mat2.colCount()) 
+			throw std::runtime_error("Matrix dimension not compatible for addition!");
+
+		char trans = 'N';
+		int request = 1;
+		int sort = 0;
+		int m = (int)mat1.rowCount();
+		int n = (int)mat1.colCount();
+		std::vector<double> a, b;
+		std::vector<int> ja, ia, jb, ib;
+		mat1.convertToCSR(a, ja, ia, MAT_FULL);
+		mat2.convertToCSR(b, jb, ib, MAT_FULL);
+		int nzmax = 0;
+		double *c = NULL;
+		int *jc = NULL; 
+		int *ic = new int[m+1];
+		int info = 0;
+
+		mkl_dcsradd(&trans, &request, &sort, &m, &n, &a[0], &ja[0], &ia[0], &beta,
+			        &b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
+		if (info != 0) {
+			std::cout << "mkl_dcsrmultcsr error code: " << info;
+			delete []ic;
+			return;
+		}
+
+		nzmax = ic[m] - 1;
+		c = new double[nzmax];
+		jc = new int[nzmax];
+		request = 2;
+
+		mkl_dcsradd(&trans, &request, &sort, &m, &n, &a[0], &ja[0], &ia[0], &beta,
+					&b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
+		if (info != 0) {
+			std::cout << "mkl_dcsrmultcsr error code: " << info;
+			delete []ic;
+			delete []jc;
+			delete []c;
+			return;
+		}
+
+		mat3.convertFromCSR(m, n, c, jc, ic);		
+		delete []c;
+		delete []jc;
+		delete []ic;
+	}
+
+} // end of namespace

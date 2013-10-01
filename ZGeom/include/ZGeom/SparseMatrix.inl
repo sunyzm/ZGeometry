@@ -282,7 +282,7 @@ namespace ZGeom
 		mElements.reserve(mNonzeroCount);
 		for (uint k = 0; k < mNonzeroCount; ++k) {
 			assert(rowInd[k] > 0 && colInd[k] > 0);
-			assert(rowInd[k] <= rowCount && colInd[k] <= colCount);
+			assert(rowInd[k] <= (U)rowCount && colInd[k] <= (U)colCount);
 			mElements.push_back(MatElem<T>(rowInd[k], colInd[k], val[k]));
 		}
 	}
