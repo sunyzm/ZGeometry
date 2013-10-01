@@ -248,6 +248,7 @@
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
+    <ClCompile Include="src\MatlabEngineWrapper.cpp" />
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\SparseMatrixCSR.cpp" />

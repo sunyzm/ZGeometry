@@ -259,7 +259,6 @@ void ShapeEditor::deformBiLaplacian()
 
 	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
-
 }
 
 void ShapeEditor::deformSpectralWavelet()
