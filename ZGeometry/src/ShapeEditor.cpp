@@ -212,15 +212,15 @@ void ShapeEditor::deformBiLaplacian()
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);
-
+	
 	mEngine->addSparseMat(matLs, "matL");
 	mEngine->addSparseMat(matBiL, "matBiL");
 
-	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
+	ZGeom::SparseMatVecMultiplier mulBiLs(matBiL, true);	
 	ZGeom::VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(vertCount);
-		mulLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
+		mulBiLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
 	
 	ZGeom::VecNd solveRHS[3];
@@ -238,7 +238,7 @@ void ShapeEditor::deformBiLaplacian()
 	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount);
 	std::vector<int> rowInd, colInd;
 	std::vector<double> vals;
-	matOptS.copyElements(matLs);
+	matOptS.copyElements(matBiL);
 	for (int a = 0; a < anchorCount; ++a) 
 		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, anchorWeight);
 	matOptS.convertToCOO(rowInd, colInd, vals, ZGeom::MAT_FULL);
