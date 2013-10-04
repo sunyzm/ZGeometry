@@ -714,6 +714,27 @@ void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescale
 	m_bSGWComputed = true;
 }
 
+void DifferentialMeshProcessor::computeSGW()
+{
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const int vertCount = mhb.eigVecSize();
+	const int eigCount = mhb.eigVecCount();
+	double waveletTime = 20.0;
+
+	mMatWavelet.resize(vertCount, vertCount);
+	Concurrency::parallel_for (0, vertCount, [&](int i) {
+		for (int j = 0; j <= i; ++j) {
+			double elemVal(0);
+			for (int k = 0; k < eigCount; ++k) {
+				double lt = std::pow(mhb.getEigVal(k) * waveletTime, 2);
+				elemVal += lt * std::exp(-lt) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[j];
+			}
+			mMatWavelet(i,j) = elemVal;
+			mMatWavelet(j,i) = elemVal;
+		}
+	});
+}
+
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
@@ -735,17 +756,14 @@ void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType ker
 		break;
 	}
 
-	Concurrency::parallel_for(0, m_size, [&](int i)
-//	for (int i = 0; i < m_size; ++i)
-	{
+	Concurrency::parallel_for(0, m_size, [&](int i)	{
 		double sum = 0;
 		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
 			sum += (*pTF)(mhb.getEigVal(k), scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[i];
 		}
 		values[i] = sum;
-	}
-	);
+	});
 }
 
 void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const

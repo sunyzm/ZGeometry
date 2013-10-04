@@ -86,6 +86,7 @@ public :
 	Vector3D& operator /=(double u);
 	Vector3D& operator ^=(const Vector3D& v);
 	double& operator[](int i);
+	double  operator[](int i) const;
 	operator std::string() const;
 
 	friend Vector3D operator-(const Vector3D& v);

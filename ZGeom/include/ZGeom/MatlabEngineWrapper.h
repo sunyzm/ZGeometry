@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <engine.h>
 #include "SparseMatrix.h"
+#include "DenseMatrix.h"
+#include "VecN.h"
 
 namespace ZGeom
 {
@@ -77,13 +79,15 @@ public:
 	mxArray* getVariable(const char *name) const; /* Get a variable with the specified name from MATLAB's workspace  */
 	int putVariable(const char *var_name, const mxArray *ap) const; /* Put a variable into MATLAB's workspace with the specified name */
 	
-	void addVariable(double* data, int row, int col, bool rowMajor, const std::string& name);
-	void addVariable(int *data, int row, int col, bool rowMajor, const std::string& name);
+	void addArray(double* data, int row, int col, bool rowMajor, const std::string& name);
+	void addArray(int *data, int row, int col, bool rowMajor, const std::string& name);
 	void addDoubleScalar(double value, const std::string& name);
 	void addColVec(double *data, int row, const std::string& name);
 	void addColVec(int *data, int row, const std::string& name);
+	void addColVec(const VecNd& data, const std::string& name);
 	void addSparseMat(int *ii, int *jj, double *ss, int m, int n, int nnz, const std::string& name);
 	void addSparseMat(const SparseMatrix<double>& mat, const std::string& varName);
+	void addDenseMat(const DenseMatrix<double>& mat, const std::string& varName);
 
 	double* getDblVariablePtr(const std::string& name);
 	int* getIntVariablePtr(const std::string& name);

@@ -66,7 +66,8 @@ public:
 	static double InnerProduct(const MeshFunction& f1, const MeshFunction& f2);
 	double norm() const;
 	void setValue(int idx, double val) { m_function[idx] = val; }
-	double& operator[](int idx);
+	double& operator[] (int idx);
+	double  operator[] (int idx) const;
 	void copyValues(const std::vector<double>& values);
 
 protected:

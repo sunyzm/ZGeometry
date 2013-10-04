@@ -66,6 +66,7 @@ public:
 	double calBiharmonic(int v1, int v2) const;
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 
+	void computeSGW();
 	void computeSGW(const std::vector<double>& timescales, TransferFunc transferWavelet = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
@@ -101,6 +102,7 @@ public:
 	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
 
 	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }
+	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelet; }
 
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
@@ -117,5 +119,7 @@ private:
 	double constrain_weight;
 	std::vector<double> m_vTimescales;
 	std::vector<std::vector<double> > m_vSGW;
+
+	ZGeom::DenseMatrix<double> mMatWavelet;
 };
 

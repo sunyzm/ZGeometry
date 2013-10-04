@@ -12,11 +12,11 @@ namespace ZGeom
 		int ns = (int) vII.size();
 		double numv = nEig;
 
-		m_ep->addVariable(&vWeights[0], nOrder, 1, false, "AA");
-		m_ep->addVariable(&vII[0], ns, 1, false, "II");
-		m_ep->addVariable(&vJJ[0], ns, 1, false, "JJ");
-		m_ep->addVariable(&vSS[0], ns, 1, false, "SS");
-		m_ep->addVariable(&numv, 1, 1, false, "Numv");
+		m_ep->addArray(&vWeights[0], nOrder, 1, false, "AA");
+		m_ep->addArray(&vII[0], ns, 1, false, "II");
+		m_ep->addArray(&vJJ[0], ns, 1, false, "JJ");
+		m_ep->addArray(&vSS[0], ns, 1, false, "SS");
+		m_ep->addArray(&numv, 1, 1, false, "Numv");
 
 		m_ep->eval("[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
 		

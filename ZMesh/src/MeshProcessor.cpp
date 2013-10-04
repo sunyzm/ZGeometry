@@ -9,6 +9,11 @@ double& MeshFunction::operator[](int idx)
 	return m_function.at(idx);
 }
 
+double MeshFunction::operator[] (int idx) const 
+{
+	return m_function[idx];
+}
+
 double MeshFunction::InnerProduct( const MeshFunction& f1, const MeshFunction& f2 )
 {
 	if (f1.m_size != f2.m_size)

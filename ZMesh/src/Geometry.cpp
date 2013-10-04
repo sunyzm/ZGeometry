@@ -215,6 +215,14 @@ double& Vector3D::operator[]( int i )
 	else return z;
 }
 
+double Vector3D::operator[]( int i ) const
+{
+	assert(0 <= i && i <= 2);
+	if (i == 0) return x;
+	else if (i == 1) return y;
+	else return z;
+}
+
 Vector3D Vector3D::normalize()
 {
 	double len = length();

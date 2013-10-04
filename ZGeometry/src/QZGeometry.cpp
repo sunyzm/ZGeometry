@@ -161,8 +161,8 @@ void QZGeometryWindow::makeConnections()
 	////////	Edit	////////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
-	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
+	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
@@ -506,13 +506,26 @@ void QZGeometryWindow::computeSGW()
 	CStopWatch timer;
 	timer.startTimer();
 
-	double timescales[] = {20}; //{5, 10, 20, 40};
-	int nScales = sizeof (timescales) / sizeof(double);
-	vector<double> vTimes(timescales, timescales + nScales);
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		const ZGeom::DenseMatrixd& sgwMat = mProcessors[obj]->getWaveletMat();
+		if (sgwMat.empty())	mProcessors[obj]->computeSGW();
 
-	mProcessors[0]->computeSGW(vTimes, &transferFunc1, true, &transferScalingFunc1);
+		int vertCount = mMeshes[obj]->vertCount();
+		MeshFunction *mf = new MeshFunction(vertCount);
+		mf->setIDandName(SIGNATURE_SGW, "SGW");		
+		int vRef = mProcessors[obj]->getRefPointIndex();
+		double* data = sgwMat.raw_ptr();
+		for (int vIndex = 0; vIndex < vertCount; ++vIndex) {
+			(*mf)[vIndex] = data[vRef*vertCount + vIndex];
+		}
+		mProcessors[obj]->replaceProperty(mf);
+	}
 
 	timer.stopTimer("Time for compute SGW: ");
+
+	displaySignature(SIGNATURE_SGW);
+	updateDisplaySignatureMenu();
+	current_operation = Compute_SGW;
 }
 
 void QZGeometryWindow::deformSimple()
@@ -526,32 +539,6 @@ void QZGeometryWindow::deformSimple()
 
 void QZGeometryWindow::deformLaplace()
 {
-#if 0
-	vector<int> vHandle;
-	vector<Vector3D> vHandlePos;
-	vector<int> vFree;
-	vector<Vector3D> vNewPos;
-
-	std::set<int> sFreeIdx;
-	for (auto handle :mProcessors[0]->getHandles())
-	{
-		vHandle.push_back(handle.first);
-		vHandlePos.push_back(handle.second);
-
-		vector<int> vNeighbor = mProcessors[0]->getMesh_const()->getVertNeighborVerts(handle.first, DEFAULT_DEFORM_RING, false);
-		sFreeIdx.insert(vNeighbor.begin(), vNeighbor.end());
-	}
-	vFree.insert(vFree.begin(), sFreeIdx.begin(), sFreeIdx.end());
-
-	try {
-		mProcessors[0]->deform(vHandle, vHandlePos, vFree, vNewPos, Laplace);
-		mMeshes[1]->setVertexCoordinates(vFree, vNewPos);
-		mMeshes[1]->setVertexCoordinates(vHandle, vHandlePos);
-	} catch (runtime_error* e) {
-		qout.output(e->what(), OUT_MSGBOX);
-	}
-#endif
-
 	mShapeEditor.deformLaplacian();
 	deformType = Laplace;
 	ui.glMeshWidget->update();
@@ -569,7 +556,7 @@ void QZGeometryWindow::deformBiLaplace()
 
 void QZGeometryWindow::deformMixedLaplace()
 {
-	double ks = 1.0, kb = 10.0;
+	double ks = 1.0, kb = 1.0;
 	mShapeEditor.deformMixedLaplacian(ks, kb);
 	deformType = Shell;
 	ui.glMeshWidget->update();
@@ -606,8 +593,8 @@ void QZGeometryWindow::deformSGW()
 	}
 	*/
 
+	
 	mShapeEditor.deformSpectralWavelet();
-
 	deformType = SGW;
 	ui.glMeshWidget->update();
 	setEditModeMove();
@@ -1031,7 +1018,7 @@ void QZGeometryWindow::computeEigenfunction()
 		int count = mProcessors[i]->getMesh()->getMeshSize();
 		std::string varName = "eig" + boost::lexical_cast<std::string>(i) 
 							  + "_" + boost::lexical_cast<std::string>(select_eig);
-		mEngineWrapper.addVariable(data, count, 1, false, varName);
+		mEngineWrapper.addArray(data, count, 1, false, varName);
 	}
 
 	displaySignature(SIGNATURE_EIG_FUNC);
@@ -1195,12 +1182,10 @@ void QZGeometryWindow::computeSGWS()
 
 void QZGeometryWindow::displaySignature( int signatureID )
 {
-	for (int i = 0; i < mMeshCount; ++i)
-	{
+	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		MeshProperty* vs = mp.retrievePropertyByID(signatureID);
-		if (vs != NULL)
-		{
+		if (vs != NULL) {
 			mRenderManagers[i]->normalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
 //			vRS[i].logNormalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
 			qout.output(QString().sprintf("Sig Min: %f; Sig Max: %f", mRenderManagers[i]->sigMin, mRenderManagers[i]->sigMax), OUT_CONSOLE);

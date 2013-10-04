@@ -80,27 +80,32 @@ int ZGeom::MatlabEngineWrapper::putVariable( const char *var_name, const mxArray
 	return engPutVariable(m_ep, var_name, ap);
 }
 
-void ZGeom::MatlabEngineWrapper::addVariable( double* data, int row, int col, bool rowMajor, const std::string& name )
+void ZGeom::MatlabEngineWrapper::addArray( double* data, int row, int col, bool rowMajor, const std::string& name )
 {
 	mVariables.push_back(new MatlabArrayWrapper(m_ep, data, row, col, rowMajor, name));
 }
 
-void ZGeom::MatlabEngineWrapper::addVariable( int *data, int row, int col, bool rowMajor, const std::string& name )
+void ZGeom::MatlabEngineWrapper::addArray( int *data, int row, int col, bool rowMajor, const std::string& name )
 {
 	double *buf = new double[row*col];
 	for (int i = 0; i < row*col; ++i) buf[i] = data[i];
-	addVariable(buf, row, col, rowMajor, name);
+	addArray(buf, row, col, rowMajor, name);
 	delete []buf;
 }
 
 void ZGeom::MatlabEngineWrapper::addColVec( double *data, int row, const std::string& name )
 {
-	addVariable(data, row, 1, false, name);
+	addArray(data, row, 1, false, name);
 }
 
 void ZGeom::MatlabEngineWrapper::addColVec( int *data, int row, const std::string& name )
 {
-	addVariable(data, row, 1, false, name);
+	addArray(data, row, 1, false, name);
+}
+
+void ZGeom::MatlabEngineWrapper::addColVec(const VecNd& data, const std::string& name )
+{
+	addColVec(data.c_ptr(), data.size(), name);
 }
 
 double* ZGeom::MatlabEngineWrapper::getDblVariablePtr( const std::string& name )
@@ -117,7 +122,7 @@ int* ZGeom::MatlabEngineWrapper::getIntVariablePtr( const std::string& name )
 
 void ZGeom::MatlabEngineWrapper::addDoubleScalar( double value, const std::string& name )
 {
-	addVariable(&value, 1, 1, false, name);
+	addArray(&value, 1, 1, false, name);
 }
 
 void ZGeom::MatlabEngineWrapper::getSparseMat( const std::string& name, SparseMatrix<double>& mat )
@@ -141,4 +146,9 @@ void ZGeom::MatlabEngineWrapper::getSparseMat( const std::string& name, SparseMa
 	std::copy_n(v, nnz, vVal.begin());
 
 	mat.convertFromCOO(m, n, vRow, vCol, vVal);
+}
+
+void ZGeom::MatlabEngineWrapper::addDenseMat( const DenseMatrix<double>& mat, const std::string& varName )
+{
+	addArray(mat.raw_ptr(), mat.rowCount(), mat.colCount(), true, varName);
 }

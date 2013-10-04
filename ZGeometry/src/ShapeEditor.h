@@ -1,22 +1,16 @@
 #pragma once
-#include <iostream>
 #include <ZMesh/Mesh.h>
 #include <ZGeom/MatlabEngineWrapper.h>
+#include <ZGeom/ZGeom.h>
 #include "DifferentialMeshProcessor.h"
 
 class ShapeEditor
 {
+	friend class QZGeometryWindow;
 public:
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 
-	void init(DifferentialMeshProcessor* processor) 
-	{ 
-		mProcessor = processor; 
-		mMesh = processor->getMesh();
-		processor->getMesh()->getVertCoordinates(mOldCoord); 
-		mEngine = processor->getMatlabEngineWrapper();
-		std::cout << "Shape editor is initialized!" << std::endl;
-	}
+	void init(DifferentialMeshProcessor* processor);
 
 	void revert() { mMesh->setVertCoordinates(mOldCoord); }
 
@@ -34,6 +28,5 @@ private:
 	CMesh* mMesh;
 	MeshCoordinates mOldCoord;
 	DifferentialMeshProcessor* mProcessor;
-	ZGeom::MatlabEngineWrapper* mEngine;
-	
+	ZGeom::MatlabEngineWrapper* mEngine;	
 };

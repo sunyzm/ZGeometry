@@ -19,6 +19,7 @@ namespace ZGeom
 			for (int i = 0; i < row*col; ++i) mData[i] = 0;
 		}
 		DenseMatrix(const DenseMatrix<T>& m2);
+		DenseMatrix(DenseMatrix<T>&& m2);
 		const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
 		~DenseMatrix() { delete []mData; }
 
@@ -58,6 +59,14 @@ namespace ZGeom
 	{
 		mData = new T[mRow*mCol];
 		std::copy_n(m2.mData, mRow*mCol, mData);
+	}
+
+	template<typename T>
+	inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2) : mRow(m2.mRow), mCol(m2.mCol)
+	{
+		mData = m2.mData;
+		m2.mData = NULL;
+		m2.mRow = m2.mCol = 0;
 	}
 
 	template<typename T>
