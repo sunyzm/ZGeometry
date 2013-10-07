@@ -67,7 +67,6 @@ public:
 	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 
 	void computeSGW();
-	void computeSGW(const std::vector<double>& timescales, TransferFunc transferWavelet = &transferFunc1, bool withScaling = false, double (*transferScaling)(double) = &transferScalingFunc1);
 	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);

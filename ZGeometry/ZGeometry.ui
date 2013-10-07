@@ -249,7 +249,6 @@
      <property name="title">
       <string>Reconstruct</string>
      </property>
-     <addaction name="actionReconstructSGW"/>
      <addaction name="actionReconstructMHB"/>
     </widget>
     <widget class="QMenu" name="menuFilter">

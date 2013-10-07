@@ -316,7 +316,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
 		}
 		for (int l = 0; l < fixedCount; ++l) {
-			solveRHS[i][vertCount + anchorCount + l] = mMesh->getVertexPosition(fixedVerts[l])[i];
+			solveRHS[i][vertCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
 		}
 	}
 	mEngine->addColVec(solveRHS[0], "dcx");
@@ -356,8 +356,8 @@ void ShapeEditor::deformSpectralWavelet()
 	std::vector<Vector3D> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
-		std::cout << "At least one anchor need to be picked!";
-		return;
+		std::cout << "At least one anchor need to be picked!" << std::endl;
+//		return;
 	}
 
 	const int anchorWeight = 1.0;
@@ -370,18 +370,63 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	const ZGeom::DenseMatrixd& matW = mProcessor->getWaveletMat();
-
 	if (matW.empty()) {
 		mProcessor->computeSGW();
 		mEngine->addDenseMat(matW, "matSGW");
 	}
+	const int waveletCount = matW.rowCount();
+
+	ZGeom::DenseMatVecMultiplier mulMixedW(matW);	
+	ZGeom::VecNd diffCoord[3];
+	for (int i = 0; i < 3; ++i) {
+		diffCoord[i].resize(waveletCount);
+		mulMixedW.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
+	}
+
+	std::vector<int> fixedVerts;
+#if 0
+	std::set<int> freeVerts;
+	for (int i = 0; i < anchorCount; ++i) {
+		std::set<int> sFree;
+		mMesh->vertRingNeighborVerts(anchorIndex[i], 5, sFree, true);
+		for (int v : sFree) freeVerts.insert(v);
+	}
+	for (int i = 0; i < vertCount; ++i) {
+		if (freeVerts.find(i) == freeVerts.end())
+			fixedVerts.push_back(i);
+	}
+#endif
+	const int fixedCount = fixedVerts.size();
+
+	ZGeom::VecNd solveRHS[3];
+	for (int i = 0; i < 3; ++i ) {
+		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
+		solveRHS[i].copyElements(diffCoord[i], 0);
+		for (int l = 0; l < anchorCount; ++l) {
+			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
+		}
+		for (int l = 0; l < fixedCount; ++l) {
+			solveRHS[i][vertCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
+		}
+	}
+	mEngine->addColVec(solveRHS[0], "dcx");
+	mEngine->addColVec(solveRHS[1], "dcy");
+	mEngine->addColVec(solveRHS[2], "dcz");
+
+	ZGeom::DenseMatrixd matOptS(matW);
+	matOptS.expand(waveletCount + anchorCount + fixedCount, vertCount);
+	for (int l = 0; l < anchorCount; ++l)
+		matOptS(waveletCount + l, anchorIndex[l]) = anchorWeight;
+	for (int l = 0; l < fixedCount; ++l)
+		matOptS(waveletCount + anchorCount + l, fixedVerts[l]) = anchorWeight;
+	mEngine->addDenseMat(matOptS, "matOpt");
 
 	timer.stopTimer("Prepare deformation time: ");
-#if 0
+#if 1
 	timer.startTimer();	
-	mEngine->eval("lsx=matOptS\\dcx;");
-	mEngine->eval("lsy=matOptS\\dcy;");
-	mEngine->eval("lsz=matOptS\\dcz;");
+	mEngine->eval("lsx=cgs(matOpt'*matOpt, matOpt'*dcx);");
+	mEngine->eval("lsy=cgs(matOpt'*matOpt, matOpt'*dcy);");
+	mEngine->eval("lsz=cgs(matOpt'*matOpt, matOpt'*dcz);");
 	timer.stopTimer("Deformation time: ");
 
 	double *lsx = mEngine->getDblVariablePtr("lsx");

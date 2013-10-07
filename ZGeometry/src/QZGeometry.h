@@ -85,7 +85,6 @@ private slots:
 	void deformBiLaplace();
 	void deformMixedLaplace();
 	void deformSGW();	
-	void reconstructSGW();
 	void filterExperimental();
 
 	void registerAutomatic();

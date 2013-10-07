@@ -99,6 +99,45 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 	posRef = mesh->getVertex(0)->getPosition();
 }
 
+void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+{
+	if (hasLaplacian(laplacianType)) return;
+	
+	MeshLaplacian& laplacian = vMeshLaplacian[laplacianType];
+	switch(laplacianType)
+	{
+	case MeshLaplacian::Umbrella:
+	case MeshLaplacian::Tutte:
+	case MeshLaplacian::CotFormula:
+	case MeshLaplacian::SymCot:
+		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mesh);
+		break;
+
+	case MeshLaplacian::Anisotropic1:
+		{
+			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
+			double para2 = para1;
+			vMeshLaplacian[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
+		}
+		break;
+
+	case MeshLaplacian::Anisotropic2:
+		{
+			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
+			double para2 = mesh->getAvgEdgeLength() / 2;
+			vMeshLaplacian[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
+		}
+		break;
+
+	case MeshLaplacian::IsoApproximate:
+		vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
+		break;
+
+	default: throw std::logic_error("Unrecognized Laplacian type");
+	}       
+}
+
+
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ZUtil::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
@@ -450,10 +489,6 @@ void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::
 	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
 	matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vy);
 	matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vz);
-
-//	matlab_scgls(m_ep, SGW, vxCoeff, vx);
-//	matlab_scgls(m_ep, SGW, vyCoeff, vy);
-//	matlab_scgls(m_ep, SGW, vzCoeff, vz);	
 }
 
 void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz )
@@ -474,7 +509,7 @@ void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vecto
 //		t_scales.push_back(40);
 //		t_scales.push_back(20);
 //		t_scales.push_back(10);
-		computeSGW(t_scales);
+//		computeSGW(t_scales);
 	}
 
 	vector<vector<double> > SGW = m_vSGW;
@@ -653,85 +688,41 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 	}
 }
 
-void DifferentialMeshProcessor::computeSGW( const std::vector<double>& timescales, double (*transferWavelet)(double, double) /*= &transferFunc1*/, bool withScaling /*= false*/, double (*transferScaling)(double) /*= &transferScalingFunc1*/ )
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	m_vTimescales = timescales;
-	int nScales = m_vTimescales.size();
-
-	m_vSGW.clear();
-
-	//	scaling function
-	if (withScaling)	
-	{
-		for (int x = 0; x < m_size; ++x)
-		{
-			m_vSGW.push_back(vector<double>());
-			m_vSGW.back().resize(m_size);
-		}
-		for (int x = 0; x < m_size; ++x)
-		{
-			for (int y = 0; y <= x; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.eigVecCount(); ++k)
-				{
-					double transfer = (*transferScaling)(mhb.getEigVal(k));
-					itemSum +=  transfer * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				}
-				m_vSGW[x][y] = m_vSGW[y][x] = itemSum;
-			}
-		}
-	}	
-
-	//	wavelet functions: nm * m
-	for (int s = 0; s < nScales; ++s)
-	{
-		int offset = withScaling ? m_size * (s+1) : m_size * s;
-		
-		for (int i = 0; i < m_size; ++i)
-		{
-			m_vSGW.push_back(vector<double>());
-			m_vSGW.back().resize(m_size);
-		}
-
-		for (int x = 0; x < m_size; ++x)
-		{
-			for (int y = 0; y <= x; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.eigVecCount(); ++k)
-				{
-					double transfer = (*transferWavelet)(mhb.getEigVal(k), m_vTimescales[s]);
-					itemSum += transfer * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				}
-				m_vSGW[offset + x][y] = m_vSGW[offset + y][x] = itemSum;
-			}
-		}
-	}
-
-	m_bSGWComputed = true;
-}
-
 void DifferentialMeshProcessor::computeSGW()
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletTime = 20.0;
+	double waveletScales[] = {20, 40};
+	const int scales = 1;
 
-	mMatWavelet.resize(vertCount, vertCount);
-	Concurrency::parallel_for (0, vertCount, [&](int i) {
+	mMatWavelet.resize(vertCount*(scales+1), vertCount);
+	Concurrency::parallel_for(0, vertCount, [&](int i) {
+		for (int s = 0; s < scales; ++s) {
+			for (int j = 0; j <= i; ++j) {
+				double elemVal(0);
+				for (int k = 0; k < eigCount; ++k) {
+					double lambda = mhb.getEigVal(k);
+					const ZGeom::VecNd& phi = mhb.getEigVec(k);
+					double lt = std::pow(lambda * waveletScales[s], 2);
+					elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
+				}
+				mMatWavelet(vertCount * s + i, j) = elemVal;
+				mMatWavelet(vertCount * s + j, i) = elemVal;
+			}
+		}
+#if 1
 		for (int j = 0; j <= i; ++j) {
 			double elemVal(0);
-			for (int k = 0; k < eigCount; ++k) {
-				double lt = std::pow(mhb.getEigVal(k) * waveletTime, 2);
-				elemVal += lt * std::exp(-lt) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[j];
+			for (int k = 0; k < eigCount; ++k) {	
+				double lambda = mhb.getEigVal(k);
+				const ZGeom::VecNd& phi = mhb.getEigVec(k);
+				elemVal += std::exp(-lambda*lambda) * phi[i] * phi[j];
 			}
-			mMatWavelet(i,j) = elemVal;
-			mMatWavelet(j,i) = elemVal;
+			mMatWavelet(vertCount * scales + i, j) = elemVal;
+			mMatWavelet(vertCount * scales + j, i) = elemVal;
 		}
+#endif
 	});
 }
 
@@ -1128,41 +1119,3 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 	if (feat == NULL) return NULL;
 	else return dynamic_cast<const MeshFeatureList*>(feat);
 }
-
-void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
-{
-	if (hasLaplacian(laplacianType)) return;
-	
-	MeshLaplacian& laplacian = vMeshLaplacian[laplacianType];
-	switch(laplacianType)
-	{
-	case MeshLaplacian::Umbrella:
-	case MeshLaplacian::Tutte:
-	case MeshLaplacian::CotFormula:
-	case MeshLaplacian::SymCot:
-		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mesh);
-		break;
-
-	case MeshLaplacian::Anisotropic1:
-		{
-			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
-			double para2 = para1;
-			vMeshLaplacian[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
-		}
-		break;
-
-	case MeshLaplacian::Anisotropic2:
-		{
-			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
-			double para2 = mesh->getAvgEdgeLength() / 2;
-			vMeshLaplacian[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
-		}
-		break;
-
-	case MeshLaplacian::IsoApproximate:
-		vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
-		break;
-	default: throw std::logic_error("Unrecognized Laplacian type");
-	}       
-}
-

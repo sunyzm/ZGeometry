@@ -114,29 +114,7 @@ void QZGeometryWindow::makeConnections()
 	signatureSignalMapper = new QSignalMapper(this);
 	QObject::connect(signatureSignalMapper, SIGNAL(mapped(int)), this, SLOT(displaySignature(int)));
 
-	////////	file	////////
-	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
-	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
-	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
-	QObject::connect(ui.actionSaveMatching, SIGNAL(triggered()), this, SLOT(saveMatchingResult()));
-	QObject::connect(ui.actionLoadMatching, SIGNAL(triggered()), this, SLOT(loadMatchingResult()));
-
-	////////	compute	////////
-	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
-	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
-	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
-	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
-	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
-	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
-	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
-	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
-	QObject::connect(ui.actionComputeMHWSFeatures, SIGNAL(triggered()), this, SLOT(computeMHWFeatures()));
-	QObject::connect(ui.actionComputeSGWS, SIGNAL(triggered()), this, SLOT(computeSGWS()));
-	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
-	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
-	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
-
-	////////    Control	////////
+	////////    Controls	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), this, SLOT(setRefPoint1(int)));
@@ -158,19 +136,41 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
-	////////	Edit	////////
+	////////    Menus	////////
+	////	file	////
+	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
+	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
+	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
+	QObject::connect(ui.actionSaveMatching, SIGNAL(triggered()), this, SLOT(saveMatchingResult()));
+	QObject::connect(ui.actionLoadMatching, SIGNAL(triggered()), this, SLOT(loadMatchingResult()));
+
+	////	compute	////
+	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
+	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
+	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
+	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
+	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
+	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
+	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
+	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
+	QObject::connect(ui.actionComputeMHWSFeatures, SIGNAL(triggered()), this, SLOT(computeMHWFeatures()));
+	QObject::connect(ui.actionComputeSGWS, SIGNAL(triggered()), this, SLOT(computeSGWS()));
+	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
+	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
+	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+
+	////	Edit	////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
+	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
-	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
-	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
 	 
-	////////	Display	////////
+	////	Display	////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
@@ -181,15 +181,14 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
-	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));
-	
+	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
 
-	////////	Task	////////
+	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
 	QObject::connect(ui.actionTaskEditing, SIGNAL(triggered()), this, SLOT(setTaskEditing()));
 
-	////////	Register	////////
+	////	Register	////
 	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
 	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
@@ -205,52 +204,35 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	qout.outputDateTime(OUT_CONSOLE);
 	qout.output('*', 24, OUT_CONSOLE);
 
-	try	{
-		CStopWatch timer;
-		timer.startTimer();
-		mEngineWrapper.open();     
-		timer.stopTimer("-- Matlab loading time: ", " --");
+	CStopWatch timer;
+	timer.startTimer();
+	mEngineWrapper.open();     
+	timer.stopTimer("-- Matlab loading time: ", " --");
 
-		switch (g_task)
-		{
-		case TASK_VIEWING:
-			g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
-			if (mMeshCount <= 0) return true;
-			break;
-		case TASK_REGISTRATION:
-			mMeshCount = 2;
-			break;
-		case TASK_EDITING:
-			mMeshCount = 1;
-			break;
-		default:
-			break;
-		}
-
-		loadInitialMeshes(mesh_list_name); 
-
-		/* compute and decompose mesh Laplacians */
-#if 0		
-		int init_laplacian_type = MeshLaplacian::CotFormula;
-		g_configMgr.getConfigValueInt("INIT_LAPLACIAN_TYPE", init_laplacian_type);
-		if (init_laplacian_type >= 0 && init_laplacian_type < MeshLaplacian::LaplacianTypeCount) { 
-			timer.startTimer();
-			computeLaplacian(init_laplacian_type);			
-			timer.stopTimer("-- Time to decompose initial Laplacians: ", " --");		
-		} else {
-			std::cout << "Unrecognized Laplacian type; Nothing is done.";
-		}
-#endif
-		computeLaplacian(MeshLaplacian::CotFormula);
-		computeLaplacian(MeshLaplacian::SymCot);
-
-		if (g_task == TASK_REGISTRATION) registerPreprocess();
-		if (g_task == TASK_EDITING) mShapeEditor.init(mProcessors[0]);
-
-	} catch (std::exception* e) {
-		std::cerr << "!!Fatal error in initialization:\n" << e->what() << std::endl;
-		return false;
+	switch (g_task)
+	{
+	case TASK_VIEWING:
+		g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
+		if (mMeshCount <= 0) return true;
+		break;
+	case TASK_REGISTRATION:
+		mMeshCount = 2;
+		break;
+	case TASK_EDITING:
+		mMeshCount = 1;
+		break;
+	default:
+		break;
 	}
+
+	loadInitialMeshes(mesh_list_name); 
+
+	/* compute and decompose mesh Laplacians */
+	computeLaplacian(MeshLaplacian::CotFormula);
+	computeLaplacian(MeshLaplacian::SymCot);
+
+	if (g_task == TASK_REGISTRATION) registerPreprocess();
+	if (g_task == TASK_EDITING) mShapeEditor.init(mProcessors[0]);
 
 	return true;
 }
@@ -447,7 +429,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_G:
-		this->reconstructSGW();
 		break;
 
 	case Qt::Key_Minus:
@@ -920,44 +901,6 @@ void QZGeometryWindow::reconstructMHB()
 	int nEig = mProcessors[0]->getMHB(MeshLaplacian::CotFormula).eigVecCount() * ratio;
 	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
 	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
-
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::reconstructSGW()
-{
-	if (!mProcessors[0]->isSGWComputed())
-		this->computeSGW();
-	
-	vector<double> vx, vy, vz;
-	CStopWatch timer;
-	timer.startTimer();
-	try {
-		mProcessors[0]->reconstructBySGW(vx, vy, vz, true);
-	} catch (logic_error* e) {
-		qout.output(e->what(), OUT_MSGBOX);
-		return;
-	}
-	timer.stopTimer();
-	qout.output(QString("SGW reconstruct time: ") + QString::number(timer.getElapsedTime()));
-
-	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
-
-	{
-		int debugIdx = mProcessors[0]->getHandles().begin()->first;
-		qout.output("Original pos: " + std::string(mMeshes[0]->getVertex(debugIdx)->getPosition()));
-		if (!mProcessors[0]->getHandles().empty())
-			qout.output("Handle pos: " + std::string(mProcessors[0]->getHandles().begin()->second));
-		qout.output("Deformed pos: " + std::string(mMeshes[1]->getVertex(debugIdx)->getPosition()));
-	}
-
-	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
-	{
-		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
-	}
-	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
-	qout.output("Average position error: " + QString::number(errorSum));
 
 	ui.glMeshWidget->update();
 }
