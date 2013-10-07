@@ -30,10 +30,10 @@ public:
 	class iterator;
 
 	VecN() : mVec(NULL), mDim(0) {}
-	VecN(uint n) : mVec(NULL) { resize(n); }
-	VecN(uint n, T val) : mVec(NULL) { resize(n, val); }
 	VecN(const VecN<T>& v2);
 	VecN(VecN<T>&& v2);
+	VecN(uint n) : mVec(NULL) { resize(n, 0); }
+	VecN(uint n, T val) : mVec(NULL) { resize(n, val); }
 	VecN(T* vec, uint n);
 	VecN(const std::vector<T>& vec);
 	~VecN() { delete []mVec; }

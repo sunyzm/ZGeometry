@@ -6,8 +6,23 @@
 #include <ppl.h>
 #include <ZGeom/VecN.h>
 #include <ZUtil/timer.h>
+#include <mkl.h>
 
 using ZGeom::VecNd;
+
+void test_dgemv()
+{
+	double a[]={1,2,3,9,8,7};
+	double x[]={4,5,6};
+	double y[2] = {0};
+	char trans = 'N';
+	double alpha = 1, beta = 0;
+	int incx = 1, incy = 1;
+	int m = 2, n = 3;
+	//dgemv(&trans, &m, &n, &alpha, a, &m, x, &incx, &beta, y, &incy);	// default to column-major!
+	cblas_dgemv(CBLAS_ORDER::CblasRowMajor, CBLAS_TRANSPOSE::CblasNoTrans, m, n, alpha, a, n, x, incx, beta, y, incy);
+	std::cout << "\ny(:)" << y[0] << ' ' << y[1] << std::endl;
+};
 
 int main()
 {
@@ -49,6 +64,8 @@ int main()
 		vc[i] = va[i] * vb[i];
 	}
 	timer.stopTimer("Product 2: ");
+
+	test_dgemv();
 
 	std::system("PAUSE");
 	std::exit(0);
