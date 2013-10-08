@@ -220,6 +220,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ZGeom\arithmetic.h" />
+    <ClInclude Include="include\ZGeom\Color.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
@@ -244,6 +245,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp" />
+    <ClCompile Include="src\Color.cpp" />
     <ClCompile Include="src\DenseMatVecMultiplier.cpp" />
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />

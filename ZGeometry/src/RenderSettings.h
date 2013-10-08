@@ -17,11 +17,7 @@ class RenderSettings
 public:
 	enum {PointCloud, Wireframe, Mesh, None} displayType;
 
-	RenderSettings() : mesh_color(preset_mesh_colors[0]), displayType(Mesh), 
-					   showFeatures(false), showRefPoint(false), 
-					   showColorSignature(false), selected(false), 
-					   glPolygonMode(Z_FILL), display_shift(0, 0, 0),
-					   obj_rot(1,0,0,0), obj_trans(0,0,0) {}
+	RenderSettings();
 	
 	unsigned int glPolygonMode;
 	bool showFeatures;
@@ -33,7 +29,8 @@ public:
 	CQrot obj_rot;
 	Vector3D display_shift;
 	const float* mesh_color;
-	
+	std::string mColorSignatureName;
+
 	std::vector<double> vOriginalSignature;
 	std::vector<double> vDisplaySignature;
 	double sigMin, sigMax;

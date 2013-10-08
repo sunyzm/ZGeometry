@@ -12,6 +12,7 @@
 #include <ZGeom/arithmetic.h>
 
 using namespace std;
+using ZGeom::Colorf;
 
 const std::string CMesh::StrAttrBoundaryVertCount = "mesh_boundary_vert_count";
 const std::string CMesh::StrAttrBoundaryCount = "mesh_boundary_count";
@@ -1163,22 +1164,18 @@ bool CMesh::loadFromM(string sFileName)
 	m_pFace = new CFace[m_nFace];
 	if (m_pFace == NULL) { clearMesh(); return false; }//out of memory
 
-	vector<RGBf> vVertColors(m_nVertex);
+	std::vector<ZGeom::Colorf> vVertColors(m_nVertex);
 	for(int i = 0; i < m_nVertex; i++)
 	{
 		m_pVertex[i].m_vPosition= VertexList[i];  
 		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 
-		vVertColors[i].r = VertexColorList[3*i];
-		vVertColors[i].g = VertexColorList[3*i+1];
-		vVertColors[i].b = VertexColorList[3*i+2];
-
-		//m_pVertex[i].m_vColor.r = VertexColorList[3*i];
-		//m_pVertex[i].m_vColor.g = VertexColorList[3*i+1];
-		//m_pVertex[i].m_vColor.b = VertexColorList[3*i+2];
+		vVertColors[i][0] = VertexColorList[3*i];
+		vVertColors[i][1] = VertexColorList[3*i+1];
+		vVertColors[i][2] = VertexColorList[3*i+2];
 	}
 	
-	addAttr<std::vector<RGBf> >(vVertColors, VERTEX, StrAttrVertColors);
+	addAttr<std::vector<ZGeom::Colorf> >(vVertColors, VERTEX, StrAttrVertColors, CPP_VECTOR_COLOR);
 
 	for(int i = 0; i < m_nFace; i++)
 	{
@@ -1255,8 +1252,8 @@ bool CMesh::saveToM(const std::string& sFileName)
 	const std::vector<Vector3D>& vVertNormals = getVertNormals();
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
 	
-	std::vector<RGBf>* vColors = NULL;
-	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue<std::vector<RGBf> >(StrAttrVertColors);	
+	std::vector<Colorf>* vColors = NULL;
+	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue< std::vector<Colorf> >(StrAttrVertColors);	
 
 	for (int i = 0; i < m_nVertex; i++)
 	{
@@ -1264,9 +1261,9 @@ bool CMesh::saveToM(const std::string& sFileName)
 		const Vector3D& normal = vVertNormals[i];
 		float r(.5), g(.5), b(.5);
 		if (vColors) {
-			r = (*vColors)[i].r;
-			g = (*vColors)[i].g;
-			b = (*vColors)[i].b;
+			r = (*vColors)[i].r();
+			g = (*vColors)[i].g();
+			b = (*vColors)[i].b();
 		}
 		
 		fprintf(fp, "Vertex %ld  %.6f %.6f %.6f {rgb=(%.6f %.6f %.6f) normal=(%.6f %.6f %.6f)",

@@ -41,6 +41,7 @@ private slots:
 
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
+	void computeEigenfunction();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -51,11 +52,11 @@ private slots:
 	void computeSGWS();
 	void computeSGWSFeatures();
 	void computeBiharmonic();
-	void computeEigenfunction();
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
 
 	void displaySignature(int signatureID);
+	void displaySignature(QString sigName );
 	void displayExperimental();
 	void displayNeighborVertices();
 	void displayDiffPosition();
@@ -117,6 +118,7 @@ private:
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
+	void addColorSignatureToMesh(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 
 private:	
 	/* fields */

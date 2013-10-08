@@ -193,7 +193,6 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\ZUtil\zassert.h" />
-    <ClInclude Include="include\ZUtil\color.h" />
     <ClInclude Include="include\ZUtil\data.h" />
     <ClInclude Include="include\ZUtil\fibheap.h" />
     <ClInclude Include="include\ZUtil\misc.h" />

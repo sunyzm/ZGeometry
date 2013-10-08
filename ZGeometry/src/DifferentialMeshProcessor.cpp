@@ -57,7 +57,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor()
 	m_size = 0;
 	active_handle = -1;	
 	constrain_weight = 0.1;
-	m_bSGWComputed = false;   
 }
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
@@ -69,7 +68,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalM
 	m_size = 0;
 	active_handle = -1;
 	constrain_weight = 0.1;
-	m_bSGWComputed = false;
 
 	init_lite(tm, originalMesh);
 }
@@ -434,119 +432,8 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 //  VectorPointwiseDivide(vz, vWeight, vz);
 }
 
-void DifferentialMeshProcessor::reconstructBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ )
-{
-	vx.resize(m_size);
-	vy.resize(m_size);
-	vz.resize(m_size);
-
-	vector<double> vxcoord0, vycoord0, vzcoord0;
-	mesh->getCoordinateFunction(0, vxcoord0);
-	mesh->getCoordinateFunction(1, vycoord0);
-	mesh->getCoordinateFunction(2, vzcoord0);
-	
-	if (!m_bSGWComputed)
-		throw logic_error("SGW not computed!");
-		
-	vector<vector<double> > SGW = m_vSGW;
-	int scales = m_vTimescales.size();
-
-	int sizeCoeff = SGW.size();
-
-	vector<double> vxCoeff, vyCoeff, vzCoeff;
-	vxCoeff.resize(sizeCoeff);
-	vyCoeff.resize(sizeCoeff);
-	vzCoeff.resize(sizeCoeff);
-	
-	for (int i = 0; i < sizeCoeff; ++i)
-	{
-		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
-		for (int j = 0; j < m_size; ++j)
-		{
-				itemSumX += SGW[i][j] * vxcoord0[j];
-				itemSumY += SGW[i][j] * vycoord0[j];
-				itemSumZ += SGW[i][j] * vzcoord0[j];
-		}
-		vxCoeff[i] = itemSumX;
-		vyCoeff[i] = itemSumY;
-		vzCoeff[i] = itemSumZ;
-	}
-
-	double weightI = constrain_weight;
-	if (withConstraint)
-	{
-		for (auto iter = mHandles.begin(); iter != mHandles.end(); ++iter)
-		{
-			SGW.push_back(vector<double>());
-			SGW.back().resize(m_size, 0.0);
-			SGW.back().at(iter->first) = weightI;
-			vxCoeff.push_back(iter->second.x * weightI);
-			vyCoeff.push_back(iter->second.y * weightI);
-			vzCoeff.push_back(iter->second.z * weightI);
-		}
-	}
-
-	matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vx);
-	matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vy);
-	matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vz);
-}
-
 void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz )
 {
-	vx.resize(m_size);
-	vy.resize(m_size);
-	vz.resize(m_size);
-
-	vector<double> vxcoord0, vycoord0, vzcoord0;
-	mesh->getCoordinateFunction(0, vxcoord0);
-	mesh->getCoordinateFunction(1, vycoord0);
-	mesh->getCoordinateFunction(2, vzcoord0);
-
-	if (m_vSGW.empty())
-	{
-		vector<double> t_scales;
-		t_scales.push_back(80);
-//		t_scales.push_back(40);
-//		t_scales.push_back(20);
-//		t_scales.push_back(10);
-//		computeSGW(t_scales);
-	}
-
-	vector<vector<double> > SGW = m_vSGW;
-	int nScales = m_vTimescales.size();
-	int sizeCoeff = SGW.size();
-
-	vector<double> vxCoeff, vyCoeff, vzCoeff;
-	vxCoeff.resize(sizeCoeff);
-	vyCoeff.resize(sizeCoeff);
-	vzCoeff.resize(sizeCoeff);
-
-	for (int i = 0; i < sizeCoeff; ++i)
-	{
-		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
-		for (int j = 0; j < m_size; ++j)
-		{
-			itemSumX += SGW[i][j] * vxcoord0[j];
-			itemSumY += SGW[i][j] * vycoord0[j];
-			itemSumZ += SGW[i][j] * vzcoord0[j];
-		}
-		vxCoeff[i] = itemSumX;
-		vyCoeff[i] = itemSumY;
-		vzCoeff[i] = itemSumZ;
-
-//		if ( i >= m_size && i < m_size * 2)
-		if ( i >= sizeCoeff - m_size )
-		{
-			vxCoeff[i] *= 0.5;
-			vyCoeff[i] *= 0.5;
-			vzCoeff[i] *= 0.5;
-		}
-	}
-
-	Engine* ep = mpEngineWrapper->getEngine();
-	matlab_scgls(ep, SGW, vxCoeff, vx);
-	matlab_scgls(ep, SGW, vyCoeff, vy);
-	matlab_scgls(ep, SGW, vzCoeff, vz);
 }
 
 void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
@@ -622,69 +509,6 @@ void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, cons
 			vDeformedPos.push_back(newPos);
 		}
 
-	}
-	else if (dfType == SGW)
-	{
-		if (!m_bSGWComputed)
-			throw logic_error("Error: SGW not computed!");
-
-		vector<double> vRX, vRY, vRZ;
-
-		vRX.resize(m_size);
-		vRY.resize(m_size);
-		vRZ.resize(m_size);
-
-		vector<double> vxcoord0, vycoord0, vzcoord0;
-		mesh->getCoordinateFunction(0, vxcoord0);
-		mesh->getCoordinateFunction(1, vycoord0);
-		mesh->getCoordinateFunction(2, vzcoord0);
-
-		vector<vector<double> > SGW = m_vSGW;
-		int scales = m_vTimescales.size();
-
-		int sizeCoeff = SGW.size();
-
-		vector<double> vxCoeff, vyCoeff, vzCoeff;
-		vxCoeff.resize(sizeCoeff);
-		vyCoeff.resize(sizeCoeff);
-		vzCoeff.resize(sizeCoeff);
-
-		for (int i = 0; i < sizeCoeff; ++i)
-		{
-			double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
-			for (int j = 0; j < m_size; ++j)
-			{
-				itemSumX += SGW[i][j] * vxcoord0[j];
-				itemSumY += SGW[i][j] * vycoord0[j];
-				itemSumZ += SGW[i][j] * vzcoord0[j];
-			}
-			vxCoeff[i] = itemSumX;
-			vyCoeff[i] = itemSumY;
-			vzCoeff[i] = itemSumZ;
-		}
-
-		double weightI = constrain_weight;
-		int nHandleSize = vHandleIdx.size();
-		for (int i = 0; i < nHandleSize; ++i)
-		{
-			SGW.push_back(vector<double>());
-			SGW.back().resize(m_size, 0.0);
-			SGW.back().at(vHandleIdx[i]) = weightI;
-
-			vxCoeff.push_back(vHandlePos[i].x * weightI);
-			vyCoeff.push_back(vHandlePos[i].y * weightI);
-			vzCoeff.push_back(vHandlePos[i].z * weightI);
-		}
-
-		matlabWrapper.DenseConjugateGradient(SGW, vxCoeff, vRX);
-		matlabWrapper.DenseConjugateGradient(SGW, vyCoeff, vRY);
-		matlabWrapper.DenseConjugateGradient(SGW, vzCoeff, vRZ);
-
-		for (int i = 0; i < vFreeIdx.size(); ++i)
-		{
-			Vector3D newPos = Vector3D(vRX[vFreeIdx[i]], vRY[vFreeIdx[i]], vRZ[vFreeIdx[i]]);
-			vDeformedPos.push_back(newPos);
-		}
 	}
 }
 

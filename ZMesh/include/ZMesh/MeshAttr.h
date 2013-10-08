@@ -1,16 +1,15 @@
 #ifndef ZMESH_MESH_ATTR_H
 #define ZMESH_MESH_ATTR_H
-
 #include <string>
 #include <iostream>
 
 enum AttrRate {UNIFORM, FACE, EDGE, VERTEX, FACE_VERT};
-enum AttrType {CPP_DOUBLE, CPP_INT, CPP_STRING, CPP_VECTOR_DOUBLE, CPP_VECTOR_INT, UNKNOWN};
+enum AttrType {CPP_DOUBLE, CPP_INT, CPP_STRING, CPP_VECTOR_DOUBLE, CPP_VECTOR_INT, CPP_VECTOR_COLOR, UNKNOWN_TYPE};
 
 class MeshAttrBase
 {
 public:
-	MeshAttrBase(AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN) : mRate(rate), mAttrName(attrName), mType(UNKNOWN) {}
+	MeshAttrBase(AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN_TYPE) : mRate(rate), mAttrName(attrName), mType(type) {}
 	virtual ~MeshAttrBase() = 0 {};
 	const std::string& getAttrName() const { return mAttrName; }
 	void setAttrName(const std::string& attrName) { mAttrName = attrName; }
@@ -28,8 +27,8 @@ template<typename T>
 class MeshAttr : public MeshAttrBase
 {
 public:
-	MeshAttr(AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN) :  MeshAttrBase(rate, attrName, type){}
-	MeshAttr(const T& data, AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN) : MeshAttrBase(rate, attrName, type), mData(data) {}
+	MeshAttr(AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN_TYPE) :  MeshAttrBase(rate, attrName, type){}
+	MeshAttr(const T& data, AttrRate rate, const std::string& attrName, AttrType type = UNKNOWN_TYPE) : MeshAttrBase(rate, attrName, type), mData(data) {}
 	virtual ~MeshAttr(){}
 	virtual MeshAttrBase* clone() const {
 		MeshAttrBase* pattr = new MeshAttr<T>(mData, mRate, mAttrName, mType);

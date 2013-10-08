@@ -76,11 +76,9 @@ public:
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void calGeometryDWT();
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
-	void reconstructBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false);
 	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	
 	// ---- boolean query ---- //
-	bool isSGWComputed() const { return m_bSGWComputed; }
 	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
 
@@ -106,10 +104,7 @@ public:
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 	MatlabWrapper matlabWrapper;
-	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
-	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
-	MeshLaplacian::LaplacianType mActiveLaplacianType;
-	bool m_bSGWComputed;
+
 	int pRef;
 	Vector3D posRef;
 	int active_feature_id;
@@ -117,8 +112,10 @@ private:
 	int active_handle;
 	double constrain_weight;
 	std::vector<double> m_vTimescales;
-	std::vector<std::vector<double> > m_vSGW;
 
+	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
+	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
+	MeshLaplacian::LaplacianType mActiveLaplacianType;
 	ZGeom::DenseMatrix<double> mMatWavelet;
 };
 

@@ -13,7 +13,7 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include <ZUtil/color.h>
+#include <ZGeom/Color.h>
 #include "ZGeom/VecN.h"
 #include "ZGeom/Vec3.h"
 #include "Geometry.h"
@@ -244,6 +244,8 @@ private:
 	int*					m_piEdge;		// all half-edge index
 };
 
+typedef MeshAttr< std::vector<ZGeom::Colorf> > AttrVertColor;
+
 //////////////////////////////////////////////////////
 //						CMesh   					//
 //////////////////////////////////////////////////////
@@ -371,17 +373,17 @@ public:
 
 	/* MeshAttr functions */
 	template<typename T> 
-	MeshAttr<T>& addAttr(AttrRate rate, const std::string& name) {
+	MeshAttr<T>& addAttr(AttrRate rate, const std::string& name, AttrType attrType = AttrType::UNKNOWN_TYPE) {
 		removeAttr(name);
-		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name)));
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name, attrType)));
 		auto iter = mAttributes.find(name);
 		return *dynamic_cast<MeshAttr<T>*>(iter->second);        
 	}
 
 	template<typename T> 
-	void addAttr(const T& data, AttrRate rate, const std::string& name) {
+	void addAttr(const T& data, AttrRate rate, const std::string& name, AttrType attrType = AttrType::UNKNOWN_TYPE) {
 		removeAttr(name);
-		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name)));        
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name, attrType)));        
 	}
 
 	void removeAttr(const std::string& name) {
@@ -435,6 +437,27 @@ public:
 			mAttributes.insert(std::make_pair(a->getAttrName(), a));
 		}
 	}
+
+	MeshAttr< std::vector<ZGeom::Colorf> >& addColorAttr(const std::string& colorAttrName)
+	{
+		return addAttr< std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_VECTOR_COLOR);
+	}
+
+	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName)
+	{
+		return getAttrValue<std::vector<ZGeom::Colorf> >(colorAttrName);
+	}
+
+	std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> getColorAttrLists() {
+		std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> vColorAttr;
+		for (auto ap : mAttributes) {
+			if (ap.second->attrType() == AttrType::CPP_VECTOR_COLOR) {
+				vColorAttr.push_back(dynamic_cast<MeshAttr<std::vector<ZGeom::Colorf> > *>(ap.second));
+			}
+		}
+		return vColorAttr;
+	}
+
 	/*************************************************************************/
 
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);

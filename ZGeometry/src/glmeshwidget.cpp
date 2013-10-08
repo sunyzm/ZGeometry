@@ -8,10 +8,12 @@
 #include <gl/GLU.h>
 #include <ZUtil/ZUtil.h>
 #include <ZGeom/arithmetic.h>
+#include <ZGeom/Color.h>
 #include "OutputHelper.h"
 #include "global.h"
 
 using ZUtil::Int2String;
+using ZGeom::FalseColorMap;
 
 extern OutputHelper qout;
 extern GeometryTask g_task;
@@ -25,12 +27,10 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
 									{0.0, 1.0, 1.0, 1.0}};	//cyan
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
-FalseColorMap falseColorMap;
 
 void glFalseColor(float v, float p)
 {
-	int floor = static_cast<int>(v * 256.0f);
-	glColor4f(falseColorMap.RedMap[floor], falseColorMap.GreenMap[floor], falseColorMap.BlueMap[floor], p);
+	glColor4f(FalseColorMap::red(v), FalseColorMap::green(v), FalseColorMap::blue(v), p);
 }
 
 void glColorCoded(float v, float pf)
@@ -435,19 +435,21 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glPolygonOffset(1.0, 1.0);
 
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
-
-	if (m_bShowSignature && pRS->vDisplaySignature.size() == tmesh->vertCount())
+	if (m_bShowSignature && tmesh->hasAttr(pRS->mColorSignatureName))
 	{
+		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mColorSignatureName);
+
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++) {
 				int pi = tmesh->getFace(i)->getVertexIndex(j);	
-				Vector3D norm = vVertNormals[pi];
+				const Vector3D& norm = vVertNormals[pi];
 				glNormal3f(norm.x, norm.y, norm.z);	 				
-				Vector3D vt = tmesh->getVertex(pi)->getPosition();
+				Vector3D vt = tmesh->getVertexPosition(pi);
 				vt += shift;	//add some offset to separate object 1 and 2
-				glFalseColor(pRS->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
+				//glFalseColor(pRS->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
+				glColor4f(vVertColors[pi][0], vVertColors[pi][1], vVertColors[pi][2], 1.0);
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
@@ -461,9 +463,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
 			for (int j = 0; j < 3; j++) {
 				int pi = tmesh->getFace(i)->getVertexIndex(j);					 				
-				Vector3D norm = vVertNormals[pi];
+				const Vector3D& norm = vVertNormals[pi];
 				glNormal3f(norm.x, norm.y, norm.z);	 				
-				Vector3D vt = tmesh->getVertex(pi)->getPosition();
+				Vector3D vt = tmesh->getVertexPosition(pi);
 				vt += shift;	//add some offset to separate object 1 and 2
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
@@ -534,8 +536,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		//glPointSize(2.0);
 
 		/* draw as gluSphere */ 
-		const float *feature_color1 = RGBColors[COLOR_MAGENTA];
-		const float *feature_color2 = RGBColors[COLOR_GREEN];		
+		const float *feature_color1 = ZGeom::ColorGreen;
+		const float *feature_color2 = ZGeom::ColorMagenta;	
 		GLUquadric* quadric = gluNewQuadric();
 		bool is_hks_feature = (feature_list->id == FEATURE_MULTI_HKS);
 		bool is_demo_feature = (feature_list->id == FEATURE_DEMO || feature_list->id == FEATURE_DEMO2);
@@ -594,9 +596,10 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 	
 	int xBegin = width()/2 - 128;
 
-	for (int i = 0; i < 255; i++)
+	for (int i = 0; i <= 255; i++)
 	{
-		QColor col(255*falseColorMap.RedMap[i], 255*falseColorMap.GreenMap[i], 255*falseColorMap.BlueMap[i], 255);
+		float gray = float(i) / float(255);
+		QColor col(255*FalseColorMap::red(gray), 255*FalseColorMap::green(gray), 255*FalseColorMap::blue(gray), 255);
 //		painter->setBrush(QBrush(col, Qt::SolidPattern));
 //		painter->drawRect(xBegin + i*2, height()-50, 2, 25);
 		painter->setPen(QPen(col, 1, Qt::SolidLine));
