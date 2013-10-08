@@ -258,6 +258,9 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	CStopWatch timer;	
 	timer.startTimer();
 
+	const int vertCount = mMesh->vertCount();
+	const int anchorWeight = 1.0;
+
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
 	std::vector<Vector3D> anchorPos;
@@ -266,9 +269,21 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 		std::cout << "At least one anchor need to be picked!";
 		return;
 	}
-
-	const int anchorWeight = 1.0;
-	const int vertCount = mMesh->vertCount();
+	
+	std::vector<int> fixedVerts;
+#if 0
+	std::set<int> freeVerts;
+	for (int i = 0; i < anchorCount; ++i) {
+		std::set<int> sFree;
+		mMesh->vertRingNeighborVerts(anchorIndex[i], 5, sFree, true);
+		for (int v : sFree) freeVerts.insert(v);
+	}
+	for (int i = 0; i < vertCount; ++i) {
+		if (freeVerts.find(i) == freeVerts.end())
+			fixedVerts.push_back(i);
+	}
+#endif
+	const int fixedCount = fixedVerts.size();
 
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
@@ -285,38 +300,23 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	ZGeom::SparseMatrix<double> matL1(matLs);
 	matL1.scale(-ks);
 	ZGeom::SparseMatrix<double> matMixedL;
-	ZGeom::addMatMat(matL1, matBiL, kb, matMixedL);
+	ZGeom::addMatMat(matL1, matBiL, kb, matMixedL);	//matMixedL = -ks*matL + kb * matBiL
 	mEngine->addSparseMat(matMixedL, "matMixedL");
 
+#if 0
 	ZGeom::SparseMatVecMultiplier mulMixedL(matMixedL, true);	
 	ZGeom::VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(vertCount);
 		mulMixedL.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
-
-	std::set<int> freeVerts;
-	for (int i = 0; i < anchorCount; ++i) {
-		std::set<int> sFree;
-		mMesh->vertRingNeighborVerts(anchorIndex[i], 5, sFree, true);
-		for (int v : sFree) freeVerts.insert(v);
-	}
-	std::vector<int> fixedVerts;
-	for (int i = 0; i < vertCount; ++i) {
-		if (freeVerts.find(i) == freeVerts.end())
-			fixedVerts.push_back(i);
-	}
-	const int fixedCount = fixedVerts.size();
-
+#endif
 	ZGeom::VecNd solveRHS[3];
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount + fixedCount, 0);
-		solveRHS[i].copyElements(diffCoord[i], 0);
 		for (int l = 0; l < anchorCount; ++l) {
-			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
-		}
-		for (int l = 0; l < fixedCount; ++l) {
-			solveRHS[i][vertCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
+			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
+			solveRHS[i][vertCount + l] = anchorWeight * (anchorPos[l][i] - oldPos[i]);
 		}
 	}
 	mEngine->addColVec(solveRHS[0], "dcx");
@@ -342,7 +342,9 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	double *lsy = mEngine->getDblVariablePtr("lsy");
 	double *lsz = mEngine->getDblVariablePtr("lsz");
 
-	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
+	MeshCoordinates newCoord(oldCoord);
+	newCoord.add(lsx, lsy, lsz);
+
 	mMesh->setVertCoordinates(newCoord);
 }
 
@@ -424,9 +426,12 @@ void ShapeEditor::deformSpectralWavelet()
 	timer.stopTimer("Prepare deformation time: ");
 #if 1
 	timer.startTimer();	
-	mEngine->eval("lsx=cgs(matOpt'*matOpt, matOpt'*dcx);");
-	mEngine->eval("lsy=cgs(matOpt'*matOpt, matOpt'*dcy);");
-	mEngine->eval("lsz=cgs(matOpt'*matOpt, matOpt'*dcz);");
+	/*mEngine->eval("lsx=cgls(matOpt, dcx);");
+	mEngine->eval("lsy=cgls(matOpt, dcy);");
+	mEngine->eval("lsz=cgls(matOpt, dcz);");*/
+	mEngine->eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
+	mEngine->eval("lsy=lsqr(matOpt, dcy);");
+	mEngine->eval("lsz=lsqr(matOpt, dcz);");
 	timer.stopTimer("Deformation time: ");
 
 	double *lsx = mEngine->getDblVariablePtr("lsx");

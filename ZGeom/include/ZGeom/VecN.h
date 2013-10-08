@@ -63,6 +63,8 @@ public:
 	void expandTo(int n);
 	void copyElements(const VecN<T>& v2, int startingPos = 0);
 
+	const VecN<T>& add(T* v2);
+
 	const VecN<T>& operator += (const VecN<T>& v2);
 	const VecN<T>& operator -= (const VecN<T>& v2) { return (*this) += -v2; }
 	const VecN<T>& operator += (T trans);
@@ -297,6 +299,13 @@ inline const VecN<T>& VecN<T>::operator += (T trans)
 }
 #endif
 
+template<typename T>
+inline const VecN<T>& VecN<T>::add(T* v2)
+{
+	for (int i = 0; i < mDim; ++i)
+		mVec[i] += v2[i];
+	return *this;
+}
 
 /* definitions for operator*= */
 #ifdef USE_PPL

@@ -43,6 +43,12 @@ public:
 		mCoordZ.resize(mSize, 0); 
 	}
 
+	void add(double *cx, double *cy, double *cz) {
+		mCoordX.add(cx);
+		mCoordY.add(cy);
+		mCoordZ.add(cz);
+	}
+
 	const ZGeom::VecNd& getCoordFunc(int i) const {
 		switch (i)
 		{
