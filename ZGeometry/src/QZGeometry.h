@@ -49,15 +49,13 @@ private slots:
 	void computeMHWS();
 	void computeMHWFeatures();
 	void computeSGW();
-	void computeSGWS();
 	void computeSGWSFeatures();
 	void computeBiharmonic();
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
 
-	void displaySignature(int signatureID);
+//	void displaySignature(int signatureID);
 	void displaySignature(QString sigName );
-	void displayExperimental();
 	void displayNeighborVertices();
 	void displayDiffPosition();
 
@@ -118,7 +116,7 @@ private:
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
-	void addColorSignatureToMesh(int obj, const std::vector<double>& vVals, const std::string& sigName); 
+	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 
 private:	
 	/* fields */
@@ -139,7 +137,7 @@ private:
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
-		  Compute_EIG_FUNC,
+		  Compute_EIG_FUNC, Compute_Biharmonic,
 		  None} current_operation;
 
 	QSignalMapper*		  laplacianSignalMapper;	

@@ -52,29 +52,29 @@ public:
 	void constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
+	double calHK(int v1, int v2, double timescale) const;
+	double calHeatTrace(double timescale) const;
+	double calBiharmonic(int v1, int v2) const;
+	double calMHW(int v1, int v2, double timescale) const;
+	double calSGW(int v1, int v2, double timescale) const;	
+	void computeSGW();
+	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
+
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
 	void computeKernelSignature(double timescale, KernelType kernelType);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
-	void computeBiharmonicDistanceSignature(int refPoint);
 	void computeSimilarityMap1(int refPoint);
 	void computeSimilarityMap2(int refPoint);
 	void computeSimilarityMap3(int refPoint);
-	double calHK(int v1, int v2, double timescale) const;
-	double calHeatTrace(double timescale) const;
-	double calBiharmonic(int v1, int v2) const;
-	double getVertexHKS(int index, double timescale) const { return calHK(index, index, timescale); }
 
-	void computeSGW();
-	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
-	void computeExperimentalWavelet(std::vector<double>& vExp, double scale);
 	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
-	
+	void calGeometryDWT();
+
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
-	void calGeometryDWT();
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	
@@ -107,10 +107,11 @@ private:
 
 	int pRef;
 	Vector3D posRef;
-	int active_feature_id;
 	std::map<int, Vector3D> mHandles;
 	int active_handle;
+
 	double constrain_weight;
+	int active_feature_id;
 	std::vector<double> m_vTimescales;
 
 	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];

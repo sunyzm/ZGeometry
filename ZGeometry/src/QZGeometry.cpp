@@ -179,7 +179,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
 	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
 	QObject::connect(ui.actionComputeMHWSFeatures, SIGNAL(triggered()), this, SLOT(computeMHWFeatures()));
-	QObject::connect(ui.actionComputeSGWS, SIGNAL(triggered()), this, SLOT(computeSGWS()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
@@ -491,49 +490,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	}
 }
 
-void QZGeometryWindow::computeSGWSFeatures()
-{
-	vector<double> vTimes;
-	vTimes.push_back(10);
-	vTimes.push_back(30);
-	vTimes.push_back(90);
-	vTimes.push_back(270);
-
-	for (int i = 0; i < 2; ++i) {
-		mProcessors[i]->computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
-	}
-
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
-}
-
-void QZGeometryWindow::computeSGW()
-{
-	CStopWatch timer;
-	timer.startTimer();
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		const ZGeom::DenseMatrixd& sgwMat = mProcessors[obj]->getWaveletMat();
-		if (sgwMat.empty())	mProcessors[obj]->computeSGW();
-
-		int vertCount = mMeshes[obj]->vertCount();
-		MeshFunction *mf = new MeshFunction(vertCount);
-		mf->setIDandName(SIGNATURE_SGW, "SGW");		
-		int vRef = mProcessors[obj]->getRefPointIndex();
-		double* data = sgwMat.raw_ptr();
-		for (int vIndex = 0; vIndex < vertCount; ++vIndex) {
-			(*mf)[vIndex] = data[vRef*vertCount + vIndex];
-		}
-		mProcessors[obj]->replaceProperty(mf);
-	}
-
-	timer.stopTimer("Time for compute SGW: ");
-
-	displaySignature(SIGNATURE_SGW);
-	updateDisplaySignatureMenu();
-	current_operation = Compute_SGW;
-}
-
 void QZGeometryWindow::deformSimple()
 {
 	mShapeEditor.deformSimple();
@@ -776,28 +732,6 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayExperimental()
-{
-	DifferentialMeshProcessor& mp = *mProcessors[0];
-
-	vector<double> vExp;
-	mp.computeExperimentalWavelet(vExp, 30); 
-
-	mRenderManagers[0]->normalizeSignatureFrom(vExp);
-
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-
-	ui.glMeshWidget->update();
-	qout.output(QString().sprintf("Show MHW from vertex #%d", mp.getRefPointIndex()));
-	
-// 	qout.output("Start calculating wavelet of geometry...");
-// 	QTime timer;
-// 	timer.start();
-// 	mp.calGeometryDWT();
-// 	qout.output("Finished! Time cost: " + QString::number(timer.elapsed()/1000.0) + " (s)");
-}
-
 void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int i = 0; i < mMeshCount; ++i) {
@@ -807,7 +741,7 @@ void QZGeometryWindow::computeCurvatureMean()
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 
-		addColorSignatureToMesh(i, vCurvature, StrColorMeanCurvature);
+		addColorSignature(i, vCurvature, StrColorMeanCurvature);
 	}
 
 	displaySignature(StrColorMeanCurvature.c_str());
@@ -824,7 +758,7 @@ void QZGeometryWindow::computeCurvatureGauss()
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 	
-		addColorSignatureToMesh(i, vCurvature, StrColorGaussCurvature);
+		addColorSignature(i, vCurvature, StrColorGaussCurvature);
 
 	}
 
@@ -919,7 +853,6 @@ void QZGeometryWindow::displayNeighborVertices()
 	int ref = mProcessors[0]->getRefPointIndex();
 	std::vector<int> vn;
 	mProcessors[0]->getMesh_const()->vertRingNeighborVerts(ref, ring, vn, false);
-//	std::vector<int> vn = vMP[0].getMesh()->getRingVertex(ref, ring);
 	MeshFeatureList *mfl = new MeshFeatureList;
 
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
@@ -941,7 +874,7 @@ void QZGeometryWindow::computeEigenfunction()
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		std::vector<double> eigVec = mp.getMHB(MeshLaplacian::CotFormula).getEigVec(select_eig).toStdVector();
-		addColorSignatureToMesh(i, eigVec, StrColorEigenFunction);
+		addColorSignature(i, eigVec, StrColorEigenFunction);
 	}
 
 	for (int i = 0; i < mMeshCount; ++i) {
@@ -958,6 +891,34 @@ void QZGeometryWindow::computeEigenfunction()
 	updateDisplaySignatureMenu();
 }
 
+void QZGeometryWindow::computeHK()
+{
+	double time_scale;
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	else 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int meshSize = mp.getMesh()->vertCount();
+		const int refPoint = mp.getRefPointIndex();
+		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+
+		std::vector<double> values(meshSize);
+		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
+			values[vIdx] = mhb.heatKernel(refPoint, vIdx, time_scale);
+		});
+
+		addColorSignature(obj, values, StrColorHK);
+	}
+
+	displaySignature(StrColorHK.c_str());
+	qout.output(QString().sprintf("HK with timescale: %f", time_scale));
+	updateDisplaySignatureMenu();
+	current_operation = Compute_HK;
+}
+
 void QZGeometryWindow::computeHKS()
 {
 	double time_scale;
@@ -968,68 +929,42 @@ void QZGeometryWindow::computeHKS()
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		int meshSize = mp.getMesh_const()->getMeshSize();
-
+		const int meshSize = mp.getMesh()->vertCount();
 		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
 			values[k] = mhb.heatKernel(k, k, time_scale);
 		});
 
-		addColorSignatureToMesh(i, values, StrColorHKS);
+		addColorSignature(i, values, StrColorHKS);
 	}
 	
 	displaySignature(StrColorHKS.c_str());
-	current_operation = Compute_HKS;
 	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
+	current_operation = Compute_HKS;
 }
 
-void QZGeometryWindow::computeHK()
+void QZGeometryWindow::computeBiharmonic()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-
-	qout.output(QString().sprintf("Heat Kernel timescale: %f", time_scale));
-
-	for (int i = 0; i < mMeshCount; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		int refPoint = mp.getRefPointIndex();
-		mp.computeKernelDistanceSignature(time_scale, HEAT_KERNEL, refPoint);
-	}
-
-	displaySignature(SIGNATURE_HK);
-
-	current_operation = Compute_HK;
-	updateDisplaySignatureMenu();
-}
-
-void QZGeometryWindow::repeatOperation()
-{
-	switch(current_operation)
+	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
-	case Compute_EIG_FUNC:
-		computeEigenfunction();
-		break;
-	case Compute_HKS:
-		computeHKS();
-		break;
-	case Compute_HK:
-		computeHK();
-		break;
-	case Compute_MHWS:
-		computeMHWS();
-		break;
-	case Compute_MHW:
-		computeMHW();
-		break;
-	case Compute_SGWS:
-		computeSGWS();
-		break;
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int vertCount = mMeshes[obj]->vertCount();
+		const int refPoint = mp.getRefPointIndex();
+
+		std::vector<double> vVals(vertCount);
+		for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
+			vVals[vIdx] = mp.calBiharmonic(refPoint, vIdx);
+		}
+
+		addColorSignature(obj, vVals, StrColorBiharmonic);
 	}
+
+	displaySignature(StrColorBiharmonic.c_str());
+	updateDisplaySignatureMenu();
+	current_operation = Compute_Biharmonic;
 }
 
 void QZGeometryWindow::computeHKSFeatures()
@@ -1047,22 +982,34 @@ void QZGeometryWindow::computeHKSFeatures()
 	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 }
 
-void QZGeometryWindow::computeMHWFeatures()
+void QZGeometryWindow::computeMHW()
 {
-	vector<double> vTimes;
-	vTimes.push_back(10);
-	vTimes.push_back(30);
-	vTimes.push_back(90);
-	vTimes.push_back(270);
+	double time_scale;
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+	else 
+		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{	
-		mProcessors[i]->computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
+
+	for (int obj = 0; obj < mMeshCount; ++obj)
+	{
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int meshSize = mp.getMesh()->vertCount();
+		const int refPoint = mp.getRefPointIndex();
+		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+
+		std::vector<double> values(meshSize);
+		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
+			values[vIdx] = mp.calMHW(refPoint, vIdx, time_scale);
+		});
+
+		addColorSignature(obj, values, StrColorMHW);
 	}
 
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
-
+	displaySignature(StrColorMHW.c_str());
+	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
+	updateDisplaySignatureMenu();
+	current_operation = Compute_MHW;
 }
 
 void QZGeometryWindow::computeMHWS()
@@ -1073,42 +1020,113 @@ void QZGeometryWindow::computeMHWS()
 	else 
 		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
 
-	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		mp.computeKernelSignature(time_scale, MHW_KERNEL);
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int meshSize = mp.getMesh()->vertCount();
+		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+
+		std::vector<double> values(meshSize);
+		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
+			values[vIdx] = mp.calMHW(vIdx, vIdx, time_scale);
+		});
+
+		addColorSignature(obj, values, StrColorMHWS);
 	}
 
-	displaySignature(SIGNATURE_MHWS);
-
+	displaySignature(StrColorMHWS.c_str());
+	qout.output(QString().sprintf("MHWS timescale: %f", time_scale));
+	updateDisplaySignatureMenu();
 	current_operation = Compute_MHWS;
-	updateDisplaySignatureMenu();
 }
 
-void QZGeometryWindow::computeSGWS()
+void QZGeometryWindow::computeMHWFeatures()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+	vector<double> vTimes;
+	vTimes.push_back(10);
+	vTimes.push_back(30);
+	vTimes.push_back(90);
+	vTimes.push_back(270);
 
-	qout.output(QString().sprintf("Spectral Graph Wavelet timescale: %f", time_scale));
-
-	for (int i = 0; i < 2; ++i)
-	{
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		mp.computeKernelSignature(time_scale, SGW_KERNEL);
+	for (int i = 0; i < mMeshCount; ++i) {	
+		mProcessors[i]->computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
 	}
 
-	displaySignature(SIGNATURE_SGWS);
+	if (!ui.glMeshWidget->m_bShowFeatures)
+		toggleShowFeatures();
 
-	current_operation = Compute_SGWS;
-	updateDisplaySignatureMenu();
 }
 
+void QZGeometryWindow::computeSGW()
+{
+	CStopWatch timer;
+	timer.startTimer();
+
+	for (int obj = 0; obj < mMeshCount; ++obj) 
+	{
+		const ZGeom::DenseMatrixd& sgwMat = mProcessors[obj]->getWaveletMat();
+		if (sgwMat.empty())	mProcessors[obj]->computeSGW();
+
+		int vRef = mProcessors[obj]->getRefPointIndex();
+		int vertCount = mMeshes[obj]->vertCount();
+		std::vector<double> vSig(vertCount);
+		std::copy_n(sgwMat.raw_ptr() + vRef * vertCount, vertCount, vSig.begin());
+
+		addColorSignature(obj, vSig, StrColorSGW);
+	}
+
+	timer.stopTimer("Time for compute SGW: ");
+
+	displaySignature(StrColorSGW.c_str());
+	updateDisplaySignatureMenu();
+	current_operation = Compute_SGW;
+}
+
+void QZGeometryWindow::computeSGWSFeatures()
+{
+	vector<double> vTimes;
+	vTimes.push_back(10);
+	vTimes.push_back(30);
+	vTimes.push_back(90);
+	vTimes.push_back(270);
+
+	for (int i = 0; i < 2; ++i) {
+		mProcessors[i]->computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
+	}
+
+	if (!ui.glMeshWidget->m_bShowFeatures)
+		toggleShowFeatures();
+}
+
+void QZGeometryWindow::repeatOperation()
+{
+	switch(current_operation)
+	{
+	case Compute_EIG_FUNC:
+		computeEigenfunction();
+		break;
+	case Compute_HKS:
+		computeHKS();
+		break;
+	case Compute_HK:
+		computeHK();
+		break;
+	case Compute_Biharmonic:
+		computeBiharmonic();
+		break;
+	case Compute_MHWS:
+		computeMHWS();
+		break;
+	case Compute_MHW:
+		computeMHW();
+		break;
+	case Compute_SGW:
+		computeSGW();
+		break;
+	}
+}
+
+#if 0
 void QZGeometryWindow::displaySignature( int signatureID )
 {
 	for (int i = 0; i < mMeshCount; ++i) {
@@ -1124,6 +1142,7 @@ void QZGeometryWindow::displaySignature( int signatureID )
 	if (!ui.glMeshWidget->m_bShowSignature) toggleShowSignature();	
 	ui.glMeshWidget->update();
 }
+#endif
 
 void QZGeometryWindow::displaySignature(QString sigName )
 {
@@ -1134,29 +1153,6 @@ void QZGeometryWindow::displaySignature(QString sigName )
 
 	if (!ui.glMeshWidget->m_bShowSignature) toggleShowSignature();	
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::computeMHW()
-{
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-
-	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
-
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		int refPoint = mp.getRefPointIndex();
-		mp.computeKernelDistanceSignature(time_scale, MHW_KERNEL, refPoint);
-	}
-
-	displaySignature(SIGNATURE_MHW);
-
-	current_operation = Compute_MHW;
-	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::setTaskRegistration()
@@ -1479,19 +1475,6 @@ void QZGeometryWindow::showCoarser()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::computeBiharmonic()
-{
-	for (int i = 0; i < mMeshCount; ++i)
-	{
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		int refPoint = mp.getRefPointIndex();
-		mp.computeBiharmonicDistanceSignature(refPoint);
-	}
-
-	displaySignature(SIGNATURE_BIHARMONIC_DISTANCE);
-	updateDisplaySignatureMenu();
-}
-
 void QZGeometryWindow::evalDistance()
 {
 	if (mMeshCount < 2) return;
@@ -1571,7 +1554,7 @@ void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplaci
 
 void QZGeometryWindow::saveSignature()
 {
-	if (mRenderManagers[0]->vOriginalSignature.empty()) {
+	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) {
 		qout.output("No signature available", OUT_MSGBOX);
 		return;
 	}
@@ -1579,7 +1562,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	vector<double> vSig = mRenderManagers[0]->vOriginalSignature;
+	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double> >(StrOriginalSignature);
 
 	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -1609,8 +1592,7 @@ void QZGeometryWindow::addMesh()
 	mRenderManagers[cur_obj]->selected = true;
 	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
 
-	if (cur_obj == 0)
-	{
+	if (cur_obj == 0) {
 		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
 		ui.spinBox1->setMinimum(0);
 		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
@@ -1703,7 +1685,6 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 		break;
 	}
 
-	displaySignature(SIGNATURE_SIMILARITY_MAP);
 	updateDisplaySignatureMenu();
 }
 
@@ -1872,11 +1853,14 @@ void QZGeometryWindow::revert()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::addColorSignatureToMesh( int obj, const std::vector<double>& vVals, const std::string& sigName )
+void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName )
 {
 	if (!mMeshes[obj]->hasAttr(sigName)) mMeshes[obj]->addColorAttr(sigName);
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
 	signaturesToColors(vVals, vColors);
 
 	mRenderManagers[obj]->mColorSignatureName = sigName;
+
+	std::vector<double>& vSig = mMeshes[obj]->addAttr< std::vector<double> >(AttrRate::VERTEX, StrOriginalSignature, CPP_VECTOR_DOUBLE).getValue();
+	vSig = vVals;
 }

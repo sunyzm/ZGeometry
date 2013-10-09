@@ -177,59 +177,21 @@ void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& v
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	vMHW.resize(m_size);
 
-	if (wtype == 1)
-	{
-		for (int i = 0; i < m_size; ++i)
-		{
-			double sum = 0;
-			for (int k = 0; k < mhb.eigVecCount(); ++k)
-			{
-				double coef = mhb.getEigVal(k) * scale;
-				sum += mhb.getEigVal(k)  * exp(-mhb.getEigVal(k) * scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
-			}
-			vMHW[i] = sum;
+	if (wtype == 1) {
+		for (int vIdx = 0; vIdx < m_size; ++vIdx) {
+			vMHW[vIdx] = calMHW(pRef, vIdx, scale);
 		}
 	}
-	else if (wtype == 2)
-	{
-		for (int i = 0; i < m_size; ++i)
-		{
+	else if (wtype == 2) {
+		for (int vIdx = 0; vIdx < m_size; ++vIdx) {
 			double sum = 0;
-			for (int k = 0; k < mhb.eigVecCount(); ++k)
-			{
+			for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 				double coef = pow(mhb.getEigVal(k) * scale, 2.0);
-				sum += coef * exp(-coef) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
+				sum += coef * exp(-coef) * mhb.getEigVec(k)[vIdx] * mhb.getEigVec(k)[pRef];
 			}
-			vMHW[i] = sum;
+			vMHW[vIdx] = sum;
 		}
 	}
-}
-
-void DifferentialMeshProcessor::computeExperimentalWavelet( std::vector<double>& vExp, double scale )
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	vExp.resize(m_size);
-	
-	for (int i = 0; i < m_size; ++i)
-	{
-		double sum = 0;
-		for (int k = 0; k < mhb.eigVecCount(); ++k)
-		{
-			double coef = mhb.getEigVal(k) * scale;
-			sum += mhb.getEigVal(k) * scale * exp(-mhb.getEigVal(k) * scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[pRef];
-		}
-		vExp[i] = sum;
-	}
-
-	ofstream fout("output/frequency.txt", ios::trunc);
-	for (int k = 0; k < mhb.eigVecCount(); ++k)
-	{
-		double coef = pow(mhb.getEigVal(k) * scale, 1.0);
-		fout << coef * exp(-coef) /* * mhb.getEigVec(k)[pRef]*/ << " ";
-	}
-	fout << "\n";
-	fout.close();
 }
 
 void DifferentialMeshProcessor::calGeometryDWT()
@@ -716,9 +678,36 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 
 	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k)
-	{
-		sum += std::exp(-mhb.getEigVal(k) * timescale) * mhb.getEigVec(k)[v1] * mhb.getEigVec(k)[v2];
+	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
+		double lambda = mhb.getEigVal(k);
+		const ZGeom::VecNd& phi = mhb.getEigVec(k);
+		sum += std::exp(-lambda * timescale) * phi[v1] * phi[v2];
+	}
+	return sum;
+}
+
+double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) const
+{
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
+	double sum = 0;
+	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
+		double lambda = mhb.getEigVal(k);
+		const ZGeom::VecNd& phi = mhb.getEigVec(k);
+		sum += lambda * std::exp(-lambda * timescale) * phi[v1] * phi[v2];
+	}
+	return sum;
+}
+
+double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) const
+{
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+
+	double sum = 0;
+	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
+		double lambda = mhb.getEigVal(k);
+		const ZGeom::VecNd& phi = mhb.getEigVec(k);
+		sum += std::pow(lambda * timescale, 2) * std::exp(-std::pow(lambda * timescale, 2)) * phi[v1] * phi[v2];
 	}
 	return sum;
 }
@@ -742,29 +731,7 @@ double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
 	}
-	return sum;
-}
-
-void DifferentialMeshProcessor::computeBiharmonicDistanceSignature( int refPoint )
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	if (refPoint < 0 || refPoint >= m_size)
-		throw runtime_error("Error computeBiharmonicDistanceSignature: invalid reference point");
-
-	MeshFunction *mf = new MeshFunction(m_size);
-	
-	for (int i = 0; i < m_size; ++i) {
-		double sum = 0;
-		for (int k = 0; k < mhb.eigVecCount(); ++k) {
-			sum += pow((mhb.getEigVec(k)[i] - mhb.getEigVec(k)[refPoint]) / mhb.getEigVal(k), 2);
-		}
-		mf->setValue(i, sum);
-	}
-
-	removePropertyByID(SIGNATURE_BIHARMONIC_DISTANCE);
-	mf->setIDandName(SIGNATURE_BIHARMONIC_DISTANCE, "Biharmonic_Distance_signature");
-	addProperty(mf);
+	return std::sqrt(sum);
 }
 
 void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
