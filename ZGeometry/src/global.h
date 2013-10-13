@@ -16,6 +16,7 @@ const std::string StrColorHeat			 = "vert_color_heat";
 const std::string StrColorMHWS			 = "vert_color_mhws";
 const std::string StrColorMHW			 = "vert_color_mhw";
 const std::string StrColorSGW			 = "vert_color_sgw";
+const std::string StrColorGeodesics	     = "vert_color_geodesics";
 const std::string StrColorPreset		 = "vert_color_preset";
 const std::string StrColorSimilarity     = "vert_color_similarity";
 

@@ -76,7 +76,6 @@ public:
 	void addNewHandle(int hIdx);
 	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
 	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
-	void filterBySGW(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz);
 	
 	// ---- boolean query ---- //
 	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }

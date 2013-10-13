@@ -53,6 +53,7 @@ private slots:
 	void computeBiharmonic();
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
+	void computeGeodesics();
 
 //	void displaySignature(int signatureID);
 	void displaySignature(QString sigName );
@@ -79,6 +80,7 @@ private slots:
 	void clone();
 	void revert();
 	void reconstructMHB();
+	void reconstructSGW();
 	void deformSimple();
 	void deformLaplace();
 	void deformBiLaplace();
@@ -117,6 +119,7 @@ private:
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
+	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 
 private:	
 	/* fields */
@@ -130,14 +133,15 @@ private:
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
-	ShapeMatcher					mShapeMatcher;
-	ShapeEditor						mShapeEditor;
+	ShapeMatcher mShapeMatcher;
+	ShapeEditor	 mShapeEditor;
 
 	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
-		  Compute_EIG_FUNC, Compute_Biharmonic,
+		  Compute_Eig_Func, Compute_Biharmonic,
+		  Compute_Geodesics,
 		  None} current_operation;
 
 	QSignalMapper*		  laplacianSignalMapper;	

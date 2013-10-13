@@ -394,10 +394,6 @@ void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& v
 //  VectorPointwiseDivide(vz, vWeight, vz);
 }
 
-void DifferentialMeshProcessor::filterBySGW( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz )
-{
-}
-
 void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
 {
 	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
@@ -676,7 +672,6 @@ void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -689,7 +684,6 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -702,7 +696,6 @@ double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) con
 double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);

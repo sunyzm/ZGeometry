@@ -303,14 +303,6 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	ZGeom::addMatMat(matL1, matBiL, kb, matMixedL);	//matMixedL = -ks*matL + kb * matBiL
 	mEngine->addSparseMat(matMixedL, "matMixedL");
 
-#if 0
-	ZGeom::SparseMatVecMultiplier mulMixedL(matMixedL, true);	
-	ZGeom::VecNd diffCoord[3];
-	for (int i = 0; i < 3; ++i) {
-		diffCoord[i].resize(vertCount);
-		mulMixedL.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
-	}
-#endif
 	ZGeom::VecNd solveRHS[3];
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount + fixedCount, 0);
@@ -377,14 +369,14 @@ void ShapeEditor::deformSpectralWavelet()
 		mEngine->addDenseMat(matW, "matSGW");
 	}
 	const int waveletCount = matW.rowCount();
-
-	ZGeom::DenseMatVecMultiplier mulMixedW(matW);	
+#if 1
 	ZGeom::VecNd diffCoord[3];
+	ZGeom::DenseMatVecMultiplier mulMixedW(matW);	
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(waveletCount);
 		mulMixedW.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
-
+#endif
 	std::vector<int> fixedVerts;
 #if 0
 	std::set<int> freeVerts;
@@ -404,7 +396,11 @@ void ShapeEditor::deformSpectralWavelet()
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
 		solveRHS[i].copyElements(diffCoord[i], 0);
+
+		for (int a = 0; a < vertCount; ++a) solveRHS[i][a] *= 2;
+
 		for (int l = 0; l < anchorCount; ++l) {
+			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
 		}
 		for (int l = 0; l < fixedCount; ++l) {
@@ -424,7 +420,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addDenseMat(matOptS, "matOpt");
 
 	timer.stopTimer("Prepare deformation time: ");
-#if 1
+
 	timer.startTimer();	
 	/*mEngine->eval("lsx=cgls(matOpt, dcx);");
 	mEngine->eval("lsy=cgls(matOpt, dcy);");
@@ -439,6 +435,50 @@ void ShapeEditor::deformSpectralWavelet()
 	double *lsz = mEngine->getDblVariablePtr("lsz");
 
 	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
+	//MeshCoordinates newCoord(oldCoord);
+	//newCoord.add(lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
-#endif
+}
+
+void ShapeEditor::reconstructSpectralWavelet()
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	const int vertCount = mMesh->vertCount();	
+	const ZGeom::DenseMatrixd& matW = mProcessor->getWaveletMat();
+	if (matW.empty()) {
+		mProcessor->computeSGW();
+		mEngine->addDenseMat(matW, "matSGW");
+	}
+	const int waveletCount = matW.rowCount();
+
+	ZGeom::VecNd solveRHS[3];
+	for (int i = 0; i < 3; ++i ) {
+		solveRHS[i].resize(waveletCount, 0);
+	}
+	mEngine->addColVec(solveRHS[0], "dcx");
+	mEngine->addColVec(solveRHS[1], "dcy");
+	mEngine->addColVec(solveRHS[2], "dcz");
+	mEngine->addDenseMat(matW, "matOpt");
+
+	timer.stopTimer("Prepare deformation time: ");
+
+	timer.startTimer();	
+	/*mEngine->eval("lsx=cgls(matOpt, dcx);");
+	mEngine->eval("lsy=cgls(matOpt, dcy);");
+	mEngine->eval("lsz=cgls(matOpt, dcz);");*/
+	mEngine->eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
+	mEngine->eval("lsy=lsqr(matOpt, dcy);");
+	mEngine->eval("lsz=lsqr(matOpt, dcz);");
+	timer.stopTimer("Deformation time: ");
+
+	double *lsx = mEngine->getDblVariablePtr("lsx");
+	double *lsy = mEngine->getDblVariablePtr("lsy");
+	double *lsz = mEngine->getDblVariablePtr("lsz");
+
+	MeshCoordinates newCoord;
+	mMesh->getVertCoordinates(newCoord);
+	newCoord.add(lsx, lsy, lsz);
+	mMesh->setVertCoordinates(newCoord);
 }

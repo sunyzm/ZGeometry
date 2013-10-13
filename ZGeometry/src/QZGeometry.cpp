@@ -182,11 +182,13 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 
 	////	Edit	////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
+	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
@@ -831,6 +833,7 @@ void QZGeometryWindow::reconstructMHB()
 
 void QZGeometryWindow::filterExperimental()
 {
+#if 0
 	vector<double> vx, vy, vz;
 	mProcessors[0]->filterBySGW(vx, vy, vz);
 	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
@@ -842,7 +845,7 @@ void QZGeometryWindow::filterExperimental()
 	}
 	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
 	qout.output("Average position error: " + QString::number(errorSum));
-
+#endif
 	ui.glMeshWidget->update();
 }
 
@@ -886,18 +889,14 @@ void QZGeometryWindow::computeEigenfunction()
 	}
 
 	displaySignature(StrColorEigenFunction.c_str());
-	current_operation = Compute_EIG_FUNC;
+	current_operation = Compute_Eig_Func;
 	qout.output("Show eigenfunction" + Int2String(select_eig));
 	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::computeHK()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
@@ -921,11 +920,7 @@ void QZGeometryWindow::computeHK()
 
 void QZGeometryWindow::computeHKS()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
@@ -984,12 +979,7 @@ void QZGeometryWindow::computeHKSFeatures()
 
 void QZGeometryWindow::computeMHW()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-
+	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
@@ -1014,12 +1004,7 @@ void QZGeometryWindow::computeMHW()
 
 void QZGeometryWindow::computeMHWS()
 {
-	double time_scale;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
-	else 
-		time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
-
+	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
@@ -1059,23 +1044,22 @@ void QZGeometryWindow::computeMHWFeatures()
 
 void QZGeometryWindow::computeSGW()
 {
-	CStopWatch timer;
-	timer.startTimer();
+	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE, true);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) 
 	{
-		const ZGeom::DenseMatrixd& sgwMat = mProcessors[obj]->getWaveletMat();
-		if (sgwMat.empty())	mProcessors[obj]->computeSGW();
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int meshSize = mp.getMesh()->vertCount();
+		const int refPoint = mp.getRefPointIndex();
+		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
 
-		int vRef = mProcessors[obj]->getRefPointIndex();
-		int vertCount = mMeshes[obj]->vertCount();
-		std::vector<double> vSig(vertCount);
-		std::copy_n(sgwMat.raw_ptr() + vRef * vertCount, vertCount, vSig.begin());
+		std::vector<double> values(meshSize);
+		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
+			values[vIdx] = mp.calSGW(refPoint, vIdx, time_scale);
+		});
 
-		addColorSignature(obj, vSig, StrColorSGW);
+		addColorSignature(obj, values, StrColorSGW);
 	}
-
-	timer.stopTimer("Time for compute SGW: ");
 
 	displaySignature(StrColorSGW.c_str());
 	updateDisplaySignatureMenu();
@@ -1102,7 +1086,7 @@ void QZGeometryWindow::repeatOperation()
 {
 	switch(current_operation)
 	{
-	case Compute_EIG_FUNC:
+	case Compute_Eig_Func:
 		computeEigenfunction();
 		break;
 	case Compute_HKS:
@@ -1125,24 +1109,6 @@ void QZGeometryWindow::repeatOperation()
 		break;
 	}
 }
-
-#if 0
-void QZGeometryWindow::displaySignature( int signatureID )
-{
-	for (int i = 0; i < mMeshCount; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		MeshProperty* vs = mp.retrievePropertyByID(signatureID);
-		if (vs != NULL) {
-			mRenderManagers[i]->normalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
-//			vRS[i].logNormalizeSignatureFrom(dynamic_cast<MeshFunction*>(vs)->getMeshFunction_const());
-			qout.output(QString().sprintf("Sig Min: %f; Sig Max: %f", mRenderManagers[i]->sigMin, mRenderManagers[i]->sigMax), OUT_CONSOLE);
-		}
-	}
-
-	if (!ui.glMeshWidget->m_bShowSignature) toggleShowSignature();	
-	ui.glMeshWidget->update();
-}
-#endif
 
 void QZGeometryWindow::displaySignature(QString sigName )
 {
@@ -1356,18 +1322,15 @@ void QZGeometryWindow::matchFeatures()
 		matchScore = ShapeMatcher::TensorGraphMatching6(mEngineWrapper.getEngine(), mProcessors[0], mProcessors[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
 		//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
 
-		if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE"))
-		{
+		if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE")) {
 			vector<double> vTimes;
 			vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
-			for (auto iter = vPairs.begin(); iter != vPairs.end(); )
-			{
+			for (auto iter = vPairs.begin(); iter != vPairs.end(); ) {
 				if (!mMeshes[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
 					iter->m_note = -1;
 
 				double dissim = mShapeMatcher.calPointHksDissimilarity(mProcessors[0], mProcessors[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
-				if (dissim > 0.18)
-				{
+				if (dissim > 0.18) {
 					iter = vPairs.erase(iter);
 					continue;
 				}
@@ -1500,7 +1463,8 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 {
 	DifferentialMeshProcessor& mp = *mProcessors[obj];
 	const CMesh& mesh = *mMeshes[obj];
-	assert(nEigVec < mesh.getMeshSize());
+	const int vertCount = mesh.vertCount();
+	if (nEigVec >= vertCount) nEigVec = vertCount - 1;
 
 	if (!mp.getMHB(laplacianType).empty()) return;
 	std::string s_idx = "0";
@@ -1537,8 +1501,8 @@ void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplaci
 	}
 	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 		
-	if (totalToDecompose <= 1) {        
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
+	if (totalToDecompose <= 1 && mMeshCount > 1) {        
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){			
 			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
 		});
 	} else {    // if both need explicit decomposition, then must run in sequence in Matlab
@@ -1629,37 +1593,6 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), signatureSignalMapper, SLOT(map()));
 		}	
 	}
-
-
-#if 0
-	const std::vector<MeshProperty*> vProperties = mProcessors[mObjInFocus]->properties();
-	vector<MeshFunction*> vSigFunctions;
-	for (MeshProperty* pp : vProperties) {
-		if (pp->id > SIGNATURE_ID && pp->id < SIGNATURE_ID_COUNT)
-			vSigFunctions.push_back(dynamic_cast<MeshFunction*>(pp));
-	}
-
-	QList<QAction*> signatureActions = ui.menuSignature->actions();
-	for (QAction* qa : m_actionDisplaySignatures) {
-		if (vSigFunctions.end() == find_if(vSigFunctions.begin(), vSigFunctions.end(), [&](MeshFunction* mf){ return mf->name == qa->text().toStdString();}))
-		{
-			ui.menuSignature->removeAction(qa);
-			delete qa;			
-		}
-	}
-
-	for (MeshFunction* pmf : vSigFunctions) {
-		if (m_actionDisplaySignatures.end() == find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == pmf->name;}))
-		{
-			QAction* newDisplayAction = new QAction(pmf->name.c_str(), this);
-			m_actionDisplaySignatures.push_back(newDisplayAction);
-			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
-			signatureSignalMapper->setMapping(newDisplayAction, (int)pmf->id);
-			QObject::connect(newDisplayAction, SIGNAL(triggered()), signatureSignalMapper, SLOT(map()));
-		}	
-	}
-#endif
-
 }
 
 void QZGeometryWindow::computeSimilarityMap( int simType )
@@ -1863,4 +1796,42 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 
 	std::vector<double>& vSig = mMeshes[obj]->addAttr< std::vector<double> >(AttrRate::VERTEX, StrOriginalSignature, CPP_VECTOR_DOUBLE).getValue();
 	vSig = vVals;
+}
+
+double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
+{
+	double para;
+	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
+		para = std::exp( std::log(sDefault / sMin) * (double(mCommonParameter) / PARAMETER_SLIDER_CENTER) + std::log(sMin) );
+	else 
+		para = std::exp( std::log(sMax / sDefault) * (double(mCommonParameter - PARAMETER_SLIDER_CENTER) / PARAMETER_SLIDER_CENTER) + std::log(sDefault) ); 
+	
+	if (verbose) std::cout << "Parameter value: " << para << std::endl;
+	return para;
+}
+
+void QZGeometryWindow::reconstructSGW()
+{
+	mShapeEditor.reconstructSpectralWavelet();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::computeGeodesics()
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		const int meshSize = mp.getMesh()->vertCount();
+		const int refPoint = mp.getRefPointIndex();
+
+		std::vector<double> values(meshSize);
+		for (int vIdx = 0; vIdx < meshSize; ++vIdx) {
+			values[vIdx] = mMeshes[obj]->calGeodesic(refPoint, vIdx);
+		}
+
+		addColorSignature(obj, values, StrColorGeodesics);
+	}
+
+	displaySignature(StrColorGeodesics.c_str());
+	updateDisplaySignatureMenu();
+	current_operation = Compute_Geodesics;
 }
