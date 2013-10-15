@@ -53,6 +53,7 @@ public:
 	void decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	double calHK(int v1, int v2, double timescale) const;
+	void calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
 	double calHeatTrace(double timescale) const;
 	double calBiharmonic(int v1, int v2) const;
 	double calMHW(int v1, int v2, double timescale) const;

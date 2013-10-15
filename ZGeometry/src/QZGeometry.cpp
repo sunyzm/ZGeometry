@@ -183,6 +183,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
+	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 
 	////	Edit	////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
@@ -1107,6 +1108,9 @@ void QZGeometryWindow::repeatOperation()
 	case Compute_SGW:
 		computeSGW();
 		break;
+	case Compute_Heat:
+		computeHeatTransfer();
+		break;
 	}
 }
 
@@ -1834,4 +1838,23 @@ void QZGeometryWindow::computeGeodesics()
 	displaySignature(StrColorGeodesics.c_str());
 	updateDisplaySignatureMenu();
 	current_operation = Compute_Geodesics;
+}
+
+void QZGeometryWindow::computeHeatTransfer()
+{
+	double tMultiplier = 1.0;
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		DifferentialMeshProcessor *mp = mProcessors[obj];
+		const int vertCount = mMeshes[obj]->vertCount();
+		const int vSrc = mp->getRefPointIndex();
+		std::vector<double> vHeat;
+
+		mp->calHeat(vSrc, tMultiplier, vHeat);
+
+		addColorSignature(obj, vHeat, StrColorHeat);
+	}
+
+	displaySignature(StrColorHeat.c_str());
+	updateDisplaySignatureMenu();
+	current_operation = Compute_Heat;
 }

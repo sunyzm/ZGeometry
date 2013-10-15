@@ -53,7 +53,7 @@ namespace ZGeom
 		uint rowCount() const { return mRowCount; }
 		uint colCount() const { return mColCount; }
 		uint nonzeroCount() const { return mElements.size(); }
-
+		T frobeniusNorm() const;
 		T getElemByIndex(uint index) const;
 		T& getElemByIndex(uint index);
 		T getElem(uint row, uint col) const;

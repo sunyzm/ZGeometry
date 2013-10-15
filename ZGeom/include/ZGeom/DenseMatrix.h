@@ -24,7 +24,7 @@ namespace ZGeom
 
 		T& operator () (uint i, uint j) { return mData[i*mCol + j]; }	// 0-based subscript access to matrix elements
 		T operator () (uint i, uint j) const { return mData[i*mCol + j]; } // 0-based subscript access to matrix elements
-
+		
 		bool empty() const { return mData == NULL; }
 		uint rowCount() const { return mRow; }
 		uint colCount() const { return mCol; }
@@ -36,7 +36,11 @@ namespace ZGeom
 		void copyRows(const DenseMatrix<T>& m2, int startingRow = 0);
 		void print(const std::string& filepath) const;
 
+		T rowSumNorm() const;
+		T frobeniusNorm() const;
+
 	private:
+		T elem(uint i, uint j) const { return mData[i * mCol + j]; }
 		T* mData;
 		uint mRow, mCol;
 	};
@@ -80,6 +84,27 @@ namespace ZGeom
 		mCol = m2.mCol;
 		mData = new T[mRow*mCol];
 		std::copy_n(m2.mData, mRow*mCol, mData);
+	}
+
+	template<typename T>
+	inline T DenseMatrix<T>::rowSumNorm() const
+	{
+		T rowSumMax(0);
+		for (int i = 0; i < mRow; ++i) {
+			T rowSum(0);
+			for (int j = 0; j < mCol; ++j) rowSum += std::fabs(mData[i*mCol + j]);
+			if (rowSum > rowSumMax) rowSumMax = rowSum;
+		}
+		return rowSumMax;
+	}
+
+	template<typename T>
+	inline T DenseMatrix<T>::frobeniusNorm() const
+	{
+		T sum(0);
+		for (int i = 0; i < mRow*mCol; ++i)
+			sum += mData[i] * mData[i];
+		return std::sqrt(sum);
 	}
 
 	template<typename T>

@@ -207,7 +207,7 @@ namespace ZGeom
 	template<typename T>
 	void SparseMatrix<T>::scale( T scalar )
 	{
-		std::for_each(mElements.begin(), mElements.end(), [=](MatElem<T>& elem){ elem.mVal *= scalar; });
+		for (MatElem<T>& elem : mElements) elem.mVal *= scalar;
 	}
 
 	template<typename T>
@@ -400,6 +400,14 @@ namespace ZGeom
 				mElements[k-1].mVal = nzVal[k-1];
 			}
 		}
+	}
+	
+	template<typename T>
+	T ZGeom::SparseMatrix<T>::frobeniusNorm() const
+	{
+		T sum(0);
+		for (auto e : mElements) sum += e.val() * e.val();
+		return std::sqrt(sum);
 	}
 
 	template<typename T>

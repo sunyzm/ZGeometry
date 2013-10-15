@@ -15,7 +15,6 @@ public:
 	virtual void operator () (double *in, double *out) { mul(in, out); }
 	void mul(double *in, double *out);
 	void mul(const VecNd& vin, VecNd& vout);
-	VecNd multiplier(const VecNd& vin);
 
 private:
 	int mRow;

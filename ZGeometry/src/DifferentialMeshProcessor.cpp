@@ -10,6 +10,8 @@
 #include <ZUtil/zassert.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenSystem.h>
+#include <ZGeom/SparseSymMatVecSolver.h>
+#include <ZGeom/MatVecArithmetic.h>
 #include "global.h"
 
 using namespace std;
@@ -902,4 +904,31 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 	const MeshProperty* feat = retrievePropertyByID_const(active_feature_id);
 	if (feat == NULL) return NULL;
 	else return dynamic_cast<const MeshFeatureList*>(feat);
+}
+
+void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
+{
+	const int vertCount = mesh->vertCount();
+	vHeat.resize(vertCount);
+	const double t = std::pow(mesh->getAvgEdgeLength(), 2) * tMultiplier;
+
+	const MeshLaplacian& laplacian = getMeshLaplacian(MeshLaplacian::CotFormula);
+	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
+	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
+	ZGeom::SparseMatrix<double> matA;
+
+	ZGeom::addMatMat(matW, matLc, -t, matA);	//A = W - t*Lc
+
+	ZGeom::VecNd vInitHeat(vertCount, 0);
+	vInitHeat[vSrc] = 1.0;
+
+	ZGeom::VecNd vSolvedHeat(vertCount, 0);
+	ZGeom::SparseSymMatVecSolver heatSolver(matA, true, true);
+	heatSolver.solve(1, vInitHeat.c_ptr(), vSolvedHeat.c_ptr());
+
+// 	mpEngineWrapper->addColVec(vSolvedHeat, "vSolved");
+// 	mpEngineWrapper->addColVec(vInitHeat, "vInit");
+// 	mpEngineWrapper->addSparseMat(matA, "matA");
+
+	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
 }

@@ -54,8 +54,8 @@ private slots:
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
 	void computeGeodesics();
+	void computeHeatTransfer();
 
-//	void displaySignature(int signatureID);
 	void displaySignature(QString sigName );
 	void displayNeighborVertices();
 	void displayDiffPosition();
@@ -141,7 +141,7 @@ private:
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
 		  Compute_Eig_Func, Compute_Biharmonic,
-		  Compute_Geodesics,
+		  Compute_Geodesics, Compute_Heat,
 		  None} current_operation;
 
 	QSignalMapper*		  laplacianSignalMapper;	
