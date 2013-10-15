@@ -459,13 +459,9 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_Minus:
-		mProcessors[0]->setConstrainWeight(mProcessors[0]->getConstrainWeight()*0.5);
-		qout.output("Constrain weight: " + QString::number(mProcessors[0]->getConstrainWeight()));
 		break;
 
 	case Qt::Key_Equal:
-		mProcessors[0]->setConstrainWeight(mProcessors[0]->getConstrainWeight()*2);
-		qout.output("Constrain weight: " + QString::number(mProcessors[0]->getConstrainWeight()));
 		break;
 
 	case Qt::Key_X:

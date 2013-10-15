@@ -59,13 +59,10 @@ public:
 	double calMHW(int v1, int v2, double timescale) const;
 	double calSGW(int v1, int v2, double timescale) const;	
 	void computeSGW();
-	void computeMexicanHatWavelet(std::vector<double>& vMHW, double scale, int wtype = 1);
 
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
-	void computeKernelSignature(double timescale, KernelType kernelType);
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
-	void computeKernelDistanceSignature(double timescale, KernelType kernelType, int refPoint);
 	void computeSimilarityMap1(int refPoint);
 	void computeSimilarityMap2(int refPoint);
 	void computeSimilarityMap3(int refPoint);
@@ -75,26 +72,22 @@ public:
 
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
-	void deform(const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHanldelPos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType);
-	void reconstructExperimental1(std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint = false) const;
 	
 	// ---- boolean query ---- //
-	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return vMeshLaplacian[laplacianType].isLaplacianConstructed(); }
-	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !vMHB[laplacianType].empty(); }
+	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
+	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
 
-	// ---- attributes access --- //
-	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return vMeshLaplacian[laplacianType]; }
-	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return vMHB[laplacianType]; }
+	// ---- attribute access --- //
+	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
+	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
-	int  getRefPointIndex() const { return pRef; }
-	void setRefPointIndex(int i) { pRef = i; }
-	void setRefPointPosition(int x, int y, int z) { posRef = Vector3D(x, y, z); }
+	int  getRefPointIndex() const { return mRefVert; }
+	void setRefPointIndex(int i) { mRefVert = i; }
+	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
 	const MeshFeatureList* getActiveFeatures() const;
-	void setActiveFeaturesByID(int feature_id);
-	int getActiveHandle() const { return active_handle; }
-	void setActiveHandle(int h) { active_handle = h; }
-	int getConstrainWeight() const { return constrain_weight; }
-	void setConstrainWeight(double w) { constrain_weight = w; }
+	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
+	int getActiveHandle() const { return mActiveHandle; }
+	void setActiveHandle(int h) { mActiveHandle = h; }
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
 	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
 
@@ -103,19 +96,15 @@ public:
 
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
-	MatlabWrapper matlabWrapper;
 
-	int pRef;
-	Vector3D posRef;
+	int mRefVert;
+	Vector3D mRefPos;
 	std::map<int, Vector3D> mHandles;
-	int active_handle;
+	int mActiveHandle;
+	int mActiveFeature;
 
-	double constrain_weight;
-	int active_feature_id;
-	std::vector<double> m_vTimescales;
-
-	MeshLaplacian vMeshLaplacian[MeshLaplacian::LaplacianTypeCount];
-	ManifoldHarmonics vMHB[MeshLaplacian::LaplacianTypeCount];
+	MeshLaplacian mMeshLaplacians[MeshLaplacian::LaplacianTypeCount];
+	ManifoldHarmonics mMHBs[MeshLaplacian::LaplacianTypeCount];
 	MeshLaplacian::LaplacianType mActiveLaplacianType;
 	ZGeom::DenseMatrix<double> mMatWavelet;
 };

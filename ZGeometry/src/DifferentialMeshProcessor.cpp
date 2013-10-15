@@ -54,22 +54,20 @@ DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
 	mpEngineWrapper = NULL;
 	mesh = NULL;
-	active_feature_id = FEATURE_ID;
-	pRef = 0;
+	mActiveFeature = FEATURE_ID;
+	mRefVert = 0;
 	m_size = 0;
-	active_handle = -1;	
-	constrain_weight = 0.1;
+	mActiveHandle = -1;	
 }
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
 {
 	mpEngineWrapper = nullptr;
 	mesh = nullptr;
-	active_feature_id = FEATURE_ID;
-	pRef = 0;
+	mActiveFeature = FEATURE_ID;
+	mRefVert = 0;
 	m_size = 0;
-	active_handle = -1;
-	constrain_weight = 0.1;
+	mActiveHandle = -1;
 
 	init_lite(tm, originalMesh);
 }
@@ -86,8 +84,8 @@ void DifferentialMeshProcessor::init(CMesh* tm, MatlabEngineWrapper* e)
 	mpEngineWrapper = e;
 	//matlabWrapper.setEngine(e);
 	m_size = mesh->vertCount();
-	pRef = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	posRef = mesh->getVertex(pRef)->getPosition();
+	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
+	mRefPos = mesh->getVertex(mRefVert)->getPosition();
 }
 
 void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
@@ -95,15 +93,15 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 	mesh = tm;
 	ori_mesh = originalMesh;
 	m_size = mesh->vertCount();
-	pRef = 0;
-	posRef = mesh->getVertex(0)->getPosition();
+	mRefVert = 0;
+	mRefPos = mesh->getVertex(0)->getPosition();
 }
 
 void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (hasLaplacian(laplacianType)) return;
 	
-	MeshLaplacian& laplacian = vMeshLaplacian[laplacianType];
+	MeshLaplacian& laplacian = mMeshLaplacians[laplacianType];
 	switch(laplacianType)
 	{
 	case MeshLaplacian::Umbrella:
@@ -117,7 +115,7 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 		{
 			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
 			double para2 = para1;
-			vMeshLaplacian[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
+			mMeshLaplacians[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
 		}
 		break;
 
@@ -125,12 +123,12 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 		{
 			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
 			double para2 = mesh->getAvgEdgeLength() / 2;
-			vMeshLaplacian[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
+			mMeshLaplacians[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
 		}
 		break;
 
 	case MeshLaplacian::IsoApproximate:
-		vMeshLaplacian[laplacianType].constructFromMesh5(mesh);                
+		mMeshLaplacians[laplacianType].constructFromMesh5(mesh);                
 		break;
 
 	default: throw std::logic_error("Unrecognized Laplacian type");
@@ -145,17 +143,17 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
 	Engine *ep = mpEngineWrapper->getEngine();
-	vMeshLaplacian[laplacianType].decompose(nEigFunc, mpEngineWrapper, vMHB[laplacianType]);
+	mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType]);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
-	vMHB[laplacianType].load(path);
+	mMHBs[laplacianType].load(path);
 }
 
 void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
-	vMHB[laplacianType].save(path);	
+	mMHBs[laplacianType].save(path);	
 }
 
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
@@ -172,28 +170,6 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
 	else mHandles.insert(std::make_pair(hIdx, mesh->getVertex(hIdx)->getPosition()));	 
-}
-
-void DifferentialMeshProcessor::computeMexicanHatWavelet( std::vector<double>& vMHW, double scale, int wtype /*= 1*/ )
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-	vMHW.resize(m_size);
-
-	if (wtype == 1) {
-		for (int vIdx = 0; vIdx < m_size; ++vIdx) {
-			vMHW[vIdx] = calMHW(pRef, vIdx, scale);
-		}
-	}
-	else if (wtype == 2) {
-		for (int vIdx = 0; vIdx < m_size; ++vIdx) {
-			double sum = 0;
-			for (int k = 0; k < mhb.eigVecCount(); ++k)	{
-				double coef = pow(mhb.getEigVal(k) * scale, 2.0);
-				sum += coef * exp(-coef) * mhb.getEigVec(k)[vIdx] * mhb.getEigVec(k)[pRef];
-			}
-			vMHW[vIdx] = sum;
-		}
-	}
 }
 
 void DifferentialMeshProcessor::calGeometryDWT()
@@ -253,222 +229,6 @@ void DifferentialMeshProcessor::calGeometryDWT()
 			}
 			ofs << endl;
 		}
-	}
-}
-
-void DifferentialMeshProcessor::reconstructExperimental1( std::vector<double>& vx, std::vector<double>& vy, std::vector<double>& vz, bool withConstraint /*= false*/ ) const
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	Engine *ep = mpEngineWrapper->getEngine();
-
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
-
-	vx.resize(m_size);
-	vy.resize(m_size);
-	vz.resize(m_size);
-
-	vector<double> vxcoord0, vycoord0, vzcoord0;
-	mesh->getCoordinateFunction(0, vxcoord0);
-	mesh->getCoordinateFunction(1, vycoord0);
-	mesh->getCoordinateFunction(2, vzcoord0);
-	
-	vector<double> vWeight;
-	mLaplacian.getW().getDiagonal(vWeight);
-	vector<double> xWeightedCoord, yWeightedCoord, zWeightedCoord;
-	VectorPointwiseProduct(vxcoord0, vWeight, xWeightedCoord);
-	VectorPointwiseProduct(vycoord0, vWeight, yWeightedCoord);
-	VectorPointwiseProduct(vzcoord0, vWeight, zWeightedCoord);
-
-	int scales = 1;
-	double t_scales[4] = {80, 40, 20, 10};
-	vector<vector<double> > SGW;
-	
-//	scaling function
-	for (int x = 0; x < m_size; ++x)
-	{
-		SGW.push_back(vector<double>());
-		SGW.back().resize(m_size);
- 
-		for (int y = 0; y < m_size; ++y)
-		{
-			double itemSum = 0;
-			for (int k = 0; k < mhb.eigVecCount(); ++k)
-			{
- //				itemSum += exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
- //				itemSum += exp(-1.0) * exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				itemSum += exp(-1.0) * exp(-mhb.getEigVal(k)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-			}
-			SGW.back().at(y) = itemSum;
-		}
-	}
- 
-//	wavelet functions
-	for (int s = 0; s < scales; ++s)
-	{
-		for (int x = 0; x < m_size; ++x)
-		{
-			SGW.push_back(vector<double>());
-			SGW.back().resize(m_size);
- 
-			for (int y = 0; y < m_size; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.eigVecCount(); ++k)
-				{
-					double coef = mhb.getEigVal(k) * t_scales[s];
-					itemSum += coef * exp(-coef) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				}
-				SGW.back().at(y) = itemSum;
-			}
-		}
-	}
- 
-	int sizeCoeff = (scales + 1) * m_size;
-	vector<double> vxCoeff, vyCoeff, vzCoeff;
-	vxCoeff.resize(sizeCoeff);
-	vyCoeff.resize(sizeCoeff);
-	vzCoeff.resize(sizeCoeff);
-
-	assert(SGW.size() == sizeCoeff);
-
-	for (int i = 0; i < sizeCoeff; ++i)
-	{
-		double itemSumX = 0, itemSumY = 0, itemSumZ = 0;
-		for (int j = 0; j < m_size; ++j)
-		{
-// 				itemSumX += SGW[i][j] * xWeightedCoord[j];
-// 				itemSumY += SGW[i][j] * yWeightedCoord[j];
-// 				itemSumZ += SGW[i][j] * zWeightedCoord[j];
-
-				itemSumX += SGW[i][j] * vxcoord0[j];
-				itemSumY += SGW[i][j] * vycoord0[j];
-				itemSumZ += SGW[i][j] * vzcoord0[j];
-		}
-		vxCoeff[i] = itemSumX;
-		vyCoeff[i] = itemSumY;
-		vzCoeff[i] = itemSumZ;
-	}
-
-	double weightI = 0.1;
-	if (withConstraint)
-	{
-		SGW.push_back(vector<double>());
-		SGW.back().resize(m_size, 0.0);
-		SGW.back().at(pRef) = weightI;
-		
-		vxCoeff.push_back(posRef.x * weightI);
-		vyCoeff.push_back(posRef.y * weightI);
-		vzCoeff.push_back(posRef.z * weightI);
-	}
-	
-/*
-	ofstream of1("output/sgw.dat"), of2("output/coeff.dat");
-	for (int i = 0; i < sizeCoeff; ++i)
-	{
-		for (int j = 0; j < m_size; ++j)
-		{
-			of1 << SGW[i].at[j] << ' ';
-		}
-		of1 << endl;
-	}
-
-	for (int i = 0; i < sizeCoeff; ++i)
-	{
-		of2 << vxCoeff[i] << endl;
-	}
-
-	VectorPointwiseDivide(xWeightedCoord, vWeight, vx);
-	VectorPointwiseDivide(yWeightedCoord, vWeight, vy);
-	VectorPointwiseDivide(zWeightedCoord, vWeight, vz);
-*/
-
-// 	matlab_cgls(m_ep, SGW, vxCoeff, vx);
-// 	matlab_cgls(m_ep, SGW, vyCoeff, vy);
-// 	matlab_cgls(m_ep, SGW, vzCoeff, vz);
-
-	matlab_scgls(ep, SGW, vxCoeff, vx);
-	matlab_scgls(ep, SGW, vyCoeff, vy);
-	matlab_scgls(ep, SGW, vzCoeff, vz);	
- 
-//  VectorPointwiseDivide(vx, vWeight, vx);
-//  VectorPointwiseDivide(vy, vWeight, vy);
-//  VectorPointwiseDivide(vz, vWeight, vz);
-}
-
-void DifferentialMeshProcessor::deform( const std::vector<int>& vHandleIdx, const std::vector<Vector3D>& vHandlePos, const std::vector<int>& vFreeIdx, std::vector<Vector3D>& vDeformedPos, DeformType dfType )
-{
-	const MeshLaplacian& mLaplacian = vMeshLaplacian[MeshLaplacian::CotFormula];
-
-	if (vHandleIdx.size() != vHandlePos.size())
-		throw logic_error("Error: DifferentialMeshProcessor::deform; parameters size incompatible!");
-	
-	vDeformedPos.clear();
-	
-	if (dfType == Simple)
-	{
-		int hIdx = vHandleIdx[0];		// only use the first handle to deform
-		Vector3D handleTrans = vHandlePos[0] - mesh->getVertex(hIdx)->getPosition();
-		
-		int nFreeVertices = vFreeIdx.size();
-		vector<double> vDist2Handle;
-		double distMax = 0;
-		for (int i = 0; i < nFreeVertices; ++i)
-		{
-			double dist = mesh->calGeodesic(hIdx, vFreeIdx[i]);
-			vDist2Handle.push_back(dist);
-			if (dist > distMax) distMax = dist;
-		}
-				
-		for (int i = 0; i < nFreeVertices; ++i)
-		{
-			Vector3D newPos = mesh->getVertex(vFreeIdx[i])->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
-			vDeformedPos.push_back(newPos);
-		}
-		
-	}
-	else if (dfType == Laplace)
-	{
-		vector<int> vI, vJ;
-		vector<double> vS, vBX, vBY, vBZ;
-		vector<double> vRX, vRY, vRZ;
-		int nFree = vFreeIdx.size();
-		int n = this->m_size, //m = n * 2 - nFree;
-			m = n + vHandleIdx.size();
-				
-		int nz_laplacian = vI.size();
-		mLaplacian.getLS().convertToCOO(vI, vJ, vS, ZGeom::MAT_FULL);
-		
-		vector<double> xCoord, yCoord, zCoord;
-		mesh->getCoordinateFunction(0, xCoord);
-		mesh->getCoordinateFunction(1, yCoord);
-		mesh->getCoordinateFunction(2, zCoord);
-		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, xCoord, vBX);
-		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, yCoord, vBY);
-		matlabWrapper.SparseMatVecMul(n, n, vI, vJ, vS, zCoord, vBZ);
-
-		int posII = n;
-		for (int h = 0; h < vHandleIdx.size(); ++h)
-		{
-			vI.push_back(posII);
-			vJ.push_back(vHandleIdx[h]);
-			vS.push_back(1);
-			vBX.push_back(vHandlePos[h].x);
-			vBY.push_back(vHandlePos[h].y);
-			vBZ.push_back(vHandlePos[h].z);
-			posII += 1;
-		}
-
-		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBX, vRX);		//A*R=B
-		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBY, vRY);
-		matlabWrapper.SparseBiConjugateGradient(m, n, vI, vJ, vS, vBZ, vRZ);
-
-		for (int i = 0; i < vFreeIdx.size(); ++i)
-		{
-			Vector3D newPos = Vector3D(vRX[vFreeIdx[i]], vRY[vFreeIdx[i]], vRZ[vFreeIdx[i]]);
-			vDeformedPos.push_back(newPos);
-		}
-
 	}
 }
 
@@ -563,69 +323,6 @@ void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, Kerne
 	std::transform( normalized_values.begin(), normalized_values.end(), normalized_values.begin(), [=](double v){return v / normalize_factor;} );
 }
 
-
-void DifferentialMeshProcessor::computeKernelSignature( double timescale, KernelType kernelType )
-{
-	MeshFunction *mf = new MeshFunction(m_size);
-
-	switch(kernelType)
-	{
-	case HEAT_KERNEL:
-		mf->setIDandName(SIGNATURE_HKS, "HKS");		
-		break;
-
-	case MHW_KERNEL:
-		mf->setIDandName(SIGNATURE_MHWS, "Mexican_Hat_Signature");
-		break;
-	
-	case SGW_KERNEL:
-		mf->setIDandName(SIGNATURE_SGWS, "Spectral_Graph_Wavelet_Signature");
-		break;
-	}
-	
-	calKernelSignature(timescale, kernelType, mf->getMeshFunction());
-	replaceProperty(mf);	
-}
-
-void DifferentialMeshProcessor::computeKernelDistanceSignature( double timescale, KernelType kernelType, int refPoint )
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	if (refPoint < 0 || refPoint >= m_size)
-		throw runtime_error("Error computeKernelDistanceSignature: invalid reference point");
-
-	MeshFunction *mf = new MeshFunction(m_size);
-	TransferFunc pTF = &heatKernelTransferFunc;
-
-	switch(kernelType)
-	{
-	case HEAT_KERNEL:
-		pTF = &heatKernelTransferFunc;
-		mf->setIDandName(SIGNATURE_HK, "HK");		
-		break;
-	case MHW_KERNEL:
-		pTF = &mhwTransferFunc1;
-		mf->setIDandName(SIGNATURE_MHW, "MHW");		
-		break;
-	case SGW_KERNEL:
-		pTF = &mhwTransferFunc1;
-		mf->setIDandName(SIGNATURE_SGW, "SGW");		
-		break;
-	}
-	
-	for (int i = 0; i < m_size; ++i)
-	{
-		double sum = 0;
-		for (int k = 0; k < mhb.eigVecCount(); ++k)
-		{
-			sum += (*pTF)(mhb.getEigVal(k), timescale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[refPoint];
-		}
-		mf->setValue(i, sum);
-	}
-
-	replaceProperty(mf);
-}
-
 void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vector<double>& timescales, KernelType kernelType )
 {
 	MeshFeatureList *mfl = new MeshFeatureList;
@@ -649,26 +346,21 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 	case HEAT_KERNEL:
 		removePropertyByID(FEATURE_HKS);
 		mfl->setIDandName(FEATURE_HKS, "Feature_HKS");
-		active_feature_id = FEATURE_HKS;
+		mActiveFeature = FEATURE_HKS;
 		break;
 	case MHW_KERNEL:
 		removePropertyByID(FEATURE_MHWS);
 		mfl->setIDandName(FEATURE_MHWS, "Feature_MHWS");
-		active_feature_id = FEATURE_MHWS;
+		mActiveFeature = FEATURE_MHWS;
 		break;
 	case SGW_KERNEL:
 		removePropertyByID(FEATURE_SGWS);
 		mfl->setIDandName(FEATURE_SGWS, "Feature_SGWS");
-		active_feature_id = FEATURE_SGWS;
+		mActiveFeature = FEATURE_SGWS;
 		break;
 	}
 
 	addProperty(mfl);
-}
-
-void DifferentialMeshProcessor::setActiveFeaturesByID( int feature_id )
-{
-	active_feature_id = feature_id;
 }
 
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
@@ -710,7 +402,6 @@ double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) con
 double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += std::exp(-mhb.getEigVal(k) * timescale);
@@ -721,7 +412,6 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
@@ -901,7 +591,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 
 const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 {
-	const MeshProperty* feat = retrievePropertyByID_const(active_feature_id);
+	const MeshProperty* feat = retrievePropertyByID_const(mActiveFeature);
 	if (feat == NULL) return NULL;
 	else return dynamic_cast<const MeshFeatureList*>(feat);
 }
