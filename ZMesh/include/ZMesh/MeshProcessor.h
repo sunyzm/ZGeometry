@@ -102,7 +102,7 @@ public:
 	bool addProperty(MeshProperty* newProperty);
 	void replaceProperty(MeshProperty* newProperty);
 	MeshProperty* retrievePropertyByID(int rid);
-	const MeshProperty* retrievePropertyByID_const(int rid) const;
+	const MeshProperty* retrievePropertyByID(int rid) const;
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);
 	void removePropertyByName(const std::string& rn);

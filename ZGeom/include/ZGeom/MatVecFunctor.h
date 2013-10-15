@@ -4,15 +4,15 @@
 namespace ZGeom
 {
 
-    class MatVecFunctor
-    {
-    public:
-        virtual void operator() (double *in, double* out) = 0;
-        int getOrder() const { return mOrder; }
+class MatVecFunctor
+{
+public:
+    virtual void operator() (double *in, double* out) = 0;
+    int getOrder() const { return mOrder; }
 
-    protected:
-        int mOrder;
-    };
+protected:
+    int mOrder;
+};
 
 }
 

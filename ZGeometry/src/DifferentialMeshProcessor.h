@@ -45,8 +45,6 @@ public:
 
 	void init(CMesh* tm, ZGeom::MatlabEngineWrapper* e);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
-	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	
 	// ---- computation ---- //
 	void constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
@@ -67,32 +65,31 @@ public:
 	void computeSimilarityMap2(int refPoint);
 	void computeSimilarityMap3(int refPoint);
 
-	void computeDWTCoefficient(std::vector<double>& vCoeff, const std::vector<double>& vScales, const std::vector<double>& vfunc);
-	void calGeometryDWT();
-
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
-	
-	// ---- boolean query ---- //
-	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
-	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
-
-	// ---- attribute access --- //
-	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
-	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
-	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
-	int  getRefPointIndex() const { return mRefVert; }
-	void setRefPointIndex(int i) { mRefVert = i; }
-	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
-	const MeshFeatureList* getActiveFeatures() const;
-	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
 	int getActiveHandle() const { return mActiveHandle; }
 	void setActiveHandle(int h) { mActiveHandle = h; }
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
 	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
 
+	// ---- attribute access --- //
 	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }
+
+	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
+	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
+	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
+	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
+
+	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelet; }
+
+	int  getRefPointIndex() const { return mRefVert; }
+	void setRefPointIndex(int i) { mRefVert = i; }
+	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
+	const MeshFeatureList* getActiveFeatures() const;
+	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
 
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;

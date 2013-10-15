@@ -172,66 +172,6 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else mHandles.insert(std::make_pair(hIdx, mesh->getVertex(hIdx)->getPosition()));	 
 }
 
-void DifferentialMeshProcessor::calGeometryDWT()
-{
-// output: 1. coordinates of all vertices
-//         2. wavelets coefficients of the x-coordinates
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	ofstream ofs("output/coord.dat");
-	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPosition().x << ' ';
-	ofs << endl;
-	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPosition().y << ' ';
-	ofs << endl;
-	for (int i = 0; i < m_size; ++i)
-		ofs << mesh->getVertex(i)->getPosition().z << ' ';
-	ofs.close();
-
-	int totalScales = 4;
-	double lambdaMax = mhb.getEigVal(mhb.eigVecCount()-1);
-	double lambdaMin = lambdaMax / pow(3.0, totalScales-1);
-	vector<double> vScales;
-	vScales.push_back(2.0/lambdaMin);
-	for (int l = 1; l < totalScales; ++l)
-	{
-		vScales.push_back(vScales.back()/3);
-	}
-
-	ofs.open("output/wavelets.txt");
-
-	for (int x = 0; x < m_size; ++x)
-	{
-		for (int y = 0; y < m_size; ++y)
-		{
-			double itemSum = 0;
-			for (int k = 0; k < mhb.eigVecCount(); ++k)
-			{
-//				itemSum += exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				itemSum += exp(-1.0) * exp(-pow(mhb.getEigVal(k) / (0.6*lambdaMin), 4)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-			}
-			ofs << itemSum << ' ';
-		}
-		ofs << endl;
-
-		for (int l = 0; l < totalScales; ++l)
-		{
-			for (int y = 0; y < m_size; ++y)
-			{
-				double itemSum = 0;
-				for (int k = 0; k < mhb.eigVecCount(); ++k)
-				{
-//					itemSum += TransferFunc1(mhb.getEigVal(k) * vScales[l]) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-					itemSum += pow(mhb.getEigVal(k) * vScales[l], 2) * exp(-pow(mhb.getEigVal(k) * vScales[l],2)) * mhb.getEigVec(k)[x] * mhb.getEigVec(k)[y];
-				}
-				ofs << itemSum << ' ';
-			}
-			ofs << endl;
-		}
-	}
-}
-
 void DifferentialMeshProcessor::computeSGW()
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
@@ -591,7 +531,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 
 const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 {
-	const MeshProperty* feat = retrievePropertyByID_const(mActiveFeature);
+	const MeshProperty* feat = retrievePropertyByID(mActiveFeature);
 	if (feat == NULL) return NULL;
 	else return dynamic_cast<const MeshFeatureList*>(feat);
 }

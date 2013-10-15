@@ -14,26 +14,6 @@ double MeshFunction::operator[] (int idx) const
 	return m_function[idx];
 }
 
-double MeshFunction::InnerProduct( const MeshFunction& f1, const MeshFunction& f2 )
-{
-	if (f1.m_size != f2.m_size)
-		throw std::runtime_error("Inner product of incompatible manifold function");
-
-	int dim = f1.m_size;
-	double retval = 0.0;
-	for (int i = 0; i < dim; ++i)
-	{
-		retval += f1.m_function[i] * f2.m_function[i];
-	}
-
-	return retval;
-}
-
-double MeshFunction::norm() const
-{
-	return MeshFunction::InnerProduct(*this, *this);
-}
-
 void MeshFunction::copyValues( const std::vector<double>& values )
 {
 	assert(m_size == values.size());
@@ -60,18 +40,16 @@ void MeshProcessor::setMesh( CMesh* newMesh )
 
 MeshProperty* MeshProcessor::retrievePropertyByID( int rid )
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
-	{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter) {
 		if ((*iter)->id == rid)
 			return *iter;
 	}
 	return NULL;
 }
 
-const MeshProperty* MeshProcessor::retrievePropertyByID_const( int rid ) const
+const MeshProperty* MeshProcessor::retrievePropertyByID( int rid ) const
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
-	{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter) {
 		if ((*iter)->id == rid)
 			return *iter;
 	}
@@ -80,8 +58,7 @@ const MeshProperty* MeshProcessor::retrievePropertyByID_const( int rid ) const
 
 MeshProperty* MeshProcessor::retrievePropertyByName( const std::string& rn )
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
-	{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter) {
 		if ((*iter)->name == rn)
 			return *iter;
 	}
@@ -101,10 +78,8 @@ void MeshProcessor::removePropertyByID( int rid )
 
 void MeshProcessor::removePropertyByName( const std::string& rn )
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
-	{
-		if ((*iter)->name == rn)
-		{
+	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter) {
+		if ((*iter)->name == rn) {
 			vProperties.erase(iter);
 			break;
 		}
@@ -113,10 +88,7 @@ void MeshProcessor::removePropertyByName( const std::string& rn )
 
 MeshProcessor::~MeshProcessor()
 {
-	for (auto iter = vProperties.begin(); iter != vProperties.end(); ++iter)
-	{
-		delete *iter;
-	}
+	for (MeshProperty* p : vProperties) delete p;	
 }
 
 void MeshProcessor::replaceProperty( MeshProperty* newProperty )
@@ -127,7 +99,5 @@ void MeshProcessor::replaceProperty( MeshProperty* newProperty )
 
 MeshFeatureList::~MeshFeatureList()
 {
-	std::for_each(m_vFeatures.begin(), m_vFeatures.end(), [](MeshFeature* iter){ 
-		delete iter;
-	});
+	for (MeshFeature* f : m_vFeatures) delete f;
 }
