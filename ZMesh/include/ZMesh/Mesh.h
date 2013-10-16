@@ -457,11 +457,7 @@ public:
 		}
 		return vColorAttr;
 	}
-
 	/*************************************************************************/
-
-	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
-	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
 
 private:
 	void	clearMesh();
@@ -485,6 +481,10 @@ private:
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 	void	clearVertexMark();
-};	//CMesh
+
+	/* helper functions */
+	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
+	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
+};//CMesh
 
 #endif

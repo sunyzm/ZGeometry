@@ -13,6 +13,7 @@ const std::string StrColorHKS			 = "vert_color_hks";
 const std::string StrColorHK			 = "vert_color_hk";
 const std::string StrColorBiharmonic	 = "vert_color_biharmonic";
 const std::string StrColorHeat			 = "vert_color_heat";
+const std::string StrColorHeatMarkNegative = "vert_color_heat_mark_negative";
 const std::string StrColorMHWS			 = "vert_color_mhws";
 const std::string StrColorMHW			 = "vert_color_mhw";
 const std::string StrColorSGW			 = "vert_color_sgw";

@@ -189,8 +189,8 @@ void MatlabWrapper::SparseMatVecMul( int m_size, int n_size, const std::vector<i
 	DimM = mxCreateDoubleMatrix(1, 1, mxREAL);
 	DimN = mxCreateDoubleMatrix(1, 1, mxREAL);
 	double *pII = mxGetPr(II), *pJJ = mxGetPr(JJ), 
-           *pSS = mxGetPr(SS), *pXX = mxGetPr(XX),
-           *pDimM = mxGetPr(DimM), *pDimN = mxGetPr(DimN);
+		   *pSS = mxGetPr(SS), *pXX = mxGetPr(XX),
+		   *pDimM = mxGetPr(DimM), *pDimN = mxGetPr(DimN);
 
 	pDimM[0] = m_size; pDimN[0] = n_size;
 

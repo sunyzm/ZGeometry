@@ -6,13 +6,15 @@
 namespace ZGeom
 {
 
-const float ColorMagenta[] = {1.f, 0, 1.f};
-const float ColorGreen[]   = {0, 1.f, 0};
-const float ColorRed[]     = {1.f, 0, 0};
-const float ColorBlue[]    = {0, 0, 1.f};
-const float ColorPurple[]  = {159.f/255.f, 0, 197.f/255.f};
-const float ColorCyan[]   = {0, 1.f, 1.f};
-const float ColorYellow[]  = {1.f, 1.f, 0};
+const float ColorBlack[]   = {0, 0, 0, 1.f};
+const float ColorWhite[]   = {1.f, 1.f, 1.f, 1.f};
+const float ColorMagenta[] = {1.f, 0, 1.f, 1.f};
+const float ColorGreen[]   = {0, 1.f, 0, 1.f};
+const float ColorRed[]     = {1.f, 0, 0, 1.f};
+const float ColorBlue[]    = {0, 0, 1.f, 1.f};
+const float ColorPurple[]  = {159.f/255.f, 0, 197.f/255.f, 1.f};
+const float ColorCyan[]    = {0, 1.f, 1.f, 1.f};
+const float ColorYellow[]  = {1.f, 1.f, 0, 1.f};
 
 const float* RGBColors[];
 
@@ -21,13 +23,15 @@ class Colorf : public Vec4s
 public:
 	Colorf();
 	Colorf(float r , float g , float b, float a = 1);
-	Colorf(float *c);
+	Colorf(const float *c) { setAs(c); }
+
 	float r() const { return mVal[0]; }
 	float g() const { return mVal[1]; }
 	float b() const { return mVal[2]; }
 	float a() const { return mVal[3]; }
 	float toGrayscale() const { return 0.2989f * r() + 0.5870f * g() + 0.1140f * b(); }
 	void falseColor(float gray, float alpha = 1.f);
+	void setAs(const float *c);
 	operator const float* () const { return mVal; }
 };
 

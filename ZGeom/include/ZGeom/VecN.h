@@ -10,7 +10,6 @@
 #include "common.h"
 
 //#define USE_PPL
-
 #ifdef USE_PPL
 #include <ppl.h>
 #endif
@@ -83,6 +82,7 @@ public:
 
 	T norm1() const;
 	T norm2() const;
+	T pNorm(double p) const;
 	T normEuclidean() const { return norm2(); }
 	T dot(const VecN<T>& v2) const;
 	T sum() const;
@@ -97,14 +97,6 @@ private:
 	T *mVec;
 	int mDim;
 };
-
-template<typename T>
-inline void ZGeom::VecN<T>::copyElements( const VecN<T>& v2, int startingPos )
-{
-	if (mDim - startingPos < v2.size())
-		throw std::runtime_error("Error VecN::copyElements: Insufficient size in destination VecN");
-	std::copy_n(v2.mVec, v2.size(), mVec + startingPos);
-}
 
 template<typename T>
 class VecN<T>::iterator : public std::iterator<std::bidirectional_iterator_tag, T>
@@ -220,9 +212,6 @@ inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
 	}
 	return *this;
 }
-
-/* end of defining constructors and assignment operator */
-
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
@@ -238,8 +227,20 @@ inline void VecN<T>::resize(int n, T val)
 	for (int i = 0; i < mDim; ++i) mVec[i] = val;
 }
 
+/* end of defining constructors and assignment operator */
+
+
+
 template<typename T>
-inline void ZGeom::VecN<T>::expandTo( int n )
+inline void VecN<T>::copyElements( const VecN<T>& v2, int startingPos )
+{
+	if (mDim - startingPos < v2.size())
+		throw std::runtime_error("Error VecN::copyElements: Insufficient size in destination VecN");
+	std::copy_n(v2.mVec, v2.size(), mVec + startingPos);
+}
+
+template<typename T>
+inline void VecN<T>::expandTo( int n )
 {
 	if (n < mDim) throw runtime_error("VecN cannot be expanded to a smaller size than before");
 	else if (n == mDim) return;
@@ -342,6 +343,15 @@ inline T VecN<T>::norm2() const
 	T sum(0);
 	for (int i = 0; i < mDim; ++i) sum += std::pow(mVec[i], 2);
 	return std::sqrt(sum);
+}
+
+template<typename T>
+inline T ZGeom::VecN<T>::pNorm( double p ) const
+{
+	assert( p > 0);
+	double sum(0);
+	for (int i = 0; i < mDim; ++i) sum += std::pow(mVec[i], p);
+	return std::pow(sum, 1.0/p);
 }
 
 /* definitions for dot product */

@@ -6,15 +6,7 @@
 #include <ZGeom/Laplacian.h>
 #include <ZGeom/SparseMatrix.h>
 #include <ZGeom/EigenSystem.h>
-#include <ZGeom/MatlabEngineWrapper.h>
 #include <ZMesh/ZMesh.h>
-
-class ManifoldBasis
-{
-public:
-	std::vector<double> m_vec;	// eigenvector
-	double m_val;			    // eigenvalue
-};
 
 class ManifoldHarmonics : public ZGeom::EigenSystem
 {
@@ -49,7 +41,5 @@ public:
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
 
 private:
-
 	MeshLaplacianConstruct mConstructFunc[LaplacianTypeCount];
-
 };

@@ -60,6 +60,18 @@ void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::C
 	}
 }
 
+void signatureToColorsWithNegativeMark(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors)
+{
+	std::vector<double> normalizedSig;
+	normalizeSignature(vOriSig, normalizedSig);
+	size_t vSize = normalizedSig.size();
+	vColors.resize(vSize);
+	for (int i = 0; i < vSize; ++i) {
+		vColors[i].falseColor(normalizedSig[i]);
+		if (vOriSig[i] < 0) vColors[i].setAs(ZGeom::ColorBlack);
+	}
+}
+
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) 
 	: QMainWindow(parent, flags), mEngineWrapper(256)
 {
@@ -1786,13 +1798,13 @@ void QZGeometryWindow::revert()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName )
+void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName, bool markNegative /*= false*/ )
 {
 	if (!mMeshes[obj]->hasAttr(sigName)) mMeshes[obj]->addColorAttr(sigName);
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
-	signaturesToColors(vVals, vColors);
-
-	mRenderManagers[obj]->mColorSignatureName = sigName;
+	
+	if (markNegative) signatureToColorsWithNegativeMark(vVals, vColors);
+	else signaturesToColors(vVals, vColors);	
 
 	std::vector<double>& vSig = mMeshes[obj]->addAttr< std::vector<double> >(AttrRate::VERTEX, StrOriginalSignature, CPP_VECTOR_DOUBLE).getValue();
 	vSig = vVals;
@@ -1846,11 +1858,11 @@ void QZGeometryWindow::computeHeatTransfer()
 		std::vector<double> vHeat;
 
 		mp->calHeat(vSrc, tMultiplier, vHeat);
-
-		addColorSignature(obj, vHeat, StrColorHeat);
+		addColorSignature(obj, vHeat, StrColorHeat, false);
+		addColorSignature(obj, vHeat, StrColorHeatMarkNegative, true);		
 	}
 
-	displaySignature(StrColorHeat.c_str());
+	displaySignature(StrColorHeatMarkNegative.c_str());
 	updateDisplaySignatureMenu();
 	current_operation = Compute_Heat;
 }

@@ -118,7 +118,7 @@ private:
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
-	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
+	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName, bool markNegative = false); 
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 
 private:	

@@ -1517,9 +1517,9 @@ void CMesh::calVertNormals()
 double CMesh::getHalfEdgeLen( int iEdge ) const
 {
 	CHalfEdge* he = m_vHalfEdges[iEdge];
-	CVertex* pVertex[2] = {he->m_Vertices[0], he->m_Vertices[1]};
-	Vector3D v = pVertex[0]->m_vPosition - pVertex[1]->m_vPosition;
-	return v.length();
+	CVertex* verts[2] = {he->m_Vertices[0], he->m_Vertices[1]};
+	Vector3D v01 = verts[0]->m_vPosition - verts[1]->m_vPosition;
+	return v01.length();
 }
 
 int CMesh::calEdgeCount()
