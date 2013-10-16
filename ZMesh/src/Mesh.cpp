@@ -2723,18 +2723,21 @@ double CMesh::calGaussianCurvatureIntegration()
 	return sum;
 }
 
-double CMesh::getVolume()
+double CMesh::calVolume()
 {
-	double vol=0.0;
-	for(int fi=0; fi<m_nFace; fi++)
-	{
-		int *fv = m_pFace[fi].m_piVertex;
-		Vector3D v1 = m_pVertex[fv[0]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
-		Vector3D v2 = m_pVertex[fv[2]].m_vPosition - m_pVertex[fv[1]].m_vPosition;
-		Vector3D v3;
-		crossProduct3D(v1,v2,v3);
-		vol+=v3.length()/2.0;
+	double vol = 0.0;
+	for(int fi = 0; fi < m_nFace; fi++) {
+		CFace* face = m_vFaces[fi];
+		const Vector3D& v1 = face->getVertex(0)->getPosition();
+		const Vector3D& v2 = face->getVertex(1)->getPosition();
+		const Vector3D& v3 = face->getVertex(2)->getPosition();
+		Vector3D vo = (v1 + v2 + v3) / 3.0;
+		Vector3D vn;
+		crossProduct3D(v2 - v1, v3 - v1, vn);
+		vol += std::fabs(dotProduct3D(vo, vn));
 	}
+
+	vol /= 6;
 	return vol;
 }
 
@@ -3143,6 +3146,15 @@ void CMesh::scaleEdgeLenToUnit()
 		m_pVertex[i].translateAndScale(-center, scale);
 	}
 
+}
+
+void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
+{
+	for (int i = 0; i < m_nVertex; ++i)
+	{
+		m_vVertices[i]->translateAndScale(-center, scale);
+		m_pVertex[i].translateAndScale(-center, scale);
+	}
 }
 
 std::vector<int> CMesh::getOriginalVertexIndex() const
@@ -3670,4 +3682,5 @@ bool CMesh::calVertexCurvature(int vi)
 	}
 	return true;
 }
+
 #endif

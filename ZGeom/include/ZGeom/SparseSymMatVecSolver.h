@@ -10,19 +10,20 @@
 namespace ZGeom
 {
 
-    class SparseSymMatVecSolver : public SparseSymSolver<double>, public MatVecFunctor
-    {
-    public:
-        SparseSymMatVecSolver(const SparseMatrix<double>& laplacianMat, bool isPositiveDefinite, bool verbose = false)
-            : SparseSymSolver<double>(laplacianMat, isPositiveDefinite, verbose) {}
-        virtual void operator() (double *in, double* out);
+	class SparseSymMatVecSolver : public SparseSymSolver<double>, public MatVecFunctor
+	{
+	public:
+		SparseSymMatVecSolver() {}
+		SparseSymMatVecSolver(const SparseMatrix<double>& laplacianMat, bool isPositiveDefinite, bool verbose = false)
+			: SparseSymSolver<double>(laplacianMat, isPositiveDefinite, verbose) {}
 
-    };
+		virtual void operator() (double *in, double* out);
+	};
 
-    inline void SparseSymMatVecSolver::operator () (double *in, double* out)
-    {
-        solve(1, in, out);
-    }
+	inline void SparseSymMatVecSolver::operator () (double *in, double* out)
+	{
+		solve(1, in, out);
+	}
 
 }
 

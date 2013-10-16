@@ -1,5 +1,6 @@
 #include "ShapeEditor.h"
 #include <iostream>
+#include <random>
 #include <ppl.h>
 #include <ZGeom/SparseMatrix.h>
 #include <ZGeom/SparseMatrixCSR.h>
@@ -480,5 +481,57 @@ void ShapeEditor::reconstructSpectralWavelet()
 	MeshCoordinates newCoord;
 	mMesh->getVertCoordinates(newCoord);
 	newCoord.add(lsx, lsy, lsz);
+	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
+{
+	const int vertCount = mMesh->vertCount();
+	double oriVol = mMesh->calVolume();
+
+	mProcessor->computeHeatDiffuseMat(tMultiplier);
+	ZGeom::SparseSymMatVecSolver& solver = mProcessor->getHeatSolver();
+	const MeshLaplacian& laplacian = mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula);
+	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
+	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
+	ZGeom::SparseMatVecMultiplier mulW(matW, true);
+
+	MeshCoordinates oldCoord, newCoord;
+	mMesh->getVertCoordinates(newCoord);
+	oldCoord.resize(vertCount);
+	
+	for (int n = 0; n < nRepeat; ++n) {
+		for (int a = 0; a < 3; ++a) 
+			mulW.mul(newCoord.getCoordFunc(a), oldCoord.getCoordFunc(a));				
+		for (int a = 0; a < 3; ++a) 
+			solver.solve(oldCoord.getCoordFunc(a), newCoord.getCoordFunc(a));
+	}
+
+	mMesh->setVertCoordinates(newCoord);
+	
+	mMesh->scaleAreaToVertexNum();
+// 	double newVol = mMesh->calVolume();
+// 	double volPreserveScale = std::pow(oriVol/newVol, 1.0/3.0);
+// 	mMesh->scaleAndTranslate(Vector3D(0,0,0), volPreserveScale);
+}
+
+void ShapeEditor::addNoise( double phi )
+{
+	assert(phi > 0 && phi < 1);
+	const int vertCount = mMesh->vertCount();
+	const double avgLen = mMesh->getAvgEdgeLength();
+	MeshCoordinates newCoord;
+	mMesh->getVertCoordinates(newCoord);
+
+	std::default_random_engine generator;
+	std::normal_distribution<double> distribution(0, phi);
+
+	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
+		for (int a = 0; a < 3; ++a) {
+			double noise = avgLen * distribution(generator);
+			newCoord.getCoordFunc(a)[vIdx] += noise;
+		}
+	}
+
 	mMesh->setVertCoordinates(newCoord);
 }

@@ -35,7 +35,9 @@ public:
 		std::copy_n(cy, meshSize, mCoordY.c_ptr());
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
+
 	int size() const { return mSize; }
+
 	void resize(int n) {
 		mSize = n; 
 		mCoordX.resize(mSize, 0); 
@@ -304,6 +306,7 @@ public:
 	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
+	void		scaleAndTranslate(const Vector3D& center, double scale);
 
 	/* ---- attributes access ---- */
 	const std::string&	getMeshName() const { return m_meshName; }
@@ -363,7 +366,7 @@ public:
 	double				calGeodesic(int s, int t) const;
 	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
-	double				getVolume();	// calculate volume (area) of a surface
+	double				calVolume();	// calculate volume (area) of a surface
 	void				calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void				calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;

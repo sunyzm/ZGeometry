@@ -8,6 +8,7 @@
 #include <ZMesh/ZMesh.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatlabEngineWrapper.h>
+#include <ZGeom/SparseSymMatVecSolver.h>
 #include "MeshLaplacian.h"
 #include "MatlabWrapper.h"
 #include "global.h"
@@ -15,12 +16,6 @@
 enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
 enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW};
 enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};
-
-enum SignatureID {	SIGNATURE_ID = 0x0100, SIGNATURE_EIG_FUNC, SIGNATURE_HKS, SIGNATURE_HK, 
-					SIGNATURE_MEAN_CURVATURE, SIGNATURE_GAUSS_CURVATURE, SIGNATURE_WKS, 
-					SIGNATURE_MHWS, SIGNATURE_MHW, SIGNATURE_SGWS, SIGNATURE_SGW, 
-					SIGNATURE_BIHARMONIC_DISTANCE, SIGNATURE_SIMILARITY_MAP, 
-					SIGNATURE_ID_COUNT};
 
 enum FeatureID {	FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
 					FEATURE_MHWS, FEATURE_SGWS, FEATURE_MULTI_HKS, FEATURE_DEMO, FEATURE_DEMO2,
@@ -57,6 +52,7 @@ public:
 	double calMHW(int v1, int v2, double timescale) const;
 	double calSGW(int v1, int v2, double timescale) const;	
 	void computeSGW();
+	void computeHeatDiffuseMat(double tMultiplier);
 
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
@@ -64,7 +60,7 @@ public:
 	void computeSimilarityMap1(int refPoint);
 	void computeSimilarityMap2(int refPoint);
 	void computeSimilarityMap3(int refPoint);
-
+	
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
 	int getActiveHandle() const { return mActiveHandle; }
@@ -84,6 +80,7 @@ public:
 	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelet; }
+	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	int  getRefPointIndex() const { return mRefVert; }
 	void setRefPointIndex(int i) { mRefVert = i; }
@@ -104,5 +101,8 @@ private:
 	ManifoldHarmonics mMHBs[MeshLaplacian::LaplacianTypeCount];
 	MeshLaplacian::LaplacianType mActiveLaplacianType;
 	ZGeom::DenseMatrix<double> mMatWavelet;
+
+	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
+	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 };
 

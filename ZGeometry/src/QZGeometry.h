@@ -79,14 +79,15 @@ private slots:
 	
 	void clone();
 	void revert();
+	void addNoise();
 	void reconstructMHB();
 	void reconstructSGW();
 	void deformSimple();
 	void deformLaplace();
 	void deformBiLaplace();
 	void deformMixedLaplace();
-	void deformSGW();	
-	void filterExperimental();
+	void deformSGW();
+	void diffusionFlow();
 
 	void registerAutomatic();
 	void buildHierarchy();

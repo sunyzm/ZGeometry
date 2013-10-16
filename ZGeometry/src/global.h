@@ -4,7 +4,15 @@
 #include "OutputHelper.h"
 
 enum GeometryTask {TASK_VIEWING = 0, TASK_REGISTRATION = 1, TASK_EDITING = 2};
+
 enum DeformType {Simple, Gradient, Laplace, BiLaplace, Shell, SGW};
+
+enum SignatureID {	SIGNATURE_ID = 0x0100, SIGNATURE_EIG_FUNC, SIGNATURE_HKS, SIGNATURE_HK, 
+	SIGNATURE_MEAN_CURVATURE, SIGNATURE_GAUSS_CURVATURE, SIGNATURE_WKS, 
+	SIGNATURE_MHWS, SIGNATURE_MHW, SIGNATURE_SGWS, SIGNATURE_SGW, 
+	SIGNATURE_BIHARMONIC_DISTANCE, SIGNATURE_SIMILARITY_MAP, 
+	SIGNATURE_ID_COUNT};
+
 
 const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";

@@ -200,6 +200,7 @@ void QZGeometryWindow::makeConnections()
 	////	Edit	////
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
+	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
@@ -207,7 +208,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
-	QObject::connect(ui.actionFilter_1, SIGNAL(triggered()), this, SLOT(filterExperimental()));
+	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
 	 
 	////	Display	////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -837,24 +838,6 @@ void QZGeometryWindow::reconstructMHB()
 	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
 	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::filterExperimental()
-{
-#if 0
-	vector<double> vx, vy, vz;
-	mProcessors[0]->filterBySGW(vx, vy, vz);
-	mMeshes[1]->setVertexCoordinates(vx, vy, vz);
-
-	double errorSum(0);
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
-	{
-		errorSum += (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length();
-	}
-	errorSum /= mMeshes[0]->vertCount() * mMeshes[0]->getAvgEdgeLength();
-	qout.output("Average position error: " + QString::number(errorSum));
-#endif
 	ui.glMeshWidget->update();
 }
 
@@ -1865,4 +1848,22 @@ void QZGeometryWindow::computeHeatTransfer()
 	displaySignature(StrColorHeatMarkNegative.c_str());
 	updateDisplaySignatureMenu();
 	current_operation = Compute_Heat;
+}
+
+void QZGeometryWindow::diffusionFlow()
+{
+	double tMultiplier = 0.1;
+	mShapeEditor.meanCurvatureFlow(tMultiplier, 1);
+
+	std::cout << "Diffusion flow done!" << std::endl;
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::addNoise()
+{
+	double phi = 0.1;
+	mShapeEditor.addNoise(phi);
+
+	std::cout << "Add Gauss noise with phi=" << phi << std::endl;
+	ui.glMeshWidget->update();
 }

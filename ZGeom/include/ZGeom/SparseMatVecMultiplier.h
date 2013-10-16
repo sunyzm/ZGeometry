@@ -18,12 +18,8 @@ namespace ZGeom
 		~SparseMatVecMultiplier();
 
 		void mul(double *in, double *out);
-		void mul(const VecNd& vin, VecNd& vout) {
-			vout.resize(mOrder); 
-			mul(vin.c_ptr(), vout.c_ptr()); 
-		}
-		VecNd multiply(const VecNd& right);
-		
+		void mul(const VecNd& vin, VecNd& vout);
+		VecNd multiply(const VecNd& right);		
 
 	private:
 		bool mIsSymmetric;

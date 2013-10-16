@@ -215,6 +215,8 @@ inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
+	if (n == mDim) return;
+
 	delete []mVec;
 	mDim = n;
 	mVec = new T[mDim];

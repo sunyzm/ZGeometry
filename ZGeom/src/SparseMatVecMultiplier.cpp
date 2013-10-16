@@ -66,6 +66,12 @@ namespace ZGeom
 		}
 	}
 
+	void SparseMatVecMultiplier::mul( const VecNd& vin, VecNd& vout )
+	{
+		vout.resize(mOrder); 
+		mul(vin.c_ptr(), vout.c_ptr());
+	}
+
 	ZGeom::VecNd SparseMatVecMultiplier::multiply( const VecNd& right )
 	{
 		VecNd out(mOrder); 
