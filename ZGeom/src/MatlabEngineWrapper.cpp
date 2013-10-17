@@ -82,6 +82,7 @@ int ZGeom::MatlabEngineWrapper::putVariable( const char *var_name, const mxArray
 
 void ZGeom::MatlabEngineWrapper::addArray( double* data, int row, int col, bool rowMajor, const std::string& name )
 {
+	removeVariable(name);
 	mVariables.push_back(new MatlabArrayWrapper(m_ep, data, row, col, rowMajor, name));
 }
 

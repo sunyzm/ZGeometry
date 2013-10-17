@@ -24,7 +24,7 @@ namespace ZGeom
 		static const MKL_INT PHASE_SOLVE         = 33;
 		static const MKL_INT PHASE_RELEASE       = -1;
 
-		SparseSymSolver() {}
+		SparseSymSolver() : mInitialized(false) {}
 		SparseSymSolver(const SparseMatrix<T>& mat, bool positive_definite, bool verbose = false) { initialize(mat, positive_definite, verbose); }
 		SparseSymSolver(MKL_INT ne, T* c, MKL_INT* ic, MKL_INT *jc, bool positive_definite = true, bool verbose = false) { initialize(ne, c, ic, jc, positive_definite, verbose); }
 		~SparseSymSolver() { clear(); }
@@ -41,6 +41,7 @@ namespace ZGeom
 	private:
 		void clear();
 
+		bool	 mInitialized;
 		bool     mIsSingle;
 		bool     mVerbose;
 		T*       mc;
@@ -106,6 +107,8 @@ namespace ZGeom
 		if (error != 0) {
 			throw std::runtime_error("PARDISO error during factorization!");
 		}
+
+		mInitialized = true;	//important for clearing up
 	}
 
 	template<typename T>
@@ -139,11 +142,12 @@ namespace ZGeom
 	template<typename T>
 	inline void SparseSymSolver<T>::clear()
 	{
+		if (!mInitialized) return;
+
 		MKL_INT idum;
 		T       ddum;
 		MKL_INT error = 0;              // error flag
 		MKL_INT phase = PHASE_RELEASE;
-
 		PARDISO(mPt, &mMaxfct, &mMnum, &mMtype, &phase, &mEquationCount, mc, mic, mjc, &idum, &idum, mIparm, &mMsglvl, &ddum, &ddum, &error);
 	}
 

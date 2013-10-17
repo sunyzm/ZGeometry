@@ -14,11 +14,13 @@ class Vec3
 public:
 	Vec3() : x(0.), y(0.), z(0.) {}
 	Vec3(T x1, T y1, T z1) : x(x1), y(y1), z(z1) {}
+	Vec3(const Vec3<T>& v2) : x(v2.x), y(v2.y), z(v2.z) {}
+	const Vec3<T>& operator = (const Vec3<T>& v2) { x = v2.x; y = v2.y; z = v2.z; return *this; }
 
-	friend Vec3<T> operator + (const Vec3<T>& v1, const Vec3<T>& v2);
-	friend Vec3<T> operator - (const Vec3<T>& v1, const Vec3<T>& v2);
-	friend Vec3<T> operator * (const Vec3<T>& v, T lambda);
-	friend Vec3<T> operator / (const Vec3<T>& v, T lambda);
+	Vec3<T> operator + (const Vec3<T>& v2);
+	Vec3<T> operator - (const Vec3<T>& v2);
+	Vec3<T> operator * (T lambda);
+	Vec3<T> operator / (T lambda);
 	friend Vec3<T> operator - (const Vec3<T>& v);
 	friend T dot(const Vec3<T>& v1, const Vec3<T>& v2);
 	friend Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2);
@@ -112,27 +114,27 @@ inline Vec3<T> operator - (const Vec3<T>& v)
 }
 
 template<typename T>
-inline Vec3<T> operator + (const Vec3<T>& v1, const Vec3<T>& v2)
+inline Vec3<T> Vec3<T>::operator + (const Vec3<T>& v2)
 {
-	return Vec3<T>(v1.x + v2.x, v1.y + v2.y, v1.z + v2.z);
+	return Vec3<T>(x + v2.x, y + v2.y, z + v2.z);
 }
 
 template<typename T>
-inline Vec3<T> operator - (const Vec3<T>& v1, const Vec3<T>& v2)
+inline Vec3<T> Vec3<T>::operator - (const Vec3<T>& v2)
 {
-	return Vec3<T>(v1.x - v2.x, v1.y - v2.y, v1.z - v2.z);
+	return Vec3<T>(x - v2.x, y - v2.y, z - v2.z);
 }
 
 template<typename T>
-inline Vec3<T> operator * (const Vec3<T>& v, T coeff)
+inline Vec3<T> Vec3<T>::operator * (T coeff)
 {
-	return Vec3<T>(v1.x * coeff, v1.y * coeff, v1.z * coeff);
+	return Vec3<T>(x * coeff, y * coeff, z * coeff);
 }
 
 template<typename T>
-inline Vec3<T> operator / (const Vec3<T>& v, T coeff)
+inline Vec3<T> Vec3<T>::operator / (T coeff)
 {
-	return Vec3<T>(v1.x / coeff, v1.y / coeff, v1.z / coeff);
+	return Vec3<T>(x / coeff, y / coeff, z / coeff);
 }
 
 template<typename T> 

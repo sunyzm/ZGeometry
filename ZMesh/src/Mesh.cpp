@@ -2723,7 +2723,7 @@ double CMesh::calGaussianCurvatureIntegration()
 	return sum;
 }
 
-double CMesh::calVolume()
+double CMesh::calVolume() const
 {
 	double vol = 0.0;
 	for(int fi = 0; fi < m_nFace; fi++) {
@@ -2775,42 +2775,6 @@ void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& var )
 	//	else var[60]++;
 	//}
 
-}
-
-void CMesh::calLengthDifference( const CMesh* tmesh, std::vector<double>& ld ) const
-{
-#if 0
-	if(!ld.empty()) ld.clear();
-	const double adjustRatio = this->m_avgEdgeLen / tmesh->m_avgEdgeLen;
-	ld.resize(21, 0.0);
-
-	for(int ei = 0; ei < m_nHalfEdge; ei++)
-	{
-		//cout << ei << endl;
-		int f1 = m_pHalfEdge[ei].m_iVertex[0];
-		int f2 = m_pHalfEdge[ei].m_iVertex[1];
-		int m1 = m_pVertex[f1].m_vMatched;
-		int m2 = m_pVertex[f2].m_vMatched;
-		
-		if(m1 < 0 || m2 < 0) continue;
-
-		Vector3D v1 = m_pVertex[f1].m_vPosition - m_pVertex[f2].m_vPosition;
-		Vector3D v2 = tmesh->m_pVertex[m1].m_vPosition - tmesh->m_pVertex[m2].m_vPosition;
-			
-		double ed = abs(v1.length()-v2.length()*adjustRatio) / m_avgEdgeLen;
-
-		int ar = int (2.0 * ed + 0.5);
-
-		double d = 0.5;
-		if (m_pHalfEdge[ei].m_iTwinEdge == -1)
-		{
-			d  = 1.0;
-		}
-
-		if(ar < 21) ld[ar] += d;
-		else ld[20] += d;
-	}
-#endif
 }
 
 std::vector<int> CMesh::getVertexAdjacentFaces( int vIdx, int ring /*= 1*/ ) const
@@ -3024,18 +2988,11 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 
 void CMesh::scaleAreaToVertexNum()
 {
-	Vector3D center(0, 0, 0);
-	for (int i = 0; i < m_nVertex; ++i)
-		center += m_pVertex[i].getPosition();
-	center /= m_nVertex;
-
-	double totalSufaceArea(0);
-	for (int i = 0; i < m_nFace; ++i) 
-		totalSufaceArea += calFaceArea(i);
+	Vector3D center = calMeshCenter();
+	double totalSufaceArea = calSurfaceArea();
 	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
 
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i) {
 		m_vVertices[i]->translateAndScale(-center, scale);
 		m_pVertex[i].translateAndScale(-center, scale);
 	}
@@ -3051,39 +3008,22 @@ void CMesh::gatherStatistics()
 	// 4. boundary vertex number
 	// 5. individual vertex normal
 	// 6. individual vertex curvature value
-	// necessary stat: m_edge(avg edge length), 
 	
 	calFaceNormals();
 	calVertNormals();
 	calBoundaryVert();
 	
+	Vector3D center = calMeshCenter();
+	Vector3D boundBox = calBoundingBox(center);
+
 	double edgeLength = 0;
-	double center_x = 0.0, center_y = 0.0, center_z = 0.0;
-	Vector3D boundBox(0.0, 0.0, 0.0);
-
-	for (int i = 0; i < m_nVertex; ++i) {
-		center_x += m_vVertices[i]->m_vPosition.x;
-		center_y += m_vVertices[i]->m_vPosition.y;
-		center_z += m_vVertices[i]->m_vPosition.z;
-		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
-		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
-		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
-	}
-
-	center_x = center_x / m_nVertex;
-	center_y = center_y / m_nVertex;
-	center_z = center_z / m_nVertex;
-	boundBox.x = abs(boundBox.x - center_x);
-	boundBox.y = abs(boundBox.y - center_y);
-	boundBox.z = abs(boundBox.z - center_z);
-
 	for (int i = 0; i < m_nHalfEdge; ++i) {
 		edgeLength += m_vHalfEdges[i]->getLength();
 	}
-	edgeLength /= m_vHalfEdges.size();
+	edgeLength /= m_nHalfEdge;
 
 	addAttr(edgeLength, UNIFORM, StrAttrAvgEdgeLength);
-	addAttr(Vector3D(center_x, center_y, center_z), UNIFORM, StrAttrMeshCenter);
+	addAttr(center, UNIFORM, StrAttrMeshCenter);
 	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
 
 	calCurvatures();
@@ -3642,45 +3582,35 @@ const std::vector<bool>& CMesh::getVertOnBoundary()
 	return getAttrValue<std::vector<bool> >(StrAttrVertOnBoundary);
 }
 
-#if 0
-bool CMesh::calVertexCurvature(int vi)
+double CMesh::calSurfaceArea() const
 {
-	const double pi = ZGeom::PI;
-	double sum = 0.0;		// sum of attaching corner's angle
-	double amix = 0.0;
-	Vector3D kh;
-	for( int j = 0; j < m_pVertex[vi].m_nValence; j++ ) {
-		// get triangle edges
-		int e0 = m_pVertex[vi].m_piEdge[j];
-		int e1 = m_pHalfEdge[e0].m_iNextEdge;
-		int e2 = m_pHalfEdge[e1].m_iNextEdge;
-		// get edge lengths
-		double len0 = getHalfEdgeLen( e0 );
-		double len1 = getHalfEdgeLen( e1 );
-		double len2 = getHalfEdgeLen( e2 );
-		// compute corner angle by cosine law 
-		double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
-		sum += corner;
-		double cota, cotc;
-		amix += calAreaMixed(len0, len1, len2, cota, cotc);
-		int pt1,pt2;
-		pt1 = m_pHalfEdge[e1].m_iVertex[0];
-		pt2 = m_pHalfEdge[e1].m_iVertex[1];
-		kh += (m_pVertex[vi].m_vPosition - m_pVertex[pt1].m_vPosition) * cota + (m_pVertex[vi].m_vPosition - m_pVertex[pt2].m_vPosition) * cotc;
-	}
-	
-	if( m_pVertex[vi].m_bIsBoundary )	// boundary vertex has zero curvature
-	{	
-		m_pVertex[vi].m_vGaussCurvature = 0.0;	//(pi - sum)/amix;
-		m_pVertex[vi].m_vMeanCurvature = 0.0;
-	}
-	else								// inner vertex
-	{
-		m_pVertex[vi].m_vGaussCurvature = (2*pi - sum) / amix;
-		kh = kh / (2*amix);
-		m_pVertex[vi].m_vMeanCurvature = kh.length() / 2.0;
-	}
-	return true;
+	double totalSufaceArea(0);
+	for (int i = 0; i < m_nFace; ++i) 
+		totalSufaceArea += calFaceArea(i);
+	return totalSufaceArea;
 }
 
-#endif
+Vector3D CMesh::calMeshCenter() const
+{
+	Vector3D center(0, 0, 0);
+	for (int i = 0; i < m_nVertex; ++i)
+		center += m_vVertices[i]->getPosition();
+	center /= m_nVertex;
+	return center;
+}
+
+Vector3D CMesh::calBoundingBox( const Vector3D& center ) const
+{
+	Vector3D boundBox(0.0, 0.0, 0.0);
+	for (int i = 0; i < m_nVertex; ++i) {
+		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
+		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
+		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
+	}
+	boundBox.x = abs(boundBox.x - center.x);
+	boundBox.y = abs(boundBox.y - center.y);
+	boundBox.z = abs(boundBox.z - center.z);
+	return boundBox;
+}
+
+

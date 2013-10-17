@@ -364,15 +364,16 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getYCoord(), "ecy");
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
-	const ZGeom::DenseMatrixd& matW = mProcessor->getWaveletMat();
-	if (matW.empty()) {
+	const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+	if (matSGW.empty()) {
 		mProcessor->computeSGW();
-		mEngine->addDenseMat(matW, "matSGW");
 	}
-	const int waveletCount = matW.rowCount();
+	mEngine->addDenseMat(matSGW, "matSGW");
+
+	const int waveletCount = matSGW.rowCount();
 #if 1
 	ZGeom::VecNd diffCoord[3];
-	ZGeom::DenseMatVecMultiplier mulMixedW(matW);	
+	ZGeom::DenseMatVecMultiplier mulMixedW(matSGW);	
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(waveletCount);
 		mulMixedW.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
@@ -412,7 +413,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(solveRHS[1], "dcy");
 	mEngine->addColVec(solveRHS[2], "dcz");
 
-	ZGeom::DenseMatrixd matOptS(matW);
+	ZGeom::DenseMatrixd matOptS(matSGW);
 	matOptS.expand(waveletCount + anchorCount + fixedCount, vertCount);
 	for (int l = 0; l < anchorCount; ++l)
 		matOptS(waveletCount + l, anchorIndex[l]) = anchorWeight;
@@ -482,6 +483,8 @@ void ShapeEditor::reconstructSpectralWavelet()
 	mMesh->getVertCoordinates(newCoord);
 	newCoord.add(lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
+
+	evalReconstruct(newCoord);
 }
 
 void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
@@ -534,4 +537,16 @@ void ShapeEditor::addNoise( double phi )
 	}
 
 	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
+{
+	double errorSum(0);
+	const int vertCount = mMesh->vertCount();
+	for (int i = 0; i < vertCount; ++i) {
+		errorSum += (newCoord[i] - mOldCoord[i]).length();
+	}
+
+	double avgError = errorSum / vertCount / mMesh->getAvgEdgeLength();
+	std::cout << "Average reconstruct error: " << avgError << std::endl;
 }

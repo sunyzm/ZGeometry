@@ -366,9 +366,11 @@ public:
 	double				calGeodesic(int s, int t) const;
 	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
-	double				calVolume();	// calculate volume (area) of a surface
+	Vector3D			calMeshCenter() const;
+	Vector3D			calBoundingBox(const Vector3D& center) const;
+	double				calSurfaceArea() const;
+	double				calVolume() const;	// calculate volume (area) of a surface
 	void				calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
-	void				calLengthDifference(const CMesh* tmesh, std::vector<double>& ld) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
 	std::vector<int>    getOriginalVertexIndex() const;

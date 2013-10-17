@@ -8,6 +8,7 @@
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZUtil/zassert.h>
+#include <ZUtil/timer.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenSystem.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
@@ -174,6 +175,9 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 
 void DifferentialMeshProcessor::computeSGW()
 {
+	CStopWatch timer;	
+	timer.startTimer();
+
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
@@ -208,6 +212,8 @@ void DifferentialMeshProcessor::computeSGW()
 		}
 #endif
 	});
+
+	timer.stopTimer("Time to compute SGW: ");
 }
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const

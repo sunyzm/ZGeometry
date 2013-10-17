@@ -18,9 +18,6 @@ public:
 	MatlabArrayWrapper(Engine* ep, double* data, int row, int col, bool rowMajor, const std::string& name) 
 		: mName(name), mRow(row), mCol(col) 
 	{
-		mData = engGetVariable(ep, name.c_str());
-		if (mData) mxDestroyArray(mData);
-
 		mData = mxCreateDoubleMatrix(mRow, mCol, mxREAL);
 		double *aa = mxGetPr(mData);
 		if (rowMajor) {
