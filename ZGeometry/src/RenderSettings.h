@@ -30,18 +30,5 @@ public:
 	Vector3D display_shift;
 	const float* mesh_color;
 	std::string mColorSignatureName;
-
-	std::vector<double> vOriginalSignature;
-	std::vector<double> vDisplaySignature;
-	double sigMin, sigMax;
-
-	void normalizeSignatureFrom(const std::vector<double>& vFrom);
-	void logNormalizeSignatureFrom(const std::vector<double>& vFrom);
-	void bandCurveSignatureFrom(const std::vector<double>& vFrom, double lowend, double highend);
-	
-	void importSignature(const std::vector<double>& vFrom);
-	void normalizeSignature();
-	void logNormalizeSignature();
-	void bandCurveSignature(double lowend, double highend);
 };
 

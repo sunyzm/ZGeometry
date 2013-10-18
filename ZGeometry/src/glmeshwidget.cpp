@@ -594,7 +594,7 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 {
 	painter->setRenderHint(QPainter::Antialiasing);
 	
-	int xBegin = width()/2 - 128;
+	int xBegin = width() / 2 - 128;
 
 	for (int i = 0; i <= 255; i++)
 	{
@@ -606,8 +606,8 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
 	}
 	painter->setPen(QPen(Qt::black, Qt::SolidLine));
-	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
-	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
+//	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
+//	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
 }
 
 // void GLMeshWidget::showEvent( QShowEvent *event )
@@ -639,8 +639,7 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 	QPainter painter(this);
 	drawGL();
 
-	if (m_bShowLegend && mRenderSettings->at(0)->vDisplaySignature.empty()) 
-		drawLegend(&painter);
+	if (m_bShowLegend) drawLegend(&painter);
 }
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )

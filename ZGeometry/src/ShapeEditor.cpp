@@ -365,9 +365,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) {
-		mProcessor->computeSGW();
-	}
+	if (matSGW.empty()) mProcessor->computeSGW();
 	mEngine->addDenseMat(matSGW, "matSGW");
 
 	const int waveletCount = matSGW.rowCount();
@@ -399,8 +397,7 @@ void ShapeEditor::deformSpectralWavelet()
 		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
 		solveRHS[i].copyElements(diffCoord[i], 0);
 
-		for (int a = 0; a < vertCount; ++a) solveRHS[i][a] *= 2;
-
+		//for (int a = 0; a < vertCount; ++a) solveRHS[i][a] *= 2;
 		for (int l = 0; l < anchorCount; ++l) {
 			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
@@ -424,9 +421,9 @@ void ShapeEditor::deformSpectralWavelet()
 	timer.stopTimer("Prepare deformation time: ");
 
 	timer.startTimer();	
-	/*mEngine->eval("lsx=cgls(matOpt, dcx);");
-	mEngine->eval("lsy=cgls(matOpt, dcy);");
-	mEngine->eval("lsz=cgls(matOpt, dcz);");*/
+	//mEngine->eval("lsx=cgls(matOpt, dcx);");
+	//mEngine->eval("lsy=cgls(matOpt, dcy);");
+	//mEngine->eval("lsz=cgls(matOpt, dcz);");
 	mEngine->eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
 	mEngine->eval("lsy=lsqr(matOpt, dcy);");
 	mEngine->eval("lsz=lsqr(matOpt, dcz);");
@@ -440,6 +437,8 @@ void ShapeEditor::deformSpectralWavelet()
 	//MeshCoordinates newCoord(oldCoord);
 	//newCoord.add(lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
+
+	evalReconstruct(newCoord);
 }
 
 void ShapeEditor::reconstructSpectralWavelet()
@@ -467,9 +466,9 @@ void ShapeEditor::reconstructSpectralWavelet()
 	timer.stopTimer("Prepare deformation time: ");
 
 	timer.startTimer();	
-	/*mEngine->eval("lsx=cgls(matOpt, dcx);");
-	mEngine->eval("lsy=cgls(matOpt, dcy);");
-	mEngine->eval("lsz=cgls(matOpt, dcz);");*/
+	//mEngine->eval("lsx=cgls(matOpt, dcx);");
+	//mEngine->eval("lsy=cgls(matOpt, dcy);");
+	//mEngine->eval("lsz=cgls(matOpt, dcz);");
 	mEngine->eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
 	mEngine->eval("lsy=lsqr(matOpt, dcy);");
 	mEngine->eval("lsz=lsqr(matOpt, dcz);");

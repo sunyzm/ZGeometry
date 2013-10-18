@@ -57,6 +57,10 @@ private slots:
 	void computeHeatTransfer();
 
 	void displaySignature(QString sigName );
+	void showNormalizedSignature();
+	void showMarkNegNormalizedSignature();
+	void showAbsNormalizedSignature();
+	void showLogNormalizedSignature();
 	void displayNeighborVertices();
 	void displayDiffPosition();
 
@@ -114,12 +118,13 @@ private:
 	bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void allocateStorage(int newMeshCount);
+	void changeSignatureMode(SignatureMode smode);
 
 	/* helper functions */
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
-	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName, bool markNegative = false); 
+	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 
 private:	
@@ -127,6 +132,7 @@ private:
 	Ui::ZGeometryClass	ui;
 	ZGeom::MatlabEngineWrapper mEngineWrapper;	
 	DeformType			deformType;
+	SignatureMode		mSignatureMode;
 	int					mObjInFocus;	
 	int					mMeshCount;
 	int					mCommonParameter;

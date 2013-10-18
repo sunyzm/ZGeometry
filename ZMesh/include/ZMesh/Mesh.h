@@ -462,6 +462,15 @@ public:
 		}
 		return vColorAttr;
 	}
+
+	MeshAttr<std::vector<double> >& addAttrVertVecDbl(const std::string& name) {
+		return addAttr<std::vector<double> >(AttrRate::VERTEX, name, AttrType::CPP_VECTOR_DOUBLE);
+	}
+
+	std::vector<double>& getVertVecDbl(const std::string& name) {
+		return getAttrValue<std::vector<double> >(name);
+	}
+
 	/*************************************************************************/
 
 private:

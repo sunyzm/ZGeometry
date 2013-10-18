@@ -45,30 +45,35 @@ void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vect
 	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), 
 			       vDisplaySignature.begin(),
 				   [=](double v){ return (v-sMin)/(sMax-sMin); });
-
-	std::cout << "sigMin: " << sMin << "; sigMax: " << sMax << std::endl;
 }
 
-void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors)
+void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::Normalized)
 {
-	std::vector<double> normalizedSig;
-	normalizeSignature(vOriSig, normalizedSig);
-	size_t vSize = normalizedSig.size();
-	vColors.resize(vSize);
-	for (int i = 0; i < vSize; ++i) {
-		vColors[i].falseColor(normalizedSig[i]);
+	size_t vSize = vOriSig.size();
+	std::vector<double> tmpSig = vOriSig;
+	
+	if (smode == AbsNormalized) {
+		for (double& v : tmpSig) v = std::fabs(v);
 	}
-}
+	if (smode == LogNormalized) {
+		double sMin = *(std::minmax_element(tmpSig.begin(), tmpSig.end()).first);
+		if (sMin > 0) {
+			for (double& v : tmpSig) v = std::log(v);
+		}
+	}
 
-void signatureToColorsWithNegativeMark(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors)
-{
 	std::vector<double> normalizedSig;
-	normalizeSignature(vOriSig, normalizedSig);
-	size_t vSize = normalizedSig.size();
+	normalizeSignature(tmpSig, normalizedSig);	
+
 	vColors.resize(vSize);
 	for (int i = 0; i < vSize; ++i) {
-		vColors[i].falseColor(normalizedSig[i]);
-		if (vOriSig[i] < 0) vColors[i].setAs(ZGeom::ColorBlack);
+		vColors[i].falseColor(normalizedSig[i]);		
+	}
+
+	if (smode == MarkNegNormalized) {
+		for (int i = 0; i < vSize; ++i) {
+			if (vOriSig[i] < 0) vColors[i].setAs(ZGeom::ColorBlack);
+		}
 	}
 }
 
@@ -86,6 +91,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	mCommonParameter = PARAMETER_SLIDER_CENTER;
 	current_operation = None;
 	deformType = Simple;
+	mSignatureMode = SignatureMode::Normalized;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 
 	/* setup ui and connections */
@@ -223,6 +229,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
+	QObject::connect(ui.actionNormalizedSignature, SIGNAL(triggered()), this, SLOT(showNormalizedSignature()));
+	QObject::connect(ui.actionMarkNegativeNormalized, SIGNAL(triggered()), this, SLOT(showMarkNegNormalizedSignature()));
+	QObject::connect(ui.actionAbsNormalized, SIGNAL(triggered()), this, SLOT(showAbsNormalizedSignature()));
+	QObject::connect(ui.actionLogNormalized, SIGNAL(triggered()), this, SLOT(showLogNormalizedSignature()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -775,28 +785,24 @@ void QZGeometryWindow::computeCurvatureGauss()
 	}
 
 	displaySignature(StrColorGaussCurvature.c_str());
-	qout.output("Show Gauss curvature");
 	updateDisplaySignatureMenu();
+	qout.output("Show Gauss curvature");
 }
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	runtime_assert(mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
+	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
 	int size = mMeshes[0]->vertCount();
 	vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i)
-	{
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
 		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
-	mRenderManagers[0]->normalizeSignatureFrom(vDiff);
-	
-	if (!ui.glMeshWidget->m_bShowSignature)
-		toggleShowSignature();
-	
-	ui.glMeshWidget->update();
+	addColorSignature(0, vDiff, StrColorPosDiff);
+	displaySignature(StrColorPosDiff.c_str());
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::updateReferenceMove( int obj )
@@ -1781,16 +1787,20 @@ void QZGeometryWindow::revert()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName, bool markNegative /*= false*/ )
+void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName )
 {
+	auto iResult = minmax_element(vVals.begin(), vVals.end());
+	double sMin = *(iResult.first); 
+	double sMax = *(iResult.second);
+	std::cout << "sMin: " << sMin << "\tsMax: " << sMax << std::endl;
+
+	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).getValue();
+	vSig = vVals;
+
 	if (!mMeshes[obj]->hasAttr(sigName)) mMeshes[obj]->addColorAttr(sigName);
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
 	
-	if (markNegative) signatureToColorsWithNegativeMark(vVals, vColors);
-	else signaturesToColors(vVals, vColors);	
-
-	std::vector<double>& vSig = mMeshes[obj]->addAttr< std::vector<double> >(AttrRate::VERTEX, StrOriginalSignature, CPP_VECTOR_DOUBLE).getValue();
-	vSig = vVals;
+	signaturesToColors(vVals, vColors, mSignatureMode);	
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -1841,11 +1851,10 @@ void QZGeometryWindow::computeHeatTransfer()
 		std::vector<double> vHeat;
 
 		mp->calHeat(vSrc, tMultiplier, vHeat);
-		addColorSignature(obj, vHeat, StrColorHeat, false);
-		addColorSignature(obj, vHeat, StrColorHeatMarkNegative, true);		
+		addColorSignature(obj, vHeat, StrColorHeat);
 	}
 
-	displaySignature(StrColorHeatMarkNegative.c_str());
+	displaySignature(StrColorHeat.c_str());
 	updateDisplaySignatureMenu();
 	current_operation = Compute_Heat;
 }
@@ -1866,4 +1875,41 @@ void QZGeometryWindow::addNoise()
 
 	std::cout << "Add Gauss noise with phi=" << phi << std::endl;
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::changeSignatureMode( SignatureMode smode )
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		const std::string& currentSig = mRenderManagers[obj]->mColorSignatureName;
+		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrOriginalSignature)) continue;
+
+		const std::vector<double>& vSig = mMeshes[obj]->getVertVecDbl(StrOriginalSignature);
+		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
+		signaturesToColors(vSig, vColors, smode);
+	}
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::showNormalizedSignature()
+{
+	mSignatureMode = Normalized;
+	changeSignatureMode(Normalized);
+}
+
+void QZGeometryWindow::showMarkNegNormalizedSignature()
+{
+	mSignatureMode = MarkNegNormalized;
+	changeSignatureMode(MarkNegNormalized);
+}
+
+void QZGeometryWindow::showAbsNormalizedSignature()
+{
+	mSignatureMode = AbsNormalized;
+	changeSignatureMode(AbsNormalized);
+}
+
+void QZGeometryWindow::showLogNormalizedSignature()
+{
+	mSignatureMode = LogNormalized;
+	changeSignatureMode(LogNormalized);
 }

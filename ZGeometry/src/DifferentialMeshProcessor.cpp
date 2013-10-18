@@ -181,8 +181,8 @@ void DifferentialMeshProcessor::computeSGW()
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletScales[] = {20, 40};
-	const int scales = 1;
+	double waveletScales[] = {10, 30, 90};
+	const int scales = 0;
 
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
 	Concurrency::parallel_for(0, vertCount, [&](int i) {
@@ -206,6 +206,7 @@ void DifferentialMeshProcessor::computeSGW()
 				double lambda = mhb.getEigVal(k);
 				const ZGeom::VecNd& phi = mhb.getEigVec(k);
 				elemVal += std::exp(-lambda*lambda) * phi[i] * phi[j];
+				//elemVal += std::exp(-lambda*30) * phi[i] * phi[j];
 			}
 			mMatWavelet(vertCount * scales + i, j) = elemVal;
 			mMatWavelet(vertCount * scales + j, i) = elemVal;
@@ -341,6 +342,7 @@ double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) con
 		double lambda = mhb.getEigVal(k);
 		const ZGeom::VecNd& phi = mhb.getEigVec(k);
 		sum += std::pow(lambda * timescale, 2) * std::exp(-std::pow(lambda * timescale, 2)) * phi[v1] * phi[v2];
+		//sum += std::exp(-lambda*lambda) * phi[v1] * phi[v2];
 	}
 	return sum;
 }

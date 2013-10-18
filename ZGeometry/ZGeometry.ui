@@ -297,6 +297,15 @@
      </property>
      <addaction name="actionShowHKSFeatures"/>
     </widget>
+    <widget class="QMenu" name="menuSignatureMode">
+     <property name="title">
+      <string>SignatureMode</string>
+     </property>
+     <addaction name="actionNormalizedSignature"/>
+     <addaction name="actionMarkNegativeNormalized"/>
+     <addaction name="actionAbsNormalized"/>
+     <addaction name="actionLogNormalized"/>
+    </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
     <addaction name="actionDrawRegistration"/>
@@ -308,6 +317,7 @@
     <addaction name="separator"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="menuSignature"/>
+    <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>
@@ -840,6 +850,26 @@
   <action name="actionAddNoise">
    <property name="text">
     <string>Add Noise</string>
+   </property>
+  </action>
+  <action name="actionNormalizedSignature">
+   <property name="text">
+    <string>Normalized</string>
+   </property>
+  </action>
+  <action name="actionMarkNegativeNormalized">
+   <property name="text">
+    <string>Mark Negative Normalized</string>
+   </property>
+  </action>
+  <action name="actionAbsNormalized">
+   <property name="text">
+    <string>Abs Normalized</string>
+   </property>
+  </action>
+  <action name="actionLogNormalized">
+   <property name="text">
+    <string>LogNormalized</string>
    </property>
   </action>
  </widget>
