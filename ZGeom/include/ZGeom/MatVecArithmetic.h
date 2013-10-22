@@ -1,6 +1,5 @@
 #ifndef ZGEOM_MAT_VEC_ARITHMETIC_H
 #define ZGEOM_MAT_VEC_ARITHMETIC_H
-
 #include "Vec3.h"
 #include "VecN.h"
 #include "SparseMatrix.h"

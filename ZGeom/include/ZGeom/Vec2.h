@@ -1,6 +1,5 @@
 #ifndef ZMATH_VEC2_H
 #define ZMATH_VEC2_H
-
 #include <cmath>
 #include <cassert>
 

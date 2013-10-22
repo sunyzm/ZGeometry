@@ -351,6 +351,8 @@ public:
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+	void				diffCoordinates(const MeshCoordinates& coordsToCompare, std::vector<double>& vDiff) const;
+
 	void				gatherStatistics();
 	bool				hasBoundary() const;
 	int					calBoundaryNum();    // compute number of (connective) boundaries
@@ -499,6 +501,6 @@ private:
 	/* helper functions */
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
-};//CMesh
+}; //CMesh
 
 #endif

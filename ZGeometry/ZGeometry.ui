@@ -306,6 +306,7 @@
      <addaction name="actionSigAbsNormalized"/>
      <addaction name="actionSigLogNormalized"/>
      <addaction name="actionSigPosNegPlot"/>
+     <addaction name="actionSigBandCurve01"/>
     </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
@@ -876,6 +877,11 @@
   <action name="actionSigPosNegPlot">
    <property name="text">
     <string>Pos-Neg Plot</string>
+   </property>
+  </action>
+  <action name="actionSigBandCurve01">
+   <property name="text">
+    <string>Band Curve 0-1</string>
    </property>
   </action>
  </widget>

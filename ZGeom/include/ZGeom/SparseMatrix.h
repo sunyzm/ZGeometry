@@ -1,6 +1,5 @@
 #ifndef ZGEOM_SPARSE_MATRIX_H
 #define ZGEOM_SPARSE_MATRIX_H
-
 #include <iostream>
 #include <vector>
 #include "common.h"

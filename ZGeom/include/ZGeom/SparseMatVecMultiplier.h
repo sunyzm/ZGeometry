@@ -1,6 +1,5 @@
 #ifndef ZGEOM_SPARSE_MAT_VEC_MULTIPLIER_H
 #define ZGEOM_SPARSE_MAT_VEC_MULTIPLIER_H
-
 #include <mkl.h>
 #include "MatVecFunctor.h"
 #include "SparseMatrix.h"

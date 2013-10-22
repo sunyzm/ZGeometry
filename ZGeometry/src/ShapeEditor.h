@@ -11,6 +11,7 @@ public:
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 	void init(DifferentialMeshProcessor* processor);
 	void revert() { mMesh->setVertCoordinates(mOldCoord); }
+	const MeshCoordinates& oldCoord() const { return mOldCoord; }
 
 	void addNoise(double phi);
 

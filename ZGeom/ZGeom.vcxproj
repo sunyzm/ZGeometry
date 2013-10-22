@@ -99,7 +99,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)d</TargetName>
-    <IncludePath>$(SolutionDir)ZUtil\include;$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZGeom;$(SolutionDir)ZUtil\include;$(MKLIncludeDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(Projectdir)lib\</OutDir>
@@ -109,7 +109,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)</TargetName>
-    <IncludePath>$(SolutionDir)ZUtil\include;$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZGeom;$(SolutionDir)ZUtil\include;$(MKLIncludeDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

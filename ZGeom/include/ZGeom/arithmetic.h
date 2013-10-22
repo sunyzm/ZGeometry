@@ -1,6 +1,5 @@
 #ifndef ZGEOM_ARITHMETIC_H
 #define ZGEOM_ARITHMETIC_H
-
 #include <vector>
 #include <cmath>
 #include <cassert>
@@ -9,6 +8,14 @@
 
 namespace ZGeom
 {
+	template<typename T>
+	inline T vecMean(const std::vector<T>& vec)
+	{
+		double sum(0);
+		for (T a: vec) sum += a;
+		return sum / static_cast<T>(vec.size());
+	}
+
 	inline double sinc(double x)
 	{
 		if (fabs(x) < 1e-10) return 1.0;

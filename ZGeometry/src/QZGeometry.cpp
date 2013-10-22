@@ -52,6 +52,15 @@ void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::C
 	size_t vSize = vOriSig.size();
 	vColors.resize(vSize);
 	std::vector<double> tmpSig = vOriSig;
+
+	if (smode == BandCurve01) {
+		for (size_t a = 0; a < vSize; ++a) {
+			if (vOriSig[a] < 0) vColors[a].falseColor(0);
+			else if (vOriSig[a] > 1) vColors[a].falseColor(1.f);
+			else vColors[a].falseColor(vOriSig[a]);
+		}
+		return;
+	}
 	
 	if (smode == AbsNormalized) {
 		for (double& v : tmpSig) v = std::fabs(v);
@@ -240,6 +249,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionSigAbsNormalized, SIGNAL(triggered()), this, SLOT(showAbsNormalizedSignature()));
 	QObject::connect(ui.actionSigLogNormalized, SIGNAL(triggered()), this, SLOT(showLogNormalizedSignature()));
 	QObject::connect(ui.actionSigPosNegPlot, SIGNAL(triggered()), this, SLOT(showPosNegPlotSignature()));
+	QObject::connect(ui.actionSigBandCurve01, SIGNAL(triggered()), this, SLOT(showBandCurve01Siganture()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -289,7 +299,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	computeLaplacian(MeshLaplacian::SymCot);
 
 	if (g_task == TASK_REGISTRATION) registerPreprocess();
-	if (g_task == TASK_EDITING) mShapeEditor.init(mProcessors[0]);
+	if (g_task == TASK_EDITING) {
+		mShapeEditor.init(mProcessors[0]);
+	}
 
 	return true;
 }
@@ -848,9 +860,18 @@ void QZGeometryWindow::reconstructMHB()
 {
 	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
 	int nEig = mProcessors[0]->getMHB(MeshLaplacian::CotFormula).eigVecCount() * ratio;
+	double avgLen = mMeshes[0]->getAvgEdgeLength();
+
 	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
 	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
+	std::vector<double> vPosDiff;
+	mMeshes[0]->diffCoordinates(mShapeEditor.oldCoord(), vPosDiff);
+	for (double& v : vPosDiff) v /= avgLen;
+	std::cout << "Avg Error as ratio of AEL: " << ZGeom::vecMean(vPosDiff) << std::endl;
+
+	addColorSignature(0, vPosDiff, StrColorPosDiff);
+	displaySignature(StrColorPosDiff.c_str());
 	ui.glMeshWidget->update();
 }
 
@@ -1924,4 +1945,10 @@ void QZGeometryWindow::showPosNegPlotSignature()
 {
 	mSignatureMode = PosNegPlot;
 	changeSignatureMode(PosNegPlot);
+}
+
+void QZGeometryWindow::showBandCurve01Siganture()
+{
+	mSignatureMode = BandCurve01;
+	changeSignatureMode(BandCurve01);
 }

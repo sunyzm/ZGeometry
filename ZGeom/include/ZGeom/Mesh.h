@@ -2,7 +2,7 @@
 #define ZGEOM_MESH_H
 #include <vector>
 #include <string>
-#include <Vec3.h>
+#include "Vec3.h"
 
 namespace ZGeom
 {

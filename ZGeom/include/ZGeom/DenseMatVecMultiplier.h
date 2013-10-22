@@ -1,6 +1,5 @@
 #ifndef ZGEOM_DENSE_MAT_VEC_MULTIPLIER_H
 #define ZGEOM_DENSE_MAT_VEC_MULTIPLIER_H
-
 #include "MatVecFunctor.h"
 #include "DenseMatrix.h"
 #include "VecN.h"

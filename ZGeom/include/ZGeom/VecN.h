@@ -1,6 +1,5 @@
-#ifndef ZGEOM_VECND_H
-#define ZGEOM_VECND_H
-
+#ifndef ZGEOM_VECN_H
+#define ZGEOM_VECN_H
 #include <cassert>
 #include <algorithm>
 #include <vector>

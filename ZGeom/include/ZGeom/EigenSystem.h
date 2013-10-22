@@ -1,6 +1,5 @@
 #ifndef ZGEOM_EIGEN_SYSTEM_H
 #define ZGEOM_EIGEN_SYSTEM_H
-
 #include <vector>
 #include <functional>
 #include "VecN.h"

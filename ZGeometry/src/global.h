@@ -13,7 +13,7 @@ enum SignatureID {	SIGNATURE_ID = 0x0100, SIGNATURE_EIG_FUNC, SIGNATURE_HKS, SIG
 	SIGNATURE_BIHARMONIC_DISTANCE, SIGNATURE_SIMILARITY_MAP, 
 	SIGNATURE_ID_COUNT};
 
-enum SignatureMode {Normalized, LogNormalized, MarkNegNormalized, AbsNormalized, PosNegPlot};
+enum SignatureMode {Normalized, LogNormalized, MarkNegNormalized, AbsNormalized, PosNegPlot, BandCurve01};
 
 const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";

@@ -1,7 +1,6 @@
 #ifndef ZGEOM_COLOR_H
 #define ZGEOM_COLOR_H
 #include "Vec4.h"
-#include <assert.h>
 
 namespace ZGeom
 {

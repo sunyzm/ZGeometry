@@ -1,6 +1,5 @@
 #ifndef ZGEOM_SPARSE_SYMMETRIC_SOLVER_H
 #define ZGEOM_SPARSE_SYMMETRIC_SOLVER_H
-
 #include <ctime>
 #include <stdexcept>
 #include <mkl.h>

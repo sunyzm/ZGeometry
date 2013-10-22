@@ -10,13 +10,12 @@
 #include <ZUtil/zassert.h>
 #include <ZUtil/timer.h>
 #include <ZGeom/ZGeom.h>
-#include <ZGeom/arithmetic.h>
-#include <ZGeom/EigenSystem.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include "global.h"
 
 using namespace std;
+
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::VectorDotProduct;
@@ -180,7 +179,7 @@ void DifferentialMeshProcessor::computeSGW()
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletScales[] = {40, 30, 90};
+	double waveletScales[] = {10, 30, 90};
 	const int scales = 1;
 
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
@@ -192,8 +191,9 @@ void DifferentialMeshProcessor::computeSGW()
 					double lambda = mhb.getEigVal(k);
 					const ZGeom::VecNd& phi = mhb.getEigVec(k);
 					double lt = std::pow(lambda * waveletScales[s], 2);
-					//elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
-					elemVal += std::exp(-lambda * waveletScales[s]) * phi[i] * phi[j]; 
+					elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
+					//elemVal += lambda * std::exp(-lambda*waveletScales[s]) * phi[i] * phi[j];
+					//elemVal += std::exp(-lambda * waveletScales[s]) * phi[i] * phi[j]; 
 				}
 				mMatWavelet(vertCount * s + i, j) = elemVal;
 				mMatWavelet(vertCount * s + j, i) = elemVal;
@@ -214,7 +214,8 @@ void DifferentialMeshProcessor::computeSGW()
 #endif
 	});
 	timer.stopTimer("Time to compute SGW: ");
-#if 0
+
+#if 1	//some verification code
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	getMeshLaplacian(MeshLaplacian::CotFormula).getW().convertToCSR(matW, ZGeom::MatrixForm::MAT_FULL);
 	ZGeom::VecNd v1 = mhb.getEigVec(1), v2 = mhb.getEigVec(5), v3 = mhb.getEigVec(200);
@@ -235,6 +236,13 @@ void DifferentialMeshProcessor::computeSGW()
 	std::cout << v4.sum() << '\n';
 	std::cout << v5.sum() << '\n';
 	std::cout << v6.sum() << '\n';
+	std::cout << endl;
+	v4.normalize(2);
+	v5.normalize(2);
+	v6.normalize(2);
+	std::cout << v4.norm2() << '\n';
+	std::cout << v5.norm2() << '\n';
+	std::cout << v6.norm2() << '\n';
 #endif
 }
 
@@ -274,15 +282,13 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 	MeshFeatureList *mfl = new MeshFeatureList;
 	int nScales = timescales.size();
 
-	for (int s = 0; s < nScales; ++s)
-	{
+	for (int s = 0; s < nScales; ++s) {
 		vector<double> vSig;
 		vector<int> vFeatures;
 		calKernelSignature(timescales[s], kernelType, vSig);
 		mesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
 
-		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter)
-		{
+		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) {
 			mfl->addFeature(new MeshFeature(*iter, s));			
 		}
 	}

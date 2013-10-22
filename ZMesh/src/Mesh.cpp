@@ -3613,4 +3613,16 @@ Vector3D CMesh::calBoundingBox( const Vector3D& center ) const
 	return boundBox;
 }
 
+void CMesh::diffCoordinates( const MeshCoordinates& coordsToCompare, std::vector<double>& vDiff ) const
+{
+	const int vertCount = this->vertCount();
+	vDiff.resize(vertCount);
+
+	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
+		const Vector3D& v2 = m_vVertices[vIdx]->getPosition();
+		vDiff[vIdx] = (coordsToCompare[vIdx] - ZGeom::Vec3d(v2.x, v2.y, v2.z)).length();
+	}
+
+}
+
 

@@ -62,6 +62,7 @@ private slots:
 	void showAbsNormalizedSignature();
 	void showLogNormalizedSignature();
 	void showPosNegPlotSignature();
+	void showBandCurve01Siganture();
 	void displayNeighborVertices();
 	void displayDiffPosition();
 
