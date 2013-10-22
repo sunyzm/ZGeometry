@@ -50,6 +50,7 @@ void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vect
 void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::Normalized)
 {
 	size_t vSize = vOriSig.size();
+	vColors.resize(vSize);
 	std::vector<double> tmpSig = vOriSig;
 	
 	if (smode == AbsNormalized) {
@@ -62,13 +63,18 @@ void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::C
 		}
 	}
 
-	std::vector<double> normalizedSig;
-	normalizeSignature(tmpSig, normalizedSig);	
-
-	vColors.resize(vSize);
-	for (int i = 0; i < vSize; ++i) {
-		vColors[i].falseColor(normalizedSig[i]);		
-	}
+	if (smode == PosNegPlot) {
+		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
+		double sMin = *mmp.first, smax = *mmp.second;
+		double absMax = std::max(std::fabs(sMin), std::fabs(smax));
+		for (int i = 0; i < vSize; ++i) vColors[i].posNegColor(tmpSig[i] / absMax);
+	} else {
+		std::vector<double> normalizedSig;
+		normalizeSignature(tmpSig, normalizedSig);	
+		for (int i = 0; i < vSize; ++i) {
+			vColors[i].falseColor(normalizedSig[i]);		
+		}
+	}	
 
 	if (smode == MarkNegNormalized) {
 		for (int i = 0; i < vSize; ++i) {
@@ -229,10 +235,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
-	QObject::connect(ui.actionNormalizedSignature, SIGNAL(triggered()), this, SLOT(showNormalizedSignature()));
-	QObject::connect(ui.actionMarkNegativeNormalized, SIGNAL(triggered()), this, SLOT(showMarkNegNormalizedSignature()));
-	QObject::connect(ui.actionAbsNormalized, SIGNAL(triggered()), this, SLOT(showAbsNormalizedSignature()));
-	QObject::connect(ui.actionLogNormalized, SIGNAL(triggered()), this, SLOT(showLogNormalizedSignature()));
+	QObject::connect(ui.actionSigNormalized, SIGNAL(triggered()), this, SLOT(showNormalizedSignature()));
+	QObject::connect(ui.actionSigMarkNegativeNormalized, SIGNAL(triggered()), this, SLOT(showMarkNegNormalizedSignature()));
+	QObject::connect(ui.actionSigAbsNormalized, SIGNAL(triggered()), this, SLOT(showAbsNormalizedSignature()));
+	QObject::connect(ui.actionSigLogNormalized, SIGNAL(triggered()), this, SLOT(showLogNormalizedSignature()));
+	QObject::connect(ui.actionSigPosNegPlot, SIGNAL(triggered()), this, SLOT(showPosNegPlotSignature()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -1044,8 +1051,7 @@ void QZGeometryWindow::computeSGW()
 {
 	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE, true);
 
-	for (int obj = 0; obj < mMeshCount; ++obj) 
-	{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
@@ -1912,4 +1918,10 @@ void QZGeometryWindow::showLogNormalizedSignature()
 {
 	mSignatureMode = LogNormalized;
 	changeSignatureMode(LogNormalized);
+}
+
+void QZGeometryWindow::showPosNegPlotSignature()
+{
+	mSignatureMode = PosNegPlot;
+	changeSignatureMode(PosNegPlot);
 }

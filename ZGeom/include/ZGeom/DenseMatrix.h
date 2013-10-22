@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include "common.h"
+#include "VecN.h"
 
 namespace ZGeom
 {
@@ -35,7 +36,8 @@ namespace ZGeom
 		void expand(uint newRow, uint newCol);
 		void copyRows(const DenseMatrix<T>& m2, int startingRow = 0);
 		void print(const std::string& filepath) const;
-
+		VecN<T> getRowVec(uint row) const;
+		VecN<T> getColVec(uint col) const;
 		T rowSumNorm() const;
 		T frobeniusNorm() const;
 
@@ -96,6 +98,24 @@ namespace ZGeom
 			if (rowSum > rowSumMax) rowSumMax = rowSum;
 		}
 		return rowSumMax;
+	}
+
+	template<typename T>
+	VecN<T> DenseMatrix<T>::getRowVec(uint row) const
+	{
+		assert( row < mRow);
+		VecN<T> vec(mCol);
+		for (int j = 0; j < mCol; ++j) vec[j] = mData[row*mCol + j];
+		return vec;
+	}
+
+	template<typename T>
+	VecN<T> DenseMatrix<T>::getColVec(uint col) const
+	{
+		assert(col < mCol);
+		VecN<T> vec(mRow);
+		for (int i = 0; i < mRow; ++i) vec[i] = mData[i*mCol + col];
+		return vec;
 	}
 
 	template<typename T>

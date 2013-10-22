@@ -9,6 +9,7 @@
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZUtil/zassert.h>
 #include <ZUtil/timer.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenSystem.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
@@ -160,10 +161,8 @@ void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian:
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
 {
 	vCurvature.resize(m_size);
-	if (curvatureType == 0)	
-		vCurvature = mesh->getMeanCurvature();
-	else if (curvatureType == 1) 
-		vCurvature = mesh->getGaussCurvature();
+	if (curvatureType == 0)	vCurvature = mesh->getMeanCurvature();
+	else if (curvatureType == 1) vCurvature = mesh->getGaussCurvature();
 }
 
 void DifferentialMeshProcessor::addNewHandle( int hIdx )
@@ -181,8 +180,8 @@ void DifferentialMeshProcessor::computeSGW()
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletScales[] = {10, 30, 90};
-	const int scales = 0;
+	double waveletScales[] = {40, 30, 90};
+	const int scales = 1;
 
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
 	Concurrency::parallel_for(0, vertCount, [&](int i) {
@@ -193,7 +192,8 @@ void DifferentialMeshProcessor::computeSGW()
 					double lambda = mhb.getEigVal(k);
 					const ZGeom::VecNd& phi = mhb.getEigVec(k);
 					double lt = std::pow(lambda * waveletScales[s], 2);
-					elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
+					//elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
+					elemVal += std::exp(-lambda * waveletScales[s]) * phi[i] * phi[j]; 
 				}
 				mMatWavelet(vertCount * s + i, j) = elemVal;
 				mMatWavelet(vertCount * s + j, i) = elemVal;
@@ -213,8 +213,29 @@ void DifferentialMeshProcessor::computeSGW()
 		}
 #endif
 	});
-
 	timer.stopTimer("Time to compute SGW: ");
+#if 0
+	ZGeom::SparseMatrixCSR<double, int> matW;
+	getMeshLaplacian(MeshLaplacian::CotFormula).getW().convertToCSR(matW, ZGeom::MatrixForm::MAT_FULL);
+	ZGeom::VecNd v1 = mhb.getEigVec(1), v2 = mhb.getEigVec(5), v3 = mhb.getEigVec(200);
+	ZGeom::VecNd v4 = mMatWavelet.getRowVec(0), v5 = mMatWavelet.getRowVec(1), v6 = mMatWavelet.getRowVec(500);
+	std::cout << ZGeom::innerProductSym(v1, matW, v1) << std::endl;
+	std::cout << ZGeom::innerProductSym(v1, matW, v2) << std::endl;
+	std::cout << ZGeom::innerProductSym(v1, matW, v4) << std::endl;
+	std::cout << ZGeom::innerProductSym(v2, matW, v4) << std::endl;
+	std::cout << ZGeom::innerProductSym(v3, matW, v4) << std::endl;
+	std::cout << ZGeom::innerProductSym(v4, matW, v4) << std::endl;
+	std::cout << ZGeom::innerProductSym(v4, matW, v5) << std::endl;
+	std::cout << ZGeom::innerProductSym(v4, matW, v6) << std::endl;
+	std::cout << ZGeom::innerProductSym(v3, matW, v6) << std::endl;
+	std::cout << endl;
+	std::cout << v1.sum() << '\n';
+	std::cout << v2.sum() << '\n';
+	std::cout << v3.sum() << '\n';
+	std::cout << v4.sum() << '\n';
+	std::cout << v5.sum() << '\n';
+	std::cout << v6.sum() << '\n';
+#endif
 }
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
@@ -246,28 +267,6 @@ void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType ker
 		}
 		values[i] = sum;
 	});
-}
-
-void DifferentialMeshProcessor::calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const
-{
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	calKernelSignature(scale, kernelType, normalized_values);
-
-	double normalize_factor = 0.;
-	for (auto iter = normalized_values.begin(); iter != normalized_values.end(); ++iter)
-	{
-		normalize_factor += *iter;
-	}
-
-	double normalize_factor2 = 0.;
-	for (auto iter = mhb.getEigVals().begin(); iter != mhb.getEigVals().end(); ++iter)
-	{
-		normalize_factor2 += std::exp(-*iter * scale);
-	}
-	cout << "factor1 = " << normalize_factor << ", " << "factor2 = " << normalize_factor2 << endl;
-
-	std::transform( normalized_values.begin(), normalized_values.end(), normalized_values.begin(), [=](double v){return v / normalize_factor;} );
 }
 
 void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vector<double>& timescales, KernelType kernelType )

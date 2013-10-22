@@ -61,6 +61,7 @@ private slots:
 	void showMarkNegNormalizedSignature();
 	void showAbsNormalizedSignature();
 	void showLogNormalizedSignature();
+	void showPosNegPlotSignature();
 	void displayNeighborVertices();
 	void displayDiffPosition();
 

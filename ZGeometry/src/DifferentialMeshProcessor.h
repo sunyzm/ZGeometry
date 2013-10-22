@@ -55,7 +55,6 @@ public:
 	void computeHeatDiffuseMat(double tMultiplier);
 
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
-	void calNormalizedKernelSignature(double scale, KernelType kernelType, std::vector<double>& normalized_values) const;
 	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void computeSimilarityMap1(int refPoint);
 	void computeSimilarityMap2(int refPoint);

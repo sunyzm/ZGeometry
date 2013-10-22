@@ -367,7 +367,9 @@ inline T VecN<T>::dot(const VecN<T>& v2) const
 template<typename T>
 inline T VecN<T>::sum() const
 {
-	return std::accumulate(mVec, mVec + mDim, 0);
+	double retval(0);
+	for (int i = 0; i < mDim; ++i) retval += mVec[i];
+	return retval;
 }
 
 template<typename T>

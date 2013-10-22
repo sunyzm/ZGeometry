@@ -301,10 +301,11 @@
      <property name="title">
       <string>SignatureMode</string>
      </property>
-     <addaction name="actionNormalizedSignature"/>
-     <addaction name="actionMarkNegativeNormalized"/>
-     <addaction name="actionAbsNormalized"/>
-     <addaction name="actionLogNormalized"/>
+     <addaction name="actionSigNormalized"/>
+     <addaction name="actionSigMarkNegativeNormalized"/>
+     <addaction name="actionSigAbsNormalized"/>
+     <addaction name="actionSigLogNormalized"/>
+     <addaction name="actionSigPosNegPlot"/>
     </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
@@ -852,24 +853,29 @@
     <string>Add Noise</string>
    </property>
   </action>
-  <action name="actionNormalizedSignature">
+  <action name="actionSigNormalized">
    <property name="text">
     <string>Normalized</string>
    </property>
   </action>
-  <action name="actionMarkNegativeNormalized">
+  <action name="actionSigMarkNegativeNormalized">
    <property name="text">
     <string>Mark Negative Normalized</string>
    </property>
   </action>
-  <action name="actionAbsNormalized">
+  <action name="actionSigAbsNormalized">
    <property name="text">
     <string>Abs Normalized</string>
    </property>
   </action>
-  <action name="actionLogNormalized">
+  <action name="actionSigLogNormalized">
    <property name="text">
     <string>LogNormalized</string>
+   </property>
+  </action>
+  <action name="actionSigPosNegPlot">
+   <property name="text">
+    <string>Pos-Neg Plot</string>
    </property>
   </action>
  </widget>

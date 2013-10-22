@@ -378,13 +378,14 @@ void ShapeEditor::deformSpectralWavelet()
 	}
 #endif
 	std::vector<int> fixedVerts;
-#if 0
+
 	std::set<int> freeVerts;
 	for (int i = 0; i < anchorCount; ++i) {
 		std::set<int> sFree;
-		mMesh->vertRingNeighborVerts(anchorIndex[i], 5, sFree, true);
+		mMesh->vertRingNeighborVerts(anchorIndex[i], 3, sFree, true);
 		for (int v : sFree) freeVerts.insert(v);
 	}
+#if 0
 	for (int i = 0; i < vertCount; ++i) {
 		if (freeVerts.find(i) == freeVerts.end())
 			fixedVerts.push_back(i);
@@ -396,8 +397,9 @@ void ShapeEditor::deformSpectralWavelet()
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
 		solveRHS[i].copyElements(diffCoord[i], 0);
-
-		//for (int a = 0; a < vertCount; ++a) solveRHS[i][a] *= 2;
+		//for (int a : freeVerts) solveRHS[i][a + vertCount] *= 1.5;
+		//for (int a = vertCount; a < vertCount * 2; ++a) solveRHS[i][a] *= 1.5;
+		//for (int a = vertCount; a < vertCount; ++a) solveRHS[i][a] *= 10;
 		for (int l = 0; l < anchorCount; ++l) {
 			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];

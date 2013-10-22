@@ -38,4 +38,16 @@ namespace ZGeom
 		std::copy_n(c, 4, mVal);
 	}
 
+	void Colorf::posNegColor( float val, const float* colorPos /*= ColorOrange*/, const float* colorNeg /*= ColorBlue*/ )
+	{
+		assert(-1.f <= val && val <= 1.f);
+		if (val >= 0) {
+			for (int i = 0; i < 3; ++i) mVal[i] = val * colorPos[i] + (1.f-val) * ColorWhite[i];
+		}
+		else {
+			for (int i = 0; i < 3; ++i) mVal[i] = -val * colorNeg[i] + (1.f+val) * ColorWhite[i];
+		}
+		mVal[3] = 1.f;
+	}
+
 }
