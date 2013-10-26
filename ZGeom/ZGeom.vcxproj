@@ -226,6 +226,7 @@
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
     <ClInclude Include="include\ZGeom\Laplacian.h" />
+    <ClInclude Include="include\ZGeom\MatchingPursuit.h" />
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h" />
     <ClInclude Include="include\ZGeom\MatVecFunctor.h" />
@@ -250,6 +251,7 @@
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
+    <ClCompile Include="src\MatchingPursuit.cpp" />
     <ClCompile Include="src\MatlabEngineWrapper.cpp" />
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\Mesh.cpp" />

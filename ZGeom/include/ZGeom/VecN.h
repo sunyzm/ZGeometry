@@ -81,12 +81,15 @@ public:
 
 	T norm1() const;
 	T norm2() const;
-	T pNorm(double p) const;
 	T normEuclidean() const { return norm2(); }
+	T pNorm(double p) const;
+
 	T dot(const VecN<T>& v2) const;
 	T sum() const;
 	T partial_sum(int a, int b) const;
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+
+	void normalize(double p);
 
 	/* iterator operations */
 	iterator begin() { return iterator(this, 0); };
@@ -347,12 +350,20 @@ inline T VecN<T>::norm2() const
 }
 
 template<typename T>
-inline T ZGeom::VecN<T>::pNorm( double p ) const
+inline T VecN<T>::pNorm( double p ) const
 {
 	assert( p > 0);
 	double sum(0);
-	for (int i = 0; i < mDim; ++i) sum += std::pow(mVec[i], p);
+	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), p);
 	return std::pow(sum, 1.0/p);
+}
+
+template<typename T>
+inline void VecN<T>::normalize(double p)
+{
+	assert(p > 0);
+	double norm = this->pNorm(p);
+	for (int i = 0; i < mDim; ++i) mVec[i] /= norm;
 }
 
 /* definitions for dot product */

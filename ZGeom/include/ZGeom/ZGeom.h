@@ -10,5 +10,6 @@
 #include "DenseMatrix.h"
 #include "SparseMatrix.h"
 #include "EigenSystem.h"
+#include "MatchingPursuit.h"
 
 #endif

@@ -1,13 +1,13 @@
 #include "ShapeEditor.h"
 #include <iostream>
 #include <random>
+#include <functional>
 #include <ppl.h>
-#include <ZGeom/SparseMatrix.h>
-#include <ZGeom/SparseMatrixCSR.h>
-#include <ZGeom/VecN.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZUtil/timer.h>
 #include <ZUtil/zassert.h>
+#include <ZUtil/zutil_io.h>
 
 Vector3D toVector3D(const ZGeom::Vec3d& v)
 {
@@ -26,6 +26,8 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	processor->getMesh()->getVertCoordinates(mOldCoord); 
 	mEngine = processor->getMatlabEngineWrapper();
 	std::cout << "Shape editor is initialized!" << std::endl;
+
+	editTest1();
 }
 
 
@@ -550,4 +552,129 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 
 	double avgError = errorSum / vertCount / mMesh->getAvgEdgeLength();
 	std::cout << "Average reconstruct error: " << avgError << std::endl;
+}
+
+void ShapeEditor::editTest1()
+{
+	const int vertCount = mMesh->vertCount();
+	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	ZGeom::SparseMatrixCSR<double, int> matW;
+	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
+	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
+	const int nEig = mhb.eigVecCount();
+	MeshCoordinates oldCoord;
+	mMesh->getVertCoordinates(oldCoord);
+	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0), &vy = oldCoord.getCoordFunc(1), &vz = oldCoord.getCoordFunc(2);
+
+
+	MeshCoordinates newCoord(vertCount);
+	ZGeom::VecNd &xCoord = newCoord.getCoordFunc(0), &yCoord = newCoord.getCoordFunc(1), &zCoord = newCoord.getCoordFunc(2);
+	std::vector<double> xCoeff(nEig), yCoeff(nEig), zCoeff(nEig);
+
+	////////////////  Fourier approximation  /////////////////////////////////////////////////
+	////
+	std::vector<std::tuple<double, int, double> > diffSeq;
+	for (int i = 0; i < nEig; ++i) {
+		const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
+		xCoeff[i] = ZGeom::innerProductSym(vx, matW, eigVec);
+		yCoeff[i] = ZGeom::innerProductSym(vy, matW, eigVec);
+		zCoeff[i] = ZGeom::innerProductSym(vz, matW, eigVec);
+		xCoord += xCoeff[i] * eigVec;
+		yCoord += yCoeff[i] * eigVec;
+		zCoord += zCoeff[i] * eigVec;
+
+		diffSeq.push_back(std::make_tuple((xCoord-vx).norm2(), i, xCoeff[i])); 
+	}
+	std::ofstream ofs1("output/fourier_approx.txt");
+	for (auto t : diffSeq) {
+		ofs1 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+	}
+	//////////////////////////////////////////////////////////////////////////
+	
+	////////////////// Fourier matching pursuit/////////////////////////////////////////////////////
+	////
+	{
+		std::vector<ZGeom::PursuitApproxItem> vPursuit;
+		std::vector<ZGeom::VecNd> vBasis;
+		for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
+		ZGeom::InnerProdcutFunc innerProdMatW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double { return ZGeom::innerProductSym(v1, matW, v2); };
+
+		CStopWatch timer;
+		timer.startTimer();
+		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, nEig, vPursuit);
+		timer.stopTimer("Time to compute Fourier MP: ");
+#if 0
+		std::set<int> availableBasis;
+		for (int i = 0; i < nEig; ++i) availableBasis.insert(i);
+		ZGeom::VecNd vRf = vx;
+		for (int i = 0; i < nEig; ++i) {
+			double maxCoeff = 0;
+			int selectedEigK = -1;
+			for (int eigK : availableBasis) {
+				double candidateCoeff = innerProdMatW(vBasis[eigK], vRf);//ZGeom::innerProductSym(mhb.getEigVec(eigK), matW, vRf);
+				if (std::fabs(candidateCoeff) > std::fabs(maxCoeff)) {
+					maxCoeff = candidateCoeff;
+					selectedEigK = eigK;
+				}
+			}
+			vRf = vRf - maxCoeff*mhb.getEigVec(selectedEigK);
+			vPursuit.push_back(std::make_tuple(vRf.norm2(), selectedEigK, maxCoeff));
+
+			availableBasis.erase(selectedEigK);
+			selectedEigK = -1;		
+		}
+#endif
+		std::ofstream ofs2("output/fourier_mp_approx.txt");
+		for (auto t : vPursuit) {
+			ofs2 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////
+	////////////////// Wavelet matching pursuit/////////////////////////////////////////////////////
+	////
+#if 0
+	std::cout << "To compute wavelet matching pursuit" << std::endl;
+
+	const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+	if (matSGW.empty()) mProcessor->computeSGW();
+
+	std::vector<ZGeom::VecNd> vBasis;
+	for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
+	for (int i = 0; i < matSGW.rowCount(); ++i) {
+		vBasis.push_back(matSGW.getRowVec(i));
+		vBasis.back().normalize(2);
+	}
+
+	{
+		std::vector<std::tuple<double, int, double> > vPursuit;
+		std::set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);
+		ZGeom::VecNd vRf = vx;
+		int nSelectedBasis = nEig;
+		for (int k = 0; k < nSelectedBasis; ++k) {
+			double maxCoeff = 0;
+			int selectedBasis = -1;
+			for (int iBasis : availableBasis) {
+				double candidateCoeff = ZGeom::innerProductSym(vBasis[iBasis], matW, vRf);
+				if (std::fabs(candidateCoeff) > std::fabs(maxCoeff)) {
+					maxCoeff = candidateCoeff;
+					selectedBasis = iBasis;
+				}
+			}
+			vRf = vRf - maxCoeff * vBasis[selectedBasis];
+			vPursuit.push_back(std::make_tuple(vRf.norm2(), selectedBasis, maxCoeff));
+
+			availableBasis.erase(selectedBasis);
+			selectedBasis = -1;		
+		}
+
+		std::ofstream ofs3("output/wavelet_mp_approx.txt");
+		for (auto t : vPursuit) {
+			ofs3 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+		}
+	}
+#endif
+
+	std::cout << "Finish editTest1" << std::endl;
 }

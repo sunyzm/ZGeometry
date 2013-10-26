@@ -29,6 +29,8 @@ private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
 	void reconstructSpectralWavelet();
 	void evalReconstruct(const MeshCoordinates& newCoord) const;
+	
+	void editTest1();
 
 	CMesh* mMesh;
 	MeshCoordinates mOldCoord;

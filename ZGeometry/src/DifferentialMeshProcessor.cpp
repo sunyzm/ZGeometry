@@ -179,8 +179,8 @@ void DifferentialMeshProcessor::computeSGW()
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletScales[] = {10, 30, 90};
-	const int scales = 1;
+	double waveletScales[] = {10, 20, 40};
+	const int scales = 3;
 
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
 	Concurrency::parallel_for(0, vertCount, [&](int i) {
@@ -215,7 +215,7 @@ void DifferentialMeshProcessor::computeSGW()
 	});
 	timer.stopTimer("Time to compute SGW: ");
 
-#if 1	//some verification code
+#if 0	//some verification code
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	getMeshLaplacian(MeshLaplacian::CotFormula).getW().convertToCSR(matW, ZGeom::MatrixForm::MAT_FULL);
 	ZGeom::VecNd v1 = mhb.getEigVec(1), v2 = mhb.getEigVec(5), v3 = mhb.getEigVec(200);
