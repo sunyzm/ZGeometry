@@ -16,7 +16,7 @@ namespace ZGeom
 		DenseMatrix() : mRow(0), mCol(0), mData(NULL) {}
 		DenseMatrix(uint row, uint col) : mRow(row), mCol(col) { 
 			mData = new T[row*col]; 
-			for (int i = 0; i < row*col; ++i) mData[i] = 0;
+			for (uint i = 0; i < row*col; ++i) mData[i] = 0;
 		}
 		DenseMatrix(const DenseMatrix<T>& m2);
 		DenseMatrix(DenseMatrix<T>&& m2);

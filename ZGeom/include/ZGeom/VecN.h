@@ -30,8 +30,8 @@ public:
 	VecN() : mVec(NULL), mDim(0) {}
 	VecN(const VecN<T>& v2);
 	VecN(VecN<T>&& v2);
-	VecN(uint n) : mVec(NULL) { resize(n, 0); }
-	VecN(uint n, T val) : mVec(NULL) { resize(n, val); }
+	VecN(uint n) : mVec(NULL), mDim(0) { resize(n, 0); }
+	VecN(uint n, T val) : mVec(NULL), mDim(0) { resize(n, val); }
 	VecN(T* vec, uint n);
 	VecN(const std::vector<T>& vec);
 	~VecN() { delete []mVec; }
@@ -217,7 +217,7 @@ inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
-	if (n == mDim) return;
+	if (n == mDim && mVec != NULL) return;
 
 	delete []mVec;
 	mDim = n;
