@@ -199,7 +199,7 @@ void DifferentialMeshProcessor::computeSGW()
 				mMatWavelet(vertCount * s + j, i) = elemVal;
 			}
 		}
-#if 1
+#if 0
 		for (int j = 0; j <= i; ++j) {
 			double elemVal(0);
 			for (int k = 0; k < eigCount; ++k) {	

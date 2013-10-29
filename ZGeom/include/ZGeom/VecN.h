@@ -6,6 +6,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <iterator>
+#include <functional>
 #include "common.h"
 
 //#define USE_PPL
@@ -19,6 +20,7 @@ namespace ZGeom
 template<typename T> class VecN;
 template<typename T> class SparseMatrix;
 template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+typedef std::function<double(const VecN<double>&, const VecN<double>&)> InnerProdcutFunc;
 
 template<typename T>
 class VecN
@@ -90,6 +92,7 @@ public:
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 	void normalize(double p);
+	void normalize(const InnerProdcutFunc& innerProdFunc);
 
 	/* iterator operations */
 	iterator begin() { return iterator(this, 0); };
@@ -363,6 +366,14 @@ inline void VecN<T>::normalize(double p)
 {
 	assert(p > 0);
 	double norm = this->pNorm(p);
+	for (int i = 0; i < mDim; ++i) mVec[i] /= norm;
+}
+
+
+template<>
+inline void VecN<double>::normalize(const InnerProdcutFunc& innerProdFunc)
+{
+	double norm = std::sqrt(innerProdFunc(*this, *this));
 	for (int i = 0; i < mDim; ++i) mVec[i] /= norm;
 }
 

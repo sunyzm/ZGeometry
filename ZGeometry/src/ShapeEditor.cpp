@@ -576,9 +576,9 @@ void ShapeEditor::editTest1()
 	std::vector<std::tuple<double, int, double> > diffSeq;
 	for (int i = 0; i < nEig; ++i) {
 		const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
-		xCoeff[i] = ZGeom::innerProductSym(vx, matW, eigVec);
-		yCoeff[i] = ZGeom::innerProductSym(vy, matW, eigVec);
-		zCoeff[i] = ZGeom::innerProductSym(vz, matW, eigVec);
+		xCoeff[i] = innerProdMatW(vx, eigVec);
+		yCoeff[i] = innerProdMatW(vy, eigVec);
+		zCoeff[i] = innerProdMatW(vz, eigVec);
 		xCoord += xCoeff[i] * eigVec;
 		yCoord += yCoeff[i] * eigVec;
 		zCoord += zCoeff[i] * eigVec;
@@ -591,7 +591,7 @@ void ShapeEditor::editTest1()
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
-	////////////////// Fourier matching pursuit/////////////////////////////////////////////////////
+	////////////////// Fourier matching pursuit //////////////////////////////
 	////
 	{
 		std::vector<ZGeom::PursuitApproxItem> vPursuit;
@@ -609,22 +609,26 @@ void ShapeEditor::editTest1()
 			ofs2 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 		}
 	}
-
 	//////////////////////////////////////////////////////////////////////////
-	////////////////// Wavelet matching pursuit/////////////////////////////////////////////////////
+	
+	////////////////// Wavelet matching pursuit //////////////////////////////
 	////
-#if 0
-	std::cout << "To compute wavelet matching pursuit" << std::endl;
-
-	const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW();
-
+#if 1
 	{
+		std::cout << "To compute wavelet matching pursuit" << std::endl;
+
+		const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+		if (matSGW.empty()) mProcessor->computeSGW();
+
 		std::vector<ZGeom::VecNd> vBasis;
-		for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
+		for (int i = 0; i < nEig; ++i) 
+			vBasis.push_back(mhb.getEigVec(i));
+
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
-			vBasis.push_back(matSGW.getRowVec(i));
-			vBasis.back().normalize(2);
+			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
+			newBasis.normalize(innerProdMatW);
+			vBasis.push_back(newBasis);
+			if (i < 5) std::cout << "inner product: " << innerProdMatW(newBasis, newBasis) << std::endl;
 		}
 		std::vector<std::tuple<double, int, double> > vPursuit;
 
@@ -640,6 +644,7 @@ void ShapeEditor::editTest1()
 		}
 	}
 #endif
+	//////////////////////////////////////////////////////////////////////////
 
 	std::cout << "Finish editTest1" << std::endl;
 }
