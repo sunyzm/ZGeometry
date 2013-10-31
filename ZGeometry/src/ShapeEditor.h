@@ -31,9 +31,12 @@ private:
 	void evalReconstruct(const MeshCoordinates& newCoord) const;
 	
 	void editTest1();
+	void editTest2();
 
 	CMesh* mMesh;
 	MeshCoordinates mOldCoord;
 	DifferentialMeshProcessor* mProcessor;
 	ZGeom::MatlabEngineWrapper* mEngine;	
+
+	std::vector<ZGeom::VecNd> mEditBasis;	
 };

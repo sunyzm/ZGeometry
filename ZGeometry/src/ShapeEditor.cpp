@@ -28,6 +28,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	std::cout << "Shape editor is initialized!" << std::endl;
 
 	editTest1();
+	//editTest2();
 }
 
 
@@ -399,9 +400,10 @@ void ShapeEditor::deformSpectralWavelet()
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
 		solveRHS[i].copyElements(diffCoord[i], 0);
-		//for (int a : freeVerts) solveRHS[i][a + vertCount] *= 1.5;
-		//for (int a = vertCount; a < vertCount * 2; ++a) solveRHS[i][a] *= 1.5;
-		//for (int a = vertCount; a < vertCount; ++a) solveRHS[i][a] *= 10;
+
+		for (int v = 0; v < vertCount; ++v)
+			solveRHS[i][v] *= 2.0;
+
 		for (int l = 0; l < anchorCount; ++l) {
 			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
@@ -620,15 +622,13 @@ void ShapeEditor::editTest1()
 		const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 		if (matSGW.empty()) mProcessor->computeSGW();
 
-		std::vector<ZGeom::VecNd> vBasis;
-		for (int i = 0; i < nEig; ++i) 
-			vBasis.push_back(mhb.getEigVec(i));
+		std::vector<ZGeom::VecNd>& vBasis = mEditBasis;
+		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
 
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(innerProdMatW);
 			vBasis.push_back(newBasis);
-			if (i < 5) std::cout << "inner product: " << innerProdMatW(newBasis, newBasis) << std::endl;
 		}
 		std::vector<std::tuple<double, int, double> > vPursuit;
 
@@ -647,4 +647,30 @@ void ShapeEditor::editTest1()
 	//////////////////////////////////////////////////////////////////////////
 
 	std::cout << "Finish editTest1" << std::endl;
+}
+
+void ShapeEditor::editTest2()
+{
+	const int vertCount = mMesh->vertCount();
+	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	ZGeom::SparseMatrixCSR<double, int> matW;
+	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
+	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
+	const int nEig = mhb.eigVecCount();
+
+	using ZGeom::VecNd;
+	const VecNd& fiedlerVec = mhb.getEigVec(1);
+	std::vector<std::pair<int, double> > vertFiedler;
+	for (int i = 0; i < vertCount; ++i) vertFiedler.push_back(std::make_pair(i, fiedlerVec[i]));
+
+	std::sort(vertFiedler.begin(), vertFiedler.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2) { return p1.second < p2.second; });
+	
+	std::ofstream ofs("output/SortedEigVec.txt");
+	for (auto p : vertFiedler) {
+		ofs << p.first;
+		for (int ek = 1; ek <= 10; ek += 1) {
+			ofs << ' ' << mhb.getEigVec(ek)[p.first];
+		}
+		ofs << std::endl;
+	}
 }

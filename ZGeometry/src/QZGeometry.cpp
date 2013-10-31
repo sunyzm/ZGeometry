@@ -204,6 +204,7 @@ void QZGeometryWindow::makeConnections()
 
 	////	compute	////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
+	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
 	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
 	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
@@ -1114,6 +1115,11 @@ void QZGeometryWindow::repeatOperation()
 	case Compute_Eig_Func:
 		computeEigenfunction();
 		break;
+
+	case Compute_Edit_Basis:
+		computeEditBasis();
+		break;
+	
 	case Compute_HKS:
 		computeHKS();
 		break;
@@ -1951,4 +1957,25 @@ void QZGeometryWindow::showBandCurve01Siganture()
 {
 	mSignatureMode = BandCurve01;
 	changeSignatureMode(BandCurve01);
+}
+
+void QZGeometryWindow::computeEditBasis()
+{
+	if (mShapeEditor.mEditBasis.empty()) {
+		std::cout << "No wavelet basis available!" << std::endl;
+		return;
+	}
+	int select_basis = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER) : 0;
+
+	for (int i = 0; i < 1; ++i) {
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		std::vector<double> eigVec = mShapeEditor.mEditBasis[select_basis].toStdVector();
+		addColorSignature(i, eigVec, StrColorWaveletBasis);
+	}
+
+
+	displaySignature(StrColorWaveletBasis.c_str());
+	current_operation = Compute_Edit_Basis;
+	qout.output("Show wavelet basis" + Int2String(select_basis));
+	updateDisplaySignatureMenu();
 }

@@ -179,19 +179,34 @@ void DifferentialMeshProcessor::computeSGW()
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	double waveletScales[] = {10, 20, 40};
-	const int scales = 3;
+
+	std::function<double(double)> generator1 = [](double x) {
+		if (x < 1) return x*x;
+		else if (x <= 2) return (-5. + 11.*x - 6.*x*x + x*x*x);
+		else return 4.0/x/x;
+	};
+
+	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
+	const double K = 20.0;
+	double minEigVal = maxEigVal / K;
+	double minT = 1./maxEigVal, maxT = 2./minEigVal;
+	const int scales = 5;	
+	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(scales - 1));
+	
+	std::vector<double> waveletScales(scales);	
+	for (int s = 0; s < scales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
 
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
 	Concurrency::parallel_for(0, vertCount, [&](int i) {
-		for (int s = 0; s < scales; ++s) {
-			for (int j = 0; j <= i; ++j) {
+		for (int j = 0; j <= i; ++j) {
+			for (int s = 0; s < scales; ++s) {
 				double elemVal(0);
 				for (int k = 0; k < eigCount; ++k) {
 					double lambda = mhb.getEigVal(k);
 					const ZGeom::VecNd& phi = mhb.getEigVec(k);
-					double lt = std::pow(lambda * waveletScales[s], 2);
-					elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
+					elemVal += generator1(waveletScales[s] * lambda) *  phi[i] * phi[j];
+					//double lt = std::pow(lambda * waveletScales[s], 2);
+					//elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
 					//elemVal += lambda * std::exp(-lambda*waveletScales[s]) * phi[i] * phi[j];
 					//elemVal += std::exp(-lambda * waveletScales[s]) * phi[i] * phi[j]; 
 				}
@@ -199,14 +214,16 @@ void DifferentialMeshProcessor::computeSGW()
 				mMatWavelet(vertCount * s + j, i) = elemVal;
 			}
 		}
-#if 0
+#if 1
+		double gamma = 1.3849001794597505097;
 		for (int j = 0; j <= i; ++j) {
 			double elemVal(0);
 			for (int k = 0; k < eigCount; ++k) {	
 				double lambda = mhb.getEigVal(k);
 				const ZGeom::VecNd& phi = mhb.getEigVec(k);
-				elemVal += std::exp(-lambda*lambda) * phi[i] * phi[j];
+				//elemVal += gamma*std::exp(-lambda*lambda) * phi[i] * phi[j];
 				//elemVal += std::exp(-lambda*30) * phi[i] * phi[j];
+				elemVal +=  gamma * std::exp(-std::pow(lambda/(0.6*minEigVal), 4)) * phi[i] * phi[j];
 			}
 			mMatWavelet(vertCount * scales + i, j) = elemVal;
 			mMatWavelet(vertCount * scales + j, i) = elemVal;
@@ -237,12 +254,6 @@ void DifferentialMeshProcessor::computeSGW()
 	std::cout << v5.sum() << '\n';
 	std::cout << v6.sum() << '\n';
 	std::cout << endl;
-	v4.normalize(2);
-	v5.normalize(2);
-	v6.normalize(2);
-	std::cout << v4.norm2() << '\n';
-	std::cout << v5.norm2() << '\n';
-	std::cout << v6.norm2() << '\n';
 #endif
 }
 

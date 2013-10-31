@@ -356,6 +356,7 @@
     <addaction name="actionComputeBiharmonic"/>
     <addaction name="actionComputeHeatTransfer"/>
     <addaction name="actionComputeGeodesics"/>
+    <addaction name="actionComputeBasis"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTask">
@@ -882,6 +883,11 @@
   <action name="actionSigBandCurve01">
    <property name="text">
     <string>Band Curve 0-1</string>
+   </property>
+  </action>
+  <action name="actionComputeBasis">
+   <property name="text">
+    <string>Edit Basis</string>
    </property>
   </action>
  </widget>

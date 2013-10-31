@@ -42,6 +42,7 @@ private slots:
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
+	void computeEditBasis();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
@@ -149,7 +150,7 @@ private:
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
-		  Compute_Eig_Func, Compute_Biharmonic,
+		  Compute_Eig_Func, Compute_Biharmonic, Compute_Edit_Basis,
 		  Compute_Geodesics, Compute_Heat,
 		  None} current_operation;
 
