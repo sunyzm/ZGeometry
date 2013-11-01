@@ -79,6 +79,7 @@ public:
 	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelet; }
+	ZGeom::DenseMatrixd& getWaveletMat() { return mMatWavelet; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	int  getRefPointIndex() const { return mRefVert; }

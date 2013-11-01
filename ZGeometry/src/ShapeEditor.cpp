@@ -556,6 +556,37 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 	std::cout << "Average reconstruct error: " << avgError << std::endl;
 }
 
+bool readPursuits(const std::string& pursuitFile, std::vector<ZGeom::PursuitApproxItem> *vPursuits[]) {
+	if (!ZUtil::fileExist(pursuitFile)) 
+		return false;
+
+	std::ifstream ifs(pursuitFile.c_str());
+	int atomCount;
+	ifs >> atomCount;
+	
+	for (int b = 0; b < 3; ++b) {
+		vPursuits[b]->resize(atomCount);
+		for (int i = 0; i < atomCount; ++i) {
+			ZGeom::PursuitApproxItem& item = (*vPursuits[b])[i];
+			ifs >> std::get<0>(item) >> std::get<1>(item) >> std::get<2>(item);
+		}
+	}
+
+	return true;
+}
+
+void writePursuits(const std::string& pursuitFile, std::vector<ZGeom::PursuitApproxItem> *vPursuits[]) {
+	std::ofstream ofs(pursuitFile.c_str());
+	int atomCount = vPursuits[0]->size();
+	ofs << atomCount << std::endl;
+	for (int b = 0; b < 3; ++b) {
+		for (int i = 0; i < atomCount; ++i) {
+			const ZGeom::PursuitApproxItem& item = (*vPursuits[b])[i];
+			ofs << std::get<0>(item) << ' ' << std::get<1>(item) << ' ' << std::get<2>(item) << std::endl;
+		}
+	}	
+}
+
 void ShapeEditor::editTest1()
 {
 	const int vertCount = mMesh->vertCount();
@@ -576,7 +607,7 @@ void ShapeEditor::editTest1()
 	////////////////  Fourier approximation  /////////////////////////////////////////////////
 	////
 	std::vector<std::tuple<double, int, double> > diffSeq;
-	for (int i = 0; i < nEig; ++i) {
+	for (int i = 0; i < 50; ++i) {
 		const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
 		xCoeff[i] = innerProdMatW(vx, eigVec);
 		yCoeff[i] = innerProdMatW(vy, eigVec);
@@ -591,25 +622,37 @@ void ShapeEditor::editTest1()
 	for (auto t : diffSeq) {
 		ofs1 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 	}
+	mCoord1 = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
 	//////////////////////////////////////////////////////////////////////////
 	
 	////////////////// Fourier matching pursuit //////////////////////////////
 	////
 	{
-		std::vector<ZGeom::PursuitApproxItem> vPursuit;
+		std::vector<ZGeom::PursuitApproxItem> vPursuitX, vPursuitY, vPursuitZ;
 		std::vector<ZGeom::VecNd> vBasis;
 		for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
 
 		CStopWatch timer;
 		timer.startTimer();
-		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, nEig, vPursuit);
+		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, nEig, vPursuitX);
 //		ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit, *mEngine);
 		timer.stopTimer("Time to compute Fourier MP: ");
 
 		std::ofstream ofs2("output/fourier_mp_approx.txt");
-		for (auto t : vPursuit) {
+		for (auto t : vPursuitX) {
 			ofs2 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 		}
+
+		ZGeom::MatchingPursuit(vy, vBasis, innerProdMatW, nEig, vPursuitY);
+		ZGeom::MatchingPursuit(vz, vBasis, innerProdMatW, nEig, vPursuitZ);
+		
+		mCoord2.resize(vertCount);
+		for (int i = 0; i < 50; ++i) {
+			mCoord2.getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
+			mCoord2.getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
+			mCoord2.getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
+		}
+
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -619,32 +662,58 @@ void ShapeEditor::editTest1()
 	{
 		std::cout << "To compute wavelet matching pursuit" << std::endl;
 
-		const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		if (matSGW.empty()) mProcessor->computeSGW();
+		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+		if (matSGW.empty()) {
+			std::string sgwFile = "cache/" + mMesh->getMeshName() + ".sgw";
+			if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
+			else {
+				mProcessor->computeSGW();
+				matSGW.write(sgwFile);
+			}			
+		}
 
 		std::vector<ZGeom::VecNd>& vBasis = mEditBasis;
 		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
-
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(innerProdMatW);
 			vBasis.push_back(newBasis);
 		}
-		std::vector<std::tuple<double, int, double> > vPursuit;
 
-		CStopWatch timer;
-		timer.startTimer();
-// 		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit);
-		ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit, *mEngine);
-		timer.stopTimer("Time to compute Wavelet MP: ");
+		std::vector<ZGeom::PursuitApproxItem> vPursuitX, vPursuitY, vPursuitZ;
+		std::vector<ZGeom::PursuitApproxItem> *vPursuits[3] = {&vPursuitX, &vPursuitY, &vPursuitZ};
 
-		std::ofstream ofs3("output/wavelet_mp_approx.txt");
-		for (auto t : vPursuit) {
-			ofs3 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+		const std::string waveltPursuitFile = "cache/" + mMesh->getMeshName() + ".omp";
+		if (readPursuits(waveltPursuitFile, vPursuits)) ;
+		else {
+			CStopWatch timer;
+			timer.startTimer();
+			// 		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit);
+			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuitX, *mEngine);
+			timer.stopTimer("Time to compute Wavelet MP: ");
+
+			std::ofstream ofs3("output/wavelet_mp_approx.txt");
+			for (auto t : vPursuitX) {
+				ofs3 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+			}
+
+			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdMatW, 100, vPursuitY, *mEngine);
+			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdMatW, 100, vPursuitZ, *mEngine);
+
+			writePursuits(waveltPursuitFile, vPursuits);
 		}
-	}
+
+		mCoord3.resize(vertCount);
+		for (int i = 0; i < 50; ++i) {
+			mCoord3.getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
+			mCoord3.getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
+			mCoord3.getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
+		}
+	} //end of wavelet OMP
 #endif
 	//////////////////////////////////////////////////////////////////////////
+
+	mMesh->setVertCoordinates(mCoord3);
 
 	std::cout << "Finish editTest1" << std::endl;
 }
@@ -673,4 +742,14 @@ void ShapeEditor::editTest2()
 		}
 		ofs << std::endl;
 	}
+}
+
+int gCoordSelect = 0;
+
+void ShapeEditor::revert()
+{
+	std::cout << "Selected coordinate: " << gCoordSelect << std::endl;
+	MeshCoordinates* coords[4] = {&mOldCoord, &mCoord1, &mCoord2, &mCoord3};
+	mMesh->setVertCoordinates(*coords[gCoordSelect]);
+	gCoordSelect = (gCoordSelect + 1) % 4;
 }

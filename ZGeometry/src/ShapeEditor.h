@@ -10,7 +10,7 @@ class ShapeEditor
 public:
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 	void init(DifferentialMeshProcessor* processor);
-	void revert() { mMesh->setVertCoordinates(mOldCoord); }
+	void revert();
 	const MeshCoordinates& oldCoord() const { return mOldCoord; }
 
 	void addNoise(double phi);
@@ -39,4 +39,6 @@ private:
 	ZGeom::MatlabEngineWrapper* mEngine;	
 
 	std::vector<ZGeom::VecNd> mEditBasis;	
+
+	MeshCoordinates mCoord1, mCoord2, mCoord3;
 };

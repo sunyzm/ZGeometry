@@ -2,6 +2,7 @@
 #define ZGEOM_DENSE_MATRIX_H
 #include <fstream>
 #include <string>
+#include <fstream>
 #include <algorithm>
 #include <stdexcept>
 #include "common.h"
@@ -41,6 +42,9 @@ namespace ZGeom
 		T rowSumNorm() const;
 		T frobeniusNorm() const;
 
+		void write(const std::string& filename);
+		void read(const std::string& filename);
+
 	private:
 		T elem(uint i, uint j) const { return mData[i * mCol + j]; }
 		T* mData;
@@ -79,13 +83,38 @@ namespace ZGeom
 	}
 
 	template<typename T>
-	inline const DenseMatrix<T>& ZGeom::DenseMatrix<T>::operator=( const DenseMatrix<T>& m2 )
+	inline const DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2 )
 	{
 		delete []mData;
 		mRow = m2.mRow;
 		mCol = m2.mCol;
 		mData = new T[mRow*mCol];
 		std::copy_n(m2.mData, mRow*mCol, mData);
+	}
+
+	template<typename T>
+	inline void DenseMatrix<T>::write(const std::string& filename)
+	{
+		std::ofstream ofs(filename.c_str(), std::ios::binary);
+		int st = sizeof(T);
+		ofs.write((const char*)&st, sizeof(st));
+		ofs.write((const char*)&mRow, sizeof(mRow));
+		ofs.write((const char*)&mCol, sizeof(mCol));		
+		ofs.write((const char*)mData, sizeof(T)*mRow*mCol);
+	}
+
+	template<typename T>
+	inline void DenseMatrix<T>::read(const std::string& filename)
+	{
+		std::ifstream ifs(filename.c_str(), std::ios::binary);
+		int st;
+		ifs.read((char*)&st, sizeof(st));
+		if (sizeof(T) != st) throw std::runtime_error("DenseMatrix element type not compatible!");
+
+		ifs.read((char*)&mRow, sizeof(mRow));
+		ifs.read((char*)&mCol, sizeof(mCol));		
+		mData = new T[mRow*mCol];
+		ifs.read((char*)mData, sizeof(T)*mRow*mCol);
 	}
 
 	template<typename T>
