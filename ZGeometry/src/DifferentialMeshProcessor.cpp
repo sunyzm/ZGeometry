@@ -5,6 +5,8 @@
 #include <algorithm>
 #include <functional>
 #include <ppl.h>
+#include <amp.h>
+#include <amp_math.h>
 #include <mkl.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZUtil/zassert.h>
@@ -50,6 +52,32 @@ double mhwTransferFunc1( double lambda, double t )
 {
 	return lambda * std::exp(-lambda * t);
 }
+
+void quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult)
+{
+	using namespace Concurrency;
+	// Y=X'*Q*X
+	array_view<double, 2> X(dim2, dim1, mat1);
+	array_view<double, 1> Q(dim2, diag);
+	array_view<double, 2> Y(dim1, dim1, matResult);	
+
+	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp){
+		int row = idx[0], col = idx[1];
+		if (row >= col) {
+			Y[idx] = 0;
+			for (int k = 0; k < dim2; ++k) {
+				Y[idx] += Q(k) * X(k, row) * X(k, col);
+			}
+		}	
+	});
+	Y.synchronize();
+
+	for (int i = 0; i < dim1; ++i ) {
+		for (int j = i + 1; j < dim1; ++j)
+			matResult[i*dim1 + j] = matResult[j*dim1 + i];
+	}
+}
+
 
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
@@ -192,19 +220,49 @@ void DifferentialMeshProcessor::computeSGW()
 	double minT = 1./maxEigVal, maxT = 2./minEigVal;
 	const int scales = 5;	
 	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(scales - 1));
-	
+
 	std::vector<double> waveletScales(scales);	
 	for (int s = 0; s < scales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
-
 	mMatWavelet.resize(vertCount*(scales+1), vertCount);
-	Concurrency::parallel_for(0, vertCount, [&](int i) {
+
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	double *pEigVec = new double[eigCount*vertCount];
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	std::vector<double> vDiag(eigCount);
+
+#if 1
+	//////////////////////////////////////////////////////////////////////////
+	// now compute SGW with AMP
+	for (int s = 0; s < scales; ++s) {
+		for (int i = 0; i < eigCount; ++i) 
+			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
+		double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * s;
+
+		quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	}
+	
+	double gamma = 1.3849001794597505097;
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
+	double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * scales;
+	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+
+#else
+	//////////////////////////////////////////////////////////////////////////
+	// now compute SGW with PPL
+	for (int s = 0; s < scales; ++s) {
+		for (int k = 0; k < eigCount; ++k) 
+			vDiag[k] = generator1(waveletScales[s] * pEigVals[k]);
+
+		Concurrency::parallel_for(0, vertCount, [&](int i) {
 		for (int j = 0; j <= i; ++j) {
-			for (int s = 0; s < scales; ++s) {
 				double elemVal(0);
 				for (int k = 0; k < eigCount; ++k) {
 					double lambda = mhb.getEigVal(k);
 					const ZGeom::VecNd& phi = mhb.getEigVec(k);
-					elemVal += generator1(waveletScales[s] * lambda) *  phi[i] * phi[j];
+					elemVal += vDiag[k] *  phi[i] * phi[j];
 					//double lt = std::pow(lambda * waveletScales[s], 2);
 					//elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
 					//elemVal += lambda * std::exp(-lambda*waveletScales[s]) * phi[i] * phi[j];
@@ -213,9 +271,13 @@ void DifferentialMeshProcessor::computeSGW()
 				mMatWavelet(vertCount * s + i, j) = elemVal;
 				mMatWavelet(vertCount * s + j, i) = elemVal;
 			}
-		}
+		});
+	}
 #if 1
-		double gamma = 1.3849001794597505097;
+	double gamma = 1.3849001794597505097;
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
+	Concurrency::parallel_for(0, vertCount, [&](int i) {		
 		for (int j = 0; j <= i; ++j) {
 			double elemVal(0);
 			for (int k = 0; k < eigCount; ++k) {	
@@ -228,10 +290,11 @@ void DifferentialMeshProcessor::computeSGW()
 			mMatWavelet(vertCount * scales + i, j) = elemVal;
 			mMatWavelet(vertCount * scales + j, i) = elemVal;
 		}
-#endif
 	});
-	timer.stopTimer("Time to compute SGW: ");
+#endif	
+#endif
 
+	timer.stopTimer("Time to compute SGW: ");
 #if 0	//some verification code
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	getMeshLaplacian(MeshLaplacian::CotFormula).getW().convertToCSR(matW, ZGeom::MatrixForm::MAT_FULL);
@@ -591,4 +654,59 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 
 	ZGeom::addMatMat(matW, matLc, -t, mHeatDiffuseMat);	//A = W - t*Lc
 	mHeatDiffuseSolver.initialize(mHeatDiffuseMat, true, true);
+}
+
+void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatrix<double>& hkmat )
+{
+	const int vertCount = mesh->vertCount();
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const int eigCount = mhb.eigVecCount();
+	hkmat.resize(vertCount, vertCount);
+	double *pResult = hkmat.raw_ptr();
+
+	double *pEigVec = new double[vertCount*eigCount];
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+	
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	std::vector<double> vDiag(eigCount);
+	for (int i = 0; i < eigCount; ++i) vDiag[i] = std::exp(-pEigVals[i]*t);
+
+	CStopWatch timer;
+	timer.startTimer();
+	Concurrency::parallel_for(0, vertCount, [&](int i) {
+		for (int j = 0; j <= i; ++j) {
+			double sum(0);
+			for (int k = 0; k < eigCount; ++k) {
+				sum += vDiag[k] * pEigVec[k*vertCount + i] * pEigVec[k*vertCount + j];
+			}
+			pResult[i*vertCount + j] = pResult[j*vertCount + i] = sum;
+		}
+	});
+	timer.stopTimer("HK computation time with PPL: ");
+
+	delete []pEigVec;
+}
+
+void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::DenseMatrix<double>& hkmat )
+{
+	const int vertCount = mesh->vertCount();
+	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const int eigCount = mhb.eigVecCount();
+	hkmat.resize(vertCount, vertCount);
+	double *pResult = hkmat.raw_ptr();
+
+	double *pEigVec = new double[eigCount*vertCount];
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	std::vector<double> vDiag(eigCount);
+	for (int i = 0; i < eigCount; ++i) vDiag[i] = std::exp(-pEigVals[i]*t);
+
+	CStopWatch timer;
+	timer.startTimer();
+	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	timer.stopTimer("HK computation time with AMP: ");
+	delete []pEigVec;
 }

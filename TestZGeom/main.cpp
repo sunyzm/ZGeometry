@@ -4,6 +4,7 @@
 #include <numeric>
 #include <fstream>
 #include <ppl.h>
+#include <amp.h>
 #include <ZGeom/VecN.h>
 #include <ZUtil/timer.h>
 #include <mkl.h>

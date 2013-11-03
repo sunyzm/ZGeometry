@@ -1,5 +1,4 @@
 #pragma once
-
 #include <string>
 #include <vector>
 #include <map>
@@ -10,7 +9,6 @@
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include "MeshLaplacian.h"
-#include "MatlabWrapper.h"
 #include "global.h"
 
 enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
@@ -30,6 +28,8 @@ double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo
 
 typedef double (*TransferFunc)(double, double);
 typedef double (*ScalelessTransferFunc)(double);
+
+void quadricFormAMP(int dim1, int dim2, int dim3, double* mat1, double* diag, double *matResult);
 
 class DifferentialMeshProcessor : public MeshProcessor
 {
@@ -52,6 +52,8 @@ public:
 	double calMHW(int v1, int v2, double timescale) const;
 	double calSGW(int v1, int v2, double timescale) const;	
 	void computeSGW();
+	void computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
+	void computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void computeHeatDiffuseMat(double tMultiplier);
 
 	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;

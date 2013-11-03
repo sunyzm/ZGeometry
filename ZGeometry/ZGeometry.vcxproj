@@ -118,7 +118,7 @@
       <Optimization>Disabled</Optimization>
       <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
@@ -163,7 +163,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
-      <TreatWChar_tAsBuiltInType>false</TreatWChar_tAsBuiltInType>
+      <TreatWChar_tAsBuiltInType>true</TreatWChar_tAsBuiltInType>
       <EnableParallelCodeGeneration>false</EnableParallelCodeGeneration>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>

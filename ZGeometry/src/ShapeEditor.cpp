@@ -28,6 +28,18 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	std::cout << "Shape editor is initialized!" << std::endl;
 
 	editTest1();
+// 	ZGeom::DenseMatrixd hkMat1, hkMat2;
+// 	processor->computeHeatKernelMat(30, hkMat1);
+// 	processor->computeHeatKernelMat_AMP(30, hkMat2);
+// 
+// 	double maxError(0);
+// 	for (int i = 0; i < hkMat1.rowCount(); ++i) {
+// 		for (int j = 0; j < hkMat1.colCount(); ++j)
+// 			if (std::fabs(hkMat1(i,j) - hkMat2(i,j)) > maxError) maxError = std::fabs(hkMat1(i,j) - hkMat2(i,j));
+// 	}
+// 
+// 	std::cout << "max hkmat error: " << maxError << std::endl;
+
 	//editTest2();
 }
 
@@ -656,8 +668,8 @@ void ShapeEditor::editTest1()
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
-	////////////////// Wavelet matching pursuit //////////////////////////////
-	////
+	//////////////////////////////////////////////////////////////////////////
+	//// Wavelet matching pursuit
 #if 1
 	{
 		std::cout << "To compute wavelet matching pursuit" << std::endl;
