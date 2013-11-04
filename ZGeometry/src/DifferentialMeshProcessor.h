@@ -51,7 +51,7 @@ public:
 	double calBiharmonic(int v1, int v2) const;
 	double calMHW(int v1, int v2, double timescale) const;
 	double calSGW(int v1, int v2, double timescale) const;	
-	void computeSGW();
+	void computeSGW(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void computeHeatDiffuseMat(double tMultiplier);

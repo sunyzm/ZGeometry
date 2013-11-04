@@ -199,12 +199,12 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else mHandles.insert(std::make_pair(hIdx, mesh->getVertex(hIdx)->getPosition()));	 
 }
 
-void DifferentialMeshProcessor::computeSGW()
+void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/)
 {
 	CStopWatch timer;	
 	timer.startTimer();
 
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(laplacianType);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 
@@ -234,7 +234,7 @@ void DifferentialMeshProcessor::computeSGW()
 
 #if 1
 	//////////////////////////////////////////////////////////////////////////
-	// now compute SGW with AMP
+	// compute SGW with AMP
 	for (int s = 0; s < scales; ++s) {
 		for (int i = 0; i < eigCount; ++i) 
 			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
@@ -251,7 +251,7 @@ void DifferentialMeshProcessor::computeSGW()
 
 #else
 	//////////////////////////////////////////////////////////////////////////
-	// now compute SGW with PPL
+	// compute SGW with PPL
 	for (int s = 0; s < scales; ++s) {
 		for (int k = 0; k < eigCount; ++k) 
 			vDiag[k] = generator1(waveletScales[s] * pEigVals[k]);

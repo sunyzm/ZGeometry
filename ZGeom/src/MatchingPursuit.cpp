@@ -7,7 +7,9 @@
 #include <algorithm>
 #include <ppl.h>
 #include <concurrent_vector.h>
+#include <amp.h>
 #include "DenseMatrix.h"
+#include <mkl.h>
 
 void ZGeom::MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, const InnerProdcutFunc& innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit )
 {
@@ -57,19 +59,28 @@ void ZGeom::MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBa
 #endif
 }
 
+#undef SOLVE_OMP_VIA_MATLAB
+
 void ZGeom::OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit, MatlabEngineWrapper& engine )
 {
+	//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;
+
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
 	vPursuit.clear();
 	const int signalSize = vSignal.size();
 	std::unordered_set<int> availableBasis;
-	for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);
-
+	for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+	
+#ifdef SOLVE_OMP_VIA_MATLAB
 	engine.addColVec(vSignal, "vSignal");
-
-	VecNd vRf = vSignal;
+#endif
 	double *matBasis = new double[nSelected * signalSize];
+	double *work = new double[signalSize*17];
+	double *a = new double[nSelected * signalSize];
+	double *b = new double[signalSize];
+	
+	VecNd vRf = vSignal;
 	for (int k = 0; k < nSelected; ++k) {
 		Concurrency::concurrent_vector<std::pair<int,double> > vCoeff;
 		Concurrency::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
@@ -86,12 +97,31 @@ void ZGeom::OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<V
 		}
 		vPursuit.push_back(std::make_tuple(0, iSelected, maxCoeff));
 		availableBasis.erase(iSelected);
-
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
-		engine.addArray(matBasis, signalSize, k + 1, false, "matBasis");
 
+		double *xcoeff;
+#ifdef SOLVE_OMP_VIA_MATLAB
+		// solve least square via matlab
+		engine.addArray(matBasis, signalSize, k + 1, false, "matBasis");
 		engine.eval("xcoeff = matBasis\\vSignal");
-		double *xcoeff = engine.getDblVariablePtr("xcoeff");
+		xcoeff = engine.getDblVariablePtr("xcoeff");
+#else
+		// solve least square via MKL
+		{
+			int matrix_order = LAPACK_COL_MAJOR;
+			char trans = 'N';
+			int m = signalSize;
+			int n = k + 1;
+			int nrhs = 1;
+			int lwork = m + 16*m;
+			int lda = signalSize;
+			int ldb = signalSize;
+			std::memcpy(a, matBasis, sizeof(double)*signalSize*(k+1));
+			std::memcpy(b, vSignal.c_ptr(), sizeof(double)*signalSize);
+			LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
+			xcoeff = b;
+		}
+#endif
 
 		VecNd vNewRf = vSignal;
 		for (int b = 0; b <= k; ++b) {
@@ -102,5 +132,8 @@ void ZGeom::OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<V
 		vRf = vNewRf;
 	}
 
+	delete []work;
+	delete []a;
+	delete []b;
 	delete []matBasis;
 }

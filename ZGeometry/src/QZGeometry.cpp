@@ -1503,7 +1503,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 	if (!mp.getMHB(laplacianType).empty()) return;
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
+	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
 	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
@@ -1518,8 +1518,8 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 		qout.output("MHB saved to " + pathMHB);
 	}
 
-	std::cout << "Min EigVal: " << mp.getMHB(MeshLaplacian::CotFormula).getEigVals().front() 
-			  << "; Max EigVal: " << mp.getMHB(MeshLaplacian::CotFormula).getEigVals().back() << std::endl;
+	std::cout << "Min EigVal: " << mp.getMHB(laplacianType).getEigVals().front() 
+			  << "; Max EigVal: " << mp.getMHB(laplacianType).getEigVals().back() << std::endl;
 }
 
 void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
@@ -1539,7 +1539,7 @@ void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplaci
 		Concurrency::parallel_for(0, mMeshCount, [&](int obj){			
 			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
 		});
-	} else {    // if both need explicit decomposition, then must run in sequence in Matlab
+	} else {    // if both need explicit decomposition, then must run decomposition in sequence in Matlab
 		for(int obj = 0; obj < mMeshCount; ++obj) {
 			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
 		}
@@ -1732,7 +1732,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLapl
 
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = "output/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
+	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 
 	if (!ZUtil::fileExist(pathMHB)) return true;
 

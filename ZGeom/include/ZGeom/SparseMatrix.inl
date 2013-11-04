@@ -217,8 +217,7 @@ namespace ZGeom
 		assert(mRowCount == mColCount);
 
 		diag.resize(mRowCount, 0.0);
-		typename std::vector< MatElem<T> >::const_iterator iter = mElements.begin();
-		for (; iter != mElements.end(); ++iter) {
+		for (auto iter = mElements.begin(); iter != mElements.end(); ++iter) {
 			if (iter->row() == iter->col()) 
 				diag[iter->row() - 1] = iter->val();
 		}

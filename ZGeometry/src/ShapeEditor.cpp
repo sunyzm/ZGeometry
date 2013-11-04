@@ -602,7 +602,7 @@ void writePursuits(const std::string& pursuitFile, std::vector<ZGeom::PursuitApp
 void ShapeEditor::editTest1()
 {
 	const int vertCount = mMesh->vertCount();
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	MeshLaplacian::LaplacianType lapType = MeshLaplacian::CotFormula;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
@@ -610,28 +610,44 @@ void ShapeEditor::editTest1()
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
 	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0), &vy = oldCoord.getCoordFunc(1), &vz = oldCoord.getCoordFunc(2);
-	ZGeom::InnerProdcutFunc innerProdMatW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double { return ZGeom::innerProductSym(v1, matW, v2); };
+	std::vector<double> wDiag;
+	mProcessor->getMeshLaplacian(lapType).getW().getDiagonal(wDiag);
 
-	MeshCoordinates newCoord(vertCount);
-	ZGeom::VecNd &xCoord = newCoord.getCoordFunc(0), &yCoord = newCoord.getCoordFunc(1), &zCoord = newCoord.getCoordFunc(2);
-	std::vector<double> xCoeff(nEig), yCoeff(nEig), zCoeff(nEig);
+
+	ZGeom::InnerProdcutFunc innerProdMatW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double { return ZGeom::innerProductSym(v1, matW, v2); };
+		
+	ZGeom::InnerProdcutFunc innerProdDiagW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double {
+		double *y = new double[vertCount];
+		vdmul(&vertCount, v1.c_ptr(), &wDiag[0], &y[0]);
+		//for (int i = 0; i < vertCount; ++i) y[i] = v1[i] * wDiag[i];
+		double res = cblas_ddot(vertCount, y, 1, v2.c_ptr(), 1);
+		delete []y;
+		return res;
+	};
+
+	ZGeom::InnerProdcutFunc innerProdRegular = [=](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2) {
+		return cblas_ddot(vertCount, v1.c_ptr(), 1, v2.c_ptr(), 1);
+	};
 
 	////////////////  Fourier approximation  /////////////////////////////////////////////////
 	////
-	std::vector<std::tuple<double, int, double> > diffSeq;
+	ZGeom::VecNd xCoord(vertCount, 0), yCoord(vertCount, 0), zCoord(vertCount, 0);
+	std::vector<double> xCoeff(nEig), yCoeff(nEig), zCoeff(nEig);
+	std::vector<ZGeom::PursuitApproxItem> vPursuitX;
+
 	for (int i = 0; i < 50; ++i) {
 		const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
-		xCoeff[i] = innerProdMatW(vx, eigVec);
-		yCoeff[i] = innerProdMatW(vy, eigVec);
-		zCoeff[i] = innerProdMatW(vz, eigVec);
+		xCoeff[i] = innerProdDiagW(vx, eigVec);
+		yCoeff[i] = innerProdDiagW(vy, eigVec);
+		zCoeff[i] = innerProdDiagW(vz, eigVec);
 		xCoord += xCoeff[i] * eigVec;
 		yCoord += yCoeff[i] * eigVec;
 		zCoord += zCoeff[i] * eigVec;
 
-		diffSeq.push_back(std::make_tuple((xCoord-vx).norm2(), i, xCoeff[i])); 
+		vPursuitX.push_back(std::make_tuple((xCoord-vx).norm2(), i, xCoeff[i])); 
 	}
 	std::ofstream ofs1("output/fourier_approx.txt");
-	for (auto t : diffSeq) {
+	for (auto t : vPursuitX) {
 		ofs1 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 	}
 	mCoord1 = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
@@ -646,8 +662,7 @@ void ShapeEditor::editTest1()
 
 		CStopWatch timer;
 		timer.startTimer();
-		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, nEig, vPursuitX);
-//		ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit, *mEngine);
+		ZGeom::MatchingPursuit(vx, vBasis, innerProdDiagW, nEig, vPursuitX);
 		timer.stopTimer("Time to compute Fourier MP: ");
 
 		std::ofstream ofs2("output/fourier_mp_approx.txt");
@@ -655,8 +670,8 @@ void ShapeEditor::editTest1()
 			ofs2 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 		}
 
-		ZGeom::MatchingPursuit(vy, vBasis, innerProdMatW, nEig, vPursuitY);
-		ZGeom::MatchingPursuit(vz, vBasis, innerProdMatW, nEig, vPursuitZ);
+		ZGeom::MatchingPursuit(vy, vBasis, innerProdDiagW, nEig, vPursuitY);
+		ZGeom::MatchingPursuit(vz, vBasis, innerProdDiagW, nEig, vPursuitZ);
 		
 		mCoord2.resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
@@ -677,9 +692,10 @@ void ShapeEditor::editTest1()
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 		if (matSGW.empty()) {
 			std::string sgwFile = "cache/" + mMesh->getMeshName() + ".sgw";
-			if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
-			else {
-				mProcessor->computeSGW();
+			//if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
+			//else 
+			{
+				mProcessor->computeSGW(lapType);
 				matSGW.write(sgwFile);
 			}			
 		}
@@ -688,7 +704,7 @@ void ShapeEditor::editTest1()
 		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
-			newBasis.normalize(innerProdMatW);
+			newBasis.normalize(/*innerProdMatW*/innerProdDiagW);
 			vBasis.push_back(newBasis);
 		}
 
@@ -696,12 +712,13 @@ void ShapeEditor::editTest1()
 		std::vector<ZGeom::PursuitApproxItem> *vPursuits[3] = {&vPursuitX, &vPursuitY, &vPursuitZ};
 
 		const std::string waveltPursuitFile = "cache/" + mMesh->getMeshName() + ".omp";
-		if (readPursuits(waveltPursuitFile, vPursuits)) ;
-		else {
+		//if (readPursuits(waveltPursuitFile, vPursuits)) ;
+		//else 
+		{
 			CStopWatch timer;
 			timer.startTimer();
 			// 		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit);
-			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuitX, *mEngine);
+			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, /*innerProdMatW*/innerProdDiagW, 100, vPursuitX, *mEngine);
 			timer.stopTimer("Time to compute Wavelet MP: ");
 
 			std::ofstream ofs3("output/wavelet_mp_approx.txt");
@@ -709,9 +726,9 @@ void ShapeEditor::editTest1()
 				ofs3 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
 			}
 
-			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdMatW, 100, vPursuitY, *mEngine);
-			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdMatW, 100, vPursuitZ, *mEngine);
-
+			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdDiagW, 100, vPursuitY, *mEngine);
+			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdDiagW, 100, vPursuitZ, *mEngine);
+// 
 			writePursuits(waveltPursuitFile, vPursuits);
 		}
 
