@@ -27,6 +27,8 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mEngine = processor->getMatlabEngineWrapper();
 	std::cout << "Shape editor is initialized!" << std::endl;
 
+	//addNoise(0.1);
+	//processor->getMesh()->getVertCoordinates(mOldCoord); 
 	editTest1();
 // 	ZGeom::DenseMatrixd hkMat1, hkMat2;
 // 	processor->computeHeatKernelMat(30, hkMat1);
@@ -614,7 +616,7 @@ void ShapeEditor::editTest1()
 	mProcessor->getMeshLaplacian(lapType).getW().getDiagonal(wDiag);
 
 
-	ZGeom::InnerProdcutFunc innerProdMatW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double { return ZGeom::innerProductSym(v1, matW, v2); };
+	ZGeom::InnerProdcutFunc innerProdMatW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2) { return ZGeom::innerProductSym(v1, matW, v2); };
 		
 	ZGeom::InnerProdcutFunc innerProdDiagW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2)->double {
 		double *y = new double[vertCount];
@@ -648,7 +650,7 @@ void ShapeEditor::editTest1()
 	}
 	std::ofstream ofs1("output/fourier_approx.txt");
 	for (auto t : vPursuitX) {
-		ofs1 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+		ofs1 << std::get<0>(t) << '\t' << std::get<1>(t) << '\t' << std::get<2>(t) << std::endl;
 	}
 	mCoord1 = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
 	//////////////////////////////////////////////////////////////////////////
@@ -667,7 +669,7 @@ void ShapeEditor::editTest1()
 
 		std::ofstream ofs2("output/fourier_mp_approx.txt");
 		for (auto t : vPursuitX) {
-			ofs2 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+			ofs2 << std::get<0>(t) << '\t' << std::get<1>(t) << '\t' << std::get<2>(t) << std::endl;
 		}
 
 		ZGeom::MatchingPursuit(vy, vBasis, innerProdDiagW, nEig, vPursuitY);
@@ -688,7 +690,6 @@ void ShapeEditor::editTest1()
 #if 1
 	{
 		std::cout << "To compute wavelet matching pursuit" << std::endl;
-
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 		if (matSGW.empty()) {
 			std::string sgwFile = "cache/" + mMesh->getMeshName() + ".sgw";
@@ -700,11 +701,13 @@ void ShapeEditor::editTest1()
 			}			
 		}
 
+		ZGeom::InnerProdcutFunc& innerProdSelected = innerProdDiagW;//innerProdRegular;
 		std::vector<ZGeom::VecNd>& vBasis = mEditBasis;
+		
 		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
-			newBasis.normalize(/*innerProdMatW*/innerProdDiagW);
+			newBasis.normalize(innerProdSelected);
 			vBasis.push_back(newBasis);
 		}
 
@@ -717,17 +720,18 @@ void ShapeEditor::editTest1()
 		{
 			CStopWatch timer;
 			timer.startTimer();
-			// 		ZGeom::MatchingPursuit(vx, vBasis, innerProdMatW, 100, vPursuit);
-			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, /*innerProdMatW*/innerProdDiagW, 100, vPursuitX, *mEngine);
+			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuit);
+			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
+			//ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX, *mEngine);
 			timer.stopTimer("Time to compute Wavelet MP: ");
 
 			std::ofstream ofs3("output/wavelet_mp_approx.txt");
 			for (auto t : vPursuitX) {
-				ofs3 << std::get<0>(t) << ' ' << std::get<1>(t) << ' ' << std::get<2>(t) << std::endl;
+				ofs3 << std::get<0>(t) << '\t' << std::get<1>(t) << '\t' << std::get<2>(t) << std::endl;
 			}
 
-			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdDiagW, 100, vPursuitY, *mEngine);
-			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdDiagW, 100, vPursuitZ, *mEngine);
+			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdSelected, 100, vPursuitY);
+			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdSelected, 100, vPursuitZ);
 // 
 			writePursuits(waveltPursuitFile, vPursuits);
 		}

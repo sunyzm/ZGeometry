@@ -10,6 +10,10 @@ namespace ZGeom
 	typedef std::tuple<double, int, double> PursuitApproxItem;
 
 	void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, const InnerProdcutFunc& innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit );
+	
+	void OrthogonalMatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit);
+	
+	//// compute OMP with Matlab
 	void OrthogonalMatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit, MatlabEngineWrapper& engine);
 }
 
