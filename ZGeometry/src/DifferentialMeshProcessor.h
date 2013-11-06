@@ -67,7 +67,8 @@ public:
 	int getActiveHandle() const { return mActiveHandle; }
 	void setActiveHandle(int h) { mActiveHandle = h; }
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
-	const std::map<int, Vector3D>& getHandles() const { return mHandles; }	
+	const std::map<int, Vector3D>& getHandles() const { return mHandles; }
+	void clearAllHandles() { mHandles.clear(); }
 
 	// ---- attribute access --- //
 	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }

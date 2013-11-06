@@ -220,6 +220,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 
 	////	Edit	////
+	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
 	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
@@ -1978,4 +1979,11 @@ void QZGeometryWindow::computeEditBasis()
 	current_operation = Compute_Edit_Basis;
 	qout.output("Show wavelet basis" + Int2String(select_basis));
 	updateDisplaySignatureMenu();
+}
+
+void QZGeometryWindow::clearHandles()
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) 
+		mProcessors[obj]->clearAllHandles();
+	ui.glMeshWidget->update();
 }

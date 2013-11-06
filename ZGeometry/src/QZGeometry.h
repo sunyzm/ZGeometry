@@ -39,6 +39,8 @@ private slots:
 	void setEditModePick();
 	void setEditModeDrag();
 
+	void clearHandles();
+
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
