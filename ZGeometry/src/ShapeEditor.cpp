@@ -381,11 +381,19 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getYCoord(), "ecy");
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
-	const ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW();
-	mEngine->addDenseMat(matSGW, "matSGW");
-
+	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::SymCot);
 	const int waveletCount = matSGW.rowCount();
+	
+	/*std::vector<double> diagW;
+	mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula).getW().getDiagonal(diagW);
+	Concurrency::parallel_for(0, waveletCount, [&](int i){
+		double *pr = matSGW.raw_ptr() + vertCount * i;
+		for (int j = 0; j < vertCount; ++j) pr[j] *= diagW[j];
+	});*/
+
+	mEngine->addDenseMat(matSGW, "matSGW");
+	
 #if 1
 	ZGeom::VecNd diffCoord[3];
 	ZGeom::DenseMatVecMultiplier mulMixedW(matSGW);	
@@ -394,8 +402,8 @@ void ShapeEditor::deformSpectralWavelet()
 		mulMixedW.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
 #endif
-	std::vector<int> fixedVerts;
 
+	std::vector<int> fixedVerts;
 	std::set<int> freeVerts;
 	for (int i = 0; i < anchorCount; ++i) {
 		std::set<int> sFree;
@@ -413,30 +421,28 @@ void ShapeEditor::deformSpectralWavelet()
 	ZGeom::VecNd solveRHS[3];
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
+
 		solveRHS[i].copyElements(diffCoord[i], 0);
 
-		for (int v = 0; v < vertCount; ++v)
-			solveRHS[i][v] *= 2.0;
-
 		for (int l = 0; l < anchorCount; ++l) {
-			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
-			solveRHS[i][vertCount + l] = anchorWeight * anchorPos[l][i];
+			solveRHS[i][waveletCount + l] = anchorWeight * anchorPos[l][i];
 		}
+
 		for (int l = 0; l < fixedCount; ++l) {
-			solveRHS[i][vertCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
+			solveRHS[i][waveletCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
 		}
 	}
 	mEngine->addColVec(solveRHS[0], "dcx");
 	mEngine->addColVec(solveRHS[1], "dcy");
 	mEngine->addColVec(solveRHS[2], "dcz");
 
-	ZGeom::DenseMatrixd matOptS(matSGW);
-	matOptS.expand(waveletCount + anchorCount + fixedCount, vertCount);
+	ZGeom::DenseMatrixd matOpt(matSGW);
+	matOpt.expand(waveletCount + anchorCount + fixedCount, vertCount);
 	for (int l = 0; l < anchorCount; ++l)
-		matOptS(waveletCount + l, anchorIndex[l]) = anchorWeight;
+		matOpt(waveletCount + l, anchorIndex[l]) = anchorWeight;
 	for (int l = 0; l < fixedCount; ++l)
-		matOptS(waveletCount + anchorCount + l, fixedVerts[l]) = anchorWeight;
-	mEngine->addDenseMat(matOptS, "matOpt");
+		matOpt(waveletCount + anchorCount + l, fixedVerts[l]) = anchorWeight;
+	mEngine->addDenseMat(matOpt, "matOpt");
 
 	timer.stopTimer("Prepare deformation time: ");
 
@@ -604,7 +610,7 @@ void writePursuits(const std::string& pursuitFile, std::vector<ZGeom::PursuitApp
 void ShapeEditor::editTest1()
 {
 	const int vertCount = mMesh->vertCount();
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::CotFormula;
+	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
@@ -693,8 +699,8 @@ void ShapeEditor::editTest1()
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 		if (matSGW.empty()) {
 			std::string sgwFile = "cache/" + mMesh->getMeshName() + ".sgw";
-			//if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
-			//else 
+			if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
+			else 
 			{
 				mProcessor->computeSGW(lapType);
 				matSGW.write(sgwFile);
@@ -715,8 +721,8 @@ void ShapeEditor::editTest1()
 		std::vector<ZGeom::PursuitApproxItem> *vPursuits[3] = {&vPursuitX, &vPursuitY, &vPursuitZ};
 
 		const std::string waveltPursuitFile = "cache/" + mMesh->getMeshName() + ".omp";
-		//if (readPursuits(waveltPursuitFile, vPursuits)) ;
-		//else 
+		if (readPursuits(waveltPursuitFile, vPursuits)) ;
+		else 
 		{
 			CStopWatch timer;
 			timer.startTimer();
