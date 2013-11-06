@@ -97,6 +97,9 @@ namespace ZGeom
 		template<typename F> 
 		void convertToFull(F* fullMat, MatrixForm form) const;
 
+		bool testNoEmptyRow() const;
+		bool testSymmetric(double eps = 1e-7) const;
+
 		void scale(T scalar);
 		void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
 		void symmetrize();              // turn upper or lower matrix into symmetric one
@@ -112,9 +115,6 @@ namespace ZGeom
 		friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 	private:
-		bool testNoEmptyRow() const;
-		bool testSymmetric(double eps = 1e-7) const;
-
 		std::vector< MatElem<T> > mElements;
 		uint mRowCount;
 		uint mColCount;

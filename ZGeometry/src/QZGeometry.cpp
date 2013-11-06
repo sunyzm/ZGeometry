@@ -229,6 +229,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
+	QObject::connect(ui.actionDeformLaplace2, SIGNAL(triggered()), this, SLOT(deformLaplace2()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
@@ -869,7 +870,7 @@ void QZGeometryWindow::reconstructMHB()
 	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
 	std::vector<double> vPosDiff;
-	mMeshes[0]->diffCoordinates(mShapeEditor.oldCoord(), vPosDiff);
+	mMeshes[0]->diffCoordinates(mShapeEditor.getOldMeshCoord(), vPosDiff);
 	for (double& v : vPosDiff) v /= avgLen;
 	std::cout << "Avg Error as ratio of AEL: " << ZGeom::vecMean(vPosDiff) << std::endl;
 
@@ -1992,5 +1993,11 @@ void QZGeometryWindow::clearHandles()
 void QZGeometryWindow::nextCoordinate()
 {
 	mShapeEditor.changeCoordinates();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::deformLaplace2()
+{
+	mShapeEditor.deformLaplacian2();
 	ui.glMeshWidget->update();
 }

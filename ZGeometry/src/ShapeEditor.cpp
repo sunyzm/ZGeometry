@@ -33,7 +33,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 	//addNoise(0.1);
 	//processor->getMesh()->getVertCoordinates(mOldCoord); 
-	editTest1();
+	//editTest1();
 // 	ZGeom::DenseMatrixd hkMat1, hkMat2;
 // 	processor->computeHeatKernelMat(30, hkMat1);
 // 	processor->computeHeatKernelMat_AMP(30, hkMat2);
@@ -573,7 +573,7 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 	double errorSum(0);
 	const int vertCount = mMesh->vertCount();
 	for (int i = 0; i < vertCount; ++i) {
-		errorSum += (newCoord[i] - oldCoord()[i]).length();
+		errorSum += (newCoord[i] - getOldMeshCoord()[i]).length();
 	}
 
 	double avgError = errorSum / vertCount / mMesh->getAvgEdgeLength();
@@ -805,9 +805,74 @@ void ShapeEditor::changeCoordinates()
 	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
 	
 	if (mCoords[mCoordSelect].empty()) {
-		mCoordSelect = oldCoordSelect;
 		std::cout << "Selected coordinate is empty!" << std::endl;
 	} else {
 		mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 	}
+}
+
+void ShapeEditor::deformLaplacian2()
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	int anchorCount(0);
+	std::vector<int> anchorIndex;
+	std::vector<Vector3D> anchorPos;
+	prepareAnchors(anchorCount, anchorIndex, anchorPos);
+	if (anchorCount == 0) {
+		std::cout << "At least one anchor need to be picked!";
+		return;
+	}
+
+	const int anchorWeight = 1.0;
+	const int vertCount = mMesh->vertCount();
+
+	const MeshCoordinates& oldMeshCoord = this->getOldMeshCoord();
+
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+
+    /* | A    B | | d |    | O  |
+	   |        | |   | =  |    |
+       | B^T  O | | r |    | d' | */
+
+	ZGeom::VecNd solveRHS[3];
+	for (int i = 0; i < 3; ++i ) {
+		solveRHS[i].resize(vertCount + anchorCount, 0);
+		for (int l = 0; l < anchorCount; ++l) {
+			solveRHS[i][vertCount + l] = anchorPos[l][i] - oldMeshCoord[anchorIndex[l]][i];
+		}
+	}
+	mEngine->addColVec(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
+	mEngine->addColVec(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
+	mEngine->addColVec(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
+
+	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount + anchorCount);
+	matOptS.copyElements(matLs);
+	for (int a = 0; a < anchorCount; ++a) {
+		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, 1.);
+		matOptS.insertElem(anchorIndex[a] + 1, vertCount + a + 1, 1.);
+	}
+
+	if (!matOptS.testSymmetric()) {
+		std::cout << "ERROR: MatOptS is not symmetric!" << std::endl;
+		return;
+	}
+
+	mEngine->addSparseMat(matOptS, "matOptS");
+
+	timer.stopTimer("Prepare deformation time: ");
+	timer.startTimer();	
+	mEngine->eval("lsx=matOptS\\dcx;");
+	mEngine->eval("lsy=matOptS\\dcy;");
+	mEngine->eval("lsz=matOptS\\dcz;");
+	timer.stopTimer("Deformation time: ");
+
+	double *lsx = mEngine->getDblVariablePtr("lsx");
+	double *lsy = mEngine->getDblVariablePtr("lsy");
+	double *lsz = mEngine->getDblVariablePtr("lsz");
+
+	MeshCoordinates newCoord(oldMeshCoord);
+	newCoord.add(lsx, lsy, lsz);
+	mMesh->setVertCoordinates(newCoord);
 }

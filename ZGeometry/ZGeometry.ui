@@ -244,6 +244,7 @@
      <addaction name="actionDeformBiLaplace"/>
      <addaction name="actionDeformMixedLaplace"/>
      <addaction name="actionDeformSGW"/>
+     <addaction name="actionDeformLaplace2"/>
     </widget>
     <widget class="QMenu" name="menuReconstruct">
      <property name="title">
@@ -895,6 +896,11 @@
   <action name="actionNextCoordinate">
    <property name="text">
     <string>Next Coordinate</string>
+   </property>
+  </action>
+  <action name="actionDeformLaplace2">
+   <property name="text">
+    <string>Laplace2</string>
    </property>
   </action>
  </widget>

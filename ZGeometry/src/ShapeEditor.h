@@ -12,7 +12,7 @@ public:
 	void init(DifferentialMeshProcessor* processor);
 	void revertCoordinates();
 	void changeCoordinates();
-	const MeshCoordinates& oldCoord() const { return mCoords[0]; }
+	const MeshCoordinates& getOldMeshCoord() const { return mCoords[0]; }
 
 	void addNoise(double phi);
 
@@ -21,6 +21,7 @@ public:
 
 	void deformSimple();
 	void deformLaplacian();
+	void deformLaplacian2();
 	void deformBiLaplacian();
 	void deformMixedLaplacian(double ks, double kb);
 	void deformThinShell2(double ks, double kb);
@@ -39,7 +40,7 @@ private:
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 
-	MeshCoordinates mPrevCoord;
+	//MeshCoordinates mPrevCoord;
 	std::vector<MeshCoordinates> mCoords;
 	int mCoordSelect;
 };
