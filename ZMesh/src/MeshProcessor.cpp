@@ -28,14 +28,12 @@ bool MeshProcessor::addProperty( MeshProperty* newProperty )
 
 MeshProcessor::MeshProcessor()
 {
-	mesh = NULL;
-	m_size = 0;
+	mMesh = NULL;
 }
 
 void MeshProcessor::setMesh( CMesh* newMesh )
 {
-	mesh = newMesh;
-	m_size = mesh->vertCount();
+	mMesh = newMesh;
 }
 
 MeshProperty* MeshProcessor::retrievePropertyByID( int rid )

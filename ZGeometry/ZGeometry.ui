@@ -263,7 +263,8 @@
     <addaction name="actionClearHandles"/>
     <addaction name="separator"/>
     <addaction name="actionClone"/>
-    <addaction name="actionRevert"/>
+    <addaction name="actionRevertCoordinate"/>
+    <addaction name="actionNextCoordinate"/>
     <addaction name="actionAddNoise"/>
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
@@ -811,7 +812,7 @@
     <string>Register Test</string>
    </property>
   </action>
-  <action name="actionRevert">
+  <action name="actionRevertCoordinate">
    <property name="text">
     <string>Revert</string>
    </property>
@@ -889,6 +890,11 @@
   <action name="actionClearHandles">
    <property name="text">
     <string>Clear Handles</string>
+   </property>
+  </action>
+  <action name="actionNextCoordinate">
+   <property name="text">
+    <string>Next Coordinate</string>
    </property>
   </action>
  </widget>

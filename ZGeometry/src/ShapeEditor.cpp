@@ -23,8 +23,12 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 {
 	mProcessor = processor; 
 	mMesh = processor->getMesh();
-	processor->getMesh()->getVertCoordinates(mOldCoord); 
 	mEngine = processor->getMatlabEngineWrapper();
+	
+	mCoordSelect = 0;
+	mCoords.resize(4);
+	processor->getMesh()->getVertCoordinates(mCoords[0]); 
+
 	std::cout << "Shape editor is initialized!" << std::endl;
 
 	//addNoise(0.1);
@@ -382,7 +386,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::SymCot);
+	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::CotFormula);
 	const int waveletCount = matSGW.rowCount();
 	
 	/*std::vector<double> diagW;
@@ -569,7 +573,7 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 	double errorSum(0);
 	const int vertCount = mMesh->vertCount();
 	for (int i = 0; i < vertCount; ++i) {
-		errorSum += (newCoord[i] - mOldCoord[i]).length();
+		errorSum += (newCoord[i] - oldCoord()[i]).length();
 	}
 
 	double avgError = errorSum / vertCount / mMesh->getAvgEdgeLength();
@@ -610,7 +614,7 @@ void writePursuits(const std::string& pursuitFile, std::vector<ZGeom::PursuitApp
 void ShapeEditor::editTest1()
 {
 	const int vertCount = mMesh->vertCount();
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	MeshLaplacian::LaplacianType lapType = MeshLaplacian::CotFormula;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
@@ -658,7 +662,7 @@ void ShapeEditor::editTest1()
 	for (auto t : vPursuitX) {
 		ofs1 << std::get<0>(t) << '\t' << std::get<1>(t) << '\t' << std::get<2>(t) << std::endl;
 	}
-	mCoord1 = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
+	mCoords[1] = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
 	//////////////////////////////////////////////////////////////////////////
 	
 	////////////////// Fourier matching pursuit //////////////////////////////
@@ -681,11 +685,11 @@ void ShapeEditor::editTest1()
 		ZGeom::MatchingPursuit(vy, vBasis, innerProdDiagW, nEig, vPursuitY);
 		ZGeom::MatchingPursuit(vz, vBasis, innerProdDiagW, nEig, vPursuitZ);
 		
-		mCoord2.resize(vertCount);
+		mCoords[2].resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
-			mCoord2.getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
-			mCoord2.getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
-			mCoord2.getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
+			mCoords[2].getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
+			mCoords[2].getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
+			mCoords[2].getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
 		}
 
 	}
@@ -742,22 +746,25 @@ void ShapeEditor::editTest1()
 			writePursuits(waveltPursuitFile, vPursuits);
 		}
 
-		mCoord3.resize(vertCount);
+		mCoords[3].resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
-			mCoord3.getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
-			mCoord3.getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
-			mCoord3.getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
+			mCoords[3].getXCoord() += std::get<2>(vPursuitX[i]) * vBasis[std::get<1>(vPursuitX[i])];
+			mCoords[3].getYCoord() += std::get<2>(vPursuitY[i]) * vBasis[std::get<1>(vPursuitY[i])];
+			mCoords[3].getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
 		}
 	} //end of wavelet OMP
 #endif
 	//////////////////////////////////////////////////////////////////////////
 
-	mMesh->setVertCoordinates(mCoord3);
+	mCoordSelect = 3;
+	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 
 	std::cout << "Finish editTest1" << std::endl;
 }
 
-void ShapeEditor::editTest2()
+/////// compute various eigenvectors indexed by Fiedler vector ////////////////
+////
+void ShapeEditor::editTest2()	
 {
 	const int vertCount = mMesh->vertCount();
 	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
@@ -783,12 +790,24 @@ void ShapeEditor::editTest2()
 	}
 }
 
-int gCoordSelect = 0;
 
-void ShapeEditor::revert()
+void ShapeEditor::revertCoordinates()
 {
-	std::cout << "Selected coordinate: " << gCoordSelect << std::endl;
-	MeshCoordinates* coords[4] = {&mOldCoord, &mCoord1, &mCoord2, &mCoord3};
-	mMesh->setVertCoordinates(*coords[gCoordSelect]);
-	gCoordSelect = (gCoordSelect + 1) % 4;
+	mCoordSelect = 0;
+	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
+	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+}
+
+void ShapeEditor::changeCoordinates()
+{
+	int oldCoordSelect = mCoordSelect;
+	mCoordSelect = (mCoordSelect + 1) % mCoords.size();
+	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
+	
+	if (mCoords[mCoordSelect].empty()) {
+		mCoordSelect = oldCoordSelect;
+		std::cout << "Selected coordinate is empty!" << std::endl;
+	} else {
+		mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+	}
 }

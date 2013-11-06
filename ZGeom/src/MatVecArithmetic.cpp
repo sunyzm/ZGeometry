@@ -59,14 +59,10 @@ namespace ZGeom
 		return rv;
 	}
 
-	double innerProduct(const std::vector<double>& v1, const std::vector<double>& v2)
+	double innerProductStd( const std::vector<double>& v1, const std::vector<double>& v2 )
 	{
 		assert(v1.size() == v2.size());
-
-		MKL_INT n = (int)v1.size();
-		MKL_INT xinc = 1, yinc = 1;
-
-		return ddot(&n, &v1[0], &xinc, &v2[0], &yinc);
+		return cblas_ddot((int)v1.size(), &v1[0], 1, &v2[0], 1);
 	}
 
 	double innerProductSym(const std::vector<double>& v1, SparseMatVecMultiplier* mulA, const std::vector<double>& v2)

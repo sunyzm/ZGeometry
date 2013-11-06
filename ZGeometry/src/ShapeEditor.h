@@ -10,8 +10,9 @@ class ShapeEditor
 public:
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 	void init(DifferentialMeshProcessor* processor);
-	void revert();
-	const MeshCoordinates& oldCoord() const { return mOldCoord; }
+	void revertCoordinates();
+	void changeCoordinates();
+	const MeshCoordinates& oldCoord() const { return mCoords[0]; }
 
 	void addNoise(double phi);
 
@@ -33,12 +34,12 @@ private:
 	void editTest1();
 	void editTest2();
 
-	CMesh* mMesh;
-	MeshCoordinates mOldCoord;
+	CMesh* mMesh;	
 	DifferentialMeshProcessor* mProcessor;
-	ZGeom::MatlabEngineWrapper* mEngine;	
-
+	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 
-	MeshCoordinates mCoord1, mCoord2, mCoord3;
+	MeshCoordinates mPrevCoord;
+	std::vector<MeshCoordinates> mCoords;
+	int mCoordSelect;
 };

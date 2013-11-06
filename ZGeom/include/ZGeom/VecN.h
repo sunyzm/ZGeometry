@@ -369,7 +369,6 @@ inline void VecN<T>::normalize(double p)
 	for (int i = 0; i < mDim; ++i) mVec[i] /= norm;
 }
 
-
 template<>
 inline void VecN<double>::normalize(const InnerProdcutFunc& innerProdFunc)
 {

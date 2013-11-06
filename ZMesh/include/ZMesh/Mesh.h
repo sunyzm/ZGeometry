@@ -36,6 +36,7 @@ public:
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
 
+	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
 
 	void resize(int n) {
@@ -75,12 +76,12 @@ public:
 	ZGeom::VecNd& getYCoord() { return mCoordY; }
 	ZGeom::VecNd& getZCoord() { return mCoordZ; }
 
-	ZGeom::Vec3d getCoordinate(int k) const {
-		if (k < 0 || k >= mSize) throw std::logic_error("Vertex index out of bound!");
-		return ZGeom::Vec3d(mCoordX[k], mCoordY[k], mCoordZ[k]);
+	ZGeom::Vec3d getVertCoordinate(int v) const {
+		if (v < 0 || v >= mSize) throw std::logic_error("Vertex index out of bound!");
+		return ZGeom::Vec3d(mCoordX[v], mCoordY[v], mCoordZ[v]);
 	}
 	
-	ZGeom::Vec3d operator [] (int k) const { return getCoordinate(k); }
+	ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
 
 private:
 	int mSize;

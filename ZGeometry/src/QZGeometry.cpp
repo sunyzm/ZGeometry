@@ -221,7 +221,8 @@ void QZGeometryWindow::makeConnections()
 
 	////	Edit	////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
-	QObject::connect(ui.actionRevert, SIGNAL(triggered()), this, SLOT(revert()));
+	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revert()));
+	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(nextCoordinate()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
@@ -1817,7 +1818,7 @@ void QZGeometryWindow::verifyAreas() const
 
 void QZGeometryWindow::revert()
 {
-	mShapeEditor.revert();
+	mShapeEditor.revertCoordinates();
 	ui.glMeshWidget->update();
 }
 
@@ -1985,5 +1986,11 @@ void QZGeometryWindow::clearHandles()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) 
 		mProcessors[obj]->clearAllHandles();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::nextCoordinate()
+{
+	mShapeEditor.changeCoordinates();
 	ui.glMeshWidget->update();
 }

@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include <map>
 #include <string>
@@ -106,13 +105,12 @@ public:
 	MeshProperty* retrievePropertyByName(const std::string& rn);
 	void removePropertyByID(int rid);
 	void removePropertyByName(const std::string& rn);
-	const CMesh* getMesh_const() const { return mesh; }
-	const CMesh* getOriMesh_const() const { return ori_mesh; }
-	CMesh* getMesh() const { return mesh; }
+	const CMesh* getMesh_const() const { return mMesh; }
+	const CMesh* getOriMesh_const() const { return mOriMesh; }
+	CMesh* getMesh() const { return mMesh; }
 
 protected:
-	CMesh* mesh;
-	CMesh* ori_mesh;
-	int m_size;
+	CMesh* mMesh;
+	CMesh* mOriMesh;
 	std::vector<MeshProperty*> vProperties;
 };

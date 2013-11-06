@@ -88,6 +88,7 @@ private slots:
 	
 	void clone();
 	void revert();
+	void nextCoordinate();
 	void addNoise();
 	void reconstructMHB();
 	void reconstructSGW();

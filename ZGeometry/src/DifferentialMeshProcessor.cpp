@@ -82,20 +82,18 @@ void quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matR
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
 	mpEngineWrapper = NULL;
-	mesh = NULL;
+	mMesh = NULL;
 	mActiveFeature = FEATURE_ID;
 	mRefVert = 0;
-	m_size = 0;
 	mActiveHandle = -1;	
 }
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
 {
 	mpEngineWrapper = nullptr;
-	mesh = nullptr;
+	mMesh = nullptr;
 	mActiveFeature = FEATURE_ID;
 	mRefVert = 0;
-	m_size = 0;
 	mActiveHandle = -1;
 
 	init_lite(tm, originalMesh);
@@ -108,22 +106,19 @@ DifferentialMeshProcessor::~DifferentialMeshProcessor()
 
 void DifferentialMeshProcessor::init(CMesh* tm, MatlabEngineWrapper* e)
 {
-	mesh = tm;
-	ori_mesh = tm;
+	mMesh = tm;
+	mOriMesh = tm;
 	mpEngineWrapper = e;
-	//matlabWrapper.setEngine(e);
-	m_size = mesh->vertCount();
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	mRefPos = mesh->getVertex(mRefVert)->getPosition();
+	mRefPos = mMesh->getVertex(mRefVert)->getPosition();
 }
 
 void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 {
-	mesh = tm;
-	ori_mesh = originalMesh;
-	m_size = mesh->vertCount();
+	mMesh = tm;
+	mOriMesh = originalMesh;
 	mRefVert = 0;
-	mRefPos = mesh->getVertex(0)->getPosition();
+	mRefPos = mMesh->getVertex(0)->getPosition();
 }
 
 void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
@@ -137,27 +132,27 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 	case MeshLaplacian::Tutte:
 	case MeshLaplacian::CotFormula:
 	case MeshLaplacian::SymCot:
-		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mesh);
+		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mMesh);
 		break;
 
 	case MeshLaplacian::Anisotropic1:
 		{
-			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
+			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = para1;
-			mMeshLaplacians[laplacianType].constructFromMesh3(mesh, 1, para1, para2);
+			mMeshLaplacians[laplacianType].constructFromMesh3(mMesh, 1, para1, para2);
 		}
 		break;
 
 	case MeshLaplacian::Anisotropic2:
 		{
-			double para1 = 2 * mesh->getAvgEdgeLength() * mesh->getAvgEdgeLength();
-			double para2 = mesh->getAvgEdgeLength() / 2;
-			mMeshLaplacians[laplacianType].constructFromMesh4(mesh, 1, para1, para2);
+			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
+			double para2 = mMesh->getAvgEdgeLength() / 2;
+			mMeshLaplacians[laplacianType].constructFromMesh4(mMesh, 1, para1, para2);
 		}
 		break;
 
 	case MeshLaplacian::IsoApproximate:
-		mMeshLaplacians[laplacianType].constructFromMesh5(mesh);                
+		mMeshLaplacians[laplacianType].constructFromMesh5(mMesh);                
 		break;
 
 	default: throw std::logic_error("Unrecognized Laplacian type");
@@ -187,16 +182,17 @@ void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian:
 
 void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
 {
-	vCurvature.resize(m_size);
-	if (curvatureType == 0)	vCurvature = mesh->getMeanCurvature();
-	else if (curvatureType == 1) vCurvature = mesh->getGaussCurvature();
+	const int vertCount = mMesh->vertCount();
+	vCurvature.resize(vertCount);
+	if (curvatureType == 0)	vCurvature = mMesh->getMeanCurvature();
+	else if (curvatureType == 1) vCurvature = mMesh->getGaussCurvature();
 }
 
 void DifferentialMeshProcessor::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
-	else mHandles.insert(std::make_pair(hIdx, mesh->getVertex(hIdx)->getPosition()));	 
+	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->getPosition()));	 
 }
 
 void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/)
@@ -323,8 +319,8 @@ void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacia
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
-
-	values.resize(m_size);
+	const int vertCount = mMesh->vertCount();
+	values.resize(vertCount);
 
 	TransferFunc pTF = &heatKernelTransferFunc;	// default as heat kernel
 
@@ -341,7 +337,7 @@ void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType ker
 		break;
 	}
 
-	Concurrency::parallel_for(0, m_size, [&](int i)	{
+	Concurrency::parallel_for(0, vertCount, [&](int i)	{
 		double sum = 0;
 		for (int k = 0; k < mhb.eigVecCount(); ++k)
 		{
@@ -360,7 +356,7 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		vector<double> vSig;
 		vector<int> vFeatures;
 		calKernelSignature(timescales[s], kernelType, vSig);
-		mesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
+		mMesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
 
 		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) {
 			mfl->addFeature(new MeshFeature(*iter, s));			
@@ -448,26 +444,27 @@ double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 
 void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex(refPoint); 
+	const int vertCount = mMesh->vertCount();
+	const CVertex* pvi = mMesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
 //	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
-	vFaces.resize(mesh->faceCount());
-	for (int f = 0; f < mesh->faceCount(); ++f)
+	vFaces.resize(mMesh->faceCount());
+	for (int f = 0; f < mMesh->faceCount(); ++f)
 		vFaces[f] = f;
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->vertCount(), 1.0);
+	vSimilarities.resize(mMesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->vertCount(), 0.);
+	vAreas.resize(mMesh->vertCount(), 0.);
 
-	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
-	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
-	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
+	double hPara1 = std::pow(mMesh->getAvgEdgeLength() * 5, 2);
+	double hPara2 = std::pow(mMesh->getAvgEdgeLength(), 2);
+	const std::vector<Vector3D>& vVertNormals = mMesh->getVertNormals();
 
 	for (int fi = 0; fi < vFaces.size(); ++fi) {
-		const CFace* pfi = mesh->getFace(vFaces[fi]);
+		const CFace* pfi = mMesh->getFace(vFaces[fi]);
 		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
@@ -490,9 +487,9 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 	std::transform(vSimilarities.begin(), vSimilarities.end(), vAreas.begin(), vSimilarities.begin(), [](double v1, double v2) { return v1 / v2; } );
 
-	MeshFunction *mf = new MeshFunction(m_size);
+	MeshFunction *mf = new MeshFunction(vertCount);
 
-	for (int i = 0; i < m_size; ++i) {
+	for (int i = 0; i < vertCount; ++i) {
 		mf->setValue(i, vSimilarities[i]);
 	}
 
@@ -503,27 +500,28 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex(refPoint); 
+	const int vertCount = mMesh->vertCount();
+	const CVertex* pvi = mMesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
 	//	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
-	vFaces.resize(mesh->faceCount());
-	for (int f = 0; f < mesh->faceCount(); ++f) vFaces[f] = f;
+	vFaces.resize(mMesh->faceCount());
+	for (int f = 0; f < mMesh->faceCount(); ++f) vFaces[f] = f;
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->vertCount(), 1.0);
+	vSimilarities.resize(mMesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->vertCount(), 0.);
+	vAreas.resize(mMesh->vertCount(), 0.);
 
-	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
-	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
-	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
-	const std::vector<Vector3D>& vFaceNormals = mesh->getFaceNormals();
-	const int faceNum = mesh->faceCount();
+	double hPara1 = std::pow(mMesh->getAvgEdgeLength() * 5, 2);
+	double hPara2 = std::pow(mMesh->getAvgEdgeLength(), 2);
+	const std::vector<Vector3D>& vVertNormals = mMesh->getVertNormals();
+	const std::vector<Vector3D>& vFaceNormals = mMesh->getFaceNormals();
+	const int faceNum = mMesh->faceCount();
 
 	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
-		const CFace* pfi = mesh->getFace(vFaces[fIndex]);
+		const CFace* pfi = mMesh->getFace(vFaces[fIndex]);
 		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
@@ -546,9 +544,9 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 	std::transform(vSimilarities.begin(), vSimilarities.end(), vAreas.begin(), vSimilarities.begin(), [](double v1, double v2) { return v1 / v2; } );
 
-	MeshFunction *mf = new MeshFunction(m_size);
+	MeshFunction *mf = new MeshFunction(vertCount);
 
-	for (int i = 0; i < m_size; ++i) {
+	for (int i = 0; i < vertCount; ++i) {
 		mf->setValue(i, vSimilarities[i]);
 	}
 
@@ -559,28 +557,29 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 {
-	const CVertex* pvi = mesh->getVertex(refPoint); 
+	const int vertCount = mMesh->vertCount();
+	const CVertex* pvi = mMesh->getVertex(refPoint); 
 	int ringT = 10;
 	vector<int> vFaces;
-	vFaces.resize(mesh->faceCount());
-	for (int f = 0; f < mesh->faceCount(); ++f)
+	vFaces.resize(mMesh->faceCount());
+	for (int f = 0; f < mMesh->faceCount(); ++f)
 		vFaces[f] = f;
 //	vFaces = mesh->getVertexAdjacentFacesIndex(refPoint, ringT);
 
 	vector<double> vSimilarities;
-	vSimilarities.resize(mesh->vertCount(), 1.0);
+	vSimilarities.resize(mMesh->vertCount(), 1.0);
 
 	vector<double> vAreas;
-	vAreas.resize(mesh->vertCount(), 0.);
+	vAreas.resize(mMesh->vertCount(), 0.);
 
-	double hPara1 = std::pow(mesh->getAvgEdgeLength() * 5, 2);
+	double hPara1 = std::pow(mMesh->getAvgEdgeLength() * 5, 2);
 //	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
-	double hPara2 = mesh->getAvgEdgeLength();
-	const std::vector<Vector3D>& vVertNormals = mesh->getVertNormals();
+	double hPara2 = mMesh->getAvgEdgeLength();
+	const std::vector<Vector3D>& vVertNormals = mMesh->getVertNormals();
 
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
-		const CFace* pfi = mesh->getFace(vFaces[fi]);
+		const CFace* pfi = mMesh->getFace(vFaces[fi]);
 		double face_area = pfi->computeArea();
 		for (int k = 0; k < 3; ++k)
 		{
@@ -604,9 +603,9 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 
 	std::transform(vSimilarities.begin(), vSimilarities.end(), vAreas.begin(), vSimilarities.begin(), [](double v1, double v2) { return v1 / v2; } );
 
-	MeshFunction *mf = new MeshFunction(m_size);
+	MeshFunction *mf = new MeshFunction(vertCount);
 
-	for (int i = 0; i < m_size; ++i)
+	for (int i = 0; i < vertCount; ++i)
 	{
 		mf->setValue(i, vSimilarities[i]);
 	}
@@ -625,7 +624,7 @@ const MeshFeatureList* DifferentialMeshProcessor::getActiveFeatures() const
 
 void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
 {
-	const int vertCount = mesh->vertCount();
+	const int vertCount = mMesh->vertCount();
 	vHeat.resize(vertCount);
 
 	if (mHeatDiffuseMat.empty()) computeHeatDiffuseMat(tMultiplier);
@@ -645,8 +644,8 @@ void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vect
 
 void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 {
-	const int vertCount = mesh->vertCount();
-	const double t = std::pow(mesh->getAvgEdgeLength(), 2) * tMultiplier;
+	const int vertCount = mMesh->vertCount();
+	const double t = std::pow(mMesh->getAvgEdgeLength(), 2) * tMultiplier;
 
 	const MeshLaplacian& laplacian = getMeshLaplacian(MeshLaplacian::CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
@@ -658,7 +657,7 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 
 void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
-	const int vertCount = mesh->vertCount();
+	const int vertCount = mMesh->vertCount();
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
@@ -690,7 +689,7 @@ void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatr
 
 void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
-	const int vertCount = mesh->vertCount();
+	const int vertCount = mMesh->vertCount();
 	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
