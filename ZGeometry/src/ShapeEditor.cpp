@@ -8,6 +8,8 @@
 #include <ZUtil/timer.h>
 #include <ZUtil/zassert.h>
 #include <ZUtil/zutil_io.h>
+#include "global.h"
+
 
 Vector3D toVector3D(const ZGeom::Vec3d& v)
 {
@@ -372,7 +374,7 @@ void ShapeEditor::deformSpectralWavelet()
 	std::vector<Vector3D> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
-		std::cout << "At least one anchor need to be picked!" << std::endl;
+		//std::cout << "At least one anchor need to be picked!" << std::endl;
 //		return;
 	}
 
@@ -386,7 +388,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::CotFormula);
+	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::SymCot);
 	const int waveletCount = matSGW.rowCount();
 	
 	/*std::vector<double> diagW;
@@ -695,23 +697,26 @@ void ShapeEditor::editTest1()
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
+#if 1
 	//////////////////////////////////////////////////////////////////////////
 	//// Wavelet matching pursuit
-#if 1
 	{
+		bool loadCache = (g_configMgr.getConfigValueInt("LOAD_SGW_CACHE") == 1);
+
 		std::cout << "To compute wavelet matching pursuit" << std::endl;
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 		if (matSGW.empty()) {
 			std::string sgwFile = "cache/" + mMesh->getMeshName() + ".sgw";
-			if (ZUtil::fileExist(sgwFile)) matSGW.read(sgwFile);
-			else 
+			if (loadCache && ZUtil::fileExist(sgwFile)) {
+				matSGW.read(sgwFile);
+			} else
 			{
 				mProcessor->computeSGW(lapType);
 				matSGW.write(sgwFile);
 			}			
 		}
 
-		ZGeom::InnerProdcutFunc& innerProdSelected = innerProdDiagW;//innerProdRegular;
+		ZGeom::InnerProdcutFunc& innerProdSelected = /*innerProdDiagW;*/innerProdRegular;
 		std::vector<ZGeom::VecNd>& vBasis = mEditBasis;
 		
 		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
@@ -725,7 +730,7 @@ void ShapeEditor::editTest1()
 		std::vector<ZGeom::PursuitApproxItem> *vPursuits[3] = {&vPursuitX, &vPursuitY, &vPursuitZ};
 
 		const std::string waveltPursuitFile = "cache/" + mMesh->getMeshName() + ".omp";
-		if (readPursuits(waveltPursuitFile, vPursuits)) ;
+		if (loadCache && readPursuits(waveltPursuitFile, vPursuits)) ;
 		else 
 		{
 			CStopWatch timer;
@@ -753,11 +758,11 @@ void ShapeEditor::editTest1()
 			mCoords[3].getZCoord() += std::get<2>(vPursuitZ[i]) * vBasis[std::get<1>(vPursuitZ[i])];
 		}
 	} //end of wavelet OMP
-#endif
 	//////////////////////////////////////////////////////////////////////////
 
 	mCoordSelect = 3;
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+#endif	
 
 	std::cout << "Finish editTest1" << std::endl;
 }

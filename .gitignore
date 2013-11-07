@@ -20,6 +20,10 @@
 *.suo
 *.ipch
 *.user
+*.psess
+*.vsp
+*.vsps
+*.vspx
 
 # project specific
 bin/

@@ -10,6 +10,9 @@
 #include <amp.h>
 #include "DenseMatrix.h"
 #include <mkl.h>
+#include "tbb/tbb.h"
+#include "tbb/concurrent_vector.h"
+
 
 void ZGeom::MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, const InnerProdcutFunc& innerProdFunc, int nSelected, std::vector<PursuitApproxItem>& vPursuit )
 {
@@ -77,8 +80,8 @@ void ZGeom::OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<V
 
 	VecNd vRf = vSignal;
 	for (int k = 0; k < nSelected; ++k) {
-		Concurrency::concurrent_vector<std::pair<int,double> > vCoeff;
-		Concurrency::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
+		tbb::concurrent_vector<std::pair<int,double> > vCoeff;
+		tbb::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
 			vCoeff.push_back(std::make_pair(iBasis, innerProdFunc(vBasis[iBasis], vRf)));
 		});
 
@@ -144,8 +147,8 @@ void ZGeom::OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<V
 	VecNd vRf = vSignal;
 
 	for (int k = 0; k < nSelected; ++k) {
-		Concurrency::concurrent_vector<std::pair<int,double> > vCoeff;
-		Concurrency::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
+		tbb::concurrent_vector<std::pair<int,double> > vCoeff;
+		tbb::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
 			vCoeff.push_back(std::make_pair(iBasis, innerProdFunc(vBasis[iBasis], vRf)));
 		});
 

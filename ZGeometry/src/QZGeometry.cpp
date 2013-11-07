@@ -234,6 +234,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
+	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
 	 
 	////	Display	////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -1999,5 +2000,11 @@ void QZGeometryWindow::nextCoordinate()
 void QZGeometryWindow::deformLaplace2()
 {
 	mShapeEditor.deformLaplacian2();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::runTests()
+{
+	mShapeEditor.editTest1();
 	ui.glMeshWidget->update();
 }

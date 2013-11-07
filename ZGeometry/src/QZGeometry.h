@@ -99,6 +99,7 @@ private slots:
 	void deformMixedLaplace();
 	void deformSGW();
 	void diffusionFlow();
+	void runTests();
 
 	void registerAutomatic();
 	void buildHierarchy();

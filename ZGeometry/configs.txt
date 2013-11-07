@@ -68,3 +68,6 @@ MATCHING_EIGHT_FILE = output/matching_eight.txt
 
 ## registration ##
 REGISTRATION_METHOD = 2
+
+## editing ##
+LOAD_SGW_CACHE = 0
