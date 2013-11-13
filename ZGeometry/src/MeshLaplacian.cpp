@@ -94,7 +94,7 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
@@ -171,7 +171,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
@@ -243,7 +243,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaces(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);

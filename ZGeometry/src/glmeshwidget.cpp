@@ -476,7 +476,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
 	// draw boundary edges in dark color
-	const std::vector<bool>& vVertIsOnHole = tmesh->getVertOnHole();
+	const std::vector<bool>& vVertIsOnHole = tmesh->getVertsOnHole();
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBoundary())   //highlight boundary edge 
 	{

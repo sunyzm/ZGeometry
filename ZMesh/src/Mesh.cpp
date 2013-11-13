@@ -38,42 +38,23 @@ CVertex::~CVertex()
 
 CVertex::CVertex()
 {
-	m_piEdge = NULL;
-	mOutValence = 0;
-	m_bIsBoundary = false;
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
-	m_bIsValid = true;
+	init();
 }
 
 CVertex::CVertex( double x, double y, double z )
 {
+	init();
 	m_vPosition = Vector3D(x,y,z);
-	m_piEdge = NULL; 
-	mOutValence = 0;
-	m_bIsBoundary = false;
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
-	m_bIsValid = true;
 }
 
 CVertex::CVertex( const Vector3D& v )
 {
+	init();
 	m_vPosition = v;
-	m_piEdge = NULL; 
-	mOutValence = 0;
-	m_bIsBoundary = false;
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
-	m_bIsValid = true;
 }
 
-CVertex::CVertex( double x, double y, double z, float r, float g, float b )
+void CVertex::init()
 {
-	m_vPosition = Vector3D(x,y,z);
 	m_piEdge = NULL;
 	mOutValence = 0;
 	m_bIsBoundary = false;
@@ -112,7 +93,7 @@ void CVertex::clone(const CVertex& v)
 	if (v.m_piEdge != NULL) {
 		m_piEdge = new int[mOutValence];		// starting half-edge index array
 		for (int i = 0; i < mOutValence; ++i)
-			this->m_piEdge[i] = v.m_piEdge[i];
+			m_piEdge[i] = v.m_piEdge[i];
 	}
 	else m_piEdge = NULL;
 }
@@ -152,7 +133,6 @@ void CVertex::setPosition( double x, double y, double z )
 	m_vPosition.z = z;
 }
 
-
 //////////////////////////////////////////////////////
 //						CHalfEdge					//
 //////////////////////////////////////////////////////
@@ -187,12 +167,25 @@ CHalfEdge::CHalfEdge( int iV0, int iV1 )
 
 CHalfEdge::CHalfEdge( const CHalfEdge& e )
 {
+	clone(e);
+}
+
+CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
+{
+	clone(e);
+	return *this;
+}
+
+void CHalfEdge::clone(const CHalfEdge& e)
+{
+	if (this == &e) return;
+
 	m_eIndex = e.m_eIndex;
-	
+
 	m_Vertices[0] = m_Vertices[1] = NULL;
-	m_eTwin= m_eNext = m_ePrev = NULL;
+	m_eTwin = m_eNext = m_ePrev = NULL;
 	m_Face = NULL;
-	
+
 	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0 -н> Vertex1
 	m_iVertex[1]	= e.m_iVertex[1];       //
 	m_iTwinEdge		= e.m_iTwinEdge;        // reverse half-edge index, -1 if boundary half edge
@@ -200,26 +193,9 @@ CHalfEdge::CHalfEdge( const CHalfEdge& e )
 	m_iPrevEdge		= e.m_iPrevEdge;		// previous half-edge index (cc)
 	m_iFace			= e.m_iFace;			// attaching face index ( on the left side )
 
-	m_bIsValid = e.m_bIsValid;
+	m_bIsValid      = e.m_bIsValid;
 }
 
-CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
-{
-	m_eIndex = e.m_eIndex;
-
-	m_Vertices[0] = m_Vertices[1] = NULL;
-	m_eTwin= m_eNext = m_ePrev = NULL;
-	m_Face = NULL;
-
-	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0гн>Vertex1
-	m_iVertex[1]	= e.m_iVertex[1];
-	m_iTwinEdge		= e.m_iTwinEdge;        // reverse half-edge index, -1 if boundary half edge
-	m_iNextEdge		= e.m_iNextEdge;		// next half-edge index ( counter-clock wise )
-	m_iPrevEdge		= e.m_iPrevEdge;		// previous half-edge index (cc)
-	m_iFace			= e.m_iFace;			// attaching face index ( on the left side )
-
-	return *this;
-}
 
 double CHalfEdge::getLength() const
 {
@@ -244,6 +220,19 @@ CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
 
 CFace::CFace( const CFace& f )
 {
+	clone(f);
+}
+
+CFace& CFace::operator = (const CFace& f)
+{
+	clone(f);
+	return (*this);
+}
+
+void CFace::clone( const CFace& f )
+{
+	if (this == &f) return;
+
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
 
@@ -263,27 +252,6 @@ CFace::CFace( const CFace& f )
 	m_bIsValid = f.m_bIsValid;
 }
 
-CFace& CFace::operator = (const CFace& f)
-{
-	m_fIndex = f.m_fIndex;
-	m_nType	 = f.m_nType;
-
-	if (f.m_piVertex && f.m_piEdge) {
-		if (m_piVertex) delete []m_piVertex;
-		if (m_piEdge) delete []m_piEdge;
-		m_piVertex = new int[m_nType];      // polygon vertex index
-		m_piEdge = new int[m_nType];        // polygon edge index
-
-		for(int i = 0; i < m_nType; i++) {
-			m_piVertex[i] = f.m_piVertex[i];
-			m_piEdge[i] = f.m_piEdge[i];
-		}
-	}
-	
-	m_bIsValid = f.m_bIsValid;
-
-	return (*this);
-}
 
 CFace::~CFace()
 {
@@ -291,7 +259,7 @@ CFace::~CFace()
 	delete []m_piVertex;
 }
 
-void CFace::Create(int s)
+void CFace::create(int s)
 {
 	m_nType = s;
 	m_piEdge = new int[s];
@@ -325,9 +293,9 @@ Vector3D CFace::calcNormal()
 bool CFace::hasVertex( int vidx ) const
 {
 	for (CVertex* pv : m_Vertices) {
-		if (pv->getIndex() == vidx)	
-			return true;
+		if (pv->getIndex() == vidx)	return true;
 	}
+
 	return false;
 }
 
@@ -571,9 +539,9 @@ double CFace::computeArea() const
 //////////////////////////////////////////////////////
 
 CMesh::CMesh() : 
+	m_meshName(""),
 	m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
 	m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
-	m_meshName(""),
 	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
 {
 }
@@ -609,45 +577,35 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 
 	if (m_bIsPointerVectorExist)
 	{
-		for (int i = 0; i < m_nVertex; ++i)
-		{
+		for (int i = 0; i < m_nVertex; ++i) {
 			this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 		}
-		for (int i = 0; i < m_nFace; ++i)
-		{
+		for (int i = 0; i < m_nFace; ++i) {
 			this->m_vFaces.push_back(new CFace(*oldMesh.m_vFaces[i]));
 		}
-		for (int i = 0; i < m_nHalfEdge; ++i)
-		{
+		for (int i = 0; i < m_nHalfEdge; ++i) {
 			this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh.m_vHalfEdges[i]));
 		}
-		for (int i = 0; i < m_nVertex; ++i)
-		{
+
+		for (int i = 0; i < m_nVertex; ++i) {
 			CVertex* curV = this->m_vVertices[i];
 			const CVertex* oldV = oldMesh.m_vVertices[i];
-			for (int j = 0; j < oldV->mOutValence; ++j)
-			{
+			for (int j = 0; j < oldV->mOutValence; ++j) {
 				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
 				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
-		for (int i = 0; i < m_nFace; ++i)
-		{
+		for (int i = 0; i < m_nFace; ++i) {
 			CFace* curF = this->m_vFaces[i];
 			const CFace* oldF = oldMesh.m_vFaces[i];
-			for (int j = 0; j < oldF->m_nType; ++j)
-			{
+			for (int j = 0; j < oldF->m_nType; ++j) {
 				int vidx = oldF->m_Vertices[j]->m_vIndex;
 				int eidx = oldF->m_HalfEdges[j]->m_eIndex;
-
-				assert(vidx >= 0 && vidx < m_nVertex);
-
 				curF->m_Vertices.push_back(this->m_vVertices[vidx]);
 				curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 			}
 		}
-		for (int i = 0; i < m_nHalfEdge; ++i)
-		{
+		for (int i = 0; i < m_nHalfEdge; ++i) {
 			CHalfEdge* curE = this->m_vHalfEdges[i];
 			const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
 			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
@@ -656,15 +614,12 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 				peidx = oldE->m_ePrev->m_eIndex,
 				fidx = oldE->m_Face->m_fIndex;
 
-			assert(vidx0 >= 0 && vidx0 < m_nVertex && vidx1 >= 0 && vidx1 < m_nVertex);
-
 			curE->m_Vertices[0] = this->m_vVertices[vidx0];
 			curE->m_Vertices[1] = this->m_vVertices[vidx1];
 			curE->m_eNext = this->m_vHalfEdges[neidx];
 			curE->m_ePrev = this->m_vHalfEdges[peidx];
 			curE->m_Face = this->m_vFaces[fidx];
-			if (oldE->m_eTwin != NULL)
-			{
+			if (oldE->m_eTwin != NULL) {
 				int teidx = oldE->m_eTwin->m_eIndex;
 				curE->m_eTwin = this->m_vHalfEdges[teidx];
 			}
@@ -689,7 +644,6 @@ void CMesh::cloneFrom( const CMesh& oldMesh )
 		
 		buildPointerVectors();
 	}
-
 }
 
 void CMesh::clearMesh()
@@ -740,8 +694,7 @@ bool CMesh::Load( const std::string& sFileName )
 	else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
 		retVal = loadFromOFF(sFileName);
 	}
-	else 
-		throw runtime_error("Unrecognizable file extension!");
+	else throw runtime_error("Unrecognizable file extension!");
 	
 	return retVal;
 }
@@ -817,7 +770,7 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 	}
 
 	for(int i = 0; i < m_nFace; i++) {
-		m_pFace[i].Create(3);
+		m_pFace[i].create(3);
 		for(j = 0; j < 3; j++)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
@@ -917,7 +870,7 @@ bool CMesh::loadFromPLY( string sFileName )
 				throw runtime_error( "PLY file format error: vertex index out of range");
 			else 
 			{ 
-				m_pFace[triCount].Create(3);
+				m_pFace[triCount].create(3);
 				m_pFace[triCount].m_piVertex[0] = p1;
 				m_pFace[triCount].m_piVertex[1] = p2;
 				m_pFace[triCount].m_piVertex[2] = p3;
@@ -1011,7 +964,7 @@ bool CMesh::loadFromVERT(string sFileName)
 	short j;
 	for(i=0; i<m_nFace; i++)
 	{
-		m_pFace[i].Create(3);
+		m_pFace[i].create(3);
 		for(j=0;j<3;j++)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
@@ -1179,7 +1132,7 @@ bool CMesh::loadFromM(string sFileName)
 
 	for(int i = 0; i < m_nFace; i++)
 	{
-		m_pFace[i].Create(3);
+		m_pFace[i].create(3);
 		m_pFace[i].m_piVertex[0] = FaceList[i*3]-1;
 		m_pFace[i].m_piVertex[1] = FaceList[i*3+1]-1;
 		m_pFace[i].m_piVertex[2] = FaceList[i*3+2]-1;
@@ -1367,7 +1320,7 @@ bool CMesh::construct()
 		newVertex->m_bIsValid = true;
 		newVertex->mOutValence = 0;
 		newVertex->m_HalfEdges.clear();
-		this->m_vVertices.push_back(newVertex);
+		m_vVertices.push_back(newVertex);
 	}
 
 	for (int i = 0; i < m_nFace; ++i)
@@ -1489,20 +1442,18 @@ void CMesh::calVertNormals()
 	const std::vector<Vector3D>& vFaceNormals = getFaceNormals();
 	std::vector<Vector3D> vVertNormals(vertNum);
 
-	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
-	{
+	for (int vIndex = 0; vIndex < vertNum; ++vIndex) {
 		CVertex* vertex = m_vVertices[vIndex];
-		Vector3D vNormal(0,0,0);
-
-		short valence = vertex->getOutValence();
-		if(valence < 1) {
+		std::vector<int> incidentFacecIdx = getVertexAdjacentFaceIdx(vIndex, 1);
+				
+		if(incidentFacecIdx.empty()) {
 			vVertNormals[vIndex] = Vector3D(0,0,0);
 			continue;
 		}
 
-		for(short j = 0; j < valence; j++) {
-			CFace* face = vertex->getHalfEdge(j)->getAttachedFace();
-			int fIndex = face->getFaceIndex();
+		Vector3D vNormal(0,0,0);
+		for(int fIndex : incidentFacecIdx) {
+			CFace* face = m_vFaces[fIndex];
 			Vector3D cv = (face->getVertex(0)->getPosition() + face->getVertex(1)->getPosition() + face->getVertex(2)->getPosition()) / 3.0;
 			double wt = 1.0 / (cv - vertex->getPosition()).length();
 			vNormal += vFaceNormals[fIndex] * wt;
@@ -1944,8 +1895,7 @@ bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
 
 	bool flag = true;
 
-	for (j=0; j<size; j++)
-	{
+	for (j = 0; j < size; j++) {
 		int ee = notei.m_piEdge[j];
 		int endv = m_pHalfEdge[ee].m_iVertex[1];
 		m_pVertex[endv].m_inheap = true;
@@ -1955,14 +1905,13 @@ bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
 		m_pVertex[endv].m_mark = i;
 		if(mgeo<ring) nbg.push_back(GeoNote(endv,mgeo));
 	}
-	for (j=0; j<size; j++)
-	{
+
+	for (j = 0; j < size; j++) {
 		int e1 = notei.m_piEdge[j];
 		ia = m_pHalfEdge[e1].m_iVertex[1];
 		int e2 = m_pHalfEdge[e1].m_iNextEdge;
 		ib = m_pHalfEdge[e2].m_iVertex[1];
-		if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-		{
+		if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic) {
 			int it = ia;
 			ia = ib;
 			ib = it;
@@ -1978,7 +1927,7 @@ bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
 	} // first ring
 
 	int itr = 0;
-	while (!heapqueue.empty())// && itr<MAX_NEIGHBOR_NUMBER)
+	while (!heapqueue.empty())// && itr<MAX_NEIGHBOR_NUMBER) 
 	{
 		itr++;
 		GeoNote nt = heapqueue.top();
@@ -1990,13 +1939,12 @@ bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
 
 		if(m_pVertex[sg].m_mark==i) continue;  // marched already
 		//if(m_pOctave[o].m_pNote[sg].m_LocalGeodesic < sgd) continue;
-		if(m_pVertex[sg].m_LocalGeodesic > ring) break;   // reach the upbound
+		if(m_pVertex[sg].m_LocalGeodesic > ring) break;   // reach the upper bound
 		nbg.push_back(nt);
 		m_pVertex[sg].m_mark = i;
 
 		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].mOutValence; k++)
-		{
+		for (k=0; k<m_pVertex[sg].mOutValence; k++) {
 			ia = sg;
 			int e1 = m_pVertex[sg].m_piEdge[k];
 			ib = m_pHalfEdge[e1].m_iVertex[1];
@@ -2221,188 +2169,6 @@ double CMesh::calGeodesic( int s, int t ) const
 	return geo;
 }
 
-/*
-double CMesh::calGeodesic( int s, int t ) const
-{
-	if(s == t) return 0.0;
-
-	GeoQueue heapqueue;
-
-	vector<GeoNote> nbg;
-	const CVertex* notei = m_vVertices[s];
-
-	struct GeoCalHelper 
-	{
-		int m_mark;
-		double m_LocalGeodesic;
-		bool m_inheap;
-		GeoCalHelper(int m, double g, bool i) : m_mark(m), m_LocalGeodesic(g), m_inheap(i) {}
-	};
-
-	std::map<int, GeoCalHelper> mStateHelper;
-
-	mStateHelper.insert(make_pair(s, GeoCalHelper(s, 0., true)));
-	nbg.push_back(GeoNote(s,0.0));
-
-	int size = notei->m_nValence;
-	int k,ic;
-
-	bool stop = false;
-	double geo = 0.0;
-
-	for (int j = 0; j < size; j++)
-	{
-		CHalfEdge* ee = notei->m_HalfEdges[j];
-		CVertex* endv = ee->m_Vertices[1];
-		int endIdx = endv->getIndex();
-		Vector3D vt = endv->getPosition() - notei->getPosition();
-		double mgeo = vt.length();
-		if (endIdx == t) { stop = true; geo = mgeo; break;}
-
-		mStateHelper.insert(make_pair(endIdx, GeoCalHelper(s, mgeo, true)));
-		nbg.push_back(GeoNote(endIdx, mgeo));
-	}
-
-	if(!stop)
-	{
-		for (int j = 0; j < size; j++)
-		{
-			CHalfEdge* e1 = notei->m_HalfEdges[j];
-			CVertex* via = e1->m_Vertices[1];
-			int ia = via->getIndex();
-			CHalfEdge* e2 = e1->m_eNext;
-			CVertex* vib = e2->m_Vertices[1];
-			int ib = vib->getIndex();
-
-			if (mStateHelper.find(ia) != mStateHelper.end()
-				&& mStateHelper.find(ib) != mStateHelper.end() 
-				&& mStateHelper[ia].m_LocalGeodesic > mStateHelper[ib].m_LocalGeodesic)
-			{
-				std::swap(ia, ib);
-			}
-
-			e1 = e2->m_eTwin;
-			if (e1 == NULL) continue;
-			e2 = e1->m_eNext;
-			int ic = e2->m_Vertices[1]->getIndex();
-			double mgeo = calLocalGeodesic(ia, ib, ic);
-			mStateHelper[ic] = GeoCalHelper(s, mgeo, true);
-			heapqueue.push(GeoNote(ic, mgeo));
-
-		} // first ring
-	}
-
-	int count = 0;
-	while (!stop && !heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-
-		int sg = nt.m_id;
-		if(sg == t) 
-		{
-			stop = true; 
-			geo = nt.m_geodesic; 
-			nbg.push_back(nt); 
-			break;
-		}
-
-		double sgd = nt.m_geodesic;
-
-//		if (m_vVertices[sg].m_bIsBoundary) continue;
-		if (mStateHelper.find(sg) != mStateHelper.end() && mStateHelper[s].m_mark == s)
-			continue; //matched already
-		mStateHelper.insert(make_pair(sg, GeoCalHelper(s, 0, false)));
-		for (int k = 0; k < m_vVertices[sg].m_nValence; ++k)
-		{
-			int ia = sg;
-			CHalfEdge* e1 = m_vVertices[sg].m_HalfEdges[k];
-			int ib = e1->m_Vertices[1]->getIndex();
-			if (mStateHelper.find(ib) == mStateHelper.end() || mStateHelper[ib].m_mark != s)
-				continue;		// unreached point
-			CHalfEdge* e2 = e1->m_eNext;
-
-		}
-		
-//		if(m_pVertex[sg].m_bIsBoundary) continue;
-		if(m_pVertex[sg].m_mark==s) continue;  // matched already
-		m_pVertex[sg].m_mark = s;
-		nbg.push_back(nt);
-		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].m_nValence; k++)
-		{
-			ia = sg;
-			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				ia = ib;
-				ib = sg;
-			}
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-			e2 = m_pHalfEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nHalfEdge) continue;
-			e1 = m_pHalfEdge[e2].m_iNextEdge;
-			ic = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-		}
-	}
-
-	for (size_t ni=0; ni<nbg.size(); ni++)
-	{
-		int pos = nbg[ni].m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	// clear heap
-	while (!heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-		int pos = nt.m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	nbg.clear();
-	return geo;
-}
-*/
-
 double CMesh::getGeodesicToBoundary(int s) const
 {
 	GeoQueue heapqueue;
@@ -2420,7 +2186,7 @@ double CMesh::getGeodesicToBoundary(int s) const
 	bool stop = false;
 	double geo = 0.0;
 
-	const std::vector<bool>& vVertIsHole = getVertOnHole_const();
+	const std::vector<bool>& vVertIsHole = getVertsOnHole_const();
 
 	for (j = 0; j < size; j++)
 	{
@@ -2574,7 +2340,7 @@ double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
 
 	bool stop = false;
 	double geo = 0.0;
-	const std::vector<bool>& vVertIsHole = getVertOnHole();
+	const std::vector<bool>& vVertIsHole = getVertsOnHole();
 
 	for (j=0; j<size; j++)
 	{
@@ -2733,17 +2499,16 @@ double CMesh::calVolume() const
 		const Vector3D& v3 = face->getVertex(2)->getPosition();
 		Vector3D vo = (v1 + v2 + v3) / 3.0;
 		Vector3D vn;
-		crossProduct3D(v2 - v1, v3 - v1, vn);
-		vol += std::fabs(dotProduct3D(vo, vn));
+		crossProduct3D(v2 - v1, v3 - v2, vn);
+		vol += dotProduct3D(vo, vn);
 	}
 
 	vol /= 6;
-	return vol;
+	return std::fabs(vol);
 }
 
 void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& var )
 {
-
 	//if(!var.empty()) var.clear();
 
 	//var.resize(61);
@@ -2777,7 +2542,7 @@ void CMesh::calAreaRatio( CMesh* tmesh, std::vector<int>& var )
 
 }
 
-std::vector<int> CMesh::getVertexAdjacentFaces( int vIdx, int ring /*= 1*/ ) const
+std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) const
 {
 	assert(ring >= 1);
 	vector<int> vNeighbors = getVertNeighborVerts(vIdx, ring-1, true);
@@ -3246,7 +3011,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 
 	for(int i = 0; i < m_nFace; i++)
 	{
-		m_pFace[i].Create(3);
+		m_pFace[i].create(3);
 		for(int j = 0; j < 3; j++)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
@@ -3365,53 +3130,10 @@ bool CMesh::hasBoundary() const
 	return attrBoundary->getValue() > 0;
 }
 
-void CMesh::getCoordinateFunction( int dim, std::vector<double>& vCoord ) const
+double CMesh::calFaceArea( int i ) const
 {
-	vCoord.resize(m_nVertex);
-	if (dim == 0)
-	{
-		for (int i = 0; i < m_nVertex; ++i)
-			vCoord[i] = m_pVertex[i].m_vPosition.x;
-	}
-	else if (dim == 1)
-	{
-		for (int i = 0; i < m_nVertex; ++i)
-			vCoord[i] = m_pVertex[i].m_vPosition.y;
-	}
-	else if (dim == 2)
-	{
-		for (int i = 0; i < m_nVertex; ++i)
-			vCoord[i] = m_pVertex[i].m_vPosition.z;
-	}
-}
-
-void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
-{
-	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
-
-	for (int i = 0; i < m_nVertex; ++i)
-	{
-		m_pVertex[i].setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
-		
-		if (m_bIsPointerVectorExist)
-			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
-	}
-}
-
-
-void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos)
-{
-	if(vDeformedIdx.size() != vNewPos.size())
-		throw std::logic_error("Error: CMesh::setVertexCoordinates; incompatible parameters");
-
-	size_t vsize = vDeformedIdx.size();
-	for (size_t i = 0; i < vsize; ++i)
-	{
-		m_pVertex[vDeformedIdx[i]].setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
-		
-		if (m_bIsPointerVectorExist)
-			m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
-	}
+	const CFace* f = m_vFaces[i];
+	return f->computeArea();
 }
 
 void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<double>& vSS, std::vector<double>& vArea ) const
@@ -3496,10 +3218,22 @@ void CMesh::calLBO( std::vector<int>& vII, std::vector<int>& vJJ, std::vector<do
 	}
 }
 
-double CMesh::calFaceArea( int i ) const
+void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) const
 {
-	const CFace* f = m_vFaces[i];
-	return f->computeArea();
+	vCoord.resize(m_nVertex);
+	switch(dim) {
+	case 0:
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().x; 
+		break;
+	case 1:
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().y; 
+		break;
+	case 2:
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().z; 
+		break;
+	default:
+		throw std::logic_error("Invalid coordinate dimension!");
+	}
 }
 
 void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
@@ -3527,6 +3261,34 @@ void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 	setVertexCoordinates(vx, vy, vz);
 }
 
+void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
+{
+	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
+
+	for (int i = 0; i < m_nVertex; ++i)
+	{
+		m_pVertex[i].setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
+		
+		if (m_bIsPointerVectorExist)
+			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
+	}
+}
+
+void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos)
+{
+	if(vDeformedIdx.size() != vNewPos.size())
+		throw std::logic_error("Error: CMesh::setVertexCoordinates; incompatible parameters");
+
+	size_t vsize = vDeformedIdx.size();
+	for (size_t i = 0; i < vsize; ++i)
+	{
+		m_pVertex[vDeformedIdx[i]].setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+		
+		if (m_bIsPointerVectorExist)
+			m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+	}
+}
+
 double CMesh::getAvgEdgeLength() const
 {
 	const MeshAttr<double>* attrAvgEdgeLen = getAttr<double>(StrAttrAvgEdgeLength);
@@ -3549,7 +3311,7 @@ const std::vector<double>& CMesh::getGaussCurvature()
 const std::vector<Vector3D>& CMesh::getFaceNormals()
 {
 	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
-	return getAttrValue<std::vector<Vector3D> >(StrAttrFaceNormal);
+	return getAttrValue< std::vector<Vector3D> >(StrAttrFaceNormal);
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals()
@@ -3564,22 +3326,22 @@ const std::vector<Vector3D>& CMesh::getVertNormals_const() const
 	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
 }
 
-const std::vector<bool>& CMesh::getVertOnHole()
+const std::vector<bool>& CMesh::getVertsOnHole()
 {
 	if(!hasAttr(StrAttrVertOnHole)) findHoles();
 	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
 }
 
-const std::vector<bool>& CMesh::getVertOnHole_const() const
+const std::vector<bool>& CMesh::getVertsOnHole_const() const
 {
 	assert(hasAttr(StrAttrVertOnHole));
 	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
 }
 
-const std::vector<bool>& CMesh::getVertOnBoundary()
+const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
-	return getAttrValue<std::vector<bool> >(StrAttrVertOnBoundary);
+	return getAttrValue< std::vector<bool> >(StrAttrVertOnBoundary);
 }
 
 double CMesh::calSurfaceArea() const

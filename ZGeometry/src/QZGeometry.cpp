@@ -386,7 +386,7 @@ void QZGeometryWindow::registerPreprocess()
 		string mapFile = "./models/map1.txt";
 		mShapeMatcher.loadGroundTruth(mapFile);
 	}
-	else if(mMeshes[0]->getMeshSize() == mMeshes[1]->getMeshSize()) {
+	else if(mMeshes[0]->vertCount() == mMeshes[1]->vertCount()) {
 		mShapeMatcher.autoGroundTruth();
 	}
 
@@ -913,7 +913,7 @@ void QZGeometryWindow::computeEigenfunction()
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		double *data = mProcessors[i]->getMHB(MeshLaplacian::SymCot).getEigVec(select_eig).c_ptr();
-		int count = mProcessors[i]->getMesh()->getMeshSize();
+		int count = mProcessors[i]->getMesh()->vertCount();
 		std::string varName = "eig" + boost::lexical_cast<std::string>(i) 
 							  + "_" + boost::lexical_cast<std::string>(select_eig);
 		mEngineWrapper.addArray(data, count, 1, false, varName);
@@ -1746,7 +1746,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLapl
 	ifs.read((char*)&nSize, sizeof(int));
 	ifs.close();
 
-	if (nEig != nEigVec || nSize != mesh.getMeshSize()) return true;
+	if (nEig != nEigVec || nSize != mesh.vertCount()) return true;
 
 	return false;
 }

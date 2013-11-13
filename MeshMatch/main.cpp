@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 
 	std::vector<std::pair<int,int>> matchPairs;
 
-	int meshSize1 = mesh1.getMeshSize(), meshSize2 = mesh2.getMeshSize();
+	int meshSize1 = mesh1.vertCount(), meshSize2 = mesh2.vertCount();
 	for (int i = 0; i < meshSize1; ++i) {
 		const Vector3D& v1 = mesh1.getVertex(i)->getPosition();
 		for (int j = 0; j < meshSize2; ++j) {

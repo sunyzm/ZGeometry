@@ -935,7 +935,7 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 		int vid_i = tmesh1->getVertex(vi)->getVID(),
 			vid_j = tmesh2->getVertex(vj)->getVID();
 
-		for (int ei = 0; ei < tmesh1->getVertex(vi)->getOutValence(); ei++)
+		for (int ei = 0; ei < tmesh1->getVertex(vi)->outValence(); ei++)
 		{
 			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge_const(ei);
 			const int vt = he->getVertexIndex(1);
@@ -1133,7 +1133,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh2->getVertex(idx)->getOutValence(); ++l)
+			for (int l = 0; l < tmesh2->getVertex(idx)->outValence(); ++l)
 			{
 				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
@@ -1816,7 +1816,7 @@ void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh->getVertex(idx)->getOutValence(); ++l)
+			for (int l = 0; l < tmesh->getVertex(idx)->outValence(); ++l)
 			{
 				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge_const(l);
 				int vt = he->getVertexIndex(1);
@@ -1952,7 +1952,7 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 
 	CMesh *tmesh1 = meshPyramids[0].getMesh(current_level), *tmesh2 = meshPyramids[1].getMesh(current_level);
 	const int coarseSize1 = tmesh1->vertCount(), coarseSize2 = tmesh2->vertCount();
-	const int fineSize1 = meshPyramids[0].getMesh(0)->getMeshSize(), fineSize2 = meshPyramids[1].getMesh(0)->getMeshSize();
+	const int fineSize1 = meshPyramids[0].getMesh(0)->vertCount(), fineSize2 = meshPyramids[1].getMesh(0)->vertCount();
 	vector<int> vMatch1(coarseSize1, -1), vMatch2(coarseSize2, -1);	// indexed by the vertex index in current level
 	vector<double> vMatchScore1(coarseSize1, -1), vMatchScore2(coarseSize2, 01); // indexed by the vertex index in current level
 
@@ -3337,7 +3337,7 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 
 void ShapeMatcher::sparseMatchingTesting()
 {
-	int vsize = pOriginalMesh[0]->getMeshSize();
+	int vsize = pOriginalMesh[0]->vertCount();
 	double outlier_ratio = 0.2;
 	ofstream ofs("output/evaluate_hkt.txt");
 	ofstream ofs2("output/result_hkt.csv");
@@ -3622,8 +3622,8 @@ void ShapeMatcher::sparseMatchingTesting()
 
 void ShapeMatcher::localCorrespondenceTesting()
 {
-	assert(pOriginalMesh[0]->getMeshSize() == pOriginalMesh[1]->getMeshSize());
-	int vsize = pOriginalMesh[0]->getMeshSize();
+	assert(pOriginalMesh[0]->vertCount() == pOriginalMesh[1]->vertCount());
+	int vsize = pOriginalMesh[0]->vertCount();
 
 	ofstream ofs("output/evaluate_hkt.txt");
 	ofstream ofs2("output/result_hkt.csv");
@@ -3806,7 +3806,7 @@ void ShapeMatcher::generateExampleMatching( int n )
 	if (g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE") != 1)
 		return;
 
-	int vsize = pOriginalMesh[0]->getMeshSize();
+	int vsize = pOriginalMesh[0]->vertCount();
 
 	const int anchorNum = n;
 	vector<MatchPair> vAnchors;
@@ -3842,8 +3842,8 @@ void ShapeMatcher::loadGroundTruth( const std::string& filename )
 
 void ShapeMatcher::autoGroundTruth()
 {
-	assert(pOriginalMesh[0]->getMeshSize() == pOriginalMesh[1]->getMeshSize());
-	int meshSize = pOriginalMesh[0]->getMeshSize();
+	assert(pOriginalMesh[0]->vertCount() == pOriginalMesh[1]->vertCount());
+	int meshSize = pOriginalMesh[0]->vertCount();
 	mMatchGroundTruth.clear();
 	for (int i = 0; i < meshSize; ++i)
 		mMatchGroundTruth.insert(std::make_pair(i, i));

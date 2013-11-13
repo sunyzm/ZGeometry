@@ -55,15 +55,13 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	}
 
 	// calculate initial quadric for each vertex
-	for (int i = 0; i < m_nVertices; ++i)
-	{
+	for (int i = 0; i < m_nVertices; ++i) {
 		const CVertex* pV = originalMesh->m_vVertices[i];
 		// iterate through each face incident on v; 
 		// TODO: consider boundary constraint
 		auto adjFaces = pV->getAdjacentFaces();
 		Quadric q;
-		for (auto iter = begin(adjFaces); iter != end(adjFaces); ++iter)
-		{
+		for (auto iter = begin(adjFaces); iter != end(adjFaces); ++iter) {
 			q += m_FaceQuadrics[(*iter)->m_fIndex];
 		}
 		m_VertexQuadrics.push_back(q);

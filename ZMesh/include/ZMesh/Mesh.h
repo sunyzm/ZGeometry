@@ -121,7 +121,6 @@ public:
 	CVertex(double x, double y, double z);
 	CVertex(const Vector3D& v);
 	CVertex(const CVertex& v);
-	CVertex(double x, double y, double z, float r, float g, float b);
 	CVertex& operator = (const CVertex& v);	
 	virtual ~CVertex();
 
@@ -132,15 +131,15 @@ public:
 	CHalfEdge*			getHalfEdge(int ei) { return m_HalfEdges[ei]; }
 	const CHalfEdge*    getHalfEdge_const(int ei) const { return m_HalfEdges[ei]; }
 	const Vector3D&		getPosition() const { return m_vPosition; } 
-	int					getOutValence() const { return (int)m_HalfEdges.size(); }
+	int					outValence() const { return (int)m_HalfEdges.size(); }
 	bool				judgeOnBoundary();
 	bool				isOnBoundary() const { return m_bIsBoundary; }
 	bool				isValid() const { return m_bIsValid; }
-	void				invalidate(bool flag) { m_bIsValid = flag; }
 	void                translateAndScale(const Vector3D& translation, double s);
 	void                setPosition( double x, double y, double z );
 
 private:
+	void init();
 	void clone(const CVertex& v);
 
 	// ---- fields ---- //
@@ -174,9 +173,9 @@ public:
 	CHalfEdge(const CHalfEdge& oldE);
 	CHalfEdge(int iV0, int iV1);
 	virtual ~CHalfEdge();
-
-	// -- operations -- //
 	CHalfEdge& operator = (const CHalfEdge& e);
+
+	// -- operations -- //	
 	CFace*		getAttachedFace() const { return m_Face; }
 	CHalfEdge*  getTwinHalfEdge() const { return m_eTwin; }
 	bool		isBoundaryEdge() const { return m_eTwin == NULL; }
@@ -187,6 +186,8 @@ public:
 	CVertex*	vert(int i) const { return m_Vertices[i]; }
 
 private:
+	void clone(const CHalfEdge& oldEdge);
+
 	// -- fields -- //
 	int			m_eIndex;		//half-edge id
 	bool		m_bIsValid;
@@ -223,7 +224,7 @@ public:
 	CFace& operator= (const CFace& f);
 
 	// -- operations -- //
-	void					Create(int s);
+	void					create(int s);
 	std::vector<double>		getPlaneFunction();	
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
@@ -235,6 +236,8 @@ public:
 	int						getFaceIndex() const { return m_fIndex; }
 
 private:
+	void clone(const CFace& f);
+
 	// ---- fields ---- // 
 	int						m_fIndex;
 	bool					m_bIsValid;
@@ -297,11 +300,10 @@ public:
 	/* ---- constructors ---- */
 	CMesh();
 	CMesh(const CMesh& oldMesh);
-	virtual ~CMesh();
+	~CMesh();
 
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh);
-	//void		cloneFrom(const CMesh* oldMesh);
 	bool		Load(const std::string& sFileName);		// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
@@ -320,11 +322,10 @@ public:
 	const CFace*		getFace(int i) const { return m_vFaces[i]; }
 	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
-	int					getMeshSize() const { return (int)m_vVertices.size(); }
 	/*************************************************************************/
 	
 	/* geometry query, analysis and processing */
-	const Vector3D&		         getVertexPosition(int idx) const { return m_vVertices[idx]->m_vPosition; }
+	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	double						 calFaceArea(int i) const;
 	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
@@ -335,19 +336,23 @@ public:
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
 	const std::vector<Vector3D>& getVertNormals_const() const;
-	const std::vector<bool>&	 getVertOnHole();
-	const std::vector<bool>&     getVertOnHole_const() const;
-	const std::vector<bool>&	 getVertOnBoundary();
+	const std::vector<bool>&	 getVertsOnHole();
+	const std::vector<bool>&     getVertsOnHole_const() const;
+	const std::vector<bool>&	 getVertsOnBoundary();
+	Vector3D			         calMeshCenter() const;
+	Vector3D			         calBoundingBox(const Vector3D& center) const;
+	double				         calSurfaceArea() const;
+	double				         calVolume() const;	// calculate volume (area) of a surface
 
 	void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
 	void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 	bool				isInNeighborRing(int ref, int query, int ring) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
-	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;
-	std::vector<int>	getVertexAdjacentFaces(int vIdx, int ring = 1) const;
+	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
+	std::vector<int>	getVertexAdjacentFaceIdx(int vIdx, int ring = 1) const;
 	bool				vertGeoNeighborVerts(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 
-	void                getCoordinateFunction(int dim, std::vector<double>& vCoord) const;
+	void                getVertCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	void				getVertCoordinates(MeshCoordinates& coords) const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
@@ -369,10 +374,6 @@ public:
 	double				calGeodesic(int s, int t) const;
 	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
-	Vector3D			calMeshCenter() const;
-	Vector3D			calBoundingBox(const Vector3D& center) const;
-	double				calSurfaceArea() const;
-	double				calVolume() const;	// calculate volume (area) of a surface
 	void				calAreaRatio(CMesh* tmesh, std::vector<int>& ar);	// for registration
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
