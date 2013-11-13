@@ -937,8 +937,8 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 
 		for (int ei = 0; ei < tmesh1->getVertex(vi)->outValence(); ei++)
 		{
-			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge_const(ei);
-			const int vt = he->getVertexIndex(1);
+			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge(ei);
+			const int vt = he->getVertIndex(1);
 			const int vid_t = tmesh1->getVertex(vt)->getVID();
 
 			if( vMatch1[vt] >= 0 && vMatch1[vt] < coarseSize2 ) 
@@ -1135,8 +1135,8 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 			int idx = *iter;
 			for (int l = 0; l < tmesh2->getVertex(idx)->outValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge_const(l);
-				int vt = he->getVertexIndex(1);
+				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge(l);
+				int vt = he->getVertIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
 					marked_set.insert(vt);
@@ -1818,8 +1818,8 @@ void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level
 			int idx = *iter;
 			for (int l = 0; l < tmesh->getVertex(idx)->outValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge_const(l);
-				int vt = he->getVertexIndex(1);
+				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge(l);
+				int vt = he->getVertIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
 					marked_set.insert(vt);

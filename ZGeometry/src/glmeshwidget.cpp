@@ -484,8 +484,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
 			const CHalfEdge* hf = tmesh->getHalfEdge(i);
 			if(hf->isBoundaryEdge()) {
-				int p1 = hf->getVertexIndex(0);
-				int p2 = hf->getVertexIndex(1);
+				int p1 = hf->getVertIndex(0);
+				int p2 = hf->getVertIndex(1);
 				glLineWidth(2.0);
 				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
 				if(vVertIsOnHole[p1]) {

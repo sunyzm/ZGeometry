@@ -73,7 +73,7 @@ namespace ZGeom
 			e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1;
 	}
 
-	void triangleCotan( double a, double b, double c, double &cotan_a, double &cotan_c );
+	void triangleCot( double a, double b, double c, double &cotan_a, double &cotan_c );
 
 	/// compute cosine of the angle opposite to e3
 	double cosTriSides(double e1, double e2, double e3);
@@ -92,8 +92,8 @@ namespace ZGeom
 	{
 		return ZGeom::dot(v1, v2) / (v1.length() * v2.length());
 	}
-}
 
-
+	double calMixedTriArea(double a, double b, double c);
+} // end of namespace
 
 #endif

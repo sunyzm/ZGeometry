@@ -54,12 +54,75 @@ void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 
 void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 {
-	mOrder = tmesh->vertCount();
+	const int vertCount = tmesh->vertCount();
+	mOrder = vertCount;
 	std::vector<int> vII, vJJ;
 	std::vector<double> vSS;
-	std::vector<double> vWeights;
+	std::vector<double> vWeights(vertCount);
 
-	tmesh->calLBO(vII, vJJ, vSS, vWeights);
+	std::vector<double> diagW(vertCount, 0);
+	for (int vIdx = 0; vIdx < vertCount; ++vIdx)  //for every vertex
+	{
+		double amix = 0; //mixed area
+		const CVertex* vi = tmesh->getVertex(vIdx);
+		for (int j = 0; j < vi->outValence(); ++j) {
+			const CHalfEdge* e0 = vi->getHalfEdge(j);
+			const CHalfEdge* e1 = e0->nextHalfEdge();
+			const CHalfEdge* e2 = e1->nextHalfEdge();
+			const CVertex* vj = e0->vert(1);
+			const CHalfEdge* e2twin = e2->twinHalfEdge();
+
+			double len0 = e0->getLength();
+			double len1 = e1->getLength();
+			double len2 = e2->getLength();
+			amix += ZGeom::calMixedTriArea(len0, len1, len2);
+			
+			double cot_a11(0), cot_a12(0), cot_a21(0), cot_a22(0);
+			ZGeom::triangleCot(len0, len1, len2, cot_a11, cot_a12);
+
+			if (e0->twinHalfEdge() != NULL) {
+				const CHalfEdge* e10 = e0->twinHalfEdge();
+				const CHalfEdge* e11 = e10->nextHalfEdge();
+				const CHalfEdge* e12 = e11->nextHalfEdge();
+				len1 = e11->getLength();
+				len2 = e12->getLength();
+
+				ZGeom::triangleCot(len0, len1, len2, cot_a21, cot_a22);
+			}
+			double cota = (cot_a11 + cot_a21) / 2.0;
+
+			vII.push_back(vIdx + 1);
+			vJJ.push_back(vj->getIndex() + 1);
+			vSS.push_back(cota);
+			diagW[vIdx] -= cota;
+
+			if (e2twin == NULL) { //met an boundary fan edge
+				const CHalfEdge* e20 = e2;
+				const CHalfEdge* e21 = e20->nextHalfEdge();
+				const CHalfEdge* e22 = e21->nextHalfEdge();
+				len0 = e20->getLength();
+				len1 = e21->getLength();
+				len2 = e22->getLength();
+				double cot_a1, cot_a2;
+				ZGeom::triangleCot(len0, len1, len2, cot_a1, cot_a2);
+				double cota = cot_a1 / 2.0;
+				
+				vII.push_back(vIdx + 1);
+				vJJ.push_back(e20->getVertIndex(0) + 1);
+				vSS.push_back(cota);
+				diagW[vIdx] -= cota;
+			}
+
+		} // for each incident halfedge
+
+		vWeights[vIdx] = amix;
+	}
+
+	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
+		vII.push_back(vIdx + 1);
+		vJJ.push_back(vIdx + 1);
+		vSS.push_back(diagW[vIdx]);
+	}
 
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
