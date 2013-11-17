@@ -221,6 +221,7 @@
     <None Include="include\ZGeom\SparseMatrix.inl" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\ZGeom\Approximation.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />
     <ClInclude Include="include\ZGeom\Color.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />

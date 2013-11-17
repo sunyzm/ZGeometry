@@ -302,6 +302,15 @@ bool crossProduct3D( const Vector3D&v1, const Vector3D&v2, Vector3D& v3 )
 	return true;
 }
 
+Vector3D cross3D(const Vector3D& v1, const Vector3D& v2) 
+{
+	Vector3D v3;
+	v3.x = v1.y*v2.z - v1.z*v2.y;
+	v3.y = v1.z*v2.x - v1.x*v2.z;
+	v3.z = v1.x*v2.y - v1.y*v2.x;
+	return v3;
+}
+
 double VectorND::length2()
 {
 	if(!m_vec) return 0.0;
@@ -441,7 +450,8 @@ double VectorND::normalizedDifference( const VectorND& v ) const
 
 void VectorND::resize( int n )
 {
-	if(m_vec) delete []m_vec;
+	if (m_size == n) return;
+	delete[] m_vec;
 	m_size = n;
 	m_vec = new double[m_size];
 }

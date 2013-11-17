@@ -14,8 +14,8 @@
 #include <functional>
 #include <unordered_map>
 #include <ZGeom/Color.h>
-#include "ZGeom/VecN.h"
-#include "ZGeom/Vec3.h"
+#include <ZGeom/VecN.h>
+#include <ZGeom/Vec3.h>
 #include "Geometry.h"
 #include "Quat.h"
 #include "MeshAttr.h"

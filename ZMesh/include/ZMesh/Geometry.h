@@ -3,7 +3,6 @@
 //////////////////////////////////////////////////////////////////////
 #ifndef ZMESH_GEOMETRY_H
 #define ZMESH_GEOMETRY_H
-
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -170,6 +169,7 @@ public:
 
 double dotProduct3D(const Vector3D& v1, const Vector3D& v2);
 bool crossProduct3D(const Vector3D&v1, const Vector3D&v2, Vector3D& v3);
+Vector3D cross3D(const Vector3D& v1, const Vector3D& v2); 
 Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
 Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);

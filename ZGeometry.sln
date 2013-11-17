@@ -36,11 +36,6 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestZGeom", "TestZGeom\Test
 		{895183E2-8707-4F5E-99F3-3C6119CB0729} = {895183E2-8707-4F5E-99F3-3C6119CB0729}
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{506250AF-6997-474A-B665-2395FF572726}"
-	ProjectSection(SolutionItems) = preProject
-		Performance1.psess = Performance1.psess
-	EndProjectSection
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32

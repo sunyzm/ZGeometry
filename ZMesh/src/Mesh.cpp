@@ -252,7 +252,6 @@ void CFace::clone( const CFace& f )
 	m_bIsValid = f.m_bIsValid;
 }
 
-
 CFace::~CFace()
 {
 	delete []m_piEdge;
@@ -266,19 +265,6 @@ void CFace::create(int s)
 	m_piVertex = new int[s];
 }
 
-std::vector<double> CFace::getPlaneFunction()
-{
-	vector<double> para;
-	para.resize(4);
-	Vector3D vNormal = calcNormal();
-	para[0] = vNormal[0];
-	para[1] = vNormal[1];
-	para[2] = vNormal[2];
-	double d = vNormal * m_Vertices[0]->getPosition();
-	para[3] = -d;
-	return para;
-}
-
 Vector3D CFace::calcNormal()
 {
 	Vector3D v[2];
@@ -288,6 +274,18 @@ Vector3D CFace::calcNormal()
 	vNormal.normalize();	
 
 	return vNormal;
+}
+
+std::vector<double> CFace::getPlaneFunction()
+{
+	vector<double> para(4);
+	Vector3D vNormal = calcNormal();
+	para[0] = vNormal[0];
+	para[1] = vNormal[1];
+	para[2] = vNormal[2];
+	double d = vNormal * m_Vertices[0]->getPosition();
+	para[3] = -d;
+	return para;
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -2332,10 +2330,10 @@ double CMesh::calVolume() const
 		const Vector3D& v1 = face->getVertex(0)->getPosition();
 		const Vector3D& v2 = face->getVertex(1)->getPosition();
 		const Vector3D& v3 = face->getVertex(2)->getPosition();
-		Vector3D vo = (v1 + v2 + v3) / 3.0;
+
 		Vector3D vn;
-		crossProduct3D(v2 - v1, v3 - v2, vn);
-		vol += dotProduct3D(vo, vn);
+		crossProduct3D(v1, v2, vn);
+		vol += dotProduct3D(vn, v3);
 	}
 
 	vol /= 6;
