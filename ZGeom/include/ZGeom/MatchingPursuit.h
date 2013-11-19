@@ -12,10 +12,17 @@ namespace ZGeom
 {
 	void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, const InnerProdcutFunc& innerProdFunc, int nSelected, FunctionApproximation& vPursuit );
 	
-	//// compute OMP with MKL
+	//// compute OMP with MKL and regular inner product
+	void OrthogonalMatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit);
+
+	//// compute OMP with MKL and regular inner product
+	void OrthogonalMatchingPursuit_AMP(const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit);
+
+
+	//// compute OMP with MKL and customized InnerProdcutFunc
 	void OrthogonalMatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit);
 	
-	//// compute OMP with Matlab
+	//// compute OMP with Matlab and customized InnerProductFunc
 	void OrthogonalMatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine);
 }
 

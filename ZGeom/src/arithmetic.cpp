@@ -1,5 +1,6 @@
 #include "arithmetic.h"
 #include <stdexcept>
+#include <amp.h>
 
 double ZGeom::triArea( double e1, double e2, double e3 )
 {
@@ -47,4 +48,52 @@ double ZGeom::calMixedTriArea( double a, double b, double c )
 	{
 		return (a*a*cotan_a + c*c*cotan_c)/8.0;
 	}
+}
+
+void ZGeom::quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult)
+{
+	using namespace Concurrency;
+	// Y=X'*Q*X
+	array_view<double, 2> X(dim2, dim1, mat1);
+	array_view<double, 1> Q(dim2, diag);
+	array_view<double, 2> Y(dim1, dim1, matResult);	
+	Y.discard_data();
+
+	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp){
+		int row = idx[0], col = idx[1];
+		if (row >= col) {
+			Y[idx] = 0;
+			for (int k = 0; k < dim2; ++k) {
+				Y[idx] += Q(k) * X(k, row) * X(k, col);
+			}
+			Y(col, row) = Y[idx];
+		}	
+	});
+	Y.synchronize();
+
+	/*parallel_for (0, dim1, [&](int i ) {
+		for (int j = i + 1; j < dim1; ++j)
+			matResult[i*dim1 + j] = matResult[j*dim1 + i];
+	});*/
+
+}
+
+void ZGeom::matVecMulAMP( int dim1, int dim2, double *mat, double *vec, double *vResult )
+{
+	using namespace Concurrency;
+	// Y = M*X
+	array_view<double, 2> M(dim1, dim2, mat);
+	array_view<double, 1> X(dim2, vec);
+	array_view<double, 1> Y(dim1, vResult);
+	Y.discard_data();
+
+	parallel_for_each(Y.extent, [=](index<1> idx) restrict(amp) {
+		int row = idx[0];
+		Y[idx] = 0;
+		for (int k = 0; k < dim2; ++k) {
+			Y[idx] += M(row, k) * X(k);
+		}
+	});
+
+	Y.synchronize();
 }

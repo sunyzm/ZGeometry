@@ -28,23 +28,28 @@ private:
 	double mCoeff;
 };
 
-class ApproximationBasis
+class SignalAtom : public VecNd
 {
-	friend class FunctionApproximation;
-
 public:
+	SignalAtom() : VecNd(), mScale(-1), mPosition(-1) {}
+	SignalAtom(const VecNd& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
+	SignalAtom(double* p, uint dim, int scale = -1, int pos = -1) : VecNd(p, dim), mScale(scale), mPosition(pos) {}
+	SignalAtom(const std::vector<double>& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
 
 
-private:
-	std::vector<VecNd> mBasis; 
+protected:
+	int mScale;
+	int mPosition;
 };
+
+typedef std::vector<SignalAtom*> ApproximationAtoms;
 
 class FunctionApproximation
 {
 public:
-	FunctionApproximation() : mpBasis(NULL) {}
+	FunctionApproximation() : mAtoms(NULL) {}
 
-	void clear() { mApproxItems.clear(); mpBasis = NULL; }
+	void clear() { mApproxItems.clear(); mAtoms = NULL; }
 	void addItem(double r, int i, double c)
 	{
 		mApproxItems.push_back(ApproxItem(r, i, c));
@@ -57,7 +62,7 @@ public:
 	int size() const { return (int)mApproxItems.size(); }
 
 private:
-	ApproximationBasis *mpBasis;
+	ApproximationAtoms *mAtoms;
 	std::vector<ApproxItem> mApproxItems;
 };
 

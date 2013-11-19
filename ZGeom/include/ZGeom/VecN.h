@@ -188,7 +188,7 @@ inline VecN<T>::VecN(T* vec, uint n)
 template<typename T>
 inline VecN<T>::VecN(const std::vector<T>& vec)
 {
-	mDim = vec.size();
+	mDim = (int)vec.size();
 	mVec = new T[mDim];
 	std::copy_n(vec.begin(), mDim, mVec);
 }

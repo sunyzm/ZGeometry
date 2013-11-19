@@ -29,8 +29,6 @@ double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo
 typedef double (*TransferFunc)(double, double);
 typedef double (*ScalelessTransferFunc)(double);
 
-void quadricFormAMP(int dim1, int dim2, int dim3, double* mat1, double* diag, double *matResult);
-
 class DifferentialMeshProcessor : public MeshProcessor
 {
 public:

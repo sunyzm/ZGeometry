@@ -53,32 +53,6 @@ double mhwTransferFunc1( double lambda, double t )
 	return lambda * std::exp(-lambda * t);
 }
 
-void quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult)
-{
-	using namespace Concurrency;
-	// Y=X'*Q*X
-	array_view<double, 2> X(dim2, dim1, mat1);
-	array_view<double, 1> Q(dim2, diag);
-	array_view<double, 2> Y(dim1, dim1, matResult);	
-
-	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp){
-		int row = idx[0], col = idx[1];
-		if (row >= col) {
-			Y[idx] = 0;
-			for (int k = 0; k < dim2; ++k) {
-				Y[idx] += Q(k) * X(k, row) * X(k, col);
-			}
-		}	
-	});
-	Y.synchronize();
-
-	for (int i = 0; i < dim1; ++i ) {
-		for (int j = i + 1; j < dim1; ++j)
-			matResult[i*dim1 + j] = matResult[j*dim1 + i];
-	}
-}
-
-
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
 	mpEngineWrapper = NULL;
@@ -236,14 +210,14 @@ void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacia
 			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
 		double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * s;
 
-		quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	}
 	
 	double gamma = 1.3849001794597505097;
 	for (int i = 0; i < eigCount; ++i) 
 		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
 	double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * scales;
-	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 
 #else
 	//////////////////////////////////////////////////////////////////////////
@@ -705,7 +679,7 @@ void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::Dense
 
 	CStopWatch timer;
 	timer.startTimer();
-	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	timer.stopTimer("HK computation time with AMP: ");
 	delete []pEigVec;
 }

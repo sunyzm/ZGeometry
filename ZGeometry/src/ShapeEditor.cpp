@@ -735,8 +735,8 @@ void ShapeEditor::editTest1()
 		{
 			CStopWatch timer;
 			timer.startTimer();
-			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuit);
-			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
+			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
+			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, /*innerProdSelected,*/ 100, vPursuitX);
 			//ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX, *mEngine);
 			timer.stopTimer("Time to compute Wavelet MP: ");
 
