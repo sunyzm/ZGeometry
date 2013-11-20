@@ -111,7 +111,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 
 	/* setup ui and connections */
 	ui.setupUi(this);
-	ui.centralWidget->setLayout(ui.mainLayout);
+	//ui.centralWidget->setLayout(ui.mainLayout);
 	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	

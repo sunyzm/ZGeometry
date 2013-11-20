@@ -31,7 +31,7 @@
    </property>
    <layout class="QVBoxLayout" name="mainLayout">
     <item>
-     <widget class="QWidget" name="widgetOptions" native="true">
+     <widget class="QWidget" name="toolbarLayout" native="true">
       <property name="sizePolicy">
        <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
         <horstretch>0</horstretch>
@@ -120,6 +120,9 @@
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
+         <property name="sizeType">
+          <enum>QSizePolicy::Fixed</enum>
+         </property>
          <property name="sizeHint" stdset="0">
           <size>
            <width>40</width>
@@ -142,7 +145,7 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="layoutWorking">
+     <layout class="QHBoxLayout" name="workingSpaceLayout">
       <item>
        <widget class="GLMeshWidget" name="glMeshWidget" native="true">
         <property name="sizePolicy">
@@ -157,45 +160,73 @@
           <height>600</height>
          </size>
         </property>
+        <property name="autoFillBackground">
+         <bool>false</bool>
+        </property>
        </widget>
       </item>
       <item>
-       <widget class="QSplitter" name="splitterConsole">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-          <horstretch>1</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
+       <widget class="QTabWidget" name="controlTabs">
         <property name="minimumSize">
          <size>
-          <width>240</width>
+          <width>224</width>
           <height>0</height>
          </size>
         </property>
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
+        <property name="currentIndex">
+         <number>0</number>
         </property>
-        <widget class="QPlainTextEdit" name="consoleOutput">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>3</verstretch>
-          </sizepolicy>
-         </property>
-         <property name="font">
-          <font>
-           <family>Consolas</family>
-          </font>
-         </property>
+        <widget class="QWidget" name="tabConsole">
+         <attribute name="title">
+          <string>Console</string>
+         </attribute>
+         <widget class="QWidget" name="layoutWidget">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>0</y>
+            <width>258</width>
+            <height>721</height>
+           </rect>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout">
+           <item>
+            <widget class="QPlainTextEdit" name="consoleOutput">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>3</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <family>Consolas</family>
+              </font>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPlainTextEdit" name="consoleInput">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>1</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="font">
+              <font>
+               <family>Consolas</family>
+              </font>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
         </widget>
-        <widget class="QPlainTextEdit" name="consoleInput">
-         <property name="sizePolicy">
-          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-           <horstretch>0</horstretch>
-           <verstretch>1</verstretch>
-          </sizepolicy>
-         </property>
+        <widget class="QWidget" name="tabEdit">
+         <attribute name="title">
+          <string>Edit</string>
+         </attribute>
         </widget>
        </widget>
       </item>
