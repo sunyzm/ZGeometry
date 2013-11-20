@@ -52,6 +52,26 @@ void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 	m_laplacianType = Umbrella;
 }
 
+void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
+{
+	/* L = D^(-1/2) * (D-A) * D^(-1/2) */
+	this->constructTutte(tmesh);
+
+	std::vector<double> vD;
+	mW.getDiagonal(vD);
+	for (double& v : vD) v = std::pow(v, -0.5);	// compute D^(-1/2)
+
+	int nnz = mLS.nonzeroCount();
+	for (int i = 0; i < nnz; ++i) {
+		ZGeom::MatElem<double>& elem = mLS.getElemByIndex(i);
+		elem.val() *= vD[elem.row()-1] * vD[elem.col()-1];
+	}
+
+	mW.setToIdentity(mOrder);
+	m_laplacianType = NormalizedUmbrella;
+}
+
+/* Construct negative discrete Laplace operator */
 void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 {
 	const int vertCount = tmesh->vertCount();
@@ -112,7 +132,6 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 				vSS.push_back(cota);
 				diagW[vIdx] -= cota;
 			}
-
 		} // for each incident halfedge
 
 		vWeights[vIdx] = amix;

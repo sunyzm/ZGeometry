@@ -102,8 +102,9 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 	MeshLaplacian& laplacian = mMeshLaplacians[laplacianType];
 	switch(laplacianType)
 	{
-	case MeshLaplacian::Umbrella:
 	case MeshLaplacian::Tutte:
+	case MeshLaplacian::Umbrella:
+	case MeshLaplacian::NormalizedUmbrella:
 	case MeshLaplacian::CotFormula:
 	case MeshLaplacian::SymCot:
 		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mMesh);

@@ -29,11 +29,12 @@ MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 # -1 means no Laplacian computed at initialization
 # 0 tutte laplacian (assymetric)
 # 1 umbrella laplacian (symmetric)
-# 2 cot formula laplacain (assymetric)
-# 3 symmetric cotangent formula
-# 4 Anisotropic1 
-# 5 Anisotropic2
-INIT_LAPLACIAN_TYPE = 2
+# 2 normalized umbrella laplacian (symmetric)
+# 3 cot formula laplacain (assymetric)
+# 4 symmetric cotangent formula
+# 5 Anisotropic1 
+# 6 Anisotropic2
+INIT_LAPLACIAN_TYPE = 3
 LOAD_MHB_CACHE = 1
 DEFAULT_EIGEN_SIZE = 300
 DUMP_EIG_VAL = 1

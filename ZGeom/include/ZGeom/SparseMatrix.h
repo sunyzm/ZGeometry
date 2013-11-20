@@ -36,6 +36,7 @@ namespace ZGeom
 		uint row() const { return mRow; }
 		uint col() const { return mCol; }
 		T    val() const { return mVal; }
+		T&   val() { return mVal; }
 
 	private:   
 		uint mRow, mCol;
@@ -54,10 +55,13 @@ namespace ZGeom
 		uint nonzeroCount() const { return mElements.size(); }
 		bool empty() const { return mRowCount == 0 || mColCount == 0; }
 		T frobeniusNorm() const;
-		T getElemByIndex(uint index) const;
-		T& getElemByIndex(uint index);
-		T getElem(uint row, uint col) const;
-		T& getElem(uint row, uint col);
+		T getElemValByIndex(uint index) const;
+		T& getElemValByIndex(uint index);
+		T getElemVal(uint row, uint col) const;
+		T& getElemVal(uint row, uint col);
+		MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
+		const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
+		
 		T operator() (uint row, uint col) const; 
 		T& operator() (uint row, uint col);
 		void insertElem(uint row, uint col, T val);

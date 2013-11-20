@@ -8,21 +8,21 @@
 namespace ZGeom
 {
 	template<typename T>
-	inline T SparseMatrix<T>::getElemByIndex(uint index) const
+	inline T SparseMatrix<T>::getElemValByIndex(uint index) const
 	{
 		assert(index < mNonzeroCount);
 		return mElements[index].mVal;
 	}
 
 	template<typename T>
-	inline T& SparseMatrix<T>::getElemByIndex(uint index)
+	inline T& SparseMatrix<T>::getElemValByIndex(uint index)
 	{
 		assert(index < mNonzeroCount);
 		return mElements[index].mVal;
 	}
 
 	template<typename T>
-	inline T SparseMatrix<T>::getElem(uint row, uint col) const
+	inline T SparseMatrix<T>::getElemVal(uint row, uint col) const
 	{
 		assert(row <= mRowCount && col <= mColCount);
 
@@ -34,7 +34,7 @@ namespace ZGeom
 	}
 
 	template<typename T>
-	inline T& SparseMatrix<T>::getElem(uint row, uint col)
+	inline T& SparseMatrix<T>::getElemVal(uint row, uint col)
 	{
 		assert(row <= mRowCount && col <= mColCount);
 
@@ -50,13 +50,13 @@ namespace ZGeom
 	template<typename T>
 	inline T& SparseMatrix<T>::operator() (uint row, uint col)
 	{
-		return getElem(row, col);
+		return getElemVal(row, col);
 	}
 
 	template<typename T>
 	inline T SparseMatrix<T>::operator() (uint row, uint col) const
 	{
-		return getElem(row, col);
+		return getElemVal(row, col);
 	}
 
 	template<typename T>

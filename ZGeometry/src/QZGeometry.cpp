@@ -301,7 +301,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 	/* compute and decompose mesh Laplacians */
 	computeLaplacian(MeshLaplacian::CotFormula);
+	//verifyAreas();
 	computeLaplacian(MeshLaplacian::SymCot);
+	//computeLaplacian(MeshLaplacian::NormalizedUmbrella);	
 
 	if (g_task == TASK_REGISTRATION) registerPreprocess();
 	if (g_task == TASK_EDITING) {
@@ -1802,15 +1804,17 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 
 void QZGeometryWindow::verifyAreas() const
 {
-	for (int obj = 0; obj < 2; ++obj) {
+	for (int obj = 0; obj < mMeshCount; ++obj) {
 		double areaSum(0);
 		for (int i = 0; i < mMeshes[obj]->faceCount(); ++i) {
 			areaSum += mMeshes[obj]->calFaceArea(i);
 		}
 		double weightSum(0);
 		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(MeshLaplacian::CotFormula);
+		std::vector<double> vAreas;
+		laplacian.getW().getDiagonal(vAreas);
 		for (int i = 0; i < mMeshes[obj]->vertCount(); ++i) {
-			weightSum += laplacian.getW().getElemByIndex(i);
+			weightSum += vAreas[i];
 		}
 		std::cout << "Vert count: " << mMeshes[obj]->vertCount() << std::endl;
 		std::cout << "Total surface area: " << areaSum << std::endl;
