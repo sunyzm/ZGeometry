@@ -75,7 +75,6 @@ namespace ZGeom
 		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
 
 		double *matBasis = new double[nSelected * signalSize];
-		double *work = new double[signalSize*17];
 		double *a = new double[nSelected * signalSize];
 		double *b = new double[signalSize];
 
@@ -113,7 +112,6 @@ namespace ZGeom
 				int m = signalSize;
 				int n = k + 1;
 				int nrhs = 1;
-				int lwork = m + 16*m;
 				int lda = signalSize;
 				int ldb = signalSize;
 				std::memcpy(a, matBasis, sizeof(double)*m*n);
@@ -131,7 +129,6 @@ namespace ZGeom
 			vRf = vNewRf;
 		}
 
-		delete []work;
 		delete []a;
 		delete []b;
 		delete []matBasis;
@@ -147,7 +144,6 @@ namespace ZGeom
 		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
 
 		double *matBasis = new double[nSelected * signalSize];
-		double *work = new double[signalSize*17];
 		double *a = new double[nSelected * signalSize];
 		double *b = new double[signalSize];
 
@@ -209,7 +205,6 @@ namespace ZGeom
 				int m = signalSize;
 				int n = k + 1;
 				int nrhs = 1;
-				int lwork = m + 16*m;
 				int lda = signalSize;
 				int ldb = signalSize;
 				std::memcpy(a, matBasis, sizeof(double)*m*n);
@@ -228,7 +223,6 @@ namespace ZGeom
 		}
 
 		delete []matAllBasis;
-		delete []work;
 		delete []a;
 		delete []b;
 		delete []matBasis;
@@ -247,7 +241,6 @@ namespace ZGeom
 		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
 
 		double *matBasis = new double[nSelected * signalSize];
-		double *work = new double[signalSize*17];
 		double *a = new double[nSelected * signalSize];
 		double *b = new double[signalSize];
 
@@ -287,7 +280,6 @@ namespace ZGeom
 				int m = signalSize;
 				int n = k + 1;
 				int nrhs = 1;
-				int lwork = m + 16*m;
 				int lda = signalSize;
 				int ldb = signalSize;
 				std::memcpy(a, matBasis, sizeof(double)*m*n);
@@ -305,7 +297,6 @@ namespace ZGeom
 			vRf = vNewRf;
 		}
 
-		delete []work;
 		delete []a;
 		delete []b;
 		delete []matBasis;
@@ -361,6 +352,88 @@ namespace ZGeom
 		}
 
 		delete []matBasis;
+	}
+
+	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits )
+	{
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		int nChannels = (int)vSignals.size();
+
+		for (auto p : vPursuits) p->clear();
+		
+		const int signalSize = vSignals[0].size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		std::vector<VecNd> vRfs = vSignals;
+		double *signalData = new double[signalSize * nChannels];
+		for (int c = 0; c < nChannels; ++c)
+			std::memcpy((void*)(signalData + signalSize * c), (void*)vSignals[c].c_ptr(), sizeof(double)*signalSize);
+
+		double *matBasis = new double[nSelected * signalSize];
+		double *a = new double[nSelected * signalSize];
+		double *b = new double[signalSize * nChannels];		
+		
+		for (int k = 0; k < nSelected; ++k) {
+			const int nAvaliableBasis = (int)availableBasis.size();
+			double maxCoeff = 0;
+			int iSelected = -1;
+
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				VecNd channelCoeff(nChannels);
+				for (int c = 0; c < nChannels; ++c)
+					channelCoeff[c] = cblas_ddot(signalSize, vBasis[cp.first].c_ptr(), 1, vRfs[c].c_ptr(), 1);
+				
+				cp.second = channelCoeff.norm2();
+			});		
+
+			for (auto bp : vCoeff) {
+				if (bp.second > maxCoeff) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+
+			for (auto v : vPursuits) v->addItem(0, iSelected, 0);
+			availableBasis.erase(iSelected);
+			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
+
+			// solve least squares via MKL
+			{
+				int matrix_order = LAPACK_COL_MAJOR;
+				char trans = 'N';
+				int m = signalSize;
+				int n = k + 1;
+				int nrhs = 3;
+				int lda = signalSize;
+				int ldb = signalSize;
+				std::memcpy(a, matBasis, sizeof(double)*m*n);
+				std::memcpy(b, signalData, sizeof(double)*m*nChannels);
+				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
+
+				for (int c = 0; c < nChannels; ++c) {
+					VecNd vNewRf = vSignals[c];
+					for (int j = 0; j <= k; ++j) {
+						(*vPursuits[c])[j].coeff() = b[c*ldb + j];
+						vNewRf -= (*vPursuits[c])[j].coeff() * vBasis[(*vPursuits[c])[j].index()];
+					}
+					
+					(*vPursuits[c]).back().res() = vNewRf.norm2();
+					vRfs[c] = vNewRf;
+				}
+			}
+		}
+
+		delete []a;
+		delete []b;
+		delete []matBasis;
+		delete []signalData;
 	}
 
 } // end of namespace

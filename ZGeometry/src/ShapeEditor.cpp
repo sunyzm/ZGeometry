@@ -733,30 +733,49 @@ void ShapeEditor::editTest1()
 		if (loadCache && readPursuits(waveltPursuitFile, vPursuits)) ;
 		else 
 		{
+			std::vector<ZGeom::VecNd> vSignals;
+			std::vector<ZGeom::FunctionApproximation*> vApprox;
+			vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
+			vApprox.push_back(&vPursuitX); vApprox.push_back(&vPursuitY); vApprox.push_back(&vPursuitZ);
+
+			CStopWatch timer;
+			timer.startTimer();
+			ZGeom::SimultaneousOMP(vSignals, vBasis, 100, vApprox);
+			timer.stopTimer("Time to compute Wavelet SOMP: ");
+#if 0
 			CStopWatch timer;
 			timer.startTimer();
 			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
 			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, /*innerProdSelected,*/ 100, vPursuitX);
 			//ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX, *mEngine);
-			timer.stopTimer("Time to compute Wavelet MP: ");
+			timer.stopTimer("Time to compute Wavelet OMP: ");
 
+			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdSelected, 100, vPursuitY);
+			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdSelected, 100, vPursuitZ);
+#endif
 			std::ofstream ofs3("output/wavelet_mp_approx.txt");
 			for (auto t : vPursuitX.getApproxItems()) {
 				ofs3 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
 			}
 
-			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdSelected, 100, vPursuitY);
-			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdSelected, 100, vPursuitZ);
-// 
 			writePursuits(waveltPursuitFile, vPursuits);
 		}
 
+		//// save reconstruction result
+		//
+		const int countReconstructAtoms = 50;
+		mContReconstructCoords.resize(countReconstructAtoms);
 		mCoords[3].resize(vertCount);
-		for (int i = 0; i < 50; ++i) {
+
+		for (int i = 0; i < countReconstructAtoms; ++i) {
 			mCoords[3].getXCoord() += vPursuitX[i].coeff() * vBasis[vPursuitX[i].index()];
 			mCoords[3].getYCoord() += vPursuitY[i].coeff() * vBasis[vPursuitY[i].index()];
 			mCoords[3].getZCoord() += vPursuitZ[i].coeff() * vBasis[vPursuitZ[i].index()];
+		
+			mContReconstructCoords[i] = mCoords[3];
 		}
+
+		mApproxPursuit = vPursuitY;
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 
@@ -880,4 +899,10 @@ void ShapeEditor::deformLaplacian2()
 	MeshCoordinates newCoord(oldMeshCoord);
 	newCoord.add(lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::reconstructCoordinates( int level )
+{
+	if (level < 0 || level >= mContReconstructCoords.size()) return;
+	mMesh->setVertCoordinates(mContReconstructCoords[level]);
 }

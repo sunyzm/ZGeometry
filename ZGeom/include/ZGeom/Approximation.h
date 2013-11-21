@@ -35,8 +35,7 @@ public:
 	SignalAtom(const VecNd& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
 	SignalAtom(double* p, uint dim, int scale = -1, int pos = -1) : VecNd(p, dim), mScale(scale), mPosition(pos) {}
 	SignalAtom(const std::vector<double>& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
-
-
+	
 protected:
 	int mScale;
 	int mPosition;

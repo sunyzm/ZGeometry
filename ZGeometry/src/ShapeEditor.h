@@ -12,6 +12,7 @@ public:
 	void init(DifferentialMeshProcessor* processor);
 	void revertCoordinates();
 	void changeCoordinates();
+	void reconstructCoordinates(int level);
 	const MeshCoordinates& getOldMeshCoord() const { return mCoords[0]; }
 
 	void addNoise(double phi);
@@ -39,6 +40,9 @@ private:
 	DifferentialMeshProcessor* mProcessor;
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
+
+	std::vector<MeshCoordinates> mContReconstructCoords;
+	ZGeom::FunctionApproximation mApproxPursuit;
 
 	//MeshCoordinates mPrevCoord;
 	std::vector<MeshCoordinates> mCoords;

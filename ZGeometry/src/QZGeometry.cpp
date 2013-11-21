@@ -111,7 +111,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 
 	/* setup ui and connections */
 	ui.setupUi(this);
-	//ui.centralWidget->setLayout(ui.mainLayout);
 	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	
@@ -193,6 +192,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditMove, SIGNAL(triggered()), this, SLOT(setEditModeMove()));
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
+
+	////////    tabbed controls	////////
+	QObject::connect(ui.sliderMorphing, SIGNAL(valueChanged(int)), this, SLOT(continuousMorph(int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -1977,7 +1979,7 @@ void QZGeometryWindow::computeEditBasis()
 
 	for (int i = 0; i < 1; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		std::vector<double> eigVec = mShapeEditor.mEditBasis[select_basis].toStdVector();
+		std::vector<double> eigVec = mShapeEditor.mEditBasis[mShapeEditor.mApproxPursuit[select_basis].index()].toStdVector();
 		addColorSignature(i, eigVec, StrColorWaveletBasis);
 	}
 
@@ -2010,5 +2012,13 @@ void QZGeometryWindow::deformLaplace2()
 void QZGeometryWindow::runTests()
 {
 	mShapeEditor.editTest1();
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::continuousMorph( int level )
+{
+	qout.output("Reconstruct level: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.reconstructCoordinates(level-1);
+
 	ui.glMeshWidget->update();
 }

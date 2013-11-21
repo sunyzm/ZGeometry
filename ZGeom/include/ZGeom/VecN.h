@@ -85,6 +85,7 @@ public:
 	T norm2() const;
 	T normEuclidean() const { return norm2(); }
 	T pNorm(double p) const;
+	T inftyNorm() const;
 
 	T dot(const VecN<T>& v2) const;
 	T sum() const;
@@ -360,6 +361,17 @@ inline T VecN<T>::pNorm( double p ) const
 	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), p);
 	return std::pow(sum, 1.0/p);
 }
+
+
+template<typename T>
+inline T ZGeom::VecN<T>::inftyNorm() const
+{
+	double maxNorm(0);
+	for (int i = 0; i < mDim; ++i) 
+		if (std::fabs(mVec[i]) > maxNorm) maxNorm = std::fabs(mVec[i]);
+	return maxNorm;
+}
+
 
 template<typename T>
 inline void VecN<T>::normalize(double p)

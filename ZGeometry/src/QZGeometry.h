@@ -59,6 +59,8 @@ private slots:
 	void computeGeodesics();
 	void computeHeatTransfer();
 
+	void continuousMorph(int level);
+
 	void displaySignature(QString sigName );
 	void showNormalizedSignature();
 	void showMarkNegNormalizedSignature();
