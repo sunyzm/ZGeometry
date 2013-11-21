@@ -7,16 +7,17 @@
 #include <algorithm>
 #include <numeric>
 #include <ppl.h>
+#include <amp.h>
 #include <concurrent_vector.h>
 #include <mkl.h>
 #include "tbb/tbb.h"
 #include "tbb/concurrent_vector.h"
 #include "DenseMatrix.h"
-#include <amp.h>
+
 
 namespace ZGeom
 {
-	void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, const InnerProdcutFunc& innerProdFunc, int nSelected, FunctionApproximation& vPursuit )
+	void GeneralizedMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
 	{
 		if (nSelected <= 0 ||  nSelected > vBasis.size())
 			throw std::logic_error("nSelectedBasis too small or too large!");
@@ -227,9 +228,8 @@ namespace ZGeom
 		delete []b;
 		delete []matBasis;
 	}
-
-	
-	void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit)
+		
+	void GeneralizedOrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, InnerProdcutFunc innerProdFunc)
 	{
 		//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;
 
@@ -254,11 +254,6 @@ namespace ZGeom
 			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
 				cp.second = innerProdFunc(vBasis[cp.first], vRf);
 			});			
-			
-			/*tbb::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
-				vCoeff.push_back(std::make_pair(iBasis, innerProdFunc(vBasis[iBasis], vRf)));
-			});*/
-
 
 			double maxCoeff = 0;
 			int iSelected = -1;
@@ -302,7 +297,7 @@ namespace ZGeom
 		delete []matBasis;
 	}
 
-	void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
+	void GeneralizedOrthogonalMatchingPursuit_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
 	{
 		//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;
 
@@ -354,7 +349,7 @@ namespace ZGeom
 		delete []matBasis;
 	}
 
-	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits )
+	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 1*/ )
 	{
 		if (nSelected <= 0 || nSelected > vBasis.size())
 			throw std::logic_error("nSelectedBasis too small or too large!");
@@ -390,10 +385,10 @@ namespace ZGeom
 				for (int c = 0; c < nChannels; ++c)
 					channelCoeff[c] = cblas_ddot(signalSize, vBasis[cp.first].c_ptr(), 1, vRfs[c].c_ptr(), 1);
 				
-				cp.second = channelCoeff.norm2();
+				cp.second = channelCoeff.pNorm(p);
 			});		
 
-			for (auto bp : vCoeff) {
+			for (auto& bp : vCoeff) {
 				if (bp.second > maxCoeff) {
 					maxCoeff =  bp.second;
 					iSelected = bp.first;
@@ -410,7 +405,7 @@ namespace ZGeom
 				char trans = 'N';
 				int m = signalSize;
 				int n = k + 1;
-				int nrhs = 3;
+				int nrhs = nChannels;
 				int lda = signalSize;
 				int ldb = signalSize;
 				std::memcpy(a, matBasis, sizeof(double)*m*n);
@@ -434,6 +429,55 @@ namespace ZGeom
 		delete []b;
 		delete []matBasis;
 		delete []signalData;
+	}
+
+	void GeneralizedSimultaneousMatchingPursuit( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
+	{
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		int nChannels = (int)vSignals.size();
+
+		for (auto p : vPursuits) p->clear();
+
+		const int signalSize = vSignals[0].size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		std::vector<VecNd> vRfs = vSignals;
+
+		for (int k = 0; k < nSelected; ++k) {
+			const int nAvaliableBasis = (int)availableBasis.size();
+			double maxCoeff = 0;
+			int iSelected = -1;
+
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				VecNd channelCoeff(nChannels);
+				for (int c = 0; c < nChannels; ++c)
+					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
+
+				cp.second = channelCoeff.pNorm(p);
+			});		
+
+			for (auto& bp : vCoeff) {
+				if (bp.second > maxCoeff) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+
+			for (int c = 0; c < nChannels; ++c) {
+				double coeff = innerProdFunc(vBasis[iSelected], vRfs[c]);
+				vRfs[c] -= coeff * vBasis[iSelected];
+				vPursuits[c]->addItem(vRfs[c].norm2(), iSelected, coeff);
+			}
+
+			availableBasis.erase(iSelected);
+		}
 	}
 
 } // end of namespace

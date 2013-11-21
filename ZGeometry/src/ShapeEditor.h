@@ -12,7 +12,7 @@ public:
 	void init(DifferentialMeshProcessor* processor);
 	void revertCoordinates();
 	void changeCoordinates();
-	void reconstructCoordinates(int level);
+	void continuousReconstruct(int level);
 	const MeshCoordinates& getOldMeshCoord() const { return mCoords[0]; }
 
 	void addNoise(double phi);
@@ -22,7 +22,7 @@ public:
 
 	void deformSimple();
 	void deformLaplacian();
-	void deformLaplacian2();
+	void deformLaplacian_v2();
 	void deformBiLaplacian();
 	void deformMixedLaplacian(double ks, double kb);
 	void deformThinShell2(double ks, double kb);
@@ -33,7 +33,8 @@ private:
 	void reconstructSpectralWavelet();
 	void evalReconstruct(const MeshCoordinates& newCoord) const;
 	
-	void editTest1();
+	void reconstructionTest1();
+	void reconstructionTest2();
 	void editTest2();
 
 	CMesh* mMesh;	

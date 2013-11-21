@@ -12,15 +12,41 @@
 #include "global.h"
 
 
-Vector3D toVector3D(const ZGeom::Vec3d& v)
-{
-	return Vector3D(v[0], v[1], v[2]);
+Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
+
+ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
+
+bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
+	if (!ZUtil::fileExist(pursuitFile)) 
+		return false;
+
+	std::ifstream ifs(pursuitFile.c_str());
+	int atomCount;
+	ifs >> atomCount;
+	
+	for (int b = 0; b < 3; ++b) {
+		vPursuits[b]->resize(atomCount);
+		for (int i = 0; i < atomCount; ++i) {
+			ZGeom::ApproxItem& item = (*vPursuits[b])[i];
+			ifs >> item.res() >> item.index() >>item.coeff();
+		}
+	}
+
+	return true;
 }
 
-ZGeom::Vec3d toVec3d(const Vector3D& v)
-{
-	return ZGeom::Vec3d(v.x, v.y, v.z);
+void writePursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
+	std::ofstream ofs(pursuitFile.c_str());
+	int atomCount = vPursuits[0]->size();
+	ofs << atomCount << std::endl;
+	for (int b = 0; b < 3; ++b) {
+		for (int i = 0; i < atomCount; ++i) {
+			const ZGeom::ApproxItem& item = (*vPursuits[b])[i];
+			ofs << item.res() << ' ' << item.index() << ' ' << item.coeff() << std::endl;
+		}
+	}	
 }
+
 
 void ShapeEditor::init( DifferentialMeshProcessor* processor )
 {
@@ -63,6 +89,53 @@ void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorInde
 		anchorIndex.push_back(a.first);
 		anchorPos.push_back(a.second);
 	}
+}
+
+void ShapeEditor::addNoise( double phi )
+{
+	assert(phi > 0 && phi < 1);
+	const int vertCount = mMesh->vertCount();
+	const double avgLen = mMesh->getAvgEdgeLength();
+	MeshCoordinates newCoord;
+	mMesh->getVertCoordinates(newCoord);
+
+	std::default_random_engine generator;
+	std::normal_distribution<double> distribution(0, phi);
+
+	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
+		for (int a = 0; a < 3; ++a) {
+			double noise = avgLen * distribution(generator);
+			newCoord.getCoordFunc(a)[vIdx] += noise;
+		}
+	}
+
+	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::revertCoordinates()
+{
+	mCoordSelect = 0;
+	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
+	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+}
+
+void ShapeEditor::changeCoordinates()
+{
+	int oldCoordSelect = mCoordSelect;
+	mCoordSelect = (mCoordSelect + 1) % mCoords.size();
+	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
+	
+	if (mCoords[mCoordSelect].empty()) {
+		std::cout << "Selected coordinate is empty!" << std::endl;
+	} else {
+		mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+	}
+}
+
+void ShapeEditor::continuousReconstruct( int level )
+{
+	if (level < 0 || level >= mContReconstructCoords.size()) return;
+	mMesh->setVertCoordinates(mContReconstructCoords[level]);
 }
 
 void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
@@ -211,6 +284,72 @@ void ShapeEditor::deformLaplacian()
 	double *lsz = mEngine->getDblVariablePtr("lsz");
 
 	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
+	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::deformLaplacian_v2()
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	int anchorCount(0);
+	std::vector<int> anchorIndex;
+	std::vector<Vector3D> anchorPos;
+	prepareAnchors(anchorCount, anchorIndex, anchorPos);
+	if (anchorCount == 0) {
+		std::cout << "At least one anchor need to be picked!";
+		return;
+	}
+
+	const int anchorWeight = 1.0;
+	const int vertCount = mMesh->vertCount();
+
+	const MeshCoordinates& oldMeshCoord = this->getOldMeshCoord();
+
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+
+    /* | A    B | | d |    | O  |
+	   |        | |   | =  |    |
+       | B^T  O | | r |    | d' | */
+
+	ZGeom::VecNd solveRHS[3];
+	for (int i = 0; i < 3; ++i ) {
+		solveRHS[i].resize(vertCount + anchorCount, 0);
+		for (int l = 0; l < anchorCount; ++l) {
+			solveRHS[i][vertCount + l] = anchorPos[l][i] - oldMeshCoord[anchorIndex[l]][i];
+		}
+	}
+	mEngine->addColVec(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
+	mEngine->addColVec(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
+	mEngine->addColVec(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
+
+	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount + anchorCount);
+	matOptS.copyElements(matLs);
+	for (int a = 0; a < anchorCount; ++a) {
+		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, 1.);
+		matOptS.insertElem(anchorIndex[a] + 1, vertCount + a + 1, 1.);
+	}
+
+	if (!matOptS.testSymmetric()) {
+		std::cout << "ERROR: MatOptS is not symmetric!" << std::endl;
+		return;
+	}
+
+	mEngine->addSparseMat(matOptS, "matOptS");
+
+	timer.stopTimer("Prepare deformation time: ");
+	timer.startTimer();	
+	mEngine->eval("lsx=matOptS\\dcx;");
+	mEngine->eval("lsy=matOptS\\dcy;");
+	mEngine->eval("lsz=matOptS\\dcz;");
+	timer.stopTimer("Deformation time: ");
+
+	double *lsx = mEngine->getDblVariablePtr("lsx");
+	double *lsy = mEngine->getDblVariablePtr("lsy");
+	double *lsz = mEngine->getDblVariablePtr("lsz");
+
+	MeshCoordinates newCoord(oldMeshCoord);
+	newCoord.add(lsx, lsy, lsz);
 	mMesh->setVertCoordinates(newCoord);
 }
 
@@ -550,27 +689,6 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 // 	mMesh->scaleAndTranslate(Vector3D(0,0,0), volPreserveScale);
 }
 
-void ShapeEditor::addNoise( double phi )
-{
-	assert(phi > 0 && phi < 1);
-	const int vertCount = mMesh->vertCount();
-	const double avgLen = mMesh->getAvgEdgeLength();
-	MeshCoordinates newCoord;
-	mMesh->getVertCoordinates(newCoord);
-
-	std::default_random_engine generator;
-	std::normal_distribution<double> distribution(0, phi);
-
-	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
-		for (int a = 0; a < 3; ++a) {
-			double noise = avgLen * distribution(generator);
-			newCoord.getCoordFunc(a)[vIdx] += noise;
-		}
-	}
-
-	mMesh->setVertCoordinates(newCoord);
-}
-
 void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 {
 	double errorSum(0);
@@ -583,38 +701,7 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 	std::cout << "Average reconstruct error: " << avgError << std::endl;
 }
 
-bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
-	if (!ZUtil::fileExist(pursuitFile)) 
-		return false;
-
-	std::ifstream ifs(pursuitFile.c_str());
-	int atomCount;
-	ifs >> atomCount;
-	
-	for (int b = 0; b < 3; ++b) {
-		vPursuits[b]->resize(atomCount);
-		for (int i = 0; i < atomCount; ++i) {
-			ZGeom::ApproxItem& item = (*vPursuits[b])[i];
-			ifs >> item.res() >> item.index() >>item.coeff();
-		}
-	}
-
-	return true;
-}
-
-void writePursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
-	std::ofstream ofs(pursuitFile.c_str());
-	int atomCount = vPursuits[0]->size();
-	ofs << atomCount << std::endl;
-	for (int b = 0; b < 3; ++b) {
-		for (int i = 0; i < atomCount; ++i) {
-			const ZGeom::ApproxItem& item = (*vPursuits[b])[i];
-			ofs << item.res() << ' ' << item.index() << ' ' << item.coeff() << std::endl;
-		}
-	}	
-}
-
-void ShapeEditor::editTest1()
+void ShapeEditor::reconstructionTest1()
 {
 	const int vertCount = mMesh->vertCount();
 	MeshLaplacian::LaplacianType lapType = MeshLaplacian::CotFormula;
@@ -645,26 +732,29 @@ void ShapeEditor::editTest1()
 
 	////////////////  Fourier approximation  /////////////////////////////////////////////////
 	////
-	ZGeom::VecNd xCoord(vertCount, 0), yCoord(vertCount, 0), zCoord(vertCount, 0);
-	std::vector<double> xCoeff(nEig), yCoeff(nEig), zCoeff(nEig);
-	ZGeom::FunctionApproximation vPursuitX;
+	{
+		ZGeom::VecNd xCoord(vertCount, 0), yCoord(vertCount, 0), zCoord(vertCount, 0);
+		std::vector<double> xCoeff(nEig), yCoeff(nEig), zCoeff(nEig);
+		ZGeom::FunctionApproximation vPursuitX;
 
-	for (int i = 0; i < 50; ++i) {
-		const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
-		xCoeff[i] = innerProdDiagW(vx, eigVec);
-		yCoeff[i] = innerProdDiagW(vy, eigVec);
-		zCoeff[i] = innerProdDiagW(vz, eigVec);
-		xCoord += xCoeff[i] * eigVec;
-		yCoord += yCoeff[i] * eigVec;
-		zCoord += zCoeff[i] * eigVec;
+		for (int i = 0; i < 50; ++i) {
+			const ZGeom::VecNd& eigVec = mhb.getEigVec(i);
+			xCoeff[i] = innerProdDiagW(vx, eigVec);
+			yCoeff[i] = innerProdDiagW(vy, eigVec);
+			zCoeff[i] = innerProdDiagW(vz, eigVec);
+			xCoord += xCoeff[i] * eigVec;
+			yCoord += yCoeff[i] * eigVec;
+			zCoord += zCoeff[i] * eigVec;
 
-		vPursuitX.addItem((xCoord-vx).norm2(), i, xCoeff[i]); 
-	}
-	std::ofstream ofs1("output/fourier_approx.txt");
-	for (auto t : vPursuitX.getApproxItems()) {
-		ofs1 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
-	}
-	mCoords[1] = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
+			vPursuitX.addItem((xCoord-vx).norm2(), i, xCoeff[i]); 
+		}
+		std::ofstream ofs1("output/fourier_approx.txt");
+		for (auto t : vPursuitX.getApproxItems()) {
+			ofs1 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
+		}
+		mCoords[1] = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
+		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[1]) << "\n\n";
+	}	
 	//////////////////////////////////////////////////////////////////////////
 	
 	////////////////// Fourier matching pursuit //////////////////////////////
@@ -673,20 +763,25 @@ void ShapeEditor::editTest1()
 		ZGeom::FunctionApproximation vPursuitX, vPursuitY, vPursuitZ;
 		std::vector<ZGeom::VecNd> vBasis;
 		for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
-
+#if 0
 		CStopWatch timer;
 		timer.startTimer();
-		ZGeom::MatchingPursuit(vx, vBasis, innerProdDiagW, nEig, vPursuitX);
+		ZGeom::GeneralizedMatchingPursuit(vx, vBasis, nEig, vPursuitX, innerProdDiagW);
 		timer.stopTimer("Time to compute Fourier MP: ");
+		ZGeom::GeneralizedMatchingPursuit(vy, vBasis, nEig, vPursuitY, innerProdDiagW);
+		ZGeom::GeneralizedMatchingPursuit(vz, vBasis, nEig, vPursuitZ, innerProdDiagW);
 
 		std::ofstream ofs2("output/fourier_mp_approx.txt");
 		for (auto t : vPursuitX.getApproxItems()) {
 			ofs2 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
 		}
-
-		ZGeom::MatchingPursuit(vy, vBasis, innerProdDiagW, nEig, vPursuitY);
-		ZGeom::MatchingPursuit(vz, vBasis, innerProdDiagW, nEig, vPursuitZ);
-		
+#else
+		std::vector<ZGeom::VecNd> vSignals;
+		std::vector<ZGeom::FunctionApproximation*> vPursuits;
+		vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
+		vPursuits.push_back(&vPursuitX); vPursuits.push_back(&vPursuitY); vPursuits.push_back(&vPursuitZ);
+		ZGeom::GeneralizedSimultaneousMatchingPursuit(vSignals, vBasis, nEig, vPursuits, innerProdDiagW, 1.0);
+#endif		
 		mCoords[2].resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
 			mCoords[2].getXCoord() += vPursuitX[i].coeff() * vBasis[vPursuitX[i].index()];
@@ -694,6 +789,7 @@ void ShapeEditor::editTest1()
 			mCoords[2].getZCoord() += vPursuitZ[i].coeff() * vBasis[vPursuitZ[i].index()];
 		}
 
+		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[2]) << "\n\n";
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -737,21 +833,21 @@ void ShapeEditor::editTest1()
 			std::vector<ZGeom::FunctionApproximation*> vApprox;
 			vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
 			vApprox.push_back(&vPursuitX); vApprox.push_back(&vPursuitY); vApprox.push_back(&vPursuitZ);
-
+#if 0
 			CStopWatch timer;
 			timer.startTimer();
 			ZGeom::SimultaneousOMP(vSignals, vBasis, 100, vApprox);
 			timer.stopTimer("Time to compute Wavelet SOMP: ");
-#if 0
+#else
 			CStopWatch timer;
 			timer.startTimer();
 			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
-			ZGeom::OrthogonalMatchingPursuit(vx, vBasis, /*innerProdSelected,*/ 100, vPursuitX);
-			//ZGeom::OrthogonalMatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX, *mEngine);
+			ZGeom::GeneralizedOrthogonalMatchingPursuit(vx, vBasis, 100, vPursuitX, innerProdSelected);
+			//ZGeom::GeneralizedOrthogonalMatchingPursuit_MATLAB(vx, vBasis, 100, vPursuitX, innerProdSelected, *mEngine);
 			timer.stopTimer("Time to compute Wavelet OMP: ");
 
-			ZGeom::OrthogonalMatchingPursuit(vy, vBasis, innerProdSelected, 100, vPursuitY);
-			ZGeom::OrthogonalMatchingPursuit(vz, vBasis, innerProdSelected, 100, vPursuitZ);
+			ZGeom::GeneralizedOrthogonalMatchingPursuit(vy, vBasis, 100, vPursuitY, innerProdSelected);
+			ZGeom::GeneralizedOrthogonalMatchingPursuit(vz, vBasis, 100, vPursuitZ, innerProdSelected);
 #endif
 			std::ofstream ofs3("output/wavelet_mp_approx.txt");
 			for (auto t : vPursuitX.getApproxItems()) {
@@ -763,7 +859,7 @@ void ShapeEditor::editTest1()
 
 		//// save reconstruction result
 		//
-		const int countReconstructAtoms = 50;
+		const int countReconstructAtoms = std::min<int>(50, (int)vPursuitX.size());
 		mContReconstructCoords.resize(countReconstructAtoms);
 		mCoords[3].resize(vertCount);
 
@@ -774,8 +870,9 @@ void ShapeEditor::editTest1()
 		
 			mContReconstructCoords[i] = mCoords[3];
 		}
+		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[3]) << "\n\n";
 
-		mApproxPursuit = vPursuitY;
+		mApproxPursuit = vPursuitX;
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 
@@ -783,7 +880,13 @@ void ShapeEditor::editTest1()
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 #endif	
 
-	std::cout << "Finish editTest1" << std::endl;
+	std::cout << "Finish reconstructionTest1" << std::endl;
+}
+
+void ShapeEditor::reconstructionTest2()
+{
+
+	std::cout << "Finish reconstructionTest2" << std::endl;
 }
 
 /////// compute various eigenvectors indexed by Fiedler vector ////////////////
@@ -814,95 +917,3 @@ void ShapeEditor::editTest2()
 	}
 }
 
-
-void ShapeEditor::revertCoordinates()
-{
-	mCoordSelect = 0;
-	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
-	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
-}
-
-void ShapeEditor::changeCoordinates()
-{
-	int oldCoordSelect = mCoordSelect;
-	mCoordSelect = (mCoordSelect + 1) % mCoords.size();
-	std::cout << "Selected coordinate: " << mCoordSelect << std::endl;
-	
-	if (mCoords[mCoordSelect].empty()) {
-		std::cout << "Selected coordinate is empty!" << std::endl;
-	} else {
-		mMesh->setVertCoordinates(mCoords[mCoordSelect]);
-	}
-}
-
-void ShapeEditor::deformLaplacian2()
-{
-	CStopWatch timer;	
-	timer.startTimer();
-
-	int anchorCount(0);
-	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
-	prepareAnchors(anchorCount, anchorIndex, anchorPos);
-	if (anchorCount == 0) {
-		std::cout << "At least one anchor need to be picked!";
-		return;
-	}
-
-	const int anchorWeight = 1.0;
-	const int vertCount = mMesh->vertCount();
-
-	const MeshCoordinates& oldMeshCoord = this->getOldMeshCoord();
-
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
-
-    /* | A    B | | d |    | O  |
-	   |        | |   | =  |    |
-       | B^T  O | | r |    | d' | */
-
-	ZGeom::VecNd solveRHS[3];
-	for (int i = 0; i < 3; ++i ) {
-		solveRHS[i].resize(vertCount + anchorCount, 0);
-		for (int l = 0; l < anchorCount; ++l) {
-			solveRHS[i][vertCount + l] = anchorPos[l][i] - oldMeshCoord[anchorIndex[l]][i];
-		}
-	}
-	mEngine->addColVec(solveRHS[0].c_ptr(), vertCount + anchorCount, "dcx");
-	mEngine->addColVec(solveRHS[1].c_ptr(), vertCount + anchorCount, "dcy");
-	mEngine->addColVec(solveRHS[2].c_ptr(), vertCount + anchorCount, "dcz");
-
-	ZGeom::SparseMatrix<double> matOptS(vertCount + anchorCount, vertCount + anchorCount);
-	matOptS.copyElements(matLs);
-	for (int a = 0; a < anchorCount; ++a) {
-		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, 1.);
-		matOptS.insertElem(anchorIndex[a] + 1, vertCount + a + 1, 1.);
-	}
-
-	if (!matOptS.testSymmetric()) {
-		std::cout << "ERROR: MatOptS is not symmetric!" << std::endl;
-		return;
-	}
-
-	mEngine->addSparseMat(matOptS, "matOptS");
-
-	timer.stopTimer("Prepare deformation time: ");
-	timer.startTimer();	
-	mEngine->eval("lsx=matOptS\\dcx;");
-	mEngine->eval("lsy=matOptS\\dcy;");
-	mEngine->eval("lsz=matOptS\\dcz;");
-	timer.stopTimer("Deformation time: ");
-
-	double *lsx = mEngine->getDblVariablePtr("lsx");
-	double *lsy = mEngine->getDblVariablePtr("lsy");
-	double *lsz = mEngine->getDblVariablePtr("lsz");
-
-	MeshCoordinates newCoord(oldMeshCoord);
-	newCoord.add(lsx, lsy, lsz);
-	mMesh->setVertCoordinates(newCoord);
-}
-
-void ShapeEditor::reconstructCoordinates( int level )
-{
-	if (level < 0 || level >= mContReconstructCoords.size()) return;
-	mMesh->setVertCoordinates(mContReconstructCoords[level]);
-}

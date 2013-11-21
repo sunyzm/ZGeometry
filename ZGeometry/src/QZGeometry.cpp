@@ -2005,20 +2005,20 @@ void QZGeometryWindow::nextCoordinate()
 
 void QZGeometryWindow::deformLaplace2()
 {
-	mShapeEditor.deformLaplacian2();
+	mShapeEditor.deformLaplacian_v2();
 	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::runTests()
 {
-	mShapeEditor.editTest1();
+	mShapeEditor.reconstructionTest1();
 	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::continuousMorph( int level )
 {
-	qout.output("Reconstruct level: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
-	mShapeEditor.reconstructCoordinates(level-1);
+	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.continuousReconstruct(level-1);
 
 	ui.glMeshWidget->update();
 }
