@@ -763,24 +763,24 @@ void ShapeEditor::reconstructionTest1()
 		ZGeom::FunctionApproximation vPursuitX, vPursuitY, vPursuitZ;
 		std::vector<ZGeom::VecNd> vBasis;
 		for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
-#if 0
+#if 1
+		std::vector<ZGeom::VecNd> vSignals;
+		std::vector<ZGeom::FunctionApproximation*> vPursuits;
+		vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
+		vPursuits.push_back(&vPursuitX); vPursuits.push_back(&vPursuitY); vPursuits.push_back(&vPursuitZ);
+		ZGeom::GeneralizedSimultaneousMP(vSignals, vBasis, nEig, vPursuits, innerProdDiagW, 2.);
+#else
 		CStopWatch timer;
 		timer.startTimer();
-		ZGeom::GeneralizedMatchingPursuit(vx, vBasis, nEig, vPursuitX, innerProdDiagW);
+		ZGeom::GeneralizedMP(vx, vBasis, nEig, vPursuitX, innerProdDiagW);
 		timer.stopTimer("Time to compute Fourier MP: ");
-		ZGeom::GeneralizedMatchingPursuit(vy, vBasis, nEig, vPursuitY, innerProdDiagW);
-		ZGeom::GeneralizedMatchingPursuit(vz, vBasis, nEig, vPursuitZ, innerProdDiagW);
+		ZGeom::GeneralizedMP(vy, vBasis, nEig, vPursuitY, innerProdDiagW);
+		ZGeom::GeneralizedMP(vz, vBasis, nEig, vPursuitZ, innerProdDiagW);
 
 		std::ofstream ofs2("output/fourier_mp_approx.txt");
 		for (auto t : vPursuitX.getApproxItems()) {
 			ofs2 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
 		}
-#else
-		std::vector<ZGeom::VecNd> vSignals;
-		std::vector<ZGeom::FunctionApproximation*> vPursuits;
-		vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
-		vPursuits.push_back(&vPursuitX); vPursuits.push_back(&vPursuitY); vPursuits.push_back(&vPursuitZ);
-		ZGeom::GeneralizedSimultaneousMatchingPursuit(vSignals, vBasis, nEig, vPursuits, innerProdDiagW, 2.);
 #endif		
 		mCoords[2].resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
@@ -835,18 +835,24 @@ void ShapeEditor::reconstructionTest1()
 #if 1
 			CStopWatch timer;
 			timer.startTimer();
+			//ZGeom::SimultaneousMP(vSignals, vBasis, 100, vApprox, 2);
+			//ZGeom::GeneralizedSimultaneousMP(vSignals, vBasis, 100, vApprox, innerProdSelected, 2);
 			ZGeom::SimultaneousOMP(vSignals, vBasis, 100, vApprox, 2);
+			//ZGeom::GeneralizedSimultaneousOMP(vSignals, vBasis, 100, vApprox, innerProdSelected, 2);
 			timer.stopTimer("Time to compute Wavelet SOMP: ");
 #else
 			CStopWatch timer;
 			timer.startTimer();
-			//ZGeom::MatchingPursuit(vx, vBasis, innerProdSelected, 100, vPursuitX);
-			ZGeom::GeneralizedOrthogonalMatchingPursuit(vx, vBasis, 100, vPursuitX, innerProdSelected);
-			//ZGeom::GeneralizedOrthogonalMatchingPursuit_MATLAB(vx, vBasis, 100, vPursuitX, innerProdSelected, *mEngine);
+			ZGeom::OMP(vx, vBasis, 100, vPursuitX);
+			//ZGeom::GeneralizedOMP(vx, vBasis, 100, vPursuitX, innerProdSelected);
+			//ZGeom::MatchingPursuit(vx, vBasis, 100, vPursuitX);
 			timer.stopTimer("Time to compute Wavelet OMP: ");
-
-			ZGeom::GeneralizedOrthogonalMatchingPursuit(vy, vBasis, 100, vPursuitY, innerProdSelected);
-			ZGeom::GeneralizedOrthogonalMatchingPursuit(vz, vBasis, 100, vPursuitZ, innerProdSelected);
+			ZGeom::OMP(vy, vBasis, 100, vPursuitY);
+			ZGeom::OMP(vz, vBasis, 100, vPursuitZ);
+			//ZGeom::GeneralizedOMP(vy, vBasis, 100, vPursuitY, innerProdSelected);
+			//ZGeom::GeneralizedOMP(vz, vBasis, 100, vPursuitZ, innerProdSelected);
+			//ZGeom::MatchingPursuit(vy, vBasis, 100, vPursuitY);
+			//ZGeom::MatchingPursuit(vz, vBasis, 100, vPursuitZ);
 #endif
 			std::ofstream ofs3("output/wavelet_mp_approx.txt");
 			for (auto t : vPursuitX.getApproxItems()) {

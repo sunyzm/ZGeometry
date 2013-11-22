@@ -17,7 +17,20 @@
 
 namespace ZGeom
 {
-	void GeneralizedMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
+	const InnerProdcutFunc RegularProductFunc = 
+		[](const VecN<double>& v1, const VecN<double>& v2) 
+	{
+		assert(v1.size() == v2.size());
+		return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
+	};
+
+
+	void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+	{
+		GeneralizedMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
+	}
+
+	void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
 	{
 		if (nSelected <= 0 ||  nSelected > vBasis.size())
 			throw std::logic_error("nSelectedBasis too small or too large!");
@@ -122,9 +135,9 @@ namespace ZGeom
 			}
 
 			VecNd vNewRf = vSignal;
-			for (int b = 0; b <= k; ++b) {
-				vPursuit[b].coeff() = xcoeff[b];
-				vNewRf -= xcoeff[b] * vBasis[vPursuit[b].index()];
+			for (int j = 0; j <= k; ++j) {
+				vPursuit[j].coeff() = xcoeff[j];
+				vNewRf -= xcoeff[j] * vBasis[vPursuit[j].index()];
 			}
 			vPursuit.back().res() = vNewRf.norm2();	
 			vRf = vNewRf;
@@ -134,6 +147,297 @@ namespace ZGeom
 		delete []b;
 		delete []matBasis;
 	}
+
+	void OMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+	{
+		GeneralizedOMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
+	}
+
+	void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, InnerProdcutFunc innerProdFunc )
+	{
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		vPursuit.clear();
+		const int signalSize = vSignal.size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		double *matBasis = new double[nSelected * signalSize];
+		double *a = new double[nSelected * signalSize];
+		double *b = new double[signalSize];
+		VecNd vRf = vSignal;
+
+		for (int k = 0; k < nSelected; ++k) {
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				cp.second = innerProdFunc(vBasis[cp.first], vRf);
+			});			
+
+			double maxCoeff = 0;
+			int iSelected = -1;
+			for (auto bp : vCoeff) {
+				if (std::fabs( bp.second) > std::fabs(maxCoeff)) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+			vPursuit.addItem(0, iSelected, maxCoeff);
+			availableBasis.erase(iSelected);
+			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
+
+			// solve least square via MKL
+			{
+				int matrix_order = LAPACK_COL_MAJOR;
+				char trans = 'N';
+				int m = signalSize;
+				int n = k + 1;
+				int nrhs = 1;
+				int lda = signalSize;
+				int ldb = signalSize;
+				std::memcpy(a, matBasis, sizeof(double)*m*n);	//copy to 'a' necessary because 'a' will be overwritten as output of dgels
+				std::memcpy(b, vSignal.c_ptr(), sizeof(double)*m);
+				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
+			}
+
+			VecNd vNewRf = vSignal;
+			for (int j = 0; j <= k; ++j) {
+				vPursuit[j].coeff() = b[j];
+				vNewRf -= b[j] * vBasis[vPursuit[j].index()];
+			}
+			vPursuit.back().res() = vNewRf.norm2();	
+			vRf = vNewRf;
+		}
+
+		delete []a;
+		delete []b;
+		delete []matBasis;
+	}
+
+	void SimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 2.*/ )
+	{
+		GeneralizedSimultaneousMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
+	}
+
+	void GeneralizedSimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
+	{
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		int nChannels = (int)vSignals.size();
+
+		for (auto p : vPursuits) p->clear();
+
+		const int signalSize = vSignals[0].size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		std::vector<VecNd> vRfs = vSignals;
+
+		for (int k = 0; k < nSelected; ++k) {
+			const int nAvaliableBasis = (int)availableBasis.size();
+			double maxCoeff = 0;
+			int iSelected = -1;
+
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				VecNd channelCoeff(nChannels);
+				for (int c = 0; c < nChannels; ++c)
+					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
+
+				cp.second = channelCoeff.pNorm(p);
+			});		
+
+			for (auto& bp : vCoeff) {
+				if (bp.second > maxCoeff) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+
+			for (int c = 0; c < nChannels; ++c) {
+				double coeff = innerProdFunc(vBasis[iSelected], vRfs[c]);
+				vRfs[c] -= coeff * vBasis[iSelected];
+				vPursuits[c]->addItem(vRfs[c].norm2(), iSelected, coeff);
+			}
+
+			availableBasis.erase(iSelected);
+		}
+	}
+
+	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 1*/ )
+	{
+		GeneralizedSimultaneousOMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
+#if 0
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		int nChannels = (int)vSignals.size();
+
+		for (auto p : vPursuits) p->clear();
+		
+		const int signalSize = vSignals[0].size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		std::vector<VecNd> vRfs = vSignals;
+		double *signalData = new double[signalSize * nChannels];
+		for (int c = 0; c < nChannels; ++c)
+			std::memcpy((void*)(signalData + signalSize * c), (void*)vSignals[c].c_ptr(), sizeof(double)*signalSize);
+
+		double *matBasis = new double[nSelected * signalSize];
+		double *a = new double[nSelected * signalSize];
+		double *b = new double[signalSize * nChannels];		
+		
+		for (int k = 0; k < nSelected; ++k) {
+			const int nAvaliableBasis = (int)availableBasis.size();
+			double maxCoeff = 0;
+			int iSelected = -1;
+
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				VecNd channelCoeff(nChannels);
+				for (int c = 0; c < nChannels; ++c)
+					channelCoeff[c] = cblas_ddot(signalSize, vBasis[cp.first].c_ptr(), 1, vRfs[c].c_ptr(), 1);
+				
+				cp.second = channelCoeff.pNorm(p);
+			});		
+
+			for (auto& bp : vCoeff) {
+				if (bp.second > maxCoeff) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+
+			for (auto v : vPursuits) v->addItem(0, iSelected, 0);
+			availableBasis.erase(iSelected);
+			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
+
+			// solve least squares via MKL
+			{
+				int matrix_order = LAPACK_COL_MAJOR;
+				char trans = 'N';
+				int m = signalSize;
+				int n = k + 1;
+				int nrhs = nChannels;
+				int lda = signalSize;
+				int ldb = signalSize;
+				std::memcpy(a, matBasis, sizeof(double)*m*n);
+				std::memcpy(b, signalData, sizeof(double)*m*nChannels);
+				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
+
+				for (int c = 0; c < nChannels; ++c) {
+					VecNd vNewRf = vSignals[c];
+					for (int j = 0; j <= k; ++j) {
+						(*vPursuits[c])[j].coeff() = b[c*ldb + j];
+						vNewRf -= (*vPursuits[c])[j].coeff() * vBasis[(*vPursuits[c])[j].index()];
+					}
+					
+					(*vPursuits[c]).back().res() = vNewRf.norm2();
+					vRfs[c] = vNewRf;
+				}
+			}
+		}
+
+		delete []a;
+		delete []b;
+		delete []matBasis;
+		delete []signalData;
+#endif
+	}
+
+	void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 2.*/ )
+	{
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		int nChannels = (int)vSignals.size();
+
+		for (auto p : vPursuits) p->clear();
+
+		const int signalSize = vSignals[0].size();
+		std::unordered_set<int> availableBasis;
+		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
+
+		std::vector<VecNd> vRfs = vSignals;
+		double *signalData = new double[signalSize * nChannels];
+		for (int c = 0; c < nChannels; ++c)
+			std::memcpy((void*)(signalData + signalSize * c), (void*)vSignals[c].c_ptr(), sizeof(double)*signalSize);
+
+		double *matBasis = new double[nSelected * signalSize];
+		double *a = new double[nSelected * signalSize];
+		double *b = new double[signalSize * nChannels];		
+
+		for (int k = 0; k < nSelected; ++k) {
+			const int nAvaliableBasis = (int)availableBasis.size();
+			double maxCoeff = 0;
+			int iSelected = -1;
+
+			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+			vCoeff.reserve(availableBasis.size());
+			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
+
+			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+				VecNd channelCoeff(nChannels);
+				for (int c = 0; c < nChannels; ++c)
+					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
+
+				cp.second = channelCoeff.pNorm(p);
+			});		
+
+			for (auto& bp : vCoeff) {
+				if (bp.second > maxCoeff) {
+					maxCoeff =  bp.second;
+					iSelected = bp.first;
+				}
+			}
+
+			for (auto v : vPursuits) v->addItem(0, iSelected, 0);
+			availableBasis.erase(iSelected);
+			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
+
+			// solve least squares via MKL
+			{
+				int matrix_order = LAPACK_COL_MAJOR;
+				char trans = 'N';
+				int m = signalSize;
+				int n = k + 1;
+				int nrhs = nChannels;
+				int lda = signalSize;
+				int ldb = signalSize;
+				std::memcpy(a, matBasis, sizeof(double)*m*n);
+				std::memcpy(b, signalData, sizeof(double)*m*nChannels);
+				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
+
+				for (int c = 0; c < nChannels; ++c) {
+					VecNd vNewRf = vSignals[c];
+					for (int j = 0; j <= k; ++j) {
+						(*vPursuits[c])[j].coeff() = b[c*ldb + j];
+						vNewRf -= (*vPursuits[c])[j].coeff() * vBasis[(*vPursuits[c])[j].index()];
+					}
+
+					(*vPursuits[c]).back().res() = vNewRf.norm2();
+					vRfs[c] = vNewRf;
+				}
+			}
+		}
+
+		delete []a;
+		delete []b;
+		delete []matBasis;
+		delete []signalData;
+	}
+
+
 
 	void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
 	{
@@ -229,75 +533,7 @@ namespace ZGeom
 		delete []matBasis;
 	}
 		
-	void GeneralizedOrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, InnerProdcutFunc innerProdFunc)
-	{
-		//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;
-
-		if (nSelected <= 0 || nSelected > vBasis.size())
-			throw std::logic_error("nSelectedBasis too small or too large!");
-		vPursuit.clear();
-		const int signalSize = vSignal.size();
-		std::unordered_set<int> availableBasis;
-		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
-
-		double *matBasis = new double[nSelected * signalSize];
-		double *a = new double[nSelected * signalSize];
-		double *b = new double[signalSize];
-
-		VecNd vRf = vSignal;
-
-		for (int k = 0; k < nSelected; ++k) {
-			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
-			vCoeff.reserve(availableBasis.size());
-
-			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
-			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
-				cp.second = innerProdFunc(vBasis[cp.first], vRf);
-			});			
-
-			double maxCoeff = 0;
-			int iSelected = -1;
-			for (auto bp : vCoeff) {
-				if (std::fabs( bp.second) > std::fabs(maxCoeff)) {
-					maxCoeff =  bp.second;
-					iSelected = bp.first;
-				}
-			}
-			vPursuit.addItem(0, iSelected, maxCoeff);
-			availableBasis.erase(iSelected);
-			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
-
-			double *xcoeff;
-			// solve least square via MKL
-			{
-				int matrix_order = LAPACK_COL_MAJOR;
-				char trans = 'N';
-				int m = signalSize;
-				int n = k + 1;
-				int nrhs = 1;
-				int lda = signalSize;
-				int ldb = signalSize;
-				std::memcpy(a, matBasis, sizeof(double)*m*n);
-				std::memcpy(b, vSignal.c_ptr(), sizeof(double)*m);
-				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
-				xcoeff = b;
-			}
-
-			VecNd vNewRf = vSignal;
-			for (int b = 0; b <= k; ++b) {
-				vPursuit[b].coeff() = xcoeff[b];
-				vNewRf -= xcoeff[b] * vBasis[vPursuit[b].index()];
-			}
-			vPursuit.back().res() = vNewRf.norm2();	
-			vRf = vNewRf;
-		}
-
-		delete []a;
-		delete []b;
-		delete []matBasis;
-	}
-
-	void GeneralizedOrthogonalMatchingPursuit_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
+	void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
 	{
 		//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;
 
@@ -347,137 +583,6 @@ namespace ZGeom
 		}
 
 		delete []matBasis;
-	}
-
-	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 1*/ )
-	{
-		if (nSelected <= 0 || nSelected > vBasis.size())
-			throw std::logic_error("nSelectedBasis too small or too large!");
-		assert(vSignals.size() == vPursuits.size());
-		int nChannels = (int)vSignals.size();
-
-		for (auto p : vPursuits) p->clear();
-		
-		const int signalSize = vSignals[0].size();
-		std::unordered_set<int> availableBasis;
-		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
-
-		std::vector<VecNd> vRfs = vSignals;
-		double *signalData = new double[signalSize * nChannels];
-		for (int c = 0; c < nChannels; ++c)
-			std::memcpy((void*)(signalData + signalSize * c), (void*)vSignals[c].c_ptr(), sizeof(double)*signalSize);
-
-		double *matBasis = new double[nSelected * signalSize];
-		double *a = new double[nSelected * signalSize];
-		double *b = new double[signalSize * nChannels];		
-		
-		for (int k = 0; k < nSelected; ++k) {
-			const int nAvaliableBasis = (int)availableBasis.size();
-			double maxCoeff = 0;
-			int iSelected = -1;
-
-			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
-			vCoeff.reserve(availableBasis.size());
-			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
-
-			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
-				VecNd channelCoeff(nChannels);
-				for (int c = 0; c < nChannels; ++c)
-					channelCoeff[c] = cblas_ddot(signalSize, vBasis[cp.first].c_ptr(), 1, vRfs[c].c_ptr(), 1);
-				
-				cp.second = channelCoeff.pNorm(p);
-			});		
-
-			for (auto& bp : vCoeff) {
-				if (bp.second > maxCoeff) {
-					maxCoeff =  bp.second;
-					iSelected = bp.first;
-				}
-			}
-
-			for (auto v : vPursuits) v->addItem(0, iSelected, 0);
-			availableBasis.erase(iSelected);
-			std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
-
-			// solve least squares via MKL
-			{
-				int matrix_order = LAPACK_COL_MAJOR;
-				char trans = 'N';
-				int m = signalSize;
-				int n = k + 1;
-				int nrhs = nChannels;
-				int lda = signalSize;
-				int ldb = signalSize;
-				std::memcpy(a, matBasis, sizeof(double)*m*n);
-				std::memcpy(b, signalData, sizeof(double)*m*nChannels);
-				LAPACKE_dgels(matrix_order, trans, m, n, nrhs, a, lda, b, ldb);
-
-				for (int c = 0; c < nChannels; ++c) {
-					VecNd vNewRf = vSignals[c];
-					for (int j = 0; j <= k; ++j) {
-						(*vPursuits[c])[j].coeff() = b[c*ldb + j];
-						vNewRf -= (*vPursuits[c])[j].coeff() * vBasis[(*vPursuits[c])[j].index()];
-					}
-					
-					(*vPursuits[c]).back().res() = vNewRf.norm2();
-					vRfs[c] = vNewRf;
-				}
-			}
-		}
-
-		delete []a;
-		delete []b;
-		delete []matBasis;
-		delete []signalData;
-	}
-
-	void GeneralizedSimultaneousMatchingPursuit( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
-	{
-		if (nSelected <= 0 || nSelected > vBasis.size())
-			throw std::logic_error("nSelectedBasis too small or too large!");
-		assert(vSignals.size() == vPursuits.size());
-		int nChannels = (int)vSignals.size();
-
-		for (auto p : vPursuits) p->clear();
-
-		const int signalSize = vSignals[0].size();
-		std::unordered_set<int> availableBasis;
-		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
-
-		std::vector<VecNd> vRfs = vSignals;
-
-		for (int k = 0; k < nSelected; ++k) {
-			const int nAvaliableBasis = (int)availableBasis.size();
-			double maxCoeff = 0;
-			int iSelected = -1;
-
-			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
-			vCoeff.reserve(availableBasis.size());
-			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
-
-			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
-				VecNd channelCoeff(nChannels);
-				for (int c = 0; c < nChannels; ++c)
-					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
-
-				cp.second = channelCoeff.pNorm(p);
-			});		
-
-			for (auto& bp : vCoeff) {
-				if (bp.second > maxCoeff) {
-					maxCoeff =  bp.second;
-					iSelected = bp.first;
-				}
-			}
-
-			for (int c = 0; c < nChannels; ++c) {
-				double coeff = innerProdFunc(vBasis[iSelected], vRfs[c]);
-				vRfs[c] -= coeff * vBasis[iSelected];
-				vPursuits[c]->addItem(vRfs[c].norm2(), iSelected, coeff);
-			}
-
-			availableBasis.erase(iSelected);
-		}
 	}
 
 } // end of namespace
