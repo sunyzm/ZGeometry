@@ -356,7 +356,8 @@ inline T VecN<T>::norm2() const
 template<typename T>
 inline T VecN<T>::pNorm( double p ) const
 {
-	assert( p > 0);
+	if( p < 0) return inftyNorm();
+
 	double sum(0);
 	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), p);
 	return std::pow(sum, 1.0/p);

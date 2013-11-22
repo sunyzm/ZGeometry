@@ -62,7 +62,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 	//addNoise(0.1);
 	//processor->getMesh()->getVertCoordinates(mOldCoord); 
-	//editTest1();
+	reconstructionTest1();
 // 	ZGeom::DenseMatrixd hkMat1, hkMat2;
 // 	processor->computeHeatKernelMat(30, hkMat1);
 // 	processor->computeHeatKernelMat_AMP(30, hkMat2);
@@ -746,7 +746,7 @@ void ShapeEditor::reconstructionTest1()
 			yCoord += yCoeff[i] * eigVec;
 			zCoord += zCoeff[i] * eigVec;
 
-			vPursuitX.addItem((xCoord-vx).norm2(), i, xCoeff[i]); 
+			vPursuitX.addItem((vx - xCoord).norm2(), i, xCoeff[i]); 
 		}
 		std::ofstream ofs1("output/fourier_approx.txt");
 		for (auto t : vPursuitX.getApproxItems()) {
@@ -780,7 +780,7 @@ void ShapeEditor::reconstructionTest1()
 		std::vector<ZGeom::FunctionApproximation*> vPursuits;
 		vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
 		vPursuits.push_back(&vPursuitX); vPursuits.push_back(&vPursuitY); vPursuits.push_back(&vPursuitZ);
-		ZGeom::GeneralizedSimultaneousMatchingPursuit(vSignals, vBasis, nEig, vPursuits, innerProdDiagW, 1.0);
+		ZGeom::GeneralizedSimultaneousMatchingPursuit(vSignals, vBasis, nEig, vPursuits, innerProdDiagW, 2.);
 #endif		
 		mCoords[2].resize(vertCount);
 		for (int i = 0; i < 50; ++i) {
@@ -815,7 +815,6 @@ void ShapeEditor::reconstructionTest1()
 		ZGeom::InnerProdcutFunc& innerProdSelected = /*innerProdDiagW;*/innerProdRegular;
 		std::vector<ZGeom::VecNd>& vBasis = mEditBasis;
 		
-		//for (int i = 0; i < nEig; ++i) vBasis.push_back(mhb.getEigVec(i));
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(innerProdSelected);
@@ -833,10 +832,10 @@ void ShapeEditor::reconstructionTest1()
 			std::vector<ZGeom::FunctionApproximation*> vApprox;
 			vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
 			vApprox.push_back(&vPursuitX); vApprox.push_back(&vPursuitY); vApprox.push_back(&vPursuitZ);
-#if 0
+#if 1
 			CStopWatch timer;
 			timer.startTimer();
-			ZGeom::SimultaneousOMP(vSignals, vBasis, 100, vApprox);
+			ZGeom::SimultaneousOMP(vSignals, vBasis, 100, vApprox, 2);
 			timer.stopTimer("Time to compute Wavelet SOMP: ");
 #else
 			CStopWatch timer;
