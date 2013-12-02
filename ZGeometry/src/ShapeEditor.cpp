@@ -63,6 +63,11 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	//addNoise(0.1);
 	//processor->getMesh()->getVertCoordinates(mOldCoord); 
 	reconstructionTest1();
+	reconstructionTest2();
+	
+	mCoordSelect = 3;
+	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
+
 // 	ZGeom::DenseMatrixd hkMat1, hkMat2;
 // 	processor->computeHeatKernelMat(30, hkMat1);
 // 	processor->computeHeatKernelMat_AMP(30, hkMat2);
@@ -308,9 +313,9 @@ void ShapeEditor::deformLaplacian_v2()
 
 	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
 
-    /* | A    B | | d |    | O  |
+	/* | A    B | | d |    | O  |
 	   |        | |   | =  |    |
-       | B^T  O | | r |    | d' | */
+	   | B^T  O | | r |    | d' | */
 
 	ZGeom::VecNd solveRHS[3];
 	for (int i = 0; i < 3; ++i ) {
@@ -753,7 +758,7 @@ void ShapeEditor::reconstructionTest1()
 			ofs1 << t.res() << '\t' << t.index() << '\t' << t.coeff() << std::endl;
 		}
 		mCoords[1] = MeshCoordinates(vertCount, &xCoord[0], &yCoord[0], &zCoord[0]);
-		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[1]) << "\n\n";
+		std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n\n";
 	}	
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -789,7 +794,7 @@ void ShapeEditor::reconstructionTest1()
 			mCoords[2].getZCoord() += vPursuitZ[i].coeff() * vBasis[vPursuitZ[i].index()];
 		}
 
-		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[2]) << "\n\n";
+		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
 	}
 	//////////////////////////////////////////////////////////////////////////
 	
@@ -875,14 +880,12 @@ void ShapeEditor::reconstructionTest1()
 		
 			mContReconstructCoords[i] = mCoords[3];
 		}
-		std::cout << "Reconstruct error: " << oldCoord.difference(mCoords[3]) << "\n\n";
+		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
 
 		mApproxPursuit = vPursuitX;
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 
-	mCoordSelect = 3;
-	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 #endif	
 
 	std::cout << "Finish reconstructionTest1" << std::endl;
@@ -890,7 +893,134 @@ void ShapeEditor::reconstructionTest1()
 
 void ShapeEditor::reconstructionTest2()
 {
+	std::cout << "\nStart reconstruction test2\n";
 
+	using ZGeom::VecNd;
+	CStopWatch timer;
+
+	/* prepare prerequisite data */
+	const int vertCount = mMesh->vertCount();
+	MeshCoordinates oldCoord;
+	mMesh->getVertCoordinates(oldCoord);
+
+	const ManifoldHarmonics &graphMHB = mProcessor->getMHB(MeshLaplacian::Umbrella);
+	const ManifoldHarmonics &cotMHB = mProcessor->getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics &cotSymMHB = mProcessor->getMHB(MeshLaplacian::SymCot);
+
+	std::vector<double> wDiag;
+	mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula).getW().getDiagonal(wDiag);
+	ZGeom::InnerProdcutFunc innerProdDiagW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2) {
+		double *y = new double[vertCount];
+		vdmul(&vertCount, v1.c_ptr(), &wDiag[0], &y[0]); 
+		//for (int i = 0; i < vertCount; ++i) y[i] = v1[i] * wDiag[i];
+		double res = cblas_ddot(vertCount, y, 1, v2.c_ptr(), 1);
+		delete []y;
+		return res;
+	};
+
+	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0), &vy = oldCoord.getCoordFunc(1), &vz = oldCoord.getCoordFunc(2);
+	std::vector<ZGeom::VecNd> vSignals;
+	vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
+
+	ZGeom::FunctionApproximation vApproxX, vApproxY, vApproxZ;
+	std::vector<ZGeom::FunctionApproximation*> vApprox;
+	vApprox.push_back(&vApproxX); vApprox.push_back(&vApproxY); vApprox.push_back(&vApproxZ);
+
+	/************************************************************************/
+	/*  In each approximation test, the following is required
+	/*    (0) Clear previously computed results;
+	/*    (1) Compute atoms (eigenbasis, wavelet, etc.);
+	/*    (2) Compute multi-channel approximation coefficients;
+	/*    (3) Reconstruct with the computed coefficients
+	/*    (4) Evaluate approximation result; possibly save to ShapeEditor                                                                       */
+	/************************************************************************/ 
+
+	const int nEigTotal = cotMHB.eigVecCount();
+	int nAtomSel = 100;
+	int nReconstruct = 50;
+	std::vector<VecNd> vAtoms;
+
+	/* Test 1, Fourier approximation */
+	{
+		
+		for (auto p : vApprox) p->clear();
+		vAtoms.clear();
+
+		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
+
+		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApprox, innerProdDiagW);
+		
+		mCoords[1].resize(vertCount);
+		for (int i = 0; i < nReconstruct; ++i) {
+			mCoords[1].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
+			mCoords[1].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
+			mCoords[1].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
+		}
+		
+		std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n\n";
+	}	
+	//////////////////////////////////////////////////////////////////////////
+
+
+	/* Test 2, Simultaneous Fourier Matching Pursuit */
+	{
+		for (auto p : vApprox) p->clear();
+		vAtoms.clear();
+		
+		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
+
+		timer.startTimer();
+		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApprox, innerProdDiagW, 2.);
+		timer.stopTimer("Time to compute Fourier SMP: ");
+
+		mCoords[2].resize(vertCount);
+		for (int i = 0; i < nReconstruct; ++i) {
+			mCoords[2].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
+			mCoords[2].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
+			mCoords[2].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
+		}
+
+		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
+	}
+	//////////////////////////////////////////////////////////////////////////
+
+
+	/* Test 3, Wavelet Simultaneous-OMP */
+#if 1
+	{
+		for (auto p : vApprox) p->clear();
+		vAtoms.clear();
+	
+		std::cout << "To compute wavelet matching pursuit..\n";
+		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
+		mProcessor->computeSGW(MeshLaplacian::CotFormula);		
+		for (int i = 0; i < matSGW.rowCount(); ++i) {
+			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
+			newBasis.normalize(ZGeom::RegularProductFunc);
+			vAtoms.push_back(newBasis);
+		}
+
+		timer.startTimer();
+		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApprox, 2);
+		timer.stopTimer("Time to compute Wavelet SOMP: ");
+
+		// save continuously reconstructed coordinates
+		mContReconstructCoords.resize(nReconstruct);
+		mCoords[3].resize(vertCount);
+		for (int i = 0; i < nReconstruct; ++i) {
+			mCoords[3].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
+			mCoords[3].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
+			mCoords[3].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
+
+			mContReconstructCoords[i] = mCoords[3];
+		}
+
+		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
+		mApproxPursuit = vApproxX;
+	} //end of wavelet OMP
+#endif
+	//////////////////////////////////////////////////////////////////////////
+	
 	std::cout << "Finish reconstructionTest2" << std::endl;
 }
 

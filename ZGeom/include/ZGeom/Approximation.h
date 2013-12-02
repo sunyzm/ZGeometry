@@ -48,12 +48,12 @@ class FunctionApproximation
 public:
 	FunctionApproximation() : mAtoms(NULL) {}
 
-	void clear() { mApproxItems.clear(); mAtoms = NULL; }
 	void addItem(double r, int i, double c)
 	{
 		mApproxItems.push_back(ApproxItem(r, i, c));
 	}
 
+	void clear() { mApproxItems.clear(); mAtoms = NULL; }
 	const std::vector<ApproxItem>& getApproxItems() const { return mApproxItems; }
 	ApproxItem& operator [] (int i) { return mApproxItems[i]; }
 	ApproxItem& back() { return mApproxItems.back(); }

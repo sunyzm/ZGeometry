@@ -305,6 +305,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	computeLaplacian(MeshLaplacian::CotFormula);
 	//verifyAreas();
 	computeLaplacian(MeshLaplacian::SymCot);
+	computeLaplacian(MeshLaplacian::Umbrella);
 	//computeLaplacian(MeshLaplacian::NormalizedUmbrella);	
 
 	if (g_task == TASK_REGISTRATION) registerPreprocess();

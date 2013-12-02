@@ -17,12 +17,25 @@
 
 namespace ZGeom
 {
-	const InnerProdcutFunc RegularProductFunc = 
-		[](const VecN<double>& v1, const VecN<double>& v2) 
+	void GeneralizedSimultaneousFourierApprox( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc /*= RegularProductFunc*/ )
 	{
-		assert(v1.size() == v2.size());
-		return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
-	};
+		if (nSelected <= 0 || nSelected > vBasis.size())
+			throw std::logic_error("nSelectedBasis too small or too large!");
+		assert(vSignals.size() == vPursuits.size());
+		for (auto p : vPursuits) p->clear();
+
+		int nChannels = (int)vSignals.size();
+		const int signalSize = vSignals[0].size();
+		std::vector<VecNd> vRfs = vSignals;
+
+		for (int c = 0; c < nChannels; ++c) {
+			for (int k = 0; k < nSelected; ++k) {
+				double coeff = innerProdFunc(vBasis[k], vSignals[c]);
+				vRfs[c] -= coeff * vBasis[k];
+				vPursuits[c]->addItem(vRfs[c].norm2(), k, coeff);
+			}
+		}
+	}
 
 
 	void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
