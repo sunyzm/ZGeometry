@@ -56,7 +56,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	m_dFeatureSphereRadius = 0.5;
+	m_dFeatureSphereRadius = 1;
 	m_dMeshPointSize = 2;
 	
 	m_bShowLegend = false;
@@ -558,7 +558,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				else 
 					glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 			} else {
-				int color_index = feature->m_scale % gFeatureColorNum;
+				int feature_scale = feature->m_scale;
+				int color_index = feature_scale % gFeatureColorNum;
 				glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
 			}			
 			gluQuadricDrawStyle(quadric, GLU_FILL);

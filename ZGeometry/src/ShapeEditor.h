@@ -42,10 +42,10 @@ private:
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 
-	std::vector<MeshCoordinates> mContReconstructCoords;
-	ZGeom::FunctionApproximation mApproxPursuit;
 
-	//MeshCoordinates mPrevCoord;
+	ZGeom::FunctionApproximation mApproxPursuit;
+	std::vector<MeshCoordinates> mContReconstructCoords;	
+
 	std::vector<MeshCoordinates> mCoords;
 	int mCoordSelect;
 };

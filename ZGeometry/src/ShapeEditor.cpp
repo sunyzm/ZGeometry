@@ -937,7 +937,7 @@ void ShapeEditor::reconstructionTest2()
 
 	const int nEigTotal = cotMHB.eigVecCount();
 	int nAtomSel = 100;
-	int nReconstruct = 50;
+	int nReconstruct = 100;
 	std::vector<VecNd> vAtoms;
 
 	/* Test 1, Fourier approximation */
@@ -992,7 +992,7 @@ void ShapeEditor::reconstructionTest2()
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		mProcessor->computeSGW1(MeshLaplacian::Umbrella);		
+		mProcessor->computeSGW1(MeshLaplacian::CotFormula);		
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(ZGeom::RegularProductFunc);
@@ -1004,7 +1004,7 @@ void ShapeEditor::reconstructionTest2()
 		timer.stopTimer("Time to compute Wavelet SOMP: ");
 
 		// save continuously reconstructed coordinates
-		nReconstruct = nAtomSel;
+		//nReconstruct = nAtomSel;
 		mContReconstructCoords.resize(nReconstruct);
 		mCoords[3].resize(vertCount);
 		for (int i = 0; i < nReconstruct; ++i) {
@@ -1014,6 +1014,15 @@ void ShapeEditor::reconstructionTest2()
 
 			mContReconstructCoords[i] = mCoords[3];
 		}
+
+		MeshFeatureList *mfl = new MeshFeatureList;
+		for (int i = 0; i < 30; ++i) {
+			int atomIdx = vApproxX[i].index();
+			mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
+		}
+		mfl->setIDandName(FEATURE_SGW_SOMP, "Feature_SGW_SOMP");
+		mProcessor->addProperty(mfl);
+		mProcessor->setActiveFeaturesByID(FEATURE_SGW_SOMP);
 
 		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
 		mApproxPursuit = vApproxX;
