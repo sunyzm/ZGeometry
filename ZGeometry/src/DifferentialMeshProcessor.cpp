@@ -170,7 +170,7 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->getPosition()));	 
 }
 
-void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/)
+void DifferentialMeshProcessor::computeSGW1( MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -185,110 +185,89 @@ void DifferentialMeshProcessor::computeSGW(MeshLaplacian::LaplacianType laplacia
 		else return 4.0/x/x;
 	};
 
+	const int scales = 5;
 	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
 	const double K = 20.0;
 	double minEigVal = maxEigVal / K;
-	double minT = 1./maxEigVal, maxT = 2./minEigVal;
-	const int scales = 5;	
+	double minT = 1./maxEigVal, maxT = 2./minEigVal;		
 	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(scales - 1));
 
 	std::vector<double> waveletScales(scales);	
 	for (int s = 0; s < scales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
-	mMatWavelet.resize(vertCount*(scales+1), vertCount);
+	mMatWavelets.resize(vertCount*(scales+1), vertCount);
 
+	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
 	const double *pEigVals = &(mhb.getEigVals()[0]);
-	double *pEigVec = new double[eigCount*vertCount];
+	double *pEigVec = matEigVecs.raw_ptr();
 	for (int i = 0; i < eigCount; ++i) 
 		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
 
 	std::vector<double> vDiag(eigCount);
-
-#if 1
 	//////////////////////////////////////////////////////////////////////////
 	// compute SGW with AMP
 	for (int s = 0; s < scales; ++s) {
 		for (int i = 0; i < eigCount; ++i) 
 			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
-		double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * s;
+		double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * s;
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	}
 
+	double gamma = 1.3849001794597505097;
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
+	double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * scales;
+	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+
+	timer.stopTimer("Time to compute SGW1: ");
+}
+
+void DifferentialMeshProcessor::computeSGW2(MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/)
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	const ManifoldHarmonics& mhb = getMHB(laplacianType);
+	const int vertCount = mhb.eigVecSize();
+	const int eigCount = mhb.eigVecCount();
+
+	std::function<double(double)> generator1 = [](double x) { return x * std::exp(-x); };
+	std::function<double(double)> generator2 = [](double x) { return std::exp(-x-1); };
+
+	const int nScales = 5;
+	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
+	double minEigVal = maxEigVal / 20.;//mhb.getEigVal(1);
+	double maxT = 1.0 / minEigVal;
+	double minT = 1.0 / maxEigVal;	
+	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nScales - 1));
+
+	std::vector<double> waveletScales(nScales);	
+	for (int s = 0; s < nScales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
+	mMatWavelets.resize(vertCount * (nScales+1), vertCount);
+
+	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	std::vector<double> vDiag(eigCount);
+	//////////////////////////////////////////////////////////////////////////
+	// compute SGW with AMP
+	for (int s = 0; s < nScales; ++s) {
+		for (int i = 0; i < eigCount; ++i) {
+			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
+		}
+		double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * s;
 		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	}
 	
-	double gamma = 1.3849001794597505097;
-	for (int i = 0; i < eigCount; ++i) 
-		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
-	double *pResult = mMatWavelet.raw_ptr() + vertCount * vertCount * scales;
+	for (int i = 0; i < eigCount; ++i) {
+		vDiag[i] = generator2(pEigVals[i]);
+	}
+	double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * nScales;
 	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 
-#else
-	//////////////////////////////////////////////////////////////////////////
-	// compute SGW with PPL
-	for (int s = 0; s < scales; ++s) {
-		for (int k = 0; k < eigCount; ++k) 
-			vDiag[k] = generator1(waveletScales[s] * pEigVals[k]);
-
-		Concurrency::parallel_for(0, vertCount, [&](int i) {
-		for (int j = 0; j <= i; ++j) {
-				double elemVal(0);
-				for (int k = 0; k < eigCount; ++k) {
-					double lambda = mhb.getEigVal(k);
-					const ZGeom::VecNd& phi = mhb.getEigVec(k);
-					elemVal += vDiag[k] *  phi[i] * phi[j];
-					//double lt = std::pow(lambda * waveletScales[s], 2);
-					//elemVal += lt * std::exp(-lt) * phi[i] * phi[j];
-					//elemVal += lambda * std::exp(-lambda*waveletScales[s]) * phi[i] * phi[j];
-					//elemVal += std::exp(-lambda * waveletScales[s]) * phi[i] * phi[j]; 
-				}
-				mMatWavelet(vertCount * s + i, j) = elemVal;
-				mMatWavelet(vertCount * s + j, i) = elemVal;
-			}
-		});
-	}
-#if 1
-	double gamma = 1.3849001794597505097;
-	for (int i = 0; i < eigCount; ++i) 
-		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
-	Concurrency::parallel_for(0, vertCount, [&](int i) {		
-		for (int j = 0; j <= i; ++j) {
-			double elemVal(0);
-			for (int k = 0; k < eigCount; ++k) {	
-				double lambda = mhb.getEigVal(k);
-				const ZGeom::VecNd& phi = mhb.getEigVec(k);
-				//elemVal += gamma*std::exp(-lambda*lambda) * phi[i] * phi[j];
-				//elemVal += std::exp(-lambda*30) * phi[i] * phi[j];
-				elemVal +=  gamma * std::exp(-std::pow(lambda/(0.6*minEigVal), 4)) * phi[i] * phi[j];
-			}
-			mMatWavelet(vertCount * scales + i, j) = elemVal;
-			mMatWavelet(vertCount * scales + j, i) = elemVal;
-		}
-	});
-#endif	
-#endif
-
-	timer.stopTimer("Time to compute SGW: ");
-#if 0	//some verification code
-	ZGeom::SparseMatrixCSR<double, int> matW;
-	getMeshLaplacian(MeshLaplacian::CotFormula).getW().convertToCSR(matW, ZGeom::MatrixForm::MAT_FULL);
-	ZGeom::VecNd v1 = mhb.getEigVec(1), v2 = mhb.getEigVec(5), v3 = mhb.getEigVec(200);
-	ZGeom::VecNd v4 = mMatWavelet.getRowVec(0), v5 = mMatWavelet.getRowVec(1), v6 = mMatWavelet.getRowVec(500);
-	std::cout << ZGeom::innerProductSym(v1, matW, v1) << std::endl;
-	std::cout << ZGeom::innerProductSym(v1, matW, v2) << std::endl;
-	std::cout << ZGeom::innerProductSym(v1, matW, v4) << std::endl;
-	std::cout << ZGeom::innerProductSym(v2, matW, v4) << std::endl;
-	std::cout << ZGeom::innerProductSym(v3, matW, v4) << std::endl;
-	std::cout << ZGeom::innerProductSym(v4, matW, v4) << std::endl;
-	std::cout << ZGeom::innerProductSym(v4, matW, v5) << std::endl;
-	std::cout << ZGeom::innerProductSym(v4, matW, v6) << std::endl;
-	std::cout << ZGeom::innerProductSym(v3, matW, v6) << std::endl;
-	std::cout << endl;
-	std::cout << v1.sum() << '\n';
-	std::cout << v2.sum() << '\n';
-	std::cout << v3.sum() << '\n';
-	std::cout << v4.sum() << '\n';
-	std::cout << v5.sum() << '\n';
-	std::cout << v6.sum() << '\n';
-	std::cout << endl;
-#endif
+	timer.stopTimer("Time to compute SGW2: ");
 }
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const

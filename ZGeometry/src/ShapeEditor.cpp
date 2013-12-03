@@ -62,7 +62,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 	//addNoise(0.1);
 	//processor->getMesh()->getVertCoordinates(mOldCoord); 
-	reconstructionTest1();
+	//reconstructionTest1();
 	reconstructionTest2();
 	
 	mCoordSelect = 3;
@@ -533,7 +533,7 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW(MeshLaplacian::SymCot);
+	if (matSGW.empty()) mProcessor->computeSGW1(MeshLaplacian::CotFormula);
 	const int waveletCount = matSGW.rowCount();
 	
 	/*std::vector<double> diagW;
@@ -626,7 +626,7 @@ void ShapeEditor::reconstructSpectralWavelet()
 	const int vertCount = mMesh->vertCount();	
 	const ZGeom::DenseMatrixd& matW = mProcessor->getWaveletMat();
 	if (matW.empty()) {
-		mProcessor->computeSGW();
+		mProcessor->computeSGW1();
 		mEngine->addDenseMat(matW, "matSGW");
 	}
 	const int waveletCount = matW.rowCount();
@@ -812,7 +812,7 @@ void ShapeEditor::reconstructionTest1()
 				matSGW.read(sgwFile);
 			} else
 			{
-				mProcessor->computeSGW(lapType);
+				mProcessor->computeSGW1(lapType);
 				matSGW.write(sgwFile);
 			}			
 		}
@@ -941,8 +941,7 @@ void ShapeEditor::reconstructionTest2()
 	std::vector<VecNd> vAtoms;
 
 	/* Test 1, Fourier approximation */
-	{
-		
+	{		
 		for (auto p : vApprox) p->clear();
 		vAtoms.clear();
 
@@ -993,7 +992,7 @@ void ShapeEditor::reconstructionTest2()
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		mProcessor->computeSGW(MeshLaplacian::CotFormula);		
+		mProcessor->computeSGW1(MeshLaplacian::Umbrella);		
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(ZGeom::RegularProductFunc);
@@ -1005,6 +1004,7 @@ void ShapeEditor::reconstructionTest2()
 		timer.stopTimer("Time to compute Wavelet SOMP: ");
 
 		// save continuously reconstructed coordinates
+		nReconstruct = nAtomSel;
 		mContReconstructCoords.resize(nReconstruct);
 		mCoords[3].resize(vertCount);
 		for (int i = 0; i < nReconstruct; ++i) {

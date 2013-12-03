@@ -40,25 +40,26 @@ public:
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	
 	// ---- computation ---- //
-	void constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
-	double calHK(int v1, int v2, double timescale) const;
-	void calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
-	double calHeatTrace(double timescale) const;
-	double calBiharmonic(int v1, int v2) const;
-	double calMHW(int v1, int v2, double timescale) const;
-	double calSGW(int v1, int v2, double timescale) const;	
-	void computeSGW(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
-	void computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
-	void computeHeatDiffuseMat(double tMultiplier);
+	void	constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
+	double	calHK(int v1, int v2, double timescale) const;
+	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
+	double	calHeatTrace(double timescale) const;
+	double	calBiharmonic(int v1, int v2) const;
+	double	calMHW(int v1, int v2, double timescale) const;
+	double	calSGW(int v1, int v2, double timescale) const;	
+	void	computeSGW1(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	computeSGW2(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
+	void	computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
+	void	computeHeatDiffuseMat(double tMultiplier);
 
-	void calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
-	void computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
-	void computeSimilarityMap1(int refPoint);
-	void computeSimilarityMap2(int refPoint);
-	void computeSimilarityMap3(int refPoint);
+	void	calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
+	void	computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
+	void	computeSimilarityMap1(int refPoint);
+	void	computeSimilarityMap2(int refPoint);
+	void	computeSimilarityMap3(int refPoint);
 	
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
@@ -79,8 +80,8 @@ public:
 	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
-	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelet; }
-	ZGeom::DenseMatrixd& getWaveletMat() { return mMatWavelet; }
+	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelets; }
+	ZGeom::DenseMatrixd& getWaveletMat() { return mMatWavelets; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	int  getRefPointIndex() const { return mRefVert; }
@@ -101,8 +102,8 @@ private:
 	MeshLaplacian mMeshLaplacians[MeshLaplacian::LaplacianTypeCount];
 	ManifoldHarmonics mMHBs[MeshLaplacian::LaplacianTypeCount];
 	MeshLaplacian::LaplacianType mActiveLaplacianType;
-	ZGeom::DenseMatrix<double> mMatWavelet;
 
+	ZGeom::DenseMatrix<double> mMatWavelets;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 };

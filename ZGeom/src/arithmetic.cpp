@@ -70,12 +70,6 @@ void ZGeom::quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, doubl
 		}	
 	});
 	Y.synchronize();
-
-	/*parallel_for (0, dim1, [&](int i ) {
-		for (int j = i + 1; j < dim1; ++j)
-			matResult[i*dim1 + j] = matResult[j*dim1 + i];
-	});*/
-
 }
 
 void ZGeom::matVecMulAMP( int dim1, int dim2, double *mat, double *vec, double *vResult )
