@@ -55,8 +55,9 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	g_myNear = 1.0;
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
-
-	m_dFeatureSphereRadius = 1;
+		
+	mBaseFeatureRadius = 0.5;
+	mFeatureSphereRadius = mBaseFeatureRadius;
 	m_dMeshPointSize = 2;
 	
 	m_bShowLegend = false;
@@ -512,7 +513,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		gluQuadricDrawStyle(quadric, GLU_FILL);
 		glPushMatrix();
 		glTranslated(vt.x, vt.y, vt.z);
-		gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+		gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 		glPopMatrix();
 	}
 
@@ -565,8 +566,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			if (is_hks_feature) gluSphere(quadric, m_dFeatureSphereRadius * (0.7 + 0.3 * feature->m_scale), 16, 8);
-			else gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			if (is_hks_feature) gluSphere(quadric, mFeatureSphereRadius * (0.7 + 0.3 * feature->m_scale), 16, 8);
+			else gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 		gluDeleteQuadric(quadric);
@@ -582,7 +583,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}
 	}
@@ -730,12 +731,12 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 
 			glPushMatrix();
 			glTranslated(x1, y1, z1);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			glPushMatrix();
 			glTranslated(x2, y2, z2);
-			gluSphere(quadric, m_dFeatureSphereRadius, 16, 8);
+			gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
 			if (m_bShowCorrespondenceLine)

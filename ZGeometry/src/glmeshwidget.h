@@ -34,7 +34,8 @@ public:
 		mEditor = editor;
 	}
 
-	void setPointSize(double s) { m_dFeatureSphereRadius = s; }
+	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
+	void setBasePointSize(double r) { mFeatureSphereRadius *= r / mBaseFeatureRadius; mBaseFeatureRadius = r; }
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 
 protected:
@@ -72,7 +73,8 @@ private:
 	GLdouble		g_myFar;
 	GLdouble		g_myAngle;
 	int				g_startx, g_starty;
-	double			m_dFeatureSphereRadius;
+	double			mBaseFeatureRadius;
+	double			mFeatureSphereRadius;
 	double			m_dMeshPointSize;
 };
 

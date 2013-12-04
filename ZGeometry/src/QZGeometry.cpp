@@ -195,6 +195,7 @@ void QZGeometryWindow::makeConnections()
 
 	////////    tabbed controls	////////
 	QObject::connect(ui.sliderMorphing, SIGNAL(valueChanged(int)), this, SLOT(continuousMorph(int)));
+	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -2020,6 +2021,12 @@ void QZGeometryWindow::continuousMorph( int level )
 {
 	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
 	mShapeEditor.continuousReconstruct(level-1);
+	ui.glMeshWidget->update();
+}
 
+void QZGeometryWindow::setFeaturePointSize( int v )
+{
+	double scale = std::pow(1.1, double(v-10));
+	ui.glMeshWidget->zoomPointSize(scale);
 	ui.glMeshWidget->update();
 }

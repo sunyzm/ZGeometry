@@ -79,6 +79,7 @@ private slots:
 	void setRefPoint1(int vn);
 	void setRefPoint2(int vn);
 	void setCommonParameter(int p);
+	void setFeaturePointSize(int v);
 	
 	void toggleShowSignature(bool show = false);
 	void toggleShowRefPoint(bool show = false);

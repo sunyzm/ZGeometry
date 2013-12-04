@@ -174,7 +174,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tabConsole">
          <attribute name="title">
@@ -251,6 +251,46 @@
           <property name="tickPosition">
            <enum>QSlider::TicksBothSides</enum>
           </property>
+         </widget>
+        </widget>
+        <widget class="QWidget" name="tabDisplay">
+         <attribute name="title">
+          <string>Display</string>
+         </attribute>
+         <widget class="QWidget" name="">
+          <property name="geometry">
+           <rect>
+            <x>0</x>
+            <y>10</y>
+            <width>211</width>
+            <height>24</height>
+           </rect>
+          </property>
+          <layout class="QHBoxLayout" name="layoutPointSize">
+           <item>
+            <widget class="QLabel" name="labelPointSize">
+             <property name="text">
+              <string>Point Size</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderPointSize">
+             <property name="maximum">
+              <number>20</number>
+             </property>
+             <property name="pageStep">
+              <number>3</number>
+             </property>
+             <property name="value">
+              <number>10</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+          </layout>
          </widget>
         </widget>
        </widget>
