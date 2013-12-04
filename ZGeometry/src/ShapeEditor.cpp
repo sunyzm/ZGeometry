@@ -68,18 +68,6 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mCoordSelect = 3;
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 
-// 	ZGeom::DenseMatrixd hkMat1, hkMat2;
-// 	processor->computeHeatKernelMat(30, hkMat1);
-// 	processor->computeHeatKernelMat_AMP(30, hkMat2);
-// 
-// 	double maxError(0);
-// 	for (int i = 0; i < hkMat1.rowCount(); ++i) {
-// 		for (int j = 0; j < hkMat1.colCount(); ++j)
-// 			if (std::fabs(hkMat1(i,j) - hkMat2(i,j)) > maxError) maxError = std::fabs(hkMat1(i,j) - hkMat2(i,j));
-// 	}
-// 
-// 	std::cout << "max hkmat error: " << maxError << std::endl;
-
 	//editTest2();
 }
 
@@ -141,6 +129,13 @@ void ShapeEditor::continuousReconstruct( int level )
 {
 	if (level < 0 || level >= mContReconstructCoords.size()) return;
 	mMesh->setVertCoordinates(mContReconstructCoords[level]);
+
+	const int vertCount = mMesh->vertCount();
+	MeshFeatureList *mfl = dynamic_cast<MeshFeatureList*>(mProcessor->retrievePropertyByID(FEATURE_SGW_SOMP));
+	if (NULL == mfl) return;
+	mfl->clear();
+	int atomIdx = mApproxPursuit[level].index();
+	mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
 }
 
 void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )

@@ -45,9 +45,11 @@ public:
 class MeshFeatureList : public MeshProperty
 {
 public:
+	~MeshFeatureList() { clear(); }
+
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
 	std::vector<MeshFeature*>* getFeatureVector() { return &m_vFeatures; }
-	~MeshFeatureList();
+	void clear();
 
 	int featureType;
 	std::vector<MeshFeature*> m_vFeatures;

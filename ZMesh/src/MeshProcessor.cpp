@@ -95,7 +95,8 @@ void MeshProcessor::replaceProperty( MeshProperty* newProperty )
 	addProperty(newProperty);
 }
 
-MeshFeatureList::~MeshFeatureList()
+void MeshFeatureList::clear()
 {
 	for (MeshFeature* f : m_vFeatures) delete f;
+	m_vFeatures.clear();
 }
