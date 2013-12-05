@@ -4,10 +4,11 @@
 #include <map>
 #include <cmath>
 #include <engine.h>
-#include <ZMesh/ZMesh.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
+#include <ZGeom/Mesh.h>
+#include <ZGeom/MeshProcessor.h>
 #include "MeshLaplacian.h"
 #include "global.h"
 

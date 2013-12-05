@@ -5,9 +5,9 @@
 #include <QtWidgets/QMainWindow>
 #include <QSignalMapper>
 #include <engine.h>
-#include <ZMesh/ZMesh.h>
 #include <ZUtil/SimpleConfigLoader.h>
 #include <ZGeom/MatlabEngineWrapper.h>
+#include <ZGeom/Mesh.h>
 #include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"

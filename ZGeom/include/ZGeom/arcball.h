@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZGEOM_ARCBALL_H
+#define ZGEOM_ARCBALL_H
 #include "geometry.h"
 #include "quat.h"
 
@@ -17,3 +18,5 @@ private:
   double   m_radius;
   Vector2D m_center;
 };
+
+#endif

@@ -6,7 +6,7 @@
 #include <ZGeom/Laplacian.h>
 #include <ZGeom/SparseMatrix.h>
 #include <ZGeom/EigenSystem.h>
-#include <ZMesh/ZMesh.h>
+#include <ZGeom/Mesh.h>
 
 class ManifoldHarmonics : public ZGeom::EigenSystem
 {

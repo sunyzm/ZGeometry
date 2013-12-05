@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
-#include <ZMesh/Geometry.h>
-#include <ZMesh/Quat.h>
+#include <ZGeom/Geometry.h>
+#include <ZGeom/Quat.h>
 #include <iostream>
 
 const int Z_POINT = 0x1B00;

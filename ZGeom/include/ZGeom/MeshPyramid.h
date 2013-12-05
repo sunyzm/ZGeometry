@@ -1,6 +1,5 @@
 #ifndef MESH_PYRAMID_H
 #define MESH_PYRAMID_H
-
 #include "Mesh.h"
 #include "Quadric.h"
 #include <vector>

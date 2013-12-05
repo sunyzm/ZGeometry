@@ -1,7 +1,8 @@
 #pragma once
 #include <vector>
 #include <QGLWidget>
-#include <ZMesh/ZMesh.h>
+#include <ZGeom/Mesh.h>
+#include <ZGeom/arcball.h>
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"

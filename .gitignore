@@ -31,8 +31,6 @@ data/
 lib/
 ZUtil/intermediate/
 ZUtil/lib/
-ZMesh/intermediate/
-ZMesh/lib/
 ZGeom/intermediate/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/

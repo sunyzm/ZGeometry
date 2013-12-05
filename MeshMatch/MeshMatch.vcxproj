@@ -76,8 +76,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -90,8 +90,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
-    <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(SolutionDir)ZMesh/include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZMesh/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZUtil/include;$(SolutionDir)ZGeom/include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZUtil/lib;$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
     <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -120,7 +120,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ZUtil64d.lib;ZMesh64d.lib;ZGeom64d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ZUtil64d.lib;ZGeom64d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -157,7 +157,7 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ZUtil64.lib;ZMesh64.lib;ZGeom64.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ZUtil64.lib;ZGeom64.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>

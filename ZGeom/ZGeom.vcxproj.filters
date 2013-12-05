@@ -67,9 +67,6 @@
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\Mesh.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\EigenCompute.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -94,6 +91,33 @@
     <ClInclude Include="include\ZGeom\Approximation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\Mesh2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\arcball.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\Geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\MeshAttr.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\MeshProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\MeshPyramid.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\Quadric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\Quat.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -114,9 +138,6 @@
     <ClCompile Include="src\EigenCompute.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\DenseMatVecMultiplier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -130,6 +151,30 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\MatchingPursuit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mesh2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshPyramid.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\arcball.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Quadric.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Quat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

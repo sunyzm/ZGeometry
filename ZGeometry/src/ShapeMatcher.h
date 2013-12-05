@@ -5,7 +5,7 @@
 #include <fstream>
 #include <utility>
 #include <engine.h>
-#include "ZMesh/MeshPyramid.h"
+#include <ZGeom/MeshPyramid.h>
 #include "DifferentialMeshProcessor.h"
 #include "matching.h"
 
