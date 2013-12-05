@@ -40,8 +40,6 @@ ZGeometry/intermediate/
 ZGeometry/models/
 ZGeometry/output/
 ZGeometry/cache/
-ZMeshViewer/GeneratedFiles/
-ZMeshViewer/intermediate/
 MeshMatch/intermediate/
 TestZGeom/bin/
 TestZGeom/intermediate/

@@ -13,7 +13,6 @@
 
 
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
-
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
 
 bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
@@ -988,9 +987,10 @@ void ShapeEditor::reconstructionTest2()
 		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, 2);
 		timer.stopTimer("Time to compute Wavelet SOMP: ");
 
-		// save continuously reconstructed coordinates
 		//nReconstruct = nAtomSel;
 		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[2], mCoords[3]);
+		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
+		mApproxCoeff[2] = vApproxX;
 
 		MeshFeatureList *mfl = new MeshFeatureList;
 		for (int i = 0; i < 30; ++i) {
@@ -1000,9 +1000,6 @@ void ShapeEditor::reconstructionTest2()
 		mfl->setIDandName(FEATURE_SGW_SOMP, "Feature_SGW_SOMP");
 		mProcessor->addProperty(mfl);
 		mProcessor->setActiveFeaturesByID(FEATURE_SGW_SOMP);
-
-		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
-		mApproxCoeff[2] = vApproxX;
 	} //end of wavelet OMP
 #endif
 	//////////////////////////////////////////////////////////////////////////
