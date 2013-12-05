@@ -59,7 +59,9 @@ private slots:
 	void computeGeodesics();
 	void computeHeatTransfer();
 
-	void continuousMorph(int level);
+	void continuousApprox1(int level);
+	void continuousApprox2(int level);
+	void continuousApprox3(int level);
 
 	void displaySignature(QString sigName );
 	void showNormalizedSignature();

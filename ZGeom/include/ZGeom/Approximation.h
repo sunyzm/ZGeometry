@@ -56,6 +56,7 @@ public:
 	void clear() { mApproxItems.clear(); mAtoms = NULL; }
 	const std::vector<ApproxItem>& getApproxItems() const { return mApproxItems; }
 	ApproxItem& operator [] (int i) { return mApproxItems[i]; }
+	const ApproxItem& operator [] (int i) const { return mApproxItems[i]; }
 	ApproxItem& back() { return mApproxItems.back(); }
 	void resize(int n) { mApproxItems.resize(n); }
 	int size() const { return (int)mApproxItems.size(); }

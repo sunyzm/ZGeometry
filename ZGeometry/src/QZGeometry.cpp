@@ -194,7 +194,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
 	////////    tabbed controls	////////
-	QObject::connect(ui.sliderMorphing, SIGNAL(valueChanged(int)), this, SLOT(continuousMorph(int)));
+	QObject::connect(ui.sliderApprox1, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox1(int)));
+	QObject::connect(ui.sliderApprox2, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox2(int)));
+	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
 
 	////////    Menus	////////
@@ -1981,7 +1983,7 @@ void QZGeometryWindow::computeEditBasis()
 
 	for (int i = 0; i < 1; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		std::vector<double> eigVec = mShapeEditor.mEditBasis[mShapeEditor.mApproxPursuit[select_basis].index()].toStdVector();
+		std::vector<double> eigVec = mShapeEditor.mEditBasis[mShapeEditor.mApproxCoeff[2][select_basis].index()].toStdVector();
 		addColorSignature(i, eigVec, StrColorWaveletBasis);
 	}
 
@@ -2017,16 +2019,30 @@ void QZGeometryWindow::runTests()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::continuousMorph( int level )
-{
-	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
-	mShapeEditor.continuousReconstruct(level-1);
-	ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::setFeaturePointSize( int v )
 {
 	double scale = std::pow(1.1, double(v-10));
 	ui.glMeshWidget->zoomPointSize(scale);
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::continuousApprox1( int level )
+{
+	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.continuousReconstruct(0, level-1);
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::continuousApprox2( int level )
+{
+	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.continuousReconstruct(1, level-1);
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::continuousApprox3( int level )
+{
+	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.continuousReconstruct(2, level-1);
 	ui.glMeshWidget->update();
 }

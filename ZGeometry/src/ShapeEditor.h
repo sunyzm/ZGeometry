@@ -12,7 +12,7 @@ public:
 	void init(DifferentialMeshProcessor* processor);
 	void revertCoordinates();
 	void changeCoordinates();
-	void continuousReconstruct(int level);
+	void continuousReconstruct(int selectedApprox, int atomCount);
 	const MeshCoordinates& getOldMeshCoord() const { return mCoords[0]; }
 
 	void addNoise(double phi);
@@ -37,15 +37,20 @@ private:
 	void reconstructionTest2();
 	void editTest2();
 
+	void computeApproximations(const std::vector<ZGeom::VecNd>& vAtoms, 
+		                       ZGeom::FunctionApproximation* vApproxCoeff[3], 
+							   int nReconstruct, 
+							   std::vector<MeshCoordinates>& continuousCoords, 
+							   MeshCoordinates& finalCoord);
+
 	CMesh* mMesh;	
 	DifferentialMeshProcessor* mProcessor;
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 
 
-	ZGeom::FunctionApproximation mApproxPursuit;
-	std::vector<MeshCoordinates> mContReconstructCoords;	
-
+	ZGeom::FunctionApproximation mApproxCoeff[3];
+	std::vector<MeshCoordinates> mContReconstructCoords[3];
 	std::vector<MeshCoordinates> mCoords;
 	int mCoordSelect;
 };

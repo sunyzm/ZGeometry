@@ -180,7 +180,7 @@
          <attribute name="title">
           <string>Console</string>
          </attribute>
-         <widget class="QWidget" name="layoutWidget">
+         <widget class="QWidget" name="layoutWidgetConsoleTab">
           <property name="geometry">
            <rect>
             <x>0</x>
@@ -189,7 +189,7 @@
             <height>721</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
+          <layout class="QVBoxLayout" name="layoutConsoleTab">
            <item>
             <widget class="QPlainTextEdit" name="consoleOutput">
              <property name="sizePolicy">
@@ -227,16 +227,16 @@
          <attribute name="title">
           <string>Edit</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidgetEditTab">
           <property name="geometry">
            <rect>
             <x>0</x>
             <y>0</y>
             <width>211</width>
-            <height>54</height>
+            <height>130</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
+          <layout class="QVBoxLayout" name="layoutEditTab">
            <item>
             <widget class="QLabel" name="labelApproximation">
              <property name="text">
@@ -245,7 +245,63 @@
             </widget>
            </item>
            <item>
-            <widget class="QSlider" name="sliderMorphing">
+            <widget class="QSlider" name="sliderApprox1">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="pageStep">
+              <number>5</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TicksBothSides</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderApprox2">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
+             <property name="minimum">
+              <number>1</number>
+             </property>
+             <property name="maximum">
+              <number>100</number>
+             </property>
+             <property name="pageStep">
+              <number>5</number>
+             </property>
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="tickPosition">
+              <enum>QSlider::TicksBothSides</enum>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QSlider" name="sliderApprox3">
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>32</height>
+              </size>
+             </property>
              <property name="minimum">
               <number>1</number>
              </property>
@@ -270,7 +326,7 @@
          <attribute name="title">
           <string>Display</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidgetDisplayTab">
           <property name="geometry">
            <rect>
             <x>0</x>

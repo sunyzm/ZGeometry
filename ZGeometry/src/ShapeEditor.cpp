@@ -125,17 +125,20 @@ void ShapeEditor::changeCoordinates()
 	}
 }
 
-void ShapeEditor::continuousReconstruct( int level )
+void ShapeEditor::continuousReconstruct( int selected, int atomCount )
 {
-	if (level < 0 || level >= mContReconstructCoords.size()) return;
-	mMesh->setVertCoordinates(mContReconstructCoords[level]);
+	if (selected < 0 || selected >= 3 || atomCount < 0 || atomCount >= mContReconstructCoords[selected].size()) return;
+	mMesh->setVertCoordinates(mContReconstructCoords[selected][atomCount]);
 
-	const int vertCount = mMesh->vertCount();
-	MeshFeatureList *mfl = dynamic_cast<MeshFeatureList*>(mProcessor->retrievePropertyByID(FEATURE_SGW_SOMP));
-	if (NULL == mfl) return;
-	mfl->clear();
-	int atomIdx = mApproxPursuit[level].index();
-	mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
+	if (selected == 2) {
+		const int vertCount = mMesh->vertCount();
+		MeshProperty* curAtomLocation = mProcessor->retrievePropertyByID(FEATURE_SGW_SOMP);
+		if (NULL == curAtomLocation) return;
+		MeshFeatureList *mfl = dynamic_cast<MeshFeatureList*>(curAtomLocation);
+		mfl->clear();
+		int atomIdx = mApproxCoeff[selected][atomCount].index();
+		mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
+	}
 }
 
 void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
@@ -865,7 +868,7 @@ void ShapeEditor::reconstructionTest1()
 		//// save reconstruction result
 		//
 		const int countReconstructAtoms = std::min<int>(50, (int)vPursuitX.size());
-		mContReconstructCoords.resize(countReconstructAtoms);
+		mContReconstructCoords[2].resize(countReconstructAtoms);
 		mCoords[3].resize(vertCount);
 
 		for (int i = 0; i < countReconstructAtoms; ++i) {
@@ -873,11 +876,11 @@ void ShapeEditor::reconstructionTest1()
 			mCoords[3].getYCoord() += vPursuitY[i].coeff() * vBasis[vPursuitY[i].index()];
 			mCoords[3].getZCoord() += vPursuitZ[i].coeff() * vBasis[vPursuitZ[i].index()];
 		
-			mContReconstructCoords[i] = mCoords[3];
+			mContReconstructCoords[2][i] = mCoords[3];
 		}
 		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
 
-		mApproxPursuit = vPursuitX;
+		mApproxCoeff[2] = vPursuitX;
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 
@@ -918,16 +921,15 @@ void ShapeEditor::reconstructionTest2()
 	vSignals.push_back(vx); vSignals.push_back(vy); vSignals.push_back(vz);
 
 	ZGeom::FunctionApproximation vApproxX, vApproxY, vApproxZ;
-	std::vector<ZGeom::FunctionApproximation*> vApprox;
-	vApprox.push_back(&vApproxX); vApprox.push_back(&vApproxY); vApprox.push_back(&vApproxZ);
+	std::vector<ZGeom::FunctionApproximation*> vApproxCoeff;
+	vApproxCoeff.push_back(&vApproxX); vApproxCoeff.push_back(&vApproxY); vApproxCoeff.push_back(&vApproxZ);
 
 	/************************************************************************/
 	/*  In each approximation test, the following is required
 	/*    (0) Clear previously computed results;
 	/*    (1) Compute atoms (eigenbasis, wavelet, etc.);
 	/*    (2) Compute multi-channel approximation coefficients;
-	/*    (3) Reconstruct with the computed coefficients
-	/*    (4) Evaluate approximation result; possibly save to ShapeEditor                                                                       */
+	/*    (3) Reconstruct with the computed coefficients; Evaluate results	                                        */
 	/************************************************************************/ 
 
 	const int nEigTotal = cotMHB.eigVecCount();
@@ -937,20 +939,14 @@ void ShapeEditor::reconstructionTest2()
 
 	/* Test 1, Fourier approximation */
 	{		
-		for (auto p : vApprox) p->clear();
+		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 
 		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
 
-		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApprox, innerProdDiagW);
+		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW);
 		
-		mCoords[1].resize(vertCount);
-		for (int i = 0; i < nReconstruct; ++i) {
-			mCoords[1].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
-			mCoords[1].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
-			mCoords[1].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
-		}
-		
+		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[0], mCoords[1]);
 		std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n\n";
 	}	
 	//////////////////////////////////////////////////////////////////////////
@@ -958,22 +954,16 @@ void ShapeEditor::reconstructionTest2()
 
 	/* Test 2, Simultaneous Fourier Matching Pursuit */
 	{
-		for (auto p : vApprox) p->clear();
+		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 		
 		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
 
 		timer.startTimer();
-		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApprox, innerProdDiagW, 2.);
+		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW, 2.);
 		timer.stopTimer("Time to compute Fourier SMP: ");
 
-		mCoords[2].resize(vertCount);
-		for (int i = 0; i < nReconstruct; ++i) {
-			mCoords[2].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
-			mCoords[2].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
-			mCoords[2].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
-		}
-
+		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[1], mCoords[2]);
 		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -982,7 +972,7 @@ void ShapeEditor::reconstructionTest2()
 	/* Test 3, Wavelet Simultaneous-OMP */
 #if 1
 	{
-		for (auto p : vApprox) p->clear();
+		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
@@ -995,20 +985,12 @@ void ShapeEditor::reconstructionTest2()
 		}
 
 		timer.startTimer();
-		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApprox, 2);
+		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, 2);
 		timer.stopTimer("Time to compute Wavelet SOMP: ");
 
 		// save continuously reconstructed coordinates
 		//nReconstruct = nAtomSel;
-		mContReconstructCoords.resize(nReconstruct);
-		mCoords[3].resize(vertCount);
-		for (int i = 0; i < nReconstruct; ++i) {
-			mCoords[3].getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
-			mCoords[3].getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
-			mCoords[3].getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
-
-			mContReconstructCoords[i] = mCoords[3];
-		}
+		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[2], mCoords[3]);
 
 		MeshFeatureList *mfl = new MeshFeatureList;
 		for (int i = 0; i < 30; ++i) {
@@ -1020,7 +1002,7 @@ void ShapeEditor::reconstructionTest2()
 		mProcessor->setActiveFeaturesByID(FEATURE_SGW_SOMP);
 
 		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
-		mApproxPursuit = vApproxX;
+		mApproxCoeff[2] = vApproxX;
 	} //end of wavelet OMP
 #endif
 	//////////////////////////////////////////////////////////////////////////
@@ -1053,6 +1035,28 @@ void ShapeEditor::editTest2()
 			ofs << ' ' << mhb.getEigVec(ek)[p.first];
 		}
 		ofs << std::endl;
+	}
+}
+
+void ShapeEditor::computeApproximations( const std::vector<ZGeom::VecNd>& vAtoms, 
+										 ZGeom::FunctionApproximation* vApproxCoeff[3], 
+										 int nReconstruct, 
+										 std::vector<MeshCoordinates>& continuousCoords, 
+										 MeshCoordinates& finalCoord )
+{
+	const int vertCount = mMesh->vertCount();
+	const ZGeom::FunctionApproximation &vApproxX = *vApproxCoeff[0], &vApproxY = *vApproxCoeff[1], &vApproxZ = *vApproxCoeff[2];
+
+	if (nReconstruct > vApproxX.size()) nReconstruct = (int)vApproxX.size();
+	continuousCoords.resize(nReconstruct);
+	finalCoord.resize(vertCount);
+
+	for (int i = 0; i < nReconstruct; ++i) {
+		finalCoord.getXCoord() += vApproxX[i].coeff() * vAtoms[vApproxX[i].index()];
+		finalCoord.getYCoord() += vApproxY[i].coeff() * vAtoms[vApproxY[i].index()];
+		finalCoord.getZCoord() += vApproxZ[i].coeff() * vAtoms[vApproxZ[i].index()];
+
+		continuousCoords[i] = finalCoord;
 	}
 }
 

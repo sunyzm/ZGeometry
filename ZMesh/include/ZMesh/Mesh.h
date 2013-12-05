@@ -37,6 +37,23 @@ public:
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
 
+	MeshCoordinates(const MeshCoordinates& mc)
+	{
+		this->mSize = mc.mSize;
+		this->mCoordX = mc.mCoordX;
+		this->mCoordY = mc.mCoordY;
+		this->mCoordZ = mc.mCoordZ;
+	}
+
+	MeshCoordinates& operator = (const MeshCoordinates& mc)
+	{
+		this->mSize = mc.mSize;
+		this->mCoordX = mc.mCoordX;
+		this->mCoordY = mc.mCoordY;
+		this->mCoordZ = mc.mCoordZ;
+		return *this;
+	}
+
 	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
 
