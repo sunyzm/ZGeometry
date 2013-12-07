@@ -53,6 +53,7 @@ public:
 	double	calSGW(int v1, int v2, double timescale) const;	
 	void	computeSGW1(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void	computeSGW2(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void    computeMixedAtoms1(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void	computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void	computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void	computeHeatDiffuseMat(double tMultiplier);
@@ -82,8 +83,8 @@ public:
 	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
-	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatWavelets; }
-	ZGeom::DenseMatrixd& getWaveletMat() { return mMatWavelets; }
+	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
+	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	int  getRefPointIndex() const { return mRefVert; }
@@ -105,7 +106,7 @@ private:
 	ManifoldHarmonics mMHBs[MeshLaplacian::LaplacianTypeCount];
 	MeshLaplacian::LaplacianType mActiveLaplacianType;
 
-	ZGeom::DenseMatrix<double> mMatWavelets;
+	ZGeom::DenseMatrix<double> mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 };

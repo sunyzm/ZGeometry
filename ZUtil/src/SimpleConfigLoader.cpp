@@ -18,11 +18,11 @@ void SimpleConfigLoader::load( const std::string& config_file_path )
 	{
 		string sline;
 		getline(ifs, sline);	
-		if (sline.empty() || sline[0] == '#') continue;
+		if (sline.empty() || sline[0] == '#' || sline[0] == ';') continue;
 		sline = sline.substr(0, sline.find('#'));
-
+		
 		size_t sep = sline.find('=');
-		if (sep == string::npos) continue;	// no '=' is found
+		if (sep == string::npos) continue;	// no '=' is found, the line is skipped
 		string s_key = sline.substr(0, sep), s_value = sline.substr(sep+1);
 
 		string::iterator iter = s_key.begin();

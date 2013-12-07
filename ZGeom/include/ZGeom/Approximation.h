@@ -61,6 +61,13 @@ public:
 	void resize(int n) { mApproxItems.resize(n); }
 	int size() const { return (int)mApproxItems.size(); }
 
+	std::vector<int> getAllAtomIndex() const 
+	{
+		std::vector<int> vIdx;
+		for (auto ai : mApproxItems) vIdx.push_back(ai.index());
+		return vIdx;
+	}
+
 private:
 	ApproximationAtoms *mAtoms;
 	std::vector<ApproxItem> mApproxItems;

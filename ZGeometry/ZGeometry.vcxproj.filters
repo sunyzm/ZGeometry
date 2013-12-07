@@ -118,9 +118,6 @@
     <CustomBuild Include="src\RenderSettings.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
-    <CustomBuild Include="configs.txt">
-      <Filter>Resource Files</Filter>
-    </CustomBuild>
     <CustomBuild Include="doc\code_recylce.txt">
       <Filter>Resource Files</Filter>
     </CustomBuild>
@@ -150,6 +147,9 @@
     </CustomBuild>
     <CustomBuild Include="src\MeshLaplacian.h">
       <Filter>Header Files</Filter>
+    </CustomBuild>
+    <CustomBuild Include="config.txt">
+      <Filter>Resource Files</Filter>
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>

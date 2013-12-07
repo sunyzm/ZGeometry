@@ -934,7 +934,7 @@ void ShapeEditor::reconstructionTest2()
 	const int nEigTotal = cotMHB.eigVecCount();
 	int nAtomSel = 100;
 	int nReconstruct = 100;
-	std::vector<VecNd> vAtoms;
+	std::vector<VecNd> &vAtoms = mEditBasis;
 
 	/* Test 1, Fourier approximation */
 	{		
@@ -946,6 +946,7 @@ void ShapeEditor::reconstructionTest2()
 		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW);
 		
 		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[0], mCoords[1]);
+		
 		std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n\n";
 	}	
 	//////////////////////////////////////////////////////////////////////////
@@ -963,6 +964,10 @@ void ShapeEditor::reconstructionTest2()
 		timer.stopTimer("Time to compute Fourier SMP: ");
 
 		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[1], mCoords[2]);
+		
+		std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
+		int selectedFromTop = std::count_if(vSelectedAtomIdx.begin(), vSelectedAtomIdx.end(), [&](int idx) { return idx < vSelectedAtomIdx.size();} );
+		std::cout << "Ratio of MP overlapping: " << (double)selectedFromTop / (double)vSelectedAtomIdx.size() << '\n';
 		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
 	}
 	//////////////////////////////////////////////////////////////////////////
@@ -976,13 +981,15 @@ void ShapeEditor::reconstructionTest2()
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		mProcessor->computeSGW1(MeshLaplacian::CotFormula);		
+		//mProcessor->computeSGW1(MeshLaplacian::CotFormula);		
+		mProcessor->computeMixedAtoms1(MeshLaplacian::CotFormula);
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(ZGeom::RegularProductFunc);
 			vAtoms.push_back(newBasis);
 		}
 
+		nAtomSel = 100;
 		timer.startTimer();
 		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, 2);
 		timer.stopTimer("Time to compute Wavelet SOMP: ");
@@ -992,9 +999,21 @@ void ShapeEditor::reconstructionTest2()
 		std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
 		mApproxCoeff[2] = vApproxX;
 
+		std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
+
+		int nClass = vAtoms.size() / vertCount;
+		std::vector<int> vScaleStat(nClass, 0);
+		for (int idx : vSelectedAtomIdx) {
+			vScaleStat[idx/vertCount] += 1;
+		}
+		std::cout << "Selected atom stats: \n";
+		for (int s = 0; s < nClass; ++s) 
+			std::cout << "  scale " << s << ": " << vScaleStat[s] << '\n';
+		std::cout << "    total: " << vSelectedAtomIdx.size() << "\n\n"; 
+
 		MeshFeatureList *mfl = new MeshFeatureList;
 		for (int i = 0; i < 30; ++i) {
-			int atomIdx = vApproxX[i].index();
+			int atomIdx = vSelectedAtomIdx[i];
 			mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
 		}
 		mfl->setIDandName(FEATURE_SGW_SOMP, "Feature_SGW_SOMP");

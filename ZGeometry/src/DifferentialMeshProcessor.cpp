@@ -185,16 +185,18 @@ void DifferentialMeshProcessor::computeSGW1( MeshLaplacian::LaplacianType laplac
 		else return 4.0/x/x;
 	};
 
-	const int scales = 5;
+	const int nWaveletScales = 5;
+	const int mScalingScales = 1;
+
 	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
 	const double K = 20.0;
 	double minEigVal = maxEigVal / K;
 	double minT = 1./maxEigVal, maxT = 2./minEigVal;		
-	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(scales - 1));
+	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nWaveletScales - 1));
 
-	std::vector<double> waveletScales(scales);	
-	for (int s = 0; s < scales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
-	mMatWavelets.resize(vertCount*(scales+1), vertCount);
+	std::vector<double> vWaveletScales(nWaveletScales);	
+	for (int s = 0; s < nWaveletScales; ++s) vWaveletScales[s] = minT * std::pow(tMultiplier, s);
+	mMatAtoms.resize(vertCount*(nWaveletScales+1), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
 	const double *pEigVals = &(mhb.getEigVals()[0]);
@@ -205,17 +207,17 @@ void DifferentialMeshProcessor::computeSGW1( MeshLaplacian::LaplacianType laplac
 	std::vector<double> vDiag(eigCount);
 	//////////////////////////////////////////////////////////////////////////
 	// compute SGW with AMP
-	for (int s = 0; s < scales; ++s) {
+	for (int s = 0; s < nWaveletScales; ++s) {
 		for (int i = 0; i < eigCount; ++i) 
-			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
-		double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * s;
+			vDiag[i] = generator1(vWaveletScales[s] * pEigVals[i]);
+		double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * s;
 		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	}
 
-	double gamma = 1.3849001794597505097;
+	double gamma = 1;//.3849001794597505097;
 	for (int i = 0; i < eigCount; ++i) 
-		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
-	double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * scales;
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6/*0.6*/*minEigVal), 4));
+	double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * nWaveletScales;
 	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 
 	timer.stopTimer("Time to compute SGW1: ");
@@ -242,7 +244,7 @@ void DifferentialMeshProcessor::computeSGW2(MeshLaplacian::LaplacianType laplaci
 
 	std::vector<double> waveletScales(nScales);	
 	for (int s = 0; s < nScales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
-	mMatWavelets.resize(vertCount * (nScales+1), vertCount);
+	mMatAtoms.resize(vertCount * (nScales+1), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
 	const double *pEigVals = &(mhb.getEigVals()[0]);
@@ -257,17 +259,82 @@ void DifferentialMeshProcessor::computeSGW2(MeshLaplacian::LaplacianType laplaci
 		for (int i = 0; i < eigCount; ++i) {
 			vDiag[i] = generator1(waveletScales[s] * pEigVals[i]);
 		}
-		double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * s;
+		double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * s;
 		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	}
 	
 	for (int i = 0; i < eigCount; ++i) {
 		vDiag[i] = generator2(pEigVals[i]);
 	}
-	double *pResult = mMatWavelets.raw_ptr() + vertCount * vertCount * nScales;
+	double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * nScales;
 	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 
 	timer.stopTimer("Time to compute SGW2: ");
+}
+
+void DifferentialMeshProcessor::computeMixedAtoms1( MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
+{
+	CStopWatch timer;	
+	timer.startTimer();
+
+	const ManifoldHarmonics& mhb = getMHB(laplacianType);
+	const int vertCount = mhb.eigVecSize();
+	const int eigCount = mhb.eigVecCount();
+
+	std::function<double(double)> generator1 = [](double x) {
+		if (x < 1) return x*x;
+		else if (x <= 2) return (-5. + 11.*x - 6.*x*x + x*x*x);
+		else return 4.0/x/x;
+	};
+
+	std::cout << "Ev(1) = " << mhb.getEigVal(1) 
+		      << ", Ev(" << mhb.eigVecCount()-1 << ") = " << mhb.getEigVal(mhb.eigVecCount()-1)
+			  << "\n";
+
+	const int nWaveletScales = 5;
+	std::vector<double> vWaveletScales(nWaveletScales);	
+	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
+	const double K = 18.0;
+	double minEigVal = maxEigVal / K;
+	double minT = 1./maxEigVal, maxT = 2./minEigVal;		
+	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nWaveletScales - 1));	
+	for (int s = 0; s < nWaveletScales; ++s) 
+		vWaveletScales[s] = minT * std::pow(tMultiplier, s);
+
+	std::vector<double> vScalingScales;
+	//vScalingScales.push_back(0.5); 
+	//vScalingScales.push_back(1.0); 
+	vScalingScales.push_back(2.0);
+	vScalingScales.push_back(4.0);
+	//vScalingScales.push_back(8.0);
+
+	const int mScalingScales = (int)vScalingScales.size();;
+	mMatAtoms.resize(vertCount * (nWaveletScales+mScalingScales), vertCount);
+
+	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	std::vector<double> vDiag(eigCount);
+	//////////////////////////////////////////////////////////////////////////
+	// compute SGW with AMP
+	for (int s = 0; s < nWaveletScales; ++s) {
+		for (int i = 0; i < eigCount; ++i) 
+			vDiag[i] = generator1(vWaveletScales[s] * pEigVals[i]);
+		double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * s;
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	}
+
+	for (int s = 0; s < mScalingScales; ++s) {
+		for (int i = 0; i < eigCount; ++i) 
+			vDiag[i] = std::exp(-vScalingScales[s] * 8/*7.716*/ * std::pow(pEigVals[i]/minEigVal, 4));
+		double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * (nWaveletScales + s);
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	}
+
+	timer.stopTimer("Time to compute mixed atoms 1: ");
 }
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
