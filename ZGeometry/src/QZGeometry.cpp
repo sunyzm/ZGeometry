@@ -53,7 +53,7 @@ void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::C
 	vColors.resize(vSize);
 	std::vector<double> tmpSig = vOriSig;
 
-	if (smode == BandCurve01) {
+	if (smode == BandCurved) {
 		for (size_t a = 0; a < vSize; ++a) {
 			if (vOriSig[a] < 0) vColors[a].falseColor(0);
 			else if (vOriSig[a] > 1) vColors[a].falseColor(1.f);
@@ -114,6 +114,10 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	
+	ui.comboBoxSigMode->clear();
+	for (int i = 0; i < CountSigModes; ++i)
+		ui.comboBoxSigMode->addItem(QString(StrSignatureModeNames[i].c_str()));
+
 	ui.spinBoxParameter->setMinimum(0);
 	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setMinimum(0);
@@ -199,6 +203,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
 	QObject::connect(ui.sliderEditBasis, SIGNAL(valueChanged(int)), this, SLOT(displayBasis(int)));
+	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
 
 	////////    Menus	////////
 	////	file	////
@@ -255,12 +260,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
-	QObject::connect(ui.actionSigNormalized, SIGNAL(triggered()), this, SLOT(showNormalizedSignature()));
-	QObject::connect(ui.actionSigMarkNegativeNormalized, SIGNAL(triggered()), this, SLOT(showMarkNegNormalizedSignature()));
-	QObject::connect(ui.actionSigAbsNormalized, SIGNAL(triggered()), this, SLOT(showAbsNormalizedSignature()));
-	QObject::connect(ui.actionSigLogNormalized, SIGNAL(triggered()), this, SLOT(showLogNormalizedSignature()));
-	QObject::connect(ui.actionSigPosNegPlot, SIGNAL(triggered()), this, SLOT(showPosNegPlotSignature()));
-	QObject::connect(ui.actionSigBandCurve01, SIGNAL(triggered()), this, SLOT(showBandCurve01Siganture()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -1935,43 +1934,8 @@ void QZGeometryWindow::changeSignatureMode( SignatureMode smode )
 		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
 		signaturesToColors(vSig, vColors, smode);
 	}
+
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::showNormalizedSignature()
-{
-	mSignatureMode = Normalized;
-	changeSignatureMode(Normalized);
-}
-
-void QZGeometryWindow::showMarkNegNormalizedSignature()
-{
-	mSignatureMode = MarkNegNormalized;
-	changeSignatureMode(MarkNegNormalized);
-}
-
-void QZGeometryWindow::showAbsNormalizedSignature()
-{
-	mSignatureMode = AbsNormalized;
-	changeSignatureMode(AbsNormalized);
-}
-
-void QZGeometryWindow::showLogNormalizedSignature()
-{
-	mSignatureMode = LogNormalized;
-	changeSignatureMode(LogNormalized);
-}
-
-void QZGeometryWindow::showPosNegPlotSignature()
-{
-	mSignatureMode = PosNegPlot;
-	changeSignatureMode(PosNegPlot);
-}
-
-void QZGeometryWindow::showBandCurve01Siganture()
-{
-	mSignatureMode = BandCurve01;
-	changeSignatureMode(BandCurve01);
 }
 
 void QZGeometryWindow::computeEditBasis()
@@ -2053,6 +2017,22 @@ void QZGeometryWindow::displayBasis( int idx )
 
 	displaySignature(StrColorWaveletBasis.c_str());
 	current_operation = Compute_Edit_Basis;
-	qout.output("Show basis" + Int2String(select_basis), OUT_STATUS);
+	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
 	updateDisplaySignatureMenu();
+}
+
+void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
+{
+	for (int i = 0; i < CountSigModes; ++i)
+		if (sigModeName == StrSignatureModeNames[i].c_str()) mSignatureMode = (SignatureMode)i;
+	
+	if (mSignatureMode == BandCurved) {
+		ui.sliderSigMin->setEnabled(true);
+		ui.sliderSigMax->setEnabled(true);
+	} else {
+		ui.sliderSigMin->setEnabled(false);
+		ui.sliderSigMax->setEnabled(false);
+	}
+
+	changeSignatureMode(mSignatureMode);
 }

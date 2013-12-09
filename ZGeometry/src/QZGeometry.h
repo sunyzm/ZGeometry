@@ -65,12 +65,7 @@ private slots:
 	void continuousApprox3(int level);
 
 	void displaySignature(QString sigName );
-	void showNormalizedSignature();
-	void showMarkNegNormalizedSignature();
-	void showAbsNormalizedSignature();
-	void showLogNormalizedSignature();
-	void showPosNegPlotSignature();
-	void showBandCurve01Siganture();
+	void setSignatureMode(const QString& sigModeName);
 	void displayNeighborVertices();
 	void displayDiffPosition();
 

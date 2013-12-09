@@ -326,13 +326,13 @@
          <attribute name="title">
           <string>Display</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>0</x>
             <y>10</y>
             <width>211</width>
-            <height>56</height>
+            <height>114</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="layoutDisplayTab">
@@ -382,6 +382,71 @@
                </property>
                <property name="value">
                 <number>0</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="layoutSigModeSelect">
+             <item>
+              <widget class="QLabel" name="labelSigMode">
+               <property name="text">
+                <string>Sig. Mode</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBoxSigMode">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="layoutSigMinMax">
+             <item>
+              <widget class="QLabel" name="labelSigMin">
+               <property name="text">
+                <string>Min.</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="sliderSigMin">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="maximum">
+                <number>100</number>
+               </property>
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="labelSigMax">
+               <property name="text">
+                <string>Max.</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSlider" name="sliderSigMax">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="maximum">
+                <number>100</number>
                </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -493,17 +558,6 @@
      </property>
      <addaction name="actionShowHKSFeatures"/>
     </widget>
-    <widget class="QMenu" name="menuSignatureMode">
-     <property name="title">
-      <string>SignatureMode</string>
-     </property>
-     <addaction name="actionSigNormalized"/>
-     <addaction name="actionSigMarkNegativeNormalized"/>
-     <addaction name="actionSigAbsNormalized"/>
-     <addaction name="actionSigLogNormalized"/>
-     <addaction name="actionSigPosNegPlot"/>
-     <addaction name="actionSigBandCurve01"/>
-    </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
     <addaction name="actionDrawRegistration"/>
@@ -515,7 +569,6 @@
     <addaction name="separator"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="menuSignature"/>
-    <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>
