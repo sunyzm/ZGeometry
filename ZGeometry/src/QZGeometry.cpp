@@ -47,24 +47,28 @@ void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vect
 				   [=](double v){ return (v-sMin)/(sMax-sMin); });
 }
 
-void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::Normalized)
+void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode/* = SignatureMode::Normalized*/)
 {
 	size_t vSize = vOriSig.size();
 	vColors.resize(vSize);
 	std::vector<double> tmpSig = vOriSig;
 
 	if (smode == BandCurved) {
+		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
+		double sMin = *mmp.first, sMax = *mmp.second;
+		double bandMin = (double)ui.sliderSigMin->value() / ui.sliderSigMin->maximum() * (sMax - sMin) + sMin;
+		double bandMax = (double)ui.sliderSigMax->value() / ui.sliderSigMax->maximum() * (sMax - sMin) + sMin;
+
 		for (size_t a = 0; a < vSize; ++a) {
-			if (vOriSig[a] < 0) vColors[a].falseColor(0);
-			else if (vOriSig[a] > 1) vColors[a].falseColor(1.f);
-			else vColors[a].falseColor(vOriSig[a]);
+			if (tmpSig[a] < bandMin) tmpSig[a] = bandMin;
+			if (tmpSig[a] > bandMax) tmpSig[a] = bandMax;
 		}
-		return;
 	}
 	
 	if (smode == AbsNormalized) {
 		for (double& v : tmpSig) v = std::fabs(v);
 	}
+
 	if (smode == LogNormalized) {
 		double sMin = *(std::minmax_element(tmpSig.begin(), tmpSig.end()).first);
 		if (sMin > 0) {
@@ -127,8 +131,13 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	setDisplayMesh();
 	setEditModeMove();
 
+	mStatusLabel1.setParent(ui.statusBar);
+	ui.statusBar->addPermanentWidget(&mStatusLabel1);
+	qout.setLabel(&mStatusLabel1);
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);    
+	
+	mStatusLabel1.setText("Editing");
 }
 
 QZGeometryWindow::~QZGeometryWindow()
@@ -204,6 +213,8 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
 	QObject::connect(ui.sliderEditBasis, SIGNAL(valueChanged(int)), this, SLOT(displayBasis(int)));
 	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
+	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
+	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -1924,7 +1935,7 @@ void QZGeometryWindow::addNoise()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::changeSignatureMode( SignatureMode smode )
+void QZGeometryWindow::updateSignature( SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		const std::string& currentSig = mRenderManagers[obj]->mColorSignatureName;
@@ -2019,6 +2030,13 @@ void QZGeometryWindow::displayBasis( int idx )
 	current_operation = Compute_Edit_Basis;
 	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
 	updateDisplaySignatureMenu();
+
+	if (mSignatureMode == BandCurved) {
+		ui.sliderSigMin->triggerAction(QAbstractSlider::SliderToMinimum);
+		ui.sliderSigMax->triggerAction(QAbstractSlider::SliderToMaximum);
+		updateSignatureMin(ui.sliderSigMin->minimum());
+		updateSignatureMax(ui.sliderSigMax->maximum());
+	}
 }
 
 void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
@@ -2029,10 +2047,45 @@ void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 	if (mSignatureMode == BandCurved) {
 		ui.sliderSigMin->setEnabled(true);
 		ui.sliderSigMax->setEnabled(true);
+		ui.sliderSigMin->setValue(ui.sliderSigMin->minimum());
+		ui.sliderSigMax->setValue(ui.sliderSigMax->maximum());
+		updateSignatureMin(ui.sliderSigMin->minimum());
 	} else {
 		ui.sliderSigMin->setEnabled(false);
 		ui.sliderSigMax->setEnabled(false);
 	}
 
-	changeSignatureMode(mSignatureMode);
+	updateSignature(mSignatureMode);
+}
+
+void QZGeometryWindow::updateSignatureMin( int sMin )
+{
+	if (mSignatureMode != BandCurved) return;
+	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
+	if (sMin >= ui.sliderSigMax->value()) return;
+
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue< std::vector<double> >(StrOriginalSignature);
+	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
+	double vMin = *mmp.first, vMax = *mmp.second;
+
+	double newVal = (double)sMin / (double)ui.sliderSigMin->maximum() * (vMax - vMin) + vMin;
+	ui.labelSigMin->setText("Min: " + QString::number(newVal));
+	
+	updateSignature(BandCurved);
+}
+
+void QZGeometryWindow::updateSignatureMax( int sMax )
+{
+	if (mSignatureMode != BandCurved) return;
+	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
+	if (sMax <= ui.sliderSigMin->value()) return;
+
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue< std::vector<double> >(StrOriginalSignature);
+	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
+	double vMin = *mmp.first, vMax = *mmp.second;
+
+	double newVal = (double)sMax / (double)ui.sliderSigMax->maximum() * (vMax - vMin) + vMin;
+	ui.labelSigMax->setText("Max: " + QString::number(newVal));
+
+	updateSignature(BandCurved);
 }

@@ -330,12 +330,12 @@
           <property name="geometry">
            <rect>
             <x>0</x>
-            <y>10</y>
+            <y>11</y>
             <width>211</width>
-            <height>114</height>
+            <height>161</height>
            </rect>
           </property>
-          <layout class="QVBoxLayout" name="layoutDisplayTab">
+          <layout class="QVBoxLayout" name="verticalLayout_3">
            <item>
             <layout class="QHBoxLayout" name="layoutPointSize">
              <item>
@@ -412,46 +412,72 @@
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="layoutSigMinMax">
+            <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
-              <widget class="QLabel" name="labelSigMin">
-               <property name="text">
-                <string>Min.</string>
+              <layout class="QVBoxLayout" name="verticalLayout">
+               <property name="spacing">
+                <number>0</number>
                </property>
-              </widget>
+               <item>
+                <widget class="QSlider" name="sliderSigMin">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="maximum">
+                  <number>100</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="labelSigMin">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Min: </string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
              <item>
-              <widget class="QSlider" name="sliderSigMin">
-               <property name="enabled">
-                <bool>false</bool>
+              <layout class="QVBoxLayout" name="verticalLayout_2">
+               <property name="spacing">
+                <number>0</number>
                </property>
-               <property name="maximum">
-                <number>100</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QLabel" name="labelSigMax">
-               <property name="text">
-                <string>Max.</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QSlider" name="sliderSigMax">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="maximum">
-                <number>100</number>
-               </property>
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-              </widget>
+               <item>
+                <widget class="QSlider" name="sliderSigMax">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="maximum">
+                  <number>100</number>
+                 </property>
+                 <property name="orientation">
+                  <enum>Qt::Horizontal</enum>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="labelSigMax">
+                 <property name="sizePolicy">
+                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+                   <horstretch>0</horstretch>
+                   <verstretch>0</verstretch>
+                  </sizepolicy>
+                 </property>
+                 <property name="text">
+                  <string>Max: </string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </item>
@@ -558,6 +584,17 @@
      </property>
      <addaction name="actionShowHKSFeatures"/>
     </widget>
+    <widget class="QMenu" name="menuSignatureMode">
+     <property name="title">
+      <string>SignatureMode</string>
+     </property>
+     <addaction name="actionSigNormalized"/>
+     <addaction name="actionSigMarkNegativeNormalized"/>
+     <addaction name="actionSigAbsNormalized"/>
+     <addaction name="actionSigLogNormalized"/>
+     <addaction name="actionSigPosNegPlot"/>
+     <addaction name="actionSigBandCurve01"/>
+    </widget>
     <addaction name="menuDisplay_Type"/>
     <addaction name="actionDrawMatching"/>
     <addaction name="actionDrawRegistration"/>
@@ -569,6 +606,7 @@
     <addaction name="separator"/>
     <addaction name="actionDiffPosition"/>
     <addaction name="menuSignature"/>
+    <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
    </widget>

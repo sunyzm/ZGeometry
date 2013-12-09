@@ -66,6 +66,8 @@ private slots:
 
 	void displaySignature(QString sigName );
 	void setSignatureMode(const QString& sigModeName);
+	void updateSignatureMin(int sMin);
+	void updateSignatureMax(int sMax);
 	void displayNeighborVertices();
 	void displayDiffPosition();
 
@@ -127,7 +129,7 @@ private:
 	bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
 	void allocateStorage(int newMeshCount);
-	void changeSignatureMode(SignatureMode smode);
+	void updateSignature(SignatureMode smode);
 
 	/* helper functions */
 	void evalDistance();
@@ -137,6 +139,8 @@ private:
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 
 private:	
+	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::Normalized);
+
 	/* fields */
 	Ui::ZGeometryClass	ui;
 	ZGeom::MatlabEngineWrapper mEngineWrapper;	
@@ -145,7 +149,7 @@ private:
 	int					mObjInFocus;	
 	int					mMeshCount;
 	int					mCommonParameter;
-
+	
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
@@ -167,6 +171,8 @@ private:
 	std::vector<QAction*> m_actionComputeSimilarities;
 	std::vector<QAction*> m_actionDisplaySignatures;
 
+	QLabel mStatusLabel1;
+
 	/*---- static members as constant parameters ----*/
 	static int DEFAULT_EIGEN_SIZE;
 	static int DEFAULT_DEFORM_RING; 
@@ -177,4 +183,3 @@ private:
 	static double PARAMETER_SLIDER_CENTER;
 	static double DR_THRESH_INCREMENT;
 };
-

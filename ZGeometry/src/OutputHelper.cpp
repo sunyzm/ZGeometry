@@ -7,7 +7,7 @@
 #include <fstream>
 #include <iostream>
 
-OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL) {}
+OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL), statusLabel(NULL) {}
 
 OutputHelper::~OutputHelper(void) {}
 
@@ -29,9 +29,15 @@ void OutputHelper::output( const QString& msg, int venue /*= 1*/, double timeout
 		case OUT_STATUS:
 			if (statusBar) 	statusBar->showMessage(msg, timeout);
 			break;
+
 		case OUT_MSGBOX:
 			QMessageBox::information(NULL, "Important!", msg, QMessageBox::Ok);
 			break;
+
+		case OUT_STATUS_LABEL:
+			if (statusLabel) statusLabel->setText(msg);
+			break;
+
 		default:
 			std::cout << msg.toStdString() << std::endl;
 	}	
