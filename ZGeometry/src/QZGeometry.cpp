@@ -198,6 +198,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderApprox2, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox2(int)));
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
+	QObject::connect(ui.sliderEditBasis, SIGNAL(valueChanged(int)), this, SLOT(displayBasis(int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -1976,22 +1977,13 @@ void QZGeometryWindow::showBandCurve01Siganture()
 void QZGeometryWindow::computeEditBasis()
 {
 	if (mShapeEditor.mEditBasis.empty()) {
-		std::cout << "No wavelet basis available!" << std::endl;
+		std::cout << "Edit basis unavailable!" << std::endl;
 		return;
 	}
-	int select_basis = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER) : 0;
 
-	for (int i = 0; i < 1; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		std::vector<double> eigVec = mShapeEditor.mEditBasis[mShapeEditor.mApproxCoeff[2][select_basis].index()].toStdVector();
-		addColorSignature(i, eigVec, StrColorWaveletBasis);
-	}
-
-
-	displaySignature(StrColorWaveletBasis.c_str());
-	current_operation = Compute_Edit_Basis;
-	qout.output("Show wavelet basis" + Int2String(select_basis));
-	updateDisplaySignatureMenu();
+	ui.sliderEditBasis->setMaximum(mShapeEditor.mEditBasis.size()-1);
+	ui.sliderEditBasis->setValue(0);
+	displayBasis(0);
 }
 
 void QZGeometryWindow::clearHandles()
@@ -2045,4 +2037,22 @@ void QZGeometryWindow::continuousApprox3( int level )
 	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
 	mShapeEditor.continuousReconstruct(2, level-1);
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayBasis( int idx )
+{
+	if (mShapeEditor.mEditBasis.empty()) return;
+
+	int select_basis = idx;
+
+	for (int i = 0; i < 1; ++i) {
+		DifferentialMeshProcessor& mp = *mProcessors[i];
+		std::vector<double> eigVec = mShapeEditor.mEditBasis[idx].toStdVector();
+		addColorSignature(i, eigVec, StrColorWaveletBasis);
+	}
+
+	displaySignature(StrColorWaveletBasis.c_str());
+	current_operation = Compute_Edit_Basis;
+	qout.output("Show basis" + Int2String(select_basis), OUT_STATUS);
+	updateDisplaySignatureMenu();
 }

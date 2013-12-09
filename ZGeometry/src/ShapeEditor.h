@@ -37,6 +37,7 @@ private:
 	void reconstructionTest2();
 	void editTest2();
 
+	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
 	void computeApproximations(const std::vector<ZGeom::VecNd>& vAtoms, 
 		                       ZGeom::FunctionApproximation* vApproxCoeff[3], 
 							   int nReconstruct, 

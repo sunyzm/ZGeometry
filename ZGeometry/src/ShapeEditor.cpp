@@ -934,7 +934,7 @@ void ShapeEditor::reconstructionTest2()
 	const int nEigTotal = cotMHB.eigVecCount();
 	int nAtomSel = 100;
 	int nReconstruct = 100;
-	std::vector<VecNd> &vAtoms = mEditBasis;
+	std::vector<VecNd> vAtoms;
 
 	/* Test 1, Fourier approximation */
 	{		
@@ -1000,6 +1000,7 @@ void ShapeEditor::reconstructionTest2()
 		mApproxCoeff[2] = vApproxX;
 
 		std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
+		updateEditBasis(vAtoms, vSelectedAtomIdx);
 
 		int nClass = vAtoms.size() / vertCount;
 		std::vector<int> vScaleStat(nClass, 0);
@@ -1074,5 +1075,11 @@ void ShapeEditor::computeApproximations( const std::vector<ZGeom::VecNd>& vAtoms
 
 		continuousCoords[i] = finalCoord;
 	}
+}
+
+void ShapeEditor::updateEditBasis( const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx )
+{
+	mEditBasis.clear();
+	for (int idx : vSelectedIdx) mEditBasis.push_back(vAtoms[idx]);
 }
 

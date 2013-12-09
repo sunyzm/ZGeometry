@@ -45,6 +45,7 @@ private slots:
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
 	void computeEditBasis();
+	void displayBasis(int idx);
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
