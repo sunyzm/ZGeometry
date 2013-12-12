@@ -31,7 +31,7 @@ REGISTER_OUTPUT_FILE = output/Registration.log
 # 0 tutte laplacian (assymetric)
 # 1 umbrella laplacian (symmetric)
 # 2 normalized umbrella laplacian (symmetric)
-# 3 cot formula laplacain (assymetric)
+# 3 cotangent formula laplacain (assymetric)
 # 4 symmetric cotangent formula
 # 5 Anisotropic1 
 # 6 Anisotropic2

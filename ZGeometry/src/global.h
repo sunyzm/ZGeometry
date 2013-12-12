@@ -16,6 +16,8 @@ enum SignatureID {	SIGNATURE_ID = 0x0100, SIGNATURE_EIG_FUNC, SIGNATURE_HKS, SIG
 enum SignatureMode {Normalized = 0, LogNormalized, MarkNegNormalized, AbsNormalized, BandCurved, PosNegPlot, CountSigModes};
 const std::string StrSignatureModeNames[] = {"Normalized", "Log-Normalized", "Mark-Neg", "Abs-Normalized", "Band-Curved", "Pos-Neg Plot"};
 
+const std::string StrLaplacianTypes[4] = {"Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"};
+
 const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";
 const std::string StrColorEigenFunction  = "vert_color_eig_function";

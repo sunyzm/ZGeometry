@@ -42,8 +42,8 @@ public:
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	
 	// ---- computation ---- //
-	void	constructLaplacian(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void	decomposeLaplacian(int nEigFunc, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
+	void	decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
 	void	computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
@@ -51,9 +51,9 @@ public:
 	double	calBiharmonic(int v1, int v2) const;
 	double	calMHW(int v1, int v2, double timescale) const;
 	double	calSGW(int v1, int v2, double timescale) const;	
-	void	computeSGW1(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void	computeSGW2(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void    computeMixedAtoms1(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void	computeSGW1(LaplacianType laplacianType = CotFormula);
+	void	computeSGW2(LaplacianType laplacianType = CotFormula);
+	void    computeMixedAtoms1(LaplacianType laplacianType = CotFormula);
 	void	computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void	computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void	computeHeatDiffuseMat(double tMultiplier);
@@ -75,14 +75,13 @@ public:
 	// ---- attribute access --- //
 	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }
 
-	const MeshLaplacian& getMeshLaplacian(MeshLaplacian::LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
-	void setActiveLaplacian(MeshLaplacian::LaplacianType laplacianType) { mActiveLaplacianType = laplacianType;}
-	bool hasLaplacian(MeshLaplacian::LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
-	bool isLaplacianDecomposed(MeshLaplacian::LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
+	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
+	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
+	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
 
-	void loadMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void saveMHB(const std::string& path, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	const ManifoldHarmonics& getMHB(MeshLaplacian::LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
+	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	const ManifoldHarmonics& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
 	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
@@ -102,9 +101,8 @@ private:
 	int mActiveHandle;
 	int mActiveFeature;
 
-	MeshLaplacian mMeshLaplacians[MeshLaplacian::LaplacianTypeCount];
-	ManifoldHarmonics mMHBs[MeshLaplacian::LaplacianTypeCount];
-	MeshLaplacian::LaplacianType mActiveLaplacianType;
+	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
+	ManifoldHarmonics mMHBs[LaplacianTypeCount];
 
 	ZGeom::DenseMatrix<double> mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;

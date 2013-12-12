@@ -370,10 +370,11 @@ public:
 	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
 	const std::vector<double>&   getMeanCurvature();
+	const std::vector<double>&   getMeanCurvature_const() const;
 	const std::vector<double>&   getGaussCurvature();
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
-	const std::vector<Vector3D>& getVertNormals_const() const;
+	const std::vector<Vector3D>& getVertNormals() const;
 	const std::vector<bool>&	 getVertsOnHole();
 	const std::vector<bool>&     getVertsOnHole_const() const;
 	const std::vector<bool>&	 getVertsOnBoundary();

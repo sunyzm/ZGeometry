@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include <ppl.h>
 #include <boost/lexical_cast.hpp>
-#include <QtWidgets/QMessageBox>
+#include <QMessageBox>
 #include <QFileDialog>
 #include <QTime>
 #include <QProcess>
@@ -109,8 +109,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	mObjInFocus = -1;
 	mCommonParameter = PARAMETER_SLIDER_CENTER;
 	current_operation = None;
-	deformType = Simple;
+	mDeformType = Simple;
 	mSignatureMode = SignatureMode::Normalized;
+	mActiveLalacian = CotFormula;
 	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 
 	/* setup ui and connections */
@@ -118,26 +119,34 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	
+	// comboBoxSigMode
 	ui.comboBoxSigMode->clear();
 	for (int i = 0; i < CountSigModes; ++i)
 		ui.comboBoxSigMode->addItem(QString(StrSignatureModeNames[i].c_str()));
 
+	// comboBoxLaplacian
+	ui.comboBoxLaplacian->clear();
+	for (int i = 0; i < 4; ++i)
+		ui.comboBoxLaplacian->addItem(StrLaplacianTypes[i].c_str());
+	ui.comboBoxLaplacian->setCurrentIndex(ui.comboBoxLaplacian->findText("CotFormula"));
+
+	// toolbar
 	ui.spinBoxParameter->setMinimum(0);
 	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setMinimum(0);
 	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
 
-	setDisplayMesh();
-	setEditModeMove();
-
+	// status bar
 	mStatusLabel1.setParent(ui.statusBar);
 	ui.statusBar->addPermanentWidget(&mStatusLabel1);
 	qout.setLabel(&mStatusLabel1);
 	qout.setConsole(ui.consoleOutput);
-	qout.setStatusBar(ui.statusBar);    
-	
+	qout.setStatusBar(ui.statusBar);    	
 	mStatusLabel1.setText("Editing");
+
+	setDisplayMesh();
+	setEditModeMove();
 }
 
 QZGeometryWindow::~QZGeometryWindow()
@@ -158,7 +167,7 @@ QZGeometryWindow::~QZGeometryWindow()
 void QZGeometryWindow::makeConnections()
 {	
 	/*  actionComputeLaplacians  */
-	int laplacianTypeCount = MeshLaplacian::LaplacianTypeCount;
+	int laplacianTypeCount = LaplacianTypeCount;
 	m_actionComputeLaplacians.resize(laplacianTypeCount);
 	laplacianSignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < laplacianTypeCount; ++t) {
@@ -215,6 +224,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
 	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
 	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
+	QObject::connect(ui.comboBoxLaplacian, SIGNAL(activated(const QString&)), this, SLOT(setLaplacianType(const QString&)));
 
 	////////    Menus	////////
 	////	file	////
@@ -316,11 +326,12 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	computeLaplacian(MeshLaplacian::CotFormula);
+	computeLaplacian(CotFormula);
 	//verifyAreas();
-	computeLaplacian(MeshLaplacian::SymCot);
-	computeLaplacian(MeshLaplacian::Umbrella);
+	//computeLaplacian(SymCot);
+	computeLaplacian(Umbrella);
 	//computeLaplacian(MeshLaplacian::NormalizedUmbrella);	
+	computeLaplacian(Anisotropic1);
 
 	if (g_task == TASK_REGISTRATION) registerPreprocess();
 	if (g_task == TASK_EDITING) {
@@ -513,11 +524,11 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_E:
-		if (deformType == Simple)
+		if (mDeformType == Simple)
 			deformSimple();
-		else if (deformType == SGW)
+		else if (mDeformType == SGW)
 			deformSGW();
-		else if (deformType == Laplace)
+		else if (mDeformType == Laplace)
 			deformLaplace();
 		break;
 
@@ -559,7 +570,7 @@ void QZGeometryWindow::deformSimple()
 {
 	mShapeEditor.deformSimple();
 
-	deformType = Simple;
+	mDeformType = Simple;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -567,7 +578,7 @@ void QZGeometryWindow::deformSimple()
 void QZGeometryWindow::deformLaplace()
 {
 	mShapeEditor.deformLaplacian();
-	deformType = Laplace;
+	mDeformType = Laplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -575,7 +586,7 @@ void QZGeometryWindow::deformLaplace()
 void QZGeometryWindow::deformBiLaplace()
 {
 	mShapeEditor.deformBiLaplacian();
-	deformType = BiLaplace;
+	mDeformType = BiLaplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -585,7 +596,7 @@ void QZGeometryWindow::deformMixedLaplace()
 {
 	double ks = 1.0, kb = 1.0;
 	mShapeEditor.deformMixedLaplacian(ks, kb);
-	deformType = Shell;
+	mDeformType = Shell;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -593,7 +604,7 @@ void QZGeometryWindow::deformMixedLaplace()
 void QZGeometryWindow::deformSGW()
 {
 	mShapeEditor.deformSpectralWavelet();
-	deformType = SGW;
+	mDeformType = SGW;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -883,7 +894,7 @@ void QZGeometryWindow::clone()
 void QZGeometryWindow::reconstructMHB()
 {
 	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
-	int nEig = mProcessors[0]->getMHB(MeshLaplacian::CotFormula).eigVecCount() * ratio;
+	int nEig = mProcessors[0]->getMHB(CotFormula).eigVecCount() * ratio;
 	double avgLen = mMeshes[0]->getAvgEdgeLength();
 
 	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
@@ -923,19 +934,12 @@ void QZGeometryWindow::displayNeighborVertices()
 void QZGeometryWindow::computeEigenfunction()
 {
 	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
+	LaplacianType lapType = mActiveLalacian;
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		std::vector<double> eigVec = mp.getMHB(MeshLaplacian::CotFormula).getEigVec(select_eig).toStdVector();
+		std::vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
 		addColorSignature(i, eigVec, StrColorEigenFunction);
-	}
-
-	for (int i = 0; i < mMeshCount; ++i) {
-		double *data = mProcessors[i]->getMHB(MeshLaplacian::SymCot).getEigVec(select_eig).c_ptr();
-		int count = mProcessors[i]->getMesh()->vertCount();
-		std::string varName = "eig" + boost::lexical_cast<std::string>(i) 
-							  + "_" + boost::lexical_cast<std::string>(select_eig);
-		mEngineWrapper.addArray(data, count, 1, false, varName);
 	}
 
 	displaySignature(StrColorEigenFunction.c_str());
@@ -952,7 +956,8 @@ void QZGeometryWindow::computeHK()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		//const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
+		const ManifoldHarmonics &mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -975,7 +980,7 @@ void QZGeometryWindow::computeHKS()
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		const ManifoldHarmonics& mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
@@ -1036,7 +1041,7 @@ void QZGeometryWindow::computeMHW()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1059,7 +1064,7 @@ void QZGeometryWindow::computeMHWS()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1100,7 +1105,7 @@ void QZGeometryWindow::computeSGW()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ManifoldHarmonics& mhb = mp.getMHB(MeshLaplacian::CotFormula);
+		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1516,7 +1521,7 @@ void QZGeometryWindow::evalDistance()
 
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	DifferentialMeshProcessor& mp = *mProcessors[obj];
 	const CMesh& mesh = *mMeshes[obj];
@@ -1528,7 +1533,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
-	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB))	// MHB cache available for the current mesh
+	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
 	{
 		ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
@@ -1545,7 +1550,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, MeshLapla
 			  << "; Max EigVal: " << mp.getMHB(laplacianType).getEigVals().back() << std::endl;
 }
 
-void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	int totalToDecompose = 0;
 	int nEigVec = DEFAULT_EIGEN_SIZE;
@@ -1568,7 +1573,7 @@ void QZGeometryWindow::decomposeLaplacians( MeshLaplacian::LaplacianType laplaci
 		}
 	}
 
-	for (int l = 0; l < MeshLaplacian::LaplacianTypeCount; ++l)
+	for (int l = 0; l < LaplacianTypeCount; ++l)
 		m_actionComputeLaplacians[l]->setChecked(false);
 	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
@@ -1678,7 +1683,7 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 	updateDisplaySignatureMenu();
 }
 
-void QZGeometryWindow::constructLaplacians( MeshLaplacian::LaplacianType laplacianType )
+void QZGeometryWindow::constructLaplacians( LaplacianType laplacianType )
 {
 	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
 		mProcessors[obj]->constructLaplacian(laplacianType);
@@ -1687,7 +1692,7 @@ void QZGeometryWindow::constructLaplacians( MeshLaplacian::LaplacianType laplaci
 
 void QZGeometryWindow::computeLaplacian( int lapType )
 {
-	MeshLaplacian::LaplacianType laplacianType = (MeshLaplacian::LaplacianType)lapType;
+	LaplacianType laplacianType = (LaplacianType)lapType;
 	constructLaplacians(laplacianType);
 	decomposeLaplacians(laplacianType);
 }
@@ -1745,7 +1750,7 @@ void QZGeometryWindow::registerTest()
 	ui.glMeshWidget->update();
 }
 
-bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType ) const
+bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, LaplacianType laplacianType ) const
 {
 	const DifferentialMeshProcessor& mp = *mProcessors[obj];
 	const CMesh& mesh = *mMeshes[obj];
@@ -1788,10 +1793,10 @@ void QZGeometryWindow::allocateStorage( int newMeshCount )
 void QZGeometryWindow::computeFunctionMaps( int num )
 {
 	ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
-	const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(MeshLaplacian::CotFormula);
-	const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(MeshLaplacian::CotFormula);
-	const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(MeshLaplacian::CotFormula);
-	const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(MeshLaplacian::CotFormula);
+	const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(CotFormula);
+	const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(CotFormula);
+	const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(CotFormula);
+	const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(CotFormula);
 	ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
 	lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
 	lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
@@ -1827,7 +1832,7 @@ void QZGeometryWindow::verifyAreas() const
 			areaSum += mMeshes[obj]->calFaceArea(i);
 		}
 		double weightSum(0);
-		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(MeshLaplacian::CotFormula);
+		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(CotFormula);
 		std::vector<double> vAreas;
 		laplacian.getW().getDiagonal(vAreas);
 		for (int i = 0; i < mMeshes[obj]->vertCount(); ++i) {
@@ -2088,4 +2093,13 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	ui.labelSigMax->setText("Max: " + QString::number(newVal));
 
 	updateSignature(BandCurved);
+}
+
+void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
+{
+	if (laplacianTypeName == "Umbrella") mActiveLalacian = Umbrella;
+	else if (laplacianTypeName == "CotFormula") mActiveLalacian = CotFormula;
+	else if (laplacianTypeName == "Anisotropic1") mActiveLalacian = Anisotropic1;
+	else if (laplacianTypeName == "Anisotropic2") mActiveLalacian = Anisotropic2;
+	else qout.output("Invalid Laplacian type selected!", OUT_MSGBOX);
 }

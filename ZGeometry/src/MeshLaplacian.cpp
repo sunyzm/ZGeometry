@@ -157,55 +157,61 @@ void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 	m_laplacianType = SymCot;
 }
 
-void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hPara1, double hPara2 )
+void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
 {
-	// curvature difference based
-	mOrder = tmesh->vertCount();
-
-	std::vector<int> vII, vJJ;
-	std::vector<double> vSS;
-	std::vector<double> vWeights;
-
-	vector<std::tuple<int,int,double> > vSparseElements;
-
-	ringT = 1;
+	// curvature difference based or similar to bilateral filtering
+	const int vertCount = mOrder = tmesh->vertCount();
+	nRing = 2;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals_const();
-	
-	for (int vi = 0; vi < mOrder; ++vi)
-	{
+
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature_const();
+
+	vector< std::tuple<int,int,double> > vSparseElements;
+
+	for (int vi = 0; vi < vertCount; ++vi) {
 		const CVertex* pvi = tmesh->getVertex(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
-		for (int fi = 0; fi < vFaces.size(); ++fi)
-		{
-			const CFace* pfi = tmesh->getFace(vFaces[fi]);
+		vector<int> vAdjFaces = tmesh->getVertexAdjacentFaceIdx(vi, nRing);
+		for (int fi : vAdjFaces) {
+			const CFace* pfi = tmesh->getFace(fi);
 			double face_area = pfi->computeArea();
-			for (int k = 0; k < 3; ++k)
-			{
+			for (int k = 0; k < 3; ++k) {
 				int vki = pfi->getVertexIndex(k);
-				if (vki == vi) continue;
+				if (vi == vki) continue;
 				const CVertex* pvk = pfi->getVertex(k);
 
+				Vector3D vpw = pvi->getPosition() - pvk->getPosition();
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-				double w1 = std::exp(-(pvi->getPosition()-pvk->getPosition()).length2() / hPara1);
-//				double w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[vi], pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+				double w1 = std::exp(-vpw.length2() / hPara1);
+//				double w2 = std::exp(-std::pow(vMeanCurvatures[vi] - vMeanCurvatures[vki], 2)  / hPara2);
+				double w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[vi], vpw), 2) / hPara2);
+				double svalue = face_area * w1 * w2;
 
-				double svalue = w1 * w2;
-				svalue *= face_area;
-
-				vSparseElements.push_back(make_tuple(vi, vki, svalue));
+				bool alreadyExisted = false;
+				for (auto iterElem = vSparseElements.rbegin(); iterElem != vSparseElements.rend(); ++iterElem) {
+					if (std::get<0>(*iterElem) == vi && std::get<1>(*iterElem) == vki) {
+						std::get<2>(*iterElem) += svalue;
+						alreadyExisted = true;
+						break;
+					}
+				}
+				if (!alreadyExisted)
+					vSparseElements.push_back(make_tuple(vi, vki, svalue));
 			}
 		}
 	}
 
-	vector<double> vDiag(mOrder, 0.);
-	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
-	{
-		int ii, jj; double ss;
-		std::tie(ii, jj, ss) = *iter;
+	std::vector<int> vII, vJJ;
+	std::vector<double> vSS;
+	std::vector<double> vWeights;
+	vector<double> vDiag(vertCount, 0.);
 
+	for (auto elem : vSparseElements) {
+		int ii = std::get<0>(elem);
+		int jj = std::get<1>(elem);
+		double ss = std::get<2>(elem);
+		
 		vII.push_back(ii+1);
 		vJJ.push_back(jj+1);
 		vSS.push_back(ss);
@@ -213,21 +219,23 @@ void MeshLaplacian::constructFromMesh3( const CMesh* tmesh, int ringT, double hP
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < mOrder; ++i)
-	{
+	for (int i = 0; i < vertCount; ++i) {
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
 		vSS.push_back(vDiag[i]);
 	}
 
-	for (int k = 0; k < vII.size(); ++k)
-	{
-		vSS[k] /= vDiag[vII[k]-1];
-	}
+// 	for (int k = 0; k < vII.size(); ++k) {
+// 		vSS[k] /= vDiag[vII[k]-1];
+// 	}
 
 	vWeights.resize(mOrder, 1.0);	
+//	for (int i = 0; i < mOrder; ++i) vWeights[i] = std::fabs(vDiag[i]);
 
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+
+	std::cout << "Anisotropic Laplacian is symmetric? " << mLS.testSymmetric() << '\n';
+
 	mW.convertFromDiagonal(vWeights);
 
 	mConstructed = true;
@@ -242,24 +250,21 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	std::vector<double> vSS;
 	std::vector<double> vWeights;
 
-	vector<std::tuple<int,int,double> > vSparseElements;
+	vector< std::tuple<int,int,double> > vSparseElements;
 
 	ringT = 1;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals_const();
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
 
-	for (int vi = 0; vi < mOrder; ++vi)
-	{
+	for (int vi = 0; vi < mOrder; ++vi)	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
-		for (int fi = 0; fi < vFaces.size(); ++fi)
-		{
+		for (int fi = 0; fi < vFaces.size(); ++fi) {
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
 			double face_area = pfi->computeArea();
-			for (int k = 0; k < 3; ++k)
-			{
+			for (int k = 0; k < 3; ++k)	{
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex(k);
@@ -280,8 +285,7 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 	}
 
 	vector<double> vDiag(mOrder, 0.);
-	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
-	{
+	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter) {
 		int ii, jj; double ss;
 		std::tie(ii, jj, ss) = *iter;
 
@@ -292,15 +296,13 @@ void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPa
 		vDiag[ii] += -ss;
 	}
 
-	for (int i = 0; i < mOrder; ++i)
-	{
+	for (int i = 0; i < mOrder; ++i) {
 		vII.push_back(i+1);
 		vJJ.push_back(i+1);
 		vSS.push_back(vDiag[i]);
 	}
 
-	for (int k = 0; k < vII.size(); ++k)
-	{
+	for (int k = 0; k < vII.size(); ++k) {
 		vSS[k] /= vDiag[vII[k]-1];
 	}
 

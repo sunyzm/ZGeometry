@@ -147,7 +147,8 @@ namespace ZGeom
 			bool symElemFound = false;
 			for (uint l = 0; l < mNonzeroCount; ++l) {
 				if (mElements[k].row() == mElements[l].col() && mElements[k].col() == mElements[l].row()) { // element in symmetric position found
-					if (fabs(mElements[l].val() - mElements[k].val()) < eps) symElemFound = true;
+					if (fabs(mElements[l].val() - mElements[k].val()) < eps) 
+						symElemFound = true;
 					break;
 				}
 			}

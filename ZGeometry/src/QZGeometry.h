@@ -80,7 +80,8 @@ private slots:
 	void setRefPoint2(int vn);
 	void setCommonParameter(int p);
 	void setFeaturePointSize(int v);
-	
+	void setLaplacianType(const QString& laplacianTypeName);
+
 	void toggleShowSignature(bool show = false);
 	void toggleShowRefPoint(bool show = false);
 	void toggleShowColorLegend(bool show = false);
@@ -124,10 +125,10 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void constructLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	void decomposeLaplacians(MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
-	bool laplacianRequireDecompose(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType) const;
-	void decomposeSingleLaplacian(int obj, int nEigVec, MeshLaplacian::LaplacianType laplacianType = MeshLaplacian::CotFormula);
+	void constructLaplacians(LaplacianType laplacianType = CotFormula);
+	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
+	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType) const;
+	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
 	void updateSignature(SignatureMode smode);
 
@@ -144,7 +145,8 @@ private:
 	/* fields */
 	Ui::ZGeometryClass	ui;
 	ZGeom::MatlabEngineWrapper mEngineWrapper;	
-	DeformType			deformType;
+	DeformType			mDeformType;
+	LaplacianType       mActiveLalacian;
 	SignatureMode		mSignatureMode;
 	int					mObjInFocus;	
 	int					mMeshCount;

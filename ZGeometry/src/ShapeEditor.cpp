@@ -146,7 +146,7 @@ void ShapeEditor::manifoldHarmonicsReconstruct( int nEig )
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
 	MeshCoordinates newCoord(vertCount);
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	LaplacianType lapType = SymCot;
 		
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
@@ -248,7 +248,7 @@ void ShapeEditor::deformLaplacian()
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
 	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
 	ZGeom::VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
@@ -308,7 +308,7 @@ void ShapeEditor::deformLaplacian_v2()
 
 	const MeshCoordinates& oldMeshCoord = this->getOldMeshCoord();
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
 
 	/* | A    B | | d |    | O  |
 	   |        | |   | =  |    |
@@ -375,7 +375,7 @@ void ShapeEditor::deformBiLaplacian()
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);
 	
@@ -457,7 +457,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	mEngine->addColVec(oldCoord.getYCoord(), "ecy");
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(MeshLaplacian::SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);
 	mEngine->addSparseMat(matLs, "matL");
@@ -530,11 +530,11 @@ void ShapeEditor::deformSpectralWavelet()
 	mEngine->addColVec(oldCoord.getZCoord(), "ecz");
 	
 	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW1(MeshLaplacian::CotFormula);
+	if (matSGW.empty()) mProcessor->computeSGW1(CotFormula);
 	const int waveletCount = matSGW.rowCount();
 	
 	/*std::vector<double> diagW;
-	mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula).getW().getDiagonal(diagW);
+	mProcessor->getMeshLaplacian(CotFormula).getW().getDiagonal(diagW);
 	Concurrency::parallel_for(0, waveletCount, [&](int i){
 		double *pr = matSGW.raw_ptr() + vertCount * i;
 		for (int j = 0; j < vertCount; ++j) pr[j] *= diagW[j];
@@ -667,7 +667,7 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 
 	mProcessor->computeHeatDiffuseMat(tMultiplier);
 	ZGeom::SparseSymMatVecSolver& solver = mProcessor->getHeatSolver();
-	const MeshLaplacian& laplacian = mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula);
+	const MeshLaplacian& laplacian = mProcessor->getMeshLaplacian(CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
 	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
 	ZGeom::SparseMatVecMultiplier mulW(matW, true);
@@ -706,7 +706,7 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 void ShapeEditor::reconstructionTest1()
 {
 	const int vertCount = mMesh->vertCount();
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::CotFormula;
+	LaplacianType lapType = CotFormula;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
@@ -900,12 +900,12 @@ void ShapeEditor::reconstructionTest2()
 	MeshCoordinates oldCoord;
 	mMesh->getVertCoordinates(oldCoord);
 
-	const ManifoldHarmonics &graphMHB = mProcessor->getMHB(MeshLaplacian::Umbrella);
-	const ManifoldHarmonics &cotMHB = mProcessor->getMHB(MeshLaplacian::CotFormula);
-	const ManifoldHarmonics &cotSymMHB = mProcessor->getMHB(MeshLaplacian::SymCot);
+	const ManifoldHarmonics &graphMHB = mProcessor->getMHB(Umbrella);
+	const ManifoldHarmonics &cotMHB = mProcessor->getMHB(CotFormula);
+	const ManifoldHarmonics &cotSymMHB = mProcessor->getMHB(SymCot);
 
 	std::vector<double> wDiag;
-	mProcessor->getMeshLaplacian(MeshLaplacian::CotFormula).getW().getDiagonal(wDiag);
+	mProcessor->getMeshLaplacian(CotFormula).getW().getDiagonal(wDiag);
 	ZGeom::InnerProdcutFunc innerProdDiagW = [&](const ZGeom::VecNd& v1, const ZGeom::VecNd& v2) {
 		double *y = new double[vertCount];
 		vdmul(&vertCount, v1.c_ptr(), &wDiag[0], &y[0]); 
@@ -981,8 +981,8 @@ void ShapeEditor::reconstructionTest2()
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		//mProcessor->computeSGW1(MeshLaplacian::CotFormula);		
-		mProcessor->computeMixedAtoms1(MeshLaplacian::CotFormula);
+		//mProcessor->computeSGW1(CotFormula);		
+		mProcessor->computeMixedAtoms1(CotFormula);
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(ZGeom::RegularProductFunc);
@@ -1032,7 +1032,7 @@ void ShapeEditor::reconstructionTest2()
 void ShapeEditor::editTest2()	
 {
 	const int vertCount = mMesh->vertCount();
-	MeshLaplacian::LaplacianType lapType = MeshLaplacian::SymCot;
+	LaplacianType lapType = SymCot;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);

@@ -1629,8 +1629,8 @@ void CMesh::calCurvatures()
 		vMeanCurvatures[vIndex] = kh.length() / 2.0;
 	}
 
-	addAttr<std::vector<double> >(vGaussCurvatures, VERTEX, StrAttrVertGaussCurvatures);
-	addAttr<std::vector<double> >(vMeanCurvatures, VERTEX, StrAttrVertMeanCurvatures);
+	addAttr< std::vector<double> >(vGaussCurvatures, VERTEX, StrAttrVertGaussCurvatures);
+	addAttr< std::vector<double> >(vMeanCurvatures, VERTEX, StrAttrVertMeanCurvatures);
 }
 
 double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
@@ -3018,6 +3018,12 @@ const std::vector<double>& CMesh::getMeanCurvature()
 	return getAttrValue<std::vector<double> >(StrAttrVertMeanCurvatures);
 }
 
+const std::vector<double>& CMesh::getMeanCurvature_const() const
+{
+	assert(hasAttr(StrAttrVertMeanCurvatures));
+	return getAttrValue<std::vector<double> >(StrAttrVertMeanCurvatures);
+}
+
 const std::vector<double>& CMesh::getGaussCurvature()
 {
 	if (!hasAttr(StrAttrVertGaussCurvatures)) calCurvatures();		
@@ -3036,10 +3042,10 @@ const std::vector<Vector3D>& CMesh::getVertNormals()
 	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
 }
 
-const std::vector<Vector3D>& CMesh::getVertNormals_const() const
+const std::vector<Vector3D>& CMesh::getVertNormals() const
 {
 	assert(hasAttr(StrAttrVertNormal));
-	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
+	return getAttrValue< std::vector<Vector3D> >(StrAttrVertNormal);
 }
 
 const std::vector<bool>& CMesh::getVertsOnHole()

@@ -95,30 +95,31 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 	mRefPos = mMesh->getVertex(0)->getPosition();
 }
 
-void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (hasLaplacian(laplacianType)) return;
 	
 	MeshLaplacian& laplacian = mMeshLaplacians[laplacianType];
 	switch(laplacianType)
 	{
-	case MeshLaplacian::Tutte:
-	case MeshLaplacian::Umbrella:
-	case MeshLaplacian::NormalizedUmbrella:
-	case MeshLaplacian::CotFormula:
-	case MeshLaplacian::SymCot:
+	case Tutte:
+	case Umbrella:
+	case NormalizedUmbrella:
+	case CotFormula:
+	case SymCot:
 		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mMesh);
 		break;
 
-	case MeshLaplacian::Anisotropic1:
+	case Anisotropic1:
 		{
 			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = para1;
-			mMeshLaplacians[laplacianType].constructFromMesh3(mMesh, 1, para1, para2);
+			int nRing = 1;
+			mMeshLaplacians[laplacianType].constructAnisotropic1(mMesh, nRing, para1, para2);
 		}
 		break;
 
-	case MeshLaplacian::Anisotropic2:
+	case Anisotropic2:
 		{
 			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = mMesh->getAvgEdgeLength() / 2;
@@ -126,7 +127,7 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 		}
 		break;
 
-	case MeshLaplacian::IsoApproximate:
+	case IsoApproximate:
 		mMeshLaplacians[laplacianType].constructFromMesh5(mMesh);                
 		break;
 
@@ -135,7 +136,7 @@ void DifferentialMeshProcessor::constructLaplacian( MeshLaplacian::LaplacianType
 }
 
 
-void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian::LaplacianType laplacianType /*= CotFormula*/ )
+void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ZUtil::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
 	if (!mpEngineWrapper->isOpened())
@@ -145,12 +146,12 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, MeshLaplacian:
 	mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType]);
 }
 
-void DifferentialMeshProcessor::loadMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
+void DifferentialMeshProcessor::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	mMHBs[laplacianType].load(path);
 }
 
-void DifferentialMeshProcessor::saveMHB( const std::string& path, MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
+void DifferentialMeshProcessor::saveMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	mMHBs[laplacianType].save(path);	
 }
@@ -170,7 +171,7 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->getPosition()));	 
 }
 
-void DifferentialMeshProcessor::computeSGW1( MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
+void DifferentialMeshProcessor::computeSGW1( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -223,7 +224,7 @@ void DifferentialMeshProcessor::computeSGW1( MeshLaplacian::LaplacianType laplac
 	timer.stopTimer("Time to compute SGW1: ");
 }
 
-void DifferentialMeshProcessor::computeSGW2(MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/)
+void DifferentialMeshProcessor::computeSGW2(LaplacianType laplacianType /*= CotFormula*/)
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -272,7 +273,7 @@ void DifferentialMeshProcessor::computeSGW2(MeshLaplacian::LaplacianType laplaci
 	timer.stopTimer("Time to compute SGW2: ");
 }
 
-void DifferentialMeshProcessor::computeMixedAtoms1( MeshLaplacian::LaplacianType laplacianType /*= MeshLaplacian::CotFormula*/ )
+void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	CStopWatch timer;	
 	timer.startTimer();
@@ -339,7 +340,7 @@ void DifferentialMeshProcessor::computeMixedAtoms1( MeshLaplacian::LaplacianType
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	const int vertCount = mMesh->vertCount();
 	values.resize(vertCount);
 
@@ -408,7 +409,7 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -420,7 +421,7 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 
 double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -432,7 +433,7 @@ double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) con
 
 double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -445,7 +446,7 @@ double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) con
 
 double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += std::exp(-mhb.getEigVal(k) * timescale);
@@ -455,7 +456,7 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
@@ -668,7 +669,7 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 	const int vertCount = mMesh->vertCount();
 	const double t = std::pow(mMesh->getAvgEdgeLength(), 2) * tMultiplier;
 
-	const MeshLaplacian& laplacian = getMeshLaplacian(MeshLaplacian::CotFormula);
+	const MeshLaplacian& laplacian = getMeshLaplacian(CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
 	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
 
@@ -679,7 +680,7 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
 	const int vertCount = mMesh->vertCount();
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
 	double *pResult = hkmat.raw_ptr();
@@ -711,7 +712,7 @@ void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatr
 void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
 	const int vertCount = mMesh->vertCount();
-	const ManifoldHarmonics& mhb = getMHB(MeshLaplacian::CotFormula);
+	const ManifoldHarmonics& mhb = getMHB(CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
 	double *pResult = hkmat.raw_ptr();

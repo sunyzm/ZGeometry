@@ -7,6 +7,11 @@
 #include <ZGeom/SparseMatrix.h>
 #include <ZGeom/EigenSystem.h>
 #include <ZGeom/Mesh.h>
+#include "global.h"
+
+enum LaplacianType {Tutte = 0, Umbrella, NormalizedUmbrella, CotFormula, SymCot, Anisotropic1,
+	Anisotropic2, IsoApproximate, 
+	LaplacianTypeCount};
 
 class ManifoldHarmonics : public ZGeom::EigenSystem
 {
@@ -15,9 +20,7 @@ class ManifoldHarmonics : public ZGeom::EigenSystem
 class MeshLaplacian : public ZGeom::Laplacian
 {
 public:
-	enum LaplacianType {Tutte = 0, Umbrella, NormalizedUmbrella, CotFormula, SymCot, Anisotropic1,
-						Anisotropic2, IsoApproximate, 
-						LaplacianTypeCount} m_laplacianType;
+	LaplacianType m_laplacianType;
 
 	typedef void (MeshLaplacian::*MeshLaplacianConstruct)(const CMesh* tmesh);	
 
@@ -36,8 +39,8 @@ public:
 	void constructCotFormula(const CMesh* tmesh);	// negative Cotangent formula
 	void constructSymCot(const CMesh* tmesh);		// negative symmetric cotangent formula
 
-	void constructFromMesh3(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
-	void constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2);
+	void constructAnisotropic1(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
+	void constructFromMesh4(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
 
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
