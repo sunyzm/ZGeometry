@@ -1,5 +1,5 @@
 #include <cstdlib>
-#include <QtWidgets/QApplication>
+#include <QApplication>
 #include "QZGeometry.h"
 #include "global.h"
 

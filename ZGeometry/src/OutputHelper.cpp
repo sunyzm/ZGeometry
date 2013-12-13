@@ -1,7 +1,7 @@
 #include "OutputHelper.h"
 #include <ctime>
 #include <QDateTime>
-#include <QtWidgets/QMessageBox>
+#include <QMessageBox>
 #include <QScrollBar>
 #include <QDebug>
 #include <fstream>

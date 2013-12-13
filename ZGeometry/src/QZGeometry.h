@@ -2,7 +2,7 @@
 #include "ui_ZGeometry.h"
 #include <vector>
 #include <string>
-#include <QtWidgets/QMainWindow>
+#include <QMainWindow>
 #include <QSignalMapper>
 #include <engine.h>
 #include <ZUtil/SimpleConfigLoader.h>
