@@ -13,6 +13,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTime>
+#include <QImage>
 #include <QProcess>
 #include <ZUtil/ZUtil.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
@@ -281,6 +282,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
+	QObject::connect(ui.actionCapture, SIGNAL(triggered()), this, SLOT(captureGL()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -331,7 +333,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	//computeLaplacian(SymCot);
 	computeLaplacian(Umbrella);
 	//computeLaplacian(MeshLaplacian::NormalizedUmbrella);	
-	computeLaplacian(Anisotropic1);
+	//computeLaplacian(Anisotropic1);
 
 	if (g_task == TASK_REGISTRATION) registerPreprocess();
 	if (g_task == TASK_EDITING) {
@@ -2102,4 +2104,13 @@ void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 	else if (laplacianTypeName == "Anisotropic1") mActiveLalacian = Anisotropic1;
 	else if (laplacianTypeName == "Anisotropic2") mActiveLalacian = Anisotropic2;
 	else qout.output("Invalid Laplacian type selected!", OUT_MSGBOX);
+}
+
+void QZGeometryWindow::captureGL()
+{
+	QImage img = ui.glMeshWidget->grabFrameBuffer();
+	QString filename = QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
+	
+	if (img.save("output/screenshots/" + filename))
+		std::cout << "Screenshot saved to " <<  filename.toStdString() << std::endl;
 }

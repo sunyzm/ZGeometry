@@ -217,7 +217,7 @@ void DifferentialMeshProcessor::computeSGW1( LaplacianType laplacianType /*= Cot
 
 	double gamma = 1;//.3849001794597505097;
 	for (int i = 0; i < eigCount; ++i) 
-		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6/*0.6*/*minEigVal), 4));
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
 	double *pResult = mMatAtoms.raw_ptr() + vertCount * vertCount * nWaveletScales;
 	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 
@@ -306,7 +306,7 @@ void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType 
 	//vScalingScales.push_back(0.5); 
 	//vScalingScales.push_back(1.0); 
 	vScalingScales.push_back(2.0);
-	vScalingScales.push_back(4.0);
+	//vScalingScales.push_back(4.0);
 	//vScalingScales.push_back(8.0);
 
 	const int mScalingScales = (int)vScalingScales.size();;

@@ -40,6 +40,7 @@ private slots:
 	void setEditModeDrag();
 
 	void clearHandles();
+	void captureGL();
 
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);

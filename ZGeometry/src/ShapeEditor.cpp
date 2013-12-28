@@ -64,7 +64,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	//reconstructionTest1();
 	reconstructionTest2();
 	
-	mCoordSelect = 3;
+	mCoordSelect = 0;
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 
 	//editTest2();
@@ -934,7 +934,7 @@ void ShapeEditor::reconstructionTest2()
 	const int nEigTotal = cotMHB.eigVecCount();
 	int nAtomSel = 100;
 	int nReconstruct = 100;
-	std::vector<VecNd> vAtoms;
+	std::vector<VecNd>& vAtoms = mAtoms;
 
 	/* Test 1, Fourier approximation */
 	{		
@@ -981,14 +981,14 @@ void ShapeEditor::reconstructionTest2()
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		//mProcessor->computeSGW1(CotFormula);		
-		mProcessor->computeMixedAtoms1(CotFormula);
+		mProcessor->computeSGW1(CotFormula);		
+		//mProcessor->computeMixedAtoms1(CotFormula);
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 			newBasis.normalize(ZGeom::RegularProductFunc);
 			vAtoms.push_back(newBasis);
 		}
-
+#if 0
 		nAtomSel = 100;
 		timer.startTimer();
 		ZGeom::SimultaneousOMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, 2);
@@ -1013,13 +1013,14 @@ void ShapeEditor::reconstructionTest2()
 		std::cout << "    total: " << vSelectedAtomIdx.size() << "\n\n"; 
 
 		MeshFeatureList *mfl = new MeshFeatureList;
-		for (int i = 0; i < 30; ++i) {
+		for (int i = 0; i < 50; ++i) {
 			int atomIdx = vSelectedAtomIdx[i];
 			mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
 		}
 		mfl->setIDandName(FEATURE_SGW_SOMP, "Feature_SGW_SOMP");
 		mProcessor->addProperty(mfl);
 		mProcessor->setActiveFeaturesByID(FEATURE_SGW_SOMP);
+#endif
 	} //end of wavelet OMP
 #endif
 	//////////////////////////////////////////////////////////////////////////

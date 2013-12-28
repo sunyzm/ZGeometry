@@ -48,7 +48,7 @@ private:
 	DifferentialMeshProcessor* mProcessor;
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
-
+	std::vector<ZGeom::VecNd> mAtoms;
 
 	ZGeom::FunctionApproximation mApproxCoeff[3];
 	std::vector<MeshCoordinates> mContReconstructCoords[3];

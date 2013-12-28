@@ -634,6 +634,12 @@ void GLMeshWidget::setupViewport( int width, int height )
 //	glMatrixMode(GL_MODELVIEW);
 }
 
+void GLMeshWidget::paintGL()
+{
+	drawGL();
+}
+
+/*
 void GLMeshWidget::paintEvent( QPaintEvent *event )
 {
 	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
@@ -643,6 +649,7 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 
 	if (m_bShowLegend) drawLegend(&painter);
 }
+*/
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {

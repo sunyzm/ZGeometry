@@ -174,7 +174,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tabConsole">
          <attribute name="title">
@@ -638,6 +638,7 @@
     <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
+    <addaction name="actionCapture"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -667,6 +668,7 @@
     <addaction name="actionComputeMHWSFeatures"/>
     <addaction name="actionComputeSGWS"/>
     <addaction name="actionComputeSGW"/>
+    <addaction name="actionComputeSGS"/>
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeBiharmonic"/>
@@ -1224,6 +1226,16 @@
   <action name="actionRunTests">
    <property name="text">
     <string>RunTests</string>
+   </property>
+  </action>
+  <action name="actionComputeSGS">
+   <property name="text">
+    <string>SGS</string>
+   </property>
+  </action>
+  <action name="actionCapture">
+   <property name="text">
+    <string>Capture</string>
    </property>
   </action>
  </widget>
