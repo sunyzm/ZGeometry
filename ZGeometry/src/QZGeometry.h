@@ -41,6 +41,7 @@ private slots:
 
 	void clearHandles();
 	void captureGL();
+	void captureGLAs();
 
 	void computeSimilarityMap(int simType);
 	void computeLaplacian(int laplacianType);
@@ -117,6 +118,7 @@ private slots:
 	void showCoarser();		// higher level
 
 	void updateDisplaySignatureMenu();
+	void openOutputLocation();
 
 private:	
 	/* methods */
@@ -159,7 +161,6 @@ private:
 	ShapeMatcher mShapeMatcher;
 	ShapeEditor	 mShapeEditor;
 
-	struct {int xMove, yMove, zMove; } refMove;
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,

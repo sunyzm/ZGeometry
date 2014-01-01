@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <ppl.h>
 #include <boost/lexical_cast.hpp>
+#include <Shellapi.h>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTime>
@@ -20,6 +21,8 @@
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
 #include "global.h"
+
+#pragma comment(lib, "shell32")
 
 using namespace std;
 using ZUtil::Int2String;
@@ -113,7 +116,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	mDeformType = Simple;
 	mSignatureMode = SignatureMode::Normalized;
 	mActiveLalacian = CotFormula;
-	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -452,21 +454,33 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		}
 		break;
 
-	case Qt::Key_BracketLeft:
-		showFiner();
-		break;
-
-	case Qt::Key_BracketRight:
-		showCoarser();
-		break;
-
 	case Qt::Key_C:
 		clone();
+		break;
+
+	case Qt::Key_D:
+		setEditModeDrag();
+		break;
+
+	case Qt::Key_E:
+		if (event->modifiers() & Qt::AltModifier) {
+			openOutputLocation();
+		} else {
+			if (mDeformType == Simple)
+				deformSimple();
+			else if (mDeformType == SGW)
+				deformSGW();
+			else if (mDeformType == Laplace)
+				deformLaplace();
+		}
 		break;
 
 	case Qt::Key_F:
 		if (event->modifiers() & Qt::AltModifier)
 			toggleShowFeatures();
+		break;
+
+	case Qt::Key_G:
 		break;
 
 	case Qt::Key_J:
@@ -487,6 +501,23 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	case Qt::Key_L:
 		if (event->modifiers() & Qt::AltModifier)
 			toggleShowMatchingLines();
+		break;
+
+	case Qt::Key_M:
+		setEditModeMove();
+		break;
+
+	case Qt::Key_P:
+		setEditModePick();
+		if (!ui.glMeshWidget->m_bShowRefPoint)
+			toggleShowRefPoint();
+		break;
+
+	case Qt::Key_Q:
+		if (event->modifiers() & Qt::AltModifier && event->modifiers() & Qt::ShiftModifier)
+			captureGLAs();
+		else if (event->modifiers() & Qt::AltModifier)
+			captureGL();
 		break;
 
 	case Qt::Key_R:
@@ -510,58 +541,37 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		else setDisplayMesh();
 		break;
 	}	
-		
-	case Qt::Key_M:
-		setEditModeMove();
+	
+	case Qt::Key_X:
+		if (event->modifiers() & Qt::ShiftModifier)
+			;
+		else ;
 		break;
 
-	case Qt::Key_P:
-		setEditModePick();
-		if (!ui.glMeshWidget->m_bShowRefPoint)
-			toggleShowRefPoint();
+	case Qt::Key_Y:
+		if (event->modifiers() & Qt::ShiftModifier)
+			;
+		else ;
 		break;
 
-	case Qt::Key_D:
-		setEditModeDrag();
+	case Qt::Key_Z:
+		if (event->modifiers() & Qt::ShiftModifier)
+			;
+		else;
 		break;
 
-	case Qt::Key_E:
-		if (mDeformType == Simple)
-			deformSimple();
-		else if (mDeformType == SGW)
-			deformSGW();
-		else if (mDeformType == Laplace)
-			deformLaplace();
+	case Qt::Key_BracketLeft:
+		showFiner();
 		break;
 
-	case Qt::Key_G:
+	case Qt::Key_BracketRight:
+		showCoarser();
 		break;
 
 	case Qt::Key_Minus:
 		break;
 
 	case Qt::Key_Equal:
-		break;
-
-	case Qt::Key_X:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.xMove--;
-		else refMove.xMove++;
-//		updateReferenceMove();
-		break;
-
-	case Qt::Key_Y:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.yMove--;
-		else refMove.yMove++;
-//		updateReferenceMove();
-		break;
-
-	case Qt::Key_Z:
-		if (event->modifiers() & Qt::ShiftModifier)
-			refMove.zMove--;
-		else refMove.zMove++;
-//		updateReferenceMove();
 		break;
 
 	default: QWidget::keyPressEvent(event);
@@ -639,7 +649,6 @@ void QZGeometryWindow::setRefPoint1( int vn )
 {
 	if (mMeshCount < 1) return;
 	mProcessors[0]->setRefPointIndex(vn);
-	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(0);
 	ui.glMeshWidget->update();
 }
@@ -649,7 +658,6 @@ void QZGeometryWindow::setRefPoint2( int vn )
 	if (mMeshCount < 2) return;
 
 	mProcessors[1]->setRefPointIndex(vn);
-	refMove.xMove = refMove.yMove = refMove.zMove = 0;
 	updateReferenceMove(1);
 	ui.glMeshWidget->update();
 }
@@ -868,9 +876,7 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
 	Vector3D originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->getPosition();
 	
-	mp.setRefPointPosition(originalPos.x + unitMove * refMove.xMove,
-						   originalPos.y + unitMove * refMove.yMove,
-						   originalPos.z + unitMove * refMove.zMove);
+	mp.setRefPointPosition(originalPos.x, originalPos.y, originalPos.z);
 
 	ui.glMeshWidget->update();
 }
@@ -2109,8 +2115,26 @@ void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 void QZGeometryWindow::captureGL()
 {
 	QImage img = ui.glMeshWidget->grabFrameBuffer();
-	QString filename = QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
+	QString filename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	
-	if (img.save("output/screenshots/" + filename))
+	if (img.save(filename))
 		std::cout << "Screenshot saved to " <<  filename.toStdString() << std::endl;
+}
+
+void QZGeometryWindow::captureGLAs()
+{
+	QImage img = ui.glMeshWidget->grabFrameBuffer();
+	QString defaultFilename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
+
+	QString filename = QFileDialog::getSaveFileName(this, tr("Save screenshot"),
+													defaultFilename,
+													tr("Images (*.png *.jpg)"));
+
+	if (img.save(filename))
+		std::cout << "Screenshot saved to " <<  filename.toStdString() << std::endl;
+}
+
+void QZGeometryWindow::openOutputLocation()
+{
+	ShellExecute(NULL, L"explore", L".\\output\\screenshots", NULL, NULL, SW_RESTORE);
 }
