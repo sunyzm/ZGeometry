@@ -4,8 +4,8 @@
 #include <fstream>
 #include <vector>
 #include <QFile>
-#include <gl/GL.h>
-#include <gl/GLU.h>
+//#include <gl/GL.h>
+//#include <gl/GLU.h>
 #include <ZUtil/ZUtil.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/Color.h>
@@ -50,7 +50,6 @@ void glColorCoded(float v, float pf)
 
 GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 {
-//	setFormat(QGLFormat(QGL::DoubleBuffer | QGL::DepthBuffer | QGL::Rgba));
 	g_EyeZ = 10.0;
 	g_myNear = 1.0;
 	g_myFar = 100.0;
@@ -58,7 +57,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 		
 	mBaseFeatureRadius = 0.5;
 	mFeatureSphereRadius = mBaseFeatureRadius;
-	m_dMeshPointSize = 2;
+	mMeshPointSize = 2;
 	
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
@@ -75,6 +74,48 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 
 GLMeshWidget::~GLMeshWidget()
 {
+}
+
+void GLMeshWidget::initializeGL()
+{
+	glEnable(GL_MULTISAMPLE);
+
+	/* initialize GLEW */
+	qout.output("********************", OUT_TERMINAL);
+	if(glewInit() != GLEW_OK) qout.output("glewInit failed", OUT_TERMINAL);
+	else qout.output("glewInit succeeded", OUT_TERMINAL);
+
+	/* print out some info about the graphics drivers */
+	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
+	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_TERMINAL);
+	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
+	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
+
+	/* make sure OpenGL version 4.0 API is available */
+	if(!GLEW_VERSION_4_0)
+		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
+	qout.output("********************", OUT_TERMINAL);
+}
+
+void GLMeshWidget::resizeGL( int width, int height )
+{
+	setupViewport(width, height);
+}
+
+void GLMeshWidget::paintEvent( QPaintEvent *event )
+{
+	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
+	
+	drawGL();
+
+	QPainter painter(this);
+	if (m_bShowLegend) drawLegend(&painter);
+	painter.end();
+}
+
+void GLMeshWidget::showEvent( QShowEvent *event )
+{
+	Q_UNUSED(event);
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -288,30 +329,13 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	update();
 }
 
-void GLMeshWidget::initializeGL()
+void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
 {
-	/* initialize GLEW */
-	qout.output("********************", OUT_TERMINAL);
-	if(glewInit() != GLEW_OK) qout.output("glewInit failed", OUT_TERMINAL);
-	else qout.output("glewInit succeeded", OUT_TERMINAL);
-	
-	/* print out some info about the graphics drivers */
-	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
-	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_TERMINAL);
-	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
-	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
-	
-	/* make sure OpenGL version 4.0 API is available */
-	if(!GLEW_VERSION_4_0)
-		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
-	qout.output("********************", OUT_TERMINAL);
-
-#if 0	
-	std::string strExt = std::string((char*)glGetString(GL_EXTENSIONS));
-	std::ofstream ofs("output/glExt.txt");
-	ofs << strExt;
-	ofs.close();
-#endif
+	glMatrixMode(GL_MODELVIEW);
+	glTranslated(trans.x, trans.y, trans.z);
+	double rot[16];
+	qrot.convert( rot );
+	glMultMatrixd(( GLdouble*)rot );
 }
 
 void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
@@ -328,52 +352,66 @@ void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
 	g_myAngle = (g_myAngle * 180.0) / ZGeom::PI + 2.0;
 }
 
-void GLMeshWidget::resizeGL( int width, int height )
+void GLMeshWidget::setupViewport( int width, int height )
 {
-	setupViewport(width, height);
+	GLdouble ar = GLdouble(width) / GLdouble(height);	//aspect ratio
+
+	glViewport(0, 0, width, height);
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+
+	gluPerspective(g_myAngle, ar, g_myNear, g_myFar);
+
+//	glFrustum(-ar, ar, -1.0, 1.0, 4.0, 15.0);
+// 	GLdouble clipX = g_myNear * tan(g_myAngle/2.0/180.0 * PI), 
+// 		     clipY = clipX / ar;
+// 	glFrustum(-clipX, -clipY, clipX, clipY, g_myNear, g_myFar);
+
+	glMatrixMode(GL_MODELVIEW);
 }
+
 
 void GLMeshWidget::drawGL()
 {
+	static GLfloat position[] = {.0, .0, 1, 0.0};
+	//static GLfloat diffuse[] = {1, 1, 1, 1};
+	//static GLfloat global_ambient[] = {.2, .2, .2, 1};
+	//static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+
 	makeCurrent();
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 
-	GLfloat diffuse[] = {1, 1, 1, 1};
-	GLfloat global_ambient[] = {.2, .2, .2, 1};
-	GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
-	GLfloat position[] = {.0, .0, 1, 0.0};
-
 	glClearColor(1., 1., 1., 0.);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	
+	glShadeModel(GL_SMOOTH);
+	//glShadeModel(GL_FLAT);
+	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
 	glEnable(GL_CULL_FACE);
-// 	glDisable(GL_CULL_FACE);
-	glEnable(GL_DEPTH_TEST);
-	glShadeModel(GL_SMOOTH);
-//	glShadeModel(GL_FLAT);
-//	glBlendFunc (GL_SRC_ALPHA, GLblender_ONE_MINUS_SRC_ALPHA);
-//	glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
-	glEnable (GL_BLEND); 
-	glEnable(GL_POINT_SMOOTH);
-	glEnable(GL_LINE_SMOOTH);
-	glEnable(GL_POLYGON_SMOOTH);
-	glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-	glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
-
-	glEnable(GL_LIGHT1);
 	glEnable(GL_LIGHTING);
+	glEnable(GL_LIGHT0);
+		
+	//glEnable (GL_BLEND); 
+	//glBlendFunc (GL_SRC_ALPHA, GLblender_ONE_MINUS_SRC_ALPHA);
+	//glBlendFunc (GL_SRC_ALPHA_SATURATE, GL_ONE);
+	//glEnable(GL_POINT_SMOOTH);
+	//glEnable(GL_LINE_SMOOTH);
+	//glEnable(GL_POLYGON_SMOOTH);
+	//glHint(GL_POINT_SMOOTH_HINT, GL_NICEST);
+	//glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+	//glHint(GL_POLYGON_SMOOTH_HINT, GL_NICEST);
+
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
-	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-	glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
-	glLightfv(GL_LIGHT1, GL_POSITION, position);
-	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
-	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	glLightfv(GL_LIGHT0, GL_POSITION, position);
+	//glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+	//glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
+	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
 	setupViewport(width(), height());
 	
@@ -397,49 +435,41 @@ void GLMeshWidget::drawGL()
 		}
 	}
 	
+	glShadeModel(GL_FLAT);
+	glDisable(GL_CULL_FACE);
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_LIGHTING);
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 	glPopAttrib();
 }
 
-void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
-{
-	//prerequisite: glMatrixMode(GL_MODELVIEW)
-	glTranslated(trans.x, trans.y, trans.z);
-	double rot[16];
-	qrot.convert( rot );
-	glMultMatrixd(( GLdouble*)rot );
-}
-
 void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
 {
-	if(!pMP->getMesh_const()) return;
 	CMesh* tmesh = pMP->getMesh();
+	if(NULL == tmesh) return;
 	const CMesh* ori_mesh = pMP->getOriMesh_const();
-
-	const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-//  glMateriali(GL_FRONT, GL_SHININESS, 96);
-
 	const Vector3D shift = pRS->display_shift;
-	const GLfloat *mesh_color = pRS->mesh_color;	
+	const GLfloat *mesh_color = pRS->mesh_color;
 
+	//static const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+	//glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
+	//glMateriali(GL_FRONT, GL_SHININESS, 96);
+	
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	setupObject(pRS->obj_rot, pRS->obj_trans);	
 
-	/// draw the mesh
 	glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
-
-	glPointSize(m_dMeshPointSize);
 	glEnable(GL_POLYGON_OFFSET_FILL);
 	glPolygonOffset(1.0, 1.0);
+	glPointSize(mMeshPointSize);
 
+	/*** draw mesh ***/
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
 	if (m_bShowSignature && tmesh->hasAttr(pRS->mColorSignatureName))
-	{
+	{ // draw with color signature
 		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mColorSignatureName);
-
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
@@ -449,15 +479,14 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				glNormal3f(norm.x, norm.y, norm.z);	 				
 				Vector3D vt = tmesh->getVertexPosition(pi);
 				vt += shift;	//add some offset to separate object 1 and 2
-				//glFalseColor(pRS->vDisplaySignature[pi], 1.0);	// displaySignature values in [0,1)
 				glColor4f(vVertColors[pi][0], vVertColors[pi][1], vVertColors[pi][2], 1.0);
 				glVertex3f(vt.x, vt.y, vt.z);
 			}
 		}
 		glEnd();
 	}
-	else // draw mesh in solid color
-	{
+	else 
+	{ // draw with solid color
 		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
@@ -473,10 +502,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		}
 		glEnd();
 	}
-
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
-	// draw boundary edges in dark color
+	/*** draw boundary edges in dark color ***/
 	const std::vector<bool>& vVertIsOnHole = tmesh->getVertsOnHole();
 	glDisable(GL_LIGHTING);
 	if (tmesh->hasBoundary())   //highlight boundary edge 
@@ -504,7 +532,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 	glEnable(GL_LIGHTING);
 
-	//// ----	draw reference point ---- ////
+	/*** draw reference point ***/
 	if ( m_bShowRefPoint ) {
 		Vector3D vt = tmesh->getVertex(pMP->getRefPointIndex())->getPosition();
 		vt += shift;
@@ -517,24 +545,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glPopMatrix();
 	}
 
-	//// ---- draw feature points ---- ////
+	/*** draw feature points ***/
 	if (m_bShowFeatures && pMP->getActiveFeatures() != NULL)
 	{
 		const MeshFeatureList* feature_list = pMP->getActiveFeatures();
-
-		/* ---- draw as glPoint ---- */
-		//glPointSize(10.0);
-		//glBegin(GL_POINTS);
-		//for (auto iter = pMP->getDisplayFeatures().begin(); iter != pMP->getDisplayFeatures().end(); ++iter)
-		//{
-		//	Vector3D vt = tmesh->getVertex_const(iter->index)->getPosition();
-		//	vt += shift;
-		//	int color_index = iter->scale % gFeatureColorNum;
-		//	glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-		//	glVertex3d(vt.x, vt.y, vt.z);
-		//}
-		//glEnd();
-		//glPointSize(2.0);
 
 		/* draw as gluSphere */ 
 		const float *feature_color1 = ZGeom::ColorGreen;
@@ -555,7 +569,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
 				else if (feature->m_note == -1)
 					//glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-					glColor4f(0.5,0.5,0.5, 1);
+					glColor4f(0.5f, 0.5f, 0.5f, 1.0f);
 				else 
 					glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 			} else {
@@ -573,8 +587,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		gluDeleteQuadric(quadric);
 	}
 
-	//// ---- draw handle points ---- ////
-	if (!pMP->getHandles().empty()) {
+	/*** draw handle points ***/
+	if (!pMP->getHandles().empty())
+	{
 		for (auto handle :pMP->getHandles()) {
 			Vector3D vt = handle.second;
 			vt += shift;
@@ -611,45 +626,6 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 //	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
 //	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
 }
-
-// void GLMeshWidget::showEvent( QShowEvent *event )
-// {
-// 	Q_UNUSED(event);
-// }
-
-void GLMeshWidget::setupViewport( int width, int height )
-{
-	GLdouble ar = GLdouble(width) / height;	//aspect ratio
-
-	glViewport(0, 0, width, height);
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-
-//	glFrustum(-ar, ar, -1.0, 1.0, 4.0, 15.0);
-// 	GLdouble clipX = g_myNear * tan(g_myAngle/2.0/180.0 * PI), 
-// 		     clipY = clipX / ar;
-// 	glFrustum(-clipX, -clipY, clipX, clipY, g_myNear, g_myFar);
-
-	gluPerspective(g_myAngle, ar, g_myNear, g_myFar);
-//	glMatrixMode(GL_MODELVIEW);
-}
-
-void GLMeshWidget::paintGL()
-{
-	drawGL();
-}
-
-/*
-void GLMeshWidget::paintEvent( QPaintEvent *event )
-{
-	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
-
-	QPainter painter(this);
-	drawGL();
-
-	if (m_bShowLegend) drawLegend(&painter);
-}
-*/
 
 bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 {

@@ -42,17 +42,16 @@ public:
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
-	void paintGL();
-//	void paintEvent(QPaintEvent *event);
-//	void showEvent(QShowEvent *event);
+	void paintEvent(QPaintEvent *event);
+	void showEvent(QShowEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans) const;
-	void drawLegend(QPainter* painter);
 	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
+	void drawLegend(QPainter* painter);
 	void drawCorrespondences(const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
 
 signals:
@@ -77,6 +76,6 @@ private:
 	int				g_startx, g_starty;
 	double			mBaseFeatureRadius;
 	double			mFeatureSphereRadius;
-	double			m_dMeshPointSize;
+	double			mMeshPointSize;
 };
 
