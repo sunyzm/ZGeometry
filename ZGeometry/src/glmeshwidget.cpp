@@ -304,10 +304,6 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 
 void GLMeshWidget::mouseReleaseEvent( QMouseEvent *event )
 {
-	//if (editMode == QZ_DRAG)
-	//{
-	//	active_handle = -1;
-	//}
 }
 
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
@@ -610,15 +606,15 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 void GLMeshWidget::drawLegend(QPainter* painter)
 {
 	painter->setRenderHint(QPainter::Antialiasing);
-	
 	int xBegin = width() / 2 - 128;
 
+	if (mLegendColors.empty()) return;
 	for (int i = 0; i <= 255; i++)
 	{
-		float gray = float(i) / float(255);
-		QColor col(255*FalseColorMap::red(gray), 255*FalseColorMap::green(gray), 255*FalseColorMap::blue(gray), 255);
-//		painter->setBrush(QBrush(col, Qt::SolidPattern));
-//		painter->drawRect(xBegin + i*2, height()-50, 2, 25);
+		//float gray = float(i) / float(255);
+		//QColor col(255*FalseColorMap::red(gray), 255*FalseColorMap::green(gray), 255*FalseColorMap::blue(gray), 255);
+		QColor col(255*mLegendColors[i].r(), 255*mLegendColors[i].g(), 255*mLegendColors[i].b(), 255);
+
 		painter->setPen(QPen(col, 1, Qt::SolidLine));
 		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
 	}

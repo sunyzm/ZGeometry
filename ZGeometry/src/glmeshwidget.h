@@ -22,6 +22,7 @@ public:
 	bool m_bDrawMatching;
 	bool m_bShowCorrespondenceLine;
 	int	 m_nMeshLevel;
+	std::vector<ZGeom::Colorf> mLegendColors;
 
 	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
 

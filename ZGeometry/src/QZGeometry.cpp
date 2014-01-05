@@ -1869,9 +1869,14 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	vSig = vVals;
 
 	if (!mMeshes[obj]->hasAttr(sigName)) mMeshes[obj]->addColorAttr(sigName);
+
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
-	
 	signaturesToColors(vVals, vColors, mSignatureMode);	
+
+	ui.glMeshWidget->mLegendColors.resize(256);
+	std::vector<double> vLegendVals(256);
+	for (int i = 0; i <= 255; ++i) vLegendVals[i] = sMin + (double)i/255.*(sMax-sMin);
+	signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -1957,6 +1962,16 @@ void QZGeometryWindow::updateSignature( SignatureMode smode )
 		const std::vector<double>& vSig = mMeshes[obj]->getVertVecDbl(StrOriginalSignature);
 		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
 		signaturesToColors(vSig, vColors, smode);
+
+		if (obj == 0) {
+			auto iResult = minmax_element(vSig.begin(), vSig.end());
+			double sMin = *(iResult.first); 
+			double sMax = *(iResult.second);
+			ui.glMeshWidget->mLegendColors.resize(256);
+			std::vector<double> vLegendVals(256);
+			for (int i = 0; i <= 255; ++i) vLegendVals[i] = sMin + (double)i/255.*(sMax-sMin);
+			signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
+		}
 	}
 
 	ui.glMeshWidget->update();
