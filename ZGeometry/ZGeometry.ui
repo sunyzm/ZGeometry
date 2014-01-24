@@ -639,6 +639,7 @@
     <addaction name="separator"/>
     <addaction name="menuFeatures"/>
     <addaction name="actionCapture"/>
+    <addaction name="actionCaptureAs"/>
    </widget>
    <widget class="QMenu" name="menuCompute">
     <property name="title">
@@ -654,27 +655,35 @@
       <string>Laplacian</string>
      </property>
     </widget>
+    <widget class="QMenu" name="menuKernel_Signature">
+     <property name="title">
+      <string>Kernel Signature</string>
+     </property>
+     <addaction name="actionComputeHK"/>
+     <addaction name="actionComputeHKS"/>
+     <addaction name="actionComputeMHW"/>
+     <addaction name="actionComputeMHWS"/>
+     <addaction name="actionComputeSGW"/>
+     <addaction name="actionComputeSGWS"/>
+     <addaction name="actionComputeSGS"/>
+     <addaction name="actionComputeBiharmonic"/>
+    </widget>
     <addaction name="menuComputeLaplacian"/>
     <addaction name="menuComputeSimilarityMap"/>
     <addaction name="separator"/>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionGaussCurvature"/>
     <addaction name="actionMeanCurvature"/>
-    <addaction name="actionComputeHK"/>
-    <addaction name="actionComputeHKS"/>
+    <addaction name="menuKernel_Signature"/>
     <addaction name="actionComputeHKSFeatures"/>
-    <addaction name="actionComputeMHW"/>
-    <addaction name="actionComputeMHWS"/>
     <addaction name="actionComputeMHWSFeatures"/>
-    <addaction name="actionComputeSGWS"/>
-    <addaction name="actionComputeSGW"/>
-    <addaction name="actionComputeSGS"/>
     <addaction name="actionComputeSGWSFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
-    <addaction name="actionComputeBiharmonic"/>
     <addaction name="actionComputeHeatTransfer"/>
     <addaction name="actionComputeGeodesics"/>
     <addaction name="actionComputeBasis"/>
+    <addaction name="actionComputeDictionaryAtom"/>
+    <addaction name="actionSegment"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTask">
@@ -910,11 +919,6 @@
   <action name="actionDisplayHK">
    <property name="text">
     <string>HK</string>
-   </property>
-  </action>
-  <action name="actionComputeHKSFeatures">
-   <property name="text">
-    <string>HKS Features</string>
    </property>
   </action>
   <action name="actionShowHKSFeatures">
@@ -1236,6 +1240,26 @@
   <action name="actionCapture">
    <property name="text">
     <string>Capture</string>
+   </property>
+  </action>
+  <action name="actionCaptureAs">
+   <property name="text">
+    <string>Capture As</string>
+   </property>
+  </action>
+  <action name="actionComputeDictionaryAtom">
+   <property name="text">
+    <string>Dictionary Atom</string>
+   </property>
+  </action>
+  <action name="actionSegment">
+   <property name="text">
+    <string>Segment</string>
+   </property>
+  </action>
+  <action name="actionComputeHKSFeatures">
+   <property name="text">
+    <string>HKS Features</string>
    </property>
   </action>
  </widget>

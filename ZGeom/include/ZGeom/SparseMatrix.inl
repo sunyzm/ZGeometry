@@ -289,6 +289,22 @@ namespace ZGeom
 
 	template<typename T>
 	template<typename U, typename F>
+	void SparseMatrix<T>::convertFromCOO(uint rowCount, uint colCount, const std::vector< std::tuple<U,U,F> >& vElem)
+	{
+		int nnz = vElem.size();
+		std::vector<U> rowInd, colInd;
+		std::vector<F> val;
+		for (auto& elem : vElem) {
+			rowInd.push_back(std::get<0>(elem));
+			colInd.push_back(std::get<1>(elem));
+			val.push_back(std::get<2>(elem));
+		}
+
+		convertFromCOO(rowCount, colCount, rowInd, colInd, val);
+	}
+
+	template<typename T>
+	template<typename U, typename F>
 	inline void SparseMatrix<T>::convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd,std::vector<F>& val, MatrixForm form) const
 	{
 		assert (mRowCount == mColCount || form == MAT_FULL); // only square matrix has upper or lower CSR

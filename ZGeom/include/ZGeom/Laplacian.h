@@ -16,7 +16,7 @@ public:
 
 	const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
 	const ZGeom::SparseMatrix<double>& getW() const { return mW; }
-	void decompose(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys);
+	void decompose(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized = true);
 	bool isLaplacianConstructed() const { return mConstructed; }
 	void computeSubLaplacian(const std::vector<int>& vSelected, Laplacian& subLaplacian) const;
 

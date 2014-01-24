@@ -17,10 +17,13 @@ ZGeom::MatlabEngineWrapper::~MatlabEngineWrapper()
 	std::cout << "MatlabEngineWrapper destroyed!" << std::endl;
 }
 
-void ZGeom::MatlabEngineWrapper::open( const char* startcmd/*="\0"*/ )
+void ZGeom::MatlabEngineWrapper::open( const char* startcmd/*=NULL*/ )
 {
-	m_ep = engOpen(startcmd);
-	if (!m_ep) throw std::runtime_error("Fail to open Matlab engine");
+	m_ep = engOpen(NULL);
+	if (!m_ep) {
+		std::cerr << "FAIL to open Matlab engine!" << std::endl;
+		throw std::runtime_error("Fail to open Matlab engine");
+	}
 	engOutputBuffer(m_ep, mBuffer, mBufSize);
 }
 

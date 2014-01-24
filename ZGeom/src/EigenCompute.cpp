@@ -12,13 +12,13 @@ namespace ZGeom
 		int ns = (int) vII.size();
 		double numv = nEig;
 
-		m_ep->addArray(&vWeights[0], nOrder, 1, false, "AA");
 		m_ep->addArray(&vII[0], ns, 1, false, "II");
 		m_ep->addArray(&vJJ[0], ns, 1, false, "JJ");
 		m_ep->addArray(&vSS[0], ns, 1, false, "SS");
+		m_ep->addArray(&vWeights[0], nOrder, 1, false, "AA");
 		m_ep->addArray(&numv, 1, 1, false, "Numv");
 
-		m_ep->eval("[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
+		m_ep->eval("[evecs,evals] = genspeigs(II,JJ,SS,AA,Numv);");
 		
 		double *evec = m_ep->getDblVariablePtr("evecs");
 		double *eval = m_ep->getDblVariablePtr("evals");
@@ -34,56 +34,40 @@ namespace ZGeom
 		m_ep->removeVariable("JJ");
 		m_ep->removeVariable("SS");
 		m_ep->removeVariable("Numv");
+	}
 
-#if 0
-		mxArray *II, *JJ, *SS, *AA, *NUMV;
-		mxArray *evecs, *evals;
-
-		AA = mxCreateDoubleMatrix(nOrder, 1, mxREAL);
-		double *aa = mxGetPr(AA);
-		std::copy(vWeights.begin(), vWeights.end(), aa);
-
-		NUMV = mxCreateDoubleMatrix(1, 1, mxREAL);
-		double *numv = mxGetPr(NUMV);	
-		numv[0] = nEig;			// number of eigen vectors to be computed
-
-		int ns = (int) vII.size();
-		II = mxCreateDoubleMatrix(ns, 1, mxREAL);
-		JJ = mxCreateDoubleMatrix(ns, 1, mxREAL);
-		SS = mxCreateDoubleMatrix(ns, 1, mxREAL);
-		double *ii = mxGetPr(II);
-		double *jj = mxGetPr(JJ);
-		double *ss = mxGetPr(SS);
-		std::copy(vII.begin(), vII.end(), ii);
-		std::copy(vJJ.begin(), vJJ.end(), jj);
-		std::copy(vSS.begin(), vSS.end(), ss);
-
-		m_ep->putVariable("II", II);
-		m_ep->putVariable("JJ", JJ);
-		m_ep->putVariable("SS", SS);
-		m_ep->putVariable("AA", AA);
-		m_ep->putVariable("Numv", NUMV);
-
-		m_ep->eval("[evecs,evals] = hspeigs(II,JJ,SS,AA,Numv);");
+	void EigenCompute::solveStdSym( const SparseMatrix<double>& mLs, int nEig, EigenSystem& eigSys )
+	{
+		std::vector<int> vII, vJJ;
+		std::vector<double> vSS;
+		mLs.convertToCOO(vII, vJJ, vSS, ZGeom::MAT_FULL);
+		int nOrder = mLs.rowCount();
+		int ns = (int)vII.size();
+		double numv = nEig;
+		double order = (double)nOrder;
 		
-		evecs = m_ep->getVariable("evecs");
-		evals = m_ep->getVariable("evals");
-		double *evec = mxGetPr(evecs);				//eigenvectors
-		double *eval = mxGetPr(evals);				//eigenvalues
+		m_ep->addArray(&vII[0], ns, 1, false, "II");
+		m_ep->addArray(&vJJ[0], ns, 1, false, "JJ");
+		m_ep->addArray(&vSS[0], ns, 1, false, "SS");
+		m_ep->addArray(&order, 1, 1, false, "order");
+		m_ep->addArray(&numv, 1, 1, false, "Numv");
+
+		m_ep->eval("[evecs,evals] = stdspeigs(II,JJ,SS,order,Numv);");
+
+		double *evec = m_ep->getDblVariablePtr("evecs");
+		double *eval = m_ep->getDblVariablePtr("evals");
 
 		eigSys.setSize(nOrder, nEig);
-
 		for (int i = 0; i < nEig; ++i) {
 			eigSys.mEigVals[i] = std::fabs(eval[i]);
-			std::copy(evec + i*nOrder, evec + (i+1)*nOrder, eigSys.mEigVecs[i].c_ptr());
+			std::copy_n(evec + i*nOrder, nOrder, eigSys.getEigVec(i).c_ptr());
 		}
 
-		mxDestroyArray(II);
-		mxDestroyArray(JJ);
-		mxDestroyArray(SS);
-		mxDestroyArray(AA);
-		mxDestroyArray(NUMV);
-#endif
+		m_ep->removeVariable("II");
+		m_ep->removeVariable("JJ");
+		m_ep->removeVariable("SS");
+		m_ep->removeVariable("order");
+		m_ep->removeVariable("Numv");
 	}
 
 	double computeHeatKernel( const EigenSystem& eigSys, uint x, uint y, double t )

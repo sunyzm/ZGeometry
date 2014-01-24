@@ -143,7 +143,11 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType 
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
 	Engine *ep = mpEngineWrapper->getEngine();
-	mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType]);
+
+	if (laplacianType == Tutte || laplacianType == CotFormula)
+		mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType], true);
+	else 
+		mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType], false);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
@@ -197,6 +201,7 @@ void DifferentialMeshProcessor::computeSGW1( LaplacianType laplacianType /*= Cot
 
 	std::vector<double> vWaveletScales(nWaveletScales);	
 	for (int s = 0; s < nWaveletScales; ++s) vWaveletScales[s] = minT * std::pow(tMultiplier, s);
+
 	mMatAtoms.resize(vertCount*(nWaveletScales+1), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
@@ -245,6 +250,7 @@ void DifferentialMeshProcessor::computeSGW2(LaplacianType laplacianType /*= CotF
 
 	std::vector<double> waveletScales(nScales);	
 	for (int s = 0; s < nScales; ++s) waveletScales[s] = minT * std::pow(tMultiplier, s);
+
 	mMatAtoms.resize(vertCount * (nScales+1), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
@@ -308,8 +314,9 @@ void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType 
 	vScalingScales.push_back(2.0);
 	//vScalingScales.push_back(4.0);
 	//vScalingScales.push_back(8.0);
-
 	const int mScalingScales = (int)vScalingScales.size();;
+	
+	// allocate storage for mMatAtoms
 	mMatAtoms.resize(vertCount * (nWaveletScales+mScalingScales), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	

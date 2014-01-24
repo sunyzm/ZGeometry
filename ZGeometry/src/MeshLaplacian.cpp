@@ -16,28 +16,24 @@ using ZGeom::uint;
 void MeshLaplacian::constructTutte( const CMesh* tmesh )
 {
 	mOrder = tmesh->vertCount();
-	std::vector<uint> vII, vJJ;
-	std::vector<double> vSS;
+	std::vector<std::tuple<int,int,double> > vElem;
 	std::vector<double> vWeights(mOrder);
 
 	for (int i = 0; i < mOrder; ++i) {
 		const CVertex* vi = tmesh->getVertex(i);
 		vector<int> vNeighbors;
 		tmesh->vertRingNeighborVerts(i, 1, vNeighbors, false);
-		int valence = vNeighbors.size();
+		const int valence = vNeighbors.size();
 
 		for (int j = 0; j < valence; ++j) {
-			vII.push_back(i+1);
-			vJJ.push_back(vNeighbors[j]+1);
-			vSS.push_back(1.0);
+			vElem.push_back(std::make_tuple(i+1, vNeighbors[j]+1, 1.0));
 		}
-		vII.push_back(i+1);
-		vJJ.push_back(i+1);
-		vSS.push_back(-valence);
+		vElem.push_back(std::make_tuple(i+1, i+1, -valence));	// positive diagonal elements
+
 		vWeights[i] = valence;
 	}
 
-	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+	mLS.convertFromCOO(mOrder, mOrder, vElem);
 	mW.convertFromDiagonal(vWeights);
 
 	mConstructed = true;
@@ -46,28 +42,29 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 
 void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 {
+	int meshSize = tmesh->vertCount();
 	this->constructTutte(tmesh);
 
-	mW.setToIdentity(mOrder);
+	mW.setToIdentity(meshSize);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
+	mConstructed = true;
 	m_laplacianType = Umbrella;
 }
 
 void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
 {
 	/* L = D^(-1/2) * (D-A) * D^(-1/2) */
+	int meshSize = tmesh->vertCount();
 	this->constructTutte(tmesh);
 
 	std::vector<double> vD;
 	mW.getDiagonal(vD);
-	for (double& v : vD) v = std::pow(v, -0.5);	// compute D^(-1/2)
+	for (double& v : vD) v = std::pow(std::fabs(v), -0.5);	// compute D^(-1/2)
 
-	int nnz = mLS.nonzeroCount();
-	for (int i = 0; i < nnz; ++i) {
-		ZGeom::MatElem<double>& elem = mLS.getElemByIndex(i);
+	for (auto& elem : mLS.allElements()) 
 		elem.val() *= vD[elem.row()-1] * vD[elem.col()-1];
-	}
 
-	mW.setToIdentity(mOrder);
+	mW.setToIdentity(meshSize);
+	mConstructed = true;
 	m_laplacianType = NormalizedUmbrella;
 }
 
@@ -152,8 +149,11 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 
 void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 {
+	const int vertCount = tmesh->vertCount();
 	constructCotFormula(tmesh);
-	mW.setToIdentity(mOrder);
+	
+	mW.setToIdentity(vertCount);
+	mConstructed = true;
 	m_laplacianType = SymCot;
 }
 

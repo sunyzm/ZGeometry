@@ -2,6 +2,7 @@
 #define ZGEOM_SPARSE_MATRIX_H
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include "common.h"
 #include "SparseMatrixCOO.h"
 #include "SparseMatrixCSR.h"
@@ -61,7 +62,9 @@ namespace ZGeom
 		T& getElemVal(uint row, uint col);
 		MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
 		const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
-		
+		const std::vector<MatElem<T> >& allElements() const { return mElements; }
+		std::vector<MatElem<T> >& allElements() { return mElements; }
+
 		T operator() (uint row, uint col) const; 
 		T& operator() (uint row, uint col);
 		void insertElem(uint row, uint col, T val);
@@ -79,6 +82,9 @@ namespace ZGeom
 
 		template<typename U, typename F>
 		void convertFromCOO(uint rowCount, uint colCount, const std::vector<U>& rowInd, std::vector<U>& colInd, const std::vector<F>& val);
+
+		template<typename U, typename F>
+		void convertFromCOO(uint rowCount, uint colCount, const std::vector<std::tuple<U,U,F> >& vElem);
 
 		template<typename U, typename F>
 		void convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd, std::vector<F>& val, MatrixForm form) const;
@@ -119,7 +125,7 @@ namespace ZGeom
 		friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 	private:
-		std::vector< MatElem<T> > mElements;
+		std::vector<MatElem<T> > mElements;
 		uint mRowCount;
 		uint mColCount;
 		uint mNonzeroCount;

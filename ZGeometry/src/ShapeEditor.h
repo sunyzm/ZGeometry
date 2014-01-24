@@ -34,7 +34,7 @@ private:
 	void evalReconstruct(const MeshCoordinates& newCoord) const;
 	
 	void reconstructionTest1();
-	void reconstructionTest2();
+	void reconstructionTest2(bool doWavelet = true);
 	void editTest2();
 
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
@@ -49,6 +49,7 @@ private:
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	std::vector<ZGeom::VecNd> mAtoms;
+	int mTotalScales;
 
 	ZGeom::FunctionApproximation mApproxCoeff[3];
 	std::vector<MeshCoordinates> mContReconstructCoords[3];

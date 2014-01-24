@@ -3,10 +3,16 @@
 
 namespace ZGeom
 {
-	void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys )
+	void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ )
 	{
 		EigenCompute eigenCompute(ep);
-		eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
+		if (generalized) {
+			std::cout << "Do generalized eigendecomposition!\n";
+			eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
+		} else {
+			std::cout << "Do standard eigendecomposition!\n";
+			eigenCompute.solveStdSym(mLS, nEig, eigSys);
+		}
 	}
 
 	void Laplacian::computeSubLaplacian( const std::vector<int>& vSelected, Laplacian& subLaplacian ) const

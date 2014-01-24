@@ -111,6 +111,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 
 	mMeshCount = 0;
 	mObjInFocus = -1;
+	mCurrentBasisScale = 0;
 	mCommonParameter = PARAMETER_SLIDER_CENTER;
 	current_operation = None;
 	mDeformType = Simple;
@@ -253,6 +254,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
+	QObject::connect(ui.actionComputeDictionaryAtom, SIGNAL(triggered()), this, SLOT(computeDictAtom()));
 
 	////	Edit	////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
@@ -285,6 +287,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
 	QObject::connect(ui.actionCapture, SIGNAL(triggered()), this, SLOT(captureGL()));
+	QObject::connect(ui.actionCaptureAs, SIGNAL(triggered()), this, SLOT(captureGLAs()));
 
 	////	Task	////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
@@ -330,14 +333,16 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	computeLaplacian(CotFormula);
 	//verifyAreas();
-	//computeLaplacian(SymCot);
 	computeLaplacian(Umbrella);
-	//computeLaplacian(MeshLaplacian::NormalizedUmbrella);	
+	computeLaplacian(NormalizedUmbrella);	
+	computeLaplacian(CotFormula);
+	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1);
 
-	if (g_task == TASK_REGISTRATION) registerPreprocess();
+	if (g_task == TASK_REGISTRATION) {
+		registerPreprocess();
+	}
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 	}
@@ -454,6 +459,10 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		}
 		break;
 
+	case Qt::Key_B:
+		nextBasisScale();
+		break;
+
 	case Qt::Key_C:
 		clone();
 		break;
@@ -505,6 +514,10 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	case Qt::Key_M:
 		setEditModeMove();
+		break;
+
+	case Qt::Key_N:
+		nextCoordinate();
 		break;
 
 	case Qt::Key_P:
@@ -2152,4 +2165,29 @@ void QZGeometryWindow::captureGLAs()
 void QZGeometryWindow::openOutputLocation()
 {
 	ShellExecute(NULL, L"explore", L".\\output\\screenshots", NULL, NULL, SW_RESTORE);
+}
+
+void QZGeometryWindow::nextBasisScale()
+{
+	if (mShapeEditor.mTotalScales <= 0) return;
+	mCurrentBasisScale = (mCurrentBasisScale + 1) % mShapeEditor.mTotalScales;
+	std::cout << "Current basis scale: " << mCurrentBasisScale << std::endl;
+
+	computeDictAtom();
+}
+
+void QZGeometryWindow::computeDictAtom()
+{
+	DifferentialMeshProcessor& mp = *mProcessors[0];
+	const int meshSize = mp.getMesh()->vertCount();
+	const int refPoint = mp.getRefPointIndex();
+
+	std::vector<double> values(meshSize);
+	values = mp.getWaveletMat().getRowVec(meshSize * mCurrentBasisScale + refPoint).toStdVector();
+
+	addColorSignature(0, values, StrColorDictAtom);	
+
+	displaySignature(StrColorDictAtom.c_str());
+	updateDisplaySignatureMenu();
+	current_operation = Compute_Dict_Atom;
 }

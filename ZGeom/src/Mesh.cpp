@@ -2653,8 +2653,7 @@ void CMesh::scaleEdgeLenToUnit()
 
 void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
 {
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i)	{
 		m_vVertices[i]->translateAndScale(-center, scale);
 		m_pVertex[i].translateAndScale(-center, scale);
 	}

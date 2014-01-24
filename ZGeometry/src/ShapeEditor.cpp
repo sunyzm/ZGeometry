@@ -53,6 +53,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mMesh = processor->getMesh();
 	mEngine = processor->getMatlabEngineWrapper();
 	
+	mTotalScales = 0;
 	mCoordSelect = 0;
 	mCoords.resize(4);
 	processor->getMesh()->getVertCoordinates(mCoords[0]); 
@@ -60,11 +61,9 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	std::cout << "Shape editor is initialized!" << std::endl;
 
 	//addNoise(0.1);
-	//processor->getMesh()->getVertCoordinates(mOldCoord); 
-	//reconstructionTest1();
 	reconstructionTest2();
 	
-	mCoordSelect = 0;
+	mCoordSelect = mCoords[3].empty() ? 0 : 3;
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
 
 	//editTest2();
@@ -888,7 +887,7 @@ void ShapeEditor::reconstructionTest1()
 	std::cout << "Finish reconstructionTest1" << std::endl;
 }
 
-void ShapeEditor::reconstructionTest2()
+void ShapeEditor::reconstructionTest2( bool doWavelet /*= true*/ )
 {
 	std::cout << "\nStart reconstruction test2\n";
 
@@ -974,14 +973,14 @@ void ShapeEditor::reconstructionTest2()
 
 
 	/* Test 3, Wavelet Simultaneous-OMP */
-#if 1
-	{
+	if (doWavelet) {
 		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 	
 		std::cout << "To compute wavelet matching pursuit..\n";
 		ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-		mProcessor->computeSGW1(CotFormula);		
+		mProcessor->computeSGW1(CotFormula);	
+		mTotalScales = matSGW.rowCount() / vertCount;
 		//mProcessor->computeMixedAtoms1(CotFormula);
 		for (int i = 0; i < matSGW.rowCount(); ++i) {
 			ZGeom::VecNd newBasis = matSGW.getRowVec(i);
@@ -1022,7 +1021,6 @@ void ShapeEditor::reconstructionTest2()
 		mProcessor->setActiveFeaturesByID(FEATURE_SGW_SOMP);
 #endif
 	} //end of wavelet OMP
-#endif
 	//////////////////////////////////////////////////////////////////////////
 	
 	std::cout << "Finish reconstructionTest2" << std::endl;

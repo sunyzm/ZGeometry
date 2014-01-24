@@ -22,6 +22,7 @@ const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";
 const std::string StrColorEigenFunction  = "vert_color_eig_function";
 const std::string StrColorWaveletBasis   = "vert_color_wavelet_basis";
+const std::string StrColorDictAtom       = "vert_color_dict_atom";
 const std::string StrColorHKS			 = "vert_color_hks";
 const std::string StrColorHK			 = "vert_color_hk";
 const std::string StrColorBiharmonic	 = "vert_color_biharmonic";

@@ -67,7 +67,7 @@ public:
 	MatlabEngineWrapper(int bufSize = 256);
 	~MatlabEngineWrapper();
 
-	void open(const char* startcmd = "\0");
+	void open(const char* startcmd = NULL);
 	bool isOpened() const { return (m_ep != NULL); }
 	Engine* getEngine() const { return m_ep; }
 	void eval(const std::string& str) const { engEvalString(m_ep, str.c_str()); }

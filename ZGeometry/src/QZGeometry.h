@@ -47,6 +47,7 @@ private slots:
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
 	void computeEditBasis();
+	void computeDictAtom();
 	void displayBasis(int idx);
 	void computeHK();
 	void computeHKS();	
@@ -95,6 +96,7 @@ private slots:
 	void clone();
 	void revert();
 	void nextCoordinate();
+	void nextBasisScale();
 	void addNoise();
 	void reconstructMHB();
 	void reconstructSGW();
@@ -153,6 +155,7 @@ private:
 	SignatureMode		mSignatureMode;
 	int					mObjInFocus;	
 	int					mMeshCount;
+	int					mCurrentBasisScale;
 	int					mCommonParameter;
 	
 	std::vector<CMesh*>	                    mMeshes;
@@ -164,7 +167,8 @@ private:
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
 		  Compute_SGWS, Compute_SGW,
-		  Compute_Eig_Func, Compute_Biharmonic, Compute_Edit_Basis,
+		  Compute_Eig_Func, Compute_Biharmonic, 
+		  Compute_Edit_Basis, Compute_Dict_Atom,
 		  Compute_Geodesics, Compute_Heat,
 		  None} current_operation;
 
