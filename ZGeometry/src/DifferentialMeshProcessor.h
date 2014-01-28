@@ -79,6 +79,7 @@ public:
 	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
 
+	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
 	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
 	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
 	const ManifoldHarmonics& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
@@ -91,7 +92,7 @@ public:
 	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
-
+	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 

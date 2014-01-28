@@ -90,6 +90,7 @@ namespace ZGeom
 		mCol = m2.mCol;
 		mData = new T[mRow*mCol];
 		std::copy_n(m2.mData, mRow*mCol, mData);
+		return *this;
 	}
 
 	template<typename T>

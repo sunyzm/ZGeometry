@@ -149,7 +149,6 @@ private:
 
 	/* fields */
 	Ui::ZGeometryClass	ui;
-	ZGeom::MatlabEngineWrapper mEngineWrapper;	
 	DeformType			mDeformType;
 	LaplacianType       mActiveLalacian;
 	SignatureMode		mSignatureMode;

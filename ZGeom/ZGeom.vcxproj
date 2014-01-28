@@ -231,7 +231,6 @@
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
     <ClInclude Include="include\ZGeom\Geometry.h" />
     <ClInclude Include="include\ZGeom\Laplacian.h" />
-    <ClInclude Include="include\ZGeom\LeastSquareSolver.h" />
     <ClInclude Include="include\ZGeom\MatchingPursuit.h" />
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h" />

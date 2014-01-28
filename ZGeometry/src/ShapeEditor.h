@@ -4,6 +4,58 @@
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"
 
+class Dictionary : public ZGeom::DenseMatrixd
+{
+public:
+	int atomCount() const { return colCount(); }
+};
+
+class ShapeApprox
+{
+public:
+	friend class ShapeEditor;	
+	enum DictionaryType {Fourier, SGW, MixedFourierSGW};
+	enum SparseApproxMethod {Truncation, SMP, SOMP};
+
+	class SubMeshApprox
+	{
+	public:
+		friend class ShapeApprox;
+		struct SparseCoeff {
+			int mIdx;
+			double mCoeff;
+		};
+		
+		void init() { mMeshProcessor.init(&mSubMesh, &gEngineWrapper); }
+		int subMeshSize() const { return mSubMesh.vertCount(); }
+		const std::vector<int>& mappedIdx() const { return mMappedIdx; }
+
+		void prepareEigenSystem(LaplacianType laplacianType, int mEigenCount);
+		void constructDict(DictionaryType dictType);
+		void sparseApproximate(SparseApproxMethod approxMethod);
+
+	private:
+		CMesh mSubMesh;
+		DifferentialMeshProcessor mMeshProcessor;
+		std::vector<int> mMappedIdx;
+		ZGeom::EigenSystem mEigenSystem;
+		Dictionary mDict;
+		std::vector<SparseCoeff> mCoding;
+		MeshCoordinates mReconstructedCoord;
+	};
+
+	ShapeApprox() : mOriginalMesh(NULL) {}
+	void init(CMesh* mesh) { mOriginalMesh = mesh; }
+	void doSegmentation(int maxSize);
+	void doSparseApproximation();
+	void evaluate();
+
+private:
+	CMesh* mOriginalMesh;	
+	std::vector<SubMeshApprox> mSubMeshApprox;
+
+};
+
 class ShapeEditor
 {
 	friend class QZGeometryWindow;
@@ -35,6 +87,7 @@ private:
 	
 	void reconstructionTest1();
 	void reconstructionTest2(bool doWavelet = true);
+	void approximationTest1();
 	void editTest2();
 
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
@@ -46,6 +99,7 @@ private:
 
 	CMesh* mMesh;	
 	DifferentialMeshProcessor* mProcessor;
+	ShapeApprox mShapeApprox;
 	ZGeom::MatlabEngineWrapper* mEngine;
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	std::vector<ZGeom::VecNd> mAtoms;

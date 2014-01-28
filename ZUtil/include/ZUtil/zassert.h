@@ -4,7 +4,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace ZUtil{
+namespace ZUtil {
 	inline void logic_assert(bool condition, const std::string& errorMsg = "logic_error") 
 	{
 		if (!condition) {

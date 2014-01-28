@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <ZUtil/SimpleConfigLoader.h>
+#include <ZGeom/MatlabEngineWrapper.h>
 #include "OutputHelper.h"
 
 enum GeometryTask {TASK_VIEWING = 0, TASK_REGISTRATION = 1, TASK_EDITING = 2};
@@ -40,3 +41,4 @@ const std::string StrOriginalSignature   = "vert_original_signature";
 extern OutputHelper qout;
 extern SimpleConfigLoader g_configMgr;
 extern GeometryTask g_task;
+extern ZGeom::MatlabEngineWrapper gEngineWrapper;

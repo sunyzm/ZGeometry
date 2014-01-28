@@ -28,9 +28,9 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 		for (int j = 0; j < valence; ++j) {
 			vElem.push_back(std::make_tuple(i+1, vNeighbors[j]+1, 1.0));
 		}
-		vElem.push_back(std::make_tuple(i+1, i+1, -valence));	// positive diagonal elements
+		vElem.push_back(std::make_tuple(i+1, i+1, -double(valence)));	// positive diagonal elements
 
-		vWeights[i] = valence;
+		vWeights[i] = double(valence);
 	}
 
 	mLS.convertFromCOO(mOrder, mOrder, vElem);

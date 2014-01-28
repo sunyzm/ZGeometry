@@ -341,7 +341,7 @@ public:
 	~CMesh();
 
 	/* ---- Mesh IO and processing ---- */
-	void        cloneFrom(const CMesh& oldMesh);
+	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
 	bool		Load(const std::string& sFileName);		// load from file
 	bool	    Save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
@@ -350,6 +350,7 @@ public:
 	void		scaleAndTranslate(const Vector3D& center, double scale);
 
 	/* ---- geometry primitives access ---- */
+	void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
 	const std::string&	getMeshName() const { return m_meshName; }
 	int					vertCount() const { return (int)m_vVertices.size(); }
 	int					faceCount() const { return (int)m_vFaces.size(); }

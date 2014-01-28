@@ -85,9 +85,6 @@
     <ClInclude Include="include\ZGeom\MatchingPursuit.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\LeastSquareSolver.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\Approximation.h">
       <Filter>Header Files</Filter>
     </ClInclude>

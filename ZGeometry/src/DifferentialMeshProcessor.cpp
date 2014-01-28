@@ -738,3 +738,26 @@ void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::Dense
 	timer.stopTimer("HK computation time with AMP: ");
 	delete []pEigVec;
 }
+
+std::string DifferentialMeshProcessor::generateMHBPath( const std::string& prefix, LaplacianType laplacianType )
+{
+	std::string s_idx = "0";
+	s_idx[0] += (int)laplacianType;
+	std::string pathMHB = prefix + mMesh->getMeshName() + ".mhb." + s_idx;
+	return pathMHB;
+}
+
+bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
+{
+	if (!ZUtil::fileExist(pathMHB)) return false;
+
+	int nEig, nSize;
+	ifstream ifs(pathMHB.c_str(), ios::binary);
+	ifs.read((char*)&nEig, sizeof(int));
+	ifs.read((char*)&nSize, sizeof(int));
+	ifs.close();
+
+	if (nEig != eigenCount || nSize != mMesh->vertCount()) return false;
+
+	return true;
+}

@@ -15,7 +15,8 @@
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
 
-bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
+bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) 
+{
 	if (!ZUtil::fileExist(pursuitFile)) 
 		return false;
 
@@ -60,13 +61,11 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 	std::cout << "Shape editor is initialized!" << std::endl;
 
-	//addNoise(0.1);
-	reconstructionTest2();
-	
+	//reconstructionTest2();
+	approximationTest1();
+
 	mCoordSelect = mCoords[3].empty() ? 0 : 3;
 	mMesh->setVertCoordinates(mCoords[mCoordSelect]);
-
-	//editTest2();
 }
 
 
@@ -1082,3 +1081,74 @@ void ShapeEditor::updateEditBasis( const std::vector<ZGeom::VecNd>& vAtoms, cons
 	for (int idx : vSelectedIdx) mEditBasis.push_back(vAtoms[idx]);
 }
 
+void ShapeEditor::approximationTest1()
+{
+	mShapeApprox.init(mMesh);
+	mShapeApprox.doSegmentation(-1);
+	mShapeApprox.doSparseApproximation();
+	mShapeApprox.evaluate();
+}
+
+
+void ShapeApprox::doSegmentation( int maxSize )
+{
+	ZUtil::logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
+
+	if (maxSize <= 0) {
+		mSubMeshApprox.resize(1);
+		mSubMeshApprox[0].mSubMesh.cloneFrom(*mOriginalMesh, ".sub0");
+		int vertCount = mOriginalMesh->vertCount();
+		mSubMeshApprox[0].mMappedIdx.resize(vertCount);
+		for (int i = 0; i < vertCount; ++i) 
+			mSubMeshApprox[0].mMappedIdx[i] = i;
+		mSubMeshApprox[0].init();
+	}
+
+	std::cout << "Shape Approximation - Segmentation finished!" << std::endl;
+}
+
+void ShapeApprox::doSparseApproximation()
+{
+	ZUtil::logic_assert(!mSubMeshApprox.empty(), "Error: Mesh is not segmented!");
+
+	for (auto& m : mSubMeshApprox) {
+		m.prepareEigenSystem(Umbrella, 300);
+	}
+	std::cout << "Shape Approximation - Preparation finished!\n";
+
+	for (auto& m : mSubMeshApprox) {
+		m.constructDict(ShapeApprox::Fourier);
+		m.sparseApproximate(ShapeApprox::Truncation);
+	}
+	
+	std::cout << "Shape Approximation - Sparse Coding finished!\n";
+}
+
+void ShapeApprox::evaluate()
+{
+
+	std::cout << "Shape Approximation - Evaluation Results:!\n";
+}
+
+void ShapeApprox::SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCount )
+{
+	mMeshProcessor.constructLaplacian(laplacianType);
+	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
+	if (mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount))
+		mMeshProcessor.loadMHB(pathMHB, laplacianType);
+	else {
+		mMeshProcessor.decomposeLaplacian(eigenCount, laplacianType);
+		mMeshProcessor.saveMHB(pathMHB, laplacianType);
+	}
+	mEigenSystem = mMeshProcessor.getMHB(laplacianType);
+}
+
+void ShapeApprox::SubMeshApprox::constructDict( DictionaryType dictType )
+{
+
+}
+
+void ShapeApprox::SubMeshApprox::sparseApproximate( SparseApproxMethod approxMethod )
+{
+
+}

@@ -12,6 +12,10 @@ std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 int main(int argc, char *argv[])
 {
 	g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
+	CStopWatch timer;
+	timer.startTimer();
+	gEngineWrapper.open();     
+	timer.stopTimer("-- Matlab engine opening time: ", " --");
 
 	QApplication a(argc, argv);
 	QZGeometryWindow w;

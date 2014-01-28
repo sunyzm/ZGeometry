@@ -558,12 +558,12 @@ CMesh::~CMesh()
 	std::cout << "Finished!" << std::endl;
 }
 
-void CMesh::cloneFrom( const CMesh& oldMesh )
+void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".clone"*/)
 {
 	if (this == &oldMesh) return;
 	clearMesh();
 
-	m_meshName = oldMesh.m_meshName + "_clone";
+	m_meshName = oldMesh.m_meshName + nameSuffix;
 	m_nVertex = oldMesh.m_nVertex;
 	m_nFace = oldMesh.m_nFace;
 	m_nHalfEdge = oldMesh.m_nHalfEdge;

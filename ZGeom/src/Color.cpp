@@ -22,6 +22,13 @@ namespace ZGeom
 		mVal[3] = a;
 	}
 
+	void Colorf::setAs( const float *c )
+	{
+		assert( 0 <= c[0] && c[0] <= 1 && 0 <= c[1] && c[1] <= 1 &&
+			0 <= c[2] && c[2] <= 1 &&	0 <= c[3] && c[3] <= 1 );
+		std::copy_n(c, 4, mVal);
+	}
+
 	void Colorf::falseColor( float gray, float alpha )
 	{
 		assert(0 <= gray && gray <= 1.f);
@@ -29,13 +36,6 @@ namespace ZGeom
 		mVal[1] = (gray < 0.5f) ? gray * 2.f : ((1.f - gray) * 2.f);
 		mVal[2] = 1.f - gray;
 		mVal[3] = alpha;
-	}
-
-	void Colorf::setAs( const float *c )
-	{
-		assert( 0 <= c[0] && c[0] <= 1 && 0 <= c[1] && c[1] <= 1 &&
-				0 <= c[2] && c[2] <= 1 &&	0 <= c[3] && c[3] <= 1 );
-		std::copy_n(c, 4, mVal);
 	}
 
 	void Colorf::posNegColor( float val, const float* colorPos /*= ColorOrange*/, const float* colorNeg /*= ColorBlue*/ )
