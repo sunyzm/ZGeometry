@@ -122,6 +122,8 @@ private slots:
 	void updateDisplaySignatureMenu();
 	void openOutputLocation();
 
+	void resizeApproxSlider(int slider, int newSize);
+
 private:	
 	/* methods */
 	void makeConnections();

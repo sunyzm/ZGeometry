@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
 	g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
 	CStopWatch timer;
 	timer.startTimer();
-	gEngineWrapper.open();     
+	g_engineWrapper.open();     
 	timer.stopTimer("-- Matlab engine opening time: ", " --");
 
 	QApplication a(argc, argv);

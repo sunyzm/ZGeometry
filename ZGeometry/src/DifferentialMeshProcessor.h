@@ -64,6 +64,8 @@ public:
 	void	computeSimilarityMap2(int refPoint);
 	void	computeSimilarityMap3(int refPoint);
 	
+	void    partitionMesh(int partitionCount, std::vector<std::vector<int> >& vSubMeshIdx, std::vector<CMesh*>& vSubMeshes);
+
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
 	int getActiveHandle() const { return mActiveHandle; }
@@ -93,6 +95,7 @@ public:
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
 	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
+
 private:
 	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
 

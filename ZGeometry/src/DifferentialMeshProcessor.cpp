@@ -761,3 +761,8 @@ bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int
 
 	return true;
 }
+
+void DifferentialMeshProcessor::partitionMesh( int partitionCount, std::vector<std::vector<int> >& vSubMeshIdx, std::vector<CMesh*>& vSubMeshes )
+{
+
+}

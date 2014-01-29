@@ -230,6 +230,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
 	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
 	QObject::connect(ui.comboBoxLaplacian, SIGNAL(activated(const QString&)), this, SLOT(setLaplacianType(const QString&)));
+	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -381,7 +382,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
 		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
 		
-		mProcessors[obj]->init(&mesh, &gEngineWrapper);
+		mProcessors[obj]->init(&mesh, &g_engineWrapper);
 		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
 	}
 
@@ -411,7 +412,7 @@ void QZGeometryWindow::registerPreprocess()
 	if (g_task != TASK_REGISTRATION || mMeshCount != 2) return;
 
 	computeFunctionMaps(40);
-	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], gEngineWrapper.getEngine());
+	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], g_engineWrapper.getEngine());
 	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 	mShapeMatcher.readInRandPair(rand_data_file);
 
@@ -900,7 +901,7 @@ void QZGeometryWindow::clone()
 	allocateStorage(2);
 	mMeshes[1]->cloneFrom(*mMeshes[0]);
 	mMeshes[1]->gatherStatistics();
-	mProcessors[1]->init(mMeshes[1], &gEngineWrapper);
+	mProcessors[1]->init(mMeshes[1], &g_engineWrapper);
 	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
 
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
@@ -914,7 +915,7 @@ void QZGeometryWindow::reconstructMHB()
 	int nEig = mProcessors[0]->getMHB(CotFormula).eigVecCount() * ratio;
 	double avgLen = mMeshes[0]->getAvgEdgeLength();
 
-	mShapeEditor.manifoldHarmonicsReconstruct(nEig);
+	mShapeEditor.fourierReconstruct(nEig);
 	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
 	std::vector<double> vPosDiff;
@@ -1398,7 +1399,7 @@ void QZGeometryWindow::matchFeatures()
 		vector<MatchPair> vPairs;
 		double vPara[] = {40, 0.8, 400};
 		double matchScore;
-		matchScore = ShapeMatcher::TensorGraphMatching6(gEngineWrapper.getEngine(), mProcessors[0], mProcessors[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
+		matchScore = ShapeMatcher::TensorGraphMatching6(g_engineWrapper.getEngine(), mProcessors[0], mProcessors[1], vftFine1, vftFine2, vPairs, tensor_matching_timescasle, matching_thresh_2, /*verbose=*/true);
 		//matchScore = DiffusionShapeMatcher::TensorMatchingExt(m_ep, &vMP[0], &vMP[1], vFeatures1, vFeatures2, vPairs, 0, vPara, cout, true);
 
 		if (1 == g_configMgr.getConfigValueInt("GROUND_TRUTH_AVAILABLE")) {
@@ -1629,7 +1630,7 @@ void QZGeometryWindow::addMesh()
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
 
-	mProcessors[cur_obj]->init(&mesh, &gEngineWrapper);
+	mProcessors[cur_obj]->init(&mesh, &g_engineWrapper);
 
 	mRenderManagers[cur_obj]->selected = true;
 	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
@@ -2004,7 +2005,7 @@ void QZGeometryWindow::clearHandles()
 
 void QZGeometryWindow::nextCoordinate()
 {
-	mShapeEditor.changeCoordinates();
+	mShapeEditor.nextCoordinates();
 	ui.glMeshWidget->update();
 }
 
@@ -2016,7 +2017,6 @@ void QZGeometryWindow::deformLaplace2()
 
 void QZGeometryWindow::runTests()
 {
-	mShapeEditor.reconstructionTest1();
 	ui.glMeshWidget->update();
 }
 
@@ -2182,4 +2182,11 @@ void QZGeometryWindow::computeDictAtom()
 	displaySignature(StrColorDictAtom.c_str());
 	updateDisplaySignatureMenu();
 	current_operation = Compute_Dict_Atom;
+}
+
+void QZGeometryWindow::resizeApproxSlider( int slider, int newSize )
+{
+	if (slider == 0) ui.sliderApprox1->setMaximum(newSize);
+	else if (slider == 1) ui.sliderApprox2->setMaximum(newSize);
+	else if (slider == 2) ui.sliderApprox3->setMaximum(newSize);
 }

@@ -89,6 +89,12 @@
     <ClCompile Include="src\MeshLaplacian.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GeneratedFiles\Debug\moc_ShapeEditor.cpp">
+      <Filter>Generated Files\Debug</Filter>
+    </ClCompile>
+    <ClCompile Include="GeneratedFiles\Release\moc_ShapeEditor.cpp">
+      <Filter>Generated Files\Release</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -151,15 +157,18 @@
     <CustomBuild Include="config.txt">
       <Filter>Resource Files</Filter>
     </CustomBuild>
+    <CustomBuild Include="src\ShapeEditor.h">
+      <Filter>Header Files</Filter>
+    </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\ShapeEditor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\matching.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\MatchTestCase.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Palette.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

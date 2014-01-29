@@ -57,7 +57,8 @@ public:
 	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
 
-	void resize(int n) 
+	//resize coordinates size and initialize to 0
+	void resize(int n)	
 	{
 		mSize = n; 
 		mCoordX.resize(mSize, 0); 
@@ -106,7 +107,7 @@ public:
 	
 	ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
 
-	double difference(const MeshCoordinates& mc2)
+	double difference(const MeshCoordinates& mc2) const
 	{
 		assert(this->mSize == mc2.mSize);
 

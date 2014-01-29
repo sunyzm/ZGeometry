@@ -41,4 +41,4 @@ const std::string StrOriginalSignature   = "vert_original_signature";
 extern OutputHelper qout;
 extern SimpleConfigLoader g_configMgr;
 extern GeometryTask g_task;
-extern ZGeom::MatlabEngineWrapper gEngineWrapper;
+extern ZGeom::MatlabEngineWrapper g_engineWrapper;

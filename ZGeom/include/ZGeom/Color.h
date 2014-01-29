@@ -4,7 +4,6 @@
 
 namespace ZGeom
 {
-
 const float ColorBlack[]   = {0, 0, 0, 1.f};
 const float ColorWhite[]   = {1.f, 1.f, 1.f, 1.f};
 const float ColorMagenta[] = {1.f, 0, 1.f, 1.f};
@@ -16,7 +15,6 @@ const float ColorCyan[]    = {0, 1.f, 1.f, 1.f};
 const float ColorYellow[]  = {1.f, 1.f, 0, 1.f};
 const float ColorOrange[]  = {1.f, 0.5f, 0, 1.f};
 const float ColorAzure[]   = {0, 0.5f, 1.f, 1.f};
-
 const float* RGBColors[];
 
 class Colorf : public Vec4s
