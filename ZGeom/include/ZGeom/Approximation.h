@@ -46,14 +46,14 @@ typedef std::vector<SignalAtom*> ApproximationAtoms;
 class FunctionApproximation
 {
 public:
-	FunctionApproximation() : mAtoms(NULL) {}
+	FunctionApproximation() {}
 
 	void addItem(double r, int i, double c)
 	{
 		mApproxItems.push_back(ApproxItem(r, i, c));
 	}
 
-	void clear() { mApproxItems.clear(); mAtoms = NULL; }
+	void clear() { mApproxItems.clear(); }
 	const std::vector<ApproxItem>& getApproxItems() const { return mApproxItems; }
 	ApproxItem& operator [] (int i) { return mApproxItems[i]; }
 	const ApproxItem& operator [] (int i) const { return mApproxItems[i]; }
@@ -69,7 +69,6 @@ public:
 	}
 
 private:
-	ApproximationAtoms *mAtoms;
 	std::vector<ApproxItem> mApproxItems;
 };
 

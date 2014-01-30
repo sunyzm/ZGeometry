@@ -13,16 +13,18 @@ enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP};
 
 class Dictionary
 {
-	friend class ShapeApprox;
+	friend class SubMeshApprox;
 public:
 	void resize(int N, int m) 
 	{ 
 		mAtoms.resize(N); 
 		for (VecNd& v : mAtoms) v.resize(m);
 	}
+	void clear() { mAtoms.clear(); }
 	void resize(int N) { mAtoms.resize(N); }
 	VecNd& operator[] (int i) { return mAtoms[i]; }
 	int atomCount() const { return mAtoms.size(); }
+	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
 
 private:
 	std::vector<VecNd> mAtoms;
@@ -33,6 +35,7 @@ class SubMeshApprox
 	friend class ShapeApprox;
 public:
 	struct SparseCoeff {
+		SparseCoeff() : mIdx(-1), mCoeff(0) {}
 		SparseCoeff(int i, double c) : mIdx(i), mCoeff(c) {}
 		int mIdx;
 		double mCoeff;
@@ -63,12 +66,12 @@ public:
 	void init(CMesh* mesh);
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(int eigenCount);
-	void doSparseCoding(int codingSize);
+	void findSparseRepresentation(DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize);
 	void sparseReconstruction(int reconstructSize);
 	void sparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
-	void evaluate();
 	const Palette& getPalette() const { return mSegmentPalette; }
+	const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
 
 private:
 	CMesh* mOriginalMesh;	
@@ -116,6 +119,7 @@ private:
 	void monolithicApproximationTest2(bool doWavelet = true);	// use CotFormula Laplacian
 	void partitionedApproximationTest1();
 	void editTest2();
+	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
 	void computeApproximations(const std::vector<ZGeom::VecNd>& vAtoms, 

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <random>
 #include <functional>
+#include <iomanip>
 #include <ppl.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatVecArithmetic.h>
@@ -61,10 +62,8 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 	std::cout << "Shape editor is initialized!" << std::endl;
 
-	//monolithicApproximationTest1(false);
+	monolithicApproximationTest1(false);
 	partitionedApproximationTest1();
-
-	mMesh->setVertCoordinates(mCoords[mCurCoordID]);
 }
 
 
@@ -710,10 +709,10 @@ void ShapeEditor::evalReconstruct( const MeshCoordinates& newCoord ) const
 void ShapeEditor::monolithicApproximationTest1( bool doWavelet /*= true*/ )	
 {
 	using ZGeom::VecNd;
-
-	std::cout << "\nStarting MonoApproxTest1\n";
+	std::cout << "\n--------" << " Starting MonoApproxTest1 (Graph Laplacian) "
+		      << std::setfill('-') << std::setw(8) << '\n';
+	
 	CStopWatch timer;
-
 	/* prepare prerequisite data */
 	const int vertCount = mMesh->vertCount();
 	const MeshCoordinates& oldCoord = getOldMeshCoord();	
@@ -786,6 +785,8 @@ void ShapeEditor::monolithicApproximationTest1( bool doWavelet /*= true*/ )
 		std::cout << "Ratio of MP overlapping: " << (double)selectedFromTop / (double)vSelectedAtomIdx.size() << '\n';
 		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
 	}
+	changeCoordinates(2);
+
 	//////////////////////////////////////////////////////////////////////////
 	
 	/* Test 3, Wavelet Simultaneous-OMP */
@@ -839,17 +840,18 @@ void ShapeEditor::monolithicApproximationTest1( bool doWavelet /*= true*/ )
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 	
-	std::cout << "MonoApproxTest1 completed!" << std::endl;
+	std::cout << "MonoApproxTest1 completed!\n";
+	std::cout << std::setfill('+') << std::setw(40) << '\n';
 }
 
 /* test with CotFormula Laplacian */
 void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 {
 	using ZGeom::VecNd;
-
-	std::cout << "\nStarting MonoApproxTest2\n";
+	std::cout << "\n--------" << " Starting MonoApproxTest2 (Cot Laplacian) "
+		      << std::setfill('-') << std::setw(8) << '\n';
+	
 	CStopWatch timer;
-
 	/* prepare prerequisite data */
 	const int vertCount = mMesh->vertCount();
 	const MeshCoordinates& oldCoord = getOldMeshCoord();
@@ -891,7 +893,8 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 
-		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
+		for (int i = 0; i < nEigTotal; ++i) 
+			vAtoms.push_back(cotMHB.getEigVec(i));
 
 		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW);
 		
@@ -907,7 +910,8 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 		for (auto p : vApproxCoeff) p->clear();
 		vAtoms.clear();
 		
-		for (int i = 0; i < nEigTotal; ++i) vAtoms.push_back(cotMHB.getEigVec(i));
+		for (int i = 0; i < nEigTotal; ++i) 
+			vAtoms.push_back(cotMHB.getEigVec(i));
 
 		timer.startTimer();
 		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW, 2.);
@@ -974,11 +978,15 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 	} //end of wavelet OMP
 	//////////////////////////////////////////////////////////////////////////
 	
-	std::cout << "MonoApproxTest2 completed!" << std::endl;
+	std::cout << "MonoApproxTest2 completed!\n";
+	std::cout << std::setfill('+') << std::setw(40) << '\n';
 }
 
 void ShapeEditor::partitionedApproximationTest1()
 {
+	std::cout << "\n--------" << " Starting PartitionedApproxTest1 "
+	          << std::setfill('-') << std::setw(8) << '\n';
+
 	int eigenCount = 300;
 	int codingSize = 100;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
@@ -987,15 +995,22 @@ void ShapeEditor::partitionedApproximationTest1()
 	mShapeApprox.doSegmentation(-1);
 	mShapeApprox.doEigenDecomposition(eigenCount);	
 
-	mShapeApprox.doSparseCoding(codingSize);
+	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_Truncation, codingSize);
 	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[0]);
-	mShapeApprox.evaluate();	
-
+	evaluateApproximation(mShapeApprox.getApproxCoord(), "approx1");	
+	mCoords[1] = mShapeApprox.getApproxCoord();
 	emit approxStepsChanged(0, codingSize);
-	mCoords[1] = mShapeApprox.mApproxCoord;
+
+	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_SMP, codingSize);
+	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[1]);
+	evaluateApproximation(mShapeApprox.getApproxCoord(), "approx2");
+	mCoords[2] = mShapeApprox.getApproxCoord();
+	emit approxStepsChanged(1, codingSize);
+	
 	changeCoordinates(1);
 
-	std::cout << "Reconstruct error (1): " << oldMeshCoord.difference(mCoords[1]) << "\n\n";
+	std::cout << "PartitionedApproxTest1 completed!\n";
+	std::cout << std::setfill('+') << std::setw(40) << '\n';
 }
 
 /////// compute various eigenvectors indexed by Fiedler vector ////////////////
@@ -1054,6 +1069,13 @@ void ShapeEditor::updateEditBasis( const std::vector<ZGeom::VecNd>& vAtoms, cons
 	for (int idx : vSelectedIdx) mEditBasis.push_back(vAtoms[idx]);
 }
 
+void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const std::string leadText )
+{
+	const MeshCoordinates& oldCoord = getOldMeshCoord();
+	std::cout << "Evaluate " << leadText << "\n";
+	std::cout << "  Avg Position Error: " << oldCoord.difference(newCoord) << '\n';
+}
+
 void ShapeApprox::init( CMesh* mesh )
 {
 	mOriginalMesh = mesh;
@@ -1086,15 +1108,15 @@ void ShapeApprox::doEigenDecomposition( int eigenCount )
 	std::cout << "Shape Approximation - Preparation finished!\n";
 }
 
-void ShapeApprox::doSparseCoding( int codingSize )
+void ShapeApprox::findSparseRepresentation( DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "Error: Mesh is not segmented!");
 	int vertCount = mOriginalMesh->vertCount();
 	int segmentationCount = mSubMeshApprox.size();
 
 	for (auto& m : mSubMeshApprox) {
-		m.constructDict(DT_Fourier);
-		m.doSparseCoding(SA_Truncation, codingSize);
+		m.constructDict(dictType);
+		m.doSparseCoding(codingMethod, codingSize);
 	}
 
 	std::cout << "Shape Approximation - Sparse Coding finished!\n";
@@ -1118,11 +1140,6 @@ void ShapeApprox::sparseReconstructionStepping( int totalSteps, std::vector<Mesh
 	}
 
 	mApproxCoord = contCoords.back();
-}
-
-void ShapeApprox::evaluate()
-{
-	std::cout << "Shape Approximation - Evaluation Results:\n";
 }
 
 void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord)
@@ -1161,6 +1178,7 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 {
 	int vertCount = mSubMesh.vertCount();
 	int eigVecCount = mEigenSystem.eigVecCount();	
+	mDict.clear();
 
 	if (dictType == DT_Fourier)
 	{
@@ -1173,30 +1191,43 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selectedAtomCount )
 {
 	int vertCount = mSubMesh.vertCount();
-	int eigVecCount = mEigenSystem.eigVecCount();	
 	int atomCount = mDict.atomCount();
 	ZUtil::runtime_assert(atomCount >= selectedAtomCount);
 
 	MeshCoordinates vertCoords;
 	mSubMesh.getVertCoordinates(vertCoords);
-	const VecNd& vertXCoord = vertCoords.getXCoord();
-	const VecNd& vertYCoord = vertCoords.getYCoord();
-	const VecNd& vertZCoord = vertCoords.getZCoord();
+	std::vector<ZGeom::VecNd> vSignals;
+	vSignals.push_back(vertCoords.getXCoord()); 
+	vSignals.push_back(vertCoords.getYCoord());
+	vSignals.push_back(vertCoords.getZCoord());
+
+	ZGeom::FunctionApproximation vApproxX, vApproxY, vApproxZ;
+	std::vector<ZGeom::FunctionApproximation*> vApproxCoeff;
+	vApproxCoeff.push_back(&vApproxX); 
+	vApproxCoeff.push_back(&vApproxY); 
+	vApproxCoeff.push_back(&vApproxZ);
+
+	for (int c = 0; c < 3; ++c) mCoding[c].resize(selectedAtomCount);
 
 	if (approxMethod == SA_Truncation)
 	{
-		double coeff[3];
+		double innerProd[3];
 		for (int i = 0; i < selectedAtomCount; ++i) {
-			coeff[0] = mDict[i].dot(vertXCoord);
-			coeff[1] = mDict[i].dot(vertYCoord);
-			coeff[2] = mDict[i].dot(vertZCoord);
 			for (int c = 0; c < 3; ++c)
-				mCoding[c].push_back(SparseCoeff(i, coeff[c]));
+				innerProd[c] = mDict[i].dot(vSignals[c]);
+			for (int c = 0; c < 3; ++c)
+				mCoding[c][i] = SparseCoeff(i, innerProd[c]);
 		}
 	}
 	else if (approxMethod == SA_SMP)
 	{
-
+		ZGeom::SimultaneousMP(vSignals, mDict.getAtoms(), selectedAtomCount, vApproxCoeff);
+		for (int c = 0; c < 3; ++c) {
+			for (int i = 0; i < selectedAtomCount; ++i) {
+				const ZGeom::ApproxItem& item = (*vApproxCoeff[c])[i];
+				mCoding[c][i] = SparseCoeff(item.index(), item.coeff());
+			}
+		}				
 	}
 }
 

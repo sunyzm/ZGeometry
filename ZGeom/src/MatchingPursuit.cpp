@@ -241,7 +241,7 @@ namespace ZGeom
 		assert(vSignals.size() == vPursuits.size());
 		int nChannels = (int)vSignals.size();
 
-		for (auto p : vPursuits) p->clear();
+		for (auto pur : vPursuits) pur->clear();
 
 		const int signalSize = vSignals[0].size();
 		std::unordered_set<int> availableBasis;
@@ -262,7 +262,6 @@ namespace ZGeom
 				VecNd channelCoeff(nChannels);
 				for (int c = 0; c < nChannels; ++c)
 					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
-
 				cp.second = channelCoeff.pNorm(p);
 			});		
 
