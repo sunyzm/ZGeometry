@@ -382,7 +382,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
 		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
 		
-		mProcessors[obj]->init(&mesh, &g_engineWrapper);
+		mProcessors[obj]->init(&mesh);
 		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
 	}
 
@@ -901,7 +901,7 @@ void QZGeometryWindow::clone()
 	allocateStorage(2);
 	mMeshes[1]->cloneFrom(*mMeshes[0]);
 	mMeshes[1]->gatherStatistics();
-	mProcessors[1]->init(mMeshes[1], &g_engineWrapper);
+	mProcessors[1]->init(mMeshes[1]);
 	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
 
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
@@ -1630,7 +1630,7 @@ void QZGeometryWindow::addMesh()
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
 
-	mProcessors[cur_obj]->init(&mesh, &g_engineWrapper);
+	mProcessors[cur_obj]->init(&mesh);
 
 	mRenderManagers[cur_obj]->selected = true;
 	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];

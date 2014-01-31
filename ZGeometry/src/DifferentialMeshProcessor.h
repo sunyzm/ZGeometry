@@ -5,7 +5,6 @@
 #include <cmath>
 #include <engine.h>
 #include <ZGeom/ZGeom.h>
-#include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/MeshProcessor.h>
@@ -38,7 +37,7 @@ public:
 	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
 	~DifferentialMeshProcessor();
 
-	void init(CMesh* tm, ZGeom::MatlabEngineWrapper* e);
+	void init(CMesh* tm);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	
 	// ---- computation ---- //
@@ -75,8 +74,6 @@ public:
 	void clearAllHandles() { mHandles.clear(); }
 
 	// ---- attribute access --- //
-	ZGeom::MatlabEngineWrapper* getMatlabEngineWrapper() const { return mpEngineWrapper; }
-
 	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
 	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
@@ -97,8 +94,6 @@ public:
 	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
 
 private:
-	ZGeom::MatlabEngineWrapper *mpEngineWrapper;
-
 	int mRefVert;
 	Vector3D mRefPos;
 	std::map<int, Vector3D> mHandles;

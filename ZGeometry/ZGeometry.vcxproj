@@ -217,6 +217,7 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
+    <ClCompile Include="src\GeometryApproximation.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\global.cpp" />
     <ClCompile Include="src\MeshLaplacian.cpp" />
@@ -792,6 +793,7 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\GeometryApproximation.h" />
     <ClInclude Include="src\matching.h" />
     <ClInclude Include="src\MatchTestCase.h" />
     <ClInclude Include="src\Palette.h" />

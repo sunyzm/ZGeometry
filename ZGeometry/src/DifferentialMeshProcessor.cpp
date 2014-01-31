@@ -55,8 +55,7 @@ double mhwTransferFunc1( double lambda, double t )
 
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
-	mpEngineWrapper = NULL;
-	mMesh = NULL;
+	mMesh = nullptr;
 	mActiveFeature = FEATURE_ID;
 	mRefVert = 0;
 	mActiveHandle = -1;	
@@ -64,7 +63,6 @@ DifferentialMeshProcessor::DifferentialMeshProcessor()
 
 DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
 {
-	mpEngineWrapper = nullptr;
 	mMesh = nullptr;
 	mActiveFeature = FEATURE_ID;
 	mRefVert = 0;
@@ -78,11 +76,10 @@ DifferentialMeshProcessor::~DifferentialMeshProcessor()
 	std::cout << "DifferentialMeshProcessor destroyed!" << std::endl;
 }
 
-void DifferentialMeshProcessor::init(CMesh* tm, MatlabEngineWrapper* e)
+void DifferentialMeshProcessor::init(CMesh* tm)
 {
 	mMesh = tm;
 	mOriMesh = tm;
-	mpEngineWrapper = e;
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	mRefPos = mMesh->getVertex(mRefVert)->getPosition();
 }
@@ -139,15 +136,13 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ZUtil::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
-	if (!mpEngineWrapper->isOpened())
+	if (!g_engineWrapper.isOpened())
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
-	Engine *ep = mpEngineWrapper->getEngine();
-
 	if (laplacianType == Tutte || laplacianType == CotFormula)
-		mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType], true);
+		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], true);
 	else 
-		mMeshLaplacians[laplacianType].decompose(nEigFunc, mpEngineWrapper, mMHBs[laplacianType], false);
+		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], false);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )

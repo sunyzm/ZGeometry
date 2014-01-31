@@ -1,6 +1,5 @@
 #ifndef ZGEOM_APPROXIMATION_H
 #define ZGEOM_APPROXIMATION_H
-
 #include <vector>
 #include <tuple>
 #include <ZUtil/ZUtil.h>
@@ -8,6 +7,28 @@
 
 namespace ZGeom
 {
+
+class Dictionary
+{
+public:
+	Dictionary() : mDim(0) {}
+	void setDimension(int m) { mDim = m; }
+	void clear() { mAtoms.clear(); }
+	void resize(int N, int m) 
+	{ 
+		mDim = m;
+		mAtoms.resize(N); 
+		for (VecNd& v : mAtoms) v.resize(m);
+	}
+	void resize(int N) { mAtoms.resize(N); }
+	VecNd& operator[] (int i) { return mAtoms[i]; }
+	int atomCount() const { return (int)mAtoms.size(); }
+	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
+
+private:
+	std::vector<VecNd> mAtoms;
+	int mDim;
+};
 
 class  ApproxItem
 {
