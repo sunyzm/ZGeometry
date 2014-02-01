@@ -1030,6 +1030,12 @@ void ShapeEditor::partitionedApproximationTest1()
 	evaluateApproximation(mShapeApprox.getApproxCoord(), "PartitionedApprox2");
 	emit approxStepsChanged(1, codingSize);
 	
+	mShapeApprox.findSparseRepresentation(DT_SGW1, SA_SOMP, codingSize);
+	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[2]);
+	mCoords[3] = mShapeApprox.getApproxCoord();
+	evaluateApproximation(mShapeApprox.getApproxCoord(), "PartitionedApprox3");
+	emit approxStepsChanged(2, codingSize);
+
 	changeCoordinates(2);
 
 	std::cout << "PartitionedApproxTest1 completed!\n";

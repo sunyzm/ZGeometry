@@ -1,6 +1,64 @@
 #include "GeometryApproximation.h"
 using ZGeom::VecNd;
 
+void CalculateSGWDict1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
+{
+	const int vertCount = mhb.eigVecSize();
+	const int eigCount = mhb.eigVecCount();
+
+	std::function<double(double)> generator1 = [](double x) {
+		if (x < 1) return x*x;
+		else if (x <= 2) return (-5. + 11.*x - 6.*x*x + x*x*x);
+		else return 4.0/x/x;
+	};
+
+	const int nWaveletScales = waveletScaleNum;
+	const int nScalingScales = 1;
+	const int totalAtomCount = vertCount*(nWaveletScales+1);
+
+	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
+	const double K = 20.0;
+	double minEigVal = maxEigVal / K;
+	double minT = 1./maxEigVal, maxT = 2./minEigVal;		
+	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nWaveletScales - 1));
+
+	std::vector<double> vWaveletScales(nWaveletScales);	
+	for (int s = 0; s < nWaveletScales; ++s)
+		vWaveletScales[s] = minT * std::pow(tMultiplier, s);
+
+	ZGeom::DenseMatrixd matAtoms;
+	matAtoms.resize(totalAtomCount, vertCount);
+
+	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	std::vector<double> vDiag(eigCount);
+	//////////////////////////////////////////////////////////////////////////
+	// compute SGW with AMP
+	for (int s = 0; s < nWaveletScales; ++s) {
+		for (int i = 0; i < eigCount; ++i) 
+			vDiag[i] = generator1(vWaveletScales[s] * pEigVals[i]);
+		double *pResult = matAtoms.raw_ptr() + vertCount * vertCount * s;
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	}
+
+	double gamma = 1;//.3849001794597505097;
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
+	double *pResult = matAtoms.raw_ptr() + vertCount * vertCount * nWaveletScales;
+	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+
+	dict.resize(totalAtomCount, vertCount);
+	for (int i = 0; i < totalAtomCount; ++i)
+	{
+		ZGeom::VecNd newBasis = matAtoms.getRowVec(i);
+		newBasis.normalize(ZGeom::RegularProductFunc);
+		dict[i] = newBasis;
+	}
+}
 
 void ShapeApprox::init( CMesh* mesh )
 {
@@ -111,7 +169,7 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 		for (int i = 0; i < eigVecCount; ++i)
 			mDict[i] = mEigenSystem.getEigVec(i);
 	} else if (dictType == DT_SGW1) {
-
+		CalculateSGWDict1(mEigenSystem, 5, mDict);
 	}
 }
 

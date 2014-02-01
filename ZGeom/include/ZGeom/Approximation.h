@@ -21,6 +21,7 @@ public:
 		for (VecNd& v : mAtoms) v.resize(m);
 	}
 	void resize(int N) { mAtoms.resize(N); }
+	const VecNd& operator [] (int i) const { return mAtoms[i]; }
 	VecNd& operator[] (int i) { return mAtoms[i]; }
 	int atomCount() const { return (int)mAtoms.size(); }
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
