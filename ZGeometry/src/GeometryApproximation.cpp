@@ -1,5 +1,24 @@
 #include "GeometryApproximation.h"
+#include <metis.h>
 using ZGeom::VecNd;
+
+std::vector<int> metisMeshPartition(const CMesh* mesh, int nPart)
+{
+	int vertCount = mesh->vertCount();
+	std::vector<int> vPart(vertCount);
+	int ncon = 1;
+	std::vector<int> xadj, adjncy;
+	mesh->getGraphCSR(xadj, adjncy);
+	int objval;
+	int options[METIS_NOPTIONS];
+	METIS_SetDefaultOptions(options);
+	options[METIS_OPTION_CONTIG] = 1;
+	options[METIS_OPTION_NUMBERING] = 0;
+
+	METIS_PartGraphKway(&vertCount, &ncon, &xadj[0], &adjncy[0], NULL, NULL, NULL, &nPart, NULL, NULL, NULL, &objval, &vPart[0]);	
+	
+	return vPart;
+}
 
 void CalculateSGWDict1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
@@ -68,19 +87,46 @@ void ShapeApprox::init( CMesh* mesh )
 void ShapeApprox::doSegmentation( int maxSize )
 {
 	ZUtil::logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
+	const int originalVertCount = mOriginalMesh->vertCount();
+	int nPart = 1;
+	if (maxSize > 0) nPart = originalVertCount / maxSize + 1;
 
-	if (maxSize <= 0)	// no segmentation performed; just copy the original mesh
+	if (nPart == 1)	// no segmentation performed; just copy the original mesh
 	{
+		mPartIdx.resize(originalVertCount, 0);		
 		mSubMeshApprox.resize(1);
 		mSubMeshApprox[0].mSubMesh.cloneFrom(*mOriginalMesh, ".sub0");
-		int originalVertCount = mOriginalMesh->vertCount();
 		mSubMeshApprox[0].mMappedIdx.resize(originalVertCount);
 		for (int i = 0; i < originalVertCount; ++i) 
 			mSubMeshApprox[0].mMappedIdx[i] = i;
 		mSubMeshApprox[0].init();
 	}
+	else 
+	{
+		mPartIdx = metisMeshPartition(mOriginalMesh, nPart);		
+		mSubMeshApprox.resize(nPart);
+		std::vector<CMesh*> vSubMeshes;
+		std::vector<std::vector<int>*> vMappedIdx;
+		for (int partIdx = 0; partIdx < nPart; ++partIdx) {
+			vSubMeshes.push_back(&mSubMeshApprox[partIdx].mSubMesh);
+			vMappedIdx.push_back(&mSubMeshApprox[partIdx].mMappedIdx);
+			vMappedIdx.back()->clear();
+		}
+		for (int vIdx = 0; vIdx < originalVertCount; ++vIdx) {
+			vMappedIdx[mPartIdx[vIdx]]->push_back(vIdx);
+		}
 
-	std::cout << "Shape Approximation - Segmentation finished!" << std::endl;
+		mOriginalMesh->partitionToSubMeshes(vMappedIdx, vSubMeshes);
+		
+		for (int s = 0; s < nPart; ++s) {
+			QString subMeshName;
+			subMeshName.sprintf("%s.sub%d", mOriginalMesh->getMeshName().c_str(), s+1);
+			vSubMeshes[s]->setMeshName(subMeshName.toStdString());
+			mSubMeshApprox[s].init();
+		}
+	}
+
+	std::cout << "Shape Approximation - Partitioning finished!" << std::endl;
 }
 
 void ShapeApprox::doEigenDecomposition( int eigenCount )

@@ -38,6 +38,7 @@ public:
 
 signals:
 	void approxStepsChanged(int index, int newSize);
+	void signatureComputed(QString sigName);
 
 private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;

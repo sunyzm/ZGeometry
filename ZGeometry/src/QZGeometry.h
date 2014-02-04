@@ -144,6 +144,7 @@ private:
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
+	void updateSegmentationColors(int obj, const std::vector<int>& vPartIdx, const Palette& partPalette);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 
 private:	

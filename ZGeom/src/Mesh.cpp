@@ -3108,4 +3108,91 @@ void CMesh::diffCoordinates( const MeshCoordinates& coordsToCompare, std::vector
 
 }
 
+void CMesh::saveToMetis( const std::string& sFileName ) const
+{
+	std::ofstream ofs(sFileName.c_str());
+	int vertNum = vertCount();
+	ofs << vertNum << '\n';
+	for (int i = 0; i < vertNum; ++i) {
+		std::vector<int> vNbr = getVertNeighborVerts(i, 1, false);
+		int adjCount = (int)vNbr.size();
+		for (int j = 0; j < adjCount - 1; ++j)
+			ofs << vNbr[j] + 1 << ' ';
+		ofs << vNbr[adjCount-1] + 1 << '\n';
+	}
+	ofs.close();
+}
+
+void CMesh::getGraphCSR( std::vector<int>& xadj, std::vector<int>& adjncy ) const
+{
+	int vertNum = vertCount();
+	xadj.resize(vertNum + 1);
+	adjncy.clear();
+	xadj[0] = 0;
+	for (int i = 0; i < vertNum; ++i) {
+		std::vector<int> vNbr = getVertNeighborVerts(i, 1, false);
+		for (int j : vNbr) adjncy.push_back(j);
+		xadj[i+1] = (int)adjncy.size();
+	}
+}
+
+void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes ) const
+{
+	assert(vSubMappedIdx.size() == vSubMeshes.size());
+	const int nPart = (int)vSubMappedIdx.size();
+
+	for (int partIdx = 0; partIdx < nPart; ++partIdx)
+	{
+		CMesh& subMesh = *vSubMeshes[partIdx];
+		const std::vector<int>& subMappedIdx = *vSubMappedIdx[partIdx];
+		const int subVertCount = (int)subMappedIdx.size();
+
+		std::list<Vector3D> VertexList;	//temporary vertex list
+		std::list<int> FaceList;		//temporary face list
+
+		for (int i = 0; i < subVertCount; ++i) {
+			VertexList.push_back(this->getVertexPosition(subMappedIdx[i]));
+		}
+		for (CFace* f : m_vFaces) {
+			int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
+			int sfv1 = -1, sfv2 = -1, sfv3 = -1;
+			for (int i = 0; i < subVertCount; ++i) {
+				if (subMappedIdx[i] == fv1) sfv1 = i;
+				else if (subMappedIdx[i] == fv2) sfv2 = i;
+				else if (subMappedIdx[i] == fv3) sfv3 = i;
+			}
+			if (sfv1 >= 0 && sfv2 >= 0 && sfv3 >= 0) {
+				FaceList.push_back(sfv1);
+				FaceList.push_back(sfv2);
+				FaceList.push_back(sfv3);
+			}			
+		}
+
+		std::set<int> setIsolatedVert;
+		for (int i = 0; i < subVertCount; ++i) setIsolatedVert.insert(i);
+		for (auto k : FaceList) setIsolatedVert.erase(k);
+		assert(setIsolatedVert.empty());
+
+		subMesh.m_nVertex = (int)VertexList.size();
+		subMesh.m_nFace = (int)FaceList.size() / 3;
+		subMesh.m_nHalfEdge = 3 * subMesh.m_nFace;
+
+		subMesh.m_pVertex = new CVertex[subMesh.m_nVertex];
+		subMesh.m_pFace = new CFace[subMesh.m_nFace];
+
+		list<Vector3D>::iterator iVertex = VertexList.begin();
+		list<int>::iterator iFace = FaceList.begin();
+		for(int i = 0; i < subMesh.m_nVertex; i++) {
+			subMesh.m_pVertex[i].m_vPosition = *iVertex++;  
+			subMesh.m_pVertex[i].m_vIndex = subMesh.m_pVertex[i].m_vid = i;
+		}
+		for(int i = 0; i < subMesh.m_nFace; i++) {
+			subMesh.m_pFace[i].create(3);
+			for(int j = 0; j < 3; j++)
+				subMesh.m_pFace[i].m_piVertex[j] = *iFace++;
+		}
+		subMesh.construct();
+	}	
+}
+
 

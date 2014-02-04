@@ -19,7 +19,7 @@ public:
 		}
 	}
 	int totalColors() const { return mPaletteColors.size(); }
-	const ZGeom::Colorf& getColor(int i) { return mPaletteColors[i]; }
+	const ZGeom::Colorf& getColor(int i) const { return mPaletteColors[i]; }
 
 private:
 	std::vector<ZGeom::Colorf> mPaletteColors;

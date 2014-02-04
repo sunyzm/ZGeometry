@@ -50,10 +50,11 @@ public:
 	void sparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
-	int partitionCount() const { return (int)mSubMeshApprox.size(); }
+	int partitionCount() const { return mSubMeshApprox.size(); }
 
 private:
 	CMesh* mOriginalMesh;	
 	std::vector<SubMeshApprox> mSubMeshApprox;
+	std::vector<int> mPartIdx;
 	MeshCoordinates mApproxCoord;
 };

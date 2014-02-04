@@ -529,14 +529,6 @@ void ShapeEditor::deformSpectralWavelet()
 	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
 	if (matSGW.empty()) mProcessor->computeSGW1(CotFormula);
 	const int waveletCount = matSGW.rowCount();
-	
-	/*std::vector<double> diagW;
-	mProcessor->getMeshLaplacian(CotFormula).getW().getDiagonal(diagW);
-	Concurrency::parallel_for(0, waveletCount, [&](int i){
-		double *pr = matSGW.raw_ptr() + vertCount * i;
-		for (int j = 0; j < vertCount; ++j) pr[j] *= diagW[j];
-	});*/
-
 	g_engineWrapper.addDenseMat(matSGW, "matSGW");
 	
 #if 1
@@ -725,7 +717,7 @@ void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const 
 
 void ShapeEditor::runTests()
 {
-	monolithicApproximationTest1(true, true);
+	//monolithicApproximationTest1(true, true);
 	//monolithicApproximationTest2(false, false);
 	partitionedApproximationTest1();
 }
@@ -1002,6 +994,16 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 	std::cout << std::setfill('+') << std::setw(40) << '\n';
 }
 
+void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette, std::vector<ZGeom::Colorf>& vColors)
+{
+	int nPart = partPalette.totalColors();
+	int nPoints = partIdx.size();
+	vColors.resize(nPoints);
+	
+	for (int i = 0; i < nPoints; ++i)
+		vColors[i] = partPalette.getColor(partIdx[i]);
+}
+
 //// Test partitioned approximation with graph Laplacian ////
 //
 void ShapeEditor::partitionedApproximationTest1()
@@ -1014,8 +1016,12 @@ void ShapeEditor::partitionedApproximationTest1()
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 
 	mShapeApprox.init(mMesh);
-	mShapeApprox.doSegmentation(-1);
+	mShapeApprox.doSegmentation(200);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).getValue();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+	emit signatureComputed(QString(StrColorPartitions.c_str()));
+
 	mShapeApprox.doEigenDecomposition(eigenCount);	
 
 	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_Truncation, codingSize);

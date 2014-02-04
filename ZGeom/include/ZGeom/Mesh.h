@@ -349,7 +349,8 @@ public:
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
 	void		scaleAndTranslate(const Vector3D& center, double scale);
-
+	void		saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
+	void		getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
 	/* ---- geometry primitives access ---- */
 	void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
 	const std::string&	getMeshName() const { return m_meshName; }
@@ -415,6 +416,8 @@ public:
 	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
+
+	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 	/*************************************************************************/
 
 	/* MeshAttr functions */
@@ -486,7 +489,8 @@ public:
 
 	MeshAttr< std::vector<ZGeom::Colorf> >& addColorAttr(const std::string& colorAttrName)
 	{
-		return addAttr< std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_VECTOR_COLOR);
+		if (hasAttr(colorAttrName)) return *getAttr<std::vector<ZGeom::Colorf> >(colorAttrName);
+		else return addAttr<std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_VECTOR_COLOR);
 	}
 
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName)
@@ -535,7 +539,7 @@ private:
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 	void	clearVertexMark();
-
+	
 	/* helper functions */
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);

@@ -35,7 +35,7 @@ const std::string StrColorGeodesics	     = "vert_color_geodesics";
 const std::string StrColorPreset		 = "vert_color_preset";
 const std::string StrColorSimilarity     = "vert_color_similarity";
 const std::string StrColorPosDiff        = "vert_color_pos_diff";
-
+const std::string StrColorPartitions     = "vert_color_partitions";
 const std::string StrOriginalSignature   = "vert_original_signature";
 
 extern OutputHelper qout;

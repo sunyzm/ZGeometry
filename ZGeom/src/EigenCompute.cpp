@@ -43,7 +43,7 @@ namespace ZGeom
 		mLs.convertToCOO(vII, vJJ, vSS, ZGeom::MAT_FULL);
 		int nOrder = mLs.rowCount();
 		int ns = (int)vII.size();
-		double numv = nEig;
+		double numv = std::min(nEig, nOrder-1);
 		double order = (double)nOrder;
 		
 		m_ep->addArray(&vII[0], ns, 1, false, "II");
@@ -57,8 +57,8 @@ namespace ZGeom
 		double *evec = m_ep->getDblVariablePtr("evecs");
 		double *eval = m_ep->getDblVariablePtr("evals");
 
-		eigSys.setSize(nOrder, nEig);
-		for (int i = 0; i < nEig; ++i) {
+		eigSys.setSize(nOrder, numv);
+		for (int i = 0; i < numv; ++i) {
 			eigSys.mEigVals[i] = std::fabs(eval[i]);
 			std::copy_n(evec + i*nOrder, nOrder, eigSys.getEigVec(i).c_ptr());
 		}

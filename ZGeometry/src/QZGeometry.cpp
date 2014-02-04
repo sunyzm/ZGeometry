@@ -220,6 +220,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
+	//////// mShapeEditor ////////
+	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
+	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(displaySignature(QString)));
+	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(updateDisplaySignatureMenu()));
+
 	////////    tabbed controls	////////
 	QObject::connect(ui.sliderApprox1, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox1(int)));
 	QObject::connect(ui.sliderApprox2, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox2(int)));
@@ -230,7 +235,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
 	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
 	QObject::connect(ui.comboBoxLaplacian, SIGNAL(activated(const QString&)), this, SLOT(setLaplacianType(const QString&)));
-	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
 
 	////////    Menus	////////
 	////	file	////
@@ -1875,11 +1879,11 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).getValue();
 	vSig = vVals;
 
-	if (!mMeshes[obj]->hasAttr(sigName)) mMeshes[obj]->addColorAttr(sigName);
-
+	mMeshes[obj]->addColorAttr(sigName);
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
 	signaturesToColors(vVals, vColors, mSignatureMode);	
 
+	/* update color legend */
 	ui.glMeshWidget->mLegendColors.resize(256);
 	std::vector<double> vLegendVals(256);
 	for (int i = 0; i <= 255; ++i) vLegendVals[i] = sMin + (double)i/255.*(sMax-sMin);

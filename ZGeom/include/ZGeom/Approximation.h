@@ -63,8 +63,6 @@ protected:
 	int mPosition;
 };
 
-typedef std::vector<SignalAtom*> ApproximationAtoms;
-
 class FunctionApproximation
 {
 public:
