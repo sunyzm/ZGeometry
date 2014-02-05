@@ -1,5 +1,6 @@
 #include "GeometryApproximation.h"
 #include <metis.h>
+#include "global.h"
 using ZGeom::VecNd;
 
 std::vector<int> metisMeshPartition(const CMesh* mesh, int nPart)
@@ -129,12 +130,12 @@ void ShapeApprox::doSegmentation( int maxSize )
 	std::cout << "Shape Approximation - Partitioning finished!" << std::endl;
 }
 
-void ShapeApprox::doEigenDecomposition( int eigenCount )
+void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 {
 	for (auto& m : mSubMeshApprox) {
-		m.prepareEigenSystem(Umbrella, eigenCount);
+		m.prepareEigenSystem(lapType, eigenCount);
 	}
-	std::cout << "Shape Approximation - Preparation finished!\n";
+	std::cout << "Shape Approximation - Decomposition finished!\n";
 }
 
 void ShapeApprox::findSparseRepresentation( DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize )
@@ -194,8 +195,13 @@ void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCo
 {
 	mMeshProcessor.constructLaplacian(laplacianType);
 	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
-	if (mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount))
+	
+	int useCache; 
+	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", useCache);
+
+	if (useCache != 0 && mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount)) {
 		mMeshProcessor.loadMHB(pathMHB, laplacianType);
+	}
 	else {
 		mMeshProcessor.decomposeLaplacian(eigenCount, laplacianType);
 		mMeshProcessor.saveMHB(pathMHB, laplacianType);

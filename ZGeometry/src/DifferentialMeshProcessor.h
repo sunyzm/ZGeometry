@@ -62,8 +62,6 @@ public:
 	void	computeSimilarityMap1(int refPoint);
 	void	computeSimilarityMap2(int refPoint);
 	void	computeSimilarityMap3(int refPoint);
-	
-	void    partitionMesh(int partitionCount, std::vector<std::vector<int> >& vSubMeshIdx, std::vector<CMesh*>& vSubMeshes);
 
 	// ---- editing ---- //
 	void addNewHandle(int hIdx);
@@ -92,6 +90,8 @@ public:
 	const MeshFeatureList* getActiveFeatures() const;
 	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
 	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
+
+	static void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinates& eCoord, MeshCoordinates& lCoord);
 
 private:
 	int mRefVert;

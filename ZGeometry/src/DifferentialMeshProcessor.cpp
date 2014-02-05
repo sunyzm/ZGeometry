@@ -757,7 +757,26 @@ bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int
 	return true;
 }
 
-void DifferentialMeshProcessor::partitionMesh( int partitionCount, std::vector<std::vector<int> >& vSubMeshIdx, std::vector<CMesh*>& vSubMeshes )
+void DifferentialMeshProcessor::computeGeometricLaplacianCoordinate( const CMesh& mesh, const MeshCoordinates& eCoord, MeshCoordinates& lCoord )
 {
+	using ZGeom::Vec3d;
+	assert(mesh.vertCount() == eCoord.size());
+	int vertCount = mesh.vertCount();
+	lCoord.resize(vertCount);
 
+	for (int i = 0; i < vertCount; ++i)
+	{
+		Vec3d vi = eCoord.getVertCoordinate(i);
+		std::vector<int> neighbors = mesh.getVertNeighborVerts(i, 1, false);
+		Vec3d vavg(0,0,0);
+		double weightSum(0);
+		for (int j : neighbors) {
+			Vec3d vj = eCoord.getVertCoordinate(j);
+			double weight = (vi - vj).length();
+			vavg += vj * weight;
+			weightSum += weight;
+		}
+		vavg /= weightSum;
+		lCoord[i] = vi - vavg;
+	}
 }

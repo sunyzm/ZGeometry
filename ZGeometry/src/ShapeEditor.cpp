@@ -712,7 +712,14 @@ void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const 
 {
 	const MeshCoordinates& oldCoord = getOldMeshCoord();
 	std::cout << "Evaluate " << leadText << "\n";
-	std::cout << "  Avg Position Error: " << oldCoord.difference(newCoord) << "\n\n";
+	double dif1 = oldCoord.difference(newCoord);
+	MeshCoordinates lCoord1, lCoord2;
+	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldCoord, lCoord1);
+	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, newCoord, lCoord2);
+	double dif2 = lCoord1.difference(lCoord2);
+	std::cout << "  Avg Position Error: " << dif1 << '\n';
+	std::cout << "  Avg Mixed Error:    " << (dif1 + dif2)/2.0 << '\n';
+	std::cout << '\n';
 }
 
 void ShapeEditor::runTests()
@@ -1016,14 +1023,13 @@ void ShapeEditor::partitionedApproximationTest1()
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 
 	mShapeApprox.init(mMesh);
-	mShapeApprox.doSegmentation(200);
+	mShapeApprox.doSegmentation(1000);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).getValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
 	emit signatureComputed(QString(StrColorPartitions.c_str()));
 
-	mShapeApprox.doEigenDecomposition(eigenCount);	
-
+	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_Truncation, codingSize);
 	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[0]);
 	mCoords[1] = mShapeApprox.getApproxCoord();

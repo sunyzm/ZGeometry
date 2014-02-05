@@ -668,7 +668,7 @@ void CMesh::clearMesh()
 	m_meshName = "";
 }
 
-bool CMesh::Load( const std::string& sFileName )
+void CMesh::load( const std::string& sFileName )
 {
 	clearMesh();
 	
@@ -676,28 +676,25 @@ bool CMesh::Load( const std::string& sFileName )
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
 
-	bool retVal = false;
 	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
-		retVal = loadFromOBJ(sFileName);
+		loadFromOBJ(sFileName);
 	}
 	else if (ext == ".m" || ext == ".M") {
-		retVal = loadFromM(sFileName);
+		loadFromM(sFileName);
 	}
 	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") {
-		retVal = loadFromPLY(sFileName);
+		loadFromPLY(sFileName);
 	}
 	else if (ext == ".vert" || ext == ".VERT") {
-		retVal = loadFromVERT(sFileName);
+		loadFromVERT(sFileName);
 	}
 	else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
-		retVal = loadFromOFF(sFileName);
+		loadFromOFF(sFileName);
 	}
 	else throw runtime_error("Unrecognizable file extension!");
-	
-	return retVal;
 }
 
-bool CMesh::loadFromOBJ(std::string sFileName)
+void CMesh::loadFromOBJ(std::string sFileName)
 {
 /* -----  format: smf, obj, dat -----
  * vertex:
@@ -708,8 +705,7 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 	//open the file
 	FILE *f;
 	fopen_s(&f, sFileName.c_str(), "r");
-	if (f == NULL)
-		return false;
+	assert(f != NULL);
 
 	char ch = 0;
 	
@@ -773,16 +769,14 @@ bool CMesh::loadFromOBJ(std::string sFileName)
 			m_pFace[i].m_piVertex[j] = *iFace++;
 	}
 
-	bool retVal = construct();
-	return retVal;
+	construct();
 }
 
-bool CMesh::loadFromPLY( string sFileName )
+void CMesh::loadFromPLY( std::string sFileName )
 {
 	FILE *f;
 	fopen_s(&f, sFileName.c_str(), "rb");
-	if (f == NULL)
-		return false;
+	assert (f != NULL);
 
 	int p1, p2, p3, i, vNr, pNr;
 	char nr; 
@@ -833,9 +827,7 @@ bool CMesh::loadFromPLY( string sFileName )
 	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
 
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) { clearMesh(); return false; }	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) { clearMesh(); return false; }	//out of memory
 
 	// READ IN VERTICES
 	for (i = 0; i < vNr; i++) // Reads the vertices
@@ -892,18 +884,15 @@ bool CMesh::loadFromPLY( string sFileName )
 
 
 	}
-	bool flag = construct();
-	return flag;
+	construct();
 }
 
-bool CMesh::loadFromVERT(string sFileName)
+void CMesh::loadFromVERT( std::string sFileName )
 {
 	//open the file
 	ifstream infile(sFileName.c_str());
-	if( ! infile )
-	{
-		cerr << "error: unable to open input vert file!\n";
-		return 0;
+	if( ! infile ) {
+		throw std::runtime_error("error: unable to open input vert file!");
 	}
 	list<Vector3D> VertexList;//temporary vertex list
 	list<int> FaceList;//temporary face list
@@ -923,10 +912,8 @@ bool CMesh::loadFromVERT(string sFileName)
 
 	cout << triName << endl;
 	ifstream trifile(triName.c_str());
-	if( ! trifile )
-	{
-		cerr << "error: unable to open input tri file!\n";
-		return 0;
+	if(!trifile) {
+		throw std::runtime_error("unable to open input tri file");
 	}
 
 	int tx,ty,tz;
@@ -946,9 +933,7 @@ bool CMesh::loadFromVERT(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) { clearMesh(); return false; } //out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) { clearMesh(); return false; }   //out of memory
 
 	int i;
 	list<Vector3D>::iterator iVertex = VertexList.begin();
@@ -969,16 +954,10 @@ bool CMesh::loadFromVERT(string sFileName)
 
 	VertexList.clear();
 	FaceList.clear();
-	bool flag = construct();
-	return flag;
+	construct();
 }
 
-bool CMesh::loadFromM(string sFileName)
-// -----  format: smf,m,dat -----
-//vertex:
-//      Vertex id x y z {wid=id rgb=(r g b) normal=(nx ny nz) uv=(u v)}
-//face(triangle):
-//      Face fid  vid1 vid2 vid3 {matid=0}
+void CMesh::loadFromM( std::string sFileName )
 {
 	//open the file
 	ifstream infile;
@@ -1111,9 +1090,9 @@ bool CMesh::loadFromM(string sFileName)
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) { clearMesh(); return false; } //out of memory
+	if (m_pVertex == NULL) { clearMesh(); return; } //out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) { clearMesh(); return false; }//out of memory
+	if (m_pFace == NULL) { clearMesh(); return; }//out of memory
 
 	std::vector<ZGeom::Colorf> vVertColors(m_nVertex);
 	for(int i = 0; i < m_nVertex; i++)
@@ -1136,36 +1115,27 @@ bool CMesh::loadFromM(string sFileName)
 		m_pFace[i].m_piVertex[2] = FaceList[i*3+2]-1;
 	}
 
-	bool flag = construct();
-	//cout << "construc=" << flag << endl;
-	return flag;
+	construct();
 }
 
-bool CMesh::Save(string sFileName)
+void CMesh::save(string sFileName)
 {
 	string sExt = sFileName.substr(sFileName.length()-4);
 	if (sExt == ".obj" || sExt==".OBJ")
-		return (saveToOBJ(sFileName));
+		saveToOBJ(sFileName);
 	sExt = sFileName.substr(sFileName.length()-2);
 	if (sExt == ".m" || sExt==".M")
-		return (saveToM(sFileName));
-	return false;
+		saveToM(sFileName);
 }
 
-bool CMesh::saveToOBJ(string sFileName)
-// -----  format: obj -----
-//vertex:
-//      v x y z,
-//face(triangle):
-//      f v1 v2 v3  (the vertex index is 1-based)
+void CMesh::saveToOBJ( std::string sFileName )
 {
-	if ( m_pVertex == NULL || m_pFace == NULL ) 
-		return false;//empty
+	assert( m_pVertex != NULL && m_pFace != NULL );
 
 	// open the file
 	FILE *f = NULL;
 	fopen_s(&f, sFileName.c_str(),"wb");
-	if (f == NULL) return false;
+	assert(f != NULL);
 
 	// file header
 	fprintf(f, "# vertices : %ld\r\n", m_nVertex);
@@ -1185,20 +1155,15 @@ bool CMesh::saveToOBJ(string sFileName)
 	for (int i = 0; i < m_nFace; i++)
 		fprintf(f, "f %ld %ld %ld\r\n", m_pFace[i].m_piVertex[0] + 1, m_pFace[i].m_piVertex[1] + 1, m_pFace[i].m_piVertex[2] + 1);
 
-
 	fclose(f);
-
-	return true;
 }
 
 // Gu Mesh is used as a possible way to keep parameterizations
 // and the mesh together
-bool CMesh::saveToM(const std::string& sFileName)
+void CMesh::saveToM( const std::string& sFileName )
 {
-
 	FILE* fp;
 	fopen_s(&fp, sFileName.c_str(), "w+");
-	if (!fp) return false;
 	
 	const std::vector<Vector3D>& vVertNormals = getVertNormals();
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
@@ -1238,7 +1203,6 @@ bool CMesh::saveToM(const std::string& sFileName)
 	}
 
 	fclose(fp);
-	return true;
 }
 
 void CMesh::findHoles()
@@ -1297,11 +1261,10 @@ void CMesh::findHoles()
 #endif
 }
 
-bool CMesh::construct()
+void CMesh::construct()
 {
 	// face normal and area, boundary vertices are computed in the process
-	if (m_pVertex == NULL || m_pFace == NULL) 
-		return false;	//empty
+	assert(m_pVertex != NULL && m_pFace != NULL);
 
 	//delete old edge list
 	delete[] m_pHalfEdge;
@@ -1409,8 +1372,6 @@ bool CMesh::construct()
 
 	buildIndexArrays();
 	this->m_bIsIndexArrayExist = true;
-
-	return true;
 }
 
 void CMesh::calFaceNormals()
@@ -2745,7 +2706,7 @@ std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
 	return v3;
 }
 
-bool CMesh::loadFromOFF( std::string sFileName )
+void CMesh::loadFromOFF( std::string sFileName )
 {
 	// -----  format: off
 	//                #v, #f, #v+#f
@@ -2757,8 +2718,6 @@ bool CMesh::loadFromOFF( std::string sFileName )
 	//open the file
 	FILE *f;
 	fopen_s(&f, sFileName.c_str(), "r");
-	if (f == NULL)
-		return false;
 
 	char *line[100];
 	fscanf_s(f, "%s", line);
@@ -2793,9 +2752,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) {clearMesh(); return false;}	//out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) {clearMesh(); return false;}	//out of memory
 
 	list<Vector3D>::iterator iVertex = VertexList.begin();
 	list<int>::iterator iFace = FaceList.begin();
@@ -2815,8 +2772,7 @@ bool CMesh::loadFromOFF( std::string sFileName )
 
 	VertexList.clear();
 	FaceList.clear();
-	bool flag = construct();
-	return flag;
+	construct();
 }
 
 void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures ) const

@@ -44,7 +44,7 @@ public:
 	ShapeApprox() : mOriginalMesh(NULL) {}
 	void init(CMesh* mesh);
 	void doSegmentation(int maxSize);
-	void doEigenDecomposition(int eigenCount);
+	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
 	void findSparseRepresentation(DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize);
 	void sparseReconstruction(int reconstructSize);
 	void sparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);

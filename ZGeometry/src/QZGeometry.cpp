@@ -335,9 +335,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 	/* compute and decompose mesh Laplacians */
 	//verifyAreas();
-	computeLaplacian(Umbrella);
+	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
-	computeLaplacian(CotFormula);
+	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1);
 
@@ -374,7 +374,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
 	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
 		CMesh& mesh = *mMeshes[obj];
-		mesh.Load(vMeshFiles[obj]);
+		mesh.load(vMeshFiles[obj]);
 		mesh.scaleAreaToVertexNum();
 		mesh.gatherStatistics();        
 	});	
@@ -1624,7 +1624,7 @@ void QZGeometryWindow::addMesh()
 	CStopWatch timer;
 	timer.startTimer();
 	CMesh& mesh = *mMeshes[cur_obj];
-	mesh.Load(filenames.begin()->toStdString());
+	mesh.load(filenames.begin()->toStdString());
 	mesh.scaleAreaToVertexNum();
 	mesh.gatherStatistics();
 	timer.stopTimer();

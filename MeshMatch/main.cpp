@@ -9,11 +9,15 @@ int main(int argc, char *argv[])
 		exit(-1);
 	}
 	CMesh mesh1, mesh2;
-	if (!mesh1.Load(argv[1]) || !mesh2.Load(argv[2])) {
-		std::cerr << "Fail to load mesh files, please check path or file contents!" << std::endl;
+	try {
+		mesh1.load(argv[1]);
+		mesh2.load(argv[2]);
+	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << '\n';
 		exit(-2);
 	}
-
+	
 	char *outfile;
 	if (argc >= 4) outfile = argv[3];
 	else outfile = "correspondence.txt";

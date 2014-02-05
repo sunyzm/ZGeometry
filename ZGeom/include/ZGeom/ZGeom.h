@@ -11,5 +11,7 @@
 #include "SparseMatrix.h"
 #include "EigenSystem.h"
 #include "MatchingPursuit.h"
+#include "Mesh.h"
+#include "MeshProcessing.h"
 
 #endif

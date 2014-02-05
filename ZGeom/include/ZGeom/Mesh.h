@@ -343,8 +343,8 @@ public:
 
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
-	bool		Load(const std::string& sFileName);		// load from file
-	bool	    Save(std::string sFileName);			// save to file
+	void		load(const std::string& sFileName);		// load from file
+	void	    save(std::string sFileName);			// save to file
 	void        move(const Vector3D& translation);		// translate mesh
 	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
 	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
@@ -519,14 +519,14 @@ public:
 
 private:
 	void	clearMesh();
-	bool	construct();	// construct connectivity
-	bool	loadFromOBJ(std::string sFileName);	// load mesh from .obj file
-	bool	loadFromM(std::string sFileName);	// load mesh from .m file
-	bool	loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
-	bool	loadFromPLY(std::string sFileName);	// load mesh from .ply files
-	bool	loadFromOFF(std::string sFileName);
-	bool	saveToOBJ(std::string sFileName);	// save mesh to .obj file
-	bool    saveToM(const std::string& sFileName );    // save mesh to .m file
+	void	construct();	// construct connectivity
+	void	loadFromOBJ(std::string sFileName);	// load mesh from .obj file
+	void	loadFromM(std::string sFileName);	// load mesh from .m file
+	void	loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
+	void	loadFromPLY(std::string sFileName);	// load mesh from .ply files
+	void	loadFromOFF(std::string sFileName);
+	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
+	void	saveToM(const std::string& sFileName );    // save mesh to .m file
 
 	void	calFaceNormals();			// compute face normals
 	void    calVertNormals();			// compute vertex normals

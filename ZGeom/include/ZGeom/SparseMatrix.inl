@@ -260,7 +260,7 @@ namespace ZGeom
 	template<typename F>
 	void SparseMatrix<T>::convertFromDiagonal(const std::vector<F>& diag)
 	{
-		mRowCount = mColCount = mNonzeroCount = diag.size();
+		mRowCount = mColCount = mNonzeroCount = (uint)diag.size();
 		mElements.resize(mRowCount);
 		for (uint k = 0; k < mRowCount; ++k) {
 			mElements[k].mRow = mElements[k].mCol = k + 1;
@@ -291,7 +291,7 @@ namespace ZGeom
 	template<typename U, typename F>
 	void SparseMatrix<T>::convertFromCOO(uint rowCount, uint colCount, const std::vector< std::tuple<U,U,F> >& vElem)
 	{
-		int nnz = vElem.size();
+		int nnz = (int)vElem.size();
 		std::vector<U> rowInd, colInd;
 		std::vector<F> val;
 		for (auto& elem : vElem) {

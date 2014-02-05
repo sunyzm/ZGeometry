@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenCompute.h>
+#include <ZGeom/MeshProcessing.h>
 
 using namespace std;
 using ZGeom::PI;
@@ -43,9 +44,10 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 {
 	int meshSize = tmesh->vertCount();
-	this->constructTutte(tmesh);
-
+	ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
+	mLS.scale(-1);
 	mW.setToIdentity(meshSize);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
+
 	mConstructed = true;
 	m_laplacianType = Umbrella;
 }

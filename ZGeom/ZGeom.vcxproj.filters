@@ -115,6 +115,9 @@
     <ClInclude Include="include\ZGeom\Quat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\MeshProcessing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -172,6 +175,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Quat.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\MeshProcessing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

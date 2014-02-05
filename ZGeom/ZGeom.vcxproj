@@ -238,6 +238,7 @@
     <ClInclude Include="include\ZGeom\Mesh.h" />
     <ClInclude Include="include\ZGeom\Mesh2.h" />
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
+    <ClInclude Include="include\ZGeom\MeshProcessing.h" />
     <ClInclude Include="include\ZGeom\MeshProcessor.h" />
     <ClInclude Include="include\ZGeom\MeshPyramid.h" />
     <ClInclude Include="include\ZGeom\Quadric.h" />
@@ -269,6 +270,7 @@
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
     <ClCompile Include="src\Mesh2.cpp" />
+    <ClCompile Include="src\MeshProcessing.cpp" />
     <ClCompile Include="src\MeshProcessor.cpp" />
     <ClCompile Include="src\MeshPyramid.cpp" />
     <ClCompile Include="src\Quadric.cpp" />
