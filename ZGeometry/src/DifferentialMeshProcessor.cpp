@@ -175,7 +175,7 @@ void DifferentialMeshProcessor::computeSGW1( LaplacianType laplacianType /*= Cot
 	CStopWatch timer;	
 	timer.startTimer();
 
-	const ManifoldHarmonics& mhb = getMHB(laplacianType);
+	const ZGeom::EigenSystem& mhb = getMHB(laplacianType);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 
@@ -229,7 +229,7 @@ void DifferentialMeshProcessor::computeSGW2(LaplacianType laplacianType /*= CotF
 	CStopWatch timer;	
 	timer.startTimer();
 
-	const ManifoldHarmonics& mhb = getMHB(laplacianType);
+	const ZGeom::EigenSystem& mhb = getMHB(laplacianType);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 
@@ -279,7 +279,7 @@ void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType 
 	CStopWatch timer;	
 	timer.startTimer();
 
-	const ManifoldHarmonics& mhb = getMHB(laplacianType);
+	const ZGeom::EigenSystem& mhb = getMHB(laplacianType);
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 
@@ -342,7 +342,7 @@ void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType 
 
 void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	const int vertCount = mMesh->vertCount();
 	values.resize(vertCount);
 
@@ -411,7 +411,7 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -423,7 +423,7 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 
 double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -435,7 +435,7 @@ double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) con
 
 double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);
@@ -448,7 +448,7 @@ double DifferentialMeshProcessor::calSGW( int v1, int v2, double timescale ) con
 
 double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += std::exp(-mhb.getEigVal(k) * timescale);
@@ -458,7 +458,7 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 
 double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
 {
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k) {
 		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
@@ -682,7 +682,7 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
 	const int vertCount = mMesh->vertCount();
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
 	double *pResult = hkmat.raw_ptr();
@@ -714,7 +714,7 @@ void DifferentialMeshProcessor::computeHeatKernelMat( double t, ZGeom::DenseMatr
 void DifferentialMeshProcessor::computeHeatKernelMat_AMP( double t, ZGeom::DenseMatrix<double>& hkmat )
 {
 	const int vertCount = mMesh->vertCount();
-	const ManifoldHarmonics& mhb = getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	const int eigCount = mhb.eigVecCount();
 	hkmat.resize(vertCount, vertCount);
 	double *pResult = hkmat.raw_ptr();

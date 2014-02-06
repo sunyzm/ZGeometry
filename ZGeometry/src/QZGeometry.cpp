@@ -19,22 +19,12 @@
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
-#include "global.h"
 
-using namespace std;
 using ZUtil::Int2String;
 using ZUtil::logic_assert;
 using ZUtil::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
-
-int     QZGeometryWindow::DEFAULT_EIGEN_SIZE      = 300;
-int     QZGeometryWindow::DEFAULT_DEFORM_RING     = 5 ;
-int     QZGeometryWindow::LOAD_MHB_CACHE          = 0;
-double  QZGeometryWindow::MIN_HK_TIMESCALE        = 1;
-double  QZGeometryWindow::DEFUALT_HK_TIMESCALE    = 40.0;
-double  QZGeometryWindow::MAX_HK_TIMESCALE        = 2000.0;
-double  QZGeometryWindow::PARAMETER_SLIDER_CENTER = 50;
-double  QZGeometryWindow::DR_THRESH_INCREMENT     = 0.00001;
+using namespace std;
 
 void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vector<double>& vDisplaySignature)
 {
@@ -54,7 +44,7 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 	vColors.resize(vSize);
 	std::vector<double> tmpSig = vOriSig;
 
-	if (smode == BandCurved) {
+	if (smode == SM_BandCurved) {
 		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
 		double sMin = *mmp.first, sMax = *mmp.second;
 		double bandMin = (double)ui.sliderSigMin->value() / ui.sliderSigMin->maximum() * (sMax - sMin) + sMin;
@@ -66,17 +56,17 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 		}
 	}
 	
-	if (smode == AbsNormalized) {
+	if (smode == SM_AbsNormalized) {
 		for (double& v : tmpSig) v = std::fabs(v);
 	}
 
-	if (smode == LogNormalized) {
+	if (smode == SM_LogNormalized) {
 		double sMin = *(std::minmax_element(tmpSig.begin(), tmpSig.end()).first);
 		if (sMin <= 0) return;
 		for (double& v : tmpSig) v = std::log(v);		
 	}
 
-	if (smode == PosNegPlot)
+	if (smode == SM_PosNegPlot)
 	{
 		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
 		double sMin = *mmp.first, smax = *mmp.second;
@@ -84,8 +74,8 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 		for (int i = 0; i < vSize; ++i) 
 			vColors[i].posNegColor(tmpSig[i] / absMax, ZGeom::ColorOrange, ZGeom::ColorAzure);
 	} 
-	else if (smode == Normalized || smode == AbsNormalized || 
-			 smode == LogNormalized || smode == MarkNegNormalized) 
+	else if (smode == SM_Normalized || smode == SM_AbsNormalized || 
+			 smode == SM_LogNormalized || smode == SM_MarkNegNormalized) 
 	{
 		std::vector<double> normalizedSig;
 		normalizeSignature(tmpSig, normalizedSig);	
@@ -94,29 +84,22 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 		}
 	}	
 
-	if (smode == MarkNegNormalized) {
+	if (smode == SM_MarkNegNormalized) {
 		for (int i = 0; i < vSize; ++i) {
 			if (vOriSig[i] < 0) vColors[i].setAs(ZGeom::ColorBlack);
 		}
 	}
 }
 
-QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) 
-	: QMainWindow(parent, flags)
+QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
-	/* read in configuration parameters from g_configMgr */
-	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", LOAD_MHB_CACHE);
-	g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", PARAMETER_SLIDER_CENTER);
-	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", DEFUALT_HK_TIMESCALE);
-	g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", DEFAULT_EIGEN_SIZE);
-
 	mMeshCount = 0;
 	mObjInFocus = -1;
 	mCurrentBasisScale = 0;
-	mCommonParameter = PARAMETER_SLIDER_CENTER;
-	current_operation = None;
-	mDeformType = Simple;
-	mSignatureMode = SignatureMode::Normalized;
+	mCommonParameter = gSettings.PARAMETER_SLIDER_CENTER;
+	mLastOperation = None;
+	mDeformType = DEFORM_Simple;
+	mSignatureMode = SignatureMode::SM_Normalized;
 	mActiveLalacian = CotFormula;
 
 	/* setup ui and connections */
@@ -126,7 +109,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 	
 	// comboBoxSigMode
 	ui.comboBoxSigMode->clear();
-	for (int i = 0; i < CountSigModes; ++i)
+	for (int i = 0; i < SM_CountSigModes; ++i)
 		ui.comboBoxSigMode->addItem(QString(StrSignatureModeNames[i].c_str()));
 
 	// comboBoxLaplacian
@@ -137,10 +120,10 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags)
 
 	// toolbar
 	ui.spinBoxParameter->setMinimum(0);
-	ui.spinBoxParameter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
+	ui.spinBoxParameter->setMaximum(2 * gSettings.PARAMETER_SLIDER_CENTER);
 	ui.horizontalSliderParamter->setMinimum(0);
-	ui.horizontalSliderParamter->setMaximum(2 * PARAMETER_SLIDER_CENTER);
-	ui.horizontalSliderParamter->setSliderPosition(PARAMETER_SLIDER_CENTER);
+	ui.horizontalSliderParamter->setMaximum(2 * gSettings.PARAMETER_SLIDER_CENTER);
+	ui.horizontalSliderParamter->setSliderPosition(gSettings.PARAMETER_SLIDER_CENTER);
 
 	// status bar
 	mStatusLabel1.setParent(ui.statusBar);
@@ -164,9 +147,9 @@ QZGeometryWindow::~QZGeometryWindow()
 	for (QAction* a : m_actionComputeSimilarities) delete a;
 	for (QAction* a : m_actionComputeLaplacians) delete a;
 
-	delete simlaritySignalMapper;
-	delete laplacianSignalMapper;
-	delete signatureSignalMapper;
+	delete m_simlaritySignalMapper;
+	delete m_laplacianSignalMapper;
+	delete m_signatureSignalMapper;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -174,29 +157,29 @@ void QZGeometryWindow::makeConnections()
 	/*  actionComputeLaplacians  */
 	int laplacianTypeCount = LaplacianTypeCount;
 	m_actionComputeLaplacians.resize(laplacianTypeCount);
-	laplacianSignalMapper = new QSignalMapper(this);
+	m_laplacianSignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < laplacianTypeCount; ++t) {
 		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
 		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
-		laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
-		QObject::connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), laplacianSignalMapper, SLOT(map()));
+		m_laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
+		QObject::connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), m_laplacianSignalMapper, SLOT(map()));
 	}
-	QObject::connect(laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
+	QObject::connect(m_laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
 	/*  actionComputeSimilarities  */
 	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
-	simlaritySignalMapper = new QSignalMapper(this);
+	m_simlaritySignalMapper = new QSignalMapper(this);
 	for (int t = 0; t < SIM_TYPE_COUNT; ++t) {
 		m_actionComputeSimilarities[t] = new QAction(QString("Similarity type ") + QString::number(t), this);
 		ui.menuComputeSimilarityMap->addAction(m_actionComputeSimilarities[t]);
-		simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
-		QObject::connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), simlaritySignalMapper, SLOT(map()));
+		m_simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
+		QObject::connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), m_simlaritySignalMapper, SLOT(map()));
 	}
-	QObject::connect(simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
+	QObject::connect(m_simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
 	
 	/*  actionDisplaySignatures  */
-	signatureSignalMapper = new QSignalMapper(this);
-	QObject::connect(signatureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displaySignature(QString)));
+	m_signatureSignalMapper = new QSignalMapper(this);
+	QObject::connect(m_signatureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displaySignature(QString)));
 
 	////////    Controls	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -476,11 +459,11 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		if (event->modifiers() & Qt::AltModifier) {
 			openOutputLocation();
 		} else {
-			if (mDeformType == Simple)
+			if (mDeformType == DEFORM_Simple)
 				deformSimple();
-			else if (mDeformType == SGW)
+			else if (mDeformType == DEFORM_SGW)
 				deformSGW();
-			else if (mDeformType == Laplace)
+			else if (mDeformType == DEFORM_Laplace)
 				deformLaplace();
 		}
 		break;
@@ -596,7 +579,7 @@ void QZGeometryWindow::deformSimple()
 {
 	mShapeEditor.deformSimple();
 
-	mDeformType = Simple;
+	mDeformType = DEFORM_Simple;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -604,7 +587,7 @@ void QZGeometryWindow::deformSimple()
 void QZGeometryWindow::deformLaplace()
 {
 	mShapeEditor.deformLaplacian();
-	mDeformType = Laplace;
+	mDeformType = DEFORM_Laplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -612,7 +595,7 @@ void QZGeometryWindow::deformLaplace()
 void QZGeometryWindow::deformBiLaplace()
 {
 	mShapeEditor.deformBiLaplacian();
-	mDeformType = BiLaplace;
+	mDeformType = DEFORM_BiLaplace;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -622,7 +605,7 @@ void QZGeometryWindow::deformMixedLaplace()
 {
 	double ks = 1.0, kb = 1.0;
 	mShapeEditor.deformMixedLaplacian(ks, kb);
-	mDeformType = Shell;
+	mDeformType = DEFORM_Shell;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -630,7 +613,7 @@ void QZGeometryWindow::deformMixedLaplace()
 void QZGeometryWindow::deformSGW()
 {
 	mShapeEditor.deformSpectralWavelet();
-	mDeformType = SGW;
+	mDeformType = DEFORM_SGW;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -679,16 +662,17 @@ void QZGeometryWindow::setRefPoint2( int vn )
 void QZGeometryWindow::setCommonParameter( int p )
 {
 	mCommonParameter = p;
+	int sliderCenter = ui.horizontalSliderParamter->maximum()/2;
 
-	if (current_operation == Compute_HKS || current_operation == Compute_HK 
-		|| current_operation == Compute_MHWS || current_operation == Compute_MHW
-		|| current_operation == Compute_SGWS || current_operation == Compute_SGW)
+	if (mLastOperation == Compute_HKS || mLastOperation == Compute_HK 
+		|| mLastOperation == Compute_MHWS || mLastOperation == Compute_MHW
+		|| mLastOperation == Compute_SGWS || mLastOperation == Compute_SGW)
 	{
 		double time_scale;
-		if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-			time_scale = std::exp(std::log(DEFUALT_HK_TIMESCALE / MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)PARAMETER_SLIDER_CENTER) + std::log(MIN_HK_TIMESCALE));
+		if (mCommonParameter <= sliderCenter) 
+			time_scale = std::exp(std::log(gSettings.DEFUALT_HK_TIMESCALE / gSettings.MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)sliderCenter) + std::log(gSettings.MIN_HK_TIMESCALE));
 		else 
-			time_scale = std::exp(std::log(MAX_HK_TIMESCALE / DEFUALT_HK_TIMESCALE) * ((double)(mCommonParameter-PARAMETER_SLIDER_CENTER) / (double)PARAMETER_SLIDER_CENTER) + std::log(DEFUALT_HK_TIMESCALE)); 
+			time_scale = std::exp(std::log(gSettings.MAX_HK_TIMESCALE / gSettings.DEFUALT_HK_TIMESCALE) * (double(mCommonParameter - sliderCenter) / sliderCenter) + std::log(gSettings.DEFUALT_HK_TIMESCALE)); 
 		qout.output(QString().sprintf("HKS timescale %f", time_scale), OUT_STATUS);
 	}
 }
@@ -915,7 +899,8 @@ void QZGeometryWindow::clone()
 
 void QZGeometryWindow::reconstructMHB()
 {
-	double ratio = min((double)mCommonParameter/PARAMETER_SLIDER_CENTER, 1.0);
+	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
+	double ratio = min((double)mCommonParameter/sliderCenter, 1.0);
 	int nEig = mProcessors[0]->getMHB(CotFormula).eigVecCount() * ratio;
 	double avgLen = mMeshes[0]->getAvgEdgeLength();
 
@@ -934,7 +919,8 @@ void QZGeometryWindow::reconstructMHB()
 
 void QZGeometryWindow::displayNeighborVertices()
 {
-	int ring = (mCommonParameter > PARAMETER_SLIDER_CENTER) ? (mCommonParameter - PARAMETER_SLIDER_CENTER) : 1;
+	int sliderCenter = ui.horizontalSliderParamter->maximum()/2;
+	int ring = (mCommonParameter > sliderCenter) ? (mCommonParameter - sliderCenter) : 1;
 
 	int ref = mProcessors[0]->getRefPointIndex();
 	std::vector<int> vn;
@@ -955,7 +941,8 @@ void QZGeometryWindow::displayNeighborVertices()
 
 void QZGeometryWindow::computeEigenfunction()
 {
-	int select_eig = (mCommonParameter - PARAMETER_SLIDER_CENTER >= 0) ? (mCommonParameter - PARAMETER_SLIDER_CENTER + 1) : 1;
+	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
+	int select_eig = (mCommonParameter - sliderCenter >= 0) ? (mCommonParameter - sliderCenter + 1) : 1;
 	LaplacianType lapType = mActiveLalacian;
 
 	for (int i = 0; i < mMeshCount; ++i) {
@@ -965,21 +952,21 @@ void QZGeometryWindow::computeEigenfunction()
 	}
 
 	displaySignature(StrColorEigenFunction.c_str());
-	current_operation = Compute_Eig_Func;
+	mLastOperation = Compute_Eig_Func;
 	qout.output("Show eigenfunction" + Int2String(select_eig));
 	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::computeHK()
 {
-	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
+	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		//const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
-		const ManifoldHarmonics &mhb = mp.getMHB(mActiveLalacian);
+		//const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
+		const ZGeom::EigenSystem &mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -992,17 +979,17 @@ void QZGeometryWindow::computeHK()
 	displaySignature(StrColorHK.c_str());
 	qout.output(QString().sprintf("HK with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
-	current_operation = Compute_HK;
+	mLastOperation = Compute_HK;
 }
 
 void QZGeometryWindow::computeHKS()
 {
-	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
+	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ManifoldHarmonics& mhb = mp.getMHB(mActiveLalacian);
+		const ZGeom::EigenSystem& mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
@@ -1015,7 +1002,7 @@ void QZGeometryWindow::computeHKS()
 	displaySignature(StrColorHKS.c_str());
 	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
-	current_operation = Compute_HKS;
+	mLastOperation = Compute_HKS;
 }
 
 void QZGeometryWindow::computeBiharmonic()
@@ -1036,7 +1023,7 @@ void QZGeometryWindow::computeBiharmonic()
 
 	displaySignature(StrColorBiharmonic.c_str());
 	updateDisplaySignatureMenu();
-	current_operation = Compute_Biharmonic;
+	mLastOperation = Compute_Biharmonic;
 }
 
 void QZGeometryWindow::computeHKSFeatures()
@@ -1056,14 +1043,14 @@ void QZGeometryWindow::computeHKSFeatures()
 
 void QZGeometryWindow::computeMHW()
 {
-	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
+	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
+		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1076,17 +1063,17 @@ void QZGeometryWindow::computeMHW()
 	displaySignature(StrColorMHW.c_str());
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
-	current_operation = Compute_MHW;
+	mLastOperation = Compute_MHW;
 }
 
 void QZGeometryWindow::computeMHWS()
 {
-	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE);
+	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
+		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1099,7 +1086,7 @@ void QZGeometryWindow::computeMHWS()
 	displaySignature(StrColorMHWS.c_str());
 	qout.output(QString().sprintf("MHWS timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
-	current_operation = Compute_MHWS;
+	mLastOperation = Compute_MHWS;
 }
 
 void QZGeometryWindow::computeMHWFeatures()
@@ -1121,13 +1108,13 @@ void QZGeometryWindow::computeMHWFeatures()
 
 void QZGeometryWindow::computeSGW()
 {
-	double time_scale = parameterFromSlider(DEFUALT_HK_TIMESCALE, MIN_HK_TIMESCALE, MAX_HK_TIMESCALE, true);
+	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE, true);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ManifoldHarmonics& mhb = mp.getMHB(CotFormula);
+		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
@@ -1139,7 +1126,7 @@ void QZGeometryWindow::computeSGW()
 
 	displaySignature(StrColorSGW.c_str());
 	updateDisplaySignatureMenu();
-	current_operation = Compute_SGW;
+	mLastOperation = Compute_SGW;
 }
 
 void QZGeometryWindow::computeSGWSFeatures()
@@ -1160,7 +1147,7 @@ void QZGeometryWindow::computeSGWSFeatures()
 
 void QZGeometryWindow::repeatOperation()
 {
-	switch(current_operation)
+	switch(mLastOperation)
 	{
 	case Compute_Eig_Func:
 		computeEigenfunction();
@@ -1554,7 +1541,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
-	if (LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
+	if (gSettings.LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
 	{
 		ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
@@ -1574,7 +1561,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	int totalToDecompose = 0;
-	int nEigVec = DEFAULT_EIGEN_SIZE;
+	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		if (!mProcessors[obj]->hasLaplacian(laplacianType))
@@ -1672,8 +1659,8 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 			QAction* newDisplayAction = new QAction(attr->getAttrName().c_str(), this);
 			m_actionDisplaySignatures.push_back(newDisplayAction);
 			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
-			signatureSignalMapper->setMapping(newDisplayAction, attr->getAttrName().c_str());
-			QObject::connect(newDisplayAction, SIGNAL(triggered()), signatureSignalMapper, SLOT(map()));
+			m_signatureSignalMapper->setMapping(newDisplayAction, attr->getAttrName().c_str());
+			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
 		}	
 	}
 }
@@ -1776,7 +1763,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 	const CMesh& mesh = *mMeshes[obj];
 	
 	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
-	if (!LOAD_MHB_CACHE) return true;    
+	if (!gSettings.LOAD_MHB_CACHE) return true;    
 
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
@@ -1814,8 +1801,8 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
 	const MeshLaplacian &lap1 = mProcessors[0]->getMeshLaplacian(CotFormula);
 	const MeshLaplacian &lap2 = mProcessors[1]->getMeshLaplacian(CotFormula);
-	const ManifoldHarmonics& mhb1 = mProcessors[0]->getMHB(CotFormula);
-	const ManifoldHarmonics& mhb2 = mProcessors[1]->getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb1 = mProcessors[0]->getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb2 = mProcessors[1]->getMHB(CotFormula);
 	ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
 	lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
 	lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);
@@ -1892,11 +1879,12 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
 {
+	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
 	double para;
-	if (mCommonParameter <= PARAMETER_SLIDER_CENTER) 
-		para = std::exp( std::log(sDefault / sMin) * (double(mCommonParameter) / PARAMETER_SLIDER_CENTER) + std::log(sMin) );
+	if (mCommonParameter <= sliderCenter) 
+		para = std::exp( std::log(sDefault / sMin) * (double(mCommonParameter) / sliderCenter) + std::log(sMin) );
 	else 
-		para = std::exp( std::log(sMax / sDefault) * (double(mCommonParameter - PARAMETER_SLIDER_CENTER) / PARAMETER_SLIDER_CENTER) + std::log(sDefault) ); 
+		para = std::exp( std::log(sMax / sDefault) * (double(mCommonParameter - sliderCenter) / sliderCenter) + std::log(sDefault) ); 
 	
 	if (verbose) std::cout << "Parameter value: " << para << std::endl;
 	return para;
@@ -1925,7 +1913,7 @@ void QZGeometryWindow::computeGeodesics()
 
 	displaySignature(StrColorGeodesics.c_str());
 	updateDisplaySignatureMenu();
-	current_operation = Compute_Geodesics;
+	mLastOperation = Compute_Geodesics;
 }
 
 void QZGeometryWindow::computeHeatTransfer()
@@ -1943,7 +1931,7 @@ void QZGeometryWindow::computeHeatTransfer()
 
 	displaySignature(StrColorHeat.c_str());
 	updateDisplaySignatureMenu();
-	current_operation = Compute_Heat;
+	mLastOperation = Compute_Heat;
 }
 
 void QZGeometryWindow::diffusionFlow()
@@ -2064,11 +2052,11 @@ void QZGeometryWindow::displayBasis( int idx )
 	}
 
 	displaySignature(StrColorWaveletBasis.c_str());
-	current_operation = Compute_Edit_Basis;
+	mLastOperation = Compute_Edit_Basis;
 	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
 	updateDisplaySignatureMenu();
 
-	if (mSignatureMode == BandCurved) {
+	if (mSignatureMode == SM_BandCurved) {
 		ui.sliderSigMin->triggerAction(QAbstractSlider::SliderToMinimum);
 		ui.sliderSigMax->triggerAction(QAbstractSlider::SliderToMaximum);
 		updateSignatureMin(ui.sliderSigMin->minimum());
@@ -2078,10 +2066,10 @@ void QZGeometryWindow::displayBasis( int idx )
 
 void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 {
-	for (int i = 0; i < CountSigModes; ++i)
+	for (int i = 0; i < SM_CountSigModes; ++i)
 		if (sigModeName == StrSignatureModeNames[i].c_str()) mSignatureMode = (SignatureMode)i;
 	
-	if (mSignatureMode == BandCurved) {
+	if (mSignatureMode == SM_BandCurved) {
 		ui.sliderSigMin->setEnabled(true);
 		ui.sliderSigMax->setEnabled(true);
 		ui.sliderSigMin->setValue(ui.sliderSigMin->minimum());
@@ -2097,7 +2085,7 @@ void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 
 void QZGeometryWindow::updateSignatureMin( int sMin )
 {
-	if (mSignatureMode != BandCurved) return;
+	if (mSignatureMode != SM_BandCurved) return;
 	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
@@ -2108,12 +2096,12 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 	double newVal = (double)sMin / (double)ui.sliderSigMin->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMin->setText("Min: " + QString::number(newVal));
 	
-	updateSignature(BandCurved);
+	updateSignature(SM_BandCurved);
 }
 
 void QZGeometryWindow::updateSignatureMax( int sMax )
 {
-	if (mSignatureMode != BandCurved) return;
+	if (mSignatureMode != SM_BandCurved) return;
 	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
@@ -2124,7 +2112,7 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	double newVal = (double)sMax / (double)ui.sliderSigMax->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMax->setText("Max: " + QString::number(newVal));
 
-	updateSignature(BandCurved);
+	updateSignature(SM_BandCurved);
 }
 
 void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
@@ -2185,7 +2173,7 @@ void QZGeometryWindow::computeDictAtom()
 
 	displaySignature(StrColorDictAtom.c_str());
 	updateDisplaySignatureMenu();
-	current_operation = Compute_Dict_Atom;
+	mLastOperation = Compute_Dict_Atom;
 }
 
 void QZGeometryWindow::resizeApproxSlider( int slider, int newSize )

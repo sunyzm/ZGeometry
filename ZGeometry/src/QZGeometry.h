@@ -4,15 +4,12 @@
 #include <string>
 #include <QMainWindow>
 #include <QSignalMapper>
-#include <engine.h>
-#include <ZUtil/SimpleConfigLoader.h>
-#include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/Mesh.h>
-#include "OutputHelper.h"
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"
 #include "ShapeEditor.h"
+#include "global.h"
 
 class QZGeometryWindow : public QMainWindow
 {
@@ -121,7 +118,6 @@ private slots:
 
 	void updateDisplaySignatureMenu();
 	void openOutputLocation();
-
 	void resizeApproxSlider(int slider, int newSize);
 
 private:	
@@ -138,7 +134,6 @@ private:
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
 	void updateSignature(SignatureMode smode);
-
 	/* helper functions */
 	void evalDistance();
 	void computeFunctionMaps(int num);
@@ -146,12 +141,24 @@ private:
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 	void updateSegmentationColors(int obj, const std::vector<int>& vPartIdx, const Palette& partPalette);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
-
-private:	
-	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::Normalized);
+	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::SM_Normalized);
 
 	/* fields */
-	Ui::ZGeometryClass	ui;
+	Ui::ZGeometryClass	  ui;
+	QSignalMapper*		  m_laplacianSignalMapper;	
+	QSignalMapper*		  m_simlaritySignalMapper;	
+	QSignalMapper*		  m_signatureSignalMapper;
+	std::vector<QAction*> m_actionComputeLaplacians;
+	std::vector<QAction*> m_actionComputeSimilarities;
+	std::vector<QAction*> m_actionDisplaySignatures;
+	QLabel mStatusLabel1;
+
+	std::vector<CMesh*>	                    mMeshes;
+	std::vector<DifferentialMeshProcessor*>	mProcessors;
+	std::vector<RenderSettings*>			mRenderManagers;
+	ShapeMatcher mShapeMatcher;
+	ShapeEditor	 mShapeEditor;
+
 	DeformType			mDeformType;
 	LaplacianType       mActiveLalacian;
 	SignatureMode		mSignatureMode;
@@ -159,12 +166,6 @@ private:
 	int					mMeshCount;
 	int					mCurrentBasisScale;
 	int					mCommonParameter;
-	
-	std::vector<CMesh*>	                    mMeshes;
-	std::vector<DifferentialMeshProcessor*>	mProcessors;
-	std::vector<RenderSettings*>			mRenderManagers;
-	ShapeMatcher mShapeMatcher;
-	ShapeEditor	 mShapeEditor;
 
 	enum {Compute_HKS, Compute_HK, 
 		  Compute_MHWS, Compute_MHW, 
@@ -172,24 +173,6 @@ private:
 		  Compute_Eig_Func, Compute_Biharmonic, 
 		  Compute_Edit_Basis, Compute_Dict_Atom,
 		  Compute_Geodesics, Compute_Heat,
-		  None} current_operation;
-
-	QSignalMapper*		  laplacianSignalMapper;	
-	QSignalMapper*		  simlaritySignalMapper;	
-	QSignalMapper*		  signatureSignalMapper;
-	std::vector<QAction*> m_actionComputeLaplacians;
-	std::vector<QAction*> m_actionComputeSimilarities;
-	std::vector<QAction*> m_actionDisplaySignatures;
-
-	QLabel mStatusLabel1;
-
-	/*---- static members as constant parameters ----*/
-	static int DEFAULT_EIGEN_SIZE;
-	static int DEFAULT_DEFORM_RING; 
-	static int LOAD_MHB_CACHE;
-	static double MIN_HK_TIMESCALE;
-	static double DEFUALT_HK_TIMESCALE;
-	static double MAX_HK_TIMESCALE;
-	static double PARAMETER_SLIDER_CENTER;
-	static double DR_THRESH_INCREMENT;
+		  None
+	} mLastOperation;
 };

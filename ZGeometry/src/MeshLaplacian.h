@@ -9,17 +9,6 @@
 #include <ZGeom/Mesh.h>
 #include "global.h"
 
-enum LaplacianType {
-	Tutte = 0, Umbrella, NormalizedUmbrella, CotFormula, SymCot, 
-	Anisotropic1,
-	Anisotropic2, IsoApproximate, 
-	LaplacianTypeCount
-};
-
-class ManifoldHarmonics : public ZGeom::EigenSystem
-{
-};
-
 class MeshLaplacian : public ZGeom::Laplacian
 {
 public:

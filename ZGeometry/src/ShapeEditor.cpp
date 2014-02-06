@@ -147,7 +147,7 @@ void ShapeEditor::fourierReconstruct( int nEig )
 		
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
-	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
+	const ZGeom::EigenSystem &mhb = mProcessor->getMHB(lapType);
 	ZUtil::logic_assert(nEig <= mhb.eigVecCount(), "Insufficient eigenvectors in mhb");
 
 	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0),
@@ -741,7 +741,7 @@ void ShapeEditor::monolithicApproximationTest1( bool computeSGW, bool sgwCoding 
 	/* prepare prerequisite data */
 	const int vertCount = mMesh->vertCount();
 	const MeshCoordinates& oldCoord = getOldMeshCoord();	
-	const ManifoldHarmonics &graphMHB = mProcessor->getMHB(Umbrella);
+	const ZGeom::EigenSystem &graphMHB = mProcessor->getMHB(Umbrella);
 
 	std::vector<double> wDiag;
 	mProcessor->getMeshLaplacian(Umbrella).getW().getDiagonal(wDiag);
@@ -874,7 +874,7 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 	/* prepare prerequisite data */
 	const int vertCount = mMesh->vertCount();
 	const MeshCoordinates& oldCoord = getOldMeshCoord();
-	const ManifoldHarmonics &cotMHB = mProcessor->getMHB(CotFormula);
+	const ZGeom::EigenSystem &cotMHB = mProcessor->getMHB(CotFormula);
 
 	std::vector<double> wDiag;
 	mProcessor->getMeshLaplacian(CotFormula).getW().getDiagonal(wDiag);
@@ -1062,7 +1062,7 @@ void ShapeEditor::spectrumTest1()
 	LaplacianType lapType = SymCot;
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
-	const ManifoldHarmonics &mhb = mProcessor->getMHB(lapType);
+	const ZGeom::EigenSystem &mhb = mProcessor->getMHB(lapType);
 	const int nEig = mhb.eigVecCount();
 
 	using ZGeom::VecNd;

@@ -79,7 +79,7 @@ public:
 	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
 	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
 	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	const ManifoldHarmonics& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
+	const ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
 	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
@@ -101,7 +101,7 @@ private:
 	int mActiveFeature;
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
-	ManifoldHarmonics mMHBs[LaplacianTypeCount];
+	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
 
 	ZGeom::DenseMatrix<double> mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;

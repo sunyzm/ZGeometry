@@ -50,17 +50,15 @@ void ConstructMeshMatrix( const CMesh& mesh, MeshMatrixType mmt, SparseMatrix<do
 		// Ln = D^(-0.5)*L*D^(-0.5) = I - D^(-0.5)*A*D^(-0.5)
 		ZGeom::SparseMatrix<double> matD;
 		ConstructMeshMatrix(mesh, MM_DEGREE, matD);
-		ConstructMeshMatrix(mesh, MM_GRAPH_LAPLACE, meshMat);
-
 		std::vector<double> vInvSqD;	// D^(-0.5)
 		matD.getDiagonal(vInvSqD);
 		for (double& v : vInvSqD) v = std::pow(v, -0.5);
 
+		ConstructMeshMatrix(mesh, MM_GRAPH_LAPLACE, meshMat);
 		for (auto& elem : meshMat.allElements()) {
 			elem.val() *= vInvSqD[elem.row()-1] * vInvSqD[elem.col()-1];
 		}
 	}
-
 }
 
 } //end of namespace

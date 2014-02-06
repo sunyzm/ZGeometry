@@ -56,6 +56,8 @@ void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
 {
 	/* L = D^(-1/2) * (D-A) * D^(-1/2) */
 	int meshSize = tmesh->vertCount();
+
+#if 0
 	this->constructTutte(tmesh);
 
 	std::vector<double> vD;
@@ -64,6 +66,10 @@ void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
 
 	for (auto& elem : mLS.allElements()) 
 		elem.val() *= vD[elem.row()-1] * vD[elem.col()-1];
+#endif
+
+	ConstructMeshMatrix(*tmesh, ZGeom::MM_NORMALIZED_GRAPH_LAPLACE, mLS);
+	mLS.scale(-1);
 
 	mW.setToIdentity(meshSize);
 	mConstructed = true;
