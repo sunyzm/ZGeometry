@@ -25,6 +25,10 @@ public:
 	VecNd& operator[] (int i) { return mAtoms[i]; }
 	int atomCount() const { return (int)mAtoms.size(); }
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
+	void expandTo(int N) {
+		if (N <= mAtoms.size()) return;
+		mAtoms.resize(N);
+	}
 
 private:
 	std::vector<VecNd> mAtoms;

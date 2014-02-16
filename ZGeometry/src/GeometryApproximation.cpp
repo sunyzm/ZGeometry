@@ -21,10 +21,11 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 	return vPart;
 }
 
-void CalculateSGWDict1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
+void CalculateSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
 	ZGeom::DenseMatrixd matSGW;
-	DifferentialMeshProcessor::computeSGWMat1(mhb, waveletScaleNum, matSGW);
+	DifferentialMeshProcessor::computeSGWMat2(mhb, waveletScaleNum, matSGW);
+	
 	const int vertCount = matSGW.colCount();
 	const int totalAtomCount = matSGW.rowCount();
 
@@ -103,30 +104,38 @@ void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 	std::cout << "** Eigendecomposition finished!\n";
 }
 
-void ShapeApprox::findSparseRepresentation( DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize )
+void ShapeApprox::constructDictionaries( DictionaryType dictType )
+{
+	for (auto& m : mSubMeshApprox)
+		m.constructDict(dictType);
+	std::cout << "** Dictionary constructed!\n";
+}
+
+void ShapeApprox::findSparseRepresentation(SparseApproxMethod codingMethod, int codingSize )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
 
 	for (auto& m : mSubMeshApprox) {
-		m.constructDict(dictType);
 		m.doSparseCoding(codingMethod, codingSize);
 	}
-
 	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::findSparseRepresentationByRatio( DictionaryType dictType, SparseApproxMethod codingMethod, double selRatio )
+void ShapeApprox::findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double selRatio )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
 	ZUtil::logic_assert(selRatio > 0 && selRatio <= 1., "!! Error: illegal coding ratio!");
 
+	CStopWatch timer;
+	timer.startTimer();
+
 	for (auto& m : mSubMeshApprox) {
-		m.constructDict(dictType);
 		int codingSize = int(m.subMeshSize() * selRatio);
 		if (codingSize > m.dictSize()) codingSize = m.dictSize();
 		m.doSparseCoding(codingMethod, codingSize);
 	}
 
+	timer.stopTimer("-- Encoding time: ");
 	std::cout << "** Sparse Coding finished!\n";
 }
 
@@ -202,13 +211,38 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 	int eigVecCount = mEigenSystem.eigVecCount();	
 	mDict.clear();
 
-	if (dictType == DT_Fourier)
+	switch (dictType)
 	{
+	case DT_Fourier:
 		mDict.resize(eigVecCount, vertCount);
 		for (int i = 0; i < eigVecCount; ++i)
 			mDict[i] = mEigenSystem.getEigVec(i);
-	} else if (dictType == DT_SGW1) {
-		CalculateSGWDict1(mEigenSystem, 5, mDict);
+		break;
+	case DT_SGW3:
+		CalculateSGWDict(mEigenSystem, 3, mDict);
+		break;
+	case DT_SGW4:
+		CalculateSGWDict(mEigenSystem, 4, mDict);
+		break;
+	case DT_SGW5:
+		CalculateSGWDict(mEigenSystem, 5, mDict);
+		break;
+	case DT_SGW3MHB:
+		CalculateSGWDict(mEigenSystem, 3, mDict);
+		break;
+	case DT_SGW4MHB:
+		CalculateSGWDict(mEigenSystem, 4, mDict);
+		break;
+	case DT_SGW5MHB:
+		CalculateSGWDict(mEigenSystem, 5, mDict);
+		break;
+	}
+
+	if (dictType == DT_SGW3MHB || dictType == DT_SGW4MHB || dictType == DT_SGW5MHB) {
+		int atomCount = mDict.atomCount();
+		mDict.expandTo(atomCount + eigVecCount);
+		for (int i = 0; i < eigVecCount; ++i)
+			mDict[atomCount + i] = mEigenSystem.getEigVec(i);
 	}
 }
 
@@ -256,7 +290,16 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 				const ZGeom::ApproxItem& item = (*vApproxCoeff[c])[i];
 				mCoding[c][i] = SparseCoeff(item.index(), item.coeff());
 			}
-		}				
+		}		
+
+// 		std::ofstream ofcoding("output/coding2.txt");
+// 		for (int i = 0; i < selectedAtomCount; ++i) {
+// 			for (int c = 0; c < 3; ++c) {
+// 				auto& sc = mCoding[c][i];
+// 				ofcoding << '(' << sc.mIdx << ',' << sc.mCoeff << ") "; 
+// 			}
+// 			ofcoding << '\n';
+// 		}
 	}	
 }
 
@@ -264,6 +307,7 @@ void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
 {
 	int vertCount = mSubMesh.vertCount();
 	if (reconstructAtomCount > this->codingSize()) reconstructAtomCount = this->codingSize();
+	if (reconstructAtomCount <= 0) reconstructAtomCount = this->codingSize();
 
 	mReconstructedCoord.resize(vertCount);
 	for (int i = 0; i < reconstructAtomCount; ++i) {

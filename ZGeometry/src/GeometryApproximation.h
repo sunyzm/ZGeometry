@@ -4,7 +4,7 @@
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"
 
-enum DictionaryType {DT_Fourier, DT_SGW1, DT_MixedFourierSGW};
+enum DictionaryType {DT_Fourier, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
 enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP};
 
 class SubMeshApprox
@@ -47,18 +47,18 @@ public:
 	void init(CMesh* mesh);
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
-	void findSparseRepresentation(DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize);
-	void findSparseRepresentationByRatio(DictionaryType dictType, SparseApproxMethod codingMethod, double selRatio);
+	void constructDictionaries(DictionaryType dictType);
+	void findSparseRepresentation(SparseApproxMethod codingMethod, int codingSize);
+	void findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double selRatio);
 	void doSparseReconstruction(int reconstructSize, MeshCoordinates& approxCoord);
 	void doSparseReconstructionRatio(double basisRatio, MeshCoordinates& approxCoord);
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	//const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
 	int partitionCount() const { return mSubMeshApprox.size(); }
-
+	
 private:
 	CMesh* mOriginalMesh;	
 	std::vector<SubMeshApprox> mSubMeshApprox;
 	std::vector<int> mPartIdx;
-	//MeshCoordinates mApproxCoord;
 };

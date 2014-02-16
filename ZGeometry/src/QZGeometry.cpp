@@ -317,7 +317,6 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	//verifyAreas();
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
