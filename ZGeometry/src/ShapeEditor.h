@@ -65,7 +65,6 @@ private:
 	std::vector<MeshCoordinates> mContReconstructCoords[3];
 	int mCurCoordID;
 	std::vector<MeshCoordinates> mCoords;
-
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	std::vector<ZGeom::VecNd> mAtoms;
 	int mTotalScales;	

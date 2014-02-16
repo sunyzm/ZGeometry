@@ -49,7 +49,7 @@ public:
 	double	calHeatTrace(double timescale) const;
 	double	calBiharmonic(int v1, int v2) const;
 	double	calMHW(int v1, int v2, double timescale) const;
-	double	calSGW(int v1, int v2, double timescale) const;	
+	double	calSGW(int v1, int v2, double timescale, LaplacianType laplacianType) const;	
 	void	computeSGW1(LaplacianType laplacianType = CotFormula);
 	void	computeSGW2(LaplacianType laplacianType = CotFormula);
 	void    computeMixedAtoms1(LaplacianType laplacianType = CotFormula);
@@ -92,6 +92,8 @@ public:
 	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
 
 	static void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinates& eCoord, MeshCoordinates& lCoord);
+	static void computeSGWMat1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
+	static void computeSGWMat2(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
 
 private:
 	int mRefVert;
@@ -103,7 +105,7 @@ private:
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
 
-	ZGeom::DenseMatrix<double> mMatAtoms;
+	ZGeom::DenseMatrixd mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 };

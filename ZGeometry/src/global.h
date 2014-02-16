@@ -37,6 +37,7 @@ const std::string StrLaplacianTypes[] = {
 	"Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"
 };
 
+/* mesh property names */
 const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";
 const std::string StrColorEigenFunction  = "vert_color_eig_function";

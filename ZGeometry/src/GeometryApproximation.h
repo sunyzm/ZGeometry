@@ -26,6 +26,8 @@ public:
 	void doSparseCoding(SparseApproxMethod approxMethod, int codingAtomCount);
 	void sparseReconstruct(int reconstructAtomCount);
 	void sparseReconstructStep(int step);
+	int dictSize() const { return mDict.atomCount(); }
+	int codingSize() const { return mCoding[0].size(); }
 
 private:
 	CMesh mSubMesh;
@@ -46,15 +48,17 @@ public:
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
 	void findSparseRepresentation(DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize);
-	void sparseReconstruction(int reconstructSize);
-	void sparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
+	void findSparseRepresentationByRatio(DictionaryType dictType, SparseApproxMethod codingMethod, double selRatio);
+	void doSparseReconstruction(int reconstructSize, MeshCoordinates& approxCoord);
+	void doSparseReconstructionRatio(double basisRatio, MeshCoordinates& approxCoord);
+	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
-	const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
+	//const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
 	int partitionCount() const { return mSubMeshApprox.size(); }
 
 private:
 	CMesh* mOriginalMesh;	
 	std::vector<SubMeshApprox> mSubMeshApprox;
 	std::vector<int> mPartIdx;
-	MeshCoordinates mApproxCoord;
+	//MeshCoordinates mApproxCoord;
 };

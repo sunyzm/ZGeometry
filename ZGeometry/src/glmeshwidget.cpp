@@ -4,8 +4,6 @@
 #include <fstream>
 #include <vector>
 #include <QFile>
-//#include <gl/GL.h>
-//#include <gl/GLU.h>
 #include <ZUtil/ZUtil.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/Color.h>

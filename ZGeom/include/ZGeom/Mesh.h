@@ -113,10 +113,10 @@ public:
 
 		double errorSum(0);
 		for (int i = 0; i < mSize; ++i) {
-			errorSum += (this->getVertCoordinate(i) - mc2.getVertCoordinate(i)).length();
+			errorSum += std::pow((this->getVertCoordinate(i) - mc2.getVertCoordinate(i)).length(), 2);
 		}
-
-		return errorSum / mSize;
+		errorSum = std::sqrt(errorSum);
+		return errorSum;
 	}
 
 private:

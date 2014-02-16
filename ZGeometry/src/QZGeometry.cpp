@@ -99,8 +99,8 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mCommonParameter = gSettings.PARAMETER_SLIDER_CENTER;
 	mLastOperation = None;
 	mDeformType = DEFORM_Simple;
-	mSignatureMode = SignatureMode::SM_Normalized;
-	mActiveLalacian = CotFormula;
+	mSignatureMode = SM_Normalized;
+	mActiveLalacian = Umbrella;
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -329,6 +329,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	}
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
+		mShapeEditor.runTests();
 	}
 
 	return true;
@@ -1114,11 +1115,11 @@ void QZGeometryWindow::computeSGW()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
+		const ZGeom::EigenSystem& mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-			values[vIdx] = mp.calSGW(refPoint, vIdx, time_scale);
+			values[vIdx] = mp.calSGW(refPoint, vIdx, time_scale, mActiveLalacian);
 		});
 
 		addColorSignature(obj, values, StrColorSGW);
@@ -1784,15 +1785,12 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 void QZGeometryWindow::allocateStorage( int newMeshCount )
 {
 	int existingMeshCount = mMeshes.size();
-
 	assert(newMeshCount > existingMeshCount);
-
 	for (int k = 0; k < newMeshCount - existingMeshCount; ++k) {
 		mMeshes.push_back(new CMesh());
 		mProcessors.push_back(new DifferentialMeshProcessor());
 		mRenderManagers.push_back(new RenderSettings());
 	}
-
 	mMeshCount = newMeshCount;
 }
 

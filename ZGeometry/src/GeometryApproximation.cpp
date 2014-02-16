@@ -3,7 +3,7 @@
 #include "global.h"
 using ZGeom::VecNd;
 
-std::vector<int> metisMeshPartition(const CMesh* mesh, int nPart)
+std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 {
 	int vertCount = mesh->vertCount();
 	std::vector<int> vPart(vertCount);
@@ -23,58 +23,14 @@ std::vector<int> metisMeshPartition(const CMesh* mesh, int nPart)
 
 void CalculateSGWDict1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
-	const int vertCount = mhb.eigVecSize();
-	const int eigCount = mhb.eigVecCount();
-
-	std::function<double(double)> generator1 = [](double x) {
-		if (x < 1) return x*x;
-		else if (x <= 2) return (-5. + 11.*x - 6.*x*x + x*x*x);
-		else return 4.0/x/x;
-	};
-
-	const int nWaveletScales = waveletScaleNum;
-	const int nScalingScales = 1;
-	const int totalAtomCount = vertCount*(nWaveletScales+1);
-
-	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
-	const double K = 20.0;
-	double minEigVal = maxEigVal / K;
-	double minT = 1./maxEigVal, maxT = 2./minEigVal;		
-	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nWaveletScales - 1));
-
-	std::vector<double> vWaveletScales(nWaveletScales);	
-	for (int s = 0; s < nWaveletScales; ++s)
-		vWaveletScales[s] = minT * std::pow(tMultiplier, s);
-
-	ZGeom::DenseMatrixd matAtoms;
-	matAtoms.resize(totalAtomCount, vertCount);
-
-	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
-	const double *pEigVals = &(mhb.getEigVals()[0]);
-	double *pEigVec = matEigVecs.raw_ptr();
-	for (int i = 0; i < eigCount; ++i) 
-		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
-
-	std::vector<double> vDiag(eigCount);
-	//////////////////////////////////////////////////////////////////////////
-	// compute SGW with AMP
-	for (int s = 0; s < nWaveletScales; ++s) {
-		for (int i = 0; i < eigCount; ++i) 
-			vDiag[i] = generator1(vWaveletScales[s] * pEigVals[i]);
-		double *pResult = matAtoms.raw_ptr() + vertCount * vertCount * s;
-		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
-	}
-
-	double gamma = 1;//.3849001794597505097;
-	for (int i = 0; i < eigCount; ++i) 
-		vDiag[i] = gamma * std::exp(-std::pow(pEigVals[i]/(0.6*minEigVal), 4));
-	double *pResult = matAtoms.raw_ptr() + vertCount * vertCount * nWaveletScales;
-	ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+	ZGeom::DenseMatrixd matSGW;
+	DifferentialMeshProcessor::computeSGWMat1(mhb, waveletScaleNum, matSGW);
+	const int vertCount = matSGW.colCount();
+	const int totalAtomCount = matSGW.rowCount();
 
 	dict.resize(totalAtomCount, vertCount);
-	for (int i = 0; i < totalAtomCount; ++i)
-	{
-		ZGeom::VecNd newBasis = matAtoms.getRowVec(i);
+	for (int i = 0; i < totalAtomCount; ++i) {
+		ZGeom::VecNd newBasis = matSGW.getRowVec(i);
 		newBasis.normalize(ZGeom::RegularProductFunc);
 		dict[i] = newBasis;
 	}
@@ -89,8 +45,7 @@ void ShapeApprox::doSegmentation( int maxSize )
 {
 	ZUtil::logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
 	const int originalVertCount = mOriginalMesh->vertCount();
-	int nPart = 1;
-	if (maxSize > 0) nPart = originalVertCount / maxSize + 1;
+	int nPart = (maxSize > 0) ? (originalVertCount / maxSize + 1) : 1;
 
 	if (nPart == 1)	// no segmentation performed; just copy the original mesh
 	{
@@ -104,7 +59,7 @@ void ShapeApprox::doSegmentation( int maxSize )
 	}
 	else 
 	{
-		mPartIdx = metisMeshPartition(mOriginalMesh, nPart);		
+		mPartIdx = MetisMeshPartition(mOriginalMesh, nPart);		
 		mSubMeshApprox.resize(nPart);
 		std::vector<CMesh*> vSubMeshes;
 		std::vector<std::vector<int>*> vMappedIdx;
@@ -125,42 +80,77 @@ void ShapeApprox::doSegmentation( int maxSize )
 			vSubMeshes[s]->setMeshName(subMeshName.toStdString());
 			mSubMeshApprox[s].init();
 		}
-	}
 
-	std::cout << "Shape Approximation - Partitioning finished!" << std::endl;
+		std::cout << "-- number of partitions: " << nPart << '\n';
+		std::cout << "-- sub-mesh sizes: ";
+		for (auto v: vMappedIdx) std::cout << v->size() << ' ';
+		std::cout << '\n';
+	}
+	
+	std::cout << "** Segmentation finished!" << std::endl;
 }
 
 void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 {
+	CStopWatch timer;
+	timer.startTimer();
+
 	for (auto& m : mSubMeshApprox) {
 		m.prepareEigenSystem(lapType, eigenCount);
 	}
-	std::cout << "Shape Approximation - Decomposition finished!\n";
+
+	timer.stopTimer("-- decomposition time: ");
+	std::cout << "** Eigendecomposition finished!\n";
 }
 
 void ShapeApprox::findSparseRepresentation( DictionaryType dictType, SparseApproxMethod codingMethod, int codingSize )
 {
-	ZUtil::logic_assert(!mSubMeshApprox.empty(), "Error: Mesh is not segmented!");
-	int vertCount = mOriginalMesh->vertCount();
-	int segmentationCount = mSubMeshApprox.size();
+	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
 
 	for (auto& m : mSubMeshApprox) {
 		m.constructDict(dictType);
 		m.doSparseCoding(codingMethod, codingSize);
 	}
 
-	std::cout << "Shape Approximation - Sparse Coding finished!\n";
+	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::sparseReconstruction( int reconstructSize )
+void ShapeApprox::findSparseRepresentationByRatio( DictionaryType dictType, SparseApproxMethod codingMethod, double selRatio )
+{
+	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	ZUtil::logic_assert(selRatio > 0 && selRatio <= 1., "!! Error: illegal coding ratio!");
+
+	for (auto& m : mSubMeshApprox) {
+		m.constructDict(dictType);
+		int codingSize = int(m.subMeshSize() * selRatio);
+		if (codingSize > m.dictSize()) codingSize = m.dictSize();
+		m.doSparseCoding(codingMethod, codingSize);
+	}
+
+	std::cout << "** Sparse Coding finished!\n";
+}
+
+void ShapeApprox::doSparseReconstruction( int reconstructSize, MeshCoordinates& approxCoord )
 {
 	for (auto& m : mSubMeshApprox) {
 		m.sparseReconstruct(reconstructSize);
 	}
-	integrateSubmeshApproximation(mApproxCoord);
+	integrateSubmeshApproximation(approxCoord);
 }
 
-void ShapeApprox::sparseReconstructionStepping( int totalSteps, std::vector<MeshCoordinates>& contCoords )
+void ShapeApprox::doSparseReconstructionRatio( double basisRatio, MeshCoordinates& approxCoord )
+{
+	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
+
+	for (auto& m : mSubMeshApprox) {
+		int reconstructSize = m.subMeshSize() * basisRatio;
+		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		m.sparseReconstruct(reconstructSize);
+	}
+	integrateSubmeshApproximation(approxCoord);
+}
+
+void ShapeApprox::doSparseReconstructionStepping( int totalSteps, std::vector<MeshCoordinates>& contCoords )
 {
 	contCoords.resize(totalSteps);
 
@@ -168,8 +158,6 @@ void ShapeApprox::sparseReconstructionStepping( int totalSteps, std::vector<Mesh
 		for (auto& m : mSubMeshApprox) m.sparseReconstructStep(step);
 		integrateSubmeshApproximation(contCoords[step]);		 
 	}
-
-	mApproxCoord = contCoords.back();
 }
 
 void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord)
@@ -195,10 +183,9 @@ void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCo
 {
 	mMeshProcessor.constructLaplacian(laplacianType);
 	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
-	
-	int useCache; 
-	g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", useCache);
+	if (eigenCount == -1) eigenCount = mSubMesh.vertCount() - 1;
 
+	int useCache = gSettings.LOAD_MHB_CACHE;
 	if (useCache != 0 && mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount)) {
 		mMeshProcessor.loadMHB(pathMHB, laplacianType);
 	}
@@ -276,8 +263,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
 {
 	int vertCount = mSubMesh.vertCount();
-	int codingCoeffCount = mCoding[0].size();
-	if (reconstructAtomCount > codingCoeffCount) reconstructAtomCount = codingCoeffCount;
+	if (reconstructAtomCount > this->codingSize()) reconstructAtomCount = this->codingSize();
 
 	mReconstructedCoord.resize(vertCount);
 	for (int i = 0; i < reconstructAtomCount; ++i) {

@@ -59,8 +59,6 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mCoords.resize(4);
 	processor->getMesh()->getVertCoordinates(mCoords[0]); 
 	std::cout << "Shape editor is initialized!" << std::endl;
-
-	runTests();
 }
 
 void ShapeEditor::revertCoordinates()
@@ -77,10 +75,10 @@ void ShapeEditor::changeCoordinates( int coordID )
 {
 	if (coordID < 0 || coordID >= mCoords.size()) return;
 	mCurCoordID = coordID;
-	std::cout << "Current coordinate ID: " << mCurCoordID << '\n';
+	std::cout << "-- Current coordinate ID: " << mCurCoordID << '\n';
 
 	if (mCoords[mCurCoordID].empty())
-		std::cout << "Selected coordinate is empty!\n";
+		std::cout << "!! Selected coordinate is empty!\n";
 	else mMesh->setVertCoordinates(mCoords[mCurCoordID]);
 }
 
@@ -711,20 +709,19 @@ void ShapeEditor::updateEditBasis( const std::vector<ZGeom::VecNd>& vAtoms, cons
 void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const std::string leadText )
 {
 	const MeshCoordinates& oldCoord = getOldMeshCoord();
-	std::cout << "Evaluate " << leadText << "\n";
+	std::cout << "** Evaluate " << leadText << "\n";
 	double dif1 = oldCoord.difference(newCoord);
 	MeshCoordinates lCoord1, lCoord2;
 	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldCoord, lCoord1);
 	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, newCoord, lCoord2);
 	double dif2 = lCoord1.difference(lCoord2);
-	std::cout << "  Avg Position Error: " << dif1 << '\n';
-	std::cout << "  Avg Mixed Error:    " << (dif1 + dif2)/2.0 << '\n';
-	std::cout << '\n';
+	std::cout << "-- Avg position error: " << dif1 << '\n';
+	std::cout << "-- Avg geometric error:    " << (dif1 + dif2)/2.0 << '\n';
 }
 
 void ShapeEditor::runTests()
 {
-	//monolithicApproximationTest1(true, true);
+	//monolithicApproximationTest1(true, false);
 	//monolithicApproximationTest2(false, false);
 	partitionedApproximationTest1();
 }
@@ -1015,43 +1012,88 @@ void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette
 //
 void ShapeEditor::partitionedApproximationTest1()
 {
-	std::cout << "\n--------" << " Starting PartitionedApproxTest1 "
-	          << std::setfill('-') << std::setw(8) << '\n';
-
-	int eigenCount = 300;
+	std::function<void(std::string, char c)> printBeginSeparator = [&](std::string s, char c) {
+		std::cout << '\n';
+		for (int i = 0; i < 8; ++i) std::cout << c;
+		std::cout << ' ' << s << ' ';
+		for (int i = 0; i < 8; ++i) std::cout << c;
+		std::cout << '\n';
+	};
+	std::function<void(char, int)> printEndSeparator = [&](char c, int num) {
+		std::cout << std::setfill(c) << std::setw(num) << '\n';
+	};
+	std::cout << "\n======== Starting PartitionedApproxTest1 ========\n";
+	
+	const int totalVertCount = mMesh->vertCount();
+	int eigenCount = -1;
 	int codingSize = 100;
+	double codingRatio = 1.0;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(1000);
-	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());
+	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).getValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
 	emit signatureComputed(QString(StrColorPartitions.c_str()));
-
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
-	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_Truncation, codingSize);
-	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[0]);
-	mCoords[1] = mShapeApprox.getApproxCoord();
-	evaluateApproximation(mShapeApprox.getApproxCoord(), "PartitionedApprox1");	
-	emit approxStepsChanged(0, codingSize);
-
-	mShapeApprox.findSparseRepresentation(DT_Fourier, SA_SMP, codingSize);
-	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[1]);
-	mCoords[2] = mShapeApprox.getApproxCoord();
-	evaluateApproximation(mShapeApprox.getApproxCoord(), "PartitionedApprox2");
-	emit approxStepsChanged(1, codingSize);
 	
+	std::vector<double> vCompressRatio;
+	for (int i = 2; i <= 20; ++i) vCompressRatio.push_back(0.05*i);
+	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
+	std::ofstream ofs("output/approx_errors.txt");	
+	for (double r : vCompressRatio) ofs << r << ' ';
+	ofs << '\n';
+
+	std::function<void(double)> compressAndEvaluate = [&](double overhead) {
+		for (int i = 0; i < vCompressRatio.size(); ++i) {
+			double basisRatio = vCompressRatio[i] - overhead;
+			mShapeApprox.doSparseReconstructionRatio(basisRatio, vProgressiveCoords[i]);
+		}
+		for (int i = 0; i < vCompressRatio.size(); ++i) {
+			ofs << oldMeshCoord.difference(vProgressiveCoords[i])/totalVertCount << ' ';
+		}
+		ofs << '\n';
+	};
+
+	// 1. low-pass approximate, MHB
+	printBeginSeparator("low-pass approximate, MHB", '-');
+	mShapeApprox.findSparseRepresentationByRatio(DT_Fourier, SA_Truncation, codingRatio);
+	//mShapeApprox.doSparseReconstructionStepping(800, mContReconstructCoords[0]);
+	//evaluateApproximation(mContReconstructCoords[0].back(), "PartitionedApprox1");	
+	//emit approxStepsChanged(0, mContReconstructCoords[0].size());
+	
+	compressAndEvaluate(0.);
+
+	evaluateApproximation(vProgressiveCoords.back(), "1");
+	mContReconstructCoords[0] = vProgressiveCoords;
+	emit approxStepsChanged(0, vProgressiveCoords.size());
+	mCoords[1] = vProgressiveCoords.back();
+	printEndSeparator('-', 40);
+		
+	// 2. SOMP, MHB
+#if 0
+	printBeginSeparator("SOMP, MHB", '-');
+	mShapeApprox.findSparseRepresentationByRatio(DT_Fourier, SA_SMP, codingRatio);
+	mShapeApprox.doSparseReconstructionStepping(800, mContReconstructCoords[1]);
+	mCoords[2] = mShapeApprox.getApproxCoord();
+	evaluateApproximation(mCoords[2], "PartitionedApprox2");
+	emit approxStepsChanged(1, 800);
+	printEndSeparator('-', 40);
+#endif
+#if 0
 	mShapeApprox.findSparseRepresentation(DT_SGW1, SA_SOMP, codingSize);
 	mShapeApprox.sparseReconstructionStepping(codingSize, mContReconstructCoords[2]);
 	mCoords[3] = mShapeApprox.getApproxCoord();
-	evaluateApproximation(mShapeApprox.getApproxCoord(), "PartitionedApprox3");
+	evaluateApproximation(mCoords[3], "PartitionedApprox3");
 	emit approxStepsChanged(2, codingSize);
+#endif	
 
-	changeCoordinates(2);
-
-	std::cout << "PartitionedApproxTest1 completed!\n";
-	std::cout << std::setfill('+') << std::setw(40) << '\n';
+	ofs.close();
+	std::cout << '\n';
+	changeCoordinates(1);
+	std::cout << "** PartitionedApproxTest1 completed!\n";
+	printEndSeparator('=', 40);
 }
 
 /////// compute various eigenvectors indexed by Fiedler vector ////////////////

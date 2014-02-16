@@ -5,6 +5,14 @@
 namespace ZGeom
 {
 	const float* RGBColors[] = { ColorRed, ColorGreen, ColorBlue, ColorYellow, ColorPurple, ColorMagenta, ColorCyan };	
+	
+	void interpolateColor(const float *color1, const float *color2, float coeff1, float *color3)
+	{
+		float coeff2 = 1 - coeff1;
+		for (int i = 0; i < 3; ++i) {
+			color3[i] = color1[i] * coeff2 + color2[i] * coeff1;
+		}		
+	}
 
 	Colorf::Colorf()
 	{
@@ -32,9 +40,21 @@ namespace ZGeom
 	void Colorf::falseColor( float gray, float alpha )
 	{
 		assert(0 <= gray && gray <= 1.f);
+		/*
 		mVal[0] = gray;
 		mVal[1] = (gray < 0.5f) ? gray * 2.f : ((1.f - gray) * 2.f);
 		mVal[2] = 1.f - gray;
+		*/
+		if (gray < 0.25) {
+			interpolateColor(ColorBlue, ColorCyan, gray / 0.25f, mVal);
+		} else if (gray < 0.5) {
+			interpolateColor(ColorCyan, ColorGreen, (gray-0.25f)/0.25f, mVal);
+		} else if (gray < 0.75) {
+			interpolateColor(ColorGreen, ColorYellow, (gray-0.5f)/0.25f, mVal);
+		} else {
+			interpolateColor(ColorYellow, ColorRed, (gray - 0.75f)/0.25f, mVal);
+		}
+
 		mVal[3] = alpha;
 	}
 

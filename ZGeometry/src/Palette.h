@@ -3,6 +3,8 @@
 #include <QColor>
 #include <ZGeom/Color.h>
 
+const float PresetMeshColor1[] = {0.53, 0.70, 0.93, 1.0};
+
 class Palette
 {
 public:
@@ -17,6 +19,8 @@ public:
 			mPaletteColors[i][2] = rgbColor.blueF();
 			mPaletteColors[i][3] = rgbColor.alphaF();
 		}
+
+		if (n == 1) mPaletteColors[0].setAs(PresetMeshColor1);
 	}
 	int totalColors() const { return mPaletteColors.size(); }
 	const ZGeom::Colorf& getColor(int i) const { return mPaletteColors[i]; }

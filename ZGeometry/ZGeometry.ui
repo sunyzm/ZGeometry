@@ -227,7 +227,7 @@
          <attribute name="title">
           <string>Edit</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>0</x>
@@ -263,11 +263,14 @@
                <property name="pageStep">
                 <number>5</number>
                </property>
+               <property name="tracking">
+                <bool>true</bool>
+               </property>
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
                <property name="tickPosition">
-                <enum>QSlider::TicksBothSides</enum>
+                <enum>QSlider::NoTicks</enum>
                </property>
               </widget>
              </item>
@@ -292,7 +295,7 @@
                 <enum>Qt::Horizontal</enum>
                </property>
                <property name="tickPosition">
-                <enum>QSlider::TicksBothSides</enum>
+                <enum>QSlider::NoTicks</enum>
                </property>
               </widget>
              </item>
@@ -317,7 +320,7 @@
                 <enum>Qt::Horizontal</enum>
                </property>
                <property name="tickPosition">
-                <enum>QSlider::TicksBothSides</enum>
+                <enum>QSlider::NoTicks</enum>
                </property>
               </widget>
              </item>
@@ -521,7 +524,7 @@
      <x>0</x>
      <y>0</y>
      <width>1071</width>
-     <height>25</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
