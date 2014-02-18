@@ -21,7 +21,7 @@ public:
 	void changeCoordinates(int coordID);
 	void nextCoordinates();
 	void continuousReconstruct(int selectedApprox, int atomCount);
-	const MeshCoordinates& getOldMeshCoord() const { return mCoords[0]; }
+	const MeshCoordinates& getOldMeshCoord() const { return mOriginalCoord; }
 	const Palette& getPalette() const { return mSegmentPalette; }
 
 	void addNoise(double phi);
@@ -39,6 +39,7 @@ public:
 signals:
 	void approxStepsChanged(int index, int newSize);
 	void signatureComputed(QString sigName);
+	void coordinateSelected(int selectedApprox, int coordIdx);
 
 private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
@@ -56,15 +57,23 @@ private:
 							   int nReconstruct, 
 							   std::vector<MeshCoordinates>& continuousCoords, 
 							   MeshCoordinates& finalCoord);
+	void setStoredCoordinates(const MeshCoordinates& newCoord, int storeIdx);
+	MeshCoordinates& getStoredCoordinate(int idx);
+	const MeshCoordinates& getApproximateCoordinate(int selctedApprox, int coordIdx) {
+		return mContReconstructCoords[selctedApprox][coordIdx];
+	}
+
 // private fields
 	CMesh* mMesh;	
 	DifferentialMeshProcessor* mProcessor;
 	ShapeApprox mShapeApprox;
 	Palette mSegmentPalette;
 
-	std::vector<MeshCoordinates> mContReconstructCoords[3];
+	std::vector<MeshCoordinates> mContReconstructCoords[4];
 	int mCurCoordID;
-	std::vector<MeshCoordinates> mCoords;
+	MeshCoordinates mOriginalCoord;
+	std::vector<MeshCoordinates> mStoredCoordinates;
+	
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	std::vector<ZGeom::VecNd> mAtoms;
 	int mTotalScales;	

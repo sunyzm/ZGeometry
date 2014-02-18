@@ -49,6 +49,16 @@ void writePursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation 
 	}	
 }
 
+void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette, std::vector<ZGeom::Colorf>& vColors)
+{
+	int nPart = partPalette.totalColors();
+	int nPoints = partIdx.size();
+	vColors.resize(nPoints);
+	
+	for (int i = 0; i < nPoints; ++i)
+		vColors[i] = partPalette.getColor(partIdx[i]);
+
+}
 
 void ShapeEditor::init( DifferentialMeshProcessor* processor )
 {
@@ -56,30 +66,31 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mMesh = processor->getMesh();
 	mTotalScales = 0;
 	mCurCoordID = 0;
-	mCoords.resize(4);
-	processor->getMesh()->getVertCoordinates(mCoords[0]); 
+	mStoredCoordinates.resize(4);
+	processor->getMesh()->getVertCoordinates(mOriginalCoord); 
 	std::cout << "Shape editor is initialized!" << std::endl;
 }
 
 void ShapeEditor::revertCoordinates()
 {
-	changeCoordinates(0);
+	mMesh->setVertCoordinates(getOldMeshCoord());
+	qout.output("Coordinate reverted", OUT_STATUS);
 }
 
 void ShapeEditor::nextCoordinates()
 {
-	changeCoordinates((mCurCoordID + 1) % mCoords.size());
+	changeCoordinates((mCurCoordID + 1) % mStoredCoordinates.size());
 }
 
 void ShapeEditor::changeCoordinates( int coordID )
 {
-	if (coordID < 0 || coordID >= mCoords.size()) return;
+	if (coordID < 0 || coordID >= mStoredCoordinates.size()) return;
 	mCurCoordID = coordID;
 	std::cout << "-- Current coordinate ID: " << mCurCoordID << '\n';
 
-	if (mCoords[mCurCoordID].empty())
+	if (mStoredCoordinates[mCurCoordID].empty())
 		std::cout << "!! Selected coordinate is empty!\n";
-	else mMesh->setVertCoordinates(mCoords[mCurCoordID]);
+	else mMesh->setVertCoordinates(mStoredCoordinates[mCurCoordID]);
 }
 
 void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
@@ -115,11 +126,19 @@ void ShapeEditor::addNoise( double phi )
 	mMesh->setVertCoordinates(newCoord);
 }
 
-void ShapeEditor::continuousReconstruct( int selected, int atomCount )
+void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
 {
-	if (selected < 0 || selected >= 3 || atomCount < 0 || atomCount >= mContReconstructCoords[selected].size()) return;
+	if (selected < 0 || selected >= 4 || contCoordIdx < 0 || 
+		contCoordIdx >= mContReconstructCoords[selected].size()) return;
 	if (mContReconstructCoords[selected].empty()) return;
-	mMesh->setVertCoordinates(mContReconstructCoords[selected][atomCount]);
+
+	mMesh->setVertCoordinates(mContReconstructCoords[selected][contCoordIdx]);
+
+	/* visualize the coordinate difference against the original coordinate */
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPosDiff).getValue();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+	emit signatureComputed(QString(StrColorPosDiff.c_str()));
+	emit coordinateSelected(selected, contCoordIdx);
 
 	/* show SGW approximation features */
 #if 0
@@ -779,9 +798,9 @@ void ShapeEditor::monolithicApproximationTest1( bool computeSGW, bool sgwCoding 
 		for (int i = 0; i < nEigTotal; ++i) 
 			vAtoms.push_back(graphMHB.getEigVec(i));
 		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW);
-		computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[0], mCoords[1]);
+		computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[0], getStoredCoordinate(0));
 		//std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n";
-		evaluateApproximation(mCoords[1], "1");
+		evaluateApproximation(getStoredCoordinate(0), "1");
 	}	
 	//////////////////////////////////////////////////////////////////////////
 
@@ -796,13 +815,12 @@ void ShapeEditor::monolithicApproximationTest1( bool computeSGW, bool sgwCoding 
 		timer.startTimer();
 		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW, 2.);
 		timer.stopTimer("Time to compute Fourier SMP: ");
-		computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[1], mCoords[2]);
+		computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[1], getStoredCoordinate(1));
 		
 		std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
 		int selectedFromTop = std::count_if(vSelectedAtomIdx.begin(), vSelectedAtomIdx.end(), [&](int idx) { return idx < vSelectedAtomIdx.size();} );
 		std::cout << "Ratio of MP overlapping: " << (double)selectedFromTop / (double)vSelectedAtomIdx.size() << '\n';
-		//std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n";
-		evaluateApproximation(mCoords[2], "2");
+		evaluateApproximation(getStoredCoordinate(1), "2");
 	}
 
 	//////////////////////////////////////////////////////////////////////////
@@ -839,10 +857,9 @@ void ShapeEditor::monolithicApproximationTest1( bool computeSGW, bool sgwCoding 
 				ofcoding << '\n';
 			}
 
-			computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[2], mCoords[3]);
-			//std::cout << "Reconstruct error (3): " << oldCoord.difference(mCoords[3]) << "\n\n";
-			evaluateApproximation(mCoords[3], "3");
-			changeCoordinates(3);
+			computeApproximations(vAtoms, &vApproxCoeff[0], nAtomSel, mContReconstructCoords[2], getStoredCoordinate(2));
+			evaluateApproximation(getStoredCoordinate(2), "3");
+			changeCoordinates(2);
 #if 0
 			std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
 			updateEditBasis(vAtoms, vSelectedAtomIdx);
@@ -927,9 +944,9 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 
 		GeneralizedSimultaneousFourierApprox(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW);
 		
-		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[0], mCoords[1]);
+		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[0], getStoredCoordinate(0));
 		
-		std::cout << "Reconstruct error (1): " << oldCoord.difference(mCoords[1]) << "\n\n";
+		std::cout << "Reconstruct error (1): " << oldCoord.difference(getStoredCoordinate(0)) << "\n\n";
 	}	
 	//////////////////////////////////////////////////////////////////////////
 
@@ -946,12 +963,12 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 		ZGeom::GeneralizedSimultaneousMP(vSignals, vAtoms, nAtomSel, vApproxCoeff, innerProdDiagW, 2.);
 		timer.stopTimer("Time to compute Fourier SMP: ");
 
-		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[1], mCoords[2]);
+		computeApproximations(vAtoms, &vApproxCoeff[0], nReconstruct, mContReconstructCoords[1], getStoredCoordinate(1));
 		
 		std::vector<int> vSelectedAtomIdx = vApproxX.getAllAtomIndex();	
 		int selectedFromTop = std::count_if(vSelectedAtomIdx.begin(), vSelectedAtomIdx.end(), [&](int idx) { return idx < vSelectedAtomIdx.size();} );
 		std::cout << "Ratio of MP overlapping: " << (double)selectedFromTop / (double)vSelectedAtomIdx.size() << '\n';
-		std::cout << "Reconstruct error (2): " << oldCoord.difference(mCoords[2]) << "\n\n";
+		std::cout << "Reconstruct error (2): " << oldCoord.difference(getStoredCoordinate(1)) << "\n\n";
 	}
 	//////////////////////////////////////////////////////////////////////////
 
@@ -1011,21 +1028,10 @@ void ShapeEditor::monolithicApproximationTest2( bool doWavelet /*= true*/ )
 	std::cout << std::setfill('+') << std::setw(40) << '\n';
 }
 
-void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette, std::vector<ZGeom::Colorf>& vColors)
-{
-	int nPart = partPalette.totalColors();
-	int nPoints = partIdx.size();
-	vColors.resize(nPoints);
-	
-	for (int i = 0; i < nPoints; ++i)
-		vColors[i] = partPalette.getColor(partIdx[i]);
-}
-
 //// Test partitioned approximation with graph Laplacian ////
 //
 void ShapeEditor::partitionedApproximationTest1()
 {
-	revertCoordinates();
 	std::function<void(std::string, char c)> printBeginSeparator = [&](std::string s, char c) {
 		std::cout << '\n';
 		for (int i = 0; i < 8; ++i) std::cout << c;
@@ -1036,12 +1042,13 @@ void ShapeEditor::partitionedApproximationTest1()
 	std::function<void(char, int)> printEndSeparator = [&](char c, int num) {
 		std::cout << std::setfill(c) << std::setw(num) << '\n';
 	};
-	std::cout << "\n======== Starting PartitionedApproxTest1 ========\n";
-	
+
+	revertCoordinates();
+	std::cout << "\n======== Starting PartitionedApproxTest1 ========\n";	
+
 	const int totalVertCount = mMesh->vertCount();
 	int eigenCount = -1;
-	int codingSize = 100;
-	double codingRatio = 1.0;
+	const double maxCodingRatio = 1.0;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 	MeshCoordinates oldGeoCoord;
 	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
@@ -1055,42 +1062,36 @@ void ShapeEditor::partitionedApproximationTest1()
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	
 	std::vector<double> vCompressRatio;
-	for (int i = 2; i <= 19; ++i) vCompressRatio.push_back(0.05*i);
+	for (int i = 1; i <= 9; ++i) vCompressRatio.push_back(0.1*i);
 	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
 	std::ofstream ofs("output/approx_errors.txt");	
 	for (double r : vCompressRatio) ofs << r << ' ';
 	ofs << '\n';
 
-	std::function<void(double, int)> compressAndEvaluate = [&](double overhead, int errorType) {
+	std::function<void(double,bool)> compressAndEvaluate = [&](double overhead, bool exploitSparsity) 
+	{
 		int ratioSteps = vCompressRatio.size();
-		std::vector<double> vMeshErrors(ratioSteps);
-
 		for (int i = 0; i < ratioSteps; ++i) {
 			double basisRatio = vCompressRatio[i] - overhead;
-			mShapeApprox.doSparseReconstructionRatio(basisRatio, vProgressiveCoords[i]);
-			vMeshErrors[i] = oldMeshCoord.difference(vProgressiveCoords[i]);
+			mShapeApprox.doSparseReconstructionByRatio(basisRatio, vProgressiveCoords[i], exploitSparsity);
 		}
 
-		if (errorType == 1) {
-			for (int i = 0; i < ratioSteps; ++i) {
-				ofs << vMeshErrors[i] / totalVertCount << ' ';
-			}
-		} else if (errorType == 2) {
-			MeshCoordinates newGeoCoord;
-			std::vector<double> vGeoErrors(ratioSteps);
-			for (int i = 0; i < ratioSteps; ++i) {
-				DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
-				vGeoErrors[i] = oldGeoCoord.difference(newGeoCoord);
-				double mixedError = (vMeshErrors[i] + vGeoErrors[i]) / (2*totalVertCount);
-				ofs << mixedError << ' ';
-			}
-		}				
+		MeshCoordinates newGeoCoord;
+		for (int i = 0; i < ratioSteps; ++i) {			
+			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			double geoError = oldGeoCoord.difference(newGeoCoord);
+			double mixedError = (meshError + geoError) / (2*totalVertCount);
+			ofs << mixedError << ' ';
+		}
 		ofs << '\n';
 	};
 
-	std::function<void(double)> multiPursuitAndEvaluate = [&](double overhead) {
-		for (int i = 0; i < vCompressRatio.size(); ++i) {
-			mShapeApprox.findSparseRepresentationByRatio(SA_SOMP, vCompressRatio[i] - overhead);
+	std::function<void(double)> multiPursuitAndEvaluate = [&](double overhead) 
+	{
+		int ratioSteps = vCompressRatio.size();
+		for (int i = 0; i < ratioSteps; ++i) {
+			mShapeApprox.findSparseRepresentationByRatio(SA_SOMP, vCompressRatio[i] - overhead, true);
 			mShapeApprox.doSparseReconstruction(-1, vProgressiveCoords[i]);
 
 			MeshCoordinates newGeoCoord;
@@ -1108,12 +1109,12 @@ void ShapeEditor::partitionedApproximationTest1()
 	// 1. low-pass approximate, MHB
 	printBeginSeparator("Low-pass Approx, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
-	mShapeApprox.findSparseRepresentationByRatio(SA_Truncation, codingRatio);	
+	mShapeApprox.findSparseRepresentationByRatio(SA_Truncation, maxCodingRatio, false);	
 	ratioOverhead = 0.;
-	compressAndEvaluate(ratioOverhead, 2);
+	compressAndEvaluate(ratioOverhead, false);
 
 	evaluateApproximation(vProgressiveCoords.back(), "1");
-	mCoords[1] = vProgressiveCoords.back();
+	setStoredCoordinates(vProgressiveCoords.back(), 0);
 	mContReconstructCoords[0] = vProgressiveCoords;
 	emit approxStepsChanged(0, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
@@ -1121,24 +1122,24 @@ void ShapeEditor::partitionedApproximationTest1()
 	// 2. SOMP, MHB
 	printBeginSeparator("SOMP, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
-	mShapeApprox.findSparseRepresentationByRatio(SA_SMP, codingRatio);
+	mShapeApprox.findSparseRepresentationByRatio(SA_SMP, maxCodingRatio, false);
 	ratioOverhead = 1.0/96.0;
-	compressAndEvaluate(ratioOverhead, 2);
+	compressAndEvaluate(ratioOverhead, true);
 
 	evaluateApproximation(vProgressiveCoords.back(), "2");
-	mCoords[2] = vProgressiveCoords.back();
+	setStoredCoordinates(vProgressiveCoords.back(), 1);
 	mContReconstructCoords[1] = vProgressiveCoords;
 	emit approxStepsChanged(1, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
 
-#if 1
-	// 3. SOMP, SGW4
+	// 3. SOMP, SGW
+#if 0
 	printBeginSeparator("SOMP, SGW3", '-');
 	mShapeApprox.constructDictionaries(DT_SGW3);
 	ratioOverhead = 4.0/96.0;
 	multiPursuitAndEvaluate(ratioOverhead);
 #endif
-#if 0
+#if 1
 	printBeginSeparator("SOMP, SGW4", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4);
 	ratioOverhead = 5.0/96.0;
@@ -1151,12 +1152,21 @@ void ShapeEditor::partitionedApproximationTest1()
 	multiPursuitAndEvaluate(ratioOverhead);
 #endif
 #if 1
+	evaluateApproximation(vProgressiveCoords.back(), "3");
+	setStoredCoordinates(vProgressiveCoords.back(), 2);
+	mContReconstructCoords[2] = vProgressiveCoords;
+	emit approxStepsChanged(2, vProgressiveCoords.size());
+	printEndSeparator('-', 40);
+#endif
+
+	// 4. SOMP, SGW + MHB
+#if 0
 	printBeginSeparator("SOMP, SGW3-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW3MHB);
 	ratioOverhead = 5.0/96.0;
 	multiPursuitAndEvaluate(ratioOverhead);
 #endif
-#if 0
+#if 1
 	printBeginSeparator("SOMP, SGW4-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4MHB);
 	ratioOverhead = 6.0/96.0;
@@ -1168,12 +1178,11 @@ void ShapeEditor::partitionedApproximationTest1()
 	ratioOverhead = 7.0/96.0;
 	multiPursuitAndEvaluate(ratioOverhead);
 #endif
-
-#if 1
-	evaluateApproximation(vProgressiveCoords.back(), "3");
-	mCoords[3] = vProgressiveCoords.back();
-	mContReconstructCoords[2] = vProgressiveCoords;
-	emit approxStepsChanged(2, vProgressiveCoords.size());
+#if 1	
+	evaluateApproximation(vProgressiveCoords.back(), "4");
+	setStoredCoordinates(vProgressiveCoords.back(), 3);
+	mContReconstructCoords[3] = vProgressiveCoords;
+	emit approxStepsChanged(3, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
 #endif
 
@@ -1210,5 +1219,17 @@ void ShapeEditor::spectrumTest1()
 		}
 		ofs << std::endl;
 	}
+}
+
+void ShapeEditor::setStoredCoordinates( const MeshCoordinates& newCoord, int idx )
+{
+	if (idx >= mStoredCoordinates.size()) mStoredCoordinates.resize(idx + 1);
+	mStoredCoordinates[idx] = newCoord;
+}
+
+MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
+{
+	if (idx >= mStoredCoordinates.size()) mStoredCoordinates.resize(idx + 1);
+	return mStoredCoordinates[idx];
 }
 

@@ -15,7 +15,7 @@ namespace ZGeom
 		template<typename F> const Vec4<T>& operator = (const Vec4<F>& vec);
 
 		T operator[] (int i) const { return mVal[i]; }
-		T& operator[] (int i) { return mVal[i]; }
+		T& operator[] (int idx) { return mVal[idx]; }
 		T* c_ptr() const { return mVal; }
 
 	protected:

@@ -60,9 +60,12 @@ private slots:
 	void computeGeodesics();
 	void computeHeatTransfer();
 
+	/* interact with shapeEditor */
 	void continuousApprox1(int level);
 	void continuousApprox2(int level);
 	void continuousApprox3(int level);
+	void continuousApprox4(int level);
+	void visualizeCompression(int selctedApprox, int coordIdx);
 
 	void displaySignature(QString sigName );
 	void setSignatureMode(const QString& sigModeName);
@@ -139,7 +142,6 @@ private:
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
-	void updateSegmentationColors(int obj, const std::vector<int>& vPartIdx, const Palette& partPalette);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::SM_Normalized);
 
@@ -151,7 +153,7 @@ private:
 	std::vector<QAction*> m_actionComputeLaplacians;
 	std::vector<QAction*> m_actionComputeSimilarities;
 	std::vector<QAction*> m_actionDisplaySignatures;
-	QLabel mStatusLabel1;
+	QLabel				  mStatusLabel1;
 
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
@@ -175,4 +177,7 @@ private:
 		  Compute_Geodesics, Compute_Heat,
 		  None
 	} mLastOperation;
+
+	int mSelectedApprox, mCoordIdx;
+	double mDiffMax;
 };

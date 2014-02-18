@@ -101,6 +101,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mDeformType = DEFORM_Simple;
 	mSignatureMode = SM_Normalized;
 	mActiveLalacian = Umbrella;
+	mDiffMax = 2.0;
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -207,11 +208,13 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
 	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(displaySignature(QString)));
 	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(updateDisplaySignatureMenu()));
+	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
 
 	////////    tabbed controls	////////
 	QObject::connect(ui.sliderApprox1, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox1(int)));
 	QObject::connect(ui.sliderApprox2, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox2(int)));
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
+	QObject::connect(ui.sliderApprox4, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox4(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
 	QObject::connect(ui.sliderEditBasis, SIGNAL(valueChanged(int)), this, SLOT(displayBasis(int)));
 	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
@@ -566,9 +569,15 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_Minus:
+		mDiffMax -= 0.1;
+		qout.output(QString().sprintf("diff max = %f", mDiffMax), OUT_STATUS);
+		visualizeCompression(mSelectedApprox, mCoordIdx);
 		break;
 
 	case Qt::Key_Equal:
+		mDiffMax += 0.1;
+		qout.output(QString().sprintf("diff max = %f", mDiffMax), OUT_STATUS);
+		visualizeCompression(mSelectedApprox, mCoordIdx);
 		break;
 
 	default: QWidget::keyPressEvent(event);
@@ -1858,7 +1867,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	auto iResult = minmax_element(vVals.begin(), vVals.end());
 	double sMin = *(iResult.first); 
 	double sMax = *(iResult.second);
-	std::cout << "sMin: " << sMin << "\tsMax: " << sMax << std::endl;
+	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
 	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).getValue();
 	vSig = vVals;
@@ -2037,6 +2046,13 @@ void QZGeometryWindow::continuousApprox3( int level )
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::continuousApprox4( int level )
+{
+	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
+	mShapeEditor.continuousReconstruct(3, level-1);
+	ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::displayBasis( int idx )
 {
 	if (mShapeEditor.mEditBasis.empty()) return;
@@ -2178,4 +2194,46 @@ void QZGeometryWindow::resizeApproxSlider( int slider, int newSize )
 	if (slider == 0) ui.sliderApprox1->setMaximum(newSize);
 	else if (slider == 1) ui.sliderApprox2->setMaximum(newSize);
 	else if (slider == 2) ui.sliderApprox3->setMaximum(newSize);
+	else if (slider == 3) ui.sliderApprox4->setMaximum(newSize);
+}
+
+void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
+{
+	mSelectedApprox = selectedApprox;
+	mCoordIdx = coordIdx;
+
+	std::cout << "** start visualizing compression \n";
+	const int vertCount = mMeshes[0]->vertCount();
+	vector<double> vDiff;
+	vDiff.resize(vertCount);
+
+	const MeshCoordinates &oldCoord = mShapeEditor.getOldMeshCoord(),
+		                  &newCoord = mShapeEditor.getApproximateCoordinate(selectedApprox, coordIdx);
+
+	for (int i = 0; i < vertCount; ++i) {
+		vDiff[i] = (oldCoord[i] - newCoord[i]).length();
+	}
+
+	auto iResult = minmax_element(vDiff.begin(), vDiff.end());
+	double sMin = *(iResult.first); 
+	double sMax = *(iResult.second);
+	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
+
+	mMeshes[0]->addColorAttr(StrColorPosDiff);
+	std::vector<ZGeom::Colorf>& vColors = mMeshes[0]->getVertColors(StrColorPosDiff);
+	for (int i = 0; i < vertCount; ++i) {
+		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax);
+		else vColors[i].falseColor(1.0f);
+	}
+
+
+	/* update color legend */
+	ui.glMeshWidget->mLegendColors.resize(256);
+	std::vector<double> vLegendVals(256);
+	for (int i = 0; i <= 255; ++i) vLegendVals[i] = float(i)/255.0;
+	signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
+
+	displaySignature(StrColorPosDiff.c_str());
+	updateDisplaySignatureMenu();
+	ui.glMeshWidget->update();
 }

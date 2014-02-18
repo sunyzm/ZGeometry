@@ -42,15 +42,15 @@ public:
 
 	T operator [] (uint i) const { return mVec[i]; }
 	T operator () (uint i) const { return mVec[i-1]; }
-	T& operator [] (uint i) { return mVec[i]; }
-	T& operator () (uint i) { return mVec[i-1]; }
+	T& operator [] (uint idx) { return mVec[idx]; }
+	T& operator () (uint idx) { return mVec[idx-1]; }
 	T at(int i) const { 
 		if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!"); 
 		return mVec[i]; 
 	}
-	T& at(int i) {
-		if (i < 0 || i >= mDim) throw std::runtime_error("Invalid VecN subscript!");
-		return mVec[i]; 
+	T& at(int idx) {
+		if (idx < 0 || idx >= mDim) throw std::runtime_error("Invalid VecN subscript!");
+		return mVec[idx]; 
 	}
 
 	T* c_ptr() const { return mVec; }

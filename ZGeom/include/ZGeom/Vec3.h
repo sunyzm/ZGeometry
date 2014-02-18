@@ -29,7 +29,7 @@ public:
 	const Vec3<T>& operator *= (T coeff);
 	const Vec3<T>& operator /= (T coeff);
 	T operator [] (uint i) const;
-	T& operator [] (uint i);
+	T& operator [] (uint idx);
 	T length() const;
 		
 	template<typename U>
@@ -54,9 +54,9 @@ inline T Vec3<T>::operator[]( uint i ) const
 }
 
 template<typename T>
-inline T& Vec3<T>::operator[]( uint i )
+inline T& Vec3<T>::operator[]( uint idx )
 {
-	switch (i) {
+	switch (idx) {
 	case 0: return this->x;
 	case 1: return this->y;
 	case 2: return this->z;

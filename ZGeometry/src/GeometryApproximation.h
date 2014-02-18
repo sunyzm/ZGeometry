@@ -49,9 +49,9 @@ public:
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
 	void constructDictionaries(DictionaryType dictType);
 	void findSparseRepresentation(SparseApproxMethod codingMethod, int codingSize);
-	void findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double selRatio);
+	void findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity);
 	void doSparseReconstruction(int reconstructSize, MeshCoordinates& approxCoord);
-	void doSparseReconstructionRatio(double basisRatio, MeshCoordinates& approxCoord);
+	void doSparseReconstructionByRatio(double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity);
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	//const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }

@@ -27,7 +27,7 @@ public:
 	const Vec2<T>& operator -= (const Vec2<T>& v2);
 	const Vec2<T>& operator *= (T lambda);
 	const Vec2<T>& operator /= (T lambda);
-	T& operator [] (unsigned i) const;
+	T& operator [] (unsigned idx) const;
 	T length() const;
 
 private:
@@ -35,11 +35,11 @@ private:
 };
 
 template<typename T>
-T& Vec2<T>::operator[]( unsigned i ) const
+T& Vec2<T>::operator[]( unsigned idx ) const
 {
-	assert(i == 0 || i == 1);
-	if (i == 0) return this->m_x;
-	else if (i == 1) return this->m_y;
+	assert(idx == 0 || idx == 1);
+	if (idx == 0) return this->m_x;
+	else if (idx == 1) return this->m_y;
 }
 
 template<typename T>

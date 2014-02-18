@@ -24,7 +24,7 @@ namespace ZGeom
 		const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
 		~DenseMatrix() { delete []mData; }
 
-		T& operator () (uint i, uint j) { return mData[i*mCol + j]; }	// 0-based subscript access to matrix elements
+		T& operator () (uint idx, uint j) { return mData[idx*mCol + j]; }	// 0-based subscript access to matrix elements
 		T operator () (uint i, uint j) const { return mData[i*mCol + j]; } // 0-based subscript access to matrix elements
 		
 		bool empty() const { return mData == NULL; }

@@ -121,16 +121,25 @@ void ShapeApprox::findSparseRepresentation(SparseApproxMethod codingMethod, int 
 	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double selRatio )
+void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
-	ZUtil::logic_assert(selRatio > 0 && selRatio <= 1., "!! Error: illegal coding ratio!");
+	ZUtil::logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
 
 	CStopWatch timer;
 	timer.startTimer();
 
 	for (auto& m : mSubMeshApprox) {
-		int codingSize = int(m.subMeshSize() * selRatio);
+		int codingSize = int(m.subMeshSize() * basisRatio);
+
+		if (exploitSparsity) {
+			int subDictSize = m.dictSize();
+			int indexBits = int(std::log((double)subDictSize)/std::log(2.)) + 1;
+			if (codingSize * indexBits < subDictSize) {
+				codingSize += (subDictSize - codingSize*indexBits) / (96 + indexBits);
+			}
+		}
+
 		if (codingSize > m.dictSize()) codingSize = m.dictSize();
 		m.doSparseCoding(codingMethod, codingSize);
 	}
@@ -147,12 +156,21 @@ void ShapeApprox::doSparseReconstruction( int reconstructSize, MeshCoordinates& 
 	integrateSubmeshApproximation(approxCoord);
 }
 
-void ShapeApprox::doSparseReconstructionRatio( double basisRatio, MeshCoordinates& approxCoord )
+void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity )
 {
 	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
 
 	for (auto& m : mSubMeshApprox) {
 		int reconstructSize = m.subMeshSize() * basisRatio;
+
+		if (exploitSparsity) {
+			int subDictSize = m.dictSize();
+			int indexBits = int(std::log((double)subDictSize)/std::log(2.)) + 1;
+			if (reconstructSize * indexBits < subDictSize) {
+				reconstructSize += (subDictSize - reconstructSize*indexBits) / (96 + indexBits);
+			}
+		}
+
 		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
 		m.sparseReconstruct(reconstructSize);
 	}
