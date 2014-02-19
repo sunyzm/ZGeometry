@@ -1061,8 +1061,9 @@ void ShapeEditor::partitionedApproximationTest1()
 	emit signatureComputed(QString(StrColorPartitions.c_str()));
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	
+	/* setup vectors of compress ratios and initialize vProgressiveCoords */
 	std::vector<double> vCompressRatio;
-	for (int i = 1; i <= 9; ++i) vCompressRatio.push_back(0.1*i);
+	for (int i = 1; i <= 8; ++i) vCompressRatio.push_back(0.05 * i);
 	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
 	std::ofstream ofs("output/approx_errors.txt");	
 	for (double r : vCompressRatio) ofs << r << ' ';
@@ -1188,7 +1189,7 @@ void ShapeEditor::partitionedApproximationTest1()
 
 	ofs.close();
 	std::cout << '\n';
-	changeCoordinates(2);
+	changeCoordinates(1);
 	std::cout << "** PartitionedApproxTest1 completed!\n";
 	printEndSeparator('=', 40);
 }

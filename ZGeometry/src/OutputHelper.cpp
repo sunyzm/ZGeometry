@@ -7,7 +7,11 @@
 #include <fstream>
 #include <iostream>
 
-OutputHelper::OutputHelper( void ) : consoleOutput(NULL), statusBar(NULL), statusLabel(NULL) {}
+OutputHelper::OutputHelper( void ) :
+	consoleOutput(NULL), statusBar(NULL), statusLabel(NULL), mDefaultVenue(OUT_CONSOLE)
+{
+
+}
 
 OutputHelper::~OutputHelper(void) {}
 

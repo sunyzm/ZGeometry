@@ -5,6 +5,7 @@
 #include <QMainWindow>
 #include <QSignalMapper>
 #include <ZGeom/Mesh.h>
+#include <ZGeom/Color.h>
 #include "DifferentialMeshProcessor.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"
@@ -178,6 +179,7 @@ private:
 		  None
 	} mLastOperation;
 
+	ZGeom::ColorMapType mColorMapType;
 	int mSelectedApprox, mCoordIdx;
 	double mDiffMax;
 };

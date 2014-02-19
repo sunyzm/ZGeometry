@@ -134,7 +134,7 @@ void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMeth
 
 		if (exploitSparsity) {
 			int subDictSize = m.dictSize();
-			int indexBits = int(std::log((double)subDictSize)/std::log(2.)) + 1;
+			int indexBits = std::ceil(std::log((double)subDictSize)/std::log(2.));
 			if (codingSize * indexBits < subDictSize) {
 				codingSize += (subDictSize - codingSize*indexBits) / (96 + indexBits);
 			}

@@ -37,7 +37,7 @@ namespace ZGeom
 		std::copy_n(c, 4, mVal);
 	}
 
-	void Colorf::falseColor( float gray, float alpha )
+	void Colorf::falseColor( float gray, float alpha, ColorMapType cmt)
 	{
 		assert(0 <= gray && gray <= 1.f);
 		/*
@@ -45,16 +45,30 @@ namespace ZGeom
 		mVal[1] = (gray < 0.5f) ? gray * 2.f : ((1.f - gray) * 2.f);
 		mVal[2] = 1.f - gray;
 		*/
-		if (gray < 0.25) {
-			interpolateColor(ColorBlue, ColorCyan, gray / 0.25f, mVal);
-		} else if (gray < 0.5) {
-			interpolateColor(ColorCyan, ColorGreen, (gray-0.25f)/0.25f, mVal);
-		} else if (gray < 0.75) {
-			interpolateColor(ColorGreen, ColorYellow, (gray-0.5f)/0.25f, mVal);
-		} else {
-			interpolateColor(ColorYellow, ColorRed, (gray - 0.75f)/0.25f, mVal);
+		if (cmt == CM_JET) {
+			if (gray < .125)
+				interpolateColor(ColorDarkBlue, ColorBlue, gray/.125f, mVal);
+			else if (gray < .375)
+				interpolateColor(ColorBlue, ColorCyan, (gray-.125f)/.25f, mVal);
+			else if (gray < .625)
+				interpolateColor(ColorCyan, ColorYellow, (gray-.375f)/.25f, mVal);
+			else if (gray < .875)
+				interpolateColor(ColorYellow, ColorRed, (gray-.625f)/.25f, mVal);
+			else 
+				interpolateColor(ColorRed, ColorDarkRed, (gray-.875f)/.25f, mVal);
+		} 
+		else if (cmt == CM_COOL) {
+			interpolateColor(ColorCyan, ColorMagenta, gray, mVal);			
+		} 
+		else if (cmt == CM_HOT) {
+			if (gray < 0.375)
+				interpolateColor(ColorBlack, ColorRed, gray / 0.375f, mVal);
+			else if(gray < 0.75)
+				interpolateColor(ColorRed, ColorYellow, (gray - 0.375f)/0.375f, mVal);
+			else 
+				interpolateColor(ColorYellow, ColorWhite, (gray - 0.75f)/0.25f, mVal);
 		}
-
+			
 		mVal[3] = alpha;
 	}
 

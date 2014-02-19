@@ -4,20 +4,22 @@
 
 namespace ZGeom
 {
-const float ColorBlack[]   = {0, 0, 0, 1.f};
+const float ColorBlack[]   = {0.1f/2.55f, 0, 0, 1.f};
 const float ColorWhite[]   = {1.f, 1.f, 1.f, 1.f};
 const float ColorMagenta[] = {1.f, 0, 1.f, 1.f};
 const float ColorGreen[]   = {0, 1.f, 0, 1.f};
 const float ColorRed[]     = {1.f, 0, 0, 1.f};
+const float ColorDarkRed[] = {1.28f/2.55f, 0, 0, 1.f};
 const float ColorBlue[]    = {0, 0, 1.f, 1.f};
-const float ColorPurple[]  = {159.f/255.f, 0, 197.f/255.f, 1.f};
+const float ColorDarkBlue[]= {0, 0, 1.43f/2.55f};
+const float ColorPurple[]  = {1.59f/2.55f, 0, 1.97f/2.55f, 1.f};
 const float ColorCyan[]    = {0, 1.f, 1.f, 1.f};
 const float ColorYellow[]  = {1.f, 1.f, 0, 1.f};
 const float ColorOrange[]  = {1.f, 0.5f, 0, 1.f};
 const float ColorAzure[]   = {0, 0.5f, 1.f, 1.f};
 const float* RGBColors[];
 
-
+enum ColorMapType {CM_JET = 0, CM_COOL, CM_HOT, CM_COUNT};
 
 class Colorf : public Vec4s
 {
@@ -31,7 +33,7 @@ public:
 	float b() const { return mVal[2]; }
 	float a() const { return mVal[3]; }
 	float toGrayscale() const { return 0.2989f * r() + 0.5870f * g() + 0.1140f * b(); }
-	void falseColor(float gray, float alpha = 1.f);
+	void falseColor(float gray, float alpha = 1.f, ColorMapType cmt = CM_JET);
 	void posNegColor(float val, const float* colorPos = ColorOrange, const float* colorNeg = ColorAzure);
 
 	void setAs(const float *c);

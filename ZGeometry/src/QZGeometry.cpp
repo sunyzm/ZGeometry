@@ -80,7 +80,7 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 		std::vector<double> normalizedSig;
 		normalizeSignature(tmpSig, normalizedSig);	
 		for (int i = 0; i < vSize; ++i) {
-			vColors[i].falseColor(normalizedSig[i]);		
+			vColors[i].falseColor(normalizedSig[i], 1.f, mColorMapType);		
 		}
 	}	
 
@@ -102,6 +102,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mSignatureMode = SM_Normalized;
 	mActiveLalacian = Umbrella;
 	mDiffMax = 2.0;
+	mColorMapType = ZGeom::CM_JET;
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -451,7 +452,7 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_C:
-		clone();
+		mColorMapType = ZGeom::ColorMapType(int(mColorMapType + 1) % (int)ZGeom::CM_COUNT);
 		break;
 
 	case Qt::Key_D:
@@ -962,7 +963,7 @@ void QZGeometryWindow::computeEigenfunction()
 
 	displaySignature(StrColorEigenFunction.c_str());
 	mLastOperation = Compute_Eig_Func;
-	qout.output("Show eigenfunction" + Int2String(select_eig));
+	qout.output("Show eigenfunction" + Int2String(select_eig), OUT_CONSOLE);
 	updateDisplaySignatureMenu();
 }
 
@@ -1197,7 +1198,7 @@ void QZGeometryWindow::displaySignature(QString sigName )
 			mRenderManagers[i]->mColorSignatureName = sigName.toStdString();
 	}
 
-	if (!ui.glMeshWidget->m_bShowSignature) toggleShowSignature();	
+	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrColorPosDiff) toggleShowSignature();	
 	ui.glMeshWidget->update();
 }
 
@@ -1560,7 +1561,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	{
 		mp.decomposeLaplacian(nEigVec, laplacianType);
 		mp.saveMHB(pathMHB, laplacianType);
-		qout.output("MHB saved to " + pathMHB);
+		qout.output("MHB saved to " + pathMHB, OUT_CONSOLE);
 	}
 
 	std::cout << "Min EigVal: " << mp.getMHB(laplacianType).getEigVals().front() 
@@ -2143,20 +2144,19 @@ void QZGeometryWindow::captureGL()
 	QString filename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	
 	if (img.save(filename))
-		std::cout << "Screenshot saved to " <<  filename.toStdString() << std::endl;
+		qout.output("Screenshot saved to " +  filename + "\n", OUT_CONSOLE);
 }
 
 void QZGeometryWindow::captureGLAs()
 {
 	QImage img = ui.glMeshWidget->grabFrameBuffer();
 	QString defaultFilename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
-
 	QString filename = QFileDialog::getSaveFileName(this, tr("Save screenshot"),
 													defaultFilename,
 													tr("Images (*.png *.jpg)"));
 
 	if (img.save(filename))
-		std::cout << "Screenshot saved to " <<  filename.toStdString() << std::endl;
+	 	qout.output("Screenshot saved to " +  filename + "\n", OUT_CONSOLE);
 }
 
 void QZGeometryWindow::openOutputLocation()
@@ -2202,7 +2202,6 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	mSelectedApprox = selectedApprox;
 	mCoordIdx = coordIdx;
 
-	std::cout << "** start visualizing compression \n";
 	const int vertCount = mMeshes[0]->vertCount();
 	vector<double> vDiff;
 	vDiff.resize(vertCount);
@@ -2222,8 +2221,8 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	mMeshes[0]->addColorAttr(StrColorPosDiff);
 	std::vector<ZGeom::Colorf>& vColors = mMeshes[0]->getVertColors(StrColorPosDiff);
 	for (int i = 0; i < vertCount; ++i) {
-		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax);
-		else vColors[i].falseColor(1.0f);
+		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax, 1.f, mColorMapType);
+		else vColors[i].falseColor(1.0f, 1.f, mColorMapType);
 	}
 
 
@@ -2235,5 +2234,4 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 
 	displaySignature(StrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();
-	ui.glMeshWidget->update();
 }
