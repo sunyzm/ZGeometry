@@ -4,7 +4,7 @@
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"
 
-enum DictionaryType {DT_Fourier, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
+enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
 enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP};
 
 class SubMeshApprox
@@ -48,10 +48,14 @@ public:
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
 	void constructDictionaries(DictionaryType dictType);
-	void findSparseRepresentation(SparseApproxMethod codingMethod, int codingSize);
+	void findSparseRepresentationBySize(SparseApproxMethod codingMethod, int codingSize);
 	void findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity);
-	void doSparseReconstruction(int reconstructSize, MeshCoordinates& approxCoord);
+	void findSparseRepresentationByBasisRatio(SparseApproxMethod codingMethod, double basisRatio);
+	void findSparseRepresentationByCompressionRatio(SparseApproxMethod codingMethod, double compressionRatio);
+	void doSparseReconstructionBySize(int reconstructSize, MeshCoordinates& approxCoord);
 	void doSparseReconstructionByRatio(double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity);
+	void doSparseReconstructionByBasisRatio(double basisRatio, MeshCoordinates& approxCoord);
+	void doSparseReconstructionByCompressionRatio(double compressionRatio, MeshCoordinates& approxCoord);
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	//const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }

@@ -37,6 +37,16 @@ void CalculateSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom:
 	}
 }
 
+int computePursuitCompressionBasisNum(int n, int m, int k1, int k2, double ratio)
+{
+	assert(m > 0);
+	int nBasis1, nBasis2;
+	nBasis1 = (3*n*k1*ratio) / (3*k2 + std::ceil(std::log(m)/std::log(2)));
+	nBasis2 = (3*n*k1*ratio - m) / (3*k2);
+	int nBasis = max(nBasis1, nBasis2);
+	return nBasis;
+}
+
 void ShapeApprox::init( CMesh* mesh )
 {
 	mOriginalMesh = mesh;
@@ -111,7 +121,7 @@ void ShapeApprox::constructDictionaries( DictionaryType dictType )
 	std::cout << "** Dictionary constructed!\n";
 }
 
-void ShapeApprox::findSparseRepresentation(SparseApproxMethod codingMethod, int codingSize )
+void ShapeApprox::findSparseRepresentationBySize(SparseApproxMethod codingMethod, int codingSize )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
 
@@ -121,18 +131,19 @@ void ShapeApprox::findSparseRepresentation(SparseApproxMethod codingMethod, int 
 	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity )
+void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMethod, double basisRatio, bool encodeIndices )
 {
 	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
 	ZUtil::logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
 
 	CStopWatch timer;
 	timer.startTimer();
+	int totalCodingSize(0);
 
 	for (auto& m : mSubMeshApprox) {
 		int codingSize = int(m.subMeshSize() * basisRatio);
 
-		if (exploitSparsity) {
+		if (encodeIndices) {
 			int subDictSize = m.dictSize();
 			int indexBits = std::ceil(std::log((double)subDictSize)/std::log(2.));
 			if (codingSize * indexBits < subDictSize) {
@@ -141,14 +152,61 @@ void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMeth
 		}
 
 		if (codingSize > m.dictSize()) codingSize = m.dictSize();
+		totalCodingSize += codingSize;
 		m.doSparseCoding(codingMethod, codingSize);
 	}
 
 	timer.stopTimer("-- Encoding time: ");
+	std::cout << "-- Total coding size: " << totalCodingSize << '\n';
 	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::doSparseReconstruction( int reconstructSize, MeshCoordinates& approxCoord )
+void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod codingMethod, double basisRatio )
+{
+	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	ZUtil::logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
+	int totalCodingSize(0);
+	CStopWatch timer;
+	timer.startTimer();
+	
+	for (auto& m : mSubMeshApprox) {
+		int codingSize = int(m.subMeshSize() * basisRatio);
+		if (codingSize > m.dictSize()) codingSize = m.dictSize();
+		totalCodingSize += codingSize;
+		m.doSparseCoding(codingMethod, codingSize);
+	}
+
+	timer.stopTimer("-- Encoding time: ");
+	std::cout << "-- Total coding size: " << totalCodingSize << '\n';
+	std::cout << "** Sparse Coding finished!\n";
+}
+
+void ShapeApprox::findSparseRepresentationByCompressionRatio( SparseApproxMethod codingMethod, double compressionRatio )
+{
+	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	ZUtil::logic_assert(compressionRatio > 0 && compressionRatio <= 1., "!! Error: illegal coding ratio!");
+	int totalCodingSize(0);
+	CStopWatch timer;
+	timer.startTimer();
+
+	for (auto& m : mSubMeshApprox) {
+		int subDictSize = m.dictSize();
+		int subMeshSize = m.subMeshSize();
+		int k1 = 32, k2 = 32;	//bit size of float
+		int codingSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
+		ZUtil::runtime_assert(codingSize >= 1, "Number of participating basis must be positive!"); 
+
+		if (codingSize > m.dictSize()) codingSize = m.dictSize();
+		totalCodingSize += codingSize;
+		m.doSparseCoding(codingMethod, codingSize);
+	}
+
+	timer.stopTimer("-- Encoding time: ");
+	std::cout << "-- Total coding size: " << totalCodingSize << '\n';
+	std::cout << "** Sparse Coding finished!\n";
+}
+
+void ShapeApprox::doSparseReconstructionBySize( int reconstructSize, MeshCoordinates& approxCoord )
 {
 	for (auto& m : mSubMeshApprox) {
 		m.sparseReconstruct(reconstructSize);
@@ -159,6 +217,7 @@ void ShapeApprox::doSparseReconstruction( int reconstructSize, MeshCoordinates& 
 void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity )
 {
 	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
+	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
 		int reconstructSize = m.subMeshSize() * basisRatio;
@@ -172,9 +231,47 @@ void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordina
 		}
 
 		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		totalReconstructSize += reconstructSize;
 		m.sparseReconstruct(reconstructSize);
 	}
 	integrateSubmeshApproximation(approxCoord);
+	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';
+}
+
+void ShapeApprox::doSparseReconstructionByBasisRatio( double basisRatio, MeshCoordinates& approxCoord )
+{
+	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
+	int totalReconstructSize(0);
+
+	for (auto& m : mSubMeshApprox) {
+		int reconstructSize = m.subMeshSize() * basisRatio;
+
+		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		totalReconstructSize += reconstructSize;
+		m.sparseReconstruct(reconstructSize);
+	}
+	integrateSubmeshApproximation(approxCoord);
+	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';
+}
+
+void ShapeApprox::doSparseReconstructionByCompressionRatio( double compressionRatio, MeshCoordinates& approxCoord )
+{
+	ZUtil::logic_assert(0 < compressionRatio && compressionRatio <= 1.);
+	int totalReconstructSize(0);
+
+	for (auto& m : mSubMeshApprox) {
+		int subDictSize = m.dictSize();
+		int subMeshSize = m.subMeshSize();
+		int k1 = 32, k2 = 32;	//bit size of float
+		int reconstructSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
+		ZUtil::runtime_assert(reconstructSize >= 1, "Number of participating basis must be positive!"); 
+
+		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		totalReconstructSize += reconstructSize;
+		m.sparseReconstruct(reconstructSize);
+	}
+	integrateSubmeshApproximation(approxCoord);
+	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';;
 }
 
 void ShapeApprox::doSparseReconstructionStepping( int totalSteps, std::vector<MeshCoordinates>& contCoords )
@@ -236,6 +333,17 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 		for (int i = 0; i < eigVecCount; ++i)
 			mDict[i] = mEigenSystem.getEigVec(i);
 		break;
+
+	case DT_FourierSpikes:
+		mDict.resize(eigVecCount + vertCount, vertCount);
+		for (int i = 0; i < eigVecCount; ++i)
+			mDict[i] = mEigenSystem.getEigVec(i);
+		for (int i = 0; i < vertCount; ++i) {
+			mDict[eigVecCount + i].resize(vertCount, 0);
+			mDict[eigVecCount + i][i] = 1.;
+		}
+		break;
+
 	case DT_SGW3:
 		CalculateSGWDict(mEigenSystem, 3, mDict);
 		break;

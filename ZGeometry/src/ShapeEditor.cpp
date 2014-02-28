@@ -743,7 +743,8 @@ void ShapeEditor::runTests()
 {
 	//monolithicApproximationTest1(true, true);
 	//monolithicApproximationTest2(false, false);
-	partitionedApproximationTest1();
+	partitionedApproximationTest2();
+	//partitionedApproximationTest1();
 }
 
 //// Test with graph Laplacian ////
@@ -1044,7 +1045,160 @@ void ShapeEditor::partitionedApproximationTest1()
 	};
 
 	revertCoordinates();
-	std::cout << "\n======== Starting PartitionedApproxTest1 ========\n";	
+	std::cout << "\n======== Starting PartitionedApproxTest 1 ========\n";	
+
+	const int totalVertCount = mMesh->vertCount();
+	int eigenCount = -1;
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	MeshCoordinates oldGeoCoord;
+	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
+
+	mShapeApprox.init(mMesh);
+	mShapeApprox.doSegmentation(1000);
+	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).getValue();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+	emit signatureComputed(QString(StrColorPartitions.c_str()));
+	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
+	
+	/* setup vectors of compress ratios and initialize vProgressiveCoords */
+	const double maxCodingRatio = 1.0;
+	double ratioToTest[] = {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5/*, 0.65, 0.8*/};
+	std::vector<double> vCompressRatio(std::begin(ratioToTest), std::end(ratioToTest));
+
+	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
+	std::ofstream ofs("output/approx_errors.txt");	
+	for (int i = 0; i < vCompressRatio.size(); ++i) 
+		ofs << vCompressRatio[i] << ((i < vCompressRatio.size()-1) ? '\t' : '\n');
+
+	std::function<void(double,SparseApproxMethod,bool)> compressAndEvaluate = [&](double maxRatio, SparseApproxMethod method, bool useCompressionRatio) 
+	{
+		if (useCompressionRatio) {
+			mShapeApprox.findSparseRepresentationByCompressionRatio(method, maxRatio);	
+		} else {
+			mShapeApprox.findSparseRepresentationByBasisRatio(method, maxRatio);
+		}
+
+		int ratiosCount = vCompressRatio.size();
+		for (int i = 0; i < ratiosCount; ++i) {
+			const double ratio = vCompressRatio[i];
+			assert(ratio <= maxRatio);
+			if (useCompressionRatio) {
+				mShapeApprox.doSparseReconstructionByCompressionRatio(ratio, vProgressiveCoords[i]);
+			} else {
+				mShapeApprox.doSparseReconstructionByBasisRatio(ratio, vProgressiveCoords[i]);
+			}
+		}
+
+		MeshCoordinates newGeoCoord;
+		for (int i = 0; i < ratiosCount; ++i) {			
+			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			double geoError = oldGeoCoord.difference(newGeoCoord);
+			double mixedError = (meshError + geoError) / (2*totalVertCount);
+			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
+		}
+	};
+
+	std::function<void(SparseApproxMethod)> pursuitAndEvaluate = [&](SparseApproxMethod method) 
+	{
+		int ratiosCount = vCompressRatio.size();
+		MeshCoordinates newGeoCoord;
+
+		for (int i = 0; i < ratiosCount; ++i) {
+			mShapeApprox.findSparseRepresentationByCompressionRatio(method, vCompressRatio[i]);
+			
+			mShapeApprox.doSparseReconstructionBySize(-1, vProgressiveCoords[i]);
+
+			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			double geoError = oldGeoCoord.difference(newGeoCoord);
+			double mixedError = (meshError + geoError) / (2*totalVertCount);
+			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
+		}
+	};
+
+	double ratioOverhead;
+	// 1. low-pass approximate, MHB
+	printBeginSeparator("Low-pass Approx, MHB", '-');
+	mShapeApprox.constructDictionaries(DT_Fourier);
+	compressAndEvaluate(maxCodingRatio, SA_Truncation, false);
+
+	evaluateApproximation(vProgressiveCoords.back(), "1");
+	setStoredCoordinates(vProgressiveCoords.back(), 0);
+	mContReconstructCoords[0] = vProgressiveCoords;
+	emit approxStepsChanged(0, vProgressiveCoords.size());
+	printEndSeparator('-', 40);
+		
+	// 2. SOMP, MHB
+	printBeginSeparator("SMP, MHB", '-');
+	mShapeApprox.constructDictionaries(DT_Fourier);
+	compressAndEvaluate(maxCodingRatio, SA_SMP, true);
+
+	evaluateApproximation(vProgressiveCoords.back(), "2");
+	setStoredCoordinates(vProgressiveCoords.back(), 1);
+	mContReconstructCoords[1] = vProgressiveCoords;
+	emit approxStepsChanged(1, vProgressiveCoords.size());
+	printEndSeparator('-', 40);
+
+	//2.5 SOMP, MHB+Spikes
+#if 0
+	printBeginSeparator("SOMP, MHB-Spikes", '-');
+	mShapeApprox.constructDictionaries(DT_FourierSpikes);
+	pursuitAndEvaluate(SA_SOMP);
+
+	evaluateApproximation(vProgressiveCoords.back(), "2.5");
+	printEndSeparator('-', 40);
+#endif
+
+	// 3. SOMP, SGW
+#if 1
+	printBeginSeparator("SOMP, SGW", '-');
+	mShapeApprox.constructDictionaries(DT_SGW4);
+	pursuitAndEvaluate(SA_SOMP);
+
+	evaluateApproximation(vProgressiveCoords.back(), "3");
+	setStoredCoordinates(vProgressiveCoords.back(), 2);
+	mContReconstructCoords[2] = vProgressiveCoords;
+	emit approxStepsChanged(2, vProgressiveCoords.size());
+	printEndSeparator('-', 40);
+#endif
+
+	// 4. SOMP, SGW + MHB
+#if 1
+	printBeginSeparator("SOMP, SGW-MHB", '-');
+	mShapeApprox.constructDictionaries(DT_SGW4MHB);
+	pursuitAndEvaluate(SA_SOMP);
+	
+	evaluateApproximation(vProgressiveCoords.back(), "4");
+	setStoredCoordinates(vProgressiveCoords.back(), 3);
+	mContReconstructCoords[3] = vProgressiveCoords;
+	emit approxStepsChanged(3, vProgressiveCoords.size());
+	printEndSeparator('-', 40);
+#endif
+
+	ofs.close();
+	std::cout << '\n';
+	changeCoordinates(1);
+	std::cout << "** PartitionedApproxTest 1 completed!\n";
+	printEndSeparator('=', 40);
+}
+
+void ShapeEditor::partitionedApproximationTest2()
+{
+	std::function<void(std::string, char c)> printBeginSeparator = [&](std::string s, char c) {
+		std::cout << '\n';
+		for (int i = 0; i < 8; ++i) std::cout << c;
+		std::cout << ' ' << s << ' ';
+		for (int i = 0; i < 8; ++i) std::cout << c;
+		std::cout << '\n';
+	};
+	std::function<void(char, int)> printEndSeparator = [&](char c, int num) {
+		std::cout << std::setfill(c) << std::setw(num) << '\n';
+	};
+
+	revertCoordinates();
+	std::cout << "\n======== Starting PartitionedApproxTest 2 ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
 	int eigenCount = -1;
@@ -1060,14 +1214,15 @@ void ShapeEditor::partitionedApproximationTest1()
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
 	emit signatureComputed(QString(StrColorPartitions.c_str()));
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
-	
+
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
-	std::vector<double> vCompressRatio;
-	for (int i = 1; i <= 8; ++i) vCompressRatio.push_back(0.05 * i);
+	double ratioToTest[] = {0.1, 0.15, 0.2, 0.25, 0.3, 0.4/*, 0.5, 0.6, 0.7, 0.8*/};
+	std::vector<double> vCompressRatio(std::begin(ratioToTest), std::end(ratioToTest));
+	//for (int i = 1; i <= 8; ++i) vCompressRatio.push_back(0.1 * i);
 	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
 	std::ofstream ofs("output/approx_errors.txt");	
-	for (double r : vCompressRatio) ofs << r << ' ';
-	ofs << '\n';
+	for (int i = 0; i < vCompressRatio.size()-1; ++i) ofs << vCompressRatio[i] << '\t';
+	ofs << vCompressRatio.back() << '\n';
 
 	std::function<void(double,bool)> compressAndEvaluate = [&](double overhead, bool exploitSparsity) 
 	{
@@ -1083,9 +1238,8 @@ void ShapeEditor::partitionedApproximationTest1()
 			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
-			ofs << mixedError << ' ';
-		}
-		ofs << '\n';
+			ofs << mixedError << (i < ratioSteps-1) ? '\t' : '\n';
+		}		
 	};
 
 	std::function<void(double)> multiPursuitAndEvaluate = [&](double overhead) 
@@ -1093,18 +1247,33 @@ void ShapeEditor::partitionedApproximationTest1()
 		int ratioSteps = vCompressRatio.size();
 		for (int i = 0; i < ratioSteps; ++i) {
 			mShapeApprox.findSparseRepresentationByRatio(SA_SOMP, vCompressRatio[i] - overhead, true);
-			mShapeApprox.doSparseReconstruction(-1, vProgressiveCoords[i]);
+			mShapeApprox.doSparseReconstructionBySize(-1, vProgressiveCoords[i]);
 
 			MeshCoordinates newGeoCoord;
 			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
 			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
-			ofs << mixedError << ' ';
+			ofs << mixedError << (i < ratioSteps-1) ? '\t' : '\n';
+		}
+	};
+
+	std::function<void(double)> multiPursuitAndEvaluate2 = [&](double overhead) 
+	{
+		int ratioSteps = vCompressRatio.size();
+		for (int i = 0; i < ratioSteps; ++i) {
+			mShapeApprox.findSparseRepresentationByRatio(SA_SMP, vCompressRatio[i] - overhead, true);
+			mShapeApprox.doSparseReconstructionBySize(-1, vProgressiveCoords[i]);
+
+			MeshCoordinates newGeoCoord;
+			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			double geoError = oldGeoCoord.difference(newGeoCoord);
+			double mixedError = (meshError + geoError) / (2*totalVertCount);
+			ofs << mixedError << '\t';
 		}
 		ofs << '\n';
 	};
-
 
 	double ratioOverhead;
 	// 1. low-pass approximate, MHB
@@ -1119,7 +1288,7 @@ void ShapeEditor::partitionedApproximationTest1()
 	mContReconstructCoords[0] = vProgressiveCoords;
 	emit approxStepsChanged(0, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
-		
+
 	// 2. SOMP, MHB
 	printBeginSeparator("SOMP, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
@@ -1187,12 +1356,26 @@ void ShapeEditor::partitionedApproximationTest1()
 	printEndSeparator('-', 40);
 #endif
 
+	// 5. SOMP, SGW + MHB
+#if 0
+	printBeginSeparator("SMP, SGW4-MHB", '-');
+	mShapeApprox.constructDictionaries(DT_SGW4MHB);
+	ratioOverhead = 6.0/96.0;
+	multiPursuitAndEvaluate2(ratioOverhead);
+
+	evaluateApproximation(vProgressiveCoords.back(), "5");
+	setStoredCoordinates(vProgressiveCoords.back(), 4);
+	mContReconstructCoords[4] = vProgressiveCoords;
+	printEndSeparator('-', 40);
+#endif
+
 	ofs.close();
 	std::cout << '\n';
 	changeCoordinates(1);
-	std::cout << "** PartitionedApproxTest1 completed!\n";
+	std::cout << "** PartitionedApproxTest 2 completed!\n";
 	printEndSeparator('=', 40);
 }
+
 
 /////// compute various eigenvectors indexed by Fiedler vector ////////////////
 ////
@@ -1233,4 +1416,3 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 	if (idx >= mStoredCoordinates.size()) mStoredCoordinates.resize(idx + 1);
 	return mStoredCoordinates[idx];
 }
-

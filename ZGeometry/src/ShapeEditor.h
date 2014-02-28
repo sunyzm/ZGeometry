@@ -48,6 +48,7 @@ private:
 	void monolithicApproximationTest1(bool computeSGW, bool sgwCoding);	// use graph Laplacian
 	void monolithicApproximationTest2(bool doWavelet = true);	// use CotFormula Laplacian
 	void partitionedApproximationTest1();
+	void partitionedApproximationTest2();
 	void spectrumTest1();
 
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
@@ -69,7 +70,7 @@ private:
 	ShapeApprox mShapeApprox;
 	Palette mSegmentPalette;
 
-	std::vector<MeshCoordinates> mContReconstructCoords[4];
+	std::vector<MeshCoordinates> mContReconstructCoords[5];
 	int mCurCoordID;
 	MeshCoordinates mOriginalCoord;
 	std::vector<MeshCoordinates> mStoredCoordinates;
