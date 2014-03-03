@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZGEOM_QUAT_H
+#define ZGEOM_QUAT_H
 #include "geometry.h"
 
 typedef double mat44[4][4];
@@ -55,3 +56,5 @@ public:
 private:
 	void normalize();
 };
+
+#endif

@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZGEOM_QUADRIC_H
+#define ZGEOM_QUADRIC_H
 #include "Geometry.h"
 
 class Quadric
@@ -37,5 +38,4 @@ private:
 	void initInternal();
 };
 
-
-
+#endif

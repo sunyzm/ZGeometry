@@ -1105,7 +1105,7 @@ void CMesh::loadFromM( std::string sFileName )
 		vVertColors[i][2] = VertexColorList[3*i+2];
 	}
 	
-	addAttr<std::vector<ZGeom::Colorf> >(vVertColors, VERTEX, StrAttrVertColors, CPP_VECTOR_COLOR);
+	addAttr<std::vector<ZGeom::Colorf> >(vVertColors, VERTEX, StrAttrVertColors, CPP_COLOR);
 
 	for(int i = 0; i < m_nFace; i++)
 	{

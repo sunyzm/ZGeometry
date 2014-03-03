@@ -490,7 +490,7 @@ public:
 	MeshAttr< std::vector<ZGeom::Colorf> >& addColorAttr(const std::string& colorAttrName)
 	{
 		if (hasAttr(colorAttrName)) return *getAttr<std::vector<ZGeom::Colorf> >(colorAttrName);
-		else return addAttr<std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_VECTOR_COLOR);
+		else return addAttr<std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_COLOR);
 	}
 
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName)
@@ -501,7 +501,7 @@ public:
 	std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> getColorAttrLists() {
 		std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> vColorAttr;
 		for (auto ap : mAttributes) {
-			if (ap.second->attrType() == AttrType::CPP_VECTOR_COLOR) {
+			if (ap.second->attrType() == AttrType::CPP_COLOR) {
 				vColorAttr.push_back(dynamic_cast<MeshAttr<std::vector<ZGeom::Colorf> > *>(ap.second));
 			}
 		}
