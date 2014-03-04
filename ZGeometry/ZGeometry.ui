@@ -174,7 +174,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <widget class="QWidget" name="tabConsole">
          <attribute name="title">
@@ -701,7 +701,7 @@
     <addaction name="actionComputeGeodesics"/>
     <addaction name="actionComputeBasis"/>
     <addaction name="actionComputeDictionaryAtom"/>
-    <addaction name="actionSegment"/>
+    <addaction name="actionDoPartitioning"/>
     <addaction name="separator"/>
    </widget>
    <widget class="QMenu" name="menuTask">
@@ -1270,9 +1270,9 @@
     <string>Dictionary Atom</string>
    </property>
   </action>
-  <action name="actionSegment">
+  <action name="actionDoPartitioning">
    <property name="text">
-    <string>Segment</string>
+    <string>Partition</string>
    </property>
   </action>
   <action name="actionComputeHKSFeatures">

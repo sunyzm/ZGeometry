@@ -74,7 +74,7 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 		for (int i = 0; i < vSize; ++i) 
 			vColors[i].posNegColor(tmpSig[i] / absMax, ZGeom::ColorOrange, ZGeom::ColorAzure);
 	} 
-	else if (smode == SM_Normalized || smode == SM_AbsNormalized || 
+	else if (smode == SM_Normalized || smode == SM_AbsNormalized || smode == SM_BandCurved ||
 			 smode == SM_LogNormalized || smode == SM_MarkNegNormalized) 
 	{
 		std::vector<double> normalizedSig;

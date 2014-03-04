@@ -5,7 +5,7 @@
 
 #ifdef NDEBUG
 std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME");
-#else NDEBUG
+#else
 std::string mesh_list_name = g_configMgr.getConfigValue("MESH_LIST_NAME_DEBUG");
 #endif
 

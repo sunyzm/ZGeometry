@@ -1090,9 +1090,7 @@ void CMesh::loadFromM( std::string sFileName )
 
 	//read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
-	if (m_pVertex == NULL) { clearMesh(); return; } //out of memory
 	m_pFace = new CFace[m_nFace];
-	if (m_pFace == NULL) { clearMesh(); return; }//out of memory
 
 	std::vector<ZGeom::Colorf> vVertColors(m_nVertex);
 	for(int i = 0; i < m_nVertex; i++)

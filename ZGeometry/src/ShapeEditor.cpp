@@ -564,12 +564,7 @@ void ShapeEditor::deformSpectralWavelet()
 		mMesh->vertRingNeighborVerts(anchorIndex[i], 3, sFree, true);
 		for (int v : sFree) freeVerts.insert(v);
 	}
-#if 0
-	for (int i = 0; i < vertCount; ++i) {
-		if (freeVerts.find(i) == freeVerts.end())
-			fixedVerts.push_back(i);
-	}
-#endif
+
 	const int fixedCount = fixedVerts.size();
 
 	ZGeom::VecNd solveRHS[3];

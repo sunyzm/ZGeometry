@@ -138,12 +138,13 @@ private:
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
 	void updateSignature(SignatureMode smode);
+
 	/* helper functions */
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
-	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
+	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::SM_Normalized);
 
 	/* fields */

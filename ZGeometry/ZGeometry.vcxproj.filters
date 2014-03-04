@@ -68,9 +68,6 @@
     <ClCompile Include="src\DifferentialMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\MatlabWrapper.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\RenderSettings.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -116,9 +113,6 @@
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\DifferentialMeshProcessor.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="src\MatlabWrapper.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\OutputHelper.h">
@@ -175,6 +169,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\GeometryApproximation.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\GeometryProcesser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
