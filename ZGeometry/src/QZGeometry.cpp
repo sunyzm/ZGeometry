@@ -241,9 +241,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
 	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
 	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
-	QObject::connect(ui.actionComputeMHWSFeatures, SIGNAL(triggered()), this, SLOT(computeMHWFeatures()));
 	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
-	QObject::connect(ui.actionComputeSGWSFeatures, SIGNAL(triggered()), this, SLOT(computeSGWSFeatures()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
@@ -481,18 +479,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_J:
-		// a temporary hack
-		if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO) {
-			mProcessors[0]->setActiveFeaturesByID(FEATURE_DEMO2);
-			mProcessors[1]->setActiveFeaturesByID(FEATURE_DEMO2);
-			mShapeMatcher.swapMP();
-		} else if (mProcessors[0]->getActiveFeatures()->id == FEATURE_DEMO2) {
-			mProcessors[0]->setActiveFeaturesByID(FEATURE_DEMO);
-			mProcessors[1]->setActiveFeaturesByID(FEATURE_DEMO);
-			mShapeMatcher.swapMP();
-		}
-		
-		ui.glMeshWidget->update();
 		break;
 
 	case Qt::Key_L:
@@ -939,12 +925,9 @@ void QZGeometryWindow::displayNeighborVertices()
 
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
 		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
-		mfl->setIDandName(FEATURE_NEIGHBORS, "Neighbors");
 	}
-	mProcessors[0]->replaceProperty(mfl);
+	mMeshes[0]->addAttrMeshFeatures(*mfl, StrFeatureNeighbors);
 
-	mProcessors[0]->setActiveFeaturesByID(FEATURE_NEIGHBORS);
-	
 	if (!ui.actionShowFeatures->isChecked()) toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
@@ -1055,8 +1038,7 @@ void QZGeometryWindow::computeMHW()
 {
 	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
-	for (int obj = 0; obj < mMeshCount; ++obj)
-	{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
@@ -1099,22 +1081,6 @@ void QZGeometryWindow::computeMHWS()
 	mLastOperation = Compute_MHWS;
 }
 
-void QZGeometryWindow::computeMHWFeatures()
-{
-	vector<double> vTimes;
-	vTimes.push_back(10);
-	vTimes.push_back(30);
-	vTimes.push_back(90);
-	vTimes.push_back(270);
-
-	for (int i = 0; i < mMeshCount; ++i) {	
-		mProcessors[i]->computeKernelSignatureFeatures(vTimes, MHW_KERNEL);
-	}
-
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
-
-}
 
 void QZGeometryWindow::computeSGW()
 {
@@ -1139,55 +1105,36 @@ void QZGeometryWindow::computeSGW()
 	mLastOperation = Compute_SGW;
 }
 
-void QZGeometryWindow::computeSGWSFeatures()
-{
-	vector<double> vTimes;
-	vTimes.push_back(10);
-	vTimes.push_back(30);
-	vTimes.push_back(90);
-	vTimes.push_back(270);
-
-	for (int i = 0; i < 2; ++i) {
-		mProcessors[i]->computeKernelSignatureFeatures(vTimes, SGW_KERNEL);
-	}
-
-	if (!ui.glMeshWidget->m_bShowFeatures)
-		toggleShowFeatures();
-}
-
 void QZGeometryWindow::repeatOperation()
 {
 	switch(mLastOperation)
 	{
 	case Compute_Eig_Func:
-		computeEigenfunction();
-		break;
+		computeEigenfunction(); break;
 
 	case Compute_Edit_Basis:
-		computeEditBasis();
-		break;
+		computeEditBasis(); break;
 	
 	case Compute_HKS:
-		computeHKS();
-		break;
+		computeHKS(); break;
+
 	case Compute_HK:
-		computeHK();
-		break;
+		computeHK(); break;
+
 	case Compute_Biharmonic:
-		computeBiharmonic();
-		break;
+		computeBiharmonic(); break;
+
 	case Compute_MHWS:
-		computeMHWS();
-		break;
+		computeMHWS(); break;
+
 	case Compute_MHW:
-		computeMHW();
-		break;
+		computeMHW(); break;
+
 	case Compute_SGW:
-		computeSGW();
-		break;
+		computeSGW(); break;
+
 	case Compute_Heat:
-		computeHeatTransfer();
-		break;
+		computeHeatTransfer(); break;
 	}
 }
 
@@ -1606,7 +1553,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double> >(StrOriginalSignature);
+	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
 
 	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -1650,11 +1597,11 @@ void QZGeometryWindow::addMesh()
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
 	if (mObjInFocus < 0) return;
-	std::vector<AttrVertColor*> vColorAttributes = mMeshes[mObjInFocus]->getColorAttrLists();
+	std::vector<AttrVertColors*> vColorAttributes = mMeshes[mObjInFocus]->getColorAttrLists();
 
 	QList<QAction*> signatureActions = ui.menuSignature->actions();
 	for (QAction* qa : m_actionDisplaySignatures) {
-		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColor* attr){ return attr->getAttrName() == qa->text().toStdString();}) 
+		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
 			== vColorAttributes.end())
 		{
 				ui.menuSignature->removeAction(qa);
@@ -1662,14 +1609,14 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 		}
 	}
 
-	for (AttrVertColor* attr : vColorAttributes) {
-		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->getAttrName();})
+	for (AttrVertColors* attr : vColorAttributes) {
+		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
 			== m_actionDisplaySignatures.end())
 		{
-			QAction* newDisplayAction = new QAction(attr->getAttrName().c_str(), this);
+			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
 			m_actionDisplaySignatures.push_back(newDisplayAction);
 			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
-			m_signatureSignalMapper->setMapping(newDisplayAction, attr->getAttrName().c_str());
+			m_signatureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
 		}	
 	}
@@ -1870,7 +1817,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
-	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).getValue();
+	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).attrValue();
 	vSig = vVals;
 
 	mMeshes[obj]->addColorAttr(sigName);
@@ -2103,7 +2050,7 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue< std::vector<double> >(StrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2119,7 +2066,7 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue< std::vector<double> >(StrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 

@@ -18,13 +18,13 @@ using ZGeom::VectorPointwiseProduct;
 using ZGeom::PI;
 
 const double ShapeMatcher::DEFAULT_C_RATIO				= 0.2;
-const double ShapeMatcher::DEFAULT_RANK_EPSILON		= 1e-4;
-const double ShapeMatcher::SPARSIFY_EPSILON			= 1e-6;
+const double ShapeMatcher::DEFAULT_RANK_EPSILON			= 1e-4;
+const double ShapeMatcher::SPARSIFY_EPSILON				= 1e-6;
 const double ShapeMatcher::DEFAULT_FEATURE_TIMESCALE	= 30.0;
-const double ShapeMatcher::DEFAULT_T_MULTIPLIER		= 3.0;
+const double ShapeMatcher::DEFAULT_T_MULTIPLIER			= 3.0;
 const double ShapeMatcher::DEFAULT_MATCH_TIME_LOW		= 10.0;
-const double ShapeMatcher::DEFAULT_MATCH_THRESH        = 0.52;
-const double ShapeMatcher::DEFAULT_EXTREAMA_THRESH     = 0.04;
+const double ShapeMatcher::DEFAULT_MATCH_THRESH			= 0.52;
+const double ShapeMatcher::DEFAULT_EXTREAMA_THRESH		= 0.04;
 const double ShapeMatcher::DEFAULT_REGISTER_TIMESCALE	= 80;
 const int	 ShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
 const int	 ShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
@@ -272,7 +272,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 	ZUtil::logic_assert(obj == 0 || obj == 1);
 	m_vFeatures[obj].clear();
 
-	const CMesh* fineMesh = pOriginalMesh[obj];
+	CMesh* fineMesh = pOriginalMesh[obj];
 	DifferentialMeshProcessor* pMP = pOriginalProcessor[obj];
 	const int fineSize = fineMesh->vertCount();
 	vector<HKSFeature>& vF = m_vFeatures[obj];
@@ -337,9 +337,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 		{
 			tn = default_num_scales;
 			tu = tl * std::pow(2.0, tn-1);
-		}
-		else
-		{
+		} else {
 			if(tu < tl) { tu = tl;/*iter = vF.erase(iter); continue;*/}	// features too close to boundary are discarded
 			tn = log(tu/tl)/log(2.0) + 1.01;	    // tn is the number of timescales
 		}
@@ -349,10 +347,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 
 	MeshFeatureList *mfl = new MeshFeatureList;
 	for (auto iter = vF.begin(); iter != vF.end(); ++iter) mfl->addFeature(new HKSFeature(*iter));
-
-	mfl->setIDandName(FEATURE_MULTI_HKS, "Feature_multiple_hks");
-	pMP->replaceProperty(mfl);
-	pMP->setActiveFeaturesByID(FEATURE_MULTI_HKS);
+	fineMesh->addAttrMeshFeatures(*mfl, StrFeatureMultiHKS);
 
 	m_bFeatureDetected = true;
 }
@@ -3405,8 +3400,6 @@ void ShapeMatcher::sparseMatchingTesting()
 
 				MeshFeatureList* mfl1 =new MeshFeatureList;
 				MeshFeatureList* mfl2 = new MeshFeatureList;
-				mfl1->setIDandName(FEATURE_DEMO, "feature_demo");
-				mfl2->setIDandName(FEATURE_DEMO, "feature_demo");
 				for (int i = 0; i < N * 6 / 5; ++i)
 				{
 					MeshFeature* f1 = new MeshFeature;
@@ -3421,10 +3414,10 @@ void ShapeMatcher::sparseMatchingTesting()
 					else f2->m_note = -1;
 					mfl2->addFeature(f2);
 				}				
-				pOriginalProcessor[0]->addProperty(mfl1);
-				pOriginalProcessor[1]->addProperty(mfl2);
-				pOriginalProcessor[0]->setActiveFeaturesByID(FEATURE_DEMO);
-				pOriginalProcessor[1]->setActiveFeaturesByID(FEATURE_DEMO);
+				
+				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrFeatureUnnamed);
+				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrFeatureUnnamed);
+
 
 				selectedGroup = group;
 
@@ -3451,8 +3444,6 @@ void ShapeMatcher::sparseMatchingTesting()
 				
 				MeshFeatureList* mfl1 =new MeshFeatureList;
 				MeshFeatureList* mfl2 = new MeshFeatureList;
-				mfl1->setIDandName(FEATURE_DEMO2, "feature_demo2");
-				mfl2->setIDandName(FEATURE_DEMO2, "feature_demo2");
 				for (int i = 0; i < N * 6 / 5; ++i)
 				{
 					MeshFeature* f1 = new MeshFeature;
@@ -3476,8 +3467,8 @@ void ShapeMatcher::sparseMatchingTesting()
 				anchor2->m_index = anchor;
 				anchor2->m_note = 0;
 				mfl2->addFeature(anchor2);
-				pOriginalProcessor[0]->addProperty(mfl1);
-				pOriginalProcessor[1]->addProperty(mfl2);
+				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrFeatureUnnamed);
+				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrFeatureUnnamed);
 
 				for (auto iter = vMatched.begin(); iter != vMatched.end(); ++iter)
 				{

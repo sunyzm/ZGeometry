@@ -4,7 +4,13 @@
 #include <ZGeom/MatlabEngineWrapper.h>
 #include "OutputHelper.h"
 
+extern SimpleConfigLoader g_configMgr;
+extern ZGeom::MatlabEngineWrapper g_engineWrapper;
+extern OutputHelper qout;
+
 enum GeometryTask {TASK_VIEWING = 0, TASK_REGISTRATION = 1, TASK_EDITING = 2};
+extern GeometryTask g_task;
+
 enum DeformType {
 	DEFORM_Simple, DEFORM_Gradient, DEFORM_Laplace, 
 	DEFORM_BiLaplace, DEFORM_Shell, DEFORM_SGW,
@@ -37,7 +43,22 @@ const std::string StrLaplacianTypes[] = {
 	"Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"
 };
 
+struct GlobalSettings {
+	GlobalSettings();
+	
+	int DEFAULT_EIGEN_SIZE;
+	int DEFAULT_DEFORM_RING; 
+	int LOAD_MHB_CACHE;
+	double MIN_HK_TIMESCALE;
+	double DEFUALT_HK_TIMESCALE;
+	double MAX_HK_TIMESCALE;
+	double PARAMETER_SLIDER_CENTER;
+	double DR_THRESH_INCREMENT;
+};
+extern GlobalSettings gSettings;
+
 /* mesh property names */
+const std::string StrColorUnnamed        = "vert_color_unnamed";
 const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";
 const std::string StrColorEigenFunction  = "vert_color_eig_function";
@@ -57,21 +78,8 @@ const std::string StrColorPosDiff        = "vert_color_pos_diff";
 const std::string StrColorPartitions     = "vert_color_partitions";
 const std::string StrOriginalSignature   = "vert_original_signature";
 
-extern OutputHelper qout;
-extern SimpleConfigLoader g_configMgr;
-extern GeometryTask g_task;
-extern ZGeom::MatlabEngineWrapper g_engineWrapper;
-
-struct GlobalSettings {
-	GlobalSettings();
-	
-	int DEFAULT_EIGEN_SIZE;
-	int DEFAULT_DEFORM_RING; 
-	int LOAD_MHB_CACHE;
-	double MIN_HK_TIMESCALE;
-	double DEFUALT_HK_TIMESCALE;
-	double MAX_HK_TIMESCALE;
-	double PARAMETER_SLIDER_CENTER;
-	double DR_THRESH_INCREMENT;
-};
-extern GlobalSettings gSettings;
+const std::string StrFeatureUnnamed      = "mesh_feature_unnamed";
+const std::string StrFeatureHKS			 = "mesh_feature_hks";
+const std::string StrFeatureMHWS		 = "mesh_feature_mhks";
+const std::string StrFeatureNeighbors    = "mesh_feature_neighbors";
+const std::string StrFeatureMultiHKS     = "mesh_feature_multi_hks";

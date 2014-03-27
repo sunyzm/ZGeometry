@@ -68,9 +68,6 @@
     <ClCompile Include="src\DifferentialMeshProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\RenderSettings.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\global.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>

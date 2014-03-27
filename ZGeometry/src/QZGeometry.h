@@ -40,26 +40,24 @@ private slots:
 	void clearHandles();
 	void captureGL();
 	void captureGLAs();
-
-	void computeSimilarityMap(int simType);
+	
+	/* computation */
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
+	void computeCurvatureMean();
+	void computeCurvatureGauss();
 	void computeEditBasis();
 	void computeDictAtom();
-	void displayBasis(int idx);
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
 	void computeMHW();
 	void computeMHWS();
-	void computeMHWFeatures();
 	void computeSGW();
-	void computeSGWSFeatures();
 	void computeBiharmonic();
-	void computeCurvatureMean();
-	void computeCurvatureGauss();
 	void computeGeodesics();
 	void computeHeatTransfer();
+	void computeSimilarityMap(int simType);
 
 	/* interact with shapeEditor */
 	void continuousApprox1(int level);
@@ -74,6 +72,7 @@ private slots:
 	void updateSignatureMax(int sMax);
 	void displayNeighborVertices();
 	void displayDiffPosition();
+	void displayBasis(int idx);
 
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
@@ -171,16 +170,16 @@ private:
 	int					mCurrentBasisScale;
 	int					mCommonParameter;
 
-	enum {Compute_HKS, Compute_HK, 
-		  Compute_MHWS, Compute_MHW, 
-		  Compute_SGWS, Compute_SGW,
-		  Compute_Eig_Func, Compute_Biharmonic, 
-		  Compute_Edit_Basis, Compute_Dict_Atom,
-		  Compute_Geodesics, Compute_Heat,
-		  None
-	} mLastOperation;
-
 	ZGeom::ColorMapType mColorMapType;
 	int mSelectedApprox, mCoordIdx;
 	double mDiffMax;
+
+	enum { Compute_HKS, Compute_HK, 
+		   Compute_MHWS, Compute_MHW, 
+		   Compute_SGWS, Compute_SGW,
+		   Compute_Eig_Func, Compute_Biharmonic, 
+		   Compute_Edit_Basis, Compute_Dict_Atom,
+		   Compute_Geodesics, Compute_Heat,
+		   None
+	} mLastOperation;
 };

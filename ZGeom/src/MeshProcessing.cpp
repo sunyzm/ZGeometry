@@ -1,5 +1,6 @@
 #include "MeshProcessing.h"
 #include "MatVecArithmetic.h"
+#include "arithmetic.h"
 
 namespace ZGeom {
 
@@ -59,6 +60,46 @@ void ConstructMeshMatrix( const CMesh& mesh, MeshMatrixType mmt, SparseMatrix<do
 			elem.val() *= vInvSqD[elem.row()-1] * vInvSqD[elem.col()-1];
 		}
 	}
+}
+
+void ComputeHeatKernelMatrix( const EigenSystem& hb, double t, DenseMatrixd& hk )
+{
+	const int vertCount = hb.eigVecSize();
+	const int eigCount = hb.eigVecCount();
+
+	DenseMatrixd matEigVecs(eigCount, vertCount);	
+	const double *pEigVals = &(hb.getEigVals()[0]);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(hb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+	
+	std::vector<double> vDiag(eigCount);
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = std::exp(-hb.getEigVal(i) * t);
+
+	hk.resize(vertCount, vertCount);
+
+	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], hk.raw_ptr());
+}
+
+void ComputeKernelMatrix( const EigenSystem& hb, double t, std::function<double(double,double)> gen, DenseMatrixd& hk )
+{
+	const int vertCount = hb.eigVecSize();
+	const int eigCount = hb.eigVecCount();
+
+	DenseMatrixd matEigVecs(eigCount, vertCount);	
+	const double *pEigVals = &(hb.getEigVals()[0]);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i) 
+		std::copy_n(hb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
+
+	std::vector<double> vDiag(eigCount);
+	for (int i = 0; i < eigCount; ++i) 
+		vDiag[i] = gen(hb.getEigVal(i), t);
+
+	hk.resize(vertCount, vertCount);
+
+	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], hk.raw_ptr());
 }
 
 } //end of namespace

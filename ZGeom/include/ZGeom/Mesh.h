@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <functional>
 #include <unordered_map>
-#include "Color.h"
 #include "VecN.h"
 #include "Vec3.h"
 #include "Geometry.h"
@@ -289,8 +288,6 @@ private:
 	int*					m_piEdge;		// all half-edge index
 };
 
-typedef MeshAttr< std::vector<ZGeom::Colorf> > AttrVertColor;
-
 //////////////////////////////////////////////////////
 //						CMesh   					//
 //////////////////////////////////////////////////////
@@ -369,11 +366,11 @@ public:
 	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	double						 calFaceArea(int i) const;
-	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
-	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
+	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshBBox); }
+	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
 	const std::vector<double>&   getMeanCurvature();
-	const std::vector<double>&   getMeanCurvature_const() const;
+	const std::vector<double>&   getMeanCurvature() const;
 	const std::vector<double>&   getGaussCurvature();
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
@@ -421,18 +418,23 @@ public:
 	/*************************************************************************/
 
 	/* MeshAttr functions */
-	template<typename T> 
-	MeshAttr<T>& addAttr(AttrRate rate, const std::string& name, AttrType attrType = AttrType::UNKNOWN_TYPE) {
-		removeAttr(name);
-		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(rate, name, attrType)));
+	bool hasAttr(const std::string& name) const {
 		auto iter = mAttributes.find(name);
-		return *dynamic_cast<MeshAttr<T>*>(iter->second);        
+		return iter != mAttributes.end();
 	}
 
-	template<typename T> 
-	void addAttr(const T& data, AttrRate rate, const std::string& name, AttrType attrType = AttrType::UNKNOWN_TYPE) {
+	template<typename T, AttrRate R> 
+	MeshAttr<T,R>& addAttr(const std::string& name, AttrType attrType = AttrType::AT_UNKNOWN) {
 		removeAttr(name);
-		mAttributes.insert(std::make_pair(name, new MeshAttr<T>(data, rate, name, attrType)));        
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T,R>(name, attrType)));
+		auto iter = mAttributes.find(name);
+		return *dynamic_cast<MeshAttr<T,R>*>(iter->second);        
+	}
+
+	template<typename T, AttrRate R> 
+	void addAttr(const T& data, const std::string& name, AttrType attrType = AttrType::AT_UNKNOWN) {
+		removeAttr(name);
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T,R>(data, name, attrType)));        
 	}
 
 	void removeAttr(const std::string& name) {
@@ -442,39 +444,34 @@ public:
 			mAttributes.erase(iter);
 		}
 	}
+		
+	template<typename T, AttrRate R>
+	MeshAttr<T,R>* getAttr(const std::string& name) {
+		auto iter = mAttributes.find(name);
+		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T,R>*>(iter->second);
+		else return nullptr;
+	}
 	
-	bool hasAttr(const std::string& name) const {
+	template<typename T, AttrRate R>
+	const MeshAttr<T,R>* getAttr(const std::string& name) const {
 		auto iter = mAttributes.find(name);
-		return iter != mAttributes.end();
-	}
-
-	template<typename T>
-	MeshAttr<T>* getAttr(const std::string& name) {
-		auto iter = mAttributes.find(name);
-		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
+		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T,R>*>(iter->second);
 		else return nullptr;
 	}
 
-	template<typename T>
-	const MeshAttr<T>* getAttr(const std::string& name) const {
-		auto iter = mAttributes.find(name);
-		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
-		else return nullptr;
-	}
-
-	template<typename T>
+	template<typename T, AttrRate R>
 	T& getAttrValue(const std::string& name) {
 		auto iter = mAttributes.find(name);
 		if (iter != mAttributes.end()) 
-			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
+			return dynamic_cast<MeshAttr<T,R>*>(iter->second)->attrValue();
 		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
 	}
 
-	template<typename T>
+	template<typename T, AttrRate R>
 	const T& getAttrValue(const std::string& name) const {
 		auto iter = mAttributes.find(name);
 		if (iter != mAttributes.end()) 
-			return dynamic_cast<MeshAttr<T>*>(iter->second)->getValue();
+			return dynamic_cast<MeshAttr<T,R>*>(iter->second)->attrValue();
 		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
 	}
 
@@ -483,38 +480,56 @@ public:
 
 		for (auto ma : attributeMaps) {
 			MeshAttrBase* a = ma.second->clone();
-			mAttributes.insert(std::make_pair(a->getAttrName(), a));
+			mAttributes.insert(std::make_pair(a->attrName(), a));
 		}
 	}
 
-	MeshAttr< std::vector<ZGeom::Colorf> >& addColorAttr(const std::string& colorAttrName)
+	AttrVertColors& getColorAttr(const std::string& colorAttrName) {
+		return *getAttr<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName);
+	}
+
+	AttrVertColors& addColorAttr(const std::string& colorAttrName)
 	{
-		if (hasAttr(colorAttrName)) return *getAttr<std::vector<ZGeom::Colorf> >(colorAttrName);
-		else return addAttr<std::vector<ZGeom::Colorf> >(AttrRate::VERTEX, colorAttrName, AttrType::CPP_COLOR);
+		if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
+		else return addAttr<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName, AttrType::AT_VEC_COLOR);
 	}
 
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName)
 	{
-		return getAttrValue<std::vector<ZGeom::Colorf> >(colorAttrName);
+		return getAttrValue<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName);
 	}
 
-	std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> getColorAttrLists() {
-		std::vector<MeshAttr< std::vector<ZGeom::Colorf> > *> vColorAttr;
+	std::vector<AttrVertColors*> getColorAttrLists() {
+		std::vector<AttrVertColors*> vColorAttr;
 		for (auto ap : mAttributes) {
-			if (ap.second->attrType() == AttrType::CPP_COLOR) {
-				vColorAttr.push_back(dynamic_cast<MeshAttr<std::vector<ZGeom::Colorf> > *>(ap.second));
+			if (ap.second->attrType() == AttrType::AT_VEC_COLOR) {
+				vColorAttr.push_back(dynamic_cast<AttrVertColors*>(ap.second));
 			}
 		}
 		return vColorAttr;
 	}
 
-	MeshAttr<std::vector<double> >& addAttrVertVecDbl(const std::string& name) {
-		return addAttr<std::vector<double> >(AttrRate::VERTEX, name, AttrType::CPP_VECTOR_DOUBLE);
+	AttrVertScalars& addAttrVertVecDbl(const std::string& name) {
+		return addAttr<std::vector<double>, AR_VERTEX>(name, AT_VEC_DBL);
+	}
+
+	void addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name) {
+		assert(vScalars.size() == vertCount());
+		addAttr<std::vector<double>, AR_VERTEX>(vScalars, name, AT_VEC_DBL);
 	}
 
 	std::vector<double>& getVertVecDbl(const std::string& name) {
-		return getAttrValue<std::vector<double> >(name);
+		return getAttrValue<std::vector<double>, AR_VERTEX>(name);
 	}
+
+	void addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name) {
+		addAttr<MeshFeatureList, AR_UNIFORM>(mfl, name, AT_FEATURES);
+	}
+
+	const MeshFeatureList& getMeshFeatures(const std::string& name) const {
+		return getAttrValue<MeshFeatureList, AR_UNIFORM>(name);
+	}
+
 	/*************************************************************************/
 
 private:

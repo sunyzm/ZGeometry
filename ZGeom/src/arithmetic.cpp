@@ -59,7 +59,7 @@ void ZGeom::quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, doubl
 	array_view<double, 2> Y(dim1, dim1, matResult);	
 	Y.discard_data();
 
-	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp){
+	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp) {
 		int row = idx[0], col = idx[1];
 		if (row >= col) {
 			Y[idx] = 0;

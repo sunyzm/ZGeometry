@@ -162,7 +162,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
-	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature_const();
+	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 
 	vector< std::tuple<int,int,double> > vSparseElements;
 

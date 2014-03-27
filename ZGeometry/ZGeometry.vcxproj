@@ -226,7 +226,6 @@
     <ClCompile Include="src\matching.cpp" />
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
-    <ClCompile Include="src\RenderSettings.cpp" />
     <ClCompile Include="src\ShapeEditor.cpp" />
     <ClCompile Include="src\ShapeMatcher.cpp" />
   </ItemGroup>

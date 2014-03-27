@@ -7,7 +7,6 @@
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/Mesh.h>
-#include <ZGeom/MeshProcessor.h>
 #include "MeshLaplacian.h"
 #include "global.h"
 
@@ -16,13 +15,10 @@ enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE
 enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};
 
 enum FeatureID { FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
-				 FEATURE_MHWS, FEATURE_SGWS, FEATURE_MULTI_HKS, FEATURE_DEMO, FEATURE_DEMO2,
+				 FEATURE_MHWS, FEATURE_MULTI_HKS, FEATURE_DEMO, FEATURE_DEMO2,
 				 FEATURE_SGW_SOMP,
 				 FEATURE_ID_COUNT};
 
-double transferScalingFunc1(double lambda);
-
-double transferFunc1(double lambda, double t);	// Mexican-hat square wavelet
 double transferFunc2(double lambda, double t);	// Mexican-hat wavelet
 double heatKernelTransferFunc(double lambda, double t);  // heat kernel
 double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
@@ -30,7 +26,7 @@ double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo
 typedef double (*TransferFunc)(double, double);
 typedef double (*ScalelessTransferFunc)(double);
 
-class DifferentialMeshProcessor : public MeshProcessor
+class DifferentialMeshProcessor
 {
 public:
 	DifferentialMeshProcessor();
@@ -40,6 +36,11 @@ public:
 	void init(CMesh* tm);
 	void init_lite(CMesh* tm, CMesh* originalMesh);
 	
+	const CMesh* getMesh_const() const { return mMesh; }
+	const CMesh* getOriMesh_const() const { return mOriMesh; }
+	CMesh* getMesh() const { return mMesh; }
+	void setMesh(CMesh* newMesh);
+
 	// ---- computation ---- //
 	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
 	void	decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
@@ -87,20 +88,20 @@ public:
 	int  getRefPointIndex() const { return mRefVert; }
 	void setRefPointIndex(int i) { mRefVert = i; }
 	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
-	const MeshFeatureList* getActiveFeatures() const;
-	void setActiveFeaturesByID(int feature_id) { mActiveFeature = feature_id; }
 	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
 
 	static void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinates& eCoord, MeshCoordinates& lCoord);
-	static void computeSGWMat1(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
+	static void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
 	static void computeSGWMat2(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
 
 private:
+	CMesh* mMesh;
+	CMesh* mOriMesh;
+
 	int mRefVert;
 	Vector3D mRefPos;
 	std::map<int, Vector3D> mHandles;
 	int mActiveHandle;
-	int mActiveFeature;
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];

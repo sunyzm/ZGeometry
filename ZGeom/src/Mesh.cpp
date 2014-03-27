@@ -320,83 +320,58 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	//double s_bar = s / det, t_bar = t / det;
 	double sqrDistance;
 	
-	if (s + t <= det)
+	if (s + t <= det) 
 	{
-		if (s < 0.)
-		{
-			if (t < 0.)  // region 4
-			{
-				if (d < 0.)
-				{
-					if (-d >= a)
-					{
+		if (s < 0.) {
+			if (t < 0.) { // region 4
+				if (d < 0.) {
+					if (-d >= a) {
 						sqrDistance = a + 2.*d + f;	// on V1
 						s = 1; t = 0;
-					}
-					else
-					{
+					} else {
 						sqrDistance = f - d*d/a; // on E0
 						s = -d/a; t = 0;
 					}
-				}
-				else
-				{
-					if (e >= 0.)		
-					{
+				} 
+				else {
+					if (e >= 0.) {
 						sqrDistance = f;   // on V0
 						s = 0; t = 0;
-					}
-					else if (-e >= c)
-					{
+					} else if (-e >= c) {
 						sqrDistance = c + 2.*e + f;	// on V2
 						s = 0; t = 1;
-					}
-					else
-					{
+					} else {
 						sqrDistance = f - e*e/c;	//on E1
 						s = 0; t = -e/c;
 					}
 				}
 			}
-			else  // region 3
-			{
-				if (e >= 0.)
-				{
+			else {  // region 3
+				if (e >= 0.) {
 					sqrDistance = f;	// on V0
 					s = 0; t = 0;
-				}
-				else if (-e >= c)
-				{
+				} else if (-e >= c) {
 					sqrDistance = c + 2.*e + f;	// on V2
 					s = 0; t = 1;
-				}
-				else
-				{
+				} else {
 					sqrDistance = f - e*e/c;	//on E1
 					s = 0; t = -e/c;
 				}
 			}
 		} 
-		else if (t < 0.)  // region 5
-		{
-			if (d >= 0.)
-			{
+		else if (t < 0.)  { // region 5
+			if (d >= 0.) {
 				sqrDistance = f;	// on V0
 				s = 0; t = 0;
-			}
-			else if (-d >= a)
-			{
+			} else if (-d >= a) {
 				sqrDistance = a + 2.*d + f;	// on V1
 				s = 1; t = 0;
-			}
-			else
-			{
+			} else {
 				sqrDistance = d*s + f - d*d/a;	// on E0
 				s = -d/a; t = 0;
 			}
 		}
-		else  // region 0
-		{
+		else  { // region 0
 			// The minimum is at an interior point of the triangle.
 			double invDet = 1./det;
 			s *= invDet;
@@ -408,103 +383,73 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	{
 		double tmp0, tmp1, numer, denom;
 
-		if (s < 0.)  // region 2
-		{
+		if (s < 0.)  {// region 2
 			tmp0 = b + d;
 			tmp1 = c + e;
-			if (tmp1 > tmp0)
-			{
+			if (tmp1 > tmp0) {
 				numer = tmp1 - tmp0;
 				denom = a - 2.*b + c;
-				if (numer >= denom)
-				{
+				if (numer >= denom) {
 					sqrDistance = a + 2.*d + f;	// on V1?
 					s = 1; t = 0;
-				}
-				else
-				{
+				} else {
 					s = numer/denom;
 					t = 1. - s;
 					sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
 				}
 			}
-			else
-			{
-				if (tmp1 <= 0.)
-				{
+			else {
+				if (tmp1 <= 0.) {
 					sqrDistance = c + 2.*e + f;	//on v2
 					s = 0; t = 1;
-				}
-				else if (e >= 0.)
-				{
+				} else if (e >= 0.) {
 					sqrDistance = f;	// on v0
 					s = 0; t = 0;
-				}
-				else
-				{
+				} else {
 					sqrDistance = f - e*e/c;	// on E1?
 					s = 0; t = -e/c;
 				}
 			}
 		}
-		else if (t < 0.)  // region 6
-		{
+		else if (t < 0.) { // region 6
 			tmp0 = b + e;
 			tmp1 = a + d;
-			if (tmp1 > tmp0)
-			{
+			if (tmp1 > tmp0) {
 				numer = tmp1 - tmp0;
 				denom = a - 2.*b + c;
-				if (numer >= denom)
-				{
-
+				if (numer >= denom) {
 					sqrDistance = c + 2.*e + f;	// on V2
 					s = 0.; t = 1.; 
-				}
-				else
-				{
+				} else {
 					t = numer/denom;
 					s = 1. - t;
 					sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
 				}
 			}
-			else
-			{
-				if (tmp1 <= 0.)
-				{
+			else {
+				if (tmp1 <= 0.) {
 					sqrDistance = a + 2.*d + f;	// on V1
 					s = 1.; t = 0.;
-				}
-				else if (d >= 0.)
-				{
+				} else if (d >= 0.) {
 					sqrDistance = f;	// on V0
 					s = 0.; t = 0.;
-				}
-				else
-				{
+				} else {
 					sqrDistance = f - d*d/a;	// on E0
 					s = -d/a; t = 0;
 				}
 			}
 		}
-		else  // region 1
-		{
+		else { // region 1
 			numer = c + e - b - d;
-			if (numer <= 0.)
-			{
+			if (numer <= 0.) {
 				sqrDistance = c + 2.*e + f;		// on V2
 				s = 0.; t = 1.;
-			}
-			else
-			{
+			} else {
 				denom = a - 2.*b + c;
-				if (numer >= denom)
-				{
+				if (numer >= denom) {
 					sqrDistance = a + 2.*d + f;	// on V1
 					s = 1.; t = 0.;
-				}
-				else
-				{
+				} else {
 					s = numer/denom;
 					t = 1. - s;
 					sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
@@ -517,8 +462,7 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	baryCoord[1] = s;
 	baryCoord[2] = t;
 
-	if (baryCoord[0] < -1e-6 || baryCoord[1] < -1e-6 || baryCoord[2] < -1e-6)
-	{
+	if (baryCoord[0] < -1e-6 || baryCoord[1] < -1e-6 || baryCoord[2] < -1e-6) {
 		cout << "Illegal barycentric coordinate: (" << baryCoord[0] << ", " << baryCoord[1] << ", " << baryCoord[2] << ")" << endl;
 	}
 
@@ -1088,7 +1032,7 @@ void CMesh::loadFromM( std::string sFileName )
 	m_nFace = (int)FaceList.size()/3;
 	m_nHalfEdge = 3 * m_nFace;
 
-	//read vertices and faces
+	// read vertices and faces
 	m_pVertex = new CVertex[m_nVertex];
 	m_pFace = new CFace[m_nFace];
 
@@ -1103,7 +1047,7 @@ void CMesh::loadFromM( std::string sFileName )
 		vVertColors[i][2] = VertexColorList[3*i+2];
 	}
 	
-	addAttr<std::vector<ZGeom::Colorf> >(vVertColors, VERTEX, StrAttrVertColors, CPP_COLOR);
+	addAttr<std::vector<ZGeom::Colorf>,AR_VERTEX>(vVertColors, StrAttrVertColors, AT_VEC_COLOR);
 
 	for(int i = 0; i < m_nFace; i++)
 	{
@@ -1167,7 +1111,7 @@ void CMesh::saveToM( const std::string& sFileName )
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
 	
 	std::vector<Colorf>* vColors = NULL;
-	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue< std::vector<Colorf> >(StrAttrVertColors);	
+	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue<std::vector<Colorf>,AR_VERTEX>(StrAttrVertColors);	
 
 	for (int i = 0; i < m_nVertex; i++)
 	{
@@ -1231,7 +1175,7 @@ void CMesh::findHoles()
 			vIsOnHole[it_v] = true;
 	}
 
-	addAttr<std::vector<bool> >(vIsOnHole, VERTEX, StrAttrVertOnHole);
+	addAttr<std::vector<bool>,AR_VERTEX>(vIsOnHole, StrAttrVertOnHole);
 
 #if 0
 	for(int i = 0; i < m_nVertex; i++)
@@ -1390,7 +1334,7 @@ void CMesh::calFaceNormals()
 		vFaceNormals[fIndex].normalize();
 	}
 	
-	addAttr<std::vector<Vector3D> >(vFaceNormals, FACE, StrAttrFaceNormal);
+	addAttr<std::vector<Vector3D>,AR_FACE>(vFaceNormals, StrAttrFaceNormal);
 }
  
 void CMesh::calVertNormals()
@@ -1419,7 +1363,7 @@ void CMesh::calVertNormals()
 		vVertNormals[vIndex] = vNormal;
 	}
 
-	addAttr<std::vector<Vector3D> >(vVertNormals, VERTEX, StrAttrVertNormal);
+	addAttr<std::vector<Vector3D>,AR_VERTEX>(vVertNormals, StrAttrVertNormal);
 }
 
 double CMesh::getHalfEdgeLen( int iEdge ) const
@@ -1480,7 +1424,7 @@ int CMesh::calBoundaryNum()
 		}
 	}
 
-	addAttr(boundaryNum, UNIFORM, StrAttrBoundaryCount);
+	addAttr<int,AR_UNIFORM>(boundaryNum, StrAttrBoundaryCount);
 	return boundaryNum;
 }
 
@@ -1495,8 +1439,8 @@ int CMesh::calBoundaryVert()
 			bNum++;
 		} else vVertOnBoundary[i] = false;
 	}
-	addAttr<std::vector<bool> >(vVertOnBoundary, VERTEX, StrAttrVertOnBoundary);
-	addAttr(bNum, UNIFORM, StrAttrBoundaryVertCount);
+	addAttr<std::vector<bool>,AR_VERTEX>(vVertOnBoundary, StrAttrVertOnBoundary);
+	addAttr<int,AR_UNIFORM>(bNum, StrAttrBoundaryVertCount);
 
 	if (m_bIsIndexArrayExist) {
 		for (int i = 0; i < m_nVertex; ++i) 
@@ -1588,24 +1532,19 @@ void CMesh::calCurvatures()
 		vMeanCurvatures[vIndex] = kh.length() / 2.0;
 	}
 
-	addAttr< std::vector<double> >(vGaussCurvatures, VERTEX, StrAttrVertGaussCurvatures);
-	addAttr< std::vector<double> >(vMeanCurvatures, VERTEX, StrAttrVertMeanCurvatures);
+	addAttr<std::vector<double>, AR_VERTEX>(vGaussCurvatures, StrAttrVertGaussCurvatures);
+	addAttr<std::vector<double>, AR_VERTEX>(vMeanCurvatures, StrAttrVertMeanCurvatures);
 }
 
 double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
 {
-	if ( a*a + c*c < b*b )
-	{
+	if ( a*a + c*c < b*b ) {
 		double s = (a+b+c)/2.0;
 		return sqrt(s*(s-a)*(s-b)*(s-c))/4.0;
-	}
-	else if ( a*a + b*b < c*c || b*b + c*c < a*a)
-	{
+	} else if ( a*a + b*b < c*c || b*b + c*c < a*a) {
 		double s = (a+b+c) / 2.0;
 		return sqrt(s*(s-a)*(s-b)*(s-c)) / 8.0;
-	}
-	else 
-	{
+	} else {
 		double cosa = (b*b + c*c - a*a) / (2.0*b*c);
 		cotan_a = cosa / sqrt(1 - cosa*cosa);
 		return (a*a*cotan_a) / 8.0;
@@ -2544,9 +2483,9 @@ void CMesh::gatherStatistics()
 	}
 	edgeLength /= m_nHalfEdge;
 
-	addAttr(edgeLength, UNIFORM, StrAttrAvgEdgeLength);
-	addAttr(center, UNIFORM, StrAttrMeshCenter);
-	addAttr(boundBox, UNIFORM, StrAttrMeshBBox);
+	addAttr<double,AR_UNIFORM>(edgeLength, StrAttrAvgEdgeLength);
+	addAttr<Vector3D,AR_UNIFORM>(center, StrAttrMeshCenter);
+	addAttr<Vector3D,AR_UNIFORM>(boundBox, StrAttrMeshBBox);
 
 	calCurvatures();
 	findHoles();
@@ -2877,8 +2816,8 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 bool CMesh::hasBoundary() const
 {
 	assert(hasAttr(StrAttrBoundaryVertCount));
-	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryVertCount);
-	return attrBoundary->getValue() > 0;
+	const MeshAttr<int,AR_UNIFORM> *attrBoundary = getAttr<int,AR_UNIFORM>(StrAttrBoundaryVertCount);
+	return attrBoundary->attrValue() > 0;
 }
 
 double CMesh::calFaceArea( int i ) const
@@ -2960,63 +2899,63 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 
 double CMesh::getAvgEdgeLength() const
 {
-	const MeshAttr<double>* attrAvgEdgeLen = getAttr<double>(StrAttrAvgEdgeLength);
+	const MeshAttr<double,AR_UNIFORM>* attrAvgEdgeLen = getAttr<double,AR_UNIFORM>(StrAttrAvgEdgeLength);
 	if (attrAvgEdgeLen == NULL) throw std::logic_error("Attribute of average edge length not available!");
-	return attrAvgEdgeLen->getValue();
+	return attrAvgEdgeLen->attrValue();
 }
 
 const std::vector<double>& CMesh::getMeanCurvature()
 {
 	if (!hasAttr(StrAttrVertMeanCurvatures)) calCurvatures();		
-	return getAttrValue<std::vector<double> >(StrAttrVertMeanCurvatures);
+	return getAttrValue<std::vector<double>,AR_UNIFORM>(StrAttrVertMeanCurvatures);
 }
 
-const std::vector<double>& CMesh::getMeanCurvature_const() const
+const std::vector<double>& CMesh::getMeanCurvature() const
 {
 	assert(hasAttr(StrAttrVertMeanCurvatures));
-	return getAttrValue<std::vector<double> >(StrAttrVertMeanCurvatures);
+	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertMeanCurvatures);
 }
 
 const std::vector<double>& CMesh::getGaussCurvature()
 {
 	if (!hasAttr(StrAttrVertGaussCurvatures)) calCurvatures();		
-	return getAttrValue<std::vector<double> >(StrAttrVertGaussCurvatures);
+	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertGaussCurvatures);
 }
 
 const std::vector<Vector3D>& CMesh::getFaceNormals()
 {
 	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
-	return getAttrValue< std::vector<Vector3D> >(StrAttrFaceNormal);
+	return getAttrValue<std::vector<Vector3D>,AR_VERTEX>(StrAttrFaceNormal);
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals()
 {
 	if (!hasAttr(StrAttrVertNormal)) calFaceNormals();
-	return getAttrValue<std::vector<Vector3D> >(StrAttrVertNormal);
+	return getAttrValue<std::vector<Vector3D>,AR_VERTEX>(StrAttrVertNormal);
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals() const
 {
 	assert(hasAttr(StrAttrVertNormal));
-	return getAttrValue< std::vector<Vector3D> >(StrAttrVertNormal);
+	return getAttrValue< std::vector<Vector3D>,AR_VERTEX>(StrAttrVertNormal);
 }
 
 const std::vector<bool>& CMesh::getVertsOnHole()
 {
 	if(!hasAttr(StrAttrVertOnHole)) findHoles();
-	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
+	return getAttrValue<std::vector<bool>,AR_VERTEX>(StrAttrVertOnHole);
 }
 
 const std::vector<bool>& CMesh::getVertsOnHole_const() const
 {
 	assert(hasAttr(StrAttrVertOnHole));
-	return getAttrValue<std::vector<bool> >(StrAttrVertOnHole);
+	return getAttrValue<std::vector<bool>,AR_VERTEX>(StrAttrVertOnHole);
 }
 
 const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
-	return getAttrValue< std::vector<bool> >(StrAttrVertOnBoundary);
+	return getAttrValue< std::vector<bool>,AR_VERTEX>(StrAttrVertOnBoundary);
 }
 
 double CMesh::calSurfaceArea() const

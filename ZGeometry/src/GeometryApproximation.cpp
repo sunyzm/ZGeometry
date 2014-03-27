@@ -24,7 +24,7 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 void CalculateSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
 	ZGeom::DenseMatrixd matSGW;
-	DifferentialMeshProcessor::computeSGWMat2(mhb, waveletScaleNum, matSGW);
+	DifferentialMeshProcessor::computeSGWMat(mhb, waveletScaleNum, matSGW);
 	
 	const int vertCount = matSGW.colCount();
 	const int totalAtomCount = matSGW.rowCount();

@@ -438,6 +438,27 @@
             </layout>
            </item>
            <item>
+            <layout class="QHBoxLayout" name="layouColorMapSelect">
+             <item>
+              <widget class="QLabel" name="labelColorMap">
+               <property name="text">
+                <string>Color Map</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBoxColorMap">
+               <property name="sizePolicy">
+                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                 <horstretch>0</horstretch>
+                 <verstretch>0</verstretch>
+                </sizepolicy>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
             <layout class="QHBoxLayout" name="layoutSigModeSelect">
              <item>
               <widget class="QLabel" name="labelSigMode">
@@ -683,8 +704,13 @@
      <addaction name="actionComputeMHWS"/>
      <addaction name="actionComputeSGW"/>
      <addaction name="actionComputeSGWS"/>
-     <addaction name="actionComputeSGS"/>
      <addaction name="actionComputeBiharmonic"/>
+    </widget>
+    <widget class="QMenu" name="menuFeatures_2">
+     <property name="title">
+      <string>Features</string>
+     </property>
+     <addaction name="actionComputeHKSFeatures"/>
     </widget>
     <addaction name="menuComputeLaplacian"/>
     <addaction name="menuComputeSimilarityMap"/>
@@ -693,9 +719,7 @@
     <addaction name="actionGaussCurvature"/>
     <addaction name="actionMeanCurvature"/>
     <addaction name="menuKernel_Signature"/>
-    <addaction name="actionComputeHKSFeatures"/>
-    <addaction name="actionComputeMHWSFeatures"/>
-    <addaction name="actionComputeSGWSFeatures"/>
+    <addaction name="menuFeatures_2"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeHeatTransfer"/>
     <addaction name="actionComputeGeodesics"/>
@@ -1272,7 +1296,7 @@
   </action>
   <action name="actionDoPartitioning">
    <property name="text">
-    <string>Partition</string>
+    <string>Segmentation</string>
    </property>
   </action>
   <action name="actionComputeHKSFeatures">

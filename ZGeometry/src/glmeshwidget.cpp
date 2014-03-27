@@ -540,17 +540,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	/*** draw feature points ***/
-	if (m_bShowFeatures && pMP->getActiveFeatures() != NULL)
+	if (m_bShowFeatures && tmesh->hasAttr(pRS->mActiveFeatureName))
 	{
-		const MeshFeatureList* feature_list = pMP->getActiveFeatures();
+		const MeshFeatureList& feature_list = tmesh->getMeshFeatures(pRS->mActiveFeatureName);
 
 		/* draw as gluSphere */ 
 		const float *feature_color1 = ZGeom::ColorGreen;
 		const float *feature_color2 = ZGeom::ColorMagenta;	
 		GLUquadric* quadric = gluNewQuadric();
-		bool is_hks_feature = (feature_list->id == FEATURE_MULTI_HKS);
-		bool is_demo_feature = (feature_list->id == FEATURE_DEMO || feature_list->id == FEATURE_DEMO2);
-		for (MeshFeature* feature : feature_list->m_vFeatures) {
+		bool is_hks_feature = false;
+		for (MeshFeature* feature : feature_list.m_vFeatures) {
 			Vector3D vt = ori_mesh->getVertex(feature->m_index)->getPosition();
 			vt += shift;
 			if (is_hks_feature) {
@@ -558,14 +557,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
 				else
 					glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-			} else if (is_demo_feature) {
-				if (feature->m_note == 1)
-					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
-				else if (feature->m_note == -1)
-					//glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-					glColor4f(0.5f, 0.5f, 0.5f, 1.0f);
-				else 
-					glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 			} else {
 				int feature_scale = feature->m_scale;
 				int color_index = feature_scale % gFeatureColorNum;
