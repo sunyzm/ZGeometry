@@ -26,6 +26,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestZGeom", "TestZGeom\Test
 		{895183E2-8707-4F5E-99F3-3C6119CB0729} = {895183E2-8707-4F5E-99F3-3C6119CB0729}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_partition", "zmesh_partition\zmesh_partition.vcxproj", "{83720D1F-761B-4463-A281-46DF085E2487}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -74,6 +76,14 @@ Global
 		{DA8CC400-140F-4ACE-959C-E6F2993EFE7E}.Release|Win32.Build.0 = Release|Win32
 		{DA8CC400-140F-4ACE-959C-E6F2993EFE7E}.Release|x64.ActiveCfg = Release|x64
 		{DA8CC400-140F-4ACE-959C-E6F2993EFE7E}.Release|x64.Build.0 = Release|x64
+		{83720D1F-761B-4463-A281-46DF085E2487}.Debug|Win32.ActiveCfg = Debug|Win32
+		{83720D1F-761B-4463-A281-46DF085E2487}.Debug|Win32.Build.0 = Debug|Win32
+		{83720D1F-761B-4463-A281-46DF085E2487}.Debug|x64.ActiveCfg = Debug|x64
+		{83720D1F-761B-4463-A281-46DF085E2487}.Debug|x64.Build.0 = Debug|x64
+		{83720D1F-761B-4463-A281-46DF085E2487}.Release|Win32.ActiveCfg = Release|Win32
+		{83720D1F-761B-4463-A281-46DF085E2487}.Release|Win32.Build.0 = Release|Win32
+		{83720D1F-761B-4463-A281-46DF085E2487}.Release|x64.ActiveCfg = Release|x64
+		{83720D1F-761B-4463-A281-46DF085E2487}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

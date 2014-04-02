@@ -43,6 +43,8 @@ TestZGeom/bin/
 TestZGeom/intermediate/
 thirdparty/matlab/mex/
 thirdparty/matlab/tensor/ann_mwrapper/private/
+zmesh_partition/intermediate/
+
 *.mexw32
 *.mexw64
 

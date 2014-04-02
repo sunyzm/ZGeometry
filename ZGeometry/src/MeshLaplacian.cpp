@@ -155,7 +155,7 @@ void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 
 void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
 {
-	// curvature difference based or similar to bilateral filtering
+	// based on curvature difference; similar to bilateral filtering
 	const int vertCount = mOrder = tmesh->vertCount();
 	nRing = 2;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
@@ -164,7 +164,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
 	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 
-	vector< std::tuple<int,int,double> > vSparseElements;
+	vector<std::tuple<int,int,double> > vSparseElements;
 
 	for (int vi = 0; vi < vertCount; ++vi) {
 		const CVertex* pvi = tmesh->getVertex(vi); 
@@ -237,7 +237,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 	mConstructed = true;
 }
 
-void MeshLaplacian::constructFromMesh4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
+void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
 {
 	// similar to bilateral filtering
 	mOrder = tmesh->vertCount();

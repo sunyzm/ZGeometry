@@ -26,11 +26,6 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
 
-void glFalseColor(float v, float p)
-{
-	glColor4f(FalseColorMap::red(v), FalseColorMap::green(v), FalseColorMap::blue(v), p);
-}
-
 void glColorCoded(float v, float pf)
 {
 	int ic = v;

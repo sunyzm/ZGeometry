@@ -41,6 +41,8 @@ private slots:
 	void captureGL();
 	void captureGLAs();
 	
+	void listMeshAttributes();
+
 	/* computation */
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
@@ -66,7 +68,10 @@ private slots:
 	void continuousApprox4(int level);
 	void visualizeCompression(int selctedApprox, int coordIdx);
 
-	void displaySignature(QString sigName );
+	void displaySignature(QString sigName);
+	void displayFeature(QString featureName);
+	void updateDisplaySignatureMenu();
+	void updateDisplayFeatureMenu();
 	void setSignatureMode(const QString& sigModeName);
 	void updateSignatureMin(int sMin);
 	void updateSignatureMax(int sMax);
@@ -119,7 +124,6 @@ private slots:
 	void showFiner();		// lower level
 	void showCoarser();		// higher level
 
-	void updateDisplaySignatureMenu();
 	void openOutputLocation();
 	void resizeApproxSlider(int slider, int newSize);
 
@@ -139,6 +143,7 @@ private:
 	void updateSignature(SignatureMode smode);
 
 	/* helper functions */
+	bool isMeshSelected(int obj);
 	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
@@ -149,30 +154,31 @@ private:
 	/* fields */
 	Ui::ZGeometryClass	  ui;
 	QSignalMapper*		  m_laplacianSignalMapper;	
-	QSignalMapper*		  m_simlaritySignalMapper;	
 	QSignalMapper*		  m_signatureSignalMapper;
+	QSignalMapper*        m_featureSignalMapper;
 	std::vector<QAction*> m_actionComputeLaplacians;
-	std::vector<QAction*> m_actionComputeSimilarities;
 	std::vector<QAction*> m_actionDisplaySignatures;
+	std::vector<QAction*> m_actionDisplayFeatures;
 	QLabel				  mStatusLabel1;
 
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
+
 	ShapeMatcher mShapeMatcher;
 	ShapeEditor	 mShapeEditor;
 
 	DeformType			mDeformType;
 	LaplacianType       mActiveLalacian;
 	SignatureMode		mSignatureMode;
-	int					mObjInFocus;	
+	ZGeom::ColorMapType mColorMapType;
+
 	int					mMeshCount;
+	int					mObjInFocus;	
 	int					mCurrentBasisScale;
 	int					mCommonParameter;
-
-	ZGeom::ColorMapType mColorMapType;
-	int mSelectedApprox, mCoordIdx;
-	double mDiffMax;
+	int                 mSelectedApprox, mCoordIdx;
+	double              mDiffMax;
 
 	enum { Compute_HKS, Compute_HK, 
 		   Compute_MHWS, Compute_MHW, 

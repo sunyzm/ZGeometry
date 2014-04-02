@@ -33,7 +33,7 @@ public:
 	void constructSymCot(const CMesh* tmesh);				// negative symmetric cotangent formula
 
 	void constructAnisotropic1(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
-	void constructFromMesh4(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
+	void constructAnisotropic2(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
 
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }

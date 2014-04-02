@@ -29,7 +29,8 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 
-	void setup(std::vector<DifferentialMeshProcessor*>* processors, std::vector<RenderSettings*>* rs, ShapeMatcher* matcher, ShapeEditor* editor) {
+	void setup(std::vector<DifferentialMeshProcessor*>* processors, std::vector<RenderSettings*>* rs, ShapeMatcher* matcher, ShapeEditor* editor) 
+	{
 		mProcessors = processors;
 		mRenderSettings = rs;
 		mMatcher = matcher;

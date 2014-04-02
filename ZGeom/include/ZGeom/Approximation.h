@@ -26,7 +26,7 @@ public:
 	int atomCount() const { return (int)mAtoms.size(); }
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
 	void expandTo(int N) {
-		if (N <= mAtoms.size()) return;
+		if (N <= (int)mAtoms.size()) return;
 		mAtoms.resize(N);
 	}
 

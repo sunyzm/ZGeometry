@@ -632,9 +632,9 @@
     <property name="title">
      <string>Display</string>
     </property>
-    <widget class="QMenu" name="menuSignature">
+    <widget class="QMenu" name="menuDisplaySignatures">
      <property name="title">
-      <string>Signature</string>
+      <string>Signatures</string>
      </property>
      <addaction name="separator"/>
     </widget>
@@ -646,11 +646,10 @@
      <addaction name="actionDisplayWireframe"/>
      <addaction name="actionDisplayMesh"/>
     </widget>
-    <widget class="QMenu" name="menuFeatures">
+    <widget class="QMenu" name="menuDisplayFeatures">
      <property name="title">
       <string>Features</string>
      </property>
-     <addaction name="actionShowHKSFeatures"/>
     </widget>
     <widget class="QMenu" name="menuSignatureMode">
      <property name="title">
@@ -673,10 +672,10 @@
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
     <addaction name="actionDiffPosition"/>
-    <addaction name="menuSignature"/>
+    <addaction name="menuDisplaySignatures"/>
+    <addaction name="menuDisplayFeatures"/>
     <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
-    <addaction name="menuFeatures"/>
     <addaction name="actionCapture"/>
     <addaction name="actionCaptureAs"/>
    </widget>
@@ -684,11 +683,6 @@
     <property name="title">
      <string>Compute</string>
     </property>
-    <widget class="QMenu" name="menuComputeSimilarityMap">
-     <property name="title">
-      <string>Similarity Map</string>
-     </property>
-    </widget>
     <widget class="QMenu" name="menuComputeLaplacian">
      <property name="title">
       <string>Laplacian</string>
@@ -706,20 +700,19 @@
      <addaction name="actionComputeSGWS"/>
      <addaction name="actionComputeBiharmonic"/>
     </widget>
-    <widget class="QMenu" name="menuFeatures_2">
+    <widget class="QMenu" name="menuComputeFeatures">
      <property name="title">
       <string>Features</string>
      </property>
      <addaction name="actionComputeHKSFeatures"/>
     </widget>
     <addaction name="menuComputeLaplacian"/>
-    <addaction name="menuComputeSimilarityMap"/>
     <addaction name="separator"/>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionGaussCurvature"/>
     <addaction name="actionMeanCurvature"/>
     <addaction name="menuKernel_Signature"/>
-    <addaction name="menuFeatures_2"/>
+    <addaction name="menuComputeFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeHeatTransfer"/>
     <addaction name="actionComputeGeodesics"/>

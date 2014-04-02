@@ -417,7 +417,9 @@ public:
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 	/*************************************************************************/
 
-	/* MeshAttr functions */
+	/************************************************************************/
+	/* MeshAttr methods                                                     */
+	/************************************************************************/
 	bool hasAttr(const std::string& name) const {
 		auto iter = mAttributes.find(name);
 		return iter != mAttributes.end();
@@ -484,22 +486,30 @@ public:
 		}
 	}
 
+	std::vector<std::string> getAttrNamesList() {
+		std::vector<std::string> vAttrNames;
+		for (auto ap : mAttributes) vAttrNames.push_back(ap.second->attrName());
+		std::sort(vAttrNames.begin(), vAttrNames.end());
+		return vAttrNames;
+	}
+
+	/************************************************************************/
+	/* Color attributes methods                                           */
+	/************************************************************************/
 	AttrVertColors& getColorAttr(const std::string& colorAttrName) {
 		return *getAttr<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName);
 	}
 
-	AttrVertColors& addColorAttr(const std::string& colorAttrName)
-	{
+	AttrVertColors& addColorAttr(const std::string& colorAttrName) {
 		if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
 		else return addAttr<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName, AttrType::AT_VEC_COLOR);
 	}
 
-	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName)
-	{
+	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName) {
 		return getAttrValue<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName);
 	}
 
-	std::vector<AttrVertColors*> getColorAttrLists() {
+	std::vector<AttrVertColors*> getColorAttrList() {
 		std::vector<AttrVertColors*> vColorAttr;
 		for (auto ap : mAttributes) {
 			if (ap.second->attrType() == AttrType::AT_VEC_COLOR) {
@@ -509,17 +519,11 @@ public:
 		return vColorAttr;
 	}
 
-	AttrVertScalars& addAttrVertVecDbl(const std::string& name) {
-		return addAttr<std::vector<double>, AR_VERTEX>(name, AT_VEC_DBL);
-	}
-
-	void addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name) {
-		assert(vScalars.size() == vertCount());
-		addAttr<std::vector<double>, AR_VERTEX>(vScalars, name, AT_VEC_DBL);
-	}
-
-	std::vector<double>& getVertVecDbl(const std::string& name) {
-		return getAttrValue<std::vector<double>, AR_VERTEX>(name);
+	/************************************************************************/
+	/* Mesh feature attributes methods                                      */
+	/************************************************************************/
+	AttrMeshFeatures& addAttrMeshFeatures(const std::string& name) {
+		return addAttr<MeshFeatureList, AR_UNIFORM>(name, AT_FEATURES);
 	}
 
 	void addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name) {
@@ -530,7 +534,33 @@ public:
 		return getAttrValue<MeshFeatureList, AR_UNIFORM>(name);
 	}
 
-	/*************************************************************************/
+	std::vector<AttrMeshFeatures*> getMeshFeatureList() {
+		std::vector<AttrMeshFeatures*> vMeshFeatures;
+		for (auto ap : mAttributes) {
+			if (ap.second->attrType() == AttrType::AT_FEATURES) {
+				vMeshFeatures.push_back(dynamic_cast<AttrMeshFeatures*>(ap.second));
+			}
+		}
+		return vMeshFeatures;
+	}
+
+	/************************************************************************/
+	/* Vertex scalar attributes methods                                     */
+	/************************************************************************/
+	AttrVertScalars& addAttrVertScalars(const std::string& name) {
+		return addAttr<std::vector<double>, AR_VERTEX>(name, AT_VEC_DBL);
+	}
+
+	void addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name) {
+		assert(vScalars.size() == vertCount());
+		addAttr<std::vector<double>, AR_VERTEX>(vScalars, name, AT_VEC_DBL);
+	}
+
+	std::vector<double>& getVertScalars(const std::string& name) {
+		return getAttrValue<std::vector<double>, AR_VERTEX>(name);
+	}
+		
+	//////////////////////////////////////////////////////////////////////////	
 
 private:
 	void	clearMesh();

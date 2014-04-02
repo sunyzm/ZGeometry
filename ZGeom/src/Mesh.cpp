@@ -1496,19 +1496,18 @@ void CMesh::calCurvatures()
 	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
 	{
 		CVertex* vi = m_vVertices[vIndex];
-
 		double sum = 0.0;		// sum of attaching corner's angle
 		double amix = 0.0;
 		Vector3D kh;
 
 		if(vi->isOnBoundary()) {
 			// boundary vertex has zero curvature
-			vGaussCurvatures[vIndex] = 0.0;	//(pi - sum)/amix;
+			vGaussCurvatures[vIndex] = 0.0;	
 			vMeanCurvatures[vIndex] = 0.0;
 			continue;
 		}
 
-		for( auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
+		for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
 			CHalfEdge* e0 = *he;
 			CHalfEdge* e1 = e0->m_eNext;
 			CHalfEdge* e2 = e1->m_eNext;
@@ -1529,7 +1528,7 @@ void CMesh::calCurvatures()
 
 		vGaussCurvatures[vIndex] = (2.0 * pi - sum) / amix;
 		kh = kh / (2.0 * amix);
-		vMeanCurvatures[vIndex] = kh.length() / 2.0;
+		vMeanCurvatures[vIndex] = kh.length() / 2.0;	//half magnitude of 
 	}
 
 	addAttr<std::vector<double>, AR_VERTEX>(vGaussCurvatures, StrAttrVertGaussCurvatures);
@@ -2906,8 +2905,8 @@ double CMesh::getAvgEdgeLength() const
 
 const std::vector<double>& CMesh::getMeanCurvature()
 {
-	if (!hasAttr(StrAttrVertMeanCurvatures)) calCurvatures();		
-	return getAttrValue<std::vector<double>,AR_UNIFORM>(StrAttrVertMeanCurvatures);
+	if (!hasAttr(StrAttrVertMeanCurvatures)) this->calCurvatures();		
+	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertMeanCurvatures);
 }
 
 const std::vector<double>& CMesh::getMeanCurvature() const
@@ -2924,8 +2923,10 @@ const std::vector<double>& CMesh::getGaussCurvature()
 
 const std::vector<Vector3D>& CMesh::getFaceNormals()
 {
-	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
-	return getAttrValue<std::vector<Vector3D>,AR_VERTEX>(StrAttrFaceNormal);
+	if (!hasAttr(StrAttrFaceNormal)) 
+		calFaceNormals();
+	const std::vector<Vector3D>& vFaceNormals = getAttrValue<std::vector<Vector3D>,AR_FACE>(StrAttrFaceNormal);
+	return vFaceNormals;
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals()

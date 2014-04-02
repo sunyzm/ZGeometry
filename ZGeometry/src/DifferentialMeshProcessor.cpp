@@ -99,7 +99,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = para1;
 			int nRing = 1;
-			mMeshLaplacians[laplacianType].constructAnisotropic1(mMesh, nRing, para1, para2);
+			laplacian.constructAnisotropic1(mMesh, nRing, para1, para2);
 		}
 		break;
 
@@ -107,12 +107,13 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 		{
 			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = mMesh->getAvgEdgeLength() / 2;
-			mMeshLaplacians[laplacianType].constructFromMesh4(mMesh, 1, para1, para2);
+			int nRing = 1;
+			laplacian.constructAnisotropic2(mMesh, nRing, para1, para2);
 		}
 		break;
 
 	case IsoApproximate:
-		mMeshLaplacians[laplacianType].constructFromMesh5(mMesh);                
+		laplacian.constructFromMesh5(mMesh);                
 		break;
 
 	default: throw std::logic_error("Unrecognized Laplacian type");

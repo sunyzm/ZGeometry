@@ -1,5 +1,6 @@
 #include "QZGeometry.h"
 #include <cmath>
+#include <cstdio>
 #include <fstream>
 #include <string>
 #include <iostream>
@@ -100,7 +101,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mLastOperation = None;
 	mDeformType = DEFORM_Simple;
 	mSignatureMode = SM_Normalized;
-	mActiveLalacian = Umbrella;
+	mActiveLalacian = CotFormula;
 	mDiffMax = 2.0;
 	mColorMapType = ZGeom::CM_JET;
 
@@ -146,12 +147,12 @@ QZGeometryWindow::~QZGeometryWindow()
 	for (RenderSettings* rs : mRenderManagers) delete rs;
 
 	for (QAction* a : m_actionDisplaySignatures) delete a;
-	for (QAction* a : m_actionComputeSimilarities) delete a;
 	for (QAction* a : m_actionComputeLaplacians) delete a;
+	for (QAction* a : m_actionDisplayFeatures) delete a;
 
-	delete m_simlaritySignalMapper;
 	delete m_laplacianSignalMapper;
 	delete m_signatureSignalMapper;
+	delete m_featureSignalMapper;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -168,20 +169,13 @@ void QZGeometryWindow::makeConnections()
 	}
 	QObject::connect(m_laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
-	/*  actionComputeSimilarities  */
-	m_actionComputeSimilarities.resize(SIM_TYPE_COUNT);
-	m_simlaritySignalMapper = new QSignalMapper(this);
-	for (int t = 0; t < SIM_TYPE_COUNT; ++t) {
-		m_actionComputeSimilarities[t] = new QAction(QString("Similarity type ") + QString::number(t), this);
-		ui.menuComputeSimilarityMap->addAction(m_actionComputeSimilarities[t]);
-		m_simlaritySignalMapper->setMapping(m_actionComputeSimilarities[t], t);
-		QObject::connect(m_actionComputeSimilarities[t], SIGNAL(triggered()), m_simlaritySignalMapper, SLOT(map()));
-	}
-	QObject::connect(m_simlaritySignalMapper, SIGNAL(mapped(int)), this, SLOT(computeSimilarityMap(int)));
-	
 	/*  actionDisplaySignatures  */
 	m_signatureSignalMapper = new QSignalMapper(this);
 	QObject::connect(m_signatureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displaySignature(QString)));
+
+	/* actionDisplayFeatures */
+	m_featureSignalMapper = new QSignalMapper(this);
+	QObject::connect(m_featureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displayFeature(QString)));
 
 	////////    Controls	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -321,7 +315,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	/* compute and decompose mesh Laplacians */
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
-	//computeLaplacian(CotFormula);
+	computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1);
 
@@ -484,6 +478,8 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	case Qt::Key_L:
 		if (event->modifiers() & Qt::AltModifier)
 			toggleShowMatchingLines();
+		else if (event->modifiers() & Qt::ControlModifier)
+			listMeshAttributes();
 		break;
 
 	case Qt::Key_M:
@@ -814,19 +810,18 @@ void QZGeometryWindow::setDisplayMesh()
 
 void QZGeometryWindow::computeCurvatureMean()
 {
-	for (int i = 0; i < mMeshCount; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		vector<double> vCurvature;
 		mp.computeCurvature(vCurvature, 0);
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-
-		addColorSignature(i, vCurvature, StrColorMeanCurvature);
+		addColorSignature(obj, vCurvature, StrColorMeanCurvature);
 	}
 
-	displaySignature(StrColorMeanCurvature.c_str());
-	qout.output("Show Mean curvature");
 	updateDisplaySignatureMenu();
+	displaySignature(StrColorMeanCurvature.c_str());
+	qout.output("Visualize mean curvature");	
 }
 
 void QZGeometryWindow::computeCurvatureGauss()
@@ -837,14 +832,12 @@ void QZGeometryWindow::computeCurvatureGauss()
 		mp.computeCurvature(vCurvature, 1);
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-	
 		addColorSignature(i, vCurvature, StrColorGaussCurvature);
-
 	}
 
-	displaySignature(StrColorGaussCurvature.c_str());
 	updateDisplaySignatureMenu();
-	qout.output("Show Gauss curvature");
+	displaySignature(StrColorGaussCurvature.c_str());
+	qout.output("Visualize Gauss curvature");
 }
 
 void QZGeometryWindow::displayDiffPosition()
@@ -1147,6 +1140,69 @@ void QZGeometryWindow::displaySignature(QString sigName )
 
 	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrColorPosDiff) toggleShowSignature();	
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayFeature( QString featureName )
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		if (!isMeshSelected(obj)) continue;
+		mRenderManagers[obj]->mActiveFeatureName = featureName.toStdString();
+	}
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::updateDisplaySignatureMenu()
+{
+	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
+	std::vector<AttrVertColors*> vColorAttributes = mMeshes[obj]->getColorAttrList();
+
+	for (QAction* qa : m_actionDisplaySignatures) {
+		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
+			== vColorAttributes.end())
+		{
+				ui.menuDisplaySignatures->removeAction(qa);
+				delete qa;	
+		}
+	}
+
+	for (AttrVertColors* attr : vColorAttributes) {
+		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
+			== m_actionDisplaySignatures.end())
+		{
+			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
+			m_actionDisplaySignatures.push_back(newDisplayAction);
+			ui.menuDisplaySignatures->addAction(m_actionDisplaySignatures.back());
+			m_signatureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
+			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
+		}	
+	}
+}
+
+void QZGeometryWindow::updateDisplayFeatureMenu()
+{
+	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
+	std::vector<AttrMeshFeatures*> vFeatureAttr = mMeshes[obj]->getMeshFeatureList();
+
+	for (QAction* qa : m_actionDisplayFeatures) {
+		if (find_if(vFeatureAttr.begin(), vFeatureAttr.end(), [&](AttrMeshFeatures* attr){ return attr->attrName() == qa->text().toStdString();}) 
+			== vFeatureAttr.end())
+		{
+			ui.menuDisplayFeatures->removeAction(qa);
+			delete qa;	
+		}
+	}
+
+	for (AttrMeshFeatures* attr : vFeatureAttr) {
+		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
+			== m_actionDisplaySignatures.end())
+		{
+			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
+			m_actionDisplayFeatures.push_back(newDisplayAction);
+			ui.menuDisplayFeatures->addAction(m_actionDisplayFeatures.back());
+			m_featureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
+			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_featureSignalMapper, SLOT(map()));
+		}	
+	}
 }
 
 void QZGeometryWindow::setTaskRegistration()
@@ -1594,34 +1650,6 @@ void QZGeometryWindow::addMesh()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::updateDisplaySignatureMenu()
-{
-	if (mObjInFocus < 0) return;
-	std::vector<AttrVertColors*> vColorAttributes = mMeshes[mObjInFocus]->getColorAttrLists();
-
-	QList<QAction*> signatureActions = ui.menuSignature->actions();
-	for (QAction* qa : m_actionDisplaySignatures) {
-		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
-			== vColorAttributes.end())
-		{
-				ui.menuSignature->removeAction(qa);
-				delete qa;	
-		}
-	}
-
-	for (AttrVertColors* attr : vColorAttributes) {
-		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
-			== m_actionDisplaySignatures.end())
-		{
-			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
-			m_actionDisplaySignatures.push_back(newDisplayAction);
-			ui.menuSignature->addAction(m_actionDisplaySignatures.back());
-			m_signatureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
-			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
-		}	
-	}
-}
-
 void QZGeometryWindow::computeSimilarityMap( int simType )
 {
 	switch(simType)
@@ -1817,7 +1845,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
-	std::vector<double>& vSig = mMeshes[obj]->addAttrVertVecDbl(StrOriginalSignature).attrValue();
+	std::vector<double>& vSig = mMeshes[obj]->addAttrVertScalars(StrOriginalSignature).attrValue();
 	vSig = vVals;
 
 	mMeshes[obj]->addColorAttr(sigName);
@@ -1912,7 +1940,7 @@ void QZGeometryWindow::updateSignature( SignatureMode smode )
 		const std::string& currentSig = mRenderManagers[obj]->mColorSignatureName;
 		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrOriginalSignature)) continue;
 
-		const std::vector<double>& vSig = mMeshes[obj]->getVertVecDbl(StrOriginalSignature);
+		const std::vector<double>& vSig = mMeshes[obj]->getVertScalars(StrOriginalSignature);
 		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
 		signaturesToColors(vSig, vColors, smode);
 
@@ -2181,4 +2209,20 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 
 	displaySignature(StrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();
+}
+
+bool QZGeometryWindow::isMeshSelected( int obj )
+{
+	if (mObjInFocus == -1) return true;
+	else return mObjInFocus == obj;
+}
+
+void QZGeometryWindow::listMeshAttributes()
+{
+	std::vector<std::string> attrList = mMeshes[0]->getAttrNamesList();
+	std::ostringstream ostr;
+	ostr << "List all attributes:";
+	for (size_t i = 0; i < attrList.size(); ++i) 
+		ostr << "\n " << i << ": " << attrList[i];
+	qout.output(ostr.str(), OUT_CONSOLE);
 }
