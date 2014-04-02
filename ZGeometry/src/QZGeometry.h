@@ -135,7 +135,6 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void constructLaplacians(LaplacianType laplacianType = CotFormula);
 	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
 	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);

@@ -317,7 +317,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	//computeLaplacian(NormalizedUmbrella);	
 	computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
-	//computeLaplacian(Anisotropic1);
+	computeLaplacian(Anisotropic1);
+	computeLaplacian(Anisotropic2);
+	setLaplacianType("Anisotropic1");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();
@@ -927,10 +929,10 @@ void QZGeometryWindow::displayNeighborVertices()
 
 void QZGeometryWindow::computeEigenfunction()
 {
-	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
-	int select_eig = (mCommonParameter - sliderCenter >= 0) ? (mCommonParameter - sliderCenter + 1) : 1;
 	LaplacianType lapType = mActiveLalacian;
-
+	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
+	int select_eig = (mCommonParameter >= sliderCenter) ? (mCommonParameter - sliderCenter + 1) : 1;
+	
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		std::vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
@@ -951,7 +953,6 @@ void QZGeometryWindow::computeHK()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		//const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
 		const ZGeom::EigenSystem &mhb = mp.getMHB(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
@@ -1676,17 +1677,13 @@ void QZGeometryWindow::computeSimilarityMap( int simType )
 	updateDisplaySignatureMenu();
 }
 
-void QZGeometryWindow::constructLaplacians( LaplacianType laplacianType )
-{
-	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-		mProcessors[obj]->constructLaplacian(laplacianType);
-	});
-}
-
 void QZGeometryWindow::computeLaplacian( int lapType )
 {
 	LaplacianType laplacianType = (LaplacianType)lapType;
-	constructLaplacians(laplacianType);
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+		mProcessors[obj]->constructLaplacian(laplacianType);
+	});
+
 	decomposeLaplacians(laplacianType);
 }
 
@@ -2106,6 +2103,8 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 
 void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 {
+	qout.output("Select " + laplacianTypeName, OUT_STATUS);
+
 	if (laplacianTypeName == "Umbrella") mActiveLalacian = Umbrella;
 	else if (laplacianTypeName == "CotFormula") mActiveLalacian = CotFormula;
 	else if (laplacianTypeName == "Anisotropic1") mActiveLalacian = Anisotropic1;

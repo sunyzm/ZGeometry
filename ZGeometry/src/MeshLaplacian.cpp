@@ -29,7 +29,7 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 		for (int j = 0; j < valence; ++j) {
 			vElem.push_back(std::make_tuple(i+1, vNeighbors[j]+1, 1.0));
 		}
-		vElem.push_back(std::make_tuple(i+1, i+1, -double(valence)));	// positive diagonal elements
+		vElem.push_back(std::make_tuple(i+1, i+1, -double(valence)));	// diagonal elements
 
 		vWeights[i] = double(valence);
 	}
@@ -153,12 +153,136 @@ void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 	m_laplacianType = SymCot;
 }
 
+void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, double para2 )
+{
+	using namespace std;
+	const int vertCount = mOrder = tmesh->vertCount();
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
+	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	int nRing = 1;
+	double hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
+	double hPara2 = 0.3;
+
+	std::vector<double> vDiag(vertCount, 0);
+	
+	for (int vi = 0; vi < vertCount; ++vi) {
+		const CVertex* pvi = tmesh->getVertex(vi); 
+		int outValence = pvi->outValence();
+		for (int j = 0; j < outValence; ++j) {
+			const CHalfEdge* phe = pvi->getHalfEdge(j);
+		    const CVertex* pvj = phe->vert(1);
+			int vj = pvj->getIndex();
+			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
+
+			Vector3D vij = pvj->getPosition() - pvi->getPosition();
+			double w1 = std::exp(-vij.length2() / hPara1);
+			double w2 = std::exp(-pow(
+				(fabs(dotProduct3D(vVertNormals[vi], vij)) + std::fabs(dotProduct3D(vVertNormals[vj], vij)))
+				/vij.length(), 2) / hPara2);
+			double wij = w1 * w2;
+
+			vSparseElements.push_back(make_tuple(vi, vj, wij));
+			vSparseElements.push_back(make_tuple(vj, vi, wij));
+			vDiag[vi] -= wij;
+			vDiag[vj] -= wij;
+		}
+	}
+	
+	std::vector<int> vII, vJJ;
+	std::vector<double> vSS;
+	for (auto elem : vSparseElements) {
+		int ii = std::get<0>(elem);
+		int jj = std::get<1>(elem);
+		double ss = std::get<2>(elem);
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
+		vSS.push_back(ss);
+	}
+	for (int i = 0; i < vertCount; ++i) {
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(vDiag[i]);
+	}
+
+	std::vector<double> vWeights(vertCount, 1.0);
+	vWeights = vMixedAreas;
+
+	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
+	mW.convertFromDiagonal(vWeights);
+	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
+	mConstructed = true;
+}
+
+void MeshLaplacian::constructAnisotropic2( const CMesh* tmesh, double para1, double para2 )
+{
+	using namespace std;
+	const int vertCount = mOrder = tmesh->vertCount();
+	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
+	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
+	vector<std::tuple<int,int,double> > vSparseElements;
+
+	int nRing = 1;
+	double hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
+	double hPara2 = 0.3;
+
+	std::vector<double> vDiag(vertCount, 0);
+
+	for (int vi = 0; vi < vertCount; ++vi) {
+		const CVertex* pvi = tmesh->getVertex(vi); 
+		int outValence = pvi->outValence();
+		for (int j = 0; j < outValence; ++j) {
+			const CHalfEdge* phe = pvi->getHalfEdge(j);
+			const CVertex* pvj = phe->vert(1);
+			int vj = pvj->getIndex();
+			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
+
+			Vector3D vij = pvj->getPosition() - pvi->getPosition();
+			double w1 = std::exp(-vij.length2() / hPara1);
+			double w2 = std::exp(-pow(vMeanCurvatures[vi]-vMeanCurvatures[vj], 2) / hPara2);
+			double wij = w1 * w2;
+
+			vSparseElements.push_back(make_tuple(vi, vj, wij));
+			vSparseElements.push_back(make_tuple(vj, vi, wij));
+			vDiag[vi] -= wij;
+			vDiag[vj] -= wij;
+		}
+	}
+
+	std::vector<int> vII, vJJ;
+	std::vector<double> vSS;
+	for (auto elem : vSparseElements) {
+		int ii = std::get<0>(elem);
+		int jj = std::get<1>(elem);
+		double ss = std::get<2>(elem);
+		vII.push_back(ii+1);
+		vJJ.push_back(jj+1);
+		vSS.push_back(ss);
+	}
+	for (int i = 0; i < vertCount; ++i) {
+		vII.push_back(i+1);
+		vJJ.push_back(i+1);
+		vSS.push_back(vDiag[i]);
+	}
+
+	std::vector<double> vWeights(vertCount, 1.0);
+	vWeights = vMixedAreas;
+
+	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
+	mW.convertFromDiagonal(vWeights);
+	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
+	mConstructed = true;
+}
+
 void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
 {
-	// based on curvature difference; similar to bilateral filtering
+	// based on curvature difference or bilateral filtering
 	const int vertCount = mOrder = tmesh->vertCount();
-	nRing = 2;
-	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
+	nRing = 1;
+	hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
@@ -182,6 +306,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 				double w1 = std::exp(-vpw.length2() / hPara1);
 //				double w2 = std::exp(-std::pow(vMeanCurvatures[vi] - vMeanCurvatures[vki], 2)  / hPara2);
 				double w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[vi], vpw), 2) / hPara2);
+
 				double svalue = face_area * w1 * w2;
 
 				bool alreadyExisted = false;
@@ -221,9 +346,6 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 		vSS.push_back(vDiag[i]);
 	}
 
-// 	for (int k = 0; k < vII.size(); ++k) {
-// 		vSS[k] /= vDiag[vII[k]-1];
-// 	}
 
 	vWeights.resize(mOrder, 1.0);	
 //	for (int i = 0; i < mOrder; ++i) vWeights[i] = std::fabs(vDiag[i]);
@@ -237,7 +359,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 	mConstructed = true;
 }
 
-void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
+void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
 {
 	// similar to bilateral filtering
 	mOrder = tmesh->vertCount();

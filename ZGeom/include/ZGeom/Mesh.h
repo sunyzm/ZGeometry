@@ -309,6 +309,7 @@ public:
 	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
 	static const std::string StrAttrFaceNormal;
+	static const std::string StrAttrVertMixedArea;
 
 ////////////////   fields    ////////////////
 private:
@@ -382,6 +383,9 @@ public:
 	Vector3D			         calBoundingBox(const Vector3D& center) const;
 	double				         calSurfaceArea() const;
 	double				         calVolume() const;
+	void                         calVertMixedAreas();
+	const std::vector<double>&   getVertMixedAreas();
+	const std::vector<double>&   getVertMixedAreas() const;
 
 	void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
 	void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;

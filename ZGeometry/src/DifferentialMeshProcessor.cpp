@@ -96,10 +96,9 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 
 	case Anisotropic1:
 		{
-			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
-			double para2 = para1;
-			int nRing = 1;
-			laplacian.constructAnisotropic1(mMesh, nRing, para1, para2);
+			double para1 = 1.0;
+			double para2 = 1.0;
+			laplacian.constructAnisotropic(mMesh, para1, para2);
 		}
 		break;
 
@@ -107,8 +106,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 		{
 			double para1 = 2 * mMesh->getAvgEdgeLength() * mMesh->getAvgEdgeLength();
 			double para2 = mMesh->getAvgEdgeLength() / 2;
-			int nRing = 1;
-			laplacian.constructAnisotropic2(mMesh, nRing, para1, para2);
+			laplacian.constructAnisotropic2(mMesh, para1, para2);
 		}
 		break;
 

@@ -26,6 +26,7 @@ const std::string CMesh::StrAttrVertNormal = "vert_normal";
 const std::string CMesh::StrAttrVertOnHole = "vert_on_hole";
 const std::string CMesh::StrAttrVertOnBoundary = "vert_on_boundary";
 const std::string CMesh::StrAttrFaceNormal = "face_normal";
+const std::string CMesh::StrAttrVertMixedArea = "vert_scalar_mixed_area";
 
 //////////////////////////////////////////////////////
 //						CVertex						//
@@ -1486,6 +1487,9 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	}
 }
 
+
+// Calculate mean and Gauss curvatures                                                                       */
+//
 void CMesh::calCurvatures()
 {
 	const double pi = ZGeom::PI;
@@ -2487,14 +2491,8 @@ void CMesh::gatherStatistics()
 	addAttr<Vector3D,AR_UNIFORM>(boundBox, StrAttrMeshBBox);
 
 	calCurvatures();
+	calVertMixedAreas();
 	findHoles();
-
-	//cout << "VertexNum: " << m_Vertices.size() << "    FaceNum: " << m_Faces.size() << endl;
-	//cout << "EdgeNum: " << m_HalfEdges.size() 
-	// 	 << "  AvgEdgLen: " << edgeLength << endl;
-	//cout << "Center: (" << center_x << ',' << center_y << ',' << center_z << ')' << endl;
-	//cout << "BoundingBox: (" << boundBox.x << ',' << boundBox.y << ',' << boundBox.z << ')' << endl;
-	//cout << "Boundary Num: " << boundaryCount << endl;
 }
 
 void CMesh::move( const Vector3D& translation )
@@ -3087,6 +3085,47 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 		}
 		subMesh.construct();
 	}	
+}
+
+void CMesh::calVertMixedAreas()
+{
+	const double pi = ZGeom::PI;
+	const int vertCount = this->vertCount();
+	std::vector<double> vMixedAreas(vertCount, 0); 
+
+	for (int vIndex = 0; vIndex < vertCount; ++vIndex) 
+	{
+		CVertex* vi = m_vVertices[vIndex];
+		double sum = 0.0;		// sum of attaching corner's angle
+		double amix = 0.0;
+
+		for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
+			CHalfEdge* e0 = *he;
+			CHalfEdge* e1 = e0->m_eNext;
+			CHalfEdge* e2 = e1->m_eNext;
+			double len0 = e0->getLength();
+			double len1 = e1->getLength();
+			double len2 = e2->getLength();
+			double cota, cotc;
+			amix += calAreaMixed(len0, len1, len2, cota, cotc);
+		}
+
+		vMixedAreas[vIndex] = amix;
+	}
+
+	addAttr<std::vector<double>, AR_VERTEX>(vMixedAreas, StrAttrVertMixedArea, AT_VEC_DBL);
+}
+
+const std::vector<double>& CMesh::getVertMixedAreas()
+{
+	if (!hasAttr(StrAttrVertMixedArea)) calVertMixedAreas();
+	return getAttrValue<std::vector<double>, AR_VERTEX>(StrAttrVertMixedArea);
+}
+
+const std::vector<double>& CMesh::getVertMixedAreas() const
+{
+	assert(hasAttr(StrAttrVertMixedArea));
+	return getAttrValue<std::vector<double>, AR_VERTEX>(StrAttrVertMixedArea);
 }
 
 
