@@ -36,7 +36,7 @@ REGISTER_OUTPUT_FILE = output/Registration.log
 # 5 Anisotropic1 
 # 6 Anisotropic2
 INIT_LAPLACIAN_TYPE = 3
-LOAD_MHB_CACHE = 0
+LOAD_MHB_CACHE = 1
 DEFAULT_EIGEN_SIZE = 300
 DUMP_EIG_VAL = 1
 

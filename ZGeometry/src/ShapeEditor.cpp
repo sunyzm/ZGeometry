@@ -1043,18 +1043,18 @@ void ShapeEditor::partitionedApproximationTest1()
 	std::cout << "\n======== Starting PartitionedApproxTest 1 ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
-	int eigenCount = -1;
+	int eigenCount = 500;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 	MeshCoordinates oldGeoCoord;
 	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
 
 	mShapeApprox.init(mMesh);
-	mShapeApprox.doSegmentation(1000);
+	mShapeApprox.doSegmentation(-1);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
 	emit signatureComputed(QString(StrColorPartitions.c_str()));
-	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
+	mShapeApprox.doEigenDecomposition(CotFormula, eigenCount);	
 	
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
 	const double maxCodingRatio = 1.0;
@@ -1115,6 +1115,7 @@ void ShapeEditor::partitionedApproximationTest1()
 
 	double ratioOverhead;
 	// 1. low-pass approximate, MHB
+#if 0
 	printBeginSeparator("Low-pass Approx, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
 	compressAndEvaluate(maxCodingRatio, SA_Truncation, false);
@@ -1124,8 +1125,10 @@ void ShapeEditor::partitionedApproximationTest1()
 	mContReconstructCoords[0] = vProgressiveCoords;
 	emit approxStepsChanged(0, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
-		
+#endif
+
 	// 2. SOMP, MHB
+#if 0
 	printBeginSeparator("SMP, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
 	compressAndEvaluate(maxCodingRatio, SA_SMP, true);
@@ -1135,6 +1138,7 @@ void ShapeEditor::partitionedApproximationTest1()
 	mContReconstructCoords[1] = vProgressiveCoords;
 	emit approxStepsChanged(1, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
+#endif
 
 	//2.5 SOMP, MHB+Spikes
 #if 0
@@ -1160,7 +1164,7 @@ void ShapeEditor::partitionedApproximationTest1()
 #endif
 
 	// 4. SOMP, SGW + MHB
-#if 1
+#if 0
 	printBeginSeparator("SOMP, SGW-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4MHB);
 	pursuitAndEvaluate(SA_SOMP);
@@ -1174,7 +1178,7 @@ void ShapeEditor::partitionedApproximationTest1()
 
 	ofs.close();
 	std::cout << '\n';
-	changeCoordinates(1);
+	//changeCoordinates(2);
 	std::cout << "** PartitionedApproxTest 1 completed!\n";
 	printEndSeparator('=', 40);
 }

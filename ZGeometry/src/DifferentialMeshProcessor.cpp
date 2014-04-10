@@ -125,7 +125,7 @@ void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType 
 	if (!g_engineWrapper.isOpened())
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
-	if (laplacianType == Tutte || laplacianType == CotFormula)
+	if (laplacianType == Tutte || laplacianType == CotFormula || laplacianType == Anisotropic1 || laplacianType == Anisotropic2)
 		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], true);
 	else 
 		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], false);

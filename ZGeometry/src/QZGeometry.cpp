@@ -313,13 +313,12 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	//computeLaplacian(Umbrella);
+	computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
-	computeLaplacian(Anisotropic1);
+	computeLaplacian(Anisotropic1); 	setLaplacianType("Anisotropic1");
 	computeLaplacian(Anisotropic2);
-	setLaplacianType("Anisotropic1");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();

@@ -164,7 +164,7 @@ void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, doub
 
 	int nRing = 1;
 	double hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
-	double hPara2 = 0.3;
+	double hPara2 = 0.2;
 
 	std::vector<double> vDiag(vertCount, 0);
 	
@@ -227,7 +227,7 @@ void MeshLaplacian::constructAnisotropic2( const CMesh* tmesh, double para1, dou
 
 	int nRing = 1;
 	double hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
-	double hPara2 = 0.3;
+	double hPara2 = 0.2;
 
 	std::vector<double> vDiag(vertCount, 0);
 
