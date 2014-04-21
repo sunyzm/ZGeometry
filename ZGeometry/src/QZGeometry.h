@@ -48,6 +48,7 @@ private slots:
 	void computeEigenfunction();
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
+	void computeVertNormals();
 	void computeEditBasis();
 	void computeDictAtom();
 	void computeHK();
@@ -59,7 +60,6 @@ private slots:
 	void computeBiharmonic();
 	void computeGeodesics();
 	void computeHeatTransfer();
-	void computeSimilarityMap(int simType);
 
 	/* interact with shapeEditor */
 	void continuousApprox1(int level);
@@ -78,7 +78,7 @@ private slots:
 	void displayNeighborVertices();
 	void displayDiffPosition();
 	void displayBasis(int idx);
-
+	
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
 	void setDisplayMesh();
@@ -94,6 +94,7 @@ private slots:
 	void toggleShowRefPoint(bool show = false);
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
+	void toggleShowVectors(bool show = false);
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
 	void toggleDrawRegistration(bool show = false);

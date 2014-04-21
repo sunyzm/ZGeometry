@@ -141,14 +141,6 @@ void DifferentialMeshProcessor::saveMHB( const std::string& path, LaplacianType 
 	mMHBs[laplacianType].save(path);	
 }
 
-void DifferentialMeshProcessor::computeCurvature( std::vector<double>& vCurvature, int curvatureType /*= 0*/ )
-{
-	const int vertCount = mMesh->vertCount();
-	vCurvature.resize(vertCount);
-	if (curvatureType == 0)	vCurvature = mMesh->getMeanCurvature();
-	else if (curvatureType == 1) vCurvature = mMesh->getGaussCurvature();
-}
-
 void DifferentialMeshProcessor::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
@@ -470,7 +462,6 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	vAreas.resize(mMesh->vertCount(), 0.);
 
 	double hPara1 = std::pow(mMesh->getAvgEdgeLength() * 5, 2);
-//	double hPara2 = std::pow(mesh->getAvgEdgeLength(), 2);
 	double hPara2 = mMesh->getAvgEdgeLength();
 	const std::vector<Vector3D>& vVertNormals = mMesh->getVertNormals();
 
@@ -507,20 +498,23 @@ void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vect
 {
 	const int vertCount = mMesh->vertCount();
 	vHeat.resize(vertCount);
-
-	if (mHeatDiffuseMat.empty()) computeHeatDiffuseMat(tMultiplier);
-
 	ZGeom::VecNd vInitHeat(vertCount, 0);
 	vInitHeat[vSrc] = 1.0;
 	ZGeom::VecNd vSolvedHeat(vertCount, 0);
 
+	if (mHeatDiffuseMat.empty()) {
+	//// 
+		computeHeatDiffuseMat(tMultiplier);
+	}
+	
 	mHeatDiffuseSolver.solve(1, vInitHeat.c_ptr(), vSolvedHeat.c_ptr());
+	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
 
+//// for purpose of debugging in matlab 
+//
 // 	mpEngineWrapper->addColVec(vInitHeat, "vInit");
 // 	mpEngineWrapper->addSparseMat(mHeatDiffuseSolver, "matA");
 // 	mpEngineWrapper->addColVec(vSolvedHeat, "vSolved");
-
-	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
 }
 
 void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )

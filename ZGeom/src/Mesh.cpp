@@ -14,19 +14,19 @@
 using namespace std;
 using ZGeom::Colorf;
 
-const std::string CMesh::StrAttrBoundaryVertCount = "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrBoundaryCount = "mesh_boundary_count";
-const std::string CMesh::StrAttrAvgEdgeLength = "mesh_average_edge_length";
-const std::string CMesh::StrAttrMeshBBox = "mesh_bounding_box";
-const std::string CMesh::StrAttrMeshCenter = "mesh_center";
-const std::string CMesh::StrAttrVertColors = "vert_color";
-const std::string CMesh::StrAttrVertGaussCurvatures = "vert_gauss_curvature";
-const std::string CMesh::StrAttrVertMeanCurvatures = "vert_mean_curvature";
-const std::string CMesh::StrAttrVertNormal = "vert_normal";
-const std::string CMesh::StrAttrVertOnHole = "vert_on_hole";
-const std::string CMesh::StrAttrVertOnBoundary = "vert_on_boundary";
-const std::string CMesh::StrAttrFaceNormal = "face_normal";
-const std::string CMesh::StrAttrVertMixedArea = "vert_scalar_mixed_area";
+const std::string CMesh::StrAttrBoundaryVertCount		= "mesh_boundary_vert_count";
+const std::string CMesh::StrAttrBoundaryCount			= "mesh_boundary_count";
+const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
+const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
+const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
+const std::string CMesh::StrAttrVertColors				= "vert_color";
+const std::string CMesh::StrAttrVertGaussCurvatures		= "vert_gauss_curvature";
+const std::string CMesh::StrAttrVertMeanCurvatures		= "vert_mean_curvature";
+const std::string CMesh::StrAttrVertNormal				= "vert_normal";
+const std::string CMesh::StrAttrVertOnHole				= "vert_on_hole";
+const std::string CMesh::StrAttrVertOnBoundary			= "vert_on_boundary";
+const std::string CMesh::StrAttrFaceNormal				= "face_normal";
+const std::string CMesh::StrAttrVertMixedArea			= "vert_scalar_mixed_area";
 
 //////////////////////////////////////////////////////
 //						CVertex						//

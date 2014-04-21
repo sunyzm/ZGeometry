@@ -83,3 +83,8 @@ const std::string StrFeatureHKS			 = "mesh_feature_hks";
 const std::string StrFeatureMHWS		 = "mesh_feature_mhks";
 const std::string StrFeatureNeighbors    = "mesh_feature_neighbors";
 const std::string StrFeatureMultiHKS     = "mesh_feature_multi_hks";
+
+const std::string StrVectorUnnamed       = "mesh_vector_unnamed";
+const std::string StrFaceVertNormal      = "mesh_vector_face_normals";
+const std::string StrVectorVertNormal    = "mesh_vector_vert_normals";
+

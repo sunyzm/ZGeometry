@@ -10,8 +10,8 @@
 #include "MeshLaplacian.h"
 #include "global.h"
 
-enum KernelType {HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL};
-enum DistanceType {DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW};
+enum KernelType { HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL };
+enum DistanceType { DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW };
 enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};
 
 enum FeatureID { FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
@@ -44,7 +44,6 @@ public:
 	// ---- computation ---- //
 	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
 	void	decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
-	void	computeCurvature(std::vector<double>& vCurvature, int curvatureType = 0); //0: mean; 1: Gauss
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
 	double	calHeatTrace(double timescale) const;

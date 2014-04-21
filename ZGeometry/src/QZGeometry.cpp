@@ -240,6 +240,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 	QObject::connect(ui.actionComputeDictionaryAtom, SIGNAL(triggered()), this, SLOT(computeDictAtom()));
+	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
 
 	////	Edit	////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
@@ -267,6 +268,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
+	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowVectors(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
@@ -736,6 +738,15 @@ void QZGeometryWindow::toggleShowSignature( bool show /*= false*/ )
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::toggleShowVectors( bool show /*= false*/ )
+{
+	bool bToShow = !ui.glMeshWidget->m_bShowVectors;
+	ui.glMeshWidget->m_bShowVectors = bToShow;
+	ui.actionShowVectors->setChecked(bToShow);
+
+	ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::toggleDrawMatching(bool show)
 {
 	bool bToShow = !ui.glMeshWidget->m_bDrawMatching;
@@ -812,12 +823,10 @@ void QZGeometryWindow::setDisplayMesh()
 void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
-		vector<double> vCurvature;
-		mp.computeCurvature(vCurvature, 0);
+		vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrColorMeanCurvature);
+		addColorSignature(obj, vCurvature, StrColorGaussCurvature);
 	}
 
 	updateDisplaySignatureMenu();
@@ -827,13 +836,11 @@ void QZGeometryWindow::computeCurvatureMean()
 
 void QZGeometryWindow::computeCurvatureGauss()
 {
-	for (int i = 0; i < mMeshCount; ++i) {		
-		DifferentialMeshProcessor& mp = *mProcessors[i];
-		vector<double> vCurvature;
-		mp.computeCurvature(vCurvature, 1);
+	for (int obj = 0; obj < mMeshCount; ++obj) {		
+		vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(i, vCurvature, StrColorGaussCurvature);
+		addColorSignature(obj, vCurvature, StrColorMeanCurvature);
 	}
 
 	updateDisplaySignatureMenu();
@@ -1135,7 +1142,7 @@ void QZGeometryWindow::displaySignature(QString sigName )
 {
 	for (int i = 0; i < mMeshCount; ++i) {
 		if (mMeshes[i]->hasAttr(sigName.toStdString()))
-			mRenderManagers[i]->mColorSignatureName = sigName.toStdString();
+			mRenderManagers[i]->mActiveColorSignatureName = sigName.toStdString();
 	}
 
 	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrColorPosDiff) toggleShowSignature();	
@@ -1650,32 +1657,6 @@ void QZGeometryWindow::addMesh()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::computeSimilarityMap( int simType )
-{
-	switch(simType)
-	{
-	case SIM_TYPE_1:
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-			mProcessors[obj]->computeSimilarityMap1(mProcessors[obj]->getRefPointIndex());
-		});
-		break;
-
-	case SIM_TYPE_2:
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-			mProcessors[obj]->computeSimilarityMap2(mProcessors[obj]->getRefPointIndex());
-		});
-		break;
-
-	case SIM_TYPE_3:
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){
-			mProcessors[obj]->computeSimilarityMap3(mProcessors[obj]->getRefPointIndex());
-		});
-		break;
-	}
-
-	updateDisplaySignatureMenu();
-}
-
 void QZGeometryWindow::computeLaplacian( int lapType )
 {
 	LaplacianType laplacianType = (LaplacianType)lapType;
@@ -1933,7 +1914,7 @@ void QZGeometryWindow::addNoise()
 void QZGeometryWindow::updateSignature( SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		const std::string& currentSig = mRenderManagers[obj]->mColorSignatureName;
+		const std::string& currentSig = mRenderManagers[obj]->mActiveColorSignatureName;
 		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrOriginalSignature)) continue;
 
 		const std::vector<double>& vSig = mMeshes[obj]->getVertScalars(StrOriginalSignature);
@@ -2223,4 +2204,25 @@ void QZGeometryWindow::listMeshAttributes()
 	for (size_t i = 0; i < attrList.size(); ++i) 
 		ostr << "\n " << i << ": " << attrList[i];
 	qout.output(ostr.str(), OUT_CONSOLE);
+}
+
+void QZGeometryWindow::computeVertNormals()
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		CMesh* mesh = mMeshes[obj];
+		int vertCount = mesh->vertCount();
+		const std::vector<Vector3D>& vNormals = mesh->getVertNormals();
+		assert(vNormals.size() == vertCount);
+		
+		MeshVectorList mvl;
+		for (int i = 0; i < vertCount; ++i)	{
+			const Vector3D& vi = mesh->getVertexPosition(i);
+			mvl.push_back(std::make_pair(vi, vNormals[i]));
+		}
+		
+		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrVectorVertNormal, AT_VEC3);
+		mRenderManagers[obj]->mActiveVectorName = StrVectorVertNormal;
+	}
+
+	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);
 }

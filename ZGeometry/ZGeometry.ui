@@ -668,6 +668,7 @@
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
+    <addaction name="actionShowVectors"/>
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
@@ -720,6 +721,8 @@
     <addaction name="actionComputeDictionaryAtom"/>
     <addaction name="actionDoPartitioning"/>
     <addaction name="separator"/>
+    <addaction name="actionComputeVertNormals"/>
+    <addaction name="actionFace_Normals"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -1295,6 +1298,21 @@
   <action name="actionComputeHKSFeatures">
    <property name="text">
     <string>HKS Features</string>
+   </property>
+  </action>
+  <action name="actionShowVectors">
+   <property name="text">
+    <string>Show vectors</string>
+   </property>
+  </action>
+  <action name="actionComputeVertNormals">
+   <property name="text">
+    <string>Vert Normals</string>
+   </property>
+  </action>
+  <action name="actionFace_Normals">
+   <property name="text">
+    <string>Face Normals</string>
    </property>
   </action>
  </widget>

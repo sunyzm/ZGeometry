@@ -55,6 +55,8 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
+	m_bShowVectors = false;
+
 	m_bShowRefPoint = false;
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
@@ -440,10 +442,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	const CMesh* ori_mesh = pMP->getOriMesh_const();
 	const Vector3D shift = pRS->display_shift;
 	const GLfloat *mesh_color = pRS->mesh_color;
-
-	//static const float specReflection[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-	//glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);
-	//glMateriali(GL_FRONT, GL_SHININESS, 96);
 	
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -456,9 +454,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
 	/*** draw mesh ***/
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
-	if (m_bShowSignature && tmesh->hasAttr(pRS->mColorSignatureName))
-	{ // draw with color signature
-		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mColorSignatureName);
+	if (m_bShowSignature && tmesh->hasAttr(pRS->mActiveColorSignatureName)) 
+	{ 
+		// draw with color signature
+		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mActiveColorSignatureName);
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
 			if(!tmesh->getFace(i)->hasHalfEdge()) continue;
@@ -473,9 +472,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			}
 		}
 		glEnd();
-	}
+	} 
 	else 
-	{ // draw with solid color
+	{ 
+		// draw with solid color
 		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
@@ -505,14 +505,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 				int p1 = hf->getVertIndex(0);
 				int p2 = hf->getVertIndex(1);
 				glLineWidth(2.0);
-				glColor4f(0.0, 0.0, 0.0, 1.0);			//show boundary edge in black
-				if(vVertIsOnHole[p1]) {
-					glColor4f(0.0, 0.0, 1.0, 1.0);		//show edge on holes in blue
-				}
-				Vector3D v1 = tmesh->getVertex(p1)->getPosition();
-				v1 += shift;
-				Vector3D v2 = tmesh->getVertex(p2)->getPosition();
-				v2 += shift;
+				if(vVertIsOnHole[p1]) glColor4f(0.0, 0.0, 1.0, 1.0); //show edge on holes in blue
+				else glColor4f(0.0, 0.0, 0.0, 1.0);					 //show boundary edge in black
+				Vector3D v1 = tmesh->getVertex(p1)->getPosition(), v2 = tmesh->getVertex(p2)->getPosition();
+				v1 += shift; v2 += shift;
 				glVertex3d(v1.x, v1.y, v1.z);
 				glVertex3d(v2.x, v2.y, v2.z);
 			}
@@ -520,6 +516,26 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glEnd();
 	}
 	glEnable(GL_LIGHTING);
+
+	/*** draw vectors on mesh ***/
+	if (m_bShowVectors && tmesh->hasAttr(pRS->mActiveVectorName))
+	{
+		const MeshVectorList& meshVecs = tmesh->getAttrValue<MeshVectorList, AR_UNIFORM>(pRS->mActiveVectorName);
+		const double avgEdgeLen = tmesh->getAvgEdgeLength();
+
+		glColor4f(0, 0, 1., 1.);
+		glLineWidth(1.0);
+		glBegin(GL_LINES);
+		for (auto vec : meshVecs) {
+			Vector3D v1 = vec.first;
+			Vector3D vn = vec.second;
+			Vector3D v2 = v1 + vn * avgEdgeLen * 0.5;
+			v1 += shift; v2 += shift;
+			glVertex3d(v1.x, v1.y, v1.z);	
+			glVertex3d(v2.x, v2.y, v2.z);
+		}
+		glEnd();
+	}
 
 	/*** draw reference point ***/
 	if ( m_bShowRefPoint ) {
@@ -540,10 +556,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		const MeshFeatureList& feature_list = tmesh->getMeshFeatures(pRS->mActiveFeatureName);
 
 		/* draw as gluSphere */ 
+		bool is_hks_feature = false;
 		const float *feature_color1 = ZGeom::ColorGreen;
 		const float *feature_color2 = ZGeom::ColorMagenta;	
 		GLUquadric* quadric = gluNewQuadric();
-		bool is_hks_feature = false;
 		for (MeshFeature* feature : feature_list.m_vFeatures) {
 			Vector3D vt = ori_mesh->getVertex(feature->m_index)->getPosition();
 			vt += shift;

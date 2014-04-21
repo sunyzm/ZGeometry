@@ -23,7 +23,8 @@ public:
 		showColorSignature(false), selected(false), 
 		glPolygonMode(Z_FILL), display_shift(0, 0, 0),
 		obj_rot(1,0,0,0), obj_trans(0,0,0),
-		mColorSignatureName(StrColorPreset), mActiveFeatureName(StrColorUnnamed)
+		mActiveColorSignatureName(StrColorPreset), 
+		mActiveFeatureName(StrFeatureUnnamed)
 	{
 		
 	}
@@ -38,7 +39,9 @@ public:
 	CQrot obj_rot;
 	Vector3D display_shift;
 	const float* mesh_color;
-	std::string mColorSignatureName;
+
+	std::string mActiveColorSignatureName;
+	std::string mActiveVectorName;
 	std::string mActiveFeatureName;
 };
 
