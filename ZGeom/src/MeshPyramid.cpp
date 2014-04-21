@@ -49,7 +49,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	{
 		CFace* pFace = originalMesh->m_vFaces[i];
 		vector<double> funcPara = pFace->getPlaneFunction();
-		Quadric q(funcPara[0], funcPara[1], funcPara[2], funcPara[3], pFace->computeArea());
+		Quadric q(funcPara[0], funcPara[1], funcPara[2], funcPara[3], pFace->calArea());
 		q *= q.getArea();
 		m_FaceQuadrics[i] = q;
 	}

@@ -49,6 +49,7 @@ private slots:
 	void computeCurvatureMean();
 	void computeCurvatureGauss();
 	void computeVertNormals();
+	void computeFaceNormals();
 	void computeEditBasis();
 	void computeDictAtom();
 	void computeHK();

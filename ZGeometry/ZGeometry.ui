@@ -722,7 +722,7 @@
     <addaction name="actionDoPartitioning"/>
     <addaction name="separator"/>
     <addaction name="actionComputeVertNormals"/>
-    <addaction name="actionFace_Normals"/>
+    <addaction name="actionComputeFaceNormals"/>
    </widget>
    <widget class="QMenu" name="menuTask">
     <property name="title">
@@ -1310,7 +1310,7 @@
     <string>Vert Normals</string>
    </property>
   </action>
-  <action name="actionFace_Normals">
+  <action name="actionComputeFaceNormals">
    <property name="text">
     <string>Face Normals</string>
    </property>

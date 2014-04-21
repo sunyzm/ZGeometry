@@ -370,7 +370,7 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 	for (int fi = 0; fi < vFaces.size(); ++fi) {
 		const CFace* pfi = mMesh->getFace(vFaces[fi]);
-		double face_area = pfi->computeArea();
+		double face_area = pfi->calArea();
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 //			if (vki == refPoint) continue;
@@ -419,7 +419,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
 		const CFace* pfi = mMesh->getFace(vFaces[fIndex]);
-		double face_area = pfi->computeArea();
+		double face_area = pfi->calArea();
 		for (int k = 0; k < 3; ++k) {
 			int vki = pfi->getVertexIndex(k);
 			//			if (vki == refPoint) continue;
@@ -468,7 +468,7 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 	for (int fi = 0; fi < vFaces.size(); ++fi)
 	{
 		const CFace* pfi = mMesh->getFace(vFaces[fi]);
-		double face_area = pfi->computeArea();
+		double face_area = pfi->calArea();
 		for (int k = 0; k < 3; ++k)
 		{
 			int vki = pfi->getVertexIndex(k);

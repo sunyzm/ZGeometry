@@ -28,15 +28,6 @@ const std::string CMesh::StrAttrVertOnBoundary			= "vert_on_boundary";
 const std::string CMesh::StrAttrFaceNormal				= "face_normal";
 const std::string CMesh::StrAttrVertMixedArea			= "vert_scalar_mixed_area";
 
-//////////////////////////////////////////////////////
-//						CVertex						//
-//////////////////////////////////////////////////////
-
-CVertex::~CVertex()
-{
-	delete[] m_piEdge;
-}
-
 CVertex::CVertex()
 {
 	init();
@@ -54,17 +45,6 @@ CVertex::CVertex( const Vector3D& v )
 	m_vPosition = v;
 }
 
-void CVertex::init()
-{
-	m_piEdge = NULL;
-	mOutValence = 0;
-	m_bIsBoundary = false;
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
-	m_bIsValid = true;
-}
-
 CVertex::CVertex( const CVertex& v )
 {	
 	clone(v);
@@ -74,6 +54,26 @@ CVertex& CVertex::operator = ( const CVertex& v )
 {	
 	clone(v);
 	return *this;
+}
+
+//////////////////////////////////////////////////////
+//						CVertex						//
+//////////////////////////////////////////////////////
+
+CVertex::~CVertex()
+{
+	delete[] m_piEdge;
+}
+
+void CVertex::init()
+{
+	m_piEdge = NULL;
+	mOutValence = 0;
+	m_bIsBoundary = false;
+	m_mark = -1;
+	m_LocalGeodesic = -1.0;
+	m_inheap = false;
+	m_bIsValid = true;
 }
 
 void CVertex::clone(const CVertex& v)
@@ -134,14 +134,6 @@ void CVertex::setPosition( double x, double y, double z )
 	m_vPosition.z = z;
 }
 
-//////////////////////////////////////////////////////
-//						CHalfEdge					//
-//////////////////////////////////////////////////////
-
-CHalfEdge::~CHalfEdge()
-{
-}
-
 CHalfEdge::CHalfEdge()
 {
 	m_iVertex[0] = m_iVertex[1] = -1;
@@ -177,6 +169,14 @@ CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 	return *this;
 }
 
+//////////////////////////////////////////////////////
+//						CHalfEdge					//
+//////////////////////////////////////////////////////
+
+CHalfEdge::~CHalfEdge()
+{
+}
+
 void CHalfEdge::clone(const CHalfEdge& e)
 {
 	if (this == &e) return;
@@ -205,16 +205,16 @@ double CHalfEdge::getLength() const
 }
 
 
+CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
+{
+	m_bIsValid = true;
+}
+
 //////////////////////////////////////////////////////
 //						CFace						//
 //////////////////////////////////////////////////////
 
 CFace::CFace(int s) : m_nType(s), m_piEdge(NULL), m_piVertex(NULL)
-{
-	m_bIsValid = true;
-}
-
-CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
 {
 	m_bIsValid = true;
 }
@@ -228,6 +228,12 @@ CFace& CFace::operator = (const CFace& f)
 {
 	clone(f);
 	return (*this);
+}
+
+CFace::~CFace()
+{
+	delete []m_piEdge;
+	delete []m_piVertex;
 }
 
 void CFace::clone( const CFace& f )
@@ -253,40 +259,11 @@ void CFace::clone( const CFace& f )
 	m_bIsValid = f.m_bIsValid;
 }
 
-CFace::~CFace()
-{
-	delete []m_piEdge;
-	delete []m_piVertex;
-}
-
 void CFace::create(int s)
 {
 	m_nType = s;
 	m_piEdge = new int[s];
 	m_piVertex = new int[s];
-}
-
-Vector3D CFace::calcNormal()
-{
-	Vector3D v[2];
-	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
-	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
-	Vector3D vNormal= v[0] ^ v[1];
-	vNormal.normalize();	
-
-	return vNormal;
-}
-
-std::vector<double> CFace::getPlaneFunction()
-{
-	vector<double> para(4);
-	Vector3D vNormal = calcNormal();
-	para[0] = vNormal[0];
-	para[1] = vNormal[1];
-	para[2] = vNormal[2];
-	double d = vNormal * m_Vertices[0]->getPosition();
-	para[3] = -d;
-	return para;
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -471,11 +448,39 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	
 }
 
-double CFace::computeArea() const
+double CFace::calArea() const
 {
 	return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition());
 }
 
+Vector3D CFace::calcNormal() const
+{
+	Vector3D v[2];
+	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
+	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
+	Vector3D vNormal= v[0] ^ v[1];
+	vNormal.normalize();	
+
+	return vNormal;
+}
+
+Vector3D CFace::calBarycenter() const
+{
+	return (m_Vertices[0]->getPosition() + m_Vertices[1]->getPosition() + m_Vertices[2]->getPosition())/3.0;
+}
+
+
+std::vector<double> CFace::getPlaneFunction()
+{
+	vector<double> para(4);
+	Vector3D vNormal = calcNormal();
+	para[0] = vNormal[0];
+	para[1] = vNormal[1];
+	para[2] = vNormal[2];
+	double d = vNormal * m_Vertices[0]->getPosition();
+	para[3] = -d;
+	return para;
+}
 
 //////////////////////////////////////////////////////
 //						CMesh						//
@@ -2820,7 +2825,7 @@ bool CMesh::hasBoundary() const
 double CMesh::calFaceArea( int i ) const
 {
 	const CFace* f = m_vFaces[i];
-	return f->computeArea();
+	return f->calArea();
 }
 
 void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) const
@@ -2921,8 +2926,7 @@ const std::vector<double>& CMesh::getGaussCurvature()
 
 const std::vector<Vector3D>& CMesh::getFaceNormals()
 {
-	if (!hasAttr(StrAttrFaceNormal)) 
-		calFaceNormals();
+	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
 	const std::vector<Vector3D>& vFaceNormals = getAttrValue<std::vector<Vector3D>,AR_FACE>(StrAttrFaceNormal);
 	return vFaceNormals;
 }

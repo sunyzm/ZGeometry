@@ -263,15 +263,17 @@ public:
 
 	// -- operations -- //
 	void					create(int s);
-	std::vector<double>		getPlaneFunction();	
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
-	double					computeArea() const;
-	Vector3D				calcNormal();
 	bool					hasVertex(int vidx) const;
 	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }
+	
+	double					calArea() const;
+	Vector3D				calBarycenter() const;
+	Vector3D				calcNormal() const;
+	std::vector<double>		getPlaneFunction();	
 
 private:
 	void clone(const CFace& f);

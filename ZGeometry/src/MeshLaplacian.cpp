@@ -295,7 +295,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 		vector<int> vAdjFaces = tmesh->getVertexAdjacentFaceIdx(vi, nRing);
 		for (int fi : vAdjFaces) {
 			const CFace* pfi = tmesh->getFace(fi);
-			double face_area = pfi->computeArea();
+			double face_area = pfi->calArea();
 			for (int k = 0; k < 3; ++k) {
 				int vki = pfi->getVertexIndex(k);
 				if (vi == vki) continue;
@@ -381,7 +381,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi) {
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
-			double face_area = pfi->computeArea();
+			double face_area = pfi->calArea();
 			for (int k = 0; k < 3; ++k)	{
 				int vki = pfi->getVertexIndex(k);
 				if (vki == vi) continue;
@@ -449,7 +449,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
-			double face_area = pfi->computeArea();
+			double face_area = pfi->calArea();
 			for (int k = 0; k < 3; ++k)
 			{
 				int vki = pfi->getVertexIndex(k);

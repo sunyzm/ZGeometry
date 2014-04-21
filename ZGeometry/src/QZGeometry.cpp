@@ -241,6 +241,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 	QObject::connect(ui.actionComputeDictionaryAtom, SIGNAL(triggered()), this, SLOT(computeDictAtom()));
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
+	QObject::connect(ui.actionComputeFaceNormals, SIGNAL(triggered()), this, SLOT(computeFaceNormals()));
 
 	////	Edit	////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
@@ -2226,4 +2227,28 @@ void QZGeometryWindow::computeVertNormals()
 	}
 
 	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);
+	else ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::computeFaceNormals()
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		CMesh* mesh = mMeshes[obj];
+		int faceCount = mesh->faceCount();
+		const std::vector<Vector3D>& fNormals = mesh->getFaceNormals();
+		assert(fNormals.size() == faceCount);
+
+		MeshVectorList mvl;
+
+		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
+			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
+			mvl.push_back(std::make_pair(vc, fNormals[fIdx]));
+		}
+
+		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrAttrVecFaceNormal, AT_VEC3);
+		mRenderManagers[obj]->mActiveVectorName = StrAttrVecFaceNormal;
+	}
+
+	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);
+	else ui.glMeshWidget->update();
 }
