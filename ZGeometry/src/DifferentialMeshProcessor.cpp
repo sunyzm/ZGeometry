@@ -275,15 +275,15 @@ void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vecto
 		}
 	}
 
-	std::string featureStr = StrFeatureUnnamed;
+	std::string featureStr = StrAttrFeatureUnnamed;
 
 	switch(kernelType)
 	{
 	case HEAT_KERNEL:
-		featureStr = StrFeatureHKS;
+		featureStr = StrAttrFeatureHKS;
 		break;
 	case MHW_KERNEL:
-		featureStr = StrFeatureMHWS;
+		featureStr = StrAttrFeatureMHWS;
 		break;
 	}
 

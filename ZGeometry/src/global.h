@@ -58,33 +58,33 @@ struct GlobalSettings {
 extern GlobalSettings gSettings;
 
 /* mesh property names */
-const std::string StrColorUnnamed        = "vert_color_unnamed";
-const std::string StrColorGaussCurvature = "vert_color_gauss_curvature";
-const std::string StrColorMeanCurvature  = "vert_color_mean_curvature";
-const std::string StrColorEigenFunction  = "vert_color_eig_function";
-const std::string StrColorWaveletBasis   = "vert_color_wavelet_basis";
-const std::string StrColorDictAtom       = "vert_color_dict_atom";
-const std::string StrColorHKS			 = "vert_color_hks";
-const std::string StrColorHK			 = "vert_color_hk";
-const std::string StrColorBiharmonic	 = "vert_color_biharmonic";
-const std::string StrColorHeat			 = "vert_color_heat";
-const std::string StrColorMHWS			 = "vert_color_mhws";
-const std::string StrColorMHW			 = "vert_color_mhw";
-const std::string StrColorSGW			 = "vert_color_sgw";
-const std::string StrColorGeodesics	     = "vert_color_geodesics";
-const std::string StrColorPreset		 = "vert_color_preset";
-const std::string StrColorSimilarity     = "vert_color_similarity";
-const std::string StrColorPosDiff        = "vert_color_pos_diff";
-const std::string StrColorPartitions     = "vert_color_partitions";
-const std::string StrOriginalSignature   = "vert_original_signature";
+const std::string StrAttrColorUnnamed        = "vert_color_unnamed";
+const std::string StrAttrColorGaussCurvature = "vert_color_gauss_curvature";
+const std::string StrAttrColorMeanCurvature  = "vert_color_mean_curvature";
+const std::string StrAttrColorEigenFunction  = "vert_color_eig_function";
+const std::string StrAttrColorWaveletBasis   = "vert_color_wavelet_basis";
+const std::string StrAttrColorDictAtom       = "vert_color_dict_atom";
+const std::string StrAttrColorHKS			 = "vert_color_hks";
+const std::string StrAttrColorHK			 = "vert_color_hk";
+const std::string StrAttrColorBiharmonic	 = "vert_color_biharmonic";
+const std::string StrAttrColorHeat			 = "vert_color_heat";
+const std::string StrAttrColorMHWS			 = "vert_color_mhws";
+const std::string StrAttrColorMHW			 = "vert_color_mhw";
+const std::string StrAttrColorSGW			 = "vert_color_sgw";
+const std::string StrAttrColorGeodesics	     = "vert_color_geodesics";
+const std::string StrAttrColorPreset		 = "vert_color_preset";
+const std::string StrAttrColorSimilarity     = "vert_color_similarity";
+const std::string StrAttrColorPosDiff        = "vert_color_pos_diff";
+const std::string StrAttrColorPartitions     = "vert_color_partitions";
+const std::string StrAttrOriginalSignature   = "vert_original_signature";
 
-const std::string StrFeatureUnnamed      = "mesh_feature_unnamed";
-const std::string StrFeatureHKS			 = "mesh_feature_hks";
-const std::string StrFeatureMHWS		 = "mesh_feature_mhks";
-const std::string StrFeatureNeighbors    = "mesh_feature_neighbors";
-const std::string StrFeatureMultiHKS     = "mesh_feature_multi_hks";
+const std::string StrAttrFeatureUnnamed      = "mesh_feature_unnamed";
+const std::string StrAttrFeatureHKS			 = "mesh_feature_hks";
+const std::string StrAttrFeatureMHWS		 = "mesh_feature_mhks";
+const std::string StrAttrFeatureNeighbors    = "mesh_feature_neighbors";
+const std::string StrAttrFeatureMultiHKS     = "mesh_feature_multi_hks";
 
-const std::string StrVectorUnnamed       = "mesh_vector_unnamed";
-const std::string StrFaceVertNormal      = "mesh_vector_face_normals";
-const std::string StrVectorVertNormal    = "mesh_vector_vert_normals";
+const std::string StrAttrVectUnnamed         = "mesh_vector_unnamed";
+const std::string StrAttrVecFaceNormal       = "mesh_vector_face_normals";
+const std::string StrAttrVecVertNormal		 = "mesh_vector_vert_normals";
 

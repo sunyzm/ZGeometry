@@ -135,9 +135,9 @@ void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
 	mMesh->setVertCoordinates(mContReconstructCoords[selected][contCoordIdx]);
 
 	/* visualize the coordinate difference against the original coordinate */
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPosDiff).attrValue();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPosDiff).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrColorPosDiff.c_str()));
+	emit signatureComputed(QString(StrAttrColorPosDiff.c_str()));
 	emit coordinateSelected(selected, contCoordIdx);
 
 	/* show SGW approximation features */
@@ -1051,9 +1051,9 @@ void ShapeEditor::partitionedApproximationTest1()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(-1);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).attrValue();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrColorPartitions.c_str()));
+	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
 	mShapeApprox.doEigenDecomposition(CotFormula, eigenCount);	
 	
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
@@ -1209,9 +1209,9 @@ void ShapeEditor::partitionedApproximationTest2()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(1000);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrColorPartitions).attrValue();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrColorPartitions.c_str()));
+	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */

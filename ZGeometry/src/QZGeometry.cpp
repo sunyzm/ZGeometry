@@ -319,7 +319,8 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	//computeLaplacian(NormalizedUmbrella);	
 	computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
-	computeLaplacian(Anisotropic1); 	setLaplacianType("Anisotropic1");
+	computeLaplacian(Anisotropic1); 	
+	setLaplacianType("Anisotropic1");
 	computeLaplacian(Anisotropic2);
 
 	if (g_task == TASK_REGISTRATION) {
@@ -826,11 +827,11 @@ void QZGeometryWindow::computeCurvatureMean()
 		vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrColorGaussCurvature);
+		addColorSignature(obj, vCurvature, StrAttrColorGaussCurvature);
 	}
 
 	updateDisplaySignatureMenu();
-	displaySignature(StrColorMeanCurvature.c_str());
+	displaySignature(StrAttrColorMeanCurvature.c_str());
 	qout.output("Visualize mean curvature");	
 }
 
@@ -840,11 +841,11 @@ void QZGeometryWindow::computeCurvatureGauss()
 		vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrColorMeanCurvature);
+		addColorSignature(obj, vCurvature, StrAttrColorMeanCurvature);
 	}
 
 	updateDisplaySignatureMenu();
-	displaySignature(StrColorGaussCurvature.c_str());
+	displaySignature(StrAttrColorGaussCurvature.c_str());
 	qout.output("Visualize Gauss curvature");
 }
 
@@ -859,8 +860,8 @@ void QZGeometryWindow::displayDiffPosition()
 		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
-	addColorSignature(0, vDiff, StrColorPosDiff);
-	displaySignature(StrColorPosDiff.c_str());
+	addColorSignature(0, vDiff, StrAttrColorPosDiff);
+	displaySignature(StrAttrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();
 }
 
@@ -909,8 +910,8 @@ void QZGeometryWindow::reconstructMHB()
 	for (double& v : vPosDiff) v /= avgLen;
 	std::cout << "Avg Error as ratio of AEL: " << ZGeom::vecMean(vPosDiff) << std::endl;
 
-	addColorSignature(0, vPosDiff, StrColorPosDiff);
-	displaySignature(StrColorPosDiff.c_str());
+	addColorSignature(0, vPosDiff, StrAttrColorPosDiff);
+	displaySignature(StrAttrColorPosDiff.c_str());
 	ui.glMeshWidget->update();
 }
 
@@ -927,7 +928,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
 		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
 	}
-	mMeshes[0]->addAttrMeshFeatures(*mfl, StrFeatureNeighbors);
+	mMeshes[0]->addAttrMeshFeatures(*mfl, StrAttrFeatureNeighbors);
 
 	if (!ui.actionShowFeatures->isChecked()) toggleShowFeatures();
 	ui.glMeshWidget->update();
@@ -942,10 +943,10 @@ void QZGeometryWindow::computeEigenfunction()
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		std::vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
-		addColorSignature(i, eigVec, StrColorEigenFunction);
+		addColorSignature(i, eigVec, StrAttrColorEigenFunction);
 	}
 
-	displaySignature(StrColorEigenFunction.c_str());
+	displaySignature(StrAttrColorEigenFunction.c_str());
 	mLastOperation = Compute_Eig_Func;
 	qout.output("Show eigenfunction" + Int2String(select_eig), OUT_CONSOLE);
 	updateDisplaySignatureMenu();
@@ -966,10 +967,10 @@ void QZGeometryWindow::computeHK()
 			values[vIdx] = mhb.heatKernel(refPoint, vIdx, time_scale);
 		});
 
-		addColorSignature(obj, values, StrColorHK);
+		addColorSignature(obj, values, StrAttrColorHK);
 	}
 
-	displaySignature(StrColorHK.c_str());
+	displaySignature(StrAttrColorHK.c_str());
 	qout.output(QString().sprintf("HK with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_HK;
@@ -989,10 +990,10 @@ void QZGeometryWindow::computeHKS()
 			values[k] = mhb.heatKernel(k, k, time_scale);
 		});
 
-		addColorSignature(i, values, StrColorHKS);
+		addColorSignature(i, values, StrAttrColorHKS);
 	}
 	
-	displaySignature(StrColorHKS.c_str());
+	displaySignature(StrAttrColorHKS.c_str());
 	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_HKS;
@@ -1011,10 +1012,10 @@ void QZGeometryWindow::computeBiharmonic()
 			vVals[vIdx] = mp.calBiharmonic(refPoint, vIdx);
 		}
 
-		addColorSignature(obj, vVals, StrColorBiharmonic);
+		addColorSignature(obj, vVals, StrAttrColorBiharmonic);
 	}
 
-	displaySignature(StrColorBiharmonic.c_str());
+	displaySignature(StrAttrColorBiharmonic.c_str());
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_Biharmonic;
 }
@@ -1049,10 +1050,10 @@ void QZGeometryWindow::computeMHW()
 			values[vIdx] = mp.calMHW(refPoint, vIdx, time_scale);
 		});
 
-		addColorSignature(obj, values, StrColorMHW);
+		addColorSignature(obj, values, StrAttrColorMHW);
 	}
 
-	displaySignature(StrColorMHW.c_str());
+	displaySignature(StrAttrColorMHW.c_str());
 	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_MHW;
@@ -1072,10 +1073,10 @@ void QZGeometryWindow::computeMHWS()
 			values[vIdx] = mp.calMHW(vIdx, vIdx, time_scale);
 		});
 
-		addColorSignature(obj, values, StrColorMHWS);
+		addColorSignature(obj, values, StrAttrColorMHWS);
 	}
 
-	displaySignature(StrColorMHWS.c_str());
+	displaySignature(StrAttrColorMHWS.c_str());
 	qout.output(QString().sprintf("MHWS timescale: %f", time_scale));
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_MHWS;
@@ -1097,10 +1098,10 @@ void QZGeometryWindow::computeSGW()
 			values[vIdx] = mp.calSGW(refPoint, vIdx, time_scale, mActiveLalacian);
 		});
 
-		addColorSignature(obj, values, StrColorSGW);
+		addColorSignature(obj, values, StrAttrColorSGW);
 	}
 
-	displaySignature(StrColorSGW.c_str());
+	displaySignature(StrAttrColorSGW.c_str());
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_SGW;
 }
@@ -1145,7 +1146,7 @@ void QZGeometryWindow::displaySignature(QString sigName )
 			mRenderManagers[i]->mActiveColorSignatureName = sigName.toStdString();
 	}
 
-	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrColorPosDiff) toggleShowSignature();	
+	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrAttrColorPosDiff) toggleShowSignature();	
 	ui.glMeshWidget->update();
 }
 
@@ -1608,7 +1609,7 @@ void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotF
 
 void QZGeometryWindow::saveSignature()
 {
-	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) {
+	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) {
 		qout.output("No signature available", OUT_MSGBOX);
 		return;
 	}
@@ -1616,7 +1617,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
+	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
 
 	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -1822,7 +1823,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
-	std::vector<double>& vSig = mMeshes[obj]->addAttrVertScalars(StrOriginalSignature).attrValue();
+	std::vector<double>& vSig = mMeshes[obj]->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
 	vSig = vVals;
 
 	mMeshes[obj]->addColorAttr(sigName);
@@ -1867,10 +1868,10 @@ void QZGeometryWindow::computeGeodesics()
 			values[vIdx] = mMeshes[obj]->calGeodesic(refPoint, vIdx);
 		}
 
-		addColorSignature(obj, values, StrColorGeodesics);
+		addColorSignature(obj, values, StrAttrColorGeodesics);
 	}
 
-	displaySignature(StrColorGeodesics.c_str());
+	displaySignature(StrAttrColorGeodesics.c_str());
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_Geodesics;
 }
@@ -1885,10 +1886,10 @@ void QZGeometryWindow::computeHeatTransfer()
 		std::vector<double> vHeat;
 
 		mp->calHeat(vSrc, tMultiplier, vHeat);
-		addColorSignature(obj, vHeat, StrColorHeat);
+		addColorSignature(obj, vHeat, StrAttrColorHeat);
 	}
 
-	displaySignature(StrColorHeat.c_str());
+	displaySignature(StrAttrColorHeat.c_str());
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_Heat;
 }
@@ -1915,9 +1916,9 @@ void QZGeometryWindow::updateSignature( SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		const std::string& currentSig = mRenderManagers[obj]->mActiveColorSignatureName;
-		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrOriginalSignature)) continue;
+		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrAttrOriginalSignature)) continue;
 
-		const std::vector<double>& vSig = mMeshes[obj]->getVertScalars(StrOriginalSignature);
+		const std::vector<double>& vSig = mMeshes[obj]->getVertScalars(StrAttrOriginalSignature);
 		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
 		signaturesToColors(vSig, vColors, smode);
 
@@ -2014,10 +2015,10 @@ void QZGeometryWindow::displayBasis( int idx )
 	for (int i = 0; i < 1; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
 		std::vector<double> eigVec = mShapeEditor.mEditBasis[idx].toStdVector();
-		addColorSignature(i, eigVec, StrColorWaveletBasis);
+		addColorSignature(i, eigVec, StrAttrColorWaveletBasis);
 	}
 
-	displaySignature(StrColorWaveletBasis.c_str());
+	displaySignature(StrAttrColorWaveletBasis.c_str());
 	mLastOperation = Compute_Edit_Basis;
 	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
 	updateDisplaySignatureMenu();
@@ -2052,10 +2053,10 @@ void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 void QZGeometryWindow::updateSignatureMin( int sMin )
 {
 	if (mSignatureMode != SM_BandCurved) return;
-	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
+	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2068,10 +2069,10 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 void QZGeometryWindow::updateSignatureMax( int sMax )
 {
 	if (mSignatureMode != SM_BandCurved) return;
-	if (!mMeshes[0]->hasAttr(StrOriginalSignature)) return;
+	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2136,9 +2137,9 @@ void QZGeometryWindow::computeDictAtom()
 	std::vector<double> values(meshSize);
 	values = mp.getWaveletMat().getRowVec(meshSize * mCurrentBasisScale + refPoint).toStdVector();
 
-	addColorSignature(0, values, StrColorDictAtom);	
+	addColorSignature(0, values, StrAttrColorDictAtom);	
 
-	displaySignature(StrColorDictAtom.c_str());
+	displaySignature(StrAttrColorDictAtom.c_str());
 	updateDisplaySignatureMenu();
 	mLastOperation = Compute_Dict_Atom;
 }
@@ -2172,8 +2173,8 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
-	mMeshes[0]->addColorAttr(StrColorPosDiff);
-	std::vector<ZGeom::Colorf>& vColors = mMeshes[0]->getVertColors(StrColorPosDiff);
+	mMeshes[0]->addColorAttr(StrAttrColorPosDiff);
+	std::vector<ZGeom::Colorf>& vColors = mMeshes[0]->getVertColors(StrAttrColorPosDiff);
 	for (int i = 0; i < vertCount; ++i) {
 		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax, 1.f, mColorMapType);
 		else vColors[i].falseColor(1.0f, 1.f, mColorMapType);
@@ -2186,7 +2187,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	for (int i = 0; i <= 255; ++i) vLegendVals[i] = float(i)/255.0;
 	signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
 
-	displaySignature(StrColorPosDiff.c_str());
+	displaySignature(StrAttrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();
 }
 
@@ -2220,8 +2221,8 @@ void QZGeometryWindow::computeVertNormals()
 			mvl.push_back(std::make_pair(vi, vNormals[i]));
 		}
 		
-		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrVectorVertNormal, AT_VEC3);
-		mRenderManagers[obj]->mActiveVectorName = StrVectorVertNormal;
+		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrAttrVecVertNormal, AT_VEC3);
+		mRenderManagers[obj]->mActiveVectorName = StrAttrVecVertNormal;
 	}
 
 	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);

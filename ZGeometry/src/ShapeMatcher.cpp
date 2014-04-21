@@ -347,7 +347,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 
 	MeshFeatureList *mfl = new MeshFeatureList;
 	for (auto iter = vF.begin(); iter != vF.end(); ++iter) mfl->addFeature(new HKSFeature(*iter));
-	fineMesh->addAttrMeshFeatures(*mfl, StrFeatureMultiHKS);
+	fineMesh->addAttrMeshFeatures(*mfl, StrAttrFeatureMultiHKS);
 
 	m_bFeatureDetected = true;
 }
@@ -3415,8 +3415,8 @@ void ShapeMatcher::sparseMatchingTesting()
 					mfl2->addFeature(f2);
 				}				
 				
-				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrFeatureUnnamed);
-				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrFeatureUnnamed);
+				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrAttrFeatureUnnamed);
+				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrAttrFeatureUnnamed);
 
 
 				selectedGroup = group;
@@ -3467,8 +3467,8 @@ void ShapeMatcher::sparseMatchingTesting()
 				anchor2->m_index = anchor;
 				anchor2->m_note = 0;
 				mfl2->addFeature(anchor2);
-				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrFeatureUnnamed);
-				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrFeatureUnnamed);
+				pOriginalProcessor[0]->getMesh()->addAttrMeshFeatures(*mfl1, StrAttrFeatureUnnamed);
+				pOriginalProcessor[1]->getMesh()->addAttrMeshFeatures(*mfl2, StrAttrFeatureUnnamed);
 
 				for (auto iter = vMatched.begin(); iter != vMatched.end(); ++iter)
 				{

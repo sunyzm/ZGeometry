@@ -23,8 +23,8 @@ public:
 		showColorSignature(false), selected(false), 
 		glPolygonMode(Z_FILL), display_shift(0, 0, 0),
 		obj_rot(1,0,0,0), obj_trans(0,0,0),
-		mActiveColorSignatureName(StrColorPreset), 
-		mActiveFeatureName(StrFeatureUnnamed)
+		mActiveColorSignatureName(StrAttrColorPreset), 
+		mActiveFeatureName(StrAttrFeatureUnnamed)
 	{
 		
 	}
