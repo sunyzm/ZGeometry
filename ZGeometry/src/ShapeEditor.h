@@ -45,12 +45,11 @@ private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
 	void reconstructSpectralWavelet();
 	
-	void monolithicApproximationTest1(bool computeSGW, bool sgwCoding);	// use graph Laplacian
-	void monolithicApproximationTest2(bool doWavelet = true);	// use CotFormula Laplacian
-	void partitionedApproximationTest1();
-	void partitionedApproximationTest2();
+	void approximationTest1();	// test compression performance using graph Laplacian basis
+	void approximationTest2();  // test feature finding and correspondence using cot formula basis
 	void spectrumTest1();
-
+	
+	
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
 	void computeApproximations(const std::vector<ZGeom::VecNd>& vAtoms, 

@@ -399,7 +399,8 @@ public:
 
 	std::vector<int>    getOriginalVertexIndex() const;
 	void                getVertCoordinateFunction(int dim, std::vector<double>& vCoord) const;
-	void				getVertCoordinates(MeshCoordinates& coords) const;
+	void				retrieveVertCoordinates(MeshCoordinates& coords) const;
+	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);

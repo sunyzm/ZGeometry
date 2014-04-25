@@ -180,13 +180,13 @@ void QZGeometryWindow::makeConnections()
 	////////    Controls	////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
-	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), this, SLOT(setRefPoint1(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), this, SLOT(setMesh1RefPoint(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), ui.horizontalSlider1, SLOT(setValue(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), ui.spinBox1, SLOT(setValue(int)));
 
 	QObject::connect(ui.spinBox2, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked2(int)));
 	QObject::connect(ui.horizontalSlider2, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked2(int)));
-	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked2(int)), this, SLOT(setRefPoint2(int)));
+	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked2(int)), this, SLOT(setMesh2RefPoint(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked2(int)), ui.horizontalSlider2, SLOT(setValue(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked2(int)), ui.spinBox2, SLOT(setValue(int)));
 
@@ -289,134 +289,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionRegisterStep, SIGNAL(triggered()), this, SLOT(registerStep()));
 	QObject::connect(ui.actionRegisterFull, SIGNAL(triggered()), this, SLOT(registerFull()));
 	QObject::connect(ui.actionRegisterTest, SIGNAL(triggered()), this, SLOT(registerTest()));
-}
 
-bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
-{
-	qout.output("******** Welcome ********", OUT_CONSOLE);
-	qout.outputDateTime(OUT_CONSOLE);
-	qout.output('*', 24, OUT_CONSOLE);
-
-	switch (g_task)
-	{
-	case TASK_VIEWING:
-		g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
-		if (mMeshCount <= 0) return true;
-		break;
-	case TASK_REGISTRATION:
-		mMeshCount = 2;
-		break;
-	case TASK_EDITING:
-		mMeshCount = 1;
-		break;
-	default:
-		break;
-	}
-
-	loadInitialMeshes(mesh_list_name); 
-
-	/* compute and decompose mesh Laplacians */
-	computeLaplacian(Umbrella);
-	//computeLaplacian(NormalizedUmbrella);	
-	computeLaplacian(CotFormula);
-	//computeLaplacian(SymCot);
-	computeLaplacian(Anisotropic1); 	
-	setLaplacianType("Anisotropic1");
-	computeLaplacian(Anisotropic2);
-
-	if (g_task == TASK_REGISTRATION) {
-		registerPreprocess();
-	}
-	if (g_task == TASK_EDITING) {
-		mShapeEditor.init(mProcessors[0]);
-		mShapeEditor.runTests();
-	}
-
-	return true;
-}
-
-void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
-{
-	ZUtil::runtime_assert (ZUtil::fileExist(mesh_list_name),  "Cannot open file mesh list file!");
-	ifstream meshfiles(mesh_list_name);
-	
-	std::vector<std::string> vMeshFiles;
-	while (!meshfiles.eof()) {
-		std::string meshFileName;
-		getline(meshfiles, meshFileName);
-		if (meshFileName == "") continue;
-		if (meshFileName[0] == '#') continue;
-		else if (!ZUtil::fileExist(meshFileName))
-			throw std::runtime_error("Cannot open file " + meshFileName);		
-		vMeshFiles.push_back(meshFileName);
-	}
-	meshfiles.close();
-	if (vMeshFiles.size() < mMeshCount)
-		throw std::runtime_error("Not enough meshes in mesh list!");
-
-	allocateStorage(mMeshCount);
-
-	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-		CMesh& mesh = *mMeshes[obj];
-		mesh.load(vMeshFiles[obj]);
-		mesh.scaleAreaToVertexNum();
-		mesh.gatherStatistics();        
-	});	
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		CMesh& mesh = *mMeshes[obj];
-		Vector3D center = mesh.getCenter();
-		Vector3D bbox = mesh.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
-		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
-		
-		mProcessors[obj]->init(&mesh);
-		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
-	}
-
-	/* ---- update mesh-dependent ui ---- */
-	if (mMeshCount >= 1) {
-		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
-		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
-		ui.spinBox1->setValue(0);	
-	}
-	if (mMeshCount >= 2) {		
-		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(mMeshes[1]->vertCount()-1);
-		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(mMeshes[1]->vertCount()-1);
-		ui.spinBox2->setValue(0);
-	}
-	ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
-
-	mRenderManagers[0]->selected = true;
-	mObjInFocus = 0;
-}
-
-void QZGeometryWindow::registerPreprocess()
-{
-	if (g_task != TASK_REGISTRATION || mMeshCount != 2) return;
-
-	computeFunctionMaps(40);
-	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], g_engineWrapper.getEngine());
-	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
-	mShapeMatcher.readInRandPair(rand_data_file);
-
-	// ground truth 
-	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
-		cout << "Ground truth available!" << endl;
-		string mapFile = "./models/map1.txt";
-		mShapeMatcher.loadGroundTruth(mapFile);
-	}
-	else if(mMeshes[0]->vertCount() == mMeshes[1]->vertCount()) {
-		mShapeMatcher.autoGroundTruth();
-	}
-
-	mShapeMatcher.setRegistrationLevels(1);
-	registerTest();
-//	evalDistance();
+	//// Tools ////
+	QObject::connect(ui.actionExploreScreenshots, SIGNAL(triggered()), this, SLOT(openSreenshotLocation()));
+	QObject::connect(ui.actionExploreOutput, SIGNAL(triggered()), this, SLOT(openOutputLocation()));
 }
 
 void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
@@ -462,10 +338,10 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		} else {
 			if (mDeformType == DEFORM_Simple)
 				deformSimple();
-			else if (mDeformType == DEFORM_SGW)
-				deformSGW();
 			else if (mDeformType == DEFORM_Laplace)
 				deformLaplace();
+			else if (mDeformType == DEFORM_SGW)
+				deformSGW();
 		}
 		break;
 
@@ -572,6 +448,164 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	}
 }
 
+bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
+{
+	qout.output("******** Welcome ********", OUT_CONSOLE);
+	qout.outputDateTime(OUT_CONSOLE);
+	qout.output('*', 24, OUT_CONSOLE);
+
+	switch (g_task)
+	{
+	case TASK_VIEWING:
+		g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
+		if (mMeshCount <= 0) return true;
+		break;
+	case TASK_REGISTRATION:
+		mMeshCount = 2;
+		break;
+	case TASK_EDITING:
+		mMeshCount = 1;
+		break;
+	default:
+		break;
+	}
+
+	loadInitialMeshes(mesh_list_name); 
+
+	/* compute and decompose mesh Laplacians */
+	//computeLaplacian(Umbrella);
+	//computeLaplacian(NormalizedUmbrella);	
+	computeLaplacian(CotFormula);
+	//computeLaplacian(SymCot);
+	//computeLaplacian(Anisotropic1); 	
+	//computeLaplacian(Anisotropic2);
+	setLaplacianType("CotFormula");
+
+	if (g_task == TASK_REGISTRATION) {
+		registerPreprocess();
+	}
+	if (g_task == TASK_EDITING) {
+		mShapeEditor.init(mProcessors[0]);
+		mShapeEditor.runTests();
+	}
+
+	return true;
+}
+
+void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
+{
+	ZUtil::runtime_assert (ZUtil::fileExist(mesh_list_name),  "Cannot open file mesh list file!");
+	ifstream meshfiles(mesh_list_name);
+	
+	std::vector<std::string> vMeshFiles;
+	while (!meshfiles.eof()) {
+		std::string meshFileName;
+		getline(meshfiles, meshFileName);
+		if (meshFileName == "") continue;
+		if (meshFileName[0] == '#') continue;
+		else if (!ZUtil::fileExist(meshFileName))
+			throw std::runtime_error("Cannot open file " + meshFileName);		
+		vMeshFiles.push_back(meshFileName);
+	}
+	meshfiles.close();
+	if (vMeshFiles.size() < mMeshCount)
+		throw std::runtime_error("Not enough meshes in mesh list!");
+
+	allocateStorage(mMeshCount);
+
+	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+		CMesh& mesh = *mMeshes[obj];
+		mesh.load(vMeshFiles[obj]);
+		mesh.scaleAreaToVertexNum();
+		mesh.gatherStatistics();        
+	});	
+
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		CMesh& mesh = *mMeshes[obj];
+		Vector3D center = mesh.getCenter();
+		Vector3D bbox = mesh.getBoundingBox();
+		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
+		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
+		
+		mProcessors[obj]->init(&mesh);
+		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
+	}
+
+	/* ---- update mesh-dependent ui ---- */
+	if (mMeshCount >= 1) {
+		ui.spinBox1->setMinimum(0);
+		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.horizontalSlider1->setMinimum(0);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.spinBox1->setValue(0);	
+	}
+	if (mMeshCount >= 2) {		
+		ui.spinBox2->setMinimum(0);
+		ui.spinBox2->setMaximum(mMeshes[1]->vertCount()-1);
+		ui.horizontalSlider2->setMinimum(0);
+		ui.horizontalSlider2->setMaximum(mMeshes[1]->vertCount()-1);
+		ui.spinBox2->setValue(0);
+	}
+	ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
+
+	mRenderManagers[0]->selected = true;
+	mObjInFocus = 0;
+}
+
+void QZGeometryWindow::addMesh()
+{
+	QStringList filenames =  QFileDialog::getOpenFileNames(this, "Select one or more mesh files to open",
+														   "../../Data/", "Meshes (*.obj *.off *.ply)");
+	int cur_obj = mMeshCount;
+	allocateStorage(++mMeshCount);
+
+	CStopWatch timer;
+	timer.startTimer();
+	CMesh& mesh = *mMeshes[cur_obj];
+	mesh.load(filenames.begin()->toStdString());
+	mesh.scaleAreaToVertexNum();
+	mesh.gatherStatistics();
+	timer.stopTimer();
+	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
+
+	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
+	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
+
+	mProcessors[cur_obj]->init(&mesh);
+
+	mRenderManagers[cur_obj]->selected = true;
+	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
+
+	if (cur_obj == 0) {
+		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
+		ui.spinBox1->setMinimum(0);
+		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.horizontalSlider1->setMinimum(0);
+		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
+	}
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::clone()
+{
+	if (mMeshCount != 1) {
+		std::cout << "One and only one mesh should exist for cloning" << std::endl;
+		return;
+	}
+
+	allocateStorage(2);
+	mMeshes[1]->cloneFrom(*mMeshes[0]);
+	mMeshes[1]->gatherStatistics();
+	mProcessors[1]->init(mMeshes[1]);
+	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
+
+	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
+	
+	ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::deformSimple()
 {
 	mShapeEditor.deformSimple();
@@ -639,7 +673,7 @@ void QZGeometryWindow::selectObject( int index )
 	qout.output("Selected object(s): " + text);
 }
 
-void QZGeometryWindow::setRefPoint1( int vn )
+void QZGeometryWindow::setMesh1RefPoint( int vn )
 {
 	if (mMeshCount < 1) return;
 	mProcessors[0]->setRefPointIndex(vn);
@@ -647,7 +681,7 @@ void QZGeometryWindow::setRefPoint1( int vn )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setRefPoint2( int vn )
+void QZGeometryWindow::setMesh2RefPoint( int vn )
 {
 	if (mMeshCount < 2) return;
 
@@ -702,6 +736,48 @@ void QZGeometryWindow::setEditModeDrag()
 	ui.actionEditPick->setCheckable(false);
 
 	qout.output("Edit Mode: Drag", OUT_STATUS);
+}
+
+void QZGeometryWindow::setDisplayPointCloud()
+{
+	ui.actionDisplayPointCloud->setChecked(true);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(false);
+
+	for ( auto rm : mRenderManagers ) {
+		rm->displayType = RenderSettings::PointCloud;
+		rm->glPolygonMode = GL_POINT;
+	}
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setDisplayWireframe()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(true);
+	ui.actionDisplayMesh->setChecked(false);
+	
+	for ( auto rm : mRenderManagers ) {
+		rm->displayType = RenderSettings::Wireframe;
+		rm->glPolygonMode = GL_LINE;
+	}
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::setDisplayMesh()
+{
+	ui.actionDisplayPointCloud->setChecked(false);
+	ui.actionDisplayWireframe->setChecked(false);
+	ui.actionDisplayMesh->setChecked(true);
+
+	for ( auto iter = begin(mRenderManagers); iter != end(mRenderManagers); ++iter) {
+		(*iter)->displayType = RenderSettings::Mesh;
+		(*iter)->glPolygonMode = GL_FILL;
+	}
+
+	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::toggleShowRefPoint(bool x)
@@ -777,51 +853,6 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setDisplayPointCloud()
-{
-	ui.actionDisplayPointCloud->setChecked(true);
-	ui.actionDisplayWireframe->setChecked(false);
-	ui.actionDisplayMesh->setChecked(false);
-
-	for ( auto iter = begin(mRenderManagers); iter != end(mRenderManagers); ++iter)
-	{
-		(*iter)->displayType = RenderSettings::PointCloud;
-		(*iter)->glPolygonMode = GL_POINT;
-	}
-
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setDisplayWireframe()
-{
-	ui.actionDisplayPointCloud->setChecked(false);
-	ui.actionDisplayWireframe->setChecked(true);
-	ui.actionDisplayMesh->setChecked(false);
-	
-	for ( auto iter = begin(mRenderManagers); iter != end(mRenderManagers); ++iter)
-	{
-		(*iter)->displayType = RenderSettings::Wireframe;
-		(*iter)->glPolygonMode = GL_LINE;
-	}
-
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::setDisplayMesh()
-{
-	ui.actionDisplayPointCloud->setChecked(false);
-	ui.actionDisplayWireframe->setChecked(false);
-	ui.actionDisplayMesh->setChecked(true);
-
-	for ( auto iter = begin(mRenderManagers); iter != end(mRenderManagers); ++iter)
-	{
-		(*iter)->displayType = RenderSettings::Mesh;
-		(*iter)->glPolygonMode = GL_FILL;
-	}
-
-	ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
@@ -850,22 +881,6 @@ void QZGeometryWindow::computeCurvatureGauss()
 	qout.output("Visualize Gauss curvature");
 }
 
-void QZGeometryWindow::displayDiffPosition()
-{
-	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
-	int size = mMeshes[0]->vertCount();
-	vector<double> vDiff;
-	vDiff.resize(size);
-
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
-		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
-	}
-
-	addColorSignature(0, vDiff, StrAttrColorPosDiff);
-	displaySignature(StrAttrColorPosDiff.c_str());
-	updateDisplaySignatureMenu();
-}
-
 void QZGeometryWindow::updateReferenceMove( int obj )
 {
 	DifferentialMeshProcessor& mp = *mProcessors[obj]; 
@@ -878,22 +893,28 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::clone()
+void QZGeometryWindow::registerPreprocess()
 {
-	if (mMeshCount != 1) {
-		std::cout << "One and only one mesh should exist for cloning" << std::endl;
-		return;
+	if (g_task != TASK_REGISTRATION || mMeshCount != 2) return;
+
+	computeFunctionMaps(40);
+	mShapeMatcher.initialize(mProcessors[0], mProcessors[1], g_engineWrapper.getEngine());
+	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
+	mShapeMatcher.readInRandPair(rand_data_file);
+
+	// ground truth 
+	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
+		cout << "Ground truth available!" << endl;
+		string mapFile = "./models/map1.txt";
+		mShapeMatcher.loadGroundTruth(mapFile);
+	}
+	else if(mMeshes[0]->vertCount() == mMeshes[1]->vertCount()) {
+		mShapeMatcher.autoGroundTruth();
 	}
 
-	allocateStorage(2);
-	mMeshes[1]->cloneFrom(*mMeshes[0]);
-	mMeshes[1]->gatherStatistics();
-	mProcessors[1]->init(mMeshes[1]);
-	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
-
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
-	
-	ui.glMeshWidget->update();
+	mShapeMatcher.setRegistrationLevels(1);
+	registerTest();
+//	evalDistance();
 }
 
 void QZGeometryWindow::reconstructMHB()
@@ -1158,6 +1179,22 @@ void QZGeometryWindow::displayFeature( QString featureName )
 		mRenderManagers[obj]->mActiveFeatureName = featureName.toStdString();
 	}
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::displayDiffPosition()
+{
+	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
+	int size = mMeshes[0]->vertCount();
+	vector<double> vDiff;
+	vDiff.resize(size);
+
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
+		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
+	}
+
+	addColorSignature(0, vDiff, StrAttrColorPosDiff);
+	displaySignature(StrAttrColorPosDiff.c_str());
+	updateDisplaySignatureMenu();
 }
 
 void QZGeometryWindow::updateDisplaySignatureMenu()
@@ -1580,34 +1617,6 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 			  << "; Max EigVal: " << mp.getMHB(laplacianType).getEigVals().back() << std::endl;
 }
 
-void QZGeometryWindow::decomposeLaplacians( LaplacianType laplacianType /*= CotFormula*/ )
-{
-	int totalToDecompose = 0;
-	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		if (!mProcessors[obj]->hasLaplacian(laplacianType))
-			throw std::logic_error("Laplacian type not valid!");
-		if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
-			++totalToDecompose;
-	}
-	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
-		
-	if (totalToDecompose <= 1 && mMeshCount > 1) {        
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){			
-			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-		});
-	} else {    // if both need explicit decomposition, then must run decomposition in sequence in Matlab
-		for(int obj = 0; obj < mMeshCount; ++obj) {
-			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-		}
-	}
-
-	for (int l = 0; l < LaplacianTypeCount; ++l)
-		m_actionComputeLaplacians[l]->setChecked(false);
-	m_actionComputeLaplacians[laplacianType]->setChecked(true);
-}
-
 void QZGeometryWindow::saveSignature()
 {
 	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) {
@@ -1623,42 +1632,6 @@ void QZGeometryWindow::saveSignature()
 	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
 }
 
-void QZGeometryWindow::addMesh()
-{
-	QStringList filenames =  QFileDialog::getOpenFileNames(this, "Select one or more mesh files to open",
-														   "../../Data/", "Meshes (*.obj *.off *.ply)");
-	int cur_obj = mMeshCount;
-	allocateStorage(++mMeshCount);
-
-	CStopWatch timer;
-	timer.startTimer();
-	CMesh& mesh = *mMeshes[cur_obj];
-	mesh.load(filenames.begin()->toStdString());
-	mesh.scaleAreaToVertexNum();
-	mesh.gatherStatistics();
-	timer.stopTimer();
-	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
-
-	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
-	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
-	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
-
-	mProcessors[cur_obj]->init(&mesh);
-
-	mRenderManagers[cur_obj]->selected = true;
-	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
-
-	if (cur_obj == 0) {
-		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
-		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
-		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
-	}
-
-	ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::computeLaplacian( int lapType )
 {
 	LaplacianType laplacianType = (LaplacianType)lapType;
@@ -1666,7 +1639,30 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 		mProcessors[obj]->constructLaplacian(laplacianType);
 	});
 
-	decomposeLaplacians(laplacianType);
+	int totalToDecompose = 0;
+	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
+
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		if (!mProcessors[obj]->hasLaplacian(laplacianType))
+			throw std::logic_error("Laplacian type not valid!");
+		if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
+			++totalToDecompose;
+	}
+	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
+
+	if (totalToDecompose <= 1 && mMeshCount > 1) {        
+		Concurrency::parallel_for(0, mMeshCount, [&](int obj){			
+			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
+		});
+	} else {    // if both need explicit decomposition, then must run decomposition in sequence in Matlab
+		for(int obj = 0; obj < mMeshCount; ++obj) {
+			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
+		}
+	}
+
+	for (int l = 0; l < LaplacianTypeCount; ++l)
+		m_actionComputeLaplacians[l]->setChecked(false);
+	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
 
 void QZGeometryWindow::saveMatchingResult()
@@ -2116,6 +2112,11 @@ void QZGeometryWindow::captureGLAs()
 }
 
 void QZGeometryWindow::openOutputLocation()
+{
+	ShellExecute(NULL, L"explore", L".\\output", NULL, NULL, SW_RESTORE);
+}
+
+void QZGeometryWindow::openSreenshotLocation()
 {
 	ShellExecute(NULL, L"explore", L".\\output\\screenshots", NULL, NULL, SW_RESTORE);
 }

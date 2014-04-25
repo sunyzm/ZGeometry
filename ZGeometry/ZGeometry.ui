@@ -746,12 +746,20 @@
     <addaction name="actionPickMatches"/>
     <addaction name="actionRegisterTest"/>
    </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionExploreScreenshots"/>
+    <addaction name="actionExploreOutput"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCompute"/>
    <addaction name="menuDisplay"/>
    <addaction name="menuTask"/>
    <addaction name="menuRegister"/>
+   <addaction name="menuTools"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
@@ -1313,6 +1321,16 @@
   <action name="actionComputeFaceNormals">
    <property name="text">
     <string>Face Normals</string>
+   </property>
+  </action>
+  <action name="actionExploreScreenshots">
+   <property name="text">
+    <string>Explore screenshots</string>
+   </property>
+  </action>
+  <action name="actionExploreOutput">
+   <property name="text">
+    <string>Explore output</string>
    </property>
   </action>
  </widget>

@@ -7,17 +7,19 @@
 enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
 enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP};
 
+struct SparseCodingOptions
+{
+	SparseCodingOptions() : mApproxMethod(SA_SOMP), mCodingAtomCount(-1) {}
+
+	SparseApproxMethod mApproxMethod;
+	int mCodingAtomCount;
+};
+
 class SubMeshApprox
 {
 public:
 	friend class ShapeApprox;
-	struct SparseCoeff 
-	{
-		SparseCoeff() : mIdx(-1), mCoeff(0) {}
-		SparseCoeff(int i, double c) : mIdx(i), mCoeff(c) {}
-		int mIdx;
-		double mCoeff;
-	};
+
 	void init() { mMeshProcessor.init(&mSubMesh); }
 	int subMeshSize() const { return mSubMesh.vertCount(); }
 	const std::vector<int>& mappedIdx() const { return mMappedIdx; }
@@ -28,6 +30,8 @@ public:
 	void sparseReconstructStep(int step);
 	int dictSize() const { return mDict.atomCount(); }
 	int codingSize() const { return mCoding[0].size(); }
+	
+	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions opts, ZGeom::FunctionApproximation& vApprox);
 
 private:
 	CMesh mSubMesh;
@@ -35,7 +39,7 @@ private:
 	std::vector<int> mMappedIdx;
 	ZGeom::EigenSystem mEigenSystem;
 	ZGeom::Dictionary mDict;
-	std::vector<SparseCoeff> mCoding[3];
+	std::vector<ZGeom::ApproxItem> mCoding[3];
 	MeshCoordinates mReconstructedCoord;
 };
 
@@ -58,8 +62,7 @@ public:
 	void doSparseReconstructionByCompressionRatio(double compressionRatio, MeshCoordinates& approxCoord);
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
-	//const MeshCoordinates& getApproxCoord() const { return mApproxCoord; }
-	int partitionCount() const { return mSubMeshApprox.size(); }
+	int  partitionCount() const { return mSubMeshApprox.size(); }
 	
 private:
 	CMesh* mOriginalMesh;	

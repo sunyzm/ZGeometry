@@ -2846,7 +2846,7 @@ void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) co
 	}
 }
 
-void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
+void CMesh::retrieveVertCoordinates( MeshCoordinates& coords ) const
 {
 	coords.resize(m_nVertex);
 	ZGeom::VecNd& vx = coords.getCoordFunc(0);
@@ -2859,6 +2859,13 @@ void CMesh::getVertCoordinates( MeshCoordinates& coords ) const
 		vy[i] = vCoord.y;
 		vz[i] = vCoord.z;
 	}
+}
+
+MeshCoordinates CMesh::getVertCoordinates() const
+{
+	MeshCoordinates coords;
+	retrieveVertCoordinates(coords);
+	return coords;
 }
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )

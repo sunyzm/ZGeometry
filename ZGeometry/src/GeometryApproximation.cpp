@@ -307,7 +307,8 @@ void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCo
 {
 	mMeshProcessor.constructLaplacian(laplacianType);
 	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
-	if (eigenCount == -1) eigenCount = mSubMesh.vertCount() - 1;
+	if (eigenCount == -1 || eigenCount >= mSubMesh.vertCount()) 
+		eigenCount = mSubMesh.vertCount() - 1;
 
 	int useCache = gSettings.LOAD_MHB_CACHE;
 	if (useCache != 0 && mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount)) {
@@ -379,7 +380,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 	ZUtil::runtime_assert(atomCount >= selectedAtomCount);
 
 	MeshCoordinates vertCoords;
-	mSubMesh.getVertCoordinates(vertCoords);
+	mSubMesh.retrieveVertCoordinates(vertCoords);
 	std::vector<ZGeom::VecNd> vSignals;
 	vSignals.push_back(vertCoords.getXCoord()); 
 	vSignals.push_back(vertCoords.getYCoord());
@@ -400,7 +401,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 			for (int c = 0; c < 3; ++c)
 				innerProd[c] = mDict[i].dot(vSignals[c]);
 			for (int c = 0; c < 3; ++c)
-				mCoding[c][i] = SparseCoeff(i, innerProd[c]);
+				mCoding[c][i] = ZGeom::ApproxItem(i, innerProd[c]);
 		}
 	}
 	else if (approxMethod == SA_SMP || approxMethod == SA_SOMP)
@@ -414,18 +415,9 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 		for (int c = 0; c < 3; ++c) {
 			for (int i = 0; i < selectedAtomCount; ++i) {
 				const ZGeom::ApproxItem& item = (*vApproxCoeff[c])[i];
-				mCoding[c][i] = SparseCoeff(item.index(), item.coeff());
+				mCoding[c][i] = ZGeom::ApproxItem(item.index(), item.coeff());
 			}
 		}		
-
-// 		std::ofstream ofcoding("output/coding2.txt");
-// 		for (int i = 0; i < selectedAtomCount; ++i) {
-// 			for (int c = 0; c < 3; ++c) {
-// 				auto& sc = mCoding[c][i];
-// 				ofcoding << '(' << sc.mIdx << ',' << sc.mCoeff << ") "; 
-// 			}
-// 			ofcoding << '\n';
-// 		}
 	}	
 }
 
@@ -438,8 +430,8 @@ void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
 	mReconstructedCoord.resize(vertCount);
 	for (int i = 0; i < reconstructAtomCount; ++i) {
 		for (int c = 0; c < 3; ++c) {
-			const SparseCoeff& sc = mCoding[c][i];
-			mReconstructedCoord.getCoordFunc(c) += sc.mCoeff * mDict[sc.mIdx];
+			const ZGeom::ApproxItem& sc = mCoding[c][i];
+			mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
 		}
 	}
 }
@@ -453,7 +445,28 @@ void SubMeshApprox::sparseReconstructStep( int step )
 	if (step == 0) mReconstructedCoord.resize(vertCount);
 
 	for (int c = 0; c < 3; ++c) {
-		const SparseCoeff& sc = mCoding[c][step];
-		mReconstructedCoord.getCoordFunc(c) += sc.mCoeff * mDict[sc.mIdx];
+		const ZGeom::ApproxItem& sc = mCoding[c][step];
+		mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
 	}
+}
+
+void SubMeshApprox::computeSparseCoding( const std::vector<double>& vecSignal, SparseCodingOptions opts, ZGeom::FunctionApproximation& vCoeff )
+{
+	using std::vector;
+	using ZGeom::VecNd;
+
+	int vertCount = mSubMesh.vertCount();
+	int atomCount = mDict.atomCount();
+	int codingAtomCount = opts.mCodingAtomCount;
+	ZUtil::runtime_assert(atomCount >= codingAtomCount);
+	
+	VecNd vSignal(vecSignal);
+	if (opts.mApproxMethod == SA_SMP || opts.mApproxMethod == SA_SOMP)
+	{
+		if (opts.mApproxMethod == SA_SMP) {
+			ZGeom::MatchingPursuit(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
+		} else {
+			ZGeom::OMP(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
+		}
+	}				
 }

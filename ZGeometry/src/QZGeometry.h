@@ -85,8 +85,8 @@ private slots:
 	void setDisplayMesh();
 	
 	void selectObject(int index);
-	void setRefPoint1(int vn);
-	void setRefPoint2(int vn);
+	void setMesh1RefPoint(int vn);
+	void setMesh2RefPoint(int vn);
 	void setCommonParameter(int p);
 	void setFeaturePointSize(int v);
 	void setLaplacianType(const QString& laplacianTypeName);
@@ -127,6 +127,7 @@ private slots:
 	void showCoarser();		// higher level
 
 	void openOutputLocation();
+	void openSreenshotLocation();
 	void resizeApproxSlider(int slider, int newSize);
 
 private:	
@@ -137,7 +138,6 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	void decomposeLaplacians(LaplacianType laplacianType = CotFormula);
 	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);

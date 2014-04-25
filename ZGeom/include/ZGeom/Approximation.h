@@ -2,6 +2,7 @@
 #define ZGEOM_APPROXIMATION_H
 #include <vector>
 #include <tuple>
+#include <iostream>
 #include <ZUtil/ZUtil.h>
 #include "VecN.h"
 
@@ -35,10 +36,10 @@ private:
 	int mDim;
 };
 
-class  ApproxItem
+struct ApproxItem
 {
-public:
 	ApproxItem() : mRes(0), mBasisIdx(-1), mCoeff(0) {}
+	ApproxItem(int i, double c) : mRes(0), mBasisIdx(i), mCoeff(c) {}
 	ApproxItem(double r, int i, double c) : mRes(r), mBasisIdx(i), mCoeff(c) {}
 
 	double res() const { return mRes; }
@@ -48,7 +49,6 @@ public:
 	double coeff() const { return mCoeff; }
 	double& coeff() { return mCoeff; }
 
-private:
 	double mRes;
 	int mBasisIdx;
 	double mCoeff;
@@ -90,6 +90,14 @@ public:
 		std::vector<int> vIdx;
 		for (auto ai : mApproxItems) vIdx.push_back(ai.index());
 		return vIdx;
+	}
+
+	friend std::ostream& operator << (std::ostream &os, const FunctionApproximation& fa) 
+	{
+		for (const ApproxItem& t : fa.mApproxItems) {
+			os << t.index() << ", " << t.coeff() << '\n';
+		}
+		return os;
 	}
 
 private:
