@@ -218,18 +218,18 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.comboBoxLaplacian, SIGNAL(activated(const QString&)), this, SLOT(setLaplacianType(const QString&)));
 
 	////////    Menus	////////
-	////	file	////
+	////  File  ////
 	QObject::connect(ui.actionExit, SIGNAL(triggered()), this, SLOT(close()));
 	QObject::connect(ui.actionSaveSignature, SIGNAL(triggered()), this, SLOT(saveSignature()));
 	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
 	QObject::connect(ui.actionSaveMatching, SIGNAL(triggered()), this, SLOT(saveMatchingResult()));
 	QObject::connect(ui.actionLoadMatching, SIGNAL(triggered()), this, SLOT(loadMatchingResult()));
 
-	////	compute	////
+	////  Compute  ////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
 	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
-	QObject::connect(ui.actionMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
-	QObject::connect(ui.actionGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
+	QObject::connect(ui.actionComputeMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
+	QObject::connect(ui.actionComputeGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -243,7 +243,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
 	QObject::connect(ui.actionComputeFaceNormals, SIGNAL(triggered()), this, SLOT(computeFaceNormals()));
 
-	////	Edit	////
+	////  Edit  ////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
 	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revert()));
 	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(nextCoordinate()));
@@ -841,7 +841,6 @@ void QZGeometryWindow::toggleShowMatchingLines(bool show)
 	ui.actionShowMatchingLines->setChecked(bToShow);
 
 	ui.glMeshWidget->update();
-
 }
 
 void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
@@ -859,7 +858,7 @@ void QZGeometryWindow::computeCurvatureMean()
 		vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrAttrColorGaussCurvature);
+		addColorSignature(obj, vCurvature, StrAttrColorMeanCurvature);
 	}
 
 	updateDisplaySignatureMenu();
@@ -873,7 +872,7 @@ void QZGeometryWindow::computeCurvatureGauss()
 		vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrAttrColorMeanCurvature);
+		addColorSignature(obj, vCurvature, StrAttrColorGaussCurvature);
 	}
 
 	updateDisplaySignatureMenu();

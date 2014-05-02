@@ -707,11 +707,17 @@
      </property>
      <addaction name="actionComputeHKSFeatures"/>
     </widget>
+    <widget class="QMenu" name="menuCurvature">
+     <property name="title">
+      <string>Curvature</string>
+     </property>
+     <addaction name="actionComputeMeanCurvature"/>
+     <addaction name="actionComputeGaussCurvature"/>
+    </widget>
     <addaction name="menuComputeLaplacian"/>
     <addaction name="separator"/>
     <addaction name="actionEigenfunction"/>
-    <addaction name="actionGaussCurvature"/>
-    <addaction name="actionMeanCurvature"/>
+    <addaction name="menuCurvature"/>
     <addaction name="menuKernel_Signature"/>
     <addaction name="menuComputeFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -801,12 +807,12 @@
     <string>Show reference point</string>
    </property>
   </action>
-  <action name="actionMeanCurvature">
+  <action name="actionComputeMeanCurvature">
    <property name="text">
     <string>Mean Curvature</string>
    </property>
   </action>
-  <action name="actionGaussCurvature">
+  <action name="actionComputeGaussCurvature">
    <property name="text">
     <string>Gauss Curvature</string>
    </property>
