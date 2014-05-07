@@ -15,6 +15,7 @@ public:
 	Dictionary() : mDim(0) {}
 	void setDimension(int m) { mDim = m; }
 	void clear() { mAtoms.clear(); }
+	int size() const { return (int)mAtoms.size(); }
 	void resize(int N, int m) 
 	{ 
 		mDim = m;
@@ -54,18 +55,6 @@ struct ApproxItem
 	double mCoeff;
 };
 
-class SignalAtom : public VecNd
-{
-public:
-	SignalAtom() : VecNd(), mScale(-1), mPosition(-1) {}
-	SignalAtom(const VecNd& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
-	SignalAtom(double* p, uint dim, int scale = -1, int pos = -1) : VecNd(p, dim), mScale(scale), mPosition(pos) {}
-	SignalAtom(const std::vector<double>& v, int scale = -1, int pos = -1) : VecNd(v), mScale(scale), mPosition(pos) {}
-	
-protected:
-	int mScale;
-	int mPosition;
-};
 
 class FunctionApproximation
 {
@@ -94,7 +83,7 @@ public:
 
 	friend std::ostream& operator << (std::ostream &os, const FunctionApproximation& fa) 
 	{
-		for (const ApproxItem& t : fa.mApproxItems) {
+		for (auto t : fa.mApproxItems) {
 			os << t.index() << ", " << t.coeff() << '\n';
 		}
 		return os;

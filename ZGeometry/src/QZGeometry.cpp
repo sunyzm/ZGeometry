@@ -177,7 +177,7 @@ void QZGeometryWindow::makeConnections()
 	m_featureSignalMapper = new QSignalMapper(this);
 	QObject::connect(m_featureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displayFeature(QString)));
 
-	////////    Controls	////////
+	////////    Toolbar Controls    ////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.horizontalSlider1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
 	QObject::connect(ui.glMeshWidget, SIGNAL(vertexPicked1(int)), this, SLOT(setMesh1RefPoint(int)));
@@ -195,17 +195,12 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), ui.spinBoxParameter, SLOT(setValue(int)));
 	QObject::connect(ui.horizontalSliderParamter, SIGNAL(valueChanged(int)), this, SLOT(setCommonParameter(int)));
 	QObject::connect(ui.boxObjSelect, SIGNAL(activated(int)), this, SLOT(selectObject(int)));
+
 	QObject::connect(ui.actionEditMove, SIGNAL(triggered()), this, SLOT(setEditModeMove()));
 	QObject::connect(ui.actionEditPick, SIGNAL(triggered()), this, SLOT(setEditModePick()));
 	QObject::connect(ui.actionEditDrag, SIGNAL(triggered()), this, SLOT(setEditModeDrag()));
 
-	//////// mShapeEditor ////////
-	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
-	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(displaySignature(QString)));
-	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(updateDisplaySignatureMenu()));
-	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
-
-	////////    tabbed controls	////////
+	////////    Tabbed Controls    ////////
 	QObject::connect(ui.sliderApprox1, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox1(int)));
 	QObject::connect(ui.sliderApprox2, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox2(int)));
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
@@ -260,7 +255,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
 	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
 	 
-	////	Display	////
+	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
@@ -277,11 +272,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionCapture, SIGNAL(triggered()), this, SLOT(captureGL()));
 	QObject::connect(ui.actionCaptureAs, SIGNAL(triggered()), this, SLOT(captureGLAs()));
 
-	////	Task	////
+	////  Task  ////
 	QObject::connect(ui.actionTaskRegistration, SIGNAL(triggered()), this, SLOT(setTaskRegistration()));
 	QObject::connect(ui.actionTaskEditing, SIGNAL(triggered()), this, SLOT(setTaskEditing()));
 
-	////	Register	////
+	////  Register  ////
 	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
 	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
@@ -290,9 +285,16 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionRegisterFull, SIGNAL(triggered()), this, SLOT(registerFull()));
 	QObject::connect(ui.actionRegisterTest, SIGNAL(triggered()), this, SLOT(registerTest()));
 
-	//// Tools ////
+	////  Tools  ////
 	QObject::connect(ui.actionExploreScreenshots, SIGNAL(triggered()), this, SLOT(openSreenshotLocation()));
 	QObject::connect(ui.actionExploreOutput, SIGNAL(triggered()), this, SLOT(openOutputLocation()));
+	
+
+	////////    mShapeEditor    ////////
+	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
+	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(displaySignature(QString)));
+	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(updateDisplaySignatureMenu()));
+	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
 }
 
 void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
@@ -475,11 +477,11 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	/* compute and decompose mesh Laplacians */
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
-	computeLaplacian(CotFormula);
+	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1); 	
 	//computeLaplacian(Anisotropic2);
-	setLaplacianType("CotFormula");
+	//setLaplacianType("CotFormula");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();
@@ -487,6 +489,8 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
+		if (mMeshes[0]->hasAttr(StrAttrFeatureSparseSGW))
+			displayFeature(StrAttrFeatureSparseSGW.c_str());
 	}
 
 	return true;
@@ -947,7 +951,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	MeshFeatureList *mfl = new MeshFeatureList;
 
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
-		mfl->getFeatureVector()->push_back(new MeshFeature(*iter));
+		mfl->addFeature(new MeshFeature(*iter));
 	}
 	mMeshes[0]->addAttrMeshFeatures(*mfl, StrAttrFeatureNeighbors);
 
@@ -1167,7 +1171,8 @@ void QZGeometryWindow::displaySignature(QString sigName )
 			mRenderManagers[i]->mActiveColorSignatureName = sigName.toStdString();
 	}
 
-	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrAttrColorPosDiff) toggleShowSignature();	
+	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrAttrColorPosDiff) 
+		toggleShowSignature();	
 	ui.glMeshWidget->update();
 }
 
@@ -1177,6 +1182,9 @@ void QZGeometryWindow::displayFeature( QString featureName )
 		if (!isMeshSelected(obj)) continue;
 		mRenderManagers[obj]->mActiveFeatureName = featureName.toStdString();
 	}
+
+	if (!ui.glMeshWidget->m_bShowFeatures) 
+		toggleShowFeatures(true);
 	ui.glMeshWidget->update();
 }
 
@@ -2180,8 +2188,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax, 1.f, mColorMapType);
 		else vColors[i].falseColor(1.0f, 1.f, mColorMapType);
 	}
-
-
+	
 	/* update color legend */
 	ui.glMeshWidget->mLegendColors.resize(256);
 	std::vector<double> vLegendVals(256);

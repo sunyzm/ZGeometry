@@ -30,7 +30,7 @@ public:
 	void sparseReconstructStep(int step);
 	int dictSize() const { return mDict.atomCount(); }
 	int codingSize() const { return mCoding[0].size(); }
-	
+	const ZGeom::Dictionary& getDict() const { return mDict; }
 	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions opts, ZGeom::FunctionApproximation& vApprox);
 
 private:

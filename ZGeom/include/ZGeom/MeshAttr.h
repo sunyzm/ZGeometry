@@ -48,6 +48,7 @@ public:
 	int m_index;
 	int m_scale;
 	int m_note;
+	double m_scalar1;
 	MeshFeature() : m_index(-1), m_scale(-1), m_note(0) {}
 	MeshFeature(int i) : m_index(i), m_scale(0), m_note(0) {}
 	MeshFeature(int i, int s) : m_index(i), m_scale(s), m_note(0) {}
@@ -60,7 +61,10 @@ public:
 	~MeshFeatureList() { clear(); }
 
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
-	std::vector<MeshFeature*>* getFeatureVector() { return &m_vFeatures; }
+	void addFeature(int index, int scale) { m_vFeatures.push_back(new MeshFeature(index, scale)); }
+	MeshFeature* back() { return m_vFeatures.back(); }
+	std::vector<MeshFeature*>& getFeatureVector() { return m_vFeatures; }
+	const std::vector<MeshFeature*>& getFeatureVector() const { return m_vFeatures; }
 
 	void clear() 
 	{

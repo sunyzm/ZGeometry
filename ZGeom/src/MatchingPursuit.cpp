@@ -17,14 +17,14 @@
 
 namespace ZGeom
 {
-	void GeneralizedSimultaneousFourierApprox( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc /*= RegularProductFunc*/ )
+	void GeneralizedMultiChannelFourierApprox( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc /*= RegularProductFunc*/ )
 	{
 		if (nSelected <= 0 || nSelected > vBasis.size())
 			throw std::logic_error("nSelectedBasis too small or too large!");
 		assert(vSignals.size() == vPursuits.size());
 		for (auto p : vPursuits) p->clear();
 
-		int nChannels = (int)vSignals.size();
+		const int nChannels = (int)vSignals.size();
 		const int signalSize = vSignals[0].size();
 		std::vector<VecNd> vRfs = vSignals;
 
@@ -43,52 +43,31 @@ namespace ZGeom
 		GeneralizedMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
 	}
 
-	void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
+
+	void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
 	{
-		if (nSelected <= 0 ||  nSelected > vBasis.size())
-			throw std::logic_error("nSelectedBasis too small or too large!");
+		using Concurrency::concurrent_vector;
+		using Concurrency::parallel_for;
+
+		if (nSelected <= 0 ||  nSelected > vAtoms.size())
+			throw std::logic_error("nSelected (basis) too small or too large!");
 		vPursuit.clear();
-		std::unordered_set<int> availableBasis;
-		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);
+
+		int dictSize = (int)vAtoms.size();
 		ZGeom::VecNd vRf = vSignal;
+		concurrent_vector<double> vCoeff(dictSize);
 
-#if 0
 		for (int k = 0; k < nSelected; ++k) {
-			double maxCoeff = 0;
-			int iSelected = -1;
-			for (int iBasis : availableBasis) {
-				double candidateCoeff = innerProdFunc(vBasis[iBasis], vRf);
-				if (std::fabs(candidateCoeff) > std::fabs(maxCoeff)) {
-					maxCoeff = candidateCoeff;
-					iSelected = iBasis;
-				}
-			}
-			vRf = vRf - maxCoeff*vBasis[iSelected];
-			vPursuit.addItem(vRf.norm2(), iSelected, maxCoeff);
-
-			availableBasis.erase(iSelected);
-		}
-#else
-		for (int k = 0; k < nSelected; ++k) {
-			Concurrency::concurrent_vector<std::pair<int,double> > vCoeff;
-			Concurrency::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
-				vCoeff.push_back(std::make_pair(iBasis, innerProdFunc(vBasis[iBasis], vRf)));
+			parallel_for(0, dictSize, [&](int iBasis) {
+				vCoeff[iBasis] = std::fabs(innerProdFunc(vAtoms[iBasis], vRf));
 			});
 
-			double maxCoeff = 0;
-			int iSelected = -1;
-			for (auto bp : vCoeff) {
-				if (std::fabs( bp.second) > std::fabs(maxCoeff)) {
-					maxCoeff =  bp.second;
-					iSelected = bp.first;
-				}
-			}
-			vRf = vRf - maxCoeff*vBasis[iSelected];
-			vPursuit.addItem(vRf.norm2(), iSelected, maxCoeff);
+			int iSelected = int(std::max_element(vCoeff.begin(), vCoeff.end()) - vCoeff.begin());
 
-			availableBasis.erase(iSelected);
+			double coeffSelected = innerProdFunc(vAtoms[iSelected], vRf);
+			vRf -= coeffSelected * vAtoms[iSelected];
+			vPursuit.addItem(vRf.norm2(), iSelected, coeffSelected);
 		}
-#endif
 	}
 
 
@@ -161,10 +140,12 @@ namespace ZGeom
 		delete []matBasis;
 	}
 
+
 	void OMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
 	{
 		GeneralizedOMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
 	}
+
 
 	void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, InnerProdcutFunc innerProdFunc )
 	{
@@ -229,63 +210,56 @@ namespace ZGeom
 		delete []matBasis;
 	}
 
+
 	void SimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 2.*/ )
 	{
 		GeneralizedSimultaneousMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
 	}
 
-	void GeneralizedSimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
+
+	void GeneralizedSimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vAtoms, 
+		                            int nSelected, std::vector<FunctionApproximation*>& vPursuits, 
+									const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
 	{
-		if (nSelected <= 0 || nSelected > vBasis.size())
+		using Concurrency::concurrent_vector;
+		using Concurrency::parallel_for;
+
+		if (nSelected <= 0 || nSelected > vAtoms.size())
 			throw std::logic_error("nSelectedBasis too small or too large!");
 		assert(vSignals.size() == vPursuits.size());
-		int nChannels = (int)vSignals.size();
+				
+		const int nChannels = (int)vSignals.size();
+		const int signalSize = vSignals[0].size();
+		const int dictSize = (int)vAtoms.size();
 
 		for (auto pur : vPursuits) pur->clear();
-
-		const int signalSize = vSignals[0].size();
-		std::unordered_set<int> availableBasis;
-		for (int i = 0; i < vBasis.size(); ++i) availableBasis.insert(i);	
-
 		std::vector<VecNd> vRfs = vSignals;
+		concurrent_vector<double> vCoeffNorm(dictSize);
 
 		for (int k = 0; k < nSelected; ++k) {
-			const int nAvaliableBasis = (int)availableBasis.size();
-			double maxCoeff = 0;
-			int iSelected = -1;
-
-			tbb::concurrent_vector< std::pair<int,double> > vCoeff;
-			vCoeff.reserve(availableBasis.size());
-			for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
-
-			tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+			parallel_for(0, dictSize, [&](int atomIdx) {
 				VecNd channelCoeff(nChannels);
 				for (int c = 0; c < nChannels; ++c)
-					channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
-				cp.second = channelCoeff.pNorm(p);
+					channelCoeff[c] = innerProdFunc(vAtoms[atomIdx], vRfs[c]);
+				vCoeffNorm[atomIdx] = channelCoeff.pNorm(p);
 			});		
 
-			for (auto& bp : vCoeff) {
-				if (bp.second > maxCoeff) {
-					maxCoeff =  bp.second;
-					iSelected = bp.first;
-				}
-			}
-
+			int iSelected = int(std::max_element(vCoeffNorm.begin(), vCoeffNorm.end()) - vCoeffNorm.begin());
+			
 			for (int c = 0; c < nChannels; ++c) {
-				double coeff = innerProdFunc(vBasis[iSelected], vRfs[c]);
-				vRfs[c] -= coeff * vBasis[iSelected];
+				double coeff = innerProdFunc(vAtoms[iSelected], vRfs[c]);
+				vRfs[c] -= coeff * vAtoms[iSelected];
 				vPursuits[c]->addItem(vRfs[c].norm2(), iSelected, coeff);
 			}
-
-			availableBasis.erase(iSelected);
 		}
 	}
+
 
 	void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 1*/ )
 	{
 		GeneralizedSimultaneousOMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
 	}
+
 
 	void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 2.*/ )
 	{
@@ -368,8 +342,7 @@ namespace ZGeom
 		delete []matBasis;
 		delete []signalData;
 	}
-
-
+	
 
 	void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
 	{
@@ -465,6 +438,7 @@ namespace ZGeom
 		delete []matBasis;
 	}
 		
+
 	void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
 	{
 		//std::cout << "For verification: " << innerProdFunc(vBasis[0], vBasis[0]) << ' ' << innerProdFunc(vBasis[1], vBasis[1]) << std::endl;

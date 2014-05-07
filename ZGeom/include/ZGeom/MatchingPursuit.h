@@ -18,7 +18,7 @@ namespace ZGeom
 		return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
 	};
 
-	void GeneralizedSimultaneousFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc = RegularProductFunc);
+	void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc = RegularProductFunc);
 
 	void MatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit);	
 	void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc);

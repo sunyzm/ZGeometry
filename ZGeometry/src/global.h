@@ -39,6 +39,7 @@ enum LaplacianType {
 	Anisotropic1, Anisotropic2, IsoApproximate, 
 	LaplacianTypeCount
 };
+
 const std::string StrLaplacianTypes[] = {
 	"Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"
 };
@@ -83,6 +84,7 @@ const std::string StrAttrFeatureHKS			 = "mesh_feature_hks";
 const std::string StrAttrFeatureMHWS		 = "mesh_feature_mhks";
 const std::string StrAttrFeatureNeighbors    = "mesh_feature_neighbors";
 const std::string StrAttrFeatureMultiHKS     = "mesh_feature_multi_hks";
+const std::string StrAttrFeatureSparseSGW    = "mesh_feature_sparse_sgw";
 
 const std::string StrAttrVectUnnamed         = "mesh_vector_unnamed";
 const std::string StrAttrVecFaceNormal       = "mesh_vector_face_normals";

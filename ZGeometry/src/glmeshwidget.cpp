@@ -454,8 +454,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
 	/*** draw mesh ***/
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
-	if (m_bShowSignature && tmesh->hasAttr(pRS->mActiveColorSignatureName)) 
-	{ 
+	if (m_bShowSignature && tmesh->hasAttr(pRS->mActiveColorSignatureName)) { 
 		// draw with color signature
 		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mActiveColorSignatureName);
 		glBegin(GL_TRIANGLES);
@@ -472,9 +471,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			}
 		}
 		glEnd();
-	} 
-	else 
-	{ 
+	} else { 
 		// draw with solid color
 		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
 		glBegin(GL_TRIANGLES);
@@ -556,27 +553,25 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		const MeshFeatureList& feature_list = tmesh->getMeshFeatures(pRS->mActiveFeatureName);
 
 		/* draw as gluSphere */ 
-		bool is_hks_feature = false;
+		bool visualizingScales = (pRS->mActiveFeatureName == StrAttrFeatureSparseSGW);
 		const float *feature_color1 = ZGeom::ColorGreen;
 		const float *feature_color2 = ZGeom::ColorMagenta;	
 		GLUquadric* quadric = gluNewQuadric();
-		for (MeshFeature* feature : feature_list.m_vFeatures) {
+		for (MeshFeature* feature : feature_list.getFeatureVector()) {
 			Vector3D vt = ori_mesh->getVertex(feature->m_index)->getPosition();
 			vt += shift;
-			if (is_hks_feature) {
-				if (dynamic_cast<HKSFeature*>(feature)->minOrMax == 1)
-					glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
-				else
-					glColor4f(feature_color2[0], feature_color2[1], feature_color2[2], 1);
-			} else {
+			if (visualizingScales) {
 				int feature_scale = feature->m_scale;
 				int color_index = feature_scale % gFeatureColorNum;
 				glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+			} else {
+				glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
 			}			
+
 			gluQuadricDrawStyle(quadric, GLU_FILL);
 			glPushMatrix();
 			glTranslated(vt.x, vt.y, vt.z);
-			if (is_hks_feature) gluSphere(quadric, mFeatureSphereRadius * (0.7 + 0.3 * feature->m_scale), 16, 8);
+			if (visualizingScales) gluSphere(quadric, mFeatureSphereRadius * (0.3 + 0.25 * std::fabs(feature->m_scalar1)), 16, 8);
 			else gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 		}

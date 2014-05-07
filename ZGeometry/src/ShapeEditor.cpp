@@ -959,7 +959,7 @@ void ShapeEditor::approximationTest2()
 	printBeginSeparator("Starting ApproxTest2 (feature analysis)",'=');
 	// initializing, segmentation, coloring, and eigendecomposition
 	int totalVertCount = mMesh->vertCount();
-	int eigenCount = min(500, totalVertCount-1);
+	int eigenCount = min(600, totalVertCount-1);
 	int maxPatchSize = -1;	// -1 means no segmentation
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
@@ -972,26 +972,42 @@ void ShapeEditor::approximationTest2()
 	// possible signals: coordinate or curvature functions
 	MeshCoordinates meshCoord = mMesh->getVertCoordinates();
 	std::vector<double> vMeanCurvatures = mMesh->getMeanCurvature();
+	std::vector<double> vGaussCurvature = mMesh->getGaussCurvature();
+	std::vector<double>& vSignal = vMeanCurvatures;
 
-	// sparse coding
+	// construct dictionary
 	timer.startTimer();
 	mShapeApprox.mSubMeshApprox[0].constructDict(DT_SGW4);
 	timer.stopTimer("Time to construct dictionary: ", "s");
 
+	{ /** To print signals and dictionary data **/
+		std::ofstream ofs;
+		ofs.open("output/signals.txt");
+		for(int i = 0; i < totalVertCount; ++i) {
+			ofs << meshCoord.getXCoord()[i] << ' ' << meshCoord.getYCoord()[i] << ' ' 
+				<< meshCoord.getZCoord()[i] << ' ' << vMeanCurvatures[i] << ' ' << vGaussCurvature[i] 
+			<< '\n';
+		}
+		ofs.close();
+		ofs.open("output/dictionary.txt");
+		const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0].getDict();
+		for (int i = 0; i < totalVertCount; ++i) {
+			for (int k = 0; k < dict.size(); ++k) 
+				ofs << dict[k][i] << ((k < dict.size() - 1) ? ' ' : '\n');
+		}		
+	}/** End of printing signals and dictionary data **/
+
+	// sparse coding
 	int dictSize = mShapeApprox.mSubMeshApprox[0].dictSize();
 	SparseCodingOptions opts;
 	opts.mApproxMethod = SA_SOMP;
 	opts.mCodingAtomCount = 300;
 	ZGeom::FunctionApproximation vCoeff;
 	timer.startTimer();
-	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vMeanCurvatures, opts, vCoeff);
+	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
 	timer.stopTimer("Time to do sparse coding: ", "s");
 
 	// analysis of coding
-	std::ofstream ofs("output/curv_coding.csv");
-	ofs << vCoeff;
-	ofs.close();
-
 	int nScales = dictSize / totalVertCount;
 	std::vector<int> vAtomScaleCount(nScales, 0);
 	for (auto c : vCoeff.getApproxItems()) {
@@ -999,6 +1015,20 @@ void ShapeEditor::approximationTest2()
 	}
 	for (int i = 0; i < nScales; ++i)
 		std::cout << "scale " << i << ": " << vAtomScaleCount[i] << '\n';
+
+	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
+	std::ofstream ofs("output/curv_coding.csv");
+	for (auto c : vCoeff.getApproxItems()) {
+		int scl = c.index() / totalVertCount, idx = c.index() % totalVertCount;
+		double coef = c.coeff();
+		ofs << scl << ", " << idx << ", " << coef << '\n';
+		
+		vSparseFeatures->addFeature(new MeshFeature(idx, scl));
+		vSparseFeatures->back()->m_scalar1 = coef;
+	}
+	//ofs << vCoeff;
+	ofs.close();
+	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
 	
 	printEndSeparator('=', 40);
 }
