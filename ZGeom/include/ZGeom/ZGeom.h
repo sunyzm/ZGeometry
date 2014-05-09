@@ -11,7 +11,7 @@
 #include "SparseMatrix.h"
 #include "MatVecArithmetic.h"
 #include "EigenSystem.h"
-#include "MatchingPursuit.h"
+#include "Approximation.h"
 #include "Mesh.h"
 #include "MeshProcessing.h"
 

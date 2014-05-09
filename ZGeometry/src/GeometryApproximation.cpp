@@ -1,6 +1,9 @@
 #include "GeometryApproximation.h"
 #include <metis.h>
 #include "global.h"
+
+#define USE_SPAMS
+
 using ZGeom::VecNd;
 
 std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
@@ -450,23 +453,29 @@ void SubMeshApprox::sparseReconstructStep( int step )
 	}
 }
 
-void SubMeshApprox::computeSparseCoding( const std::vector<double>& vecSignal, SparseCodingOptions opts, ZGeom::FunctionApproximation& vCoeff )
+void SubMeshApprox::computeSparseCoding( const std::vector<double>& vecSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vCoeff )
 {
-	using std::vector;
-	using ZGeom::VecNd;
+	ZGeom::VecNd vSignal(vecSignal);
+	computeSparseCoding(vSignal, opts, vCoeff);
+}
 
+void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vCoeff )
+{
 	int vertCount = mSubMesh.vertCount();
 	int atomCount = mDict.atomCount();
 	int codingAtomCount = opts.mCodingAtomCount;
-	ZUtil::runtime_assert(atomCount >= codingAtomCount);
-	
-	VecNd vSignal(vecSignal);
+	ZUtil::runtime_assert(atomCount >= codingAtomCount && vSignal.size() == vertCount);
+
 	if (opts.mApproxMethod == SA_SMP || opts.mApproxMethod == SA_SOMP)
 	{
 		if (opts.mApproxMethod == SA_SMP) {
 			ZGeom::MatchingPursuit(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
 		} else {
+#ifndef USE_SPAMS
 			ZGeom::OMP(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
+#else
+			ZGeom::OMP_SPAMS(g_engineWrapper, vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
+#endif
 		}
-	}				
+	}	
 }

@@ -13,6 +13,9 @@ struct SparseCodingOptions
 
 	SparseApproxMethod mApproxMethod;
 	int mCodingAtomCount;
+	double mEpsilon;
+	
+	double mResidual;
 };
 
 class SubMeshApprox
@@ -31,7 +34,8 @@ public:
 	int dictSize() const { return mDict.atomCount(); }
 	int codingSize() const { return mCoding[0].size(); }
 	const ZGeom::Dictionary& getDict() const { return mDict; }
-	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions opts, ZGeom::FunctionApproximation& vApprox);
+	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
+	void computeSparseCoding(const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
 
 private:
 	CMesh mSubMesh;

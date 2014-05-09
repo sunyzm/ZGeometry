@@ -973,7 +973,6 @@ void ShapeEditor::approximationTest2()
 	MeshCoordinates meshCoord = mMesh->getVertCoordinates();
 	std::vector<double> vMeanCurvatures = mMesh->getMeanCurvature();
 	std::vector<double> vGaussCurvature = mMesh->getGaussCurvature();
-	std::vector<double>& vSignal = vMeanCurvatures;
 
 	// construct dictionary
 	timer.startTimer();
@@ -997,15 +996,32 @@ void ShapeEditor::approximationTest2()
 		}		
 	}/** End of printing signals and dictionary data **/
 
-	// sparse coding
+	// compute sparse coding
 	int dictSize = mShapeApprox.mSubMeshApprox[0].dictSize();
+	ZGeom::FunctionApproximation vCoeff;
+	//std::vector<double>& vSignal = meshCoord.getXCoord().toStdVector();
+	std::vector<double>& vSignal = vMeanCurvatures;
+
 	SparseCodingOptions opts;
 	opts.mApproxMethod = SA_SOMP;
-	opts.mCodingAtomCount = 300;
-	ZGeom::FunctionApproximation vCoeff;
+
+	opts.mCodingAtomCount = 12;
 	timer.startTimer();
 	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
 	timer.stopTimer("Time to do sparse coding: ", "s");
+
+	ZGeom::VecNd vReconstruct = ReconstructApproximationSingleChannel(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
+	double residual = (ZGeom::VecNd(vSignal) - vReconstruct).norm2();	
+	std::cout << "Approximation residual (" << opts.mCodingAtomCount << " basis): " << residual << '\n';
+	
+	std::vector<std::pair<int,double> > vPursuit;
+	for (int i = 0; i < opts.mCodingAtomCount; ++i) 
+		vPursuit.push_back(std::make_pair(vCoeff[i].index(), vCoeff[i].coeff()));
+	std::sort(vPursuit.begin(), vPursuit.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2)->bool{
+		return p1.first < p2.first;
+	});
+	for (auto p : vPursuit)
+		std::cout << p.first + 1 << ' ' << p.second << '\n';
 
 	// analysis of coding
 	int nScales = dictSize / totalVertCount;
@@ -1017,7 +1033,7 @@ void ShapeEditor::approximationTest2()
 		std::cout << "scale " << i << ": " << vAtomScaleCount[i] << '\n';
 
 	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
-	std::ofstream ofs("output/curv_coding.csv");
+	std::ofstream ofs("output/sparse_coding.csv");
 	for (auto c : vCoeff.getApproxItems()) {
 		int scl = c.index() / totalVertCount, idx = c.index() % totalVertCount;
 		double coef = c.coeff();
@@ -1026,7 +1042,6 @@ void ShapeEditor::approximationTest2()
 		vSparseFeatures->addFeature(new MeshFeature(idx, scl));
 		vSparseFeatures->back()->m_scalar1 = coef;
 	}
-	//ofs << vCoeff;
 	ofs.close();
 	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
 	

@@ -20,11 +20,13 @@ public:
 	{
 		mData = mxCreateDoubleMatrix(mRow, mCol, mxREAL);
 		double *aa = mxGetPr(mData);
-		if (rowMajor) {
+		if (rowMajor) { 
+		// need transpose
 			for (int j = 0; j < col; ++j)
 				for (int i = 0; i < row; ++i)
 					aa[j*row + i] = data[i*col + j];
 		} else {
+		// just copy
 			std::copy_n(data, row*col, aa);
 		}
 		
