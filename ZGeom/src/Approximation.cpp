@@ -515,17 +515,17 @@ void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBas
 	delete []matBasis;
 }
 
-void OMP_SPAMS( MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, FunctionApproximation& fa )
+void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, FunctionApproximation& fa )
 {
 	int signalSize = (int)vSignal.size();
 	int atomCount = (int)vAtoms.size();
 
 	engine.addColVec(vSignal, "X");
-	double *matDict = new double[signalSize*atomCount];
+	double *pMatDict = new double[signalSize*atomCount];
 	for (int i = 0; i < atomCount; ++i) {
-		std::copy_n(vAtoms[i].c_ptr(), signalSize, matDict + signalSize*i);
+		std::copy_n(vAtoms[i].c_ptr(), signalSize, pMatDict + signalSize*i);
 	}
-	engine.addArray(matDict, signalSize, atomCount, false, "D");
+	engine.addArray(pMatDict, signalSize, atomCount, false, "D");
 	engine.addDoubleScalar((double)supportSize, "L0");
 	engine.eval("[idx,coeff]=spamsOMP(X,D,L0);");
 
@@ -537,7 +537,37 @@ void OMP_SPAMS( MatlabEngineWrapper& engine, const VecNd& vSignal, const std::ve
 
 	engine.removeVariable("X");
 	engine.removeVariable("D");
-	engine.removeVariable("L0");	
+	engine.removeVariable("L0");
+	delete []pMatDict;
+}
+
+void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, FunctionApproximation& fa )
+{
+	int signalSize = (int)vSignal.size();
+	int atomCount = (int)vAtoms.size();
+
+	engine.addColVec(vSignal, "X");
+	double *pMatDict = new double[signalSize*atomCount];
+	for (int i = 0; i < atomCount; ++i) {
+		std::copy_n(vAtoms[i].c_ptr(), signalSize, pMatDict + signalSize*i);
+	}
+	engine.addArray(pMatDict, signalSize, atomCount, false, "D");
+	engine.addDoubleScalar(lambda, "L1");
+	engine.eval("[idx,coeff,nnz]=spamsLasso(X,D,L1);");
+
+	double *pNnz = engine.getDblVariablePtr("nnz");
+	double *pIdx = engine.getDblVariablePtr("idx");
+	double *pCoeff = engine.getDblVariablePtr("coeff");
+	int supportSize = int(*pNnz);
+	
+	fa.clear();
+	for (int i = 0; i < supportSize; ++i)
+		fa.addItem(0, (int)pIdx[i] - 1, pCoeff[i]);
+
+	engine.removeVariable("X");
+	engine.removeVariable("D");
+	engine.removeVariable("L1");
+	delete []pMatDict;
 }
 
 } // end of namespace

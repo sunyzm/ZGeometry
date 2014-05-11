@@ -943,20 +943,20 @@ void ShapeEditor::approximationTest1()
 //
 void ShapeEditor::approximationTest2()
 {
-	CStopWatch timer;
-
-	std::function<void(std::string, char c)> printBeginSeparator = [&](std::string s, char c) {
+	auto printBeginSeparator = [&](std::string s, char c) {
 		std::cout << '\n';
 		for (int i = 0; i < 8; ++i) std::cout << c;
 		std::cout << ' ' << s << ' ';
 		for (int i = 0; i < 8; ++i) std::cout << c;
 		std::cout << '\n';
 	};
-	std::function<void(char, int)> printEndSeparator = [&](char c, int num) {
+	auto printEndSeparator = [&](char c, int num) {
 		std::cout << std::setfill(c) << std::setw(num) << '\n';
 	};
 
 	printBeginSeparator("Starting ApproxTest2 (feature analysis)",'=');
+	CStopWatch timer;
+	
 	// initializing, segmentation, coloring, and eigendecomposition
 	int totalVertCount = mMesh->vertCount();
 	int eigenCount = min(600, totalVertCount-1);
@@ -984,8 +984,8 @@ void ShapeEditor::approximationTest2()
 		ofs.open("output/signals.txt");
 		for(int i = 0; i < totalVertCount; ++i) {
 			ofs << meshCoord.getXCoord()[i] << ' ' << meshCoord.getYCoord()[i] << ' ' 
-				<< meshCoord.getZCoord()[i] << ' ' << vMeanCurvatures[i] << ' ' << vGaussCurvature[i] 
-			<< '\n';
+				<< meshCoord.getZCoord()[i] << ' ' << vMeanCurvatures[i] << ' ' 
+				<< vGaussCurvature[i] << '\n';
 		}
 		ofs.close();
 		ofs.open("output/dictionary.txt");
@@ -993,7 +993,8 @@ void ShapeEditor::approximationTest2()
 		for (int i = 0; i < totalVertCount; ++i) {
 			for (int k = 0; k < dict.size(); ++k) 
 				ofs << dict[k][i] << ((k < dict.size() - 1) ? ' ' : '\n');
-		}		
+		}	
+		ofs.close();
 	}/** End of printing signals and dictionary data **/
 
 	// compute sparse coding
@@ -1004,24 +1005,25 @@ void ShapeEditor::approximationTest2()
 
 	SparseCodingOptions opts;
 	opts.mApproxMethod = SA_SOMP;
+	opts.mApproxMethod = SA_LASSO;
+	opts.mCodingAtomCount = 323;
+	opts.lambda1 = 0.15;
 
-	opts.mCodingAtomCount = 12;
 	timer.startTimer();
 	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
 	timer.stopTimer("Time to do sparse coding: ", "s");
 
 	ZGeom::VecNd vReconstruct = ReconstructApproximationSingleChannel(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
 	double residual = (ZGeom::VecNd(vSignal) - vReconstruct).norm2();	
-	std::cout << "Approximation residual (" << opts.mCodingAtomCount << " basis): " << residual << '\n';
+	std::cout << "Approximation residual (" << vCoeff.size() << " basis): " << residual << '\n';
 	
 	std::vector<std::pair<int,double> > vPursuit;
-	for (int i = 0; i < opts.mCodingAtomCount; ++i) 
+	for (int i = 0; i < vCoeff.size(); ++i) 
 		vPursuit.push_back(std::make_pair(vCoeff[i].index(), vCoeff[i].coeff()));
 	std::sort(vPursuit.begin(), vPursuit.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2)->bool{
 		return p1.first < p2.first;
 	});
-	for (auto p : vPursuit)
-		std::cout << p.first + 1 << ' ' << p.second << '\n';
+	//for (auto p : vPursuit) std::cout << p.first + 1 << ' ' << p.second << '\n';
 
 	// analysis of coding
 	int nScales = dictSize / totalVertCount;

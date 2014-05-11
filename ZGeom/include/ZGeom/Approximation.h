@@ -139,7 +139,7 @@ void OrthogonalMatchingPursuit_AMP(const VecNd& vSignal, const std::vector<VecNd
 void GeneralizedOMP_MATLAB(const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine);
 
 void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, FunctionApproximation& fa);
-void LASSO_SPAMS(const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, FunctionApproximation& fa);
+void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, FunctionApproximation& fa);
 
 } // end of namespace
 

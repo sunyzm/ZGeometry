@@ -9,8 +9,11 @@ function [ idx, coeff ] = spamsOMP( X, D, L0)
 %          L: maximum number of elements in decomposition
 % Outputs: idx: int L x 1 vector (indices of selected atom)
 %          coeff: double L x 1 vector (coefficients)
-param.L=L0;
-alpha=mexOMP(X,D,param);
-[idx, col, coeff]=find(alpha);
+param.L = L0;
+tic;
+alpha = mexOMP(X,D,param);
+t = toc;
+fprintf('Decomposition time(s): %f\n',t);
+[idx,col,coeff] = find(alpha);
 end
 

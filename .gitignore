@@ -25,6 +25,12 @@
 *.vsps
 *.vspx
 
+# misc
+*.bak
+*.asv
+*.mexw32
+*.mexw64
+
 # project specific
 bin/
 data/
@@ -45,8 +51,5 @@ thirdparty/matlab/mex/
 thirdparty/matlab/tensor/ann_mwrapper/private/
 zmesh_partition/intermediate/
 
-*.mexw32
-*.mexw64
 
-# misc
-*.bak
+

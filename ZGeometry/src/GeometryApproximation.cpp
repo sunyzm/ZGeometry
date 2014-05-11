@@ -471,11 +471,16 @@ void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodi
 		if (opts.mApproxMethod == SA_SMP) {
 			ZGeom::MatchingPursuit(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
 		} else {
-#ifndef USE_SPAMS
-			ZGeom::OMP(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
-#else
+#ifdef USE_SPAMS
 			ZGeom::OMP_SPAMS(g_engineWrapper, vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
+#else
+			ZGeom::OMP(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
 #endif
 		}
-	}	
+	}
+	else if (opts.mApproxMethod == SA_LASSO)
+	{
+		double lambda1 = opts.lambda1;
+		ZGeom::LASSO_SPAMS(g_engineWrapper, vSignal, mDict.getAtoms(), lambda1, vCoeff);
+	}
 }

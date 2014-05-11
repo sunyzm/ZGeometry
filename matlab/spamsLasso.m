@@ -7,9 +7,12 @@ function [ idx, coeff, nnz ] = spamsLasso( X, D, L1)
 %          L1: parameter
 % Outputs: idx: int L x 1 vector (indices of selected atom)
 %          coeff: double L x 1 vector (coefficients)
-param.lambda=L1;
-param.mode=2;
-alpha=mexLasso(X,D,param);
-[idx, col, coeff]=find(alpha);
-nnz=length(idx);
+param.lambda = L1;
+param.mode = 2;
+tic;
+alpha = mexLasso(X,D,param);
+t = toc;
+fprintf('Decomposition time(s): %f\n',t);
+[idx,col,coeff] = find(alpha);
+nnz = length(idx);
 end
