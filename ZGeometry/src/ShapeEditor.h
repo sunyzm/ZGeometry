@@ -47,6 +47,7 @@ private:
 	
 	void approximationTest1();	// test compression performance using graph Laplacian basis
 	void approximationTest2();  // test feature finding and correspondence using cot formula basis
+	void approximationTest3();  // test shape decomposition via sparse coding
 	void spectrumTest1();
 	
 	

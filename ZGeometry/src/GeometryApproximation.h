@@ -37,6 +37,7 @@ public:
 	const ZGeom::Dictionary& getDict() const { return mDict; }
 	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
 	void computeSparseCoding(const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
+	const std::vector<ZGeom::ApproxItem>& getSparseCoding(int c) const { return mCoding[c]; }
 
 private:
 	CMesh mSubMesh;

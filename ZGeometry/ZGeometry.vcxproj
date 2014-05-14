@@ -65,13 +65,13 @@
   <PropertyGroup>
     <_ProjectFileVersion>10.0.40219.1</_ProjectFileVersion>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(SolutionDir)bin/$(Platform)/$(Configuration)/</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin/$(Platform)/$(Configuration)/</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)bin/$(Platform)/$(Configuration)/</OutDir>
-    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin/$(Platform)/$(Configuration)/</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">intermediate/$(Platform)/$(Configuration)/</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">intermediate/$(Platform)/$(Configuration)/</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">intermediate\$(Platform)\$(Configuration)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">intermediate/$(Platform)/$(Configuration)/</IntDir>
-    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">intermediate/$(Platform)/$(Configuration)/</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">intermediate\$(Platform)\$(Configuration)\</IntDir>
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath)</IncludePath>
     <SourcePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath);$(SourcePath)</SourcePath>
     <SourcePath Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IncludePath);$(SourcePath)</SourcePath>

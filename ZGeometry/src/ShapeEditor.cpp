@@ -66,7 +66,6 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mMesh = processor->getMesh();
 	mTotalScales = 0;
 	mCurCoordID = 0;
-	mStoredCoordinates.resize(4);
 	processor->getMesh()->retrieveVertCoordinates(mOriginalCoord); 
 	std::cout << "Shape editor is initialized!" << std::endl;
 }
@@ -86,11 +85,12 @@ void ShapeEditor::changeCoordinates( int coordID )
 {
 	if (coordID < 0 || coordID >= mStoredCoordinates.size()) return;
 	mCurCoordID = coordID;
-	std::cout << "-- Current coordinate ID: " << mCurCoordID << '\n';
+	qout.output("Current coordinate ID: " + ZUtil::Int2String(mCurCoordID), OUT_STATUS);
 
 	if (mStoredCoordinates[mCurCoordID].empty())
-		std::cout << "!! Selected coordinate is empty!\n";
-	else mMesh->setVertCoordinates(mStoredCoordinates[mCurCoordID]);
+		qout.output("!! Selected coordinate is empty!", OUT_CONSOLE);
+	else 
+		mMesh->setVertCoordinates(mStoredCoordinates[mCurCoordID]);
 }
 
 void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
@@ -749,7 +749,8 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 void ShapeEditor::runTests()
 {
 	//approximationTest1();
-	approximationTest2();
+	//approximationTest2();
+	approximationTest3();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
@@ -780,22 +781,26 @@ void ShapeEditor::spectrumTest1()
 	}
 }
 
+
+
+void printBeginSeparator(std::string s, char c) {
+	std::cout << '\n';
+	for (int i = 0; i < 8; ++i) std::cout << c;
+	std::cout << ' ' << s << ' ';
+	for (int i = 0; i < 8; ++i) std::cout << c;
+	std::cout << '\n';
+}
+
+void printEndSeparator(char c, int num) {
+	std::cout << std::setfill(c) << std::setw(num) << '\n';
+}
+
 //// Test partitioned approximation with graph Laplacian ////
 //
 void ShapeEditor::approximationTest1()
 {
-	std::function<void(std::string, char c)> printBeginSeparator = [&](std::string s, char c) {
-		std::cout << '\n';
-		for (int i = 0; i < 8; ++i) std::cout << c;
-		std::cout << ' ' << s << ' ';
-		for (int i = 0; i < 8; ++i) std::cout << c;
-		std::cout << '\n';
-	};
-	std::function<void(char, int)> printEndSeparator = [&](char c, int num) {
-		std::cout << std::setfill(c) << std::setw(num) << '\n';
-	};
-
 	revertCoordinates();
+	mStoredCoordinates.resize(4);
 	std::cout << "\n======== Starting ApproxTest1 (compression test) ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
@@ -939,23 +944,21 @@ void ShapeEditor::approximationTest1()
 	printEndSeparator('=', 40);
 }
 
-//// Test approximation for feature analysis with cot-formula Laplacian ////
+//// Test approximation for feature analysis  ////
 //
 void ShapeEditor::approximationTest2()
 {
-	auto printBeginSeparator = [&](std::string s, char c) {
-		std::cout << '\n';
-		for (int i = 0; i < 8; ++i) std::cout << c;
-		std::cout << ' ' << s << ' ';
-		for (int i = 0; i < 8; ++i) std::cout << c;
-		std::cout << '\n';
-	};
-	auto printEndSeparator = [&](char c, int num) {
-		std::cout << std::setfill(c) << std::setw(num) << '\n';
-	};
-
 	printBeginSeparator("Starting ApproxTest2 (feature analysis)",'=');
 	CStopWatch timer;
+
+	LaplacianType lapType;
+	DictionaryType dictType;
+	SparseApproxMethod approxMethod;
+	lapType = CotFormula;
+	lapType = Umbrella;
+	dictType = DT_SGW4;
+	approxMethod = SA_SOMP; 
+	approxMethod = SA_LASSO; 
 	
 	// initializing, segmentation, coloring, and eigendecomposition
 	int totalVertCount = mMesh->vertCount();
@@ -967,7 +970,7 @@ void ShapeEditor::approximationTest2()
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
 	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
-	mShapeApprox.doEigenDecomposition(CotFormula, eigenCount);	
+	mShapeApprox.doEigenDecomposition(lapType, eigenCount);	
 
 	// possible signals: coordinate or curvature functions
 	MeshCoordinates meshCoord = mMesh->getVertCoordinates();
@@ -976,7 +979,7 @@ void ShapeEditor::approximationTest2()
 
 	// construct dictionary
 	timer.startTimer();
-	mShapeApprox.mSubMeshApprox[0].constructDict(DT_SGW4);
+	mShapeApprox.mSubMeshApprox[0].constructDict(dictType);
 	timer.stopTimer("Time to construct dictionary: ", "s");
 
 	{ /** To print signals and dictionary data **/
@@ -1004,8 +1007,7 @@ void ShapeEditor::approximationTest2()
 	std::vector<double>& vSignal = vMeanCurvatures;
 
 	SparseCodingOptions opts;
-	opts.mApproxMethod = SA_SOMP;
-	opts.mApproxMethod = SA_LASSO;
+	opts.mApproxMethod = approxMethod;
 	opts.mCodingAtomCount = 323;
 	opts.lambda1 = 0.15;
 
@@ -1021,7 +1023,7 @@ void ShapeEditor::approximationTest2()
 	for (int i = 0; i < vCoeff.size(); ++i) 
 		vPursuit.push_back(std::make_pair(vCoeff[i].index(), vCoeff[i].coeff()));
 	std::sort(vPursuit.begin(), vPursuit.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2)->bool{
-		return p1.first < p2.first;
+		return std::fabs(p1.second) > std::fabs(p2.second);
 	});
 	//for (auto p : vPursuit) std::cout << p.first + 1 << ' ' << p.second << '\n';
 
@@ -1048,5 +1050,79 @@ void ShapeEditor::approximationTest2()
 	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
 	
 	printEndSeparator('=', 40);
+}
+
+//// Test shape decomposition via signal separation
+//
+void ShapeEditor::approximationTest3()
+{
+	revertCoordinates();
+	mStoredCoordinates.resize(4);
+	std::cout << "\n======== Starting ApproxTest3 (Decomposition test) ========\n";	
+
+	const int totalVertCount = mMesh->vertCount();
+	int eigenCount = min(500, totalVertCount-1);
+	int maxPatchSize = -1;
+
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();	
+	setStoredCoordinates(oldMeshCoord, 0);
+	mShapeApprox.init(mMesh);
+	mShapeApprox.doSegmentation(maxPatchSize);
+	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
+	
+	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
+
+	printBeginSeparator("SOMP, SGW", '-');
+
+	// SOMP, SGW
+	const int codingSize = 300;
+	DictionaryType dictType = DT_SGW4MHB;
+	SparseApproxMethod saMethod = SA_SOMP;
+
+	MeshCoordinates reconstructedMeshCoord;
+	
+	mShapeApprox.constructDictionaries(dictType);
+	mShapeApprox.findSparseRepresentationBySize(saMethod, codingSize);
+	mShapeApprox.doSparseReconstructionBySize(-1, reconstructedMeshCoord);
+	
+	std::cout << "Reconstruction error: " << oldMeshCoord.difference(reconstructedMeshCoord) << '\n';
+	setStoredCoordinates(reconstructedMeshCoord, 1);
+	
+
+	const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0].getDict();
+	const std::vector<ZGeom::ApproxItem>* vCoeff[3] = {
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(0), 
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(1), 
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(2)
+	};
+	int dictSize = dict.size();
+	int actualCodingSize = int(vCoeff[0]->size());
+	MeshCoordinates coordMHB(totalVertCount), coordSGW(totalVertCount);
+	int mhbAtomCount(0), sgwAtomCount(0);
+	
+	for (int i = 0; i < actualCodingSize; ++i) {
+		for (int c = 0; c < 3; ++c) {
+			const ZGeom::ApproxItem& sc = (*vCoeff[c])[i];
+			if (sc.index() < dictSize - totalVertCount) {
+				coordSGW.getCoordFunc(c) += sc.coeff() * dict[sc.index()];
+				if (c == 0) sgwAtomCount++;
+			} else {
+				coordMHB.getCoordFunc(c) += sc.coeff() * dict[sc.index()];
+				if (c == 0) mhbAtomCount++;
+			}
+		}
+	}
+
+	setStoredCoordinates(coordMHB, 2);
+	setStoredCoordinates(coordSGW, 3);
+	std::cout << "#MHB atoms selected: " << mhbAtomCount << '\n';
+	std::cout << "#SGW atoms selected: " << sgwAtomCount << '\n';
+
+	std::cout << '\n';	
+	printEndSeparator('=', 40);
+	changeCoordinates(1);
 }
 
