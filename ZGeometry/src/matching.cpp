@@ -22,7 +22,7 @@ void MatchResult::write( const std::string& file ) const
 void MatchResult::read( const std::string& file )
 {
 	std::ifstream ifs(file.c_str());
-	ZUtil::runtime_assert(ifs, "File " + file + " not exist!");
+	ZUtil::runtime_assert(ifs.good(), "File " + file + " not exist!");
 
 	int size, idx1, idx2;
 	ifs >> size;

@@ -10,8 +10,6 @@
 #include <amp.h>
 #include <concurrent_vector.h>
 #include <mkl.h>
-#include "tbb/tbb.h"
-#include "tbb/concurrent_vector.h"
 #include "DenseMatrix.h"
 
 namespace ZGeom
@@ -102,6 +100,8 @@ void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int 
 
 void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
 {
+	using namespace Concurrency;
+
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
 	vPursuit.clear();
@@ -120,11 +120,11 @@ void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& 
 		double maxCoeff = 0;
 		int iSelected = -1;
 
-		tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+		concurrent_vector<std::pair<int,double> > vCoeff;
 		vCoeff.reserve(availableBasis.size());
 		for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
 
-		tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+		parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
 			cp.second = cblas_ddot(signalSize, vBasis[cp.first].c_ptr(), 1, vRf.c_ptr(), 1);
 		});		
 
@@ -291,6 +291,8 @@ void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecN
 
 void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 2.*/ )
 {
+	using namespace Concurrency;
+
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
 	assert(vSignals.size() == vPursuits.size());
@@ -316,11 +318,11 @@ void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::
 		double maxCoeff = 0;
 		int iSelected = -1;
 
-		tbb::concurrent_vector< std::pair<int,double> > vCoeff;
+		concurrent_vector< std::pair<int,double> > vCoeff;
 		vCoeff.reserve(availableBasis.size());
 		for (int iBasis : availableBasis) vCoeff.push_back(std::make_pair(iBasis, 0));
 
-		tbb::parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
+		parallel_for_each(vCoeff.begin(), vCoeff.end(), [&](std::pair<int,double>& cp) {
 			VecNd channelCoeff(nChannels);
 			for (int c = 0; c < nChannels; ++c)
 				channelCoeff[c] = innerProdFunc(vBasis[cp.first], vRfs[c]);
@@ -468,6 +470,8 @@ void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecN
 	
 void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
 {
+	using namespace Concurrency;
+
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
 	vPursuit.clear();
@@ -480,8 +484,8 @@ void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBas
 	VecNd vRf = vSignal;
 
 	for (int k = 0; k < nSelected; ++k) {
-		tbb::concurrent_vector<std::pair<int,double> > vCoeff;
-		tbb::parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
+		concurrent_vector<std::pair<int,double> > vCoeff;
+		parallel_for_each(availableBasis.begin(), availableBasis.end(), [&](int iBasis) {
 			vCoeff.push_back(std::make_pair(iBasis, innerProdFunc(vBasis[iBasis], vRf)));
 		});
 

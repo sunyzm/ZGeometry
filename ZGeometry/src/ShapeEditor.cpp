@@ -750,7 +750,7 @@ void ShapeEditor::runTests()
 {
 	//approximationTest1();
 	//approximationTest2();
-	//approximationTest3();
+	approximationTest3();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
