@@ -156,7 +156,9 @@ QZGeometryWindow::~QZGeometryWindow()
 }
 
 void QZGeometryWindow::makeConnections()
-{	
+{
+	QObject::connect(ui.actionAboutQt, SIGNAL(triggered()), this, SIGNAL(displayQtVersion()));
+
 	/*  actionComputeLaplacians  */
 	int laplacianTypeCount = LaplacianTypeCount;
 	m_actionComputeLaplacians.resize(laplacianTypeCount);

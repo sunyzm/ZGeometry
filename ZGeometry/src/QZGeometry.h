@@ -23,6 +23,7 @@ public:
 
 signals:
 	void refPoint1Changed(int n);
+	void displayQtVersion();
 
 private slots:
 	void addMesh();

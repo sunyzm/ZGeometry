@@ -72,6 +72,16 @@ public:
 		mCoordZ.add(cz);
 	}
 
+	MeshCoordinates substract(const MeshCoordinates& mc2) const
+	{
+		assert(this->mSize == mc2.mSize);
+		MeshCoordinates mc3(this->mSize);
+		mc3.mCoordX = this->mCoordX - mc2.mCoordX;
+		mc3.mCoordY = this->mCoordY - mc2.mCoordY;
+		mc3.mCoordZ = this->mCoordZ - mc2.mCoordZ;
+		return mc3;
+	}
+
 	const ZGeom::VecNd& getCoordFunc(int i) const 
 	{
 		switch (i)

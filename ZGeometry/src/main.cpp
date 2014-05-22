@@ -25,8 +25,8 @@ int main(int argc, char *argv[])
 
 	QApplication a(argc, argv);
 	QZGeometryWindow w;
+	QObject::connect(&w, SIGNAL(displayQtVersion()), &a, SLOT(aboutQt()));
 	if (!w.initialize(mesh_list_name)) std::exit(-1);
-
 	w.show();
 	return a.exec();
 }

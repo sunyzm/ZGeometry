@@ -750,7 +750,7 @@ void ShapeEditor::runTests()
 {
 	//approximationTest1();
 	//approximationTest2();
-	approximationTest3();
+	//approximationTest3();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
@@ -958,7 +958,7 @@ void ShapeEditor::approximationTest2()
 	lapType = Umbrella;
 	dictType = DT_SGW4;
 	approxMethod = SA_SOMP; 
-	approxMethod = SA_LASSO; 
+	//approxMethod = SA_LASSO; 
 	
 	// initializing, segmentation, coloring, and eigendecomposition
 	int totalVertCount = mMesh->vertCount();
@@ -1057,7 +1057,7 @@ void ShapeEditor::approximationTest2()
 void ShapeEditor::approximationTest3()
 {
 	revertCoordinates();
-	mStoredCoordinates.resize(4);
+	mStoredCoordinates.resize(5);
 	std::cout << "\n======== Starting ApproxTest3 (Decomposition test) ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
@@ -1065,7 +1065,7 @@ void ShapeEditor::approximationTest3()
 	int maxPatchSize = -1;
 
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();	
-	setStoredCoordinates(oldMeshCoord, 0);
+	setStoredCoordinates(oldMeshCoord, 0);	// save original coordinates
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
@@ -1078,7 +1078,7 @@ void ShapeEditor::approximationTest3()
 	printBeginSeparator("SOMP, SGW", '-');
 
 	// SOMP, SGW
-	const int codingSize = 300;
+	const int codingSize = 100;
 	DictionaryType dictType = DT_SGW4MHB;
 	SparseApproxMethod saMethod = SA_SOMP;
 
@@ -1120,6 +1120,26 @@ void ShapeEditor::approximationTest3()
 	setStoredCoordinates(coordSGW, 3);
 	std::cout << "#MHB atoms selected: " << mhbAtomCount << '\n';
 	std::cout << "#SGW atoms selected: " << sgwAtomCount << '\n';
+
+	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
+	for (int i = 0; i < actualCodingSize; ++i) {
+		const ZGeom::ApproxItem& sc0 = (*vCoeff[0])[i];
+		const ZGeom::ApproxItem& sc1 = (*vCoeff[1])[i];
+		const ZGeom::ApproxItem& sc2 = (*vCoeff[2])[i];
+		if (sc0.index() >= dictSize - totalVertCount) continue;
+
+		int scale = sc0.index() / totalVertCount, idx = sc0.index() % totalVertCount;
+		double coef = std::sqrt(sc0.coeff()*sc0.coeff() + sc1.coeff()*sc1.coeff() + sc2.coeff()*sc2.coeff());
+		
+		vSparseFeatures->addFeature(new MeshFeature(idx, scale));
+		vSparseFeatures->back()->m_scalar1 = 3./*coef*/;
+	}
+	//delete vSparseFeatures;
+	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
+
+
+	MeshCoordinates coordResidual = oldMeshCoord.substract(reconstructedMeshCoord);
+	setStoredCoordinates(coordResidual, 4);
 
 	std::cout << '\n';	
 	printEndSeparator('=', 40);
