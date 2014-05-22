@@ -25,7 +25,7 @@ using ZUtil::Int2String;
 using ZUtil::logic_assert;
 using ZUtil::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
-using namespace std;
+
 
 void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vector<double>& vDisplaySignature)
 {
@@ -94,16 +94,17 @@ void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, st
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
-	mMeshCount = 0;
-	mObjInFocus = -1;
-	mCurrentBasisScale = 0;
-	mCommonParameter = gSettings.PARAMETER_SLIDER_CENTER;
-	mLastOperation = None;
-	mDeformType = DEFORM_Simple;
-	mSignatureMode = SM_Normalized;
-	mActiveLalacian = CotFormula;
-	mDiffMax = 2.0;
-	mColorMapType = ZGeom::CM_JET;
+	mMeshCount				= 0;
+	mObjInFocus				= -1;
+	mCommonParameter		= gSettings.PARAMETER_SLIDER_CENTER;
+	mLastOperation			= None;
+	mDeformType				= DEFORM_Simple;
+	mSignatureMode			= SM_Normalized;
+	mActiveLalacian			= CotFormula;
+	mColorMapType			= ZGeom::CM_JET;
+	mDiffMax				= 2.0;
+	mCurrentBasisScale		= 0;
+
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -501,7 +502,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
 	ZUtil::runtime_assert (ZUtil::fileExist(mesh_list_name),  "Cannot open file mesh list file!");
-	ifstream meshfiles(mesh_list_name);
+	std::ifstream meshfiles(mesh_list_name);
 	
 	std::vector<std::string> vMeshFiles;
 	while (!meshfiles.eof()) {
@@ -572,7 +573,7 @@ void QZGeometryWindow::addMesh()
 	mesh.scaleAreaToVertexNum();
 	mesh.gatherStatistics();
 	timer.stopTimer();
-	cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << endl;
+	std::cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << std::endl;
 
 	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
@@ -861,7 +862,7 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
+		std::vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 		addColorSignature(obj, vCurvature, StrAttrColorMeanCurvature);
@@ -875,7 +876,7 @@ void QZGeometryWindow::computeCurvatureMean()
 void QZGeometryWindow::computeCurvatureGauss()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {		
-		vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
+		std::vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
 		addColorSignature(obj, vCurvature, StrAttrColorGaussCurvature);
@@ -909,8 +910,8 @@ void QZGeometryWindow::registerPreprocess()
 
 	// ground truth 
 	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
-		cout << "Ground truth available!" << endl;
-		string mapFile = "./models/map1.txt";
+		std::cout << "Ground truth available!" << std::endl;
+		std::string mapFile = "./models/map1.txt";
 		mShapeMatcher.loadGroundTruth(mapFile);
 	}
 	else if(mMeshes[0]->vertCount() == mMeshes[1]->vertCount()) {
@@ -925,7 +926,7 @@ void QZGeometryWindow::registerPreprocess()
 void QZGeometryWindow::reconstructMHB()
 {
 	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
-	double ratio = min((double)mCommonParameter/sliderCenter, 1.0);
+	double ratio = std::min((double)mCommonParameter/sliderCenter, 1.0);
 	int nEig = mProcessors[0]->getMHB(CotFormula).eigVecCount() * ratio;
 	double avgLen = mMeshes[0]->getAvgEdgeLength();
 
@@ -1049,7 +1050,7 @@ void QZGeometryWindow::computeBiharmonic()
 
 void QZGeometryWindow::computeHKSFeatures()
 {
-	vector<double> vTimes;
+	std::vector<double> vTimes;
 	vTimes.push_back(10);
 	vTimes.push_back(30);
 	vTimes.push_back(90);
@@ -1194,7 +1195,7 @@ void QZGeometryWindow::displayDiffPosition()
 {
 	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
 	int size = mMeshes[0]->vertCount();
-	vector<double> vDiff;
+	std::vector<double> vDiff;
 	vDiff.resize(size);
 
 	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
@@ -1286,7 +1287,7 @@ void QZGeometryWindow::buildHierarchy()
 	int nLevel = g_configMgr.getConfigValueInt("HIERARCHY_LEVEL");
 	double ratio = g_configMgr.getConfigValueDouble("CONTRACTION_RATIO");
 	std::string log_filename = g_configMgr.getConfigValue("HIERARCHY_OUTPUT_FILE");
-	ofstream ostr(log_filename.c_str(), ios::trunc);
+	std::ofstream ostr(log_filename.c_str(), std::ios::trunc);
 
 	qout.output("-- Build hierarchy --");
 	mShapeMatcher.constructPyramid(nLevel, ratio, ostr);
@@ -1387,6 +1388,8 @@ void QZGeometryWindow::detectFeatures()
 
 void QZGeometryWindow::matchFeatures()
 {
+	using namespace std;
+
 	int force_matching = g_configMgr.getConfigValueInt("FORCE_MATCHING");
 	string string_override = "";
 	bool alreadyMached = false;
@@ -1440,7 +1443,7 @@ void QZGeometryWindow::matchFeatures()
 	std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
 
 	qout.output("-- Match initial features --");
-	ofstream ofstr(log_filename.c_str(), ios::trunc);
+	std::ofstream ofstr(log_filename.c_str(), std::ios::trunc);
 	CStopWatch timer;
 	timer.startTimer();
 	if (matching_method == 2)	//tensor
@@ -1505,6 +1508,8 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
+	using namespace std;
+
 	string log_filename = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
 
 	qout.output(QString().sprintf("-- Register level %d --", mShapeMatcher.getAlreadyRegisteredLevel() - 1));
@@ -1579,14 +1584,16 @@ void QZGeometryWindow::showCoarser()
 
 void QZGeometryWindow::evalDistance()
 {
+	using namespace std;
+
 	if (mMeshCount < 2) return;
 
 	CStopWatch timer;
 	timer.startTimer();
 	Concurrency::parallel_invoke(
-		[&](){ cout << "Error geodesic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_GEODESIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
-		[&](){ cout << "Error biharmonic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
-		[&](){ cout << "Error biharmonic2: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 500) << endl; }
+		[&](){ std::cout << "Error geodesic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_GEODESIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
+		[&](){ std::cout << "Error biharmonic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
+		[&](){ std::cout << "Error biharmonic2: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 500) << endl; }
 //		[&](){cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 30.), shapeMatcher.m_randPairs, 0) << endl;},
 //		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 90.), shapeMatcher.m_randPairs, 0) << endl;
 //		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 270.), shapeMatcher.m_randPairs, 0) << endl;
@@ -1611,7 +1618,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	
 	if (gSettings.LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
 	{
-		ifstream ifs(pathMHB.c_str());
+		std::ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
 		ifs.close();
 	}
@@ -1677,8 +1684,7 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 void QZGeometryWindow::saveMatchingResult()
 {
 	if (g_task != TASK_REGISTRATION) return;
-
-	const vector<MatchPair>& vPairs = mShapeMatcher.getInitialMatchedFeaturePairs();
+	const std::vector<MatchPair>& vPairs = mShapeMatcher.getInitialMatchedFeaturePairs();
 	if (vPairs.empty()) {
 		qout.output("No matching result available", OUT_MSGBOX);
 		return;
@@ -1686,13 +1692,12 @@ void QZGeometryWindow::saveMatchingResult()
 
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Matching Result to File"),
 													"./output/matching.txt",
-													tr("Text Files (*.txt *.dat)"));
-	
-	ofstream ofs(fileName.toStdString().c_str(), ios::trunc);
+													tr("Text Files (*.txt *.dat)"));	
+	std::ofstream ofs(fileName.toStdString().c_str(), std::ios::trunc);
 
-	ofs << vPairs.size() << endl;
+	ofs << vPairs.size() << std::endl;
 	for (auto iter = vPairs.begin(); iter != vPairs.end(); ++iter) {
-		ofs << iter->m_idx1 << ' ' << iter->m_idx2 << ' ' << iter->m_score << endl;
+		ofs << iter->m_idx1 << ' ' << iter->m_idx2 << ' ' << iter->m_score << std::endl;
 	}
 
 	ofs.close();
@@ -1739,7 +1744,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	if (!ZUtil::fileExist(pathMHB)) return true;
 
-	ifstream ifs(pathMHB.c_str(), ios::binary);
+	std::ifstream ifs(pathMHB.c_str(), std::ios::binary);
 	int nEig, nSize;
 	ifs.read((char*)&nEig, sizeof(int));
 	ifs.read((char*)&nSize, sizeof(int));
@@ -2169,7 +2174,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	mCoordIdx = coordIdx;
 
 	const int vertCount = mMeshes[0]->vertCount();
-	vector<double> vDiff;
+	std::vector<double> vDiff;
 	vDiff.resize(vertCount);
 
 	const MeshCoordinates &oldCoord = mShapeEditor.getOldMeshCoord(),
@@ -2179,7 +2184,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 		vDiff[i] = (oldCoord[i] - newCoord[i]).length();
 	}
 
-	auto iResult = minmax_element(vDiff.begin(), vDiff.end());
+	auto iResult = std::minmax_element(vDiff.begin(), vDiff.end());
 	double sMin = *(iResult.first); 
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;

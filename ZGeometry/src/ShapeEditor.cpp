@@ -1084,7 +1084,7 @@ void ShapeEditor::approximationTest3()
 
 	MeshCoordinates reconstructedMeshCoord;
 	
-	mShapeApprox.constructDictionaries(dictType);
+	mShapeApprox.constructDictionaries(dictType); 
 	mShapeApprox.findSparseRepresentationBySize(saMethod, codingSize);
 	mShapeApprox.doSparseReconstructionBySize(-1, reconstructedMeshCoord);
 	

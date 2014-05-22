@@ -32,7 +32,7 @@ inline __int64 time_call(Function&& f)
 {
 	__int64 begin = GetTickCount64();
 	f();
-	return GetTickCount() - begin;
+	return GetTickCount64() - begin;
 }
 
 template <class Function>
@@ -40,7 +40,7 @@ inline double time_call_sec(Function&& f)
 {
 	__int64 begin = GetTickCount64();
 	f();
-	return (GetTickCount() - begin) / 1e3;
+	return (GetTickCount64() - begin) / 1e3;
 }
 
 #endif

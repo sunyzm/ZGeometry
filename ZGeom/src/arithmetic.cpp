@@ -50,6 +50,21 @@ double ZGeom::calMixedTriArea( double a, double b, double c )
 	}
 }
 
+void ZGeom::quadricForm(int dim1, int dim2, double* mat1, double* diag, double *matResult)
+{
+	using namespace Concurrency;
+	parallel_for (0, dim1, [=](int i) {
+		for (int j = 0; j <= i; ++j) {
+			double sum(0);
+			for (int k = 0; k < dim2; ++k) {
+				sum += diag[k] * mat1[dim1*k + i] * mat1[dim1*k + j];
+			}
+			matResult[dim1*i + j] = matResult[dim1*j + i] = sum;
+		}
+	});
+}
+
+
 void ZGeom::quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult)
 {
 	using namespace Concurrency;

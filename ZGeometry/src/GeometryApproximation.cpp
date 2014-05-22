@@ -119,9 +119,11 @@ void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 
 void ShapeApprox::constructDictionaries( DictionaryType dictType )
 {
-	for (auto& m : mSubMeshApprox)
-		m.constructDict(dictType);
-	std::cout << "** Dictionary constructed!\n";
+	double dictConstructTime = time_call_sec([=](){
+		for (auto& m : mSubMeshApprox)
+			m.constructDict(dictType);
+	});
+	std::cout << "** Dictionary constructed!  Time: " << dictConstructTime << "s\n";
 }
 
 void ShapeApprox::findSparseRepresentationBySize(SparseApproxMethod codingMethod, int codingSize )

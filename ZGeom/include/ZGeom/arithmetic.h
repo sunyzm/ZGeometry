@@ -95,6 +95,8 @@ namespace ZGeom
 
 	double calMixedTriArea(double a, double b, double c);
 
+	void quadricForm(int dim1, int dim2, double* mat1, double* diag, double *matResult);
+
 	//////////////////////////////////////////////////////////////////////////
 	//// fast numerical computation with AMP
 	void quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult);
