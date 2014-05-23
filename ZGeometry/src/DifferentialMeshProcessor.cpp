@@ -25,7 +25,6 @@ std::function<double(double, double)> transferHeatKernel = [](double lambda, dou
 std::function<double(double, double)> transferMHW = [](double lambda, double t) { return lambda * std::exp(-lambda*t); };
 
 
-
 double transferFunc2(double lambda, double t)
 {
 	double coeff = lambda * t;
@@ -503,18 +502,11 @@ void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vect
 	ZGeom::VecNd vSolvedHeat(vertCount, 0);
 
 	if (mHeatDiffuseMat.empty()) {
-	//// 
 		computeHeatDiffuseMat(tMultiplier);
 	}
 	
 	mHeatDiffuseSolver.solve(1, vInitHeat.c_ptr(), vSolvedHeat.c_ptr());
 	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
-
-//// for purpose of debugging in matlab 
-//
-// 	mpEngineWrapper->addColVec(vInitHeat, "vInit");
-// 	mpEngineWrapper->addSparseMat(mHeatDiffuseSolver, "matA");
-// 	mpEngineWrapper->addColVec(vSolvedHeat, "vSolved");
 }
 
 void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
