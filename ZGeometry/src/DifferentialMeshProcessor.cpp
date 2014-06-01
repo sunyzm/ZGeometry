@@ -8,10 +8,9 @@
 #include <amp.h>
 #include <amp_math.h>
 #include <mkl.h>
-#include <ZUtil/SimpleConfigLoader.h>
-#include <ZUtil/zassert.h>
-#include <ZUtil/timer.h>
+#include <ZGeom/util.h>
 #include <ZGeom/ZGeom.h>
+#include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include "global.h"
 
@@ -120,7 +119,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	ZUtil::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
+	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
 	if (!g_engineWrapper.isOpened())
 		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
@@ -587,7 +586,7 @@ std::string DifferentialMeshProcessor::generateMHBPath( const std::string& prefi
 
 bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
 {
-	if (!ZUtil::fileExist(pathMHB)) return false;
+	if (!fileExist(pathMHB)) return false;
 
 	int nEig, nSize;
 	ifstream ifs(pathMHB.c_str(), ios::binary);

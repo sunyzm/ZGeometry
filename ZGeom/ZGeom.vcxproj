@@ -101,7 +101,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)d</TargetName>
-    <IncludePath>$(ProjectDir)include\ZGeom;$(SolutionDir)ZUtil\include;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(Projectdir)lib\</OutDir>
@@ -111,7 +111,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)</TargetName>
-    <IncludePath>$(ProjectDir)include\ZGeom;$(SolutionDir)ZUtil\include;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -225,10 +225,12 @@
     <ClInclude Include="include\ZGeom\arcball.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />
     <ClInclude Include="include\ZGeom\Color.h" />
+    <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
+    <ClInclude Include="include\ZGeom\fibheap.h" />
     <ClInclude Include="include\ZGeom\Geometry.h" />
     <ClInclude Include="include\ZGeom\Laplacian.h" />
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
@@ -239,8 +241,10 @@
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
     <ClInclude Include="include\ZGeom\MeshProcessing.h" />
     <ClInclude Include="include\ZGeom\MeshPyramid.h" />
+    <ClInclude Include="include\ZGeom\misc.h" />
     <ClInclude Include="include\ZGeom\Quadric.h" />
     <ClInclude Include="include\ZGeom\Quat.h" />
+    <ClInclude Include="include\ZGeom\SimpleConfigLoader.h" />
     <ClInclude Include="include\ZGeom\SparseMatrix.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCOO.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCSR.h" />
@@ -248,19 +252,24 @@
     <ClInclude Include="include\ZGeom\SparseSymMatVecSolver.h" />
     <ClInclude Include="include\ZGeom\SparseSymSolver.h" />
     <ClInclude Include="include\ZGeom\common.h" />
+    <ClInclude Include="include\ZGeom\timer.h" />
+    <ClInclude Include="include\ZGeom\util.h" />
     <ClInclude Include="include\ZGeom\Vec2.h" />
     <ClInclude Include="include\ZGeom\Vec3.h" />
     <ClInclude Include="include\ZGeom\Vec4.h" />
     <ClInclude Include="include\ZGeom\VecN.h" />
+    <ClInclude Include="include\ZGeom\zassert.h" />
     <ClInclude Include="include\ZGeom\ZGeom.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arcball.cpp" />
     <ClCompile Include="src\arithmetic.cpp" />
     <ClCompile Include="src\Color.cpp" />
+    <ClCompile Include="src\dataio.cpp" />
     <ClCompile Include="src\DenseMatVecMultiplier.cpp" />
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
+    <ClCompile Include="src\fibheap.cpp" />
     <ClCompile Include="src\Geometry.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\Approximation.cpp" />
@@ -272,8 +281,10 @@
     <ClCompile Include="src\MeshPyramid.cpp" />
     <ClCompile Include="src\Quadric.cpp" />
     <ClCompile Include="src\Quat.cpp" />
+    <ClCompile Include="src\SimpleConfigLoader.cpp" />
     <ClCompile Include="src\SparseMatrixCSR.cpp" />
     <ClCompile Include="src\SparseMatVecMultiplier.cpp" />
+    <ClCompile Include="src\timer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

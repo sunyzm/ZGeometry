@@ -1,5 +1,5 @@
-#ifndef ZUTIL_SIMPLE_CONFIG_LOADER_H
-#define ZUTIL_SIMPLE_CONFIG_LOADER_H
+#ifndef ZGEOM_SIMPLE_CONFIG_LOADER_H
+#define ZGEOM_SIMPLE_CONFIG_LOADER_H
 
 #include <string>
 #include <unordered_map>

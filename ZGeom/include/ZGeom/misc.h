@@ -1,6 +1,5 @@
-#ifndef ZUTIL_MISC_H
-#define ZUTIL_MISC_H
-
+#ifndef ZGEOM_MISC_H
+#define ZGEOM_MISC_H
 #include <string>
 #include <cmath>
 #include <queue>

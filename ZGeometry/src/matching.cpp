@@ -1,6 +1,6 @@
 #include "matching.h"
 #include <fstream>
-#include <ZUtil/ZUtil.h>
+#include <ZGeom/util.h>
 
 std::vector<std::pair<int, int> > MatchPair::ToPairVector(const std::vector<MatchPair>& vmp)
 {
@@ -22,7 +22,7 @@ void MatchResult::write( const std::string& file ) const
 void MatchResult::read( const std::string& file )
 {
 	std::ifstream ifs(file.c_str());
-	ZUtil::runtime_assert(ifs.good(), "File " + file + " not exist!");
+	ZGeom::runtime_assert(ifs.good(), "File " + file + " not exist!");
 
 	int size, idx1, idx2;
 	ifs >> size;

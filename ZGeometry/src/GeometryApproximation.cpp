@@ -5,6 +5,8 @@
 #define USE_SPAMS
 
 using ZGeom::VecNd;
+using ZGeom::logic_assert;
+using ZGeom::runtime_assert;
 
 std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 {
@@ -57,7 +59,7 @@ void ShapeApprox::init( CMesh* mesh )
 
 void ShapeApprox::doSegmentation( int maxSize )
 {
-	ZUtil::logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
+	logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
 	const int originalVertCount = mOriginalMesh->vertCount();
 	int nPart = (maxSize > 0) ? (originalVertCount / maxSize + 1) : 1;
 
@@ -106,15 +108,13 @@ void ShapeApprox::doSegmentation( int maxSize )
 
 void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 {
-	CStopWatch timer;
-	timer.startTimer();
+	double decomposeTime = time_call_sec([&](){
+		for (auto& m : mSubMeshApprox) {
+			m.prepareEigenSystem(lapType, eigenCount);
+		}
+	});
 
-	for (auto& m : mSubMeshApprox) {
-		m.prepareEigenSystem(lapType, eigenCount);
-	}
-
-	timer.stopTimer("-- decomposition time: ");
-	std::cout << "** Eigendecomposition finished!\n";
+	std::cout << "** Eigendecomposition finished! Time: " << decomposeTime << "s\n";
 }
 
 void ShapeApprox::constructDictionaries( DictionaryType dictType )
@@ -128,7 +128,7 @@ void ShapeApprox::constructDictionaries( DictionaryType dictType )
 
 void ShapeApprox::findSparseRepresentationBySize(SparseApproxMethod codingMethod, int codingSize )
 {
-	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
+	ZGeom::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
 
 	for (auto& m : mSubMeshApprox) {
 		m.doSparseCoding(codingMethod, codingSize);
@@ -138,8 +138,9 @@ void ShapeApprox::findSparseRepresentationBySize(SparseApproxMethod codingMethod
 
 void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMethod, double basisRatio, bool encodeIndices )
 {
-	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
-	ZUtil::logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
+	using ZGeom::logic_assert;
+	logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
 
 	CStopWatch timer;
 	timer.startTimer();
@@ -168,8 +169,9 @@ void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMeth
 
 void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod codingMethod, double basisRatio )
 {
-	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
-	ZUtil::logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
+	using ZGeom::logic_assert;
+	logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	logic_assert(basisRatio > 0 && basisRatio <= 1., "!! Error: illegal coding ratio!");
 	int totalCodingSize(0);
 	CStopWatch timer;
 	timer.startTimer();
@@ -188,8 +190,11 @@ void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod codin
 
 void ShapeApprox::findSparseRepresentationByCompressionRatio( SparseApproxMethod codingMethod, double compressionRatio )
 {
-	ZUtil::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
-	ZUtil::logic_assert(compressionRatio > 0 && compressionRatio <= 1., "!! Error: illegal coding ratio!");
+	using ZGeom::logic_assert;
+	using ZGeom::runtime_assert;
+
+	logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
+	logic_assert(compressionRatio > 0 && compressionRatio <= 1., "!! Error: illegal coding ratio!");
 	int totalCodingSize(0);
 	CStopWatch timer;
 	timer.startTimer();
@@ -199,7 +204,7 @@ void ShapeApprox::findSparseRepresentationByCompressionRatio( SparseApproxMethod
 		int subMeshSize = m.subMeshSize();
 		int k1 = 32, k2 = 32;	//bit size of float
 		int codingSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
-		ZUtil::runtime_assert(codingSize >= 1, "Number of participating basis must be positive!"); 
+		runtime_assert(codingSize >= 1, "Number of participating basis must be positive!"); 
 
 		if (codingSize > m.dictSize()) codingSize = m.dictSize();
 		totalCodingSize += codingSize;
@@ -221,7 +226,9 @@ void ShapeApprox::doSparseReconstructionBySize( int reconstructSize, MeshCoordin
 
 void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity )
 {
-	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
+	using ZGeom::logic_assert;
+
+	logic_assert(0 < basisRatio && basisRatio <= 1.);
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
@@ -245,7 +252,7 @@ void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordina
 
 void ShapeApprox::doSparseReconstructionByBasisRatio( double basisRatio, MeshCoordinates& approxCoord )
 {
-	ZUtil::logic_assert(0 < basisRatio && basisRatio <= 1.);
+	logic_assert(0 < basisRatio && basisRatio <= 1.);
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
@@ -261,7 +268,7 @@ void ShapeApprox::doSparseReconstructionByBasisRatio( double basisRatio, MeshCoo
 
 void ShapeApprox::doSparseReconstructionByCompressionRatio( double compressionRatio, MeshCoordinates& approxCoord )
 {
-	ZUtil::logic_assert(0 < compressionRatio && compressionRatio <= 1.);
+	logic_assert(0 < compressionRatio && compressionRatio <= 1.);
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
@@ -269,7 +276,7 @@ void ShapeApprox::doSparseReconstructionByCompressionRatio( double compressionRa
 		int subMeshSize = m.subMeshSize();
 		int k1 = 32, k2 = 32;	//bit size of float
 		int reconstructSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
-		ZUtil::runtime_assert(reconstructSize >= 1, "Number of participating basis must be positive!"); 
+		runtime_assert(reconstructSize >= 1, "Number of participating basis must be positive!"); 
 
 		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
 		totalReconstructSize += reconstructSize;
@@ -318,8 +325,7 @@ void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCo
 	int useCache = gSettings.LOAD_MHB_CACHE;
 	if (useCache != 0 && mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount)) {
 		mMeshProcessor.loadMHB(pathMHB, laplacianType);
-	}
-	else {
+	} else {
 		mMeshProcessor.decomposeLaplacian(eigenCount, laplacianType);
 		mMeshProcessor.saveMHB(pathMHB, laplacianType);
 	}
@@ -382,7 +388,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 {
 	const int vertCount = mSubMesh.vertCount();
 	const int atomCount = mDict.atomCount();
-	ZUtil::runtime_assert(atomCount >= selectedAtomCount);
+	runtime_assert(atomCount >= selectedAtomCount);
 
 	MeshCoordinates vertCoords;
 	mSubMesh.retrieveVertCoordinates(vertCoords);
@@ -466,7 +472,7 @@ void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodi
 	int vertCount = mSubMesh.vertCount();
 	int atomCount = mDict.atomCount();
 	int codingAtomCount = opts.mCodingAtomCount;
-	ZUtil::runtime_assert(atomCount >= codingAtomCount && vSignal.size() == vertCount);
+	runtime_assert(atomCount >= codingAtomCount && vSignal.size() == vertCount);
 
 	if (opts.mApproxMethod == SA_SMP || opts.mApproxMethod == SA_SOMP)
 	{

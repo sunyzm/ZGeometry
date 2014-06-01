@@ -1,6 +1,8 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2012
+# Visual Studio 2013
+VisualStudioVersion = 12.0.30501.0
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZGeometry", "ZGeometry\ZGeometry.vcxproj", "{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
@@ -27,6 +29,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "TestZGeom", "TestZGeom\Test
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_partition", "zmesh_partition\zmesh_partition.vcxproj", "{83720D1F-761B-4463-A281-46DF085E2487}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

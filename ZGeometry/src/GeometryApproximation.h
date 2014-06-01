@@ -1,5 +1,6 @@
 #pragma once
 #include <ZGeom/ZGeom.h>
+#include <ZGeom/Approximation.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"

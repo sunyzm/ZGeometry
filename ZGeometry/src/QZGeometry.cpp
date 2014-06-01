@@ -16,14 +16,13 @@
 #include <QFileDialog>
 #include <QTime>
 #include <QImage>
-#include <ZUtil/ZUtil.h>
+#include <ZGeom/util.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
 
-using ZUtil::Int2String;
-using ZUtil::logic_assert;
-using ZUtil::runtime_assert;
+using ZGeom::logic_assert;
+using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
 
 
@@ -501,7 +500,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
-	ZUtil::runtime_assert (ZUtil::fileExist(mesh_list_name),  "Cannot open file mesh list file!");
+	runtime_assert (fileExist(mesh_list_name),  "Cannot open file mesh list file!");
 	std::ifstream meshfiles(mesh_list_name);
 	
 	std::vector<std::string> vMeshFiles;
@@ -510,7 +509,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		getline(meshfiles, meshFileName);
 		if (meshFileName == "") continue;
 		if (meshFileName[0] == '#') continue;
-		else if (!ZUtil::fileExist(meshFileName))
+		else if (!fileExist(meshFileName))
 			throw std::runtime_error("Cannot open file " + meshFileName);		
 		vMeshFiles.push_back(meshFileName);
 	}
@@ -1407,7 +1406,7 @@ void QZGeometryWindow::matchFeatures()
 		}
 		if (string_override != "")
 		{
-			vector<int> idx_override = ZUtil::splitStringToInt(string_override);
+			vector<int> idx_override = splitStringToInt(string_override);
 			if (!idx_override.empty())
 			{
 				vector<MatchPair> vmp;
@@ -1616,7 +1615,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
-	if (gSettings.LOAD_MHB_CACHE && ZUtil::fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
+	if (gSettings.LOAD_MHB_CACHE && fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
 	{
 		std::ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
@@ -1645,7 +1644,7 @@ void QZGeometryWindow::saveSignature()
 		tr("Text Files (*.txt *.dat)"));
 	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
 
-	ZUtil::vector2file<double>(fileName.toStdString(), vSig);
+	vector2file<double>(fileName.toStdString(), vSig);
 }
 
 void QZGeometryWindow::computeLaplacian( int lapType )
@@ -1742,7 +1741,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
-	if (!ZUtil::fileExist(pathMHB)) return true;
+	if (!fileExist(pathMHB)) return true;
 
 	std::ifstream ifs(pathMHB.c_str(), std::ios::binary);
 	int nEig, nSize;

@@ -7,9 +7,7 @@
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/Approximation.h>
-#include <ZUtil/timer.h>
-#include <ZUtil/zassert.h>
-#include <ZUtil/zutil_io.h>
+#include <ZGeom/util.h>
 #include "global.h"
 
 using ZGeom::Dictionary;
@@ -19,7 +17,7 @@ ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
 
 bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) 
 {
-	if (!ZUtil::fileExist(pursuitFile)) 
+	if (!fileExist(pursuitFile)) 
 		return false;
 
 	std::ifstream ifs(pursuitFile.c_str());
@@ -85,7 +83,7 @@ void ShapeEditor::changeCoordinates( int coordID )
 {
 	if (coordID < 0 || coordID >= mStoredCoordinates.size()) return;
 	mCurCoordID = coordID;
-	qout.output("Current coordinate ID: " + ZUtil::Int2String(mCurCoordID), OUT_STATUS);
+	qout.output("Current coordinate ID: " + Int2String(mCurCoordID), OUT_STATUS);
 
 	if (mStoredCoordinates[mCurCoordID].empty())
 		qout.output("!! Selected coordinate is empty!", OUT_CONSOLE);
@@ -165,7 +163,7 @@ void ShapeEditor::fourierReconstruct( int nEig )
 	ZGeom::SparseMatrixCSR<double, int> matW;
 	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
 	const ZGeom::EigenSystem &mhb = mProcessor->getMHB(lapType);
-	ZUtil::logic_assert(nEig <= mhb.eigVecCount(), "Insufficient eigenvectors in mhb");
+	ZGeom::logic_assert(nEig <= mhb.eigVecCount(), "Insufficient eigenvectors in mhb");
 
 	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0),
 					   &vy = oldCoord.getCoordFunc(1),
@@ -748,9 +746,9 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 
 void ShapeEditor::runTests()
 {
-	//approximationTest1();
+	//sparseCompressionTest();		// compression test
 	//approximationTest2();
-	approximationTest3();
+	sparseDecompositionTest();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
@@ -797,16 +795,18 @@ void printEndSeparator(char c, int num) {
 
 //// Test partitioned approximation with graph Laplacian ////
 //
-void ShapeEditor::approximationTest1()
+void ShapeEditor::sparseCompressionTest()
 {
 	revertCoordinates();
-	mStoredCoordinates.resize(4);
-	std::cout << "\n======== Starting ApproxTest1 (compression test) ========\n";	
+	mStoredCoordinates.resize(5);
+	
+	std::cout << "\n======== Starting Sparse Compression test) ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
-	int eigenCount = 500;
-	int maxPatchSize = 1000;
+	int eigenCount = -1;		// -1 means vertCount-1	
+	int maxPatchSize = 1000;	// -1 means no segmentation
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	setStoredCoordinates(oldMeshCoord, 0);
 	MeshCoordinates oldGeoCoord;
 	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
 
@@ -875,15 +875,14 @@ void ShapeEditor::approximationTest1()
 		}
 	};
 
-	double ratioOverhead;
 	// 1. low-pass approximate, MHB
-#if 0
+#if 1
 	printBeginSeparator("Low-pass Approx, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
 	compressAndEvaluate(maxCodingRatio, SA_Truncation, false);
 
 	evaluateApproximation(vProgressiveCoords.back(), "1");
-	setStoredCoordinates(vProgressiveCoords.back(), 0);
+	setStoredCoordinates(vProgressiveCoords.back(), 1);
 	mContReconstructCoords[0] = vProgressiveCoords;
 	emit approxStepsChanged(0, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
@@ -896,7 +895,7 @@ void ShapeEditor::approximationTest1()
 	compressAndEvaluate(maxCodingRatio, SA_SMP, true);
 
 	evaluateApproximation(vProgressiveCoords.back(), "2");
-	setStoredCoordinates(vProgressiveCoords.back(), 1);
+	setStoredCoordinates(vProgressiveCoords.back(), 2);
 	mContReconstructCoords[1] = vProgressiveCoords;
 	emit approxStepsChanged(1, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
@@ -913,26 +912,26 @@ void ShapeEditor::approximationTest1()
 #endif
 
 	// 3. SOMP, SGW
-#if 1
+#if 0
 	printBeginSeparator("SOMP, SGW", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4);
 	pursuitAndEvaluate(SA_SOMP);
 
 	evaluateApproximation(vProgressiveCoords.back(), "3");
-	setStoredCoordinates(vProgressiveCoords.back(), 2);
+	setStoredCoordinates(vProgressiveCoords.back(), 3);
 	mContReconstructCoords[2] = vProgressiveCoords;
 	emit approxStepsChanged(2, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
 #endif
 
 	// 4. SOMP, SGW + MHB
-#if 0
+#if 1
 	printBeginSeparator("SOMP, SGW-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4MHB);
 	pursuitAndEvaluate(SA_SOMP);
 	
 	evaluateApproximation(vProgressiveCoords.back(), "4");
-	setStoredCoordinates(vProgressiveCoords.back(), 3);
+	setStoredCoordinates(vProgressiveCoords.back(), 4);
 	mContReconstructCoords[3] = vProgressiveCoords;
 	emit approxStepsChanged(3, vProgressiveCoords.size());
 	printEndSeparator('-', 40);
@@ -940,13 +939,13 @@ void ShapeEditor::approximationTest1()
 
 	ofs.close();
 	std::cout << '\n';
-	//changeCoordinates(2);
+	changeCoordinates(2);
 	printEndSeparator('=', 40);
 }
 
 //// Test approximation for feature analysis  ////
 //
-void ShapeEditor::approximationTest2()
+void ShapeEditor::sparseFeatureFindingTest1()
 {
 	printBeginSeparator("Starting ApproxTest2 (feature analysis)",'=');
 	CStopWatch timer;
@@ -962,8 +961,8 @@ void ShapeEditor::approximationTest2()
 	
 	// initializing, segmentation, coloring, and eigendecomposition
 	int totalVertCount = mMesh->vertCount();
-	int eigenCount = min(600, totalVertCount-1);
-	int maxPatchSize = -1;	// -1 means no segmentation
+	int eigenCount = min(600, totalVertCount-1); // -1 means vertCount -1 
+	int maxPatchSize = 1000;					 // -1 means no segmentation
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
@@ -1054,8 +1053,15 @@ void ShapeEditor::approximationTest2()
 
 //// Test shape decomposition via signal separation
 //
-void ShapeEditor::approximationTest3()
+void ShapeEditor::sparseDecompositionTest()
 {
+	/************************************************************************/
+	/* 1. Support decomposition w or w/o segmentation                       */
+	/* 2. Save the multilevel decomposition magnitude as color signatures   */
+	/* 3. Optimized signal separation against MHB and SGW dictionary        */
+	/*                                                                      */
+	/************************************************************************/
+	 
 	revertCoordinates();
 	mStoredCoordinates.resize(5);
 	std::cout << "\n======== Starting ApproxTest3 (Decomposition test) ========\n";	

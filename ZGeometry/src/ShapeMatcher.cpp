@@ -8,7 +8,7 @@
 #include <functional>
 #include <limits>
 #include <ppl.h>
-#include <ZUtil/ZUtil.h>
+#include <ZGeom/util.h>
 #include <ZGeom/arithmetic.h>
 #include "OutputHelper.h"
 #include "global.h"
@@ -16,6 +16,8 @@
 using namespace std;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::PI;
+using ZGeom::logic_assert;
+using ZGeom::runtime_assert;
 
 const double ShapeMatcher::DEFAULT_C_RATIO				= 0.2;
 const double ShapeMatcher::DEFAULT_RANK_EPSILON			= 1e-4;
@@ -269,7 +271,7 @@ void ShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
 
 void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*/, double baseTvalue /*= DEFAULT_FEATURE_TIMESCALE*/, double talpha /*= DEFAULT_T_MULTIPLIER*/, double thresh /*= DEFAULT_EXTREAMA_THRESH*/ )
 {
-	ZUtil::logic_assert(obj == 0 || obj == 1);
+	logic_assert(obj == 0 || obj == 1);
 	m_vFeatures[obj].clear();
 
 	CMesh* fineMesh = pOriginalMesh[obj];

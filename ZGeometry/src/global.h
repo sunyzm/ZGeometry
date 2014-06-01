@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include <ZUtil/SimpleConfigLoader.h>
+#include <ZGeom/SimpleConfigLoader.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include "OutputHelper.h"
 

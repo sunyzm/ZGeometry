@@ -4,13 +4,12 @@
 #include <fstream>
 #include <vector>
 #include <QFile>
-#include <ZUtil/ZUtil.h>
+#include <ZGeom/util.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/Color.h>
 #include "OutputHelper.h"
 #include "global.h"
 
-using ZUtil::Int2String;
 using ZGeom::FalseColorMap;
 
 extern OutputHelper qout;

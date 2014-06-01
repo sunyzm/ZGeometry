@@ -35,8 +35,6 @@
 bin/
 data/
 lib/
-ZUtil/intermediate/
-ZUtil/lib/
 ZGeom/intermediate/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/

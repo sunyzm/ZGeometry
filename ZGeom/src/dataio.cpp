@@ -1,9 +1,9 @@
-#include "data.h"
+#include "dataio.h"
 #include <fstream>
 
 using namespace std;
 
-std::vector<int> ZUtil::splitStringToInt( const std::string& s )
+std::vector<int> splitStringToInt( const std::string& s )
 {
 	vector<int> vd;
 	size_t i,j;
@@ -24,7 +24,7 @@ std::vector<int> ZUtil::splitStringToInt( const std::string& s )
 	return vd;
 }
 
-std::vector<double> ZUtil::splitStringToDouble( const std::string& s )
+std::vector<double> splitStringToDouble( const std::string& s )
 {
 	vector<double> vd;
 	size_t i,j;
@@ -44,4 +44,13 @@ std::vector<double> ZUtil::splitStringToDouble( const std::string& s )
 	}
 	return vd;
 
+}
+
+bool fileExist(const std::string& filename)
+{
+	std::ifstream ifs(filename.c_str());
+	bool retval = true;
+	if (!ifs) retval = false;
+	ifs.close();
+	return retval;
 }

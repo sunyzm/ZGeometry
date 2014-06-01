@@ -80,14 +80,14 @@
     <IncludePath Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(IncludePath)</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(SolutionDir)ZGeom\include;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZGeom\lib;$(SolutionDir)ZUtil\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZGeom\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZGeom\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
     <LinkIncremental>
     </LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(SolutionDir)ZGeom\include;$(SolutionDir)ZUtil\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZGeom\lib;$(SolutionDir)ZUtil\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZGeom\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZGeom\lib;$(OmpLibDir);$(LibraryPath)</LibraryPath>
     <LinkIncremental>
     </LinkIncremental>
   </PropertyGroup>
@@ -130,7 +130,7 @@
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>metis.lib;glew32.lib;ZUtil64d.lib;ZGeom64d.lib;libeng.lib;libmx.lib;libmat.lib;qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;opengl32.lib;glu32.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>metis_vc12.lib;glew32.lib;ZGeom64d.lib;libeng.lib;libmx.lib;libmat.lib;qtmaind.lib;Qt5Cored.lib;Qt5Guid.lib;Qt5OpenGLd.lib;opengl32.lib;glu32.lib;Qt5Widgetsd.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <Profile>true</Profile>
     </Link>
@@ -177,7 +177,7 @@
       <OutputFile>$(OutDir)\$(ProjectName).exe</OutputFile>
       <AdditionalLibraryDirectories>$(QTDIR)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateDebugInformation>false</GenerateDebugInformation>
-      <AdditionalDependencies>metis.lib;ZUtil64.lib;ZGeom64.lib;glew32.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;opengl32.lib;glu32.lib;Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>metis_vc12.lib;ZGeom64.lib;glew32.lib;libeng.lib;libmx.lib;libmat.lib;qtmain.lib;Qt5Core.lib;Qt5Gui.lib;Qt5OpenGL.lib;opengl32.lib;glu32.lib;Qt5Widgets.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <LinkTimeCodeGeneration>UseLinkTimeCodeGeneration</LinkTimeCodeGeneration>
       <Profile>false</Profile>
     </Link>

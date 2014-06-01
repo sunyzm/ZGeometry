@@ -4,13 +4,13 @@
 #include <sstream>
 #include <algorithm>
 #include <stdexcept>
-#include "zutil_io.h"
+#include "dataio.h"
 
 using namespace std;
 
 void SimpleConfigLoader::load( const std::string& config_file_path )
 {
-	if (!ZUtil::fileExist(config_file_path))
+	if (!fileExist(config_file_path))
 		throw std::runtime_error("Cannot found configuration files!");
 
 	ifstream ifs(config_file_path.c_str());

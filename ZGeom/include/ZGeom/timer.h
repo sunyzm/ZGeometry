@@ -1,5 +1,5 @@
-#ifndef ZUTIL_TIMER_H
-#define ZUTIL_TIMER_H
+#ifndef ZGEOM_TIMER_H
+#define ZGEOM_TIMER_H
 
 #include <string>
 #include <windows.h>

@@ -9,9 +9,7 @@
 #include "VecN.h"
 #include "DenseMatrix.h"
 #include "SparseMatrix.h"
-#include "MatVecArithmetic.h"
 #include "EigenSystem.h"
-#include "Approximation.h"
 #include "Mesh.h"
 #include "MeshProcessing.h"
 

@@ -4,7 +4,7 @@
 #include <tuple>
 #include <functional>
 #include <mkl.h>
-#include <ZUtil/ZUtil.h>
+#include "util.h"
 #include "VecN.h"
 #include "DenseMatrix.h"
 #include "MatlabEngineWrapper.h"

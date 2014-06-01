@@ -6,7 +6,7 @@
 #include <ppl.h>
 #include <amp.h>
 #include <ZGeom/VecN.h>
-#include <ZUtil/timer.h>
+#include <ZGeom/util.h>
 #include <mkl.h>
 
 using ZGeom::VecNd;

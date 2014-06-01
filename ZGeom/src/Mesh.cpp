@@ -8,7 +8,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
-#include <ZUtil/zassert.h>
+#include "zassert.h"
 #include "arithmetic.h"
 
 using namespace std;
@@ -2870,7 +2870,7 @@ MeshCoordinates CMesh::getVertCoordinates() const
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
-	ZUtil::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
+	ZGeom::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
 	const std::vector<double> vx = coords.getCoordFunc(0).toStdVector();
 	const std::vector<double> vy = coords.getCoordFunc(1).toStdVector();
 	const std::vector<double> vz = coords.getCoordFunc(2).toStdVector();
