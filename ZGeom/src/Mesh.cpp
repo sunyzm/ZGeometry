@@ -1092,7 +1092,7 @@ void CMesh::saveToOBJ( std::string sFileName )
 
 	
 	// vertices
-	Vector3D center = getCenter();
+	Vector3D center = Vector3D(0, 0, 0); /*getCenter();*/
 	for (int i = 0; i < m_nVertex; i++)
 	{
 		Vector3D vt = m_pVertex[i].m_vPosition - center;

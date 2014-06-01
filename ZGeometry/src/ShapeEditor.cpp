@@ -746,9 +746,9 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 
 void ShapeEditor::runTests()
 {
-	//sparseCompressionTest();		// compression test
+	sparseCompressionTest();		// compression test
 	//approximationTest2();
-	sparseDecompositionTest();
+	//sparseDecompositionTest();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
