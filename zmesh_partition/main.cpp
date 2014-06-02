@@ -26,7 +26,7 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// format: zmesh_partition [mesh_file_name] -n/-m [partitionCount/maxPatchSize]
+// format: zmesh_partition [mesh_file_name] -n/-m [partitionCount/maxPatchSize] [outputPath]
 //
 int main(int argc, char *argv[])
 {
@@ -34,7 +34,7 @@ int main(int argc, char *argv[])
 		std::cerr << "Lack argument!" << std::endl;
 		std::exit(-1);
 	}
-	else if (argc > 4) {
+	else if (argc > 5) {
 		std::cerr << "Excessive arguments ignored!" << std::endl;
 	}
 
@@ -42,6 +42,11 @@ int main(int argc, char *argv[])
 	std::string meshFilename = argv[1];
 	std::string segOption = argv[2];
 	std::string segPara = argv[3];
+	std::string outputPath = "./";
+	if (argc == 5) {
+		outputPath = argv[4];
+		if (outputPath.back() != '/') outputPath.push_back('/');	// add trailing slash if missing
+	}
 
 	if (!fileExist(meshFilename)) {
 		std::cerr << "Mesh file not existent!" << std::endl;
@@ -96,11 +101,13 @@ int main(int argc, char *argv[])
 	std::cout << "-- sub-mesh sizes: ";
 	for (int i = 0; i < nPart; ++i) {
 		std::cout << vSubMeshes[i]->getMeshName() << ": " << vSubMeshes[i]->vertCount() << " | ";
-		vSubMeshes[i]->save("output/" + vSubMeshes[i]->getMeshName() + ".obj");
+		vSubMeshes[i]->save(outputPath + vSubMeshes[i]->getMeshName() + ".obj");
 	}
 	std::cout << '\n';
 
 	for (auto p : vSubMeshes) delete p;
 	for (auto p : vMappedIdx) delete p;
+
+	std::system("PAUSE");
 	return 0;
 }

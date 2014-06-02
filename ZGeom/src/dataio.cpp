@@ -1,19 +1,20 @@
 #include "dataio.h"
 #include <fstream>
+#include <filesystem>
 
-using namespace std;
+using std::vector;
 
 std::vector<int> splitStringToInt( const std::string& s )
 {
 	vector<int> vd;
 	size_t i,j;
 	i = 0; j = s.find(',');
-	for (; i != string::npos; )
+	for (; i != std::string::npos; )
 	{
 		if (i < j)
 			vd.push_back(atoi(s.substr(i,j-i).c_str()));
 
-		if (j == string::npos)
+		if (j == std::string::npos)
 			i = j;
 		else
 		{
@@ -29,12 +30,12 @@ std::vector<double> splitStringToDouble( const std::string& s )
 	vector<double> vd;
 	size_t i,j;
 	i = 0; j = s.find(',');
-	for (; i != string::npos; )
+	for (; i != std::string::npos; )
 	{
 		if (i < j)
 			vd.push_back(atof(s.substr(i,j-i).c_str()));
 
-		if (j == string::npos)
+		if (j == std::string::npos)
 			i = j;
 		else
 		{
