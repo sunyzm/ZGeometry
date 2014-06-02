@@ -49,6 +49,7 @@ thirdparty/matlab/mex/
 thirdparty/matlab/tensor/ann_mwrapper/private/
 zmesh_partition/intermediate/
 zmesh_partition/output/
+zmesh_info/intermediate/
 
 
 

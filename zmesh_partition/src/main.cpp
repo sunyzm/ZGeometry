@@ -4,8 +4,8 @@
 #include <string>
 #include <vector>
 #include <metis.h>
-#include "ZGeom/ZGeom.h"
-#include "ZGeom/util.h"
+#include <ZGeom/ZGeom.h>
+#include <ZGeom/util.h>
 
 std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 {
@@ -60,7 +60,7 @@ int main(int argc, char *argv[])
 		std::exit(-1);
 	}
 	int nPara = std::stoi(segPara);
-	
+
 	/// load mesh
 	CMesh oriMesh;
 	oriMesh.load(meshFilename);
@@ -75,20 +75,23 @@ int main(int argc, char *argv[])
 		std::cerr << "Number of segmentations must be greater than 0" << std::endl;
 		std::exit(-1);
 	}
-	
+
 	std::vector<CMesh*> vSubMeshes;
 	std::vector<std::vector<int>*> vMappedIdx;
 
 	for (int i = 0; i < nPart; ++i) {
 		vSubMeshes.push_back(new CMesh());
 		vMappedIdx.push_back(new std::vector<int>());
-	}	
+	}
 	std::vector<int> vPartIdx = MetisMeshPartition(&oriMesh, nPart);
 	for (int vIdx = 0; vIdx < totalVertCount; ++vIdx) {
 		vMappedIdx[vPartIdx[vIdx]]->push_back(vIdx);
 	}
 
-	oriMesh.partitionToSubMeshes(vMappedIdx, vSubMeshes);
+	double paritionTime = time_call_sec([&]() {
+		oriMesh.partitionToSubMeshes(vMappedIdx, vSubMeshes);
+	});
+	std::cout << "Partition finished! Time consumed: " << paritionTime << "s\n";
 
 	char numBuf[10];
 	for (int i = 0; i < nPart; ++i) {
@@ -97,8 +100,8 @@ int main(int argc, char *argv[])
 		vSubMeshes[i]->setMeshName(subMeshName);
 	}
 
-	std::cout << "-- number of partitions: " << nPart << '\n';
-	std::cout << "-- sub-mesh sizes: ";
+	std::cout << "- number of partitions: " << nPart << '\n';
+	std::cout << "- sub-mesh sizes: ";
 	for (int i = 0; i < nPart; ++i) {
 		std::cout << vSubMeshes[i]->getMeshName() << ": " << vSubMeshes[i]->vertCount() << " | ";
 		vSubMeshes[i]->save(outputPath + vSubMeshes[i]->getMeshName() + ".obj");
@@ -108,6 +111,8 @@ int main(int argc, char *argv[])
 	for (auto p : vSubMeshes) delete p;
 	for (auto p : vMappedIdx) delete p;
 
+#ifdef _DEBUG
 	std::system("PAUSE");
+#endif
 	return 0;
 }

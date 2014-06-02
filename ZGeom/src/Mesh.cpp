@@ -486,26 +486,26 @@ std::vector<double> CFace::getPlaneFunction()
 //						CMesh						//
 //////////////////////////////////////////////////////
 
-CMesh::CMesh() : 
-	m_meshName(""),
-	m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
-	m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
-	m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false)
+CMesh::CMesh() : m_meshName(""), 
+				 m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
+				 m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
+				 m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false),
+				 m_silenceOutput(true)
 {
 }
 
 CMesh::CMesh( const CMesh& oldMesh )
 {
-	std::cout << "CMesh copy constructor is called!" << std::endl;
 	cloneFrom(oldMesh);
 	this->m_meshName = oldMesh.m_meshName;
+	m_silenceOutput = true;
 }
 
 CMesh::~CMesh()
 {
-	std::cout << "Destroying Mesh '" + m_meshName << "'... ";
+	if (!m_silenceOutput) std::cout << "Destroying Mesh '" + m_meshName << "'... ";
 	clearMesh();	
-	std::cout << "Finished!" << std::endl;
+	if (!m_silenceOutput) std::cout << "Finished!" << std::endl;
 }
 
 void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".clone"*/)

@@ -344,12 +344,16 @@ private:
 	std::string m_meshName;				// name of the mesh
 	std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
+	bool        m_silenceOutput;
 ////////////////    methods    ////////////////
 public:
 	/* ---- constructors ---- */
 	CMesh();
 	CMesh(const CMesh& oldMesh);
 	~CMesh();
+
+	/* ---- options to control behaviors ---- */
+	void setOutputSilence(bool bSilent) { m_silenceOutput = bSilent; }
 
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
