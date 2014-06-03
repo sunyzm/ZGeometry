@@ -36,9 +36,9 @@ public:
 	int dictSize() const { return mDict.atomCount(); }
 	int codingSize() const { return mCoding[0].size(); }
 	const ZGeom::Dictionary& getDict() const { return mDict; }
-	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
-	void computeSparseCoding(const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vApprox);
-	const std::vector<ZGeom::ApproxItem>& getSparseCoding(int c) const { return mCoding[c]; }
+	void computeSparseCoding(const std::vector<double>& vSignal, SparseCodingOptions& opts, ZGeom::SparseCoding& vApprox);
+	void computeSparseCoding(const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::SparseCoding& vApprox);
+	const std::vector<ZGeom::SparseCodingItem>& getSparseCoding(int c) const { return mCoding[c]; }
 
 private:
 	CMesh mSubMesh;
@@ -46,7 +46,7 @@ private:
 	std::vector<int> mMappedIdx;
 	ZGeom::EigenSystem mEigenSystem;
 	ZGeom::Dictionary mDict;
-	std::vector<ZGeom::ApproxItem> mCoding[3];
+	std::vector<ZGeom::SparseCodingItem> mCoding[3];
 	MeshCoordinates mReconstructedCoord;
 };
 

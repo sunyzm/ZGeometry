@@ -397,8 +397,8 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 	vSignals.push_back(vertCoords.getYCoord());
 	vSignals.push_back(vertCoords.getZCoord());
 
-	ZGeom::FunctionApproximation vApproxX, vApproxY, vApproxZ;
-	std::vector<ZGeom::FunctionApproximation*> vApproxCoeff;
+	ZGeom::SparseCoding vApproxX, vApproxY, vApproxZ;
+	std::vector<ZGeom::SparseCoding*> vApproxCoeff;
 	vApproxCoeff.push_back(&vApproxX); 
 	vApproxCoeff.push_back(&vApproxY); 
 	vApproxCoeff.push_back(&vApproxZ);
@@ -412,7 +412,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 			for (int c = 0; c < 3; ++c)
 				innerProd[c] = mDict[i].dot(vSignals[c]);
 			for (int c = 0; c < 3; ++c)
-				mCoding[c][i] = ZGeom::ApproxItem(i, innerProd[c]);
+				mCoding[c][i] = ZGeom::SparseCodingItem(i, innerProd[c]);
 		}
 	}
 	else if (approxMethod == SA_SMP || approxMethod == SA_SOMP)
@@ -425,8 +425,8 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 
 		for (int c = 0; c < 3; ++c) {
 			for (int i = 0; i < selectedAtomCount; ++i) {
-				const ZGeom::ApproxItem& item = (*vApproxCoeff[c])[i];
-				mCoding[c][i] = ZGeom::ApproxItem(item.index(), item.coeff());
+				const ZGeom::SparseCodingItem& item = (*vApproxCoeff[c])[i];
+				mCoding[c][i] = ZGeom::SparseCodingItem(item.index(), item.coeff());
 			}
 		}		
 	}	
@@ -441,7 +441,7 @@ void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
 	mReconstructedCoord.resize(vertCount);
 	for (int i = 0; i < reconstructAtomCount; ++i) {
 		for (int c = 0; c < 3; ++c) {
-			const ZGeom::ApproxItem& sc = mCoding[c][i];
+			const ZGeom::SparseCodingItem& sc = mCoding[c][i];
 			mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
 		}
 	}
@@ -456,18 +456,18 @@ void SubMeshApprox::sparseReconstructStep( int step )
 	if (step == 0) mReconstructedCoord.resize(vertCount);
 
 	for (int c = 0; c < 3; ++c) {
-		const ZGeom::ApproxItem& sc = mCoding[c][step];
+		const ZGeom::SparseCodingItem& sc = mCoding[c][step];
 		mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
 	}
 }
 
-void SubMeshApprox::computeSparseCoding( const std::vector<double>& vecSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vCoeff )
+void SubMeshApprox::computeSparseCoding( const std::vector<double>& vecSignal, SparseCodingOptions& opts, ZGeom::SparseCoding& vCoeff )
 {
 	ZGeom::VecNd vSignal(vecSignal);
 	computeSparseCoding(vSignal, opts, vCoeff);
 }
 
-void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::FunctionApproximation& vCoeff )
+void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodingOptions& opts, ZGeom::SparseCoding& vCoeff )
 {
 	int vertCount = mSubMesh.vertCount();
 	int atomCount = mDict.atomCount();

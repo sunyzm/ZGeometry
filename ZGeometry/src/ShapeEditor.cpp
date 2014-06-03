@@ -15,7 +15,7 @@ using ZGeom::Dictionary;
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
 
-bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) 
+bool readPursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) 
 {
 	if (!fileExist(pursuitFile)) 
 		return false;
@@ -27,22 +27,22 @@ bool readPursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *
 	for (int b = 0; b < 3; ++b) {
 		vPursuits[b]->resize(atomCount);
 		for (int i = 0; i < atomCount; ++i) {
-			ZGeom::ApproxItem& item = (*vPursuits[b])[i];
-			ifs >> item.res() >> item.index() >>item.coeff();
+			ZGeom::SparseCodingItem& item = (*vPursuits[b])[i];
+			ifs >> item.index() >>item.coeff();
 		}
 	}
 
 	return true;
 }
 
-void writePursuits(const std::string& pursuitFile, ZGeom::FunctionApproximation *vPursuits[]) {
+void writePursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) {
 	std::ofstream ofs(pursuitFile.c_str());
 	int atomCount = vPursuits[0]->size();
 	ofs << atomCount << std::endl;
 	for (int b = 0; b < 3; ++b) {
 		for (int i = 0; i < atomCount; ++i) {
-			const ZGeom::ApproxItem& item = (*vPursuits[b])[i];
-			ofs << item.res() << ' ' << item.index() << ' ' << item.coeff() << std::endl;
+			const ZGeom::SparseCodingItem& item = (*vPursuits[b])[i];
+			ofs << item.index() << ' ' << item.coeff() << std::endl;
 		}
 	}	
 }
@@ -691,13 +691,13 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 }
 
 void ShapeEditor::computeApproximations( const std::vector<ZGeom::VecNd>& vAtoms, 
-										 ZGeom::FunctionApproximation* vApproxCoeff[3], 
+										 ZGeom::SparseCoding* vApproxCoeff[3], 
 										 int nReconstruct, 
 										 std::vector<MeshCoordinates>& continuousCoords, 
 										 MeshCoordinates& finalCoord )
 {
 	const int vertCount = mMesh->vertCount();
-	const ZGeom::FunctionApproximation &vApproxX = *vApproxCoeff[0], &vApproxY = *vApproxCoeff[1], &vApproxZ = *vApproxCoeff[2];
+	const ZGeom::SparseCoding &vApproxX = *vApproxCoeff[0], &vApproxY = *vApproxCoeff[1], &vApproxZ = *vApproxCoeff[2];
 
 	if (nReconstruct > vApproxX.size()) nReconstruct = (int)vApproxX.size();
 	continuousCoords.resize(nReconstruct);
@@ -1001,7 +1001,7 @@ void ShapeEditor::sparseFeatureFindingTest1()
 
 	// compute sparse coding
 	int dictSize = mShapeApprox.mSubMeshApprox[0].dictSize();
-	ZGeom::FunctionApproximation vCoeff;
+	ZGeom::SparseCoding vCoeff;
 	//std::vector<double>& vSignal = meshCoord.getXCoord().toStdVector();
 	std::vector<double>& vSignal = vMeanCurvatures;
 
@@ -1099,7 +1099,7 @@ void ShapeEditor::sparseDecompositionTest()
 	
 
 	const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0].getDict();
-	const std::vector<ZGeom::ApproxItem>* vCoeff[3] = {
+	const std::vector<ZGeom::SparseCodingItem>* vCoeff[3] = {
 		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(0), 
 		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(1), 
 		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(2)
@@ -1111,7 +1111,7 @@ void ShapeEditor::sparseDecompositionTest()
 	
 	for (int i = 0; i < actualCodingSize; ++i) {
 		for (int c = 0; c < 3; ++c) {
-			const ZGeom::ApproxItem& sc = (*vCoeff[c])[i];
+			const ZGeom::SparseCodingItem& sc = (*vCoeff[c])[i];
 			if (sc.index() < dictSize - totalVertCount) {
 				coordSGW.getCoordFunc(c) += sc.coeff() * dict[sc.index()];
 				if (c == 0) sgwAtomCount++;
@@ -1129,9 +1129,9 @@ void ShapeEditor::sparseDecompositionTest()
 
 	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
 	for (int i = 0; i < actualCodingSize; ++i) {
-		const ZGeom::ApproxItem& sc0 = (*vCoeff[0])[i];
-		const ZGeom::ApproxItem& sc1 = (*vCoeff[1])[i];
-		const ZGeom::ApproxItem& sc2 = (*vCoeff[2])[i];
+		const ZGeom::SparseCodingItem& sc0 = (*vCoeff[0])[i];
+		const ZGeom::SparseCodingItem& sc1 = (*vCoeff[1])[i];
+		const ZGeom::SparseCodingItem& sc2 = (*vCoeff[2])[i];
 		if (sc0.index() >= dictSize - totalVertCount) continue;
 
 		int scale = sc0.index() / totalVertCount, idx = sc0.index() % totalVertCount;

@@ -12,46 +12,9 @@
 #include <mkl.h>
 #include "DenseMatrix.h"
 
-namespace ZGeom
-{
+namespace ZGeom {
 
-double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2)
-{
-	assert(v1.size() == v2.size());
-	return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
-}
-
-ZGeom::VecNd ReconstructApproximationSingleChannel( const Dictionary& dict, const FunctionApproximation& approx )
-{
-	ZGeom::VecNd vApprox(dict.atomDim(), 0);
-	for (auto item : approx.getApproxItems())
-	{
-		vApprox += dict[item.index()] * item.coeff();
-	}
-
-	return vApprox;
-}
-
-ZGeom::VecNd ReconstructApproximationSingleChannel( const std::vector<ZGeom::VecNd>& vAtoms, const FunctionApproximation& approx )
-{
-	ZGeom::VecNd vApprox(vAtoms[0].size());
-	for (auto item : approx.getApproxItems())
-	{
-		vApprox += vApprox[item.index()] * item.coeff();
-	}
-
-	return vApprox;
-}
-
-void ReconstructApproximationMultiChannel( const std::vector<VecNd>& vAtoms, const std::vector<FunctionApproximation>& vApprox, std::vector<VecNd>& vReconstructed )
-{
-	int nChannels = (int)vApprox.size();
-	vReconstructed.resize(nChannels);
-	for (int i = 0; i < nChannels; ++i)
-		vReconstructed[i] = ReconstructApproximationSingleChannel(vAtoms, vApprox[i]);
-}
-
-void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, InnerProdcutFunc innerProdFunc)
+void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<SparseCoding*>& vPursuits, InnerProdcutFunc innerProdFunc)
 {
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
@@ -66,19 +29,19 @@ void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, co
 		for (int k = 0; k < nSelected; ++k) {
 			double coeff = innerProdFunc(vBasis[k], vSignals[c]);
 			vRfs[c] -= coeff * vBasis[k];
-			vPursuits[c]->addItem(vRfs[c].norm2(), k, coeff);
+			vPursuits[c]->addItem(k, coeff);
 		}
 	}
 }
 
 
-void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, SparseCoding& vPursuit )
 {
 	GeneralizedMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
 }
 
 
-void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc)
+void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int nSelected, SparseCoding& vPursuit, const InnerProdcutFunc& innerProdFunc)
 {
 	using Concurrency::concurrent_vector;
 	using Concurrency::parallel_for;
@@ -100,12 +63,12 @@ void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int 
 
 		double coeffSelected = innerProdFunc(vAtoms[iSelected], vRf);
 		vRf -= coeffSelected * vAtoms[iSelected];
-		vPursuit.addItem(vRf.norm2(), iSelected, coeffSelected);
+		vPursuit.addItem(iSelected, coeffSelected);
 	}
 }
 
 
-void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, SparseCoding& vPursuit )
 {
 	using namespace Concurrency;
 
@@ -142,7 +105,7 @@ void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& 
 			}
 		}
 			
-		vPursuit.addItem(0, iSelected, maxCoeff);
+		vPursuit.addItem(iSelected, maxCoeff);
 		availableBasis.erase(iSelected);
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
 
@@ -167,7 +130,6 @@ void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& 
 			vPursuit[j].coeff() = xcoeff[j];
 			vNewRf -= xcoeff[j] * vBasis[vPursuit[j].index()];
 		}
-		vPursuit.back().res() = vNewRf.norm2();	
 		vRf = vNewRf;
 	}
 
@@ -177,13 +139,13 @@ void OrthogonalMatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& 
 }
 
 
-void OMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+void OMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, SparseCoding& vPursuit )
 {
 	GeneralizedOMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
 }
 
 
-void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, InnerProdcutFunc innerProdFunc )
+void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, SparseCoding& vPursuit, InnerProdcutFunc innerProdFunc )
 {
 	using Concurrency::parallel_for_each;
 	using Concurrency::parallel_for;
@@ -213,7 +175,7 @@ void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int
 		int iSelected = vAvailableBasis[iABSelected];
 		double maxCoeff = innerProdFunc(vBasis[iSelected], vRf);
 
-		vPursuit.addItem(0, iSelected, maxCoeff);
+		vPursuit.addItem(iSelected, maxCoeff);
 		availableBasis.erase(iSelected);
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
 
@@ -236,7 +198,6 @@ void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int
 			vPursuit[j].coeff() = b[j];
 			vNewRf -= b[j] * vBasis[vPursuit[j].index()];
 		}
-		vPursuit.back().res() = vNewRf.norm2();	
 		vRf = vNewRf;
 	}
 
@@ -246,14 +207,14 @@ void GeneralizedOMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int
 }
 
 
-void SimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 2.*/ )
+void SimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<SparseCoding*>& vPursuits, double p /*= 2.*/ )
 {
 	GeneralizedSimultaneousMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
 }
 
 
 void GeneralizedSimultaneousMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vAtoms, 
-		                        int nSelected, std::vector<FunctionApproximation*>& vPursuits, 
+		                        int nSelected, std::vector<SparseCoding*>& vPursuits, 
 								const InnerProdcutFunc& innerProdFunc, double p /*= 1*/ )
 {
 	using Concurrency::concurrent_vector;
@@ -284,19 +245,19 @@ void GeneralizedSimultaneousMP( const std::vector<VecNd>& vSignals, const std::v
 		for (int c = 0; c < nChannels; ++c) {
 			double coeff = innerProdFunc(vAtoms[iSelected], vRfs[c]);
 			vRfs[c] -= coeff * vAtoms[iSelected];
-			vPursuits[c]->addItem(vRfs[c].norm2(), iSelected, coeff);
+			vPursuits[c]->addItem(iSelected, coeff);
 		}
 	}
 }
 
 
-void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, double p /*= 1*/ )
+void SimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<SparseCoding*>& vPursuits, double p /*= 1*/ )
 {
 	GeneralizedSimultaneousOMP(vSignals, vBasis, nSelected, vPursuits, RegularProductFunc, p);
 }
 
 
-void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 2.*/ )
+void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<SparseCoding*>& vPursuits, const InnerProdcutFunc& innerProdFunc, double p /*= 2.*/ )
 {
 	using namespace Concurrency;
 
@@ -344,7 +305,7 @@ void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::
 			}
 		}
 
-		for (auto v : vPursuits) v->addItem(0, iSelected, 0);
+		for (auto v : vPursuits) v->addItem(iSelected, 0);
 		availableBasis.erase(iSelected);
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
 
@@ -368,7 +329,6 @@ void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::
 					vNewRf -= (*vPursuits[c])[j].coeff() * vBasis[(*vPursuits[c])[j].index()];
 				}
 
-				(*vPursuits[c]).back().res() = vNewRf.norm2();
 				vRfs[c] = vNewRf;
 			}
 		}
@@ -381,7 +341,7 @@ void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::
 }
 	
 
-void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit )
+void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, SparseCoding& vPursuit )
 {
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");
@@ -440,7 +400,7 @@ void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecN
 			}
 		}
 
-		vPursuit.addItem(0, iSelected, maxCoeff);
+		vPursuit.addItem(iSelected, maxCoeff);
 		availableBasis.erase(iSelected);
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);
 
@@ -465,7 +425,6 @@ void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecN
 			vPursuit[b].coeff() = xcoeff[b];
 			vNewRf -= xcoeff[b] * vBasis[vPursuit[b].index()];
 		}
-		vPursuit.back().res() = vNewRf.norm2();	
 		vRf = vNewRf;
 	}
 
@@ -475,7 +434,7 @@ void OrthogonalMatchingPursuit_AMP( const VecNd& vSignal, const std::vector<VecN
 	delete []matBasis;
 }
 	
-void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, FunctionApproximation& vPursuit, MatlabEngineWrapper& engine )
+void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBasis, InnerProdcutFunc innerProdFunc, int nSelected, SparseCoding& vPursuit, MatlabEngineWrapper& engine )
 {
 	using namespace Concurrency;
 
@@ -504,7 +463,7 @@ void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBas
 				iSelected = bp.first;
 			}
 		}
-		vPursuit.addItem(0, iSelected, maxCoeff);
+		vPursuit.addItem(iSelected, maxCoeff);
 		availableBasis.erase(iSelected);
 		std::copy_n(vBasis[iSelected].c_ptr(), signalSize, matBasis + k * signalSize);	//append to new selected basis to matBasis matrix
 
@@ -519,14 +478,13 @@ void GeneralizedOMP_MATLAB( const VecNd& vSignal, const std::vector<VecNd>& vBas
 			vPursuit[b].coeff() = xcoeff[b];
 			vNewRf -= xcoeff[b] * vBasis[vPursuit[b].index()];
 		}
-		vPursuit.back().res() = vNewRf.norm2();	
 		vRf = vNewRf;
 	}
 
 	delete []matBasis;
 }
 
-void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, FunctionApproximation& fa )
+void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, SparseCoding& fa )
 {
 	int signalSize = (int)vSignal.size();
 	int atomCount = (int)vAtoms.size();
@@ -544,7 +502,7 @@ void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vec
 	double *pCoeff = engine.getDblVariablePtr("coeff");
 	fa.clear();
 	for (int i = 0; i < supportSize; ++i)
-		fa.addItem(0, (int)pIdx[i] - 1, pCoeff[i]);
+		fa.addItem((int)pIdx[i] - 1, pCoeff[i]);
 
 	engine.removeVariable("X");
 	engine.removeVariable("D");
@@ -552,7 +510,7 @@ void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vec
 	delete []pMatDict;
 }
 
-void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, FunctionApproximation& fa )
+void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, SparseCoding& fa )
 {
 	int signalSize = (int)vSignal.size();
 	int atomCount = (int)vAtoms.size();
@@ -573,7 +531,7 @@ void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::v
 	
 	fa.clear();
 	for (int i = 0; i < supportSize; ++i)
-		fa.addItem(0, (int)pIdx[i] - 1, pCoeff[i]);
+		fa.addItem((int)pIdx[i] - 1, pCoeff[i]);
 
 	engine.removeVariable("X");
 	engine.removeVariable("D");

@@ -22,6 +22,8 @@ double innerProductSym(const std::vector<double>& v1, const SparseMatrixCSR<doub
 
 double innerProductSym(const VecNd& v1, const SparseMatrixCSR<double, int>& A, const VecNd& v2);
 
+double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2);
+
 template<typename T>
 T innerProductDiag(const VecN<T>& v1, const VecN<T>& v2, const VecN<T>& v3)
 {

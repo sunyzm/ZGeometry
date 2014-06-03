@@ -12,5 +12,6 @@
 #include "EigenSystem.h"
 #include "Mesh.h"
 #include "MeshProcessing.h"
+#include "SparseRepresentation.h"
 
 #endif

@@ -119,6 +119,12 @@ double innerProductSym( const VecNd& v1, const SparseMatrixCSR<double, int>& A, 
 	return ddot(&m, &vy[0], &xinc, pv2, &yinc);
 }
 
+double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2)
+{
+	assert(v1.size() == v2.size());
+	return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
+}
+
 void mulMatMat( const SparseMatrix<double>& mat1, const SparseMatrix<double>& mat2, SparseMatrix<double>& mat3 )
 {
 	if (mat1.colCount() != mat2.rowCount()) 
