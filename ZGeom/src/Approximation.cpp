@@ -14,6 +14,13 @@
 
 namespace ZGeom
 {
+
+double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2)
+{
+	assert(v1.size() == v2.size());
+	return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
+}
+
 ZGeom::VecNd ReconstructApproximationSingleChannel( const Dictionary& dict, const FunctionApproximation& approx )
 {
 	ZGeom::VecNd vApprox(dict.atomDim(), 0);
@@ -44,7 +51,7 @@ void ReconstructApproximationMultiChannel( const std::vector<VecNd>& vAtoms, con
 		vReconstructed[i] = ReconstructApproximationSingleChannel(vAtoms, vApprox[i]);
 }
 
-void GeneralizedMultiChannelFourierApprox( const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc /*= RegularProductFunc*/ )
+void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, InnerProdcutFunc innerProdFunc)
 {
 	if (nSelected <= 0 || nSelected > vBasis.size())
 		throw std::logic_error("nSelectedBasis too small or too large!");

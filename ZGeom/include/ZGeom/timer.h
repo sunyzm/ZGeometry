@@ -1,6 +1,5 @@
 #ifndef ZGEOM_TIMER_H
 #define ZGEOM_TIMER_H
-
 #include <string>
 #include <windows.h>
 #include <iostream>

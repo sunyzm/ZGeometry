@@ -3,51 +3,14 @@
 #include <vector>
 #include <tuple>
 #include <functional>
-#include <mkl.h>
 #include "util.h"
 #include "VecN.h"
 #include "DenseMatrix.h"
 #include "MatlabEngineWrapper.h"
+#include "Dictionary.h"
 
 namespace ZGeom
 {
-
-class Dictionary
-{
-public:
-	Dictionary() : mDim(0) {}
-	Dictionary(int m) : mDim(m) {}
-	
-	const VecNd& operator [] (int i) const { return mAtoms[i]; }
-	VecNd& operator[] (int i) { return mAtoms[i]; }	
-
-	int atomDim() const { return mDim; }
-	int atomCount() const { return (int)mAtoms.size(); }	
-	int size() const { return (int)mAtoms.size(); }
-
-	void setDimension(int m) { mDim = m; }
-	void resize(int N) { mAtoms.resize(N); }
-	void resize(int N, int m) 
-	{ 
-		mDim = m;
-		mAtoms.resize(N); 
-		for (VecNd& v : mAtoms) v.resize(m);
-	}
-
-	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
-	void clear() { mAtoms.clear(); }
-
-	void expandTo(int N) {
-		if (N <= (int)mAtoms.size()) return;
-		mAtoms.resize(N);
-	}
-
-	const std::vector<VecNd>& operator() () const { return mAtoms; }
-
-private:
-	std::vector<VecNd> mAtoms;
-	int mDim;
-};
 
 struct ApproxItem
 {
@@ -105,18 +68,13 @@ private:
 	std::vector<ApproxItem> mApproxItems;
 };
 
+double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2);
+
 VecNd ReconstructApproximationSingleChannel(const Dictionary& dict, const FunctionApproximation& approx);
 VecNd ReconstructApproximationSingleChannel(const std::vector<VecNd>& vAtoms, const FunctionApproximation& approx);
 void ReconstructApproximationMultiChannel(const std::vector<VecNd>& vAtoms, const std::vector<FunctionApproximation>& vApprox, std::vector<VecNd>& vReconstructed);
 
-
-const InnerProdcutFunc RegularProductFunc = [](const VecN<double>& v1, const VecN<double>& v2) 
-{
-	assert(v1.size() == v2.size());
-	return cblas_ddot(v1.size(), v1.c_ptr(), 1, v2.c_ptr(), 1);
-};
-
-void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, const InnerProdcutFunc& innerProdFunc = RegularProductFunc);
+void GeneralizedMultiChannelFourierApprox(const std::vector<VecNd>& vSignals, const std::vector<VecNd>& vBasis, int nSelected, std::vector<FunctionApproximation*>& vPursuits, InnerProdcutFunc innerProdFunc);
 
 void MatchingPursuit(const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit);	
 void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vBasis, int nSelected, FunctionApproximation& vPursuit, const InnerProdcutFunc& innerProdFunc);

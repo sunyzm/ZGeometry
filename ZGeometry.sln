@@ -26,6 +26,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_partition", "zmesh_pa
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_info", "zmesh_info\zmesh_info.vcxproj", "{C29D0FD1-DE76-4192-995A-EDDF1F6F21D4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -228,6 +228,7 @@
     <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
+    <ClInclude Include="include\ZGeom\Dictionary.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
     <ClInclude Include="include\ZGeom\fibheap.h" />
@@ -241,7 +242,6 @@
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
     <ClInclude Include="include\ZGeom\MeshProcessing.h" />
     <ClInclude Include="include\ZGeom\MeshPyramid.h" />
-    <ClInclude Include="include\ZGeom\misc.h" />
     <ClInclude Include="include\ZGeom\Quadric.h" />
     <ClInclude Include="include\ZGeom\Quat.h" />
     <ClInclude Include="include\ZGeom\SimpleConfigLoader.h" />
