@@ -29,7 +29,8 @@ public:
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
 	void clear() { mAtoms.clear(); }
 
-	void expandTo(int N) {
+	void expandTo(int N) 
+	{
 		if (N <= (int)mAtoms.size()) return;
 		mAtoms.resize(N);
 	}
@@ -40,7 +41,6 @@ private:
 	std::vector<VecNd> mAtoms;
 	int mDim;
 };
-
 
 class SparseCodingItem
 {
@@ -65,13 +65,27 @@ class SparseCoding
 {
 public:
 	SparseCoding() {}
+	SparseCoding(const VecNd& vDense, double epsilon = 1e-6) 
+	{
+		fromDense(vDense, epsilon);
+	}
 
+	void fromDense(const VecNd& vDense, double epsilon = 1e-6)
+	{
+		clear();
+		for (int i = 0; i < (int)vDense.size(); ++i) {
+			if (std::fabs(vDense[i]) >= epsilon) {
+				addItem(i, vDense[i]);
+			}
+		}
+	}
+
+	void clear() { mApproxItems.clear(); }
 	void addItem(int i, double c)
 	{
 		mApproxItems.push_back(SparseCodingItem(i, c));
 	}
-
-	void clear() { mApproxItems.clear(); }
+		
 	const std::vector<SparseCodingItem>& getApproxItems() const { return mApproxItems; }
 	SparseCodingItem& operator [] (int i) { return mApproxItems[i]; }
 	const SparseCodingItem& operator [] (int i) const { return mApproxItems[i]; }
@@ -98,8 +112,11 @@ private:
 	std::vector<SparseCodingItem> mApproxItems;
 };
 
-VecNd ReconstructApproximationSingleChannel(const Dictionary& dict, const SparseCoding& approx);
-VecNd ReconstructApproximationSingleChannel(const std::vector<VecNd>& vAtoms, const SparseCoding& approx);
+VecNd DictVecInnerProducts(const Dictionary& dict, const VecNd& vec);
+VecNd DenseReconstructSingleChannel(const Dictionary& dict, const VecNd& vCoeff);
+std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const std::vector<VecNd>& vCoeffs);
+VecNd SparseReconstructSingleChannel(const Dictionary& dict, const SparseCoding& approx);
+VecNd SparseReconstructSingleChannel(const std::vector<VecNd>& vAtoms, const SparseCoding& approx);
 void ReconstructApproximationMultiChannel(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed);
 
 }

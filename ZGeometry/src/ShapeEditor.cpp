@@ -1014,7 +1014,7 @@ void ShapeEditor::sparseFeatureFindingTest1()
 	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
 	timer.stopTimer("Time to do sparse coding: ", "s");
 
-	ZGeom::VecNd vReconstruct = ReconstructApproximationSingleChannel(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
+	ZGeom::VecNd vReconstruct = SparseReconstructSingleChannel(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
 	double residual = (ZGeom::VecNd(vSignal) - vReconstruct).norm2();	
 	std::cout << "Approximation residual (" << vCoeff.size() << " basis): " << residual << '\n';
 	
