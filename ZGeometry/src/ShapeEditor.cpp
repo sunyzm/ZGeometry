@@ -5,9 +5,10 @@
 #include <iomanip>
 #include <ppl.h>
 #include <ZGeom/ZGeom.h>
+#include <ZGeom/util.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/Approximation.h>
-#include <ZGeom/util.h>
+#include <ZGeom/MCA.h>
 #include "global.h"
 
 using ZGeom::Dictionary;
@@ -746,9 +747,9 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 
 void ShapeEditor::runTests()
 {
-	sparseCompressionTest();		// compression test
-	//approximationTest2();
+	//sparseCompressionTest();		// compression test
 	//sparseDecompositionTest();
+	sparseDecompositionTest2();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
@@ -947,7 +948,7 @@ void ShapeEditor::sparseCompressionTest()
 //
 void ShapeEditor::sparseFeatureFindingTest1()
 {
-	printBeginSeparator("Starting ApproxTest2 (feature analysis)",'=');
+	printBeginSeparator("Starting sparseFeatureFindingTest1",'=');
 	CStopWatch timer;
 
 	LaplacianType lapType;
@@ -1064,7 +1065,7 @@ void ShapeEditor::sparseDecompositionTest()
 	 
 	revertCoordinates();
 	mStoredCoordinates.resize(5);
-	std::cout << "\n======== Starting ApproxTest3 (Decomposition test) ========\n";	
+	std::cout << "\n======== Starting sparseDcompositionTest) ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
 	int eigenCount = min(500, totalVertCount-1);
@@ -1148,6 +1149,135 @@ void ShapeEditor::sparseDecompositionTest()
 	setStoredCoordinates(coordResidual, 4);
 
 	std::cout << '\n';	
+	printEndSeparator('=', 40);
+	changeCoordinates(1);
+}
+
+void ShapeEditor::sparseDecompositionTest2()
+{
+	/************************************************************************/
+	/* 1. Do eigendecomposition and compute dictionary MHB and SGW;         */
+	/* 2. Compute decomposition of shapes against dictionaries via S-OMP    */
+	/*    and MCA;                                                          */
+	/* 3. Visualize the magnitude of separated signals as well as           */
+	/*    decomposed shapes (seemingly not meaningful)                      */
+	/* 4. Focus on non-partitioned shape for now                            */
+	/************************************************************************/
+	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
+
+	revertCoordinates();
+	mStoredCoordinates.resize(7);		// 0: original shape; 1: reconstruction from OMP; 2: MHB part from OMP;
+										// 3: SGW part from OMP; 4: reconstruction from MCA
+										// 5: MHB part from MCA; 6: SGW part from MCA
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	setStoredCoordinates(oldMeshCoord, 0);	// save original coordinates
+	
+	const int totalVertCount = mMesh->vertCount();
+	mShapeApprox.init(mMesh);
+	mShapeApprox.doSegmentation(-1);		// -1 means no segmentation 
+	int eigenCount = -1;
+	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	// do full decomposition
+	const ZGeom::EigenSystem& es = mShapeApprox.getSubEigenSystem(0);
+	
+	/// SOMP
+	mShapeApprox.constructDictionaries(DT_SGW4MHB);
+	SparseApproxMethod saMethod = SA_SOMP;
+	int codingSize = 300;
+	mShapeApprox.findSparseRepresentationBySize(saMethod, codingSize);
+		
+	MeshCoordinates reconstructedMeshCoord;
+	mShapeApprox.findSparseRepresentationBySize(saMethod, codingSize);
+	mShapeApprox.doSparseReconstructionBySize(-1, reconstructedMeshCoord);
+
+	const ZGeom::Dictionary& dictOMP = mShapeApprox.getSubDictionary(0);
+	const std::vector<ZGeom::SparseCodingItem>* vCoeff[3] = {
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(0),
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(1),
+		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(2)
+	};
+	int dictSize = dictOMP.size();
+	int actualCodingSize = int(vCoeff[0]->size());
+	MeshCoordinates coordMHB(totalVertCount), coordSGW(totalVertCount);
+	int mhbAtomCount(0), sgwAtomCount(0);
+	for (int i = 0; i < actualCodingSize; ++i) {
+		for (int c = 0; c < 3; ++c) {
+			const ZGeom::SparseCodingItem& sc = (*vCoeff[c])[i];
+			if (sc.index() < dictSize - es.eigVecSize()) {
+				coordSGW.getCoordFunc(c) += sc.coeff() * dictOMP[sc.index()];
+				if (c == 0) sgwAtomCount++;
+			}
+			else {
+				coordMHB.getCoordFunc(c) += sc.coeff() * dictOMP[sc.index()];
+				if (c == 0) mhbAtomCount++;
+			}
+		}
+	}
+	std::cout << "S-OMP Reconstruction error: " << oldMeshCoord.difference(reconstructedMeshCoord) << '\n';
+	setStoredCoordinates(reconstructedMeshCoord, 1);
+	setStoredCoordinates(coordMHB, 2);
+	setStoredCoordinates(coordSGW, 3);
+	std::cout << "#MHB atoms selected: " << mhbAtomCount << '\n';
+	std::cout << "#SGW atoms selected: " << sgwAtomCount << '\n';
+
+	{
+		std::vector<double> sgwRatio(totalVertCount);
+		for (int i = 0; i < totalVertCount; ++i) {
+			sgwRatio[i] = coordSGW[i].length() / coordMHB[0].length();
+		}
+		double maxRatio = *std::max_element(sgwRatio.begin(), sgwRatio.end());
+		for (double& d : sgwRatio) d /= maxRatio;
+		std::string colorStr = "color_omp_sgw_ratio";
+		std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(colorStr).attrValue();
+		vColors.resize(totalVertCount);
+		for (int i = 0; i < totalVertCount; ++i) vColors[i].falseColor(sgwRatio[i], 1.0f, ZGeom::CM_JET);
+		emit signatureComputed(QString(colorStr.c_str()));
+	}
+
+	/// MCA
+	Dictionary dictMHB, dictSGW4;
+	computeDictionary(DT_Fourier, es, dictMHB);
+	computeDictionary(DT_SGW4, es, dictSGW4);
+	std::vector<const Dictionary*> vDicts{ &dictMHB, &dictSGW4 };
+	std::vector<ZGeom::VecNd> vOriCoords{ oldMeshCoord.getCoordFunc(0), oldMeshCoord.getCoordFunc(1), oldMeshCoord.getCoordFunc(2) };
+	std::vector<std::vector<ZGeom::SparseCoding> > vCoordCodings(3);
+	ZGeom::MCAoptions mcaOpts;
+	mcaOpts.nIter = 500;
+	mcaOpts.threshMode = ZGeom::MCAoptions::HARD_THRESH;
+	mcaOpts.threshStrategy = ZGeom::MCAoptions::MIN_OF_MAX;
+
+	std::vector<ZGeom::VecNd> vMHBCoords(3), vSGWCoords(3);
+	for (int c = 0; c < 3; ++c) {
+		singleChannelMCA(vOriCoords[c], vDicts, vCoordCodings[c], &mcaOpts);
+		vMHBCoords[c] = SparseReconstructSingleChannel(dictMHB, vCoordCodings[c][0]);
+		vSGWCoords[c] = SparseReconstructSingleChannel(dictSGW4, vCoordCodings[c][1]);
+	}
+	
+	MeshCoordinates coordMCA(totalVertCount), coordMCA_MHB(totalVertCount), coordMCA_SGW(totalVertCount);
+	for (int c = 0; c < 3; ++c) {
+		coordMCA.getCoordFunc(c) = vMHBCoords[c] + vSGWCoords[c];
+		coordMCA_MHB.getCoordFunc(c) = vMHBCoords[c];
+		coordMCA_SGW.getCoordFunc(c) = vSGWCoords[c];
+	}
+	std::cout << "MCA reconstruction error: " << oldMeshCoord.difference(coordMCA) << '\n';
+	setStoredCoordinates(coordMCA, 4);
+	setStoredCoordinates(coordMCA_MHB, 5);
+	setStoredCoordinates(coordMCA_SGW, 6);
+
+	{
+		std::vector<double> sgwRatio(totalVertCount);
+		for (int i = 0; i < totalVertCount; ++i) {
+			sgwRatio[i] = coordMCA_SGW[i].length() / coordMCA_MHB[0].length();
+		}
+		double maxRatio = *std::max_element(sgwRatio.begin(), sgwRatio.end());
+		for (double& d : sgwRatio) d /= maxRatio;
+		std::string colorStr = "color_mca_sgw_ratio";
+		std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(colorStr).attrValue();
+		vColors.resize(totalVertCount);
+		for (int i = 0; i < totalVertCount; ++i) vColors[i].falseColor(sgwRatio[i], 1.0f, ZGeom::CM_JET);
+		emit signatureComputed(QString(colorStr.c_str()));
+	}
+
+	std::cout << '\n';
 	printEndSeparator('=', 40);
 	changeCoordinates(1);
 }

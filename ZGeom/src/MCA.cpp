@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
+#include <stdexcept>
 
 namespace ZGeom {
 
@@ -19,6 +20,7 @@ public:
 			else if (x < -mThresh) return x + mThresh;
 			else return 0;
 		}
+		else throw std::logic_error("Undefined ThroshodlingMode");
 	}
 
 private:
@@ -41,43 +43,51 @@ void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>
 	VecNd vRes(vSignal);
 	double lambdaThresh;
 
+	// initial threshold lambda
+	std::vector<double> vMaxCoeff(dictCount);
+	for (int k = 0; k < dictCount; ++k) {
+		int dictSizeK = vDicts[k]->size();
+		VecNd vCoeffK = DictVecInnerProducts(*vDicts[k], vRes);
+		std::transform(vCoeffK.c_ptr(), vCoeffK.c_ptr_end(), vCoeffK.c_ptr(), FuncAbs);
+		vMaxCoeff[k] = *std::max_element(vCoeffK.c_ptr(), vCoeffK.c_ptr_end());
+	}
+
+	switch (opts->threshStrategy)
+	{
+	case MCAoptions::MEAN_OF_MAX:
+		lambdaThresh = std::accumulate(vMaxCoeff.begin(), vMaxCoeff.end(), 0.) / vMaxCoeff.size();
+		break;
+	case MCAoptions::MIN_OF_MAX:
+		lambdaThresh = *std::min_element(vMaxCoeff.begin(), vMaxCoeff.end());
+		break;
+	case MCAoptions::SECOND_TO_MAX:
+		vMaxCoeff.erase(std::max_element(vMaxCoeff.begin(), vMaxCoeff.end()));
+		lambdaThresh = *std::max_element(vMaxCoeff.begin(), vMaxCoeff.end());
+		break;
+	case MCAoptions::MAX_OF_MAX:
+		lambdaThresh = *std::max_element(vMaxCoeff.begin(), vMaxCoeff.end());
+		break;
+	}
+
+	lambdaThresh /= 2;
+	double deltaThresh = (lambdaThresh - opts->stopCriterion) / (opts->nIter - 1);
+	double minResMag;
+
 	/// main iteration
 	for (int t = 0; t < opts->nIter; ++t) 
 	{
-		// update threshold lambda
-		std::vector<double> vMaxCoeff(dictCount);
-		for (int k = 0; k < dictCount; ++k) {
-			int dictSizeK = vDicts[k]->size();
-			VecNd vCoeffK = DictVecInnerProducts(*vDicts[k], vRes);
-			std::transform(vCoeffK.c_ptr(), vCoeffK.c_ptr_end(), vCoeffK.c_ptr(), FuncAbs);
-			vMaxCoeff[k] = *std::max_element(vCoeffK.c_ptr(), vCoeffK.c_ptr_end());
-		}
-
-		switch (opts->threshStrategy) 
-		{
-		case MCAoptions::MEAN_OF_MAX: 
-			lambdaThresh = std::accumulate(vMaxCoeff.begin(), vMaxCoeff.end(), 0.) / vMaxCoeff.size();
-			break;
-		case MCAoptions::MIN_OF_MAX:
-			lambdaThresh = *std::min_element(vMaxCoeff.begin(), vMaxCoeff.end());
-			break;
-		case MCAoptions::SECOND_TO_MAX:
-			vMaxCoeff.erase(std::max_element(vMaxCoeff.begin(), vMaxCoeff.end()));
-			lambdaThresh = *std::max_element(vMaxCoeff.begin(), vMaxCoeff.end());
-			break;
-		case MCAoptions::MAX_OF_MAX:
-			lambdaThresh = *std::max_element(vMaxCoeff.begin(), vMaxCoeff.end());
-			break;
-		}
-
+		std::vector<VecNd> vTmpCoeff(dictCount);
 		for (int k = 0; k < dictCount; ++k) {
 			// compute marginal residual
 			VecNd vResK = vRes + vComponents[k];
 			// update k-th component coefficients by thresholding 
-			vDenseCoeff[k] = DictVecInnerProducts(*vDicts[k], vResK);
-			std::transform(vDenseCoeff[k].c_ptr(), vDenseCoeff[k].c_ptr_end(), vDenseCoeff[k].c_ptr(), FuncTresholding(MCAoptions::HARD_THRESH, lambdaThresh));
+			vTmpCoeff[k] = DictVecInnerProducts(*vDicts[k], vResK);
+			MCAoptions::ThresholdingMode threshMode = MCAoptions::SOFT_THRESH;
+			//if (t > 1) threshMode = MCAoptions::HARD_THRESH;
+			
+			std::transform(vTmpCoeff[k].c_ptr(), vTmpCoeff[k].c_ptr_end(), vTmpCoeff[k].c_ptr(), FuncTresholding(threshMode, lambdaThresh));
 			// update k-th component
-			vComponents[k] = DenseReconstructSingleChannel(*vDicts[k], vDenseCoeff[k]);
+			vComponents[k] = DenseReconstructSingleChannel(*vDicts[k], vTmpCoeff[k]);
 		}
 
 		// update residual
@@ -85,10 +95,19 @@ void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>
 		for (int k = 0; k < dictCount; ++k) {
 			vRes -= vComponents[k];
 		}
+		double resMag = vRes.norm2();
+		if (t == 0 || resMag < minResMag) {
+			minResMag = resMag;
+			vDenseCoeff = vTmpCoeff;
+		}
+		else break;
+
+		// update threshold lambda
+		lambdaThresh -= deltaThresh;
 	}
 
 	for (int k = 0; k < dictCount; ++k) {
-		vCodings[k].fromDense(vDenseCoeff[k], 1e-6);
+		vCodings[k].fromDense(vDenseCoeff[k], 0.1);
 	}
 }
 

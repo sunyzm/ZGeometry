@@ -117,6 +117,7 @@ VecNd DenseReconstructSingleChannel(const Dictionary& dict, const VecNd& vCoeff)
 std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const std::vector<VecNd>& vCoeffs);
 VecNd SparseReconstructSingleChannel(const Dictionary& dict, const SparseCoding& approx);
 VecNd SparseReconstructSingleChannel(const std::vector<VecNd>& vAtoms, const SparseCoding& approx);
+std::vector<VecNd> SparseReconstructMultiChannel(const Dictionary& dict, const std::vector<SparseCoding>& vCodings);
 void ReconstructApproximationMultiChannel(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed);
 
 }

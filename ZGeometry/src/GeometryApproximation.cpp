@@ -52,6 +52,59 @@ int computePursuitCompressionBasisNum(int n, int m, int k1, int k2, double ratio
 	return nBasis;
 }
 
+void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict)
+{
+	int vertCount = es.eigVecSize();
+	int eigVecCount = es.eigVecCount();
+	dict.clear();
+
+	switch (dictType)
+	{
+	case DT_Fourier:
+		dict.resize(eigVecCount, vertCount);
+		for (int i = 0; i < eigVecCount; ++i)
+			dict[i] = es.getEigVec(i);
+		break;
+
+	case DT_FourierSpikes:
+		dict.resize(eigVecCount + vertCount, vertCount);
+		for (int i = 0; i < eigVecCount; ++i)
+			dict[i] = es.getEigVec(i);
+		for (int i = 0; i < vertCount; ++i) {
+			dict[eigVecCount + i].resize(vertCount, 0);
+			dict[eigVecCount + i][i] = 1.;
+		}
+		break;
+
+	case DT_SGW3:
+		CalculateSGWDict(es, 3, dict);
+		break;
+	case DT_SGW4:
+		CalculateSGWDict(es, 4, dict);
+		break;
+	case DT_SGW5:
+		CalculateSGWDict(es, 5, dict);
+		break;
+	case DT_SGW3MHB:
+		CalculateSGWDict(es, 3, dict);
+		break;
+	case DT_SGW4MHB:
+		CalculateSGWDict(es, 4, dict);
+		break;
+	case DT_SGW5MHB:
+		CalculateSGWDict(es, 5, dict);
+		break;
+	}
+
+	if (dictType == DT_SGW3MHB || dictType == DT_SGW4MHB || dictType == DT_SGW5MHB) {
+		int atomCount = dict.atomCount();
+		dict.expandTo(atomCount + eigVecCount);
+		for (int i = 0; i < eigVecCount; ++i)
+			dict[atomCount + i] = es.getEigVec(i);
+	}
+
+}
+
 void ShapeApprox::init( CMesh* mesh )
 {
 	mOriginalMesh = mesh;
@@ -334,54 +387,7 @@ void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCo
 
 void SubMeshApprox::constructDict( DictionaryType dictType )
 {
-	int vertCount = mSubMesh.vertCount();
-	int eigVecCount = mEigenSystem.eigVecCount();	
-	mDict.clear();
-
-	switch (dictType)
-	{
-	case DT_Fourier:
-		mDict.resize(eigVecCount, vertCount);
-		for (int i = 0; i < eigVecCount; ++i)
-			mDict[i] = mEigenSystem.getEigVec(i);
-		break;
-
-	case DT_FourierSpikes:
-		mDict.resize(eigVecCount + vertCount, vertCount);
-		for (int i = 0; i < eigVecCount; ++i)
-			mDict[i] = mEigenSystem.getEigVec(i);
-		for (int i = 0; i < vertCount; ++i) {
-			mDict[eigVecCount + i].resize(vertCount, 0);
-			mDict[eigVecCount + i][i] = 1.;
-		}
-		break;
-
-	case DT_SGW3:
-		CalculateSGWDict(mEigenSystem, 3, mDict);
-		break;
-	case DT_SGW4:
-		CalculateSGWDict(mEigenSystem, 4, mDict);
-		break;
-	case DT_SGW5:
-		CalculateSGWDict(mEigenSystem, 5, mDict);
-		break;
-	case DT_SGW3MHB:
-		CalculateSGWDict(mEigenSystem, 3, mDict);
-		break;
-	case DT_SGW4MHB:
-		CalculateSGWDict(mEigenSystem, 4, mDict);
-		break;
-	case DT_SGW5MHB:
-		CalculateSGWDict(mEigenSystem, 5, mDict);
-		break;
-	}
-
-	if (dictType == DT_SGW3MHB || dictType == DT_SGW4MHB || dictType == DT_SGW5MHB) {
-		int atomCount = mDict.atomCount();
-		mDict.expandTo(atomCount + eigVecCount);
-		for (int i = 0; i < eigVecCount; ++i)
-			mDict[atomCount + i] = mEigenSystem.getEigVec(i);
-	}
+	computeDictionary(dictType, mEigenSystem, mDict);
 }
 
 void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selectedAtomCount )

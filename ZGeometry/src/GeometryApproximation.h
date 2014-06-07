@@ -8,6 +8,8 @@
 enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
 enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP, SA_LASSO};
 
+void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict);
+
 struct SparseCodingOptions
 {
 	SparseCodingOptions() : mApproxMethod(SA_SOMP), mCodingAtomCount(-1) {}
@@ -70,7 +72,9 @@ public:
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	int  partitionCount() const { return mSubMeshApprox.size(); }
-	
+	ZGeom::Dictionary getSubDictionary(int idx) { return mSubMeshApprox[idx].mDict; }
+	const ZGeom::EigenSystem& getSubEigenSystem(int idx) { return mSubMeshApprox[idx].mEigenSystem; }
+
 private:
 	CMesh* mOriginalMesh;	
 	std::vector<SubMeshApprox> mSubMeshApprox;

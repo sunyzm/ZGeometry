@@ -14,13 +14,14 @@ struct MCAoptions
 	ThresholdingMode threshMode;
 	ThresholdingStrategy threshStrategy;
 	int nIter;
+	double stopCriterion;
 
-	MCAoptions() : nIter(500), threshMode(HARD_THRESH), threshStrategy(MEAN_OF_MAX) {}
+	MCAoptions() : nIter(500), threshMode(HARD_THRESH), threshStrategy(MEAN_OF_MAX), stopCriterion(0.1) {}
 };
 
 void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>& vDicts, std::vector<SparseCoding>& vCodings, MCAoptions* opts);
 
-void multiChannelMCA(const std::vector<Dictionary>& dicts);
+void multiChannelMCA(const std::vector<VecNd>& vSignals, const std::vector<const Dictionary>*& dicts, std::vector<std::vector<SparseCoding> >& vMultiCodings, MCAoptions *opts);
 
 }
 

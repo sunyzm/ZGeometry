@@ -479,7 +479,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	/* compute and decompose mesh Laplacians */
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
-	//computeLaplacian(CotFormula);
+	computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1); 	
 	//computeLaplacian(Anisotropic2);
