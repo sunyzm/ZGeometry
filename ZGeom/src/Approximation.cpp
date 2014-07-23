@@ -266,7 +266,7 @@ void GeneralizedSimultaneousOMP( const std::vector<VecNd>& vSignals, const std::
 	assert(vSignals.size() == vPursuits.size());
 	int nChannels = (int)vSignals.size();
 
-	for (auto p : vPursuits) p->clear();
+	for (auto ptr : vPursuits) ptr->clear();
 
 	const int signalSize = vSignals[0].size();
 	std::unordered_set<int> availableBasis;
@@ -538,5 +538,59 @@ void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::v
 	engine.removeVariable("L1");
 	delete []pMatDict;
 }
+
+void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dictionary& dict, std::vector<SparseCoding>& vCodings, SparseApproximationOptions opts)
+{
+	runtime_assert(vSignals[0].size() == dict.atomDim(), "signal and atom size not equal");
+	runtime_assert(opts.mCodingSize > 0 && opts.mCodingSize <= dict.size(), "Illegal coding size");
+
+	const int channelCount = (int)vSignals.size();
+	const int signalDim = dict.atomDim();
+	vCodings.resize(channelCount);
+
+	if (opts.mApproxMethod == ZGeom::SA_Truncation)
+	{
+		for (int i = 0; i < opts.mCodingSize; ++i) {
+			for (int c = 0; c < channelCount; ++c) {
+				double innerProd = dict[i].dot(vSignals[c]);
+				vCodings[c].addItem(i, innerProd);
+			}
+		}
+	}
+	else if (opts.mApproxMethod == ZGeom::SA_OMP)
+	{
+		for (int c = 0; c < channelCount; ++c) {
+			ZGeom::OMP(vSignals[c], dict.getAtoms(), opts.mCodingSize, vCodings[c]);
+		}
+	}
+	else if (opts.mApproxMethod == ZGeom::SA_SOMP)
+	{
+		std::vector<ZGeom::SparseCoding*> vCodingPtrs;
+		for (int c = 0; c < channelCount; ++c) vCodingPtrs.push_back(&vCodings[c]);
+		ZGeom::SimultaneousOMP(vSignals, dict.getAtoms(), opts.mCodingSize, vCodingPtrs);
+	}
+}
+
+void singleChannelSparseRecontruct(const Dictionary& dict, const SparseCoding& coding, VecNd& signalReconstructed)
+{
+	const int signalSize = dict.atomDim();
+	signalReconstructed.resize(signalSize, 0);
+
+	for (int i = 0; i < coding.size(); ++i) {
+		const ZGeom::SparseCodingItem& sc = coding[i];
+		signalReconstructed += sc.coeff() * dict[sc.index()];
+	}
+}
+
+void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed)
+{
+	const int channelCount = (int)vCodings.size();
+	vReconstructed.resize(channelCount);
+
+	for (int c = 0; c < channelCount; ++c) {
+		singleChannelSparseRecontruct(dict, vCodings[c], vReconstructed[c]);
+	}
+}
+
 
 } // end of namespace

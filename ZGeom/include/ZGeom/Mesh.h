@@ -36,6 +36,15 @@ public:
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
 
+	MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
+	{
+		assert(meshSize == v1.size() && v1.size() == v2.size() && v2.size() == v3.size());
+		mSize = meshSize;
+		mCoordX = v1;
+		mCoordY = v2;
+		mCoordZ = v3;
+	}
+
 	MeshCoordinates(const MeshCoordinates& mc)
 	{
 		this->mSize = mc.mSize;
@@ -107,6 +116,9 @@ public:
 	ZGeom::VecNd& getXCoord() { return mCoordX; }
 	ZGeom::VecNd& getYCoord() { return mCoordY; }
 	ZGeom::VecNd& getZCoord() { return mCoordZ; }
+	const ZGeom::VecNd& getXCoord() const { return mCoordX; }
+	const ZGeom::VecNd& getYCoord() const { return mCoordY; }
+	const ZGeom::VecNd& getZCoord() const { return mCoordZ; }
 
 	ZGeom::Vec3d getVertCoordinate(int v) const 
 	{

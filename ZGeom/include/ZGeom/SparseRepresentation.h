@@ -81,6 +81,7 @@ public:
 	}
 
 	void clear() { mApproxItems.clear(); }
+
 	void addItem(int i, double c)
 	{
 		mApproxItems.push_back(SparseCodingItem(i, c));

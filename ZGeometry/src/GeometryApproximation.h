@@ -5,20 +5,20 @@
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"
 
+using ZGeom::SparseApproxMethod;
 enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
-enum SparseApproxMethod {SA_Truncation, SA_SMP, SA_SOMP, SA_LASSO};
+
 
 void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict);
 
 struct SparseCodingOptions
 {
-	SparseCodingOptions() : mApproxMethod(SA_SOMP), mCodingAtomCount(-1) {}
+	SparseCodingOptions() : mApproxMethod(ZGeom::SA_SOMP), mCodingAtomCount(-1) {}
 
 	SparseApproxMethod mApproxMethod;
 	int mCodingAtomCount;
 	double mEpsilon;
 	double lambda1, lambda2;
-
 	double mResidual;
 };
 

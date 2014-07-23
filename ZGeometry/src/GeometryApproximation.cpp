@@ -7,6 +7,7 @@
 using ZGeom::VecNd;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
+using ZGeom::SparseApproxMethod;
 
 std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 {
@@ -411,7 +412,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 
 	for (int c = 0; c < 3; ++c) mCoding[c].resize(selectedAtomCount);
 
-	if (approxMethod == SA_Truncation)
+	if (approxMethod == ZGeom::SA_Truncation)
 	{
 		double innerProd[3];
 		for (int i = 0; i < selectedAtomCount; ++i) {
@@ -421,9 +422,9 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 				mCoding[c][i] = ZGeom::SparseCodingItem(i, innerProd[c]);
 		}
 	}
-	else if (approxMethod == SA_SMP || approxMethod == SA_SOMP)
+	else if (approxMethod == ZGeom::SA_SMP || approxMethod == ZGeom::SA_SOMP)
 	{
-		if (approxMethod == SA_SMP) {
+		if (approxMethod == ZGeom::SA_SMP) {
 			ZGeom::SimultaneousMP(vSignals, mDict.getAtoms(), selectedAtomCount, vApproxCoeff);
 		} else {
 			ZGeom::SimultaneousOMP(vSignals, mDict.getAtoms(), selectedAtomCount, vApproxCoeff);
@@ -480,9 +481,9 @@ void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodi
 	int codingAtomCount = opts.mCodingAtomCount;
 	runtime_assert(atomCount >= codingAtomCount && vSignal.size() == vertCount);
 
-	if (opts.mApproxMethod == SA_SMP || opts.mApproxMethod == SA_SOMP)
+	if (opts.mApproxMethod == ZGeom::SA_SMP || opts.mApproxMethod == ZGeom::SA_SOMP)
 	{
-		if (opts.mApproxMethod == SA_SMP) {
+		if (opts.mApproxMethod == ZGeom::SA_SMP) {
 			ZGeom::MatchingPursuit(vSignal, mDict.getAtoms(), codingAtomCount, vCoeff);
 		} else {
 #ifdef USE_SPAMS
@@ -492,7 +493,7 @@ void SubMeshApprox::computeSparseCoding( const ZGeom::VecNd& vSignal, SparseCodi
 #endif
 		}
 	}
-	else if (opts.mApproxMethod == SA_LASSO)
+	else if (opts.mApproxMethod == ZGeom::SA_LASSO)
 	{
 		double lambda1 = opts.lambda1;
 		ZGeom::LASSO_SPAMS(g_engineWrapper, vSignal, mDict.getAtoms(), lambda1, vCoeff);

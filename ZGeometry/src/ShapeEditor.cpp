@@ -12,6 +12,7 @@
 #include "global.h"
 
 using ZGeom::Dictionary;
+using ZGeom::SparseApproxMethod;
 
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
@@ -66,6 +67,9 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mTotalScales = 0;
 	mCurCoordID = 0;
 	processor->getMesh()->retrieveVertCoordinates(mOriginalCoord); 
+	mStoredCoordinates.resize(1);
+	mStoredCoordinates[0] = mOriginalCoord;
+
 	std::cout << "Shape editor is initialized!" << std::endl;
 }
 
@@ -780,8 +784,6 @@ void ShapeEditor::spectrumTest1()
 	}
 }
 
-
-
 void printBeginSeparator(std::string s, char c) {
 	std::cout << '\n';
 	for (int i = 0; i < 8; ++i) std::cout << c;
@@ -880,7 +882,7 @@ void ShapeEditor::sparseCompressionTest()
 #if 1
 	printBeginSeparator("Low-pass Approx, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
-	compressAndEvaluate(maxCodingRatio, SA_Truncation, false);
+	compressAndEvaluate(maxCodingRatio, ZGeom::SA_Truncation, false);
 
 	evaluateApproximation(vProgressiveCoords.back(), "1");
 	setStoredCoordinates(vProgressiveCoords.back(), 1);
@@ -929,7 +931,7 @@ void ShapeEditor::sparseCompressionTest()
 #if 1
 	printBeginSeparator("SOMP, SGW-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4MHB);
-	pursuitAndEvaluate(SA_SOMP);
+	pursuitAndEvaluate(ZGeom::SA_SOMP);
 	
 	evaluateApproximation(vProgressiveCoords.back(), "4");
 	setStoredCoordinates(vProgressiveCoords.back(), 4);
@@ -957,7 +959,7 @@ void ShapeEditor::sparseFeatureFindingTest1()
 	lapType = CotFormula;
 	lapType = Umbrella;
 	dictType = DT_SGW4;
-	approxMethod = SA_SOMP; 
+	approxMethod = ZGeom::SA_SOMP; 
 	//approxMethod = SA_LASSO; 
 	
 	// initializing, segmentation, coloring, and eigendecomposition
@@ -1087,7 +1089,7 @@ void ShapeEditor::sparseDecompositionTest()
 	// SOMP, SGW
 	const int codingSize = 100;
 	DictionaryType dictType = DT_SGW4MHB;
-	SparseApproxMethod saMethod = SA_SOMP;
+	SparseApproxMethod saMethod = ZGeom::SA_SOMP;
 
 	MeshCoordinates reconstructedMeshCoord;
 	
@@ -1158,31 +1160,58 @@ void ShapeEditor::sparseDecompositionTest2()
 	/************************************************************************/
 	/* 1. Do eigendecomposition and compute dictionary MHB and SGW;         */
 	/* 2. Compute decomposition of shapes against dictionaries via S-OMP    */
-	/*    and MCA;                                                          */
+	/*    and MCA;															*/	
 	/* 3. Visualize the magnitude of separated signals as well as           */
 	/*    decomposed shapes (seemingly not meaningful)                      */
 	/* 4. Focus on non-partitioned shape for now                            */
 	/************************************************************************/
-	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
 
+	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
 	revertCoordinates();
-	mStoredCoordinates.resize(7);		// 0: original shape; 1: reconstruction from OMP; 2: MHB part from OMP;
-										// 3: SGW part from OMP; 4: reconstruction from MCA
-										// 5: MHB part from MCA; 6: SGW part from MCA
-	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
-	setStoredCoordinates(oldMeshCoord, 0);	// save original coordinates
+	/************************************************************************
+	// mStoredCoordinates:
+		 0: original shape;
+		 1: reconstruction from OMP; 2: MHB part from OMP;
+		 3: SGW part from OMP; 4: reconstruction from MCA
+		 5: MHB part from MCA; 6: SGW part from MCA		
+	************************************************************************/
 	
-	const int totalVertCount = mMesh->vertCount();
+	const int totalVertCount = mMesh->vertCount();	
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	std::vector<ZGeom::VecNd> vOldCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
+
+	/// Do eigendecomposition
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(-1);		// -1 means no segmentation 
-	int eigenCount = -1;
+	int eigenCount = -1;					// -1 means full decomposition
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	// do full decomposition
 	const ZGeom::EigenSystem& es = mShapeApprox.getSubEigenSystem(0);
+
+#if 1
+	/// S-OMP
+	Dictionary dict1;
+	DictionaryType dictType = DT_SGW4MHB;
+	computeDictionary(dictType, es, dict1);
 	
+	std::vector<ZGeom::SparseCoding> vCodings;
+	ZGeom::SparseApproximationOptions approxOpts;
+	std::vector<ZGeom::VecNd> vReconstructedCoords;
+
+	approxOpts.mCodingSize = 300;
+	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
+	multiChannelSparseApproximate(vOldCoords, dict1, vCodings, approxOpts);
+	multiChannelSparseReconstruct(dict1, vCodings, vReconstructedCoords);
+	MeshCoordinates coordReconstructedOMP(totalVertCount, vReconstructedCoords[0], vReconstructedCoords[1], vReconstructedCoords[2]);
+	setStoredCoordinates(coordReconstructedOMP, 1);
+	std::cout << "S-OMP Reconstruction error: " << oldMeshCoord.difference(coordReconstructedOMP) << '\n';
+#endif 
+
+#if 0 
 	/// SOMP
-	mShapeApprox.constructDictionaries(DT_SGW4MHB);
-	SparseApproxMethod saMethod = SA_SOMP;
 	int codingSize = 300;
+	mShapeApprox.constructDictionaries(DT_SGW4MHB);
+	ZGeom::SparseApproxMethod saMethod = ZGeom::SA_SOMP;
+	
 	mShapeApprox.findSparseRepresentationBySize(saMethod, codingSize);
 		
 	MeshCoordinates reconstructedMeshCoord;
@@ -1276,6 +1305,7 @@ void ShapeEditor::sparseDecompositionTest2()
 		for (int i = 0; i < totalVertCount; ++i) vColors[i].falseColor(sgwRatio[i], 1.0f, ZGeom::CM_JET);
 		emit signatureComputed(QString(colorStr.c_str()));
 	}
+#endif
 
 	std::cout << '\n';
 	printEndSeparator('=', 40);
