@@ -1017,7 +1017,7 @@ void ShapeEditor::sparseFeatureFindingTest1()
 	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
 	timer.stopTimer("Time to do sparse coding: ", "s");
 
-	ZGeom::VecNd vReconstruct = SparseReconstructSingleChannel(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
+	ZGeom::VecNd vReconstruct = singleChannelSparseReconstruct(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
 	double residual = (ZGeom::VecNd(vSignal) - vReconstruct).norm2();	
 	std::cout << "Approximation residual (" << vCoeff.size() << " basis): " << residual << '\n';
 	
@@ -1188,22 +1188,39 @@ void ShapeEditor::sparseDecompositionTest2()
 	const ZGeom::EigenSystem& es = mShapeApprox.getSubEigenSystem(0);
 
 #if 1
-	/// S-OMP
-	Dictionary dict1;
-	DictionaryType dictType = DT_SGW4MHB;
-	computeDictionary(dictType, es, dict1);
-	
 	std::vector<ZGeom::SparseCoding> vCodings;
 	ZGeom::SparseApproximationOptions approxOpts;
 	std::vector<ZGeom::VecNd> vReconstructedCoords;
 
+	/// S-OMP
+	Dictionary dict;
+	DictionaryType dictType = DT_SGW4MHB;
+	computeDictionary(dictType, es, dict);
+	int nDictSize = dict.size();
+	int nEigenCount = es.eigVecCount();
+
 	approxOpts.mCodingSize = 300;
 	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
-	multiChannelSparseApproximate(vOldCoords, dict1, vCodings, approxOpts);
-	multiChannelSparseReconstruct(dict1, vCodings, vReconstructedCoords);
-	MeshCoordinates coordReconstructedOMP(totalVertCount, vReconstructedCoords[0], vReconstructedCoords[1], vReconstructedCoords[2]);
+	multiChannelSparseApproximate(vOldCoords, dict, vCodings, approxOpts);
+	multiChannelSparseReconstruct(dict, vCodings, vReconstructedCoords);
+	MeshCoordinates coordReconstructedOMP(totalVertCount, vReconstructedCoords);
 	setStoredCoordinates(coordReconstructedOMP, 1);
 	std::cout << "S-OMP Reconstruction error: " << oldMeshCoord.difference(coordReconstructedOMP) << '\n';
+
+	std::vector<ZGeom::SparseCoding> codingMHB, codingSGW;
+	multiChannelSplitSparseCoding(vCodings, codingSGW, codingMHB, 
+		[=](const ZGeom::SparseCodingItem& ci) { return ci.index() < nDictSize - nEigenCount; }
+	);
+	std::cout << "#MHB atoms selected: " << codingMHB[0].size() << '\n';
+	std::cout << "#SGW atoms selected: " << codingSGW[0].size() << '\n';
+
+	std::vector<ZGeom::VecNd> vSGWCoords, vMHBCoords;
+	multiChannelSparseReconstruct(dict, codingSGW, vSGWCoords);
+	multiChannelSparseReconstruct(dict, codingMHB, vMHBCoords);
+	MeshCoordinates coordSGW(totalVertCount, vSGWCoords), coordMHB(totalVertCount, vMHBCoords);
+	setStoredCoordinates(coordMHB, 2);
+	setStoredCoordinates(coordSGW, 3);
+
 #endif 
 
 #if 0 
@@ -1231,7 +1248,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	for (int i = 0; i < actualCodingSize; ++i) {
 		for (int c = 0; c < 3; ++c) {
 			const ZGeom::SparseCodingItem& sc = (*vCoeff[c])[i];
-			if (sc.index() < dictSize - es.eigVecSize()) {
+			if (sc.index() < dictSize - es.eigVecCount()) {
 				coordSGW.getCoordFunc(c) += sc.coeff() * dictOMP[sc.index()];
 				if (c == 0) sgwAtomCount++;
 			}

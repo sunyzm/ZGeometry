@@ -571,26 +571,4 @@ void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dic
 	}
 }
 
-void singleChannelSparseRecontruct(const Dictionary& dict, const SparseCoding& coding, VecNd& signalReconstructed)
-{
-	const int signalSize = dict.atomDim();
-	signalReconstructed.resize(signalSize, 0);
-
-	for (int i = 0; i < coding.size(); ++i) {
-		const ZGeom::SparseCodingItem& sc = coding[i];
-		signalReconstructed += sc.coeff() * dict[sc.index()];
-	}
-}
-
-void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed)
-{
-	const int channelCount = (int)vCodings.size();
-	vReconstructed.resize(channelCount);
-
-	for (int c = 0; c < channelCount; ++c) {
-		singleChannelSparseRecontruct(dict, vCodings[c], vReconstructed[c]);
-	}
-}
-
-
 } // end of namespace

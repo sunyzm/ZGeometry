@@ -65,10 +65,10 @@ class SparseCoding
 {
 public:
 	SparseCoding() {}
-	SparseCoding(const VecNd& vDense, double epsilon = 1e-6) 
-	{
-		fromDense(vDense, epsilon);
-	}
+	SparseCoding(const VecNd& vDense, double epsilon = 1e-6) { fromDense(vDense, epsilon); }
+
+	SparseCodingItem& operator [] (int i) { return mApproxItems[i]; }
+	const SparseCodingItem& operator [] (int i) const { return mApproxItems[i]; }
 
 	void fromDense(const VecNd& vDense, double epsilon = 1e-6)
 	{
@@ -81,19 +81,13 @@ public:
 	}
 
 	void clear() { mApproxItems.clear(); }
-
-	void addItem(int i, double c)
-	{
-		mApproxItems.push_back(SparseCodingItem(i, c));
-	}
-		
+	void addItem(const SparseCodingItem& vi) { mApproxItems.push_back(vi);  }
+	void addItem(int i, double c) {	mApproxItems.push_back(SparseCodingItem(i, c));	}		
 	const std::vector<SparseCodingItem>& getApproxItems() const { return mApproxItems; }
-	SparseCodingItem& operator [] (int i) { return mApproxItems[i]; }
-	const SparseCodingItem& operator [] (int i) const { return mApproxItems[i]; }
 	SparseCodingItem& back() { return mApproxItems.back(); }
 	void resize(int n) { mApproxItems.resize(n); }
 	int size() const { return (int)mApproxItems.size(); }
-
+	
 	std::vector<int> getAllAtomIndex() const
 	{
 		std::vector<int> vIdx;
@@ -113,13 +107,18 @@ private:
 	std::vector<SparseCodingItem> mApproxItems;
 };
 
-VecNd DictVecInnerProducts(const Dictionary& dict, const VecNd& vec);
-VecNd DenseReconstructSingleChannel(const Dictionary& dict, const VecNd& vCoeff);
+void filterSparseCoding(const SparseCoding& coding1, SparseCoding& coding2, std::function<bool(const SparseCodingItem&)> funcFilter);
+void splitSparseCoding(const SparseCoding& coding1, SparseCoding& coding2, SparseCoding& coding3, std::function<bool(const SparseCodingItem&)> funcSplit);
+void multiChannelSplitSparseCoding(const std::vector<SparseCoding>& vCodings1, std::vector<SparseCoding>& vCodings2, std::vector<SparseCoding>& vCodings3, std::function<bool(const SparseCodingItem&)> funcSplit);
+VecNd dictVecInnerProducts(const Dictionary& dict, const VecNd& vec);
+VecNd singleChannelDenseReconstruct(const Dictionary& dict, const VecNd& vCoeff);
 std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const std::vector<VecNd>& vCoeffs);
-VecNd SparseReconstructSingleChannel(const Dictionary& dict, const SparseCoding& approx);
-VecNd SparseReconstructSingleChannel(const std::vector<VecNd>& vAtoms, const SparseCoding& approx);
+VecNd singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& approx);
+VecNd singleChannelSparseReconstruct(const std::vector<VecNd>& vDictAtoms, const SparseCoding& approx);
+void  singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& coding, VecNd& signalReconstructed);
 std::vector<VecNd> SparseReconstructMultiChannel(const Dictionary& dict, const std::vector<SparseCoding>& vCodings);
-void ReconstructApproximationMultiChannel(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed);
+void multiChannelSparseReconstruct(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed);
+void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed);
 
 }
 #endif

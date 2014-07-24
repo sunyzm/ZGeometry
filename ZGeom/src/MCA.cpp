@@ -47,7 +47,7 @@ void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>
 	std::vector<double> vMaxCoeff(dictCount);
 	for (int k = 0; k < dictCount; ++k) {
 		int dictSizeK = vDicts[k]->size();
-		VecNd vCoeffK = DictVecInnerProducts(*vDicts[k], vRes);
+		VecNd vCoeffK = dictVecInnerProducts(*vDicts[k], vRes);
 		std::transform(vCoeffK.c_ptr(), vCoeffK.c_ptr_end(), vCoeffK.c_ptr(), FuncAbs);
 		vMaxCoeff[k] = *std::max_element(vCoeffK.c_ptr(), vCoeffK.c_ptr_end());
 	}
@@ -81,13 +81,13 @@ void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>
 			// compute marginal residual
 			VecNd vResK = vRes + vComponents[k];
 			// update k-th component coefficients by thresholding 
-			vTmpCoeff[k] = DictVecInnerProducts(*vDicts[k], vResK);
+			vTmpCoeff[k] = dictVecInnerProducts(*vDicts[k], vResK);
 			MCAoptions::ThresholdingMode threshMode = MCAoptions::SOFT_THRESH;
 			//if (t > 1) threshMode = MCAoptions::HARD_THRESH;
 			
 			std::transform(vTmpCoeff[k].c_ptr(), vTmpCoeff[k].c_ptr_end(), vTmpCoeff[k].c_ptr(), FuncTresholding(threshMode, lambdaThresh));
 			// update k-th component
-			vComponents[k] = DenseReconstructSingleChannel(*vDicts[k], vTmpCoeff[k]);
+			vComponents[k] = singleChannelDenseReconstruct(*vDicts[k], vTmpCoeff[k]);
 		}
 
 		// update residual
