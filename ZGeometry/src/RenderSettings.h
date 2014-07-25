@@ -15,13 +15,11 @@ const float preset_mesh_colors[][4] = {{0.53, 0.70, 0.93, 1.0},
 class RenderSettings
 {    
 public:
-	enum {PointCloud, Wireframe, Mesh, None} displayType;
+	enum { PointCloud, Wireframe, Mesh, None } displayType;
 
 	RenderSettings() : 
 		mesh_color(preset_mesh_colors[0]), displayType(Mesh), 
-		showFeatures(false), showRefPoint(false), 
-		showColorSignature(false), selected(false), 
-		glPolygonMode(Z_FILL), display_shift(0, 0, 0),
+		selected(false), glPolygonMode(Z_FILL), display_shift(0, 0, 0),
 		obj_rot(1,0,0,0), obj_trans(0,0,0),
 		mActiveColorSignatureName(StrAttrColorPreset), 
 		mActiveFeatureName(StrAttrFeatureUnnamed)
@@ -30,9 +28,7 @@ public:
 	}
 	
 	unsigned int glPolygonMode;
-	bool showFeatures;
-	bool showRefPoint;
-	bool showColorSignature;
+	
 	bool selected;
 
 	Vector3D obj_trans;

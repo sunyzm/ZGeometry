@@ -96,6 +96,7 @@ private slots:
 	void toggleShowRefPoint(bool show = false);
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
+	void toggleShowWireframeOverlay(bool show = false);
 	void toggleShowVectors(bool show = false);
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
@@ -182,12 +183,13 @@ private:
 	int                 mSelectedApprox, mCoordIdx;
 	double              mDiffMax;
 
-	enum { Compute_HKS, Compute_HK, 
-		   Compute_MHWS, Compute_MHW, 
-		   Compute_SGWS, Compute_SGW,
-		   Compute_Eig_Func, Compute_Biharmonic, 
-		   Compute_Edit_Basis, Compute_Dict_Atom,
-		   Compute_Geodesics, Compute_Heat,
-		   None
+	enum { 
+		Compute_HKS, Compute_HK, 
+		Compute_MHWS, Compute_MHW, 
+		Compute_SGWS, Compute_SGW,
+		Compute_Eig_Func, Compute_Biharmonic, 
+		Compute_Edit_Basis, Compute_Dict_Atom,
+		Compute_Geodesics, Compute_Heat,
+		None
 	} mLastOperation;
 };

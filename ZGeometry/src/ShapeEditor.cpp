@@ -1221,6 +1221,8 @@ void ShapeEditor::sparseDecompositionTest2()
 	setStoredCoordinates(coordMHB, 2);
 	setStoredCoordinates(coordSGW, 3);
 
+
+
 #endif 
 
 #if 0 

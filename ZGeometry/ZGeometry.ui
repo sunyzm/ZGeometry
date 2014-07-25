@@ -668,6 +668,7 @@
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
+    <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowVectors"/>
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
@@ -1349,6 +1350,14 @@
   <action name="actionAboutQt">
    <property name="text">
     <string>About Qt</string>
+   </property>
+  </action>
+  <action name="actionShowWireframeOverlay">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show wireframe overlay</string>
    </property>
   </action>
  </widget>

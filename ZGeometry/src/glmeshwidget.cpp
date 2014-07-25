@@ -42,15 +42,20 @@ void glColorCoded(float v, float pf)
 
 GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 {
+	reset();
+}
+
+void GLMeshWidget::reset()
+{
 	g_EyeZ = 10.0;
 	g_myNear = 1.0;
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
-		
+
 	mBaseFeatureRadius = 0.5;
 	mFeatureSphereRadius = mBaseFeatureRadius;
 	mMeshPointSize = 2;
-	
+
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
@@ -60,6 +65,7 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
 	m_bDrawRegistration = false;
+	m_bShowWireframeOverlay = false;
 
 	m_nMeshLevel = 0;
 
@@ -451,10 +457,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glPolygonOffset(1.0, 1.0);
 	glPointSize(mMeshPointSize);
 
-	/*** draw mesh ***/
+	//**** draw mesh ****//
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
 	if (m_bShowSignature && tmesh->hasAttr(pRS->mActiveColorSignatureName)) { 
-		// draw with color signature
+		/// draw with color signature
 		const std::vector<ZGeom::Colorf>& vVertColors = tmesh->getVertColors(pRS->mActiveColorSignatureName);
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
@@ -471,7 +477,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		}
 		glEnd();
 	} else { 
-		// draw with solid color
+		/// draw with solid color
 		glColor4f(mesh_color[0], mesh_color[1], mesh_color[2], mesh_color[3]); 
 		glBegin(GL_TRIANGLES);
 		for (int i = 0; i < tmesh->faceCount(); i++) {
@@ -489,20 +495,37 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
+	//**** draw illustrative and auxiliary lines ****//
+	glDisable(GL_LIGHTING);
+	/*** draw wireframe overlay ***/
+	if (m_bShowWireframeOverlay) {
+		glBegin(GL_LINES);
+		glLineWidth(2.0);
+		glColor4f(1.0, 0, 0, 1.0);
+		for (int i = 0; i < tmesh->halfEdgeCount(); ++i) {
+			const CHalfEdge* hf = tmesh->getHalfEdge(i);
+			int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);
+			Vector3D v1 = tmesh->getVertex(p1)->getPosition(), v2 = tmesh->getVertex(p2)->getPosition();
+			v1 += shift; v2 += shift;
+
+			glVertex3d(v1.x, v1.y, v1.z);
+			glVertex3d(v2.x, v2.y, v2.z);
+		}
+		glEnd();
+	}
+
 	/*** draw boundary edges in dark color ***/
 	const std::vector<bool>& vVertIsOnHole = tmesh->getVertsOnHole();
-	glDisable(GL_LIGHTING);
-	if (tmesh->hasBoundary())   //highlight boundary edge 
+	if (tmesh->hasBoundary() || !vVertIsOnHole.empty())   //highlight boundary edge 
 	{
 		glBegin(GL_LINES);	
+		glLineWidth(2.0);
 		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
 			const CHalfEdge* hf = tmesh->getHalfEdge(i);
-			if(hf->isBoundaryEdge()) {
-				int p1 = hf->getVertIndex(0);
-				int p2 = hf->getVertIndex(1);
-				glLineWidth(2.0);
-				if(vVertIsOnHole[p1]) glColor4f(0.0, 0.0, 1.0, 1.0); //show edge on holes in blue
-				else glColor4f(0.0, 0.0, 0.0, 1.0);					 //show boundary edge in black
+			if(hf->isBoundaryEdge()) {	//may be on boundary or on holes
+				int p1 = hf->getVertIndex(0),p2 = hf->getVertIndex(1);				
+				if(vVertIsOnHole[p1]) glColor4f(0.0, 0.0, 1.0, 1.0); //show edges on holes in blue
+				else glColor4f(0.0, 0.0, 0.0, 1.0);					 //show edges on boundaries in black
 				Vector3D v1 = tmesh->getVertex(p1)->getPosition(), v2 = tmesh->getVertex(p2)->getPosition();
 				v1 += shift; v2 += shift;
 				glVertex3d(v1.x, v1.y, v1.z);
@@ -511,27 +534,30 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		}
 		glEnd();
 	}
-	glEnable(GL_LIGHTING);
-
+	
 	/*** draw vectors on mesh ***/
 	if (m_bShowVectors && tmesh->hasAttr(pRS->mActiveVectorName))
 	{
 		const MeshVectorList& meshVecs = tmesh->getAttrValue<MeshVectorList, AR_UNIFORM>(pRS->mActiveVectorName);
 		const double avgEdgeLen = tmesh->getAvgEdgeLength();
-
-		glColor4f(0, 0, 1., 1.);
 		glLineWidth(1.0);
 		glBegin(GL_LINES);
 		for (auto vec : meshVecs) {
-			Vector3D v1 = vec.first;
-			Vector3D vn = vec.second;
+			Vector3D v1 = vec.first, vn = vec.second;
 			Vector3D v2 = v1 + vn * avgEdgeLen * 0.5;
-			v1 += shift; v2 += shift;
+			v1 += shift; v2 += shift; 
+			Vector3D vc = (v1 + v2) / 2.0;
+			glColor4f(0, 0, 1.0, 1.0);	//line shooting from blue
 			glVertex3d(v1.x, v1.y, v1.z);	
+			glVertex3d(vc.x, vc.y, vc.z);
+			glColor4f(1.0, 0, 0, 1.0);	//to red
+			glVertex3d(vc.x, vc.y, vc.z);
 			glVertex3d(v2.x, v2.y, v2.z);
 		}
 		glEnd();
 	}
+	glEnable(GL_LIGHTING);
+
 
 	/*** draw reference point ***/
 	if ( m_bShowRefPoint ) {

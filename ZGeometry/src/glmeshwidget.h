@@ -22,10 +22,11 @@ public:
 	bool m_bDrawRegistration;
 	bool m_bDrawMatching;
 	bool m_bShowCorrespondenceLine;
+	bool m_bShowWireframeOverlay;
 	int	 m_nMeshLevel;
 	std::vector<ZGeom::Colorf> mLegendColors;
 
-	enum {QZ_MOVE, QZ_PICK, QZ_DRAG} editMode;
+	enum { QZ_MOVE, QZ_PICK, QZ_DRAG } editMode;
 
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
@@ -41,6 +42,7 @@ public:
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
 	void setBasePointSize(double r) { mFeatureSphereRadius *= r / mBaseFeatureRadius; mBaseFeatureRadius = r; }
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
+	void reset();
 
 protected:
 	void initializeGL();
@@ -52,7 +54,7 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const Vector3D& trans) const;
-	void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
+//  void drawMesh(const CMesh* tmesh, const CQrot& rot, const Vector3D& trans, const GLfloat* color);
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
 	void drawLegend(QPainter* painter);
 	void drawCorrespondences(const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;

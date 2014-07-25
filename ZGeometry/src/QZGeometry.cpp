@@ -265,6 +265,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowFeatures, SIGNAL(triggered(bool)), this, SLOT(toggleShowFeatures(bool)));
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
+	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowVectors(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
@@ -819,6 +820,15 @@ void QZGeometryWindow::toggleShowSignature( bool show /*= false*/ )
 	ui.glMeshWidget->m_bShowSignature = bToShow;
 	ui.actionShowSignature->setChecked(bToShow);
 	
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::toggleShowWireframeOverlay(bool show /*= false*/)
+{
+	bool toShow = !ui.glMeshWidget->m_bShowWireframeOverlay;
+	ui.glMeshWidget->m_bShowWireframeOverlay = toShow;
+	ui.actionShowWireframeOverlay->setChecked(toShow);
+
 	ui.glMeshWidget->update();
 }
 
