@@ -35,6 +35,7 @@ void CalculateSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom:
 	const int vertCount = matSGW.colCount();
 	const int totalAtomCount = matSGW.rowCount();
 
+	// normalize atoms to have norm 1
 	dict.resize(totalAtomCount, vertCount);
 	for (int i = 0; i < totalAtomCount; ++i) {
 		ZGeom::VecNd newBasis = matSGW.getRowVec(i);
@@ -77,6 +78,9 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 		}
 		break;
 
+	case DT_SGW1:
+		CalculateSGWDict(es, 1, dict);
+		break;
 	case DT_SGW3:
 		CalculateSGWDict(es, 3, dict);
 		break;
@@ -103,7 +107,6 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 		for (int i = 0; i < eigVecCount; ++i)
 			dict[atomCount + i] = es.getEigVec(i);
 	}
-
 }
 
 void ShapeApprox::init( CMesh* mesh )

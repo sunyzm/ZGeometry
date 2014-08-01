@@ -576,6 +576,7 @@
     <addaction name="actionLoadMatching"/>
     <addaction name="actionSaveMatching"/>
     <addaction name="separator"/>
+    <addaction name="actionMeshProperties"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -1358,6 +1359,11 @@
    </property>
    <property name="text">
     <string>Show wireframe overlay</string>
+   </property>
+  </action>
+  <action name="actionMeshProperties">
+   <property name="text">
+    <string>Mesh Properties</string>
    </property>
   </action>
  </widget>

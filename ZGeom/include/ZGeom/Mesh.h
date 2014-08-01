@@ -547,6 +547,14 @@ public:
 		else return addAttr<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName, AttrType::AT_VEC_COLOR);
 	}
 
+	void addColorAttr(const std::string& colorAttrName, const std::vector<ZGeom::Colorf>& vColors) {
+		if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
+		else {
+			std::vector<ZGeom::Colorf>& vNewColor = addColorAttr(colorAttrName).attrValue();
+			vNewColor = vColors;
+		}
+	}
+
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName) {
 		return getAttrValue<std::vector<ZGeom::Colorf>, AR_VERTEX>(colorAttrName);
 	}

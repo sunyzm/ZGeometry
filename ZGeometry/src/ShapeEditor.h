@@ -42,6 +42,8 @@ signals:
 	void coordinateSelected(int selectedApprox, int coordIdx);
 
 private:
+	void addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors);
+
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
 	void reconstructSpectralWavelet();
 	

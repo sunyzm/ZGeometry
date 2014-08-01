@@ -86,9 +86,13 @@ public:
 	T normEuclidean() const { return norm2(); }
 	T pNorm(double p) const;
 	T inftyNorm() const;
+	T max_element() const;
+	T min_element() const;
+	std::pair<T, T> min_max_element() const;
 
 	T dot(const VecN<T>& v2) const;
 	T sum() const;
+	T mean() const;
 	T partial_sum(int a, int b) const;
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
@@ -410,6 +414,31 @@ inline T VecN<T>::partial_sum(int a, int b) const
 {
 	assert(a >= 0 && a <= b && b <= mDim);
 	return std::accumulate(mVec + a, mVec + b, 0);
+}
+
+template<typename T>
+inline T VecN<T>::mean() const
+{
+	return sum() / mDim;
+}
+
+template<typename T>
+inline T VecN<T>::min_element() const
+{
+	return *std::min_element(c_ptr(), c_ptr_end());
+}
+
+template<typename T>
+inline T VecN<T>::max_element() const
+{
+	return *std::max_element(c_ptr(), c_ptr_end());
+}
+
+template<typename T>
+inline std::pair<T, T> VecN<T>::min_max_element() const
+{
+	auto pa = std::minmax_element(c_ptr(), c_ptr_end());
+	return std::make_pair(*pa.first, *pa.second);
 }
 
 typedef VecN<float>  VecNs;

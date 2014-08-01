@@ -625,55 +625,70 @@ void DifferentialMeshProcessor::computeGeometricLaplacianCoordinate( const CMesh
 
 void DifferentialMeshProcessor::computeSGWMat( const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW )
 {
+	ZGeom::runtime_assert(waveletScaleNum >= 1, "Illegal waveletScaleNum");
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 	const int nWaveletScales = waveletScaleNum;
-	const int nScalingScales = 1;
-	const int totalAtomCount = vertCount*(nWaveletScales+1);
-	matSGW.resize(totalAtomCount, vertCount);
-
-	double maxEigVal = mhb.getEigVal(mhb.eigVecCount()-1);
-	const double K = 20.0;
-	double minEigVal = maxEigVal / K;
-	double minT = 2./maxEigVal, maxT = 2./minEigVal;		
-	const double tMultiplier = std::pow(maxT/minT, 1.0 / double(nWaveletScales - 1));
-	const double gamma = 1.3849;
+	const double *pEigVals = &(mhb.getEigVals()[0]);
+	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);
+	double *pEigVec = matEigVecs.raw_ptr();
+	for (int i = 0; i < eigCount; ++i)
+		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
 
 	std::function<double(double)> genG = [](double x) {
 		if (x < 1) return x*x;
 		else if (x <= 2) return (-5. + 11.*x - 6.*x*x + x*x*x);
-		else return 4.0/x/x;
-	};
-	std::function<double(double)> genH = [=](double x) {
-		return gamma * std::exp(-std::pow(x/(0.6*minEigVal), 4));
+		else return 4.0 / x / x;
 	};
 
-	std::vector<double> vWaveletScales(nWaveletScales);	
-	for (int s = 0; s < nWaveletScales; ++s)
-		vWaveletScales[s] = minT * std::pow(tMultiplier, s);
-
-	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
-	const double *pEigVals = &(mhb.getEigVals()[0]);
-	double *pEigVec = matEigVecs.raw_ptr();
-	for (int i = 0; i < eigCount; ++i) 
-		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
-
-	//////////////////////////////////////////////////////////////////////////
-	// compute SGW with AMP
-	std::vector<double> vDiag(eigCount);
-	for (int s = 0; s < nWaveletScales; ++s) 
+	if (waveletScaleNum >= 2)
 	{
-		for (int i = 0; i < eigCount; ++i) 
-			vDiag[i] = genG(vWaveletScales[s] * pEigVals[i]);
-		double *pResult = matSGW.raw_ptr() + vertCount * vertCount * s;
-		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
-	}
+		const int nScalingScales = 1;
+		const int totalAtomCount = vertCount*(nWaveletScales + 1);
+		matSGW.resize(totalAtomCount, vertCount);
+		double maxEigVal = mhb.getEigVal(mhb.eigVecCount() - 1);
+		const double K = 20.0;
+		double minEigVal = maxEigVal / K;
+		double minT = 2. / maxEigVal, maxT = 2. / minEigVal;
+		const double tMultiplier = std::pow(maxT / minT, 1.0 / double(nWaveletScales - 1));
+		const double gamma = 1.3849;
+		std::vector<double> vWaveletScales(nWaveletScales);
+		for (int s = 0; s < nWaveletScales; ++s)
+			vWaveletScales[s] = minT * std::pow(tMultiplier, s);
 
-	{
-		for (int i = 0; i < eigCount; ++i) 
+		//////////////////////////////////////////////////////////////////////////
+		// compute SGW matrix with AMP
+		std::vector<double> vDiag(eigCount);
+		//// compute wavelet functions
+		for (int s = 0; s < nWaveletScales; ++s)
+		{
+			for (int i = 0; i < eigCount; ++i) {
+				vDiag[i] = genG(vWaveletScales[s] * pEigVals[i]);
+			}
+			double *pResult = matSGW.raw_ptr() + vertCount * vertCount * s;
+			ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+		}
+		//// compute scaling functions 	
+		std::function<double(double)> genH = [=](double x) {
+			return gamma * std::exp(-std::pow(x / (0.6*minEigVal), 4));
+		};
+		for (int i = 0; i < eigCount; ++i) {
 			vDiag[i] = genH(pEigVals[i]);
+		}
 		double *pResult = matSGW.raw_ptr() + vertCount * vertCount * nWaveletScales;
-		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);	
+	} 
+	/// single-scale wavelets
+	else if (waveletScaleNum == 1)
+	{
+		matSGW.resize(vertCount, vertCount);
+		std::vector<double> vDiag(eigCount);
+		double maxEigVal = mhb.getEigVal(mhb.eigVecCount() - 1);
+		double minT = 2. / maxEigVal;
+		for (int i = 0; i < eigCount; ++i) {
+			vDiag[i] = genG(minT * pEigVals[i]);
+		}
+		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], matSGW.raw_ptr());
 	}
 }
 

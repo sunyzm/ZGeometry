@@ -4,7 +4,7 @@
 
 namespace ZGeom {
 	
-void interpolateColor(const float *color1, const float *color2, float coeff1, float *color3)
+inline void interpolateColor(const float *color1, const float *color2, float coeff1, float *color3)
 {
 	float coeff2 = 1 - coeff1;
 	for (int i = 0; i < 3; ++i) {
@@ -37,13 +37,15 @@ void Colorf::setAs( const float *c )
 
 void Colorf::falseColor( float gray, float alpha, ColorMapType cmt)
 {
-	assert(0 <= gray && gray <= 1.f);
+	//assert(0 <= gray && gray <= 1.f);
 	/*
 	mVal[0] = gray;
 	mVal[1] = (gray < 0.5f) ? gray * 2.f : ((1.f - gray) * 2.f);
 	mVal[2] = 1.f - gray;
 	*/
 	if (cmt == CM_JET) {
+		if (gray < 0) gray = 0;
+		else if (gray > 1) gray = 1.f;
 		if (gray < .125)
 			interpolateColor(ColorDarkBlue, ColorBlue, gray/.125f, mVal);
 		else if (gray < .375)

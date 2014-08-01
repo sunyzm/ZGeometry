@@ -6,7 +6,7 @@
 #include "DifferentialMeshProcessor.h"
 
 using ZGeom::SparseApproxMethod;
-enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
+enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW1, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
 
 
 void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict);
