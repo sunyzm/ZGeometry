@@ -77,7 +77,6 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 void ShapeEditor::revertCoordinates()
 {
 	mMesh->setVertCoordinates(getOldMeshCoord());
-	qout.output("Coordinate reverted", OUT_STATUS);
 }
 
 void ShapeEditor::nextCoordinates()
@@ -1175,16 +1174,8 @@ void ShapeEditor::sparseDecompositionTest2()
 	/* 4. Focus on non-partitioned shape for now                            */
 	/************************************************************************/
 
-	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
 	revertCoordinates();
-	/************************************************************************
-	 mStoredCoordinates:
-		 0: original shape;
-		 1: reconstruction from OMP; 2: MHB part from OMP;
-		 3: SGW part from OMP; 4: reconstruction from MCA
-		 5: MHB part from MCA; 6: SGW part from MCA		
-	************************************************************************/
-	
+	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
 	const int totalVertCount = mMesh->vertCount();	
 	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
@@ -1192,7 +1183,7 @@ void ShapeEditor::sparseDecompositionTest2()
 
 	/// Do Eigendecomposition
 	//
-	std::cout << "-- Do Eigendecomposition --\n";
+	std::cout << "==== Do Eigendecomposition ====\n";
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(-1);		// -1 means no segmentation 
 	int eigenCount = -1;					// -1 means full decomposition
@@ -1201,14 +1192,14 @@ void ShapeEditor::sparseDecompositionTest2()
 
 	/// Computer Dictionary
 	//
-	std::cout << "-- Compute Dictionaries --\n";
+	std::cout << "\n==== Compute Dictionaries ====\n";
 	Dictionary dict1, dict2;
 	computeDictionary(DT_Fourier, es, dict1);
 	computeDictionary(DT_SGW1, es, dict2);
 	
 	/// Compute OMP Approximation
 	//
-	std::cout << "-- Compute OMP Approximation\n";
+	std::cout << "\n==== Compute OMP Approximation ====\n";
 	ZGeom::SparseApproximationOptions approxOpts;
 	approxOpts.mCodingSize = 50;
 	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
@@ -1219,17 +1210,14 @@ void ShapeEditor::sparseDecompositionTest2()
 	MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
 	setStoredCoordinates(coordApproxOMP, 0);
 	changeCoordinates(0);
-	std::cout << "* S-OMP Reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
-	std::cout << "* MHB coefficients: ";
-	for (auto p : vOMPCodings[0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
-	std::cout << '\n';
+	std::cout << "- S-OMP Reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
 	
 	/// Add SGW components
 	//
-	std::cout << "-- Mix with extra SGW components --\n";
+	std::cout << "\n==== Mix with extra SGW components ====\n";
 	std::vector<ZGeom::VecNd> vAlteredCoords = vApproximatedCoords;
 	int nnz2 = 15;
-	std::vector<std::pair<int, double> > vAddedCoeff;
+	std::vector<ZGeom::SparseCoding> vAddedCoeff(3);
 	std::mt19937 engine(0);
 	std::uniform_int_distribution<int> distNZ(0, dict2.size() - 1);
 	std::normal_distribution<double> distCoeff(0, originalAvgEdgeLen);
@@ -1239,14 +1227,20 @@ void ShapeEditor::sparseDecompositionTest2()
 		for (int c = 0; c < 3; ++c) {
 			double coeff = distCoeff(engine);
 			vAlteredCoords[c] += coeff * dict2[selectedNNZ];
-			if (c == 0) vAddedCoeff.push_back(std::make_pair(selectedNNZ, coeff));
+			vAddedCoeff[c].addItem(selectedNNZ, coeff);
 		}
 	}
 	MeshCoordinates coordAltered(totalVertCount, vAlteredCoords);
 	setStoredCoordinates(coordAltered, 1);	
-	std::cout << "* SGW coefficients: ";
-	for (auto p : vAddedCoeff) std::cout << '(' << p.first << ", " << p.second << ") ";
-	std::cout << '\n';
+
+	std::cout << "- #MHB: " << vOMPCodings[0].size() << "\t#SGW: " << vAddedCoeff[0].size() << '\n';
+	vOMPCodings[0].sortByCoeff(); vAddedCoeff[0].sortByCoeff();
+	std::cout << "-- MHB coefficients: ";
+	for (auto p : vOMPCodings[0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
+	std::cout << "\n";
+	std::cout << "-- SGW coefficients: ";
+	for (auto p : vAddedCoeff[0].getApproxItems()) std::cout << '(' << p.index() << ", " << p.coeff() << ") ";
+	std::cout << "\n";
 
 	// compute color signatures
 	const VecNd& vX0 = coordApproxOMP.getXCoord(), vX1 = coordAltered.getXCoord();
@@ -1271,7 +1265,7 @@ void ShapeEditor::sparseDecompositionTest2()
 
 	/// Compute MCA decomposition
 	//
-	std::cout << "-- Compute MCA Decomposition --\n";
+	std::cout << "\n==== Compute MCA Decomposition ====\n";
 	std::vector<const Dictionary*> vDicts{ &dict1, &dict2 };
 	ZGeom::MCAoptions mcaOpts;
 	mcaOpts.nIter = 50;
@@ -1282,12 +1276,14 @@ void ShapeEditor::sparseDecompositionTest2()
 	VecNd vXC = singleChannelSparseReconstruct(dict1, vMCACoding[0]);
 	VecNd vXT = singleChannelSparseReconstruct(dict2, vMCACoding[1]);
 
-	std::cout << "* MCA1 coefficients: ";
+	vMCACoding[0].sortByCoeff(); vMCACoding[1].sortByCoeff();
+	std::cout << "- #MCA1: " << vMCACoding[0].size() << "\t#MCA2: " << vMCACoding[1].size() << '\n';
+	std::cout << "-- MCA1 coefficients: ";
 	for (auto p : vMCACoding[0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
-	std::cout << '\n';
-	std::cout << "* MCA2 coefficients: ";
+	std::cout << "\n";
+	std::cout << "-- MCA2 coefficients: ";
 	for (auto p : vMCACoding[1].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
-	std::cout << '\n';
+	std::cout << "\n";
 
 	std::string colorStrMCA1 = "color_x_coord_mca1", colorStrMCA2 = "color_x_coord_mca2";
 	std::vector<ZGeom::Colorf> vColorsMCA1(totalVertCount), vColorsMCA2(totalVertCount);

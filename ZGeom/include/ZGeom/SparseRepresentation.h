@@ -1,6 +1,7 @@
 #ifndef ZGEOM_DICTIONARY_H
 #define ZGEOM_DICTIONARY_H
 #include "VecN.h"
+#include <algorithm>
 
 namespace ZGeom {
 
@@ -60,7 +61,6 @@ private:
 	double mCoeff;
 };
 
-
 class SparseCoding
 {
 public:
@@ -101,6 +101,18 @@ public:
 			os << t.index() << ", " << t.coeff() << '\n';
 		}
 		return os;
+	}
+
+	void sortByIndex() {
+		std::sort(mApproxItems.begin(), mApproxItems.end(),	[](const SparseCodingItem& c1, const SparseCodingItem& c2){
+			return c1.index() < c2.index();
+		});
+	}
+
+	void sortByCoeff() {
+		std::sort(mApproxItems.begin(), mApproxItems.end(), [](const SparseCodingItem& c1, const SparseCodingItem& c2){
+			return fabs(c1.coeff()) > fabs(c2.coeff());
+		});
 	}
 
 private:
