@@ -1178,6 +1178,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	std::cout << "\n======== Starting sparseDecompositionTest2 ========\n";
 	const int totalVertCount = mMesh->vertCount();	
 	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
+	const double bbDiag = mMesh->getBoundingBox().length() * 2;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 	std::vector<ZGeom::VecNd> vOriginalCoords { oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };	
 
@@ -1208,7 +1209,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	multiChannelSparseApproximate(vOriginalCoords, dict1, vOMPCodings, approxOpts);
 	multiChannelSparseReconstruct(dict1, vOMPCodings, vApproximatedCoords);
 	MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
-	setStoredCoordinates(coordApproxOMP, 0);
+	setStoredCoordinates(coordApproxOMP, 0);	// set as base mesh coordinates
 	changeCoordinates(0);
 	std::cout << "- S-OMP Reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
 	
@@ -1220,7 +1221,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	std::vector<ZGeom::SparseCoding> vAddedCoeff(3);
 	std::mt19937 engine(0);
 	std::uniform_int_distribution<int> distNZ(0, dict2.size() - 1);
-	std::normal_distribution<double> distCoeff(0, originalAvgEdgeLen);
+	std::normal_distribution<double> distCoeff(0, bbDiag * 0.01);
 	for (int i = 0; i < nnz2; ++i) {
 		//int selectedNNZ = dict2.size() * (rand() / (double)RAND_MAX);
 		int selectedNNZ = distNZ(engine);
@@ -1242,7 +1243,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	for (auto p : vAddedCoeff[0].getApproxItems()) std::cout << '(' << p.index() << ", " << p.coeff() << ") ";
 	std::cout << "\n";
 
-	// compute color signatures
+	// compute and display color signatures
 	const VecNd& vX0 = coordApproxOMP.getXCoord(), vX1 = coordAltered.getXCoord();
 	auto px1 = vX0.min_max_element(), px2 = vX1.min_max_element();
 	//double x_min = min(px1.first, px2.first), x_max = max(px1.second, px2.second);
@@ -1260,7 +1261,7 @@ void ShapeEditor::sparseDecompositionTest2()
 	std::vector<double> vDiff = (vX0-vX1).toStdVector();
 	for (auto& d : vDiff) d = std::fabs(d);
 	double maxDiff = *std::max_element(vDiff.begin(), vDiff.end());
-	for (int i = 0; i < totalVertCount; ++i) vColors2[i].falseColor(min(float(vDiff[i]/originalAvgEdgeLen), 1.f), 1.f, ZGeom::CM_COOL);
+	for (int i = 0; i < totalVertCount; ++i) vColors2[i].falseColor(min(float(vDiff[i]/(bbDiag*0.02)), 1.f), 1.f, ZGeom::CM_JET);
 	addColorSignature(colorStr2, vColors2);
 
 	/// Compute MCA decomposition
@@ -1271,25 +1272,34 @@ void ShapeEditor::sparseDecompositionTest2()
 	mcaOpts.nIter = 50;
 	mcaOpts.threshMode = ZGeom::MCAoptions::HARD_THRESH;
 	mcaOpts.threshStrategy = ZGeom::MCAoptions::MIN_OF_MAX;
-	std::vector<ZGeom::SparseCoding> vMCACoding;
-	singleChannelMCA(vAlteredCoords[0], vDicts, vMCACoding, &mcaOpts);
-	VecNd vXC = singleChannelSparseReconstruct(dict1, vMCACoding[0]);
-	VecNd vXT = singleChannelSparseReconstruct(dict2, vMCACoding[1]);
+	std::vector<ZGeom::SparseCoding> vMCACodings[3];
+	for (int c = 0; c < 3; ++c) {
+		singleChannelMCA(vAlteredCoords[c], vDicts, vMCACodings[c], &mcaOpts);
+	}
+	std::vector<VecNd> vCartoon(3), vTexture(3);
+	for (int c = 0; c < 3; ++c) {
+		vCartoon[c] = singleChannelSparseReconstruct(dict1, vMCACodings[c][0]);
+		vTexture[c] = singleChannelSparseReconstruct(dict2, vMCACodings[c][1]);
+	}
+	MeshCoordinates mcCartoon(totalVertCount, vCartoon);
+	setStoredCoordinates(mcCartoon, 2);
 
-	vMCACoding[0].sortByCoeff(); vMCACoding[1].sortByCoeff();
-	std::cout << "- #MCA1: " << vMCACoding[0].size() << "\t#MCA2: " << vMCACoding[1].size() << '\n';
+	VecNd& vXC = vCartoon[0];
+	VecNd& vXT = vTexture[0];
+	vMCACodings[0][0].sortByCoeff(); vMCACodings[0][1].sortByCoeff();
+	std::cout << "- #MCA1: " << vMCACodings[0][0].size() << "\t#MCA2: " << vMCACodings[0][1].size() << '\n';
 	std::cout << "-- MCA1 coefficients: ";
-	for (auto p : vMCACoding[0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
+	for (auto p : vMCACodings[0][0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
 	std::cout << "\n";
 	std::cout << "-- MCA2 coefficients: ";
-	for (auto p : vMCACoding[1].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
+	for (auto p : vMCACodings[0][1].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
 	std::cout << "\n";
 
 	std::string colorStrMCA1 = "color_x_coord_mca1", colorStrMCA2 = "color_x_coord_mca2";
 	std::vector<ZGeom::Colorf> vColorsMCA1(totalVertCount), vColorsMCA2(totalVertCount);
 	for (int i = 0; i < totalVertCount; ++i) {
 		vColorsMCA1[i].falseColor((vXC[i] - x_min) / (x_max - x_min), 1.f, ZGeom::CM_JET);
-		vColorsMCA2[i].falseColor(min(float(fabs(vXT[i]/originalAvgEdgeLen)), 1.f), 1.f, ZGeom::CM_COOL);
+		vColorsMCA2[i].falseColor(min(float(fabs(vXT[i]/(0.02*bbDiag))), 1.f), 1.f, ZGeom::CM_JET);
 	}
 	addColorSignature(colorStrMCA1, vColorsMCA1);
 	addColorSignature(colorStrMCA2, vColorsMCA2);

@@ -27,8 +27,8 @@ public:
 
   
 	// operator
-	double	  length()		{ return std::sqrt(x*x + y*y); }
-	double	  length2()		{ return x*x + y*y;	}
+	double	  length()	const	{ return std::sqrt(x*x + y*y); }
+	double	  length2()	const	{ return x*x + y*y;	}
 	double	  normalize()	{ double len = length(); if (!EQUALZERO(len)) {x/=len; y/=len;}	return len;	}
 	Vector2D& operator=(const Vector2D& v);
 	Vector2D& operator+=(const Vector2D& v);
@@ -73,10 +73,10 @@ public :
 	Vector3D(const Vector3D& v)					{ x = v.x;	y = v.y;	z = v.z;}
 
 	// operator
-	double	  length()		{	return std::sqrt(x*x + y*y + z*z);	}
-	double	  length2()		{	return x*x + y*y + z*z;	}
+	double	  length() const		{	return std::sqrt(x*x + y*y + z*z);	}
+	double	  length2()	const	{	return x*x + y*y + z*z;	}
 	Vector3D  normalize();
-	double	  distantFrom( const Vector3D& v )  { return std::sqrt( (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z) ); }
+	double	  distantFrom( const Vector3D& v ) const { return std::sqrt( (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z) ); }
 	bool	  equals(const Vector3D& v2) const { return abs(x-v2.x) < 1e-6 && abs(y-v2.y) < 1e-6 && abs(z-v2.z) < 1e-6; }
 	Vector3D& operator =(const Vector3D& v);
 	Vector3D& operator +=(const Vector3D& v);
