@@ -2,7 +2,6 @@
 #define ZGEOM_DENSE_MATRIX_H
 #include <fstream>
 #include <string>
-#include <fstream>
 #include <algorithm>
 #include <stdexcept>
 #include "common.h"
@@ -21,6 +20,7 @@ namespace ZGeom
 		}
 		DenseMatrix(const DenseMatrix<T>& m2);
 		DenseMatrix(DenseMatrix<T>&& m2);
+		DenseMatrix(const std::vector<VecN<T> >& vRowVecs);
 		const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
 		~DenseMatrix() { delete []mData; }
 
@@ -72,6 +72,17 @@ namespace ZGeom
 	{
 		mData = new T[mRow*mCol];
 		std::copy_n(m2.mData, mRow*mCol, mData);
+	}
+
+	template<typename T>
+	inline DenseMatrix<T>::DenseMatrix(const std::vector<VecN<T> >& vRowVecs)
+	{
+		mRow = vRowVecs.size();
+		mCol = vRowVecs[0].size();
+		mData = new T[mRow*mCol];
+		for (int i = 0; i < mRow; ++i) {
+			std::copy_n(vRowVecs[i].c_ptr(), mCol, mData + mCol*i);
+		}
 	}
 
 	template<typename T>
@@ -192,6 +203,8 @@ namespace ZGeom
 		delete []mData;
 		mData = newData;
 	}
+
+
 
 } //end of namespace
 

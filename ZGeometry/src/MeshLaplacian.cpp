@@ -9,6 +9,7 @@
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/EigenCompute.h>
 #include <ZGeom/MeshProcessing.h>
+#include <ZGeom/zassert.h>
 
 using namespace std;
 using ZGeom::PI;
@@ -38,30 +39,30 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 	mW.convertFromDiagonal(vWeights);
 
 	mConstructed = true;
-	m_laplacianType = Tutte;
+	mLaplacianType = Tutte;
 }
 
 void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 {
-	int meshSize = tmesh->vertCount();
+	mOrder = tmesh->vertCount();
 	ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
 	mLS.scale(-1);
-	mW.setToIdentity(meshSize);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
+	mW.setToIdentity(mOrder);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
 
 	mConstructed = true;
-	m_laplacianType = Umbrella;
+	mLaplacianType = Umbrella;
 }
 
 void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
 {
 	/* L = D^(-1/2) * (D-A) * D^(-1/2) */
-	int meshSize = tmesh->vertCount();
+	mOrder = tmesh->vertCount();
 	ConstructMeshMatrix(*tmesh, ZGeom::MM_NORMALIZED_GRAPH_LAPLACE, mLS);
 	mLS.scale(-1);
-	mW.setToIdentity(meshSize);
+	mW.setToIdentity(mOrder);
 
 	mConstructed = true;
-	m_laplacianType = NormalizedUmbrella;
+	mLaplacianType = NormalizedUmbrella;
 }
 
 /* Construct negative discrete Laplace operator */
@@ -140,7 +141,7 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 	mW.convertFromDiagonal(vWeights);
 
 	mConstructed = true;
-	m_laplacianType = CotFormula;
+	mLaplacianType = CotFormula;
 }
 
 void MeshLaplacian::constructSymCot( const CMesh* tmesh )
@@ -150,7 +151,7 @@ void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 	
 	mW.setToIdentity(vertCount);
 	mConstructed = true;
-	m_laplacianType = SymCot;
+	mLaplacianType = SymCot;
 }
 
 void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, double para2 )
@@ -494,4 +495,18 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 	mConstructed = true;
+}
+
+void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es)
+{
+	int nActualEigen = nEig;
+	if (nEig == -1 || nEig >= mOrder) nActualEigen = mOrder - 1;
+	if (mLaplacianType == Tutte || mLaplacianType == CotFormula ||
+		mLaplacianType == Anisotropic1 || mLaplacianType == Anisotropic2) {
+		this->decompose(nActualEigen, eng, es, true);
+	}
+	else if (mLaplacianType == Umbrella || mLaplacianType == SymCot) {
+		this->decompose(nActualEigen, eng, es, false);
+	}
+	else throw std::logic_error("The symmetry property of Laplacian cannot be determined!");
 }

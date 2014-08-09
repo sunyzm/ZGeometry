@@ -250,6 +250,7 @@
     <ClInclude Include="include\ZGeom\SparseMatrixCOO.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCSR.h" />
     <ClInclude Include="include\ZGeom\SparseMatVecMultiplier.h" />
+    <ClInclude Include="include\ZGeom\SparseSolver.h" />
     <ClInclude Include="include\ZGeom\SparseSymMatVecSolver.h" />
     <ClInclude Include="include\ZGeom\SparseSymSolver.h" />
     <ClInclude Include="include\ZGeom\common.h" />
@@ -287,6 +288,7 @@
     <ClCompile Include="src\SparseMatrixCSR.cpp" />
     <ClCompile Include="src\SparseMatVecMultiplier.cpp" />
     <ClCompile Include="src\SparseRepresentation.cpp" />
+    <ClCompile Include="src\SparseSolver.cpp" />
     <ClCompile Include="src\timer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -43,9 +43,10 @@ void Colorf::falseColor( float gray, float alpha, ColorMapType cmt)
 	mVal[1] = (gray < 0.5f) ? gray * 2.f : ((1.f - gray) * 2.f);
 	mVal[2] = 1.f - gray;
 	*/
+	if (gray < 0) gray = 0;
+	else if (gray > 1) gray = 1.f;
+
 	if (cmt == CM_JET) {
-		if (gray < 0) gray = 0;
-		else if (gray > 1) gray = 1.f;
 		if (gray < .125)
 			interpolateColor(ColorDarkBlue, ColorBlue, gray/.125f, mVal);
 		else if (gray < .375)

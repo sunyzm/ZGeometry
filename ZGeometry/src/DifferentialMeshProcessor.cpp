@@ -120,8 +120,6 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
-	if (!g_engineWrapper.isOpened())
-		throw std::logic_error("Matlab engine not opened for Laplacian decomposition!");
 	
 	if (laplacianType == Tutte || laplacianType == CotFormula || laplacianType == Anisotropic1 || laplacianType == Anisotropic2)
 		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], true);

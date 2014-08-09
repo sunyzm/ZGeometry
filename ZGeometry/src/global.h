@@ -91,4 +91,3 @@ const std::string StrAttrFeatureSparseSGW2    = "mesh_feature_sparse_sgw2";
 const std::string StrAttrVectUnnamed         = "mesh_vector_unnamed";
 const std::string StrAttrVecFaceNormal       = "mesh_vector_face_normals";
 const std::string StrAttrVecVertNormal		 = "mesh_vector_vert_normals";
-

@@ -136,6 +136,9 @@
     <ClInclude Include="include\ZGeom\SparseRepresentation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\SparseSolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -211,6 +214,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\SparseRepresentation.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\SparseSolver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

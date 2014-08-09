@@ -12,11 +12,11 @@
 class MeshLaplacian : public ZGeom::Laplacian
 {
 public:
-	LaplacianType m_laplacianType;
+	LaplacianType mLaplacianType;
 
 	typedef void (MeshLaplacian::*MeshLaplacianConstruct)(const CMesh* tmesh);	
 
-	MeshLaplacian() : Laplacian() 
+	MeshLaplacian() : ZGeom::Laplacian() 
 	{ 
 		mConstructFunc[Tutte] = &MeshLaplacian::constructTutte; 
 		mConstructFunc[Umbrella] = &MeshLaplacian::constructUmbrella;
@@ -31,14 +31,13 @@ public:
 	void constructTutte(const CMesh* tmesh);				// negative asymmetric graph Laplacian; random walk. L = D^(-1) * (A-D) = D^(-1)*A - I
 	void constructCotFormula(const CMesh* tmesh);			// negative cotangent formula
 	void constructSymCot(const CMesh* tmesh);				// negative symmetric cotangent formula
-
 	void constructAnisotropic(const CMesh* tmesh, double para1, double para2);
 	void constructAnisotropic2(const CMesh* tmesh, double para1, double para2);
 	void constructAnisotropic1(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructAnisotropic4(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
-
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
+	void meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper *eng, ZGeom::EigenSystem& es);
 
 private:
 	MeshLaplacianConstruct mConstructFunc[LaplacianTypeCount];

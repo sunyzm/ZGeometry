@@ -481,7 +481,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	computeLaplacian(CotFormula);
-	//computeLaplacian(SymCot);
+	computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1); 	
 	//computeLaplacian(Anisotropic2);
 	//setLaplacianType("CotFormula");

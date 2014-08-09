@@ -2470,13 +2470,13 @@ void CMesh::scaleAreaToVertexNum()
 void CMesh::gatherStatistics()
 {
 	// collect/compute statistics
-	// 0. individual face normal
-	// 1. avg edge length
-	// 2. bounding box
-	// 3. center
-	// 4. boundary vertex number
-	// 5. individual vertex normal
-	// 6. individual vertex curvature value
+	// 1. face normals
+	// 2. vertex normals
+	// 3. boundary vertex
+	// 4. mesh center
+	// 5. bounding box
+	// 6. average edge length
+	// 7. individual vertex curvature value
 	
 	calFaceNormals();
 	calVertNormals();

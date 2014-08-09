@@ -72,7 +72,9 @@ public:
 	void clearAllHandles() { mHandles.clear(); }
 
 	// ---- attribute access --- //
-	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
+	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const {
+		return mMeshLaplacians[laplacianType]; 
+	}
 	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
 
