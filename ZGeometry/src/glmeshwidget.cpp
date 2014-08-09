@@ -55,20 +55,19 @@ void GLMeshWidget::reset()
 	mBaseFeatureRadius = 0.5;
 	mFeatureSphereRadius = mBaseFeatureRadius;
 	mMeshPointSize = 2;
+	m_nMeshLevel = 0;
 
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
 	m_bShowVectors = false;
-
 	m_bShowRefPoint = false;
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
 	m_bDrawRegistration = false;
 	m_bShowWireframeOverlay = false;
-
-	m_nMeshLevel = 0;
-
+	m_bShowBoundingBox = false;
+	
 	setAutoFillBackground(false);
 }
 
@@ -495,7 +494,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 	glDisable(GL_POLYGON_OFFSET_FILL);
 
-	//**** draw illustrative and auxiliary lines ****//
+	///**** draw illustrative and auxiliary lines ****///
 	glDisable(GL_LIGHTING);
 	/*** draw wireframe overlay ***/
 	if (m_bShowWireframeOverlay) {
@@ -523,7 +522,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
 			const CHalfEdge* hf = tmesh->getHalfEdge(i);
 			if(hf->isBoundaryEdge()) {	//may be on boundary or on holes
-				int p1 = hf->getVertIndex(0),p2 = hf->getVertIndex(1);				
+				int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);				
 				if(vVertIsOnHole[p1]) glColor4f(0.0, 0.0, 1.0, 1.0); //show edges on holes in blue
 				else glColor4f(0.0, 0.0, 0.0, 1.0);					 //show edges on boundaries in black
 				Vector3D v1 = tmesh->getVertex(p1)->getPosition(), v2 = tmesh->getVertex(p2)->getPosition();
@@ -535,6 +534,38 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glEnd();
 	}
 	
+	/*** draw bounding box ***/
+	if (m_bShowBoundingBox) {
+		const Vector3D& bbox = tmesh->getBoundingBox();
+		Vector3D verts[8] = {Vector3D(-bbox.x, -bbox.y, -bbox.z),
+			Vector3D(-bbox.x, -bbox.y, bbox.z),
+			Vector3D(-bbox.x, bbox.y, -bbox.z),
+			Vector3D(-bbox.x, bbox.y, bbox.z),
+			Vector3D(bbox.x, -bbox.y, -bbox.z),
+			Vector3D(bbox.x, -bbox.y, bbox.z),
+			Vector3D(bbox.x, bbox.y, -bbox.z),
+			Vector3D(bbox.x, bbox.y, bbox.z)};
+		for (Vector3D& v : verts) v += shift;
+
+		auto drawQuad = [&](int i0, int i1, int i2, int i3){
+			glBegin(GL_LINE_LOOP);
+			glVertex3d(verts[i0].x, verts[i0].y, verts[i0].z);
+			glVertex3d(verts[i1].x, verts[i1].y, verts[i1].z);
+			glVertex3d(verts[i2].x, verts[i2].y, verts[i2].z);
+			glVertex3d(verts[i3].x, verts[i3].y, verts[i3].z);
+			glEnd();
+		};
+				
+		glLineWidth(1.0);
+		glColor4f(0, 1.0, 1.0, 1.0);		
+		drawQuad(0, 2, 3, 1);
+		drawQuad(1, 3, 7, 5);
+		drawQuad(5, 7, 6, 4);
+		drawQuad(4, 6, 2, 0);
+		drawQuad(3, 2, 6, 7);
+		drawQuad(0, 1, 5, 4);		
+	}
+
 	/*** draw vectors on mesh ***/
 	if (m_bShowVectors && tmesh->hasAttr(pRS->mActiveVectorName))
 	{

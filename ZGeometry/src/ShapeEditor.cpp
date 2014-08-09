@@ -3,7 +3,6 @@
 #include <random>
 #include <functional>
 #include <iomanip>
-#include <random>
 #include <ppl.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
@@ -289,7 +288,6 @@ void ShapeEditor::deformLaplacian()
 		matOptS.insertElem(vertCount + a + 1, anchorIndex[a] + 1, anchorWeight);
 
 	timer.stopTimer("Prepare deformation time: ");
-
 	timer.startTimer();	
 	std::vector<ZGeom::VecNd> vls;
 	solveSparseMultiColumn(g_engineWrapper, matOptS, solveRHS, vls);

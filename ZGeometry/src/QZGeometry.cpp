@@ -266,6 +266,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
+	QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowVectors(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
@@ -828,6 +829,15 @@ void QZGeometryWindow::toggleShowWireframeOverlay(bool show /*= false*/)
 	bool toShow = !ui.glMeshWidget->m_bShowWireframeOverlay;
 	ui.glMeshWidget->m_bShowWireframeOverlay = toShow;
 	ui.actionShowWireframeOverlay->setChecked(toShow);
+
+	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::toggleShowBoundingBox(bool show /*= false*/)
+{
+	bool toShow = !ui.glMeshWidget->m_bShowBoundingBox;
+	ui.glMeshWidget->m_bShowBoundingBox = toShow;
+	ui.actionShowBbox->setChecked(toShow);
 
 	ui.glMeshWidget->update();
 }

@@ -23,6 +23,7 @@ public:
 	bool m_bDrawMatching;
 	bool m_bShowCorrespondenceLine;
 	bool m_bShowWireframeOverlay;
+	bool m_bShowBoundingBox;
 	int	 m_nMeshLevel;
 	std::vector<ZGeom::Colorf> mLegendColors;
 

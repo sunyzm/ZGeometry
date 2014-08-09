@@ -670,6 +670,7 @@
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowWireframeOverlay"/>
+    <addaction name="actionShowBbox"/>
     <addaction name="actionShowVectors"/>
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
@@ -1364,6 +1365,14 @@
   <action name="actionMeshProperties">
    <property name="text">
     <string>Mesh Properties</string>
+   </property>
+  </action>
+  <action name="actionShowBbox">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Draw bbox</string>
    </property>
   </action>
  </widget>

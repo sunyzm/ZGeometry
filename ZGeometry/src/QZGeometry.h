@@ -97,6 +97,7 @@ private slots:
 	void toggleShowColorLegend(bool show = false);
 	void toggleShowFeatures(bool show = false);
 	void toggleShowWireframeOverlay(bool show = false);
+	void toggleShowBoundingBox(bool show = false);
 	void toggleShowVectors(bool show = false);
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
