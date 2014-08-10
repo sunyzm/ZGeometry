@@ -20,10 +20,6 @@ public:
 	Vec3<T> operator - (const Vec3<T>& v2);
 	Vec3<T> operator * (T lambda);
 	Vec3<T> operator / (T lambda);
-	friend Vec3<T> operator - (const Vec3<T>& v);
-	friend T dot(const Vec3<T>& v1, const Vec3<T>& v2);
-	friend Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2);
-
 	const Vec3<T>& operator += (const Vec3<T>& v2);
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
 	const Vec3<T>& operator *= (T coeff);
@@ -31,14 +27,17 @@ public:
 	T operator [] (uint i) const;
 	T& operator [] (uint idx);
 	T length() const;
-		
+
+	friend Vec3<T> operator - (const Vec3<T>& v);
+	friend T dot(const Vec3<T>& v1, const Vec3<T>& v2);
+	friend Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2);
+
 	template<typename U>
 	operator Vec3<U>()
 	{
 		return Vec3<U>(this->x, this->y, this->z);
 	}
 
-private:
 	T x, y, z;
 };
 

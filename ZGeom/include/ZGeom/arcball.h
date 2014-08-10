@@ -1,7 +1,9 @@
 #ifndef ZGEOM_ARCBALL_H
 #define ZGEOM_ARCBALL_H
-#include "geometry.h"
+//#include "geometry.h"
 #include "quat.h"
+#include "Vec2.h"
+#include "Vec3.h"
 
 class CArcball
 {
@@ -12,11 +14,11 @@ public:
   CQrot update( int nx, int ny );
 
 private:
-  void _plane2sphere( const Vector2D & v, Vector3D & r );
+  void _plane2sphere( const ZGeom::Vec2d & v, ZGeom::Vec3d & r );
 
-  Vector3D m_position;
+  ZGeom::Vec3d m_position;
   double   m_radius;
-  Vector2D m_center;
+  ZGeom::Vec2d m_center;
 };
 
 #endif

@@ -547,7 +547,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 			Vector3D(bbox.x, bbox.y, bbox.z)};
 		for (Vector3D& v : verts) v += shift;
 
-		auto drawQuad = [&](int i0, int i1, int i2, int i3){
+		auto drawQuad = [&verts](int i0, int i1, int i2, int i3){
 			glBegin(GL_LINE_LOOP);
 			glVertex3d(verts[i0].x, verts[i0].y, verts[i0].z);
 			glVertex3d(verts[i1].x, verts[i1].y, verts[i1].z);
