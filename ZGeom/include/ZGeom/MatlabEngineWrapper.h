@@ -9,8 +9,7 @@
 #include "DenseMatrix.h"
 #include "VecN.h"
 
-namespace ZGeom
-{
+namespace ZGeom {
 
 class MatlabArrayWrapper
 {
@@ -20,13 +19,13 @@ public:
 	{
 		mData = mxCreateDoubleMatrix(mRow, mCol, mxREAL);
 		double *aa = mxGetPr(mData);
-		if (rowMajor) { 
-		// need transpose
+		if (rowMajor) {	
+			// rowMajor needs transpose
 			for (int j = 0; j < col; ++j)
 				for (int i = 0; i < row; ++i)
 					aa[j*row + i] = data[i*col + j];
-		} else {
-		// just copy
+		} else {	
+			// colMajor just copy
 			std::copy_n(data, row*col, aa);
 		}
 		
@@ -101,5 +100,5 @@ private:
 	std::vector<MatlabArrayWrapper*> mVariables;
 };
 
-} // end of namespace
+}	// end of namespace
 #endif

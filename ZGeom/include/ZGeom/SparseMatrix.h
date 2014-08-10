@@ -116,7 +116,7 @@ namespace ZGeom
 		void symmetrize();              // turn upper or lower matrix into symmetric one
 		void fillEmptyDiagonal();       // fill empty diagonal elements with 0
 		void setToIdentity(uint order); // make the matrix an identity matrix
-		void makeLaplacian();	// make matrix a Laplacian by modifying the diagonal; must be square matrix
+		void makeLaplacian();			// make matrix a Laplacian by modifying the diagonal; must be square matrix
 
 		void print(std::ostream& out) const;
 		void print(const std::string& paht) const;

@@ -9,11 +9,6 @@
 #include <functional>
 #include "common.h"
 
-//#define USE_PPL
-#ifdef USE_PPL
-#include <ppl.h>
-#endif
-
 namespace ZGeom
 {
 
@@ -77,9 +72,7 @@ public:
 	VecN<T> operator - (const VecN<T>& v2) const { return *this + (-v2); }
 	VecN<T> operator * (T coeff) const { VecN<T> v3(*this); v3 *= coeff; return v3; }
 	VecN<T> operator / (T coeff) const { return (*this) * coeff; }
-	friend VecN<T> operator * (T t, const VecN<T>& v1) {
-		return v1 * t;
-	}
+	friend VecN<T> operator * (T t, const VecN<T>& v1) { return v1 * t; }
 
 	T norm1() const;
 	T norm2() const;
@@ -90,6 +83,7 @@ public:
 	}
 	T pNorm(double p) const;
 	T inftyNorm() const;
+	int pseudoNorm(double eps = 1e-6) const;	// pseudoNorm (p0-norm) counts the number of non-zero (>eps) elements 
 	T max_element() const;
 	T min_element() const;
 	std::pair<T, T> min_max_element() const;
@@ -187,8 +181,7 @@ inline VecN<T>::VecN(VecN<T>&& v2) : mDim(0), mVec(nullptr)
 }
 
 template<typename T>
-inline VecN<T>::VecN(T* vec, uint n) 
-	: mDim(n)
+inline VecN<T>::VecN(T* vec, uint n) : mDim(n)
 {
 	mVec = new T[mDim];
 	std::copy_n(vec, n, mVec);
@@ -226,6 +219,7 @@ inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
 	}
 	return *this;
 }
+
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
@@ -244,8 +238,6 @@ inline void VecN<T>::resize(int n, T val)
 }
 
 /* end of defining constructors and assignment operator */
-
-
 
 template<typename T>
 inline void VecN<T>::copyElements( const VecN<T>& v2, int startingPos )
@@ -278,63 +270,29 @@ inline VecN<T> VecN<T>::operator - () const
 }
 
 /* definitions for operator+= */
-#ifdef USE_PPL
 template<typename T>
 inline const VecN<T>& VecN<T>::operator += (const VecN<T>& v2)
 {
 	assert(mDim == v2.mDim);
-	Concurrency::parallel_for(0, mDim, [&](int i) {
-		mVec[i] += v2.mVec[i];
-	});
+	for(int i = 0; i < mDim; ++i) mVec[i] += v2.mVec[i];
 	return *this;
 }
 template<typename T>
 inline const VecN<T>& VecN<T>::operator += (T trans)
 {
-	Concurrency::parallel_for(0, mDim, [&](int i){
-		mVec[i] += trans;
-	});
+	for(int i = 0; i < mDim; ++i) mVec[i] += trans;
 	return *this;
 }
-#else
-template<typename T>
-inline const VecN<T>& VecN<T>::operator += (const VecN<T>& v2)
-{
-	assert(mDim == v2.mDim);
-	for(int i = 0; i < mDim; ++i) {
-		mVec[i] += v2.mVec[i];
-	}
-	return *this;
-}
-template<typename T>
-inline const VecN<T>& VecN<T>::operator += (T trans)
-{
-	for(int i = 0; i < mDim; ++i) {
-		mVec[i] += trans;
-	}
-	return *this;
-}
-#endif
+
 
 template<typename T>
 inline const VecN<T>& VecN<T>::add(T* v2)
 {
-	for (int i = 0; i < mDim; ++i)
-		mVec[i] += v2[i];
+	for (int i = 0; i < mDim; ++i) mVec[i] += v2[i];
 	return *this;
 }
 
 /* definitions for operator*= */
-#ifdef USE_PPL
-template<typename T>
-inline const VecN<T>& VecN<T>::operator *= (T scale)
-{
-	Concurrency::parallel_for(0, mDim, [&](int i){
-		mVec[i] *= scale;
-	});
-	return *this;
-}
-#else
 template<typename T>
 inline const VecN<T>& VecN<T>::operator *= (T scale)
 {
@@ -343,7 +301,6 @@ inline const VecN<T>& VecN<T>::operator *= (T scale)
 	}
 	return *this;
 }
-#endif
 
 template<typename T>
 inline T VecN<T>::norm1() const 
@@ -364,23 +321,30 @@ inline T VecN<T>::norm2() const
 template<typename T>
 inline T VecN<T>::pNorm( double p ) const
 {
-	if( p < 0) return inftyNorm();
+	assert(p > 0);
 
 	double sum(0);
-	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs(mVec[i]), p);
+	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs((double)mVec[i]), p);
 	return std::pow(sum, 1.0/p);
 }
 
+template<typename T>
+inline int VecN<T>::pseudoNorm(double eps) const
+{
+	int nnz(0);
+	for (int i = 0; i < mDim; ++i)
+		if (fabs((double)mVec[i]) > eps) ++nnz;
+	return nnz;
+}
 
 template<typename T>
 inline T ZGeom::VecN<T>::inftyNorm() const
 {
-	double maxNorm(0);
+	T maxNorm(0);
 	for (int i = 0; i < mDim; ++i) 
 		if (std::fabs(mVec[i]) > maxNorm) maxNorm = std::fabs(mVec[i]);
 	return maxNorm;
 }
-
 
 template<typename T>
 inline void VecN<T>::normalize(double p)

@@ -39,7 +39,7 @@ inline double time_call_sec(Function&& f)
 {
 	__int64 begin = GetTickCount64();
 	f();
-	return (GetTickCount64() - begin) / 1e3;
+	return double(GetTickCount64() - begin) / 1e3;
 }
 
 #endif
