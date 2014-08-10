@@ -1,6 +1,5 @@
 #ifndef ZGEOM_ARCBALL_H
 #define ZGEOM_ARCBALL_H
-//#include "geometry.h"
 #include "quat.h"
 #include "Vec2.h"
 #include "Vec3.h"

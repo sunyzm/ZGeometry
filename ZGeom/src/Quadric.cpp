@@ -1,4 +1,5 @@
 #include "Quadric.h"
+
 using namespace std;
 
 double Quadric::eval( const Vector3D& v )

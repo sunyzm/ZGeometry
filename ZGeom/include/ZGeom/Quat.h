@@ -1,6 +1,6 @@
 #ifndef ZGEOM_QUAT_H
 #define ZGEOM_QUAT_H
-#include "geometry.h"
+#include "Vector3D.h"
 
 typedef double mat44[4][4];
 

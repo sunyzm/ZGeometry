@@ -1,7 +1,7 @@
 #pragma once
 #include <vector>
 #include <iostream>
-#include <ZGeom/Geometry.h>
+#include <ZGeom/Vector3D.h>
 #include <ZGeom/Quat.h>
 
 const int Z_POINT = 0x1B00;

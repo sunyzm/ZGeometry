@@ -1,4 +1,4 @@
-// Geometry.h: classes of 2D vector and 3D vector and matrix3
+// Vector3D.h: classes of 3D vector and matrix3
 //
 //////////////////////////////////////////////////////////////////////
 #ifndef ZMESH_GEOMETRY_H
@@ -53,43 +53,6 @@ public :
 	friend Vector3D operator*(const Vector3D& vec, const Matrix3& mat1);
 	friend Vector3D operator*(const Matrix3& mat1, const Vector3D& vec);
 };
-
-
-/////////////////////////////////////////////////////////////
-// VectorND : n-dim vector
-/////////////////////////////////////////////////////////////
-
-class VectorND
-{
-public:
-	int m_size;
-	double* m_vec;
-
-public:
-	VectorND() { m_size = 0; m_vec = NULL; }
-	VectorND(int n) { m_size = n; m_vec = new double[m_size]; }
-	virtual ~VectorND() { if(m_vec) delete []m_vec; }
-	VectorND& operator= (const VectorND& vnd); 
-public:
-	void resize(int n);	// equivalent to reserve
-	void reserve(int n);
-	bool empty() { return !m_vec; }
-	virtual void clear() { m_size = 0; if(!empty()) delete m_vec; m_vec=NULL; }
-	double length();
-	double length2();
-	double normalize();
-	double normalizedDifference(const VectorND& v) const;
-
-	void   calSubtract(VectorND& v1, VectorND& v2);
-	double calDistance2(const VectorND& v) const;
-	double calDistance(const VectorND& v) const;
-	double calDistance(const VectorND& v, int method) const;
-	double norm_2() const;
-	double norm_inf() const;
-};
-
-VectorND operator-(const VectorND& v1, const VectorND& v2);
-
 
 /////////////////////////////////////////////////////////////
 // Matrix3 : 3*3 matrix

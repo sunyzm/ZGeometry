@@ -19,6 +19,7 @@ using ZGeom::VectorPointwiseProduct;
 using ZGeom::PI;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
+using ZGeom::VecNd;
 
 class MyNote
 {
@@ -62,16 +63,14 @@ double findTmax( const CMesh* tmesh, int s )
 
 void PointParam::clear()
 {
-	m_size = 0; 
-	m_votes = 0.0; 
-	if(!empty()) delete m_vec; 
-	m_vec = NULL;
+	resize(0);
+	m_votes = 0.0;
 }
 
 PointParam& PointParam::operator= ( const PointParam& hkp )
 {
-	reserve(hkp.m_size);
-	for (int i = 0; i < m_size; ++i) m_vec[i] = hkp.m_vec[i];
+	resize(hkp.size());
+	std::copy_n(mVec, mDim, hkp.c_ptr());
 	m_votes = hkp.m_votes;
 	return *this;
 }
@@ -85,11 +84,11 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 
 	for (int v = 0; v < fineSize; ++v) {
 		PointParam& hkp = vCoord[v];
-		hkp.reserve(pn);
+		hkp.resize(pn);
 		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
+			hkp[i] = pMP->calHK(v, anchors[i], t);
  
-		hkp.m_votes = hkp.length();
+		hkp.m_votes = hkp.norm2();
 	}
 }
 
@@ -102,11 +101,11 @@ void ParamManager::computeBHParam( const std::vector<int>& anchors )
 
 	for (int v = 0; v < fineSize; ++v) {
 		PointParam& hkp = vCoord[v];
-		hkp.reserve(pn);
+		hkp.resize(pn);
 		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->calBiharmonic(v, anchors[i]);
+			hkp[i] = pMP->calBiharmonic(v, anchors[i]);
 
-		hkp.m_votes = hkp.length();
+		hkp.m_votes = hkp.norm2();
 	}
 }
 
@@ -119,10 +118,10 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 
 	Concurrency::parallel_for(0, fineSize, [&](int v){
 		PointParam& hkp = vCoord[v];
-		hkp.reserve(pn);
+		hkp.resize(pn);
 		for (int i = 0; i < pn; ++i)
-			hkp.m_vec[i] = pMP->calHK(v, anchors[i], t);
-		hkp.m_votes = hkp.length();
+			hkp[i] = pMP->calHK(v, anchors[i], t);
+		hkp.m_votes = hkp.norm2();
 	});
 }
 
@@ -134,9 +133,9 @@ void ParamManager::para_computeHKS( const std::vector<double>& times )
 	vSignature.resize(fineSize);
 
 	Concurrency::parallel_for(0, fineSize, [&](int v){
-		vSignature[v].reserve(sn);
+		vSignature[v].resize(sn);
 		for (int i = 0; i < sn; ++i)
-			vSignature[v].m_vec[i] = pMP->calHK(v, v, times[sn]);
+			vSignature[v][i] = pMP->calHK(v, v, times[sn]);
 	});
 }
 
@@ -145,15 +144,15 @@ double distHKS2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshPro
 // 	if (tu < tl) return 1.0;
 // 	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
 
-	VectorND v1(tn), v2(tn);
+	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-		v1.m_vec[i] = pmp1->calHK(i1, i1, t) / pmp1->calHeatTrace(t);
-		v2.m_vec[i] = pmp2->calHK(i2, i2, t) / pmp2->calHeatTrace(t);
+		v1[i] = pmp1->calHK(i1, i1, t) / pmp1->calHeatTrace(t);
+		v2[i] = pmp2->calHK(i2, i2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
 	}
 
-	return v1.calDistance2(v2) / tn;
+	return std::pow((v1 - v2).norm2(), 2) / tn;
 }
 
 double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const MatchPair& mp1, const MatchPair& mp2, double tl, double tu)
@@ -166,15 +165,16 @@ double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMesh
 	int y1 = mp2.m_idx1;
 	int y2 = mp2.m_idx2;
 
-	VectorND v1(tn), v2(tn);
+	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-		v1.m_vec[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
-		v2.m_vec[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
+		v1[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
+		v2[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
 	}
 
-	return v1.calDistance2(v2) / tn;
+	double dist = (v1 - v2).norm2();
+	return dist*dist / tn;
 }
 
 double distHksFeature2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const HKSFeature& hf1, const HKSFeature& hf2, double& tl, int& tn)
@@ -184,15 +184,16 @@ double distHksFeature2(const DifferentialMeshProcessor* pmp1, const Differential
 	if (tu < tl) return 1.0;
 	tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
 
-	VectorND v1(tn), v2(tn);
+	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-		v1.m_vec[i] = pmp1->calHK(hf1.m_index, hf1.m_index, t) / pmp1->calHeatTrace(t);
-		v2.m_vec[i] = pmp2->calHK(hf2.m_index, hf2.m_index, t) / pmp2->calHeatTrace(t);
+		v1[i] = pmp1->calHK(hf1.m_index, hf1.m_index, t) / pmp1->calHeatTrace(t);
+		v2[i] = pmp2->calHK(hf2.m_index, hf2.m_index, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
 	}
 
-	return v1.calDistance2(v2) / tn;
+	double dist = (v1 - v2).norm2();
+	return dist*dist / tn;
 }
 
 double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const MatchPair& mp1, const MatchPair& mp2)
@@ -207,15 +208,16 @@ double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const Differen
 	int y1 = mp2.m_idx1;
 	int y2 = mp2.m_idx2;
 
-	VectorND v1(tn), v2(tn);
+	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-		v1.m_vec[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
-		v2.m_vec[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
+		v1[i] = pmp1->calHK(x1, y1, t) / pmp1->calHeatTrace(t);
+		v2[i] = pmp2->calHK(x2, y2, t) / pmp2->calHeatTrace(t);
 		t *= 2.0;
 	}
 
-	return v1.calDistance2(v2) / tn;
+	double dist = (v1 - v2).norm2();
+	return dist*dist / tn;
 //	return v1.calDistance2(v2) / (v1.length2() + v2.length2());
 }
 
@@ -676,27 +678,27 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 	const int restSize1 = (int) restFeat1.size(), restSize2 = (int) restFeat2.size();
 	flog << "Rest Size1: " << restSize1 << '\t' << "Rest Size2: " << restSize2 << endl;
 
-	vector<VectorND> vHKC1, vHKC2;
+	vector<VecNd> vHKC1, vHKC2;
 	vHKC1.resize(restSize1);
 	vHKC2.resize(restSize2);
 	for (int j = 0; j < restSize1; ++j)
 	{
-		VectorND& vnd = vHKC1[j];
-		vnd.reserve(coarseMatchSize);
+		VecNd& vnd = vHKC1[j];
+		vnd.resize(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd.m_vec[i] = pOriginalProcessor[0]->calHK(restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
+			vnd[i] = pOriginalProcessor[0]->calHK(restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
 //			vnd.m_vec[i] = mesh1->CalGeodesic(restFeat1[j], matchedPairsCoarse[i].m_idx1);
 		}
 	}
 
 	for (int j = 0; j < restSize2; ++j)
 	{
-		VectorND& vnd = vHKC2[j];
-		vnd.reserve(coarseMatchSize);
+		VecNd& vnd = vHKC2[j];
+		vnd.resize(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd.m_vec[i] = pOriginalProcessor[1]->calHK(restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
+			vnd[i] = pOriginalProcessor[1]->calHK(restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
 //			vnd.m_vec[i] = mesh2->CalGeodesic(restFeat2[j], matchedPairsCoarse[i].m_idx2);
 		}
 	}
@@ -708,7 +710,7 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 		{
 			if (restIdxToHKS1[restFeat1[i]]->m_scale != restIdxToHKS2[restFeat2[j]]->m_scale)
 				continue;
-			double s = std::exp(-vHKC1[i].calDistance(vHKC2[j]));
+			double s = std::exp(-(vHKC1[i]-vHKC2[j]).norm2());
 			restMatches.push_back(MatchPair(restFeat1[i], restFeat2[j], s));
 		}
 	}
@@ -812,14 +814,14 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 	forceInitialAnchors(matchedPairsFine);
 } // DiffusionShapmeMatcher::matchFeatures()
 
-void ShapeMatcher::calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig)
+void ShapeMatcher::calVertexSignature(const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig)
 {
 	double t = hf.m_tl;
-	sig.reserve(hf.m_tn);
+	sig.resize(hf.m_tn);
 	for(int i = 0; i < hf.m_tn; i++)
 	{
 		double eref = 4.0*PI*t;
-		sig.m_vec[i] = std::log(pOriginalProcessor->calHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
+		sig[i] = std::log(pOriginalProcessor->calHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
 		t *= 2.0;
 	}
 }
@@ -1090,10 +1092,9 @@ double ShapeMatcher::computeMatchScore( int idx1, int idx2, double sigma /*= 0.0
 {
 	const PointParam &hkp1 = m_ParamMgr[0].vCoord[idx1],
 					 &hkp2 = m_ParamMgr[1].vCoord[idx2];
-
-	double dist = hkp1.calDistance2(hkp2) / hkp1.m_size;
-
-	return std::exp(-dist / sigma);
+	double dist = (hkp1 - hkp2).norm2();
+	double dist2 = dist*dist / hkp1.size();
+	return std::exp(-dist2 / sigma);
 }
 
 int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
@@ -2014,7 +2015,8 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 	{
 		int i1 = ((double)rand() / (double)RAND_MAX) * fineSize1;
 		int i2 = ((double)rand() / (double)RAND_MAX) * fineSize2;
-		esum += m_ParamMgr[0].vCoord[i1].calDistance2(m_ParamMgr[1].vCoord[i2]);
+		double dist = (m_ParamMgr[0].vCoord[i1] - m_ParamMgr[1].vCoord[i2]).norm2();
+		esum += dist * dist;
 	}
 	double hkcSigma = esum / 10000.;
 	cout << "HKC sigma: " << esum << endl;
@@ -2562,7 +2564,7 @@ void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, c
 
 	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
 	int tsize = vTimes.size();
-	vector<VectorND> vSig1(vsize1), vSig2(vsize2);
+	vector<VecNd> vSig1(vsize1), vSig2(vsize2);
 
 	vector<double> vTrace1(tsize), vTrace2(tsize);
 	for (int s = 0; s < tsize; ++s)
@@ -2573,15 +2575,15 @@ void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, c
 
 	for (int i = 0; i < vsize1; ++i) 
 	{
-		vSig1[i].reserve(tsize);
+		vSig1[i].resize(tsize);
 		for (int j = 0; j < tsize; ++j)
-			vSig1[i].m_vec[j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+			vSig1[i][j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
 	}
 	for (int i = 0; i < vsize2; ++i) 
 	{
-		vSig2[i].reserve(tsize);
+		vSig2[i].resize(tsize);
 		for (int j = 0; j < tsize; ++j)
-			vSig2[i].m_vec[j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+			vSig2[i][j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
 	}
 	
 	double *hksSim = new double[vsize1 * vsize2];
@@ -2589,7 +2591,7 @@ void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, c
 	for (int i = 0; i < vsize1; ++i)
 	{
 		for (int j = 0; j <= i; ++j)
-			hksSim[i * vsize2 + j] = vSig1[i].calDistance2(vSig2[j]);
+			hksSim[i * vsize2 + j] = std::pow((vSig1[i] - vSig2[j]).norm2(), 2);
 		for (int j = i+1; j < vsize2; ++j)
 			hksSim[i* vsize2 + j] = 1e10;
 	}
@@ -3126,13 +3128,14 @@ double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcesso
 	{
 		for(int j = 0; j < size2; j++)
 		{
-			VectorND v1(tn), v2(tn);
+			VecNd v1(tn), v2(tn);
 			for(int k = 0; k < tn; k++)
 			{
-				v1.m_vec[k] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[k]) / vHT1[k];
-				v2.m_vec[k] = pmp2->calHK(vFeatures2[j], vFeatures2[j], vTimes[k]) / vHT2[k];
+				v1[k] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[k]) / vHT1[k];
+				v2[k] = pmp2->calHK(vFeatures2[j], vFeatures2[j], vTimes[k]) / vHT2[k];
 			}
-			double d = v1.calDistance2(v2) / tn;
+			double dist = (v1 - v2).norm2();
+			double d = dist * dist / tn;
 			tmpScores[i*size2+j] = d;
 		}
 	}
@@ -3173,15 +3176,15 @@ double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcesso
 			int y1 = vTmpMatchPairs[j].m_idx1;
 			int y2 = vTmpMatchPairs[j].m_idx2;
 
-			VectorND v1(tn), v2(tn);
+			VecNd v1(tn), v2(tn);
 			double t = tl;
 			for(int k = 0; k < tn; k++)
 			{
-				v1.m_vec[k] = pmp1->calHK(x1, y1, vTimes[k]) / vHT1[k];
-				v2.m_vec[k] = pmp2->calHK(x2, y2, vTimes[k]) / vHT2[k];
+				v1[k] = pmp1->calHK(x1, y1, vTimes[k]) / vHT1[k];
+				v2[k] = pmp2->calHK(x2, y2, vTimes[k]) / vHT2[k];
 			}
-
-			double ds = v1.calDistance2(v2) / tn;
+			double dist = (v1 - v2).norm2();
+			double ds = dist * dist / tn;
 			am[i*affinitySize+j] = am[j*affinitySize+i] = exp(-ds/sigma2);
 		}
 	});
@@ -3276,7 +3279,7 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 	
 	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
 	int tsize = vTimes.size();
-	vector<VectorND> vSig1(vsize1), vSig2(vsize2);
+	vector<VecNd> vSig1(vsize1), vSig2(vsize2);
 
 	vector<double> vTrace1(tsize), vTrace2(tsize);
 	for (int s = 0; s < tsize; ++s)
@@ -3289,15 +3292,15 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 	{
 		for (int i = 0; i < vsize1; ++i) 
 		{
-			vSig1[i].reserve(tsize);
+			vSig1[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig1[i].m_vec[j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+				vSig1[i][j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
-			vSig2[i].reserve(tsize);
+			vSig2[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig2[i].m_vec[j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+				vSig2[i][j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
 		}
 	}
 	else if (method == 1)
@@ -3306,15 +3309,15 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 		int anchor2 = (int)vPara[4];
 		for (int i = 0; i < vsize1; ++i) 
 		{
-			vSig1[i].reserve(tsize);
+			vSig1[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig1[i].m_vec[j] = pmp1->calHK(anchor1, vFeatures1[i], vTimes[j]) /*/ vTrace1[j]*/;
+				vSig1[i][j] = pmp1->calHK(anchor1, vFeatures1[i], vTimes[j]) /*/ vTrace1[j]*/;
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
-			vSig2[i].reserve(tsize);
+			vSig2[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig2[i].m_vec[j] = pmp2->calHK(anchor2, vFeatures2[i], vTimes[j]) /*/ vTrace2[j]*/;
+				vSig2[i][j] = pmp2->calHK(anchor2, vFeatures2[i], vTimes[j]) /*/ vTrace2[j]*/;
 		}
 	}
 
@@ -3323,7 +3326,7 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 	for (int i = 0; i < vsize1; ++i)
 	{
 		for (int j = 0; j < vsize2; ++j)
-			hksSim[i * vsize2 + j] = vSig1[i].calDistance2(vSig2[j]) / tsize;
+			hksSim[i * vsize2 + j] = vSig1[i].distEculidean2(vSig2[j]) / tsize;
 	}
 
 	double vMin = 1e10 - 1;
@@ -3761,7 +3764,7 @@ void ShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const Dif
 
 	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
 	int anchorSize = vAnchorPair.size();
-	vector<VectorND> vSig1(vsize1), vSig2(vsize2);
+	vector<VecNd> vSig1(vsize1), vSig2(vsize2);
 
 // 	vector<double> vTrace1(tsize), vTrace2(tsize);
 // 	for (int s = 0; s < tsize; ++s)
@@ -3773,15 +3776,15 @@ void ShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const Dif
 	{
 		for (int i = 0; i < vsize1; ++i) 
 		{
-			vSig1[i].reserve(anchorSize);
+			vSig1[i].resize(anchorSize);
 			for (int j = 0; j < anchorSize; ++j)
-				vSig1[i].m_vec[j] = pmp1->calHK(vAnchorPair[j].m_idx1, vFeatures1[i], t) /*/ vTrace1[j]*/;
+				vSig1[i][j] = pmp1->calHK(vAnchorPair[j].m_idx1, vFeatures1[i], t) /*/ vTrace1[j]*/;
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
-			vSig2[i].reserve(anchorSize);
+			vSig2[i].resize(anchorSize);
 			for (int j = 0; j < anchorSize; ++j)
-				vSig2[i].m_vec[j] = pmp2->calHK(vAnchorPair[j].m_idx2, vFeatures2[i], t) /*/ vTrace2[j]*/;
+				vSig2[i][j] = pmp2->calHK(vAnchorPair[j].m_idx2, vFeatures2[i], t) /*/ vTrace2[j]*/;
 		}
 	}
 
@@ -3790,7 +3793,7 @@ void ShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const Dif
 	for (int i = 0; i < vsize1; ++i)
 	{
 		for (int j = 0; j < vsize2; ++j)
-			hksSim[i * vsize2 + j] = vSig1[i].calDistance2(vSig2[j]) / anchorSize;
+			hksSim[i * vsize2 + j] = vSig1[i].distEculidean2(vSig2[j]) / anchorSize;
 	}
 
 	double vMin = 1e10 - 1;

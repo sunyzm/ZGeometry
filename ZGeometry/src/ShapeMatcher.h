@@ -6,6 +6,7 @@
 #include <utility>
 #include <engine.h>
 #include <ZGeom/MeshPyramid.h>
+#include <ZGeom/VecN.h>
 #include "DifferentialMeshProcessor.h"
 #include "matching.h"
 
@@ -59,7 +60,7 @@ public:
 	void setTimes(double tl, double tu, double tn) { m_tl = tl; m_tu = tu; m_tn = tn; }
 };
 
-class PointParam : public VectorND
+class PointParam : public ZGeom::VecNd
 {
 public:
 	PointParam& operator =(const PointParam& hkp);
@@ -188,7 +189,7 @@ private:
 
 public:
 	/* helper functions */
-	static void	calVertexSignature( const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, VectorND& sig );
+	static void calVertexSignature(const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig);
 	static void SimplePointMatching(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& machedResult, bool verbose = false);
 	static void PairGraphMatching(Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose = false);
 	

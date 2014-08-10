@@ -1,6 +1,6 @@
 #ifndef ZGEOM_QUADRIC_H
 #define ZGEOM_QUADRIC_H
-#include "Geometry.h"
+#include "Vector3D.h"
 
 class Quadric
 {

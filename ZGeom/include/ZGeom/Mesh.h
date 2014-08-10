@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include "VecN.h"
 #include "Vec3.h"
-#include "Geometry.h"
+#include "Vector3D.h"
 #include "Quat.h"
 #include "MeshAttr.h"
 

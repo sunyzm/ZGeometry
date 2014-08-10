@@ -1,7 +1,7 @@
-// Geometry.cpp: implementation of the Vector2D, Vector3D classes.
+// Vector3D.cpp: implementation of the Vector3D class.
 //
 //////////////////////////////////////////////////////////////////////
-#include "Geometry.h"
+#include "Vector3D.h"
 #include <cassert>
 #include <cstdio>
 #include <memory>
@@ -164,150 +164,6 @@ Vector3D cross3D(const Vector3D& v1, const Vector3D& v2)
 	return v3;
 }
 
-double VectorND::length2()
-{
-	if(!m_vec) return 0.0;
-	double d = 0.0;
-	for(int i=0; i<m_size; i++)
-	{
-		d += m_vec[i]*m_vec[i];
-	}
-	return d;
-}
-
-double VectorND::length()
-{
-	return sqrt(length2());
-}
-
-double VectorND::normalize()
-{
-	double d = length();
-	if(EQUALZERO(d)) return 0.0;
-
-	for(int i=0; i<m_size; i++)
-	{
-		m_vec[i] /= d;
-	}
-	return d;
-}
-
-void VectorND::calSubtract(VectorND& v1, VectorND& v2)
-{
-	if(v1.m_size != v2.m_size) return;
-	if(!m_vec)
-	{
-		m_size = v1.m_size;
-		m_vec = new double[m_size];
-	}
-	if(m_vec && m_size!=v1.m_size) 
-	{
-		delete m_vec;
-		m_size = v1.m_size;
-		m_vec = new double[m_size];
-	}
-
-	for(int i=0; i<m_size; i++)
-	{
-		m_vec[i] = v1.m_vec[i] - v2.m_vec[i];
-	}
-}
-
-double VectorND::calDistance2(const VectorND &v) const
-{
-	assert(this->m_size == v.m_size);
-	double d = 0.0;
-	for(int i = 0; i < m_size; i++)
-	{
-		d += (this->m_vec[i] - v.m_vec[i]) * (this->m_vec[i] - v.m_vec[i]);
-	}
-	return d;
-}
-
-double VectorND::calDistance(const VectorND& v) const
-{
-	if(m_size != v.m_size) return 0.0;
-
-	return sqrt(calDistance2(v));
-}
-
-double VectorND::calDistance(const VectorND& v, int method) const
-{
-	if (method == 0) 
-		return calDistance(v);
-	else if (method == 1) 
-		return std::sqrt(calDistance2(v) / m_size);
-	else 
-	{
-		if(m_size != v.m_size) return 0.0;
-		priority_queue<double, vector<double>, greater<double> > pq;
-		for(int i = 0; i < m_size; i++)
-		{
-			double diff = std::pow(this->m_vec[i] - v.m_vec[i], 2);
-			pq.push(diff);
-		}
-		return pq.top();
-	}
-	
-}
-
-void VectorND::reserve(int n)
-{
-	if (m_size == n) return;
-
-	if(m_vec) delete []m_vec;
-	m_size = n;
-	m_vec = new double[m_size];
-}
-
-VectorND& VectorND::operator =(const VectorND& vnd)
-{
-	reserve(vnd.m_size);
-	for (int i = 0; i < m_size; ++i)
-		m_vec[i] = vnd.m_vec[i];
-	return *this;
-}
-
-double VectorND::norm_2() const
-{
-	double sum(0);
-	for (int i = 0; i < m_size; ++i)
-	{
-		sum += m_vec[i] * m_vec[i];
-	}
-	return std::sqrt(sum);
-}
-
-double VectorND::norm_inf() const
-{
-	double maxelem = std::fabs(m_vec[0]);
-	for (int i = 1; i < m_size; ++i)
-	{
-		double m = std::fabs(m_vec[i]); 
-		if ( m > maxelem)
-			maxelem = m;
-	}
-	return maxelem;
-}
-
-double VectorND::normalizedDifference( const VectorND& v ) const
-{
-	assert(this->m_size == v.m_size);
-	double sum = 0;
-	for (int i = 0; i < m_size; ++i)
-	{
-		sum += fabs(m_vec[i] - v.m_vec[i]) / (m_vec[i] + v.m_vec[i]);
-	}
-	return sum;
-}
-
-void VectorND::resize( int n )
-{
-	if (m_size == n) return;
-	delete[] m_vec;
-	m_size = n;
-	m_vec = new double[m_size];
-}
 
 /////////////////////////////////////////////////////////////
 // Matrix3 : 3*3 matrix
@@ -412,18 +268,6 @@ Matrix3 vector3DMultiply( const Vector3D& v1, const Vector3D& v2 )
 	mat.data[2][2] = v1.z * v2.z;
 	
 	return mat;
-}
-
-VectorND operator-( const VectorND& v1, const VectorND& v2 )
-{
-	assert(v1.m_size == v2.m_size);
-	VectorND v;
-	v.reserve(v1.m_size);
-	for (int i = 0; i < v.m_size; ++i)
-	{
-		v.m_vec[i] = v1.m_vec[i] - v2.m_vec[i];
-	}
-	return v;
 }
 
 Vector3D TriAreaNormal( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3 )

@@ -84,6 +84,10 @@ public:
 	T norm1() const;
 	T norm2() const;
 	T normEuclidean() const { return norm2(); }
+	T distEculidean2(const VecN<T>& v2) const {
+		T dist = (*this - v2).norm2();
+		return dist*dist;
+	}
 	T pNorm(double p) const;
 	T inftyNorm() const;
 	T max_element() const;
@@ -103,7 +107,7 @@ public:
 	iterator begin() { return iterator(this, 0); };
 	iterator end() { return iterator(this, mDim); }
 
-private:
+protected:
 	T *mVec;
 	int mDim;
 };
@@ -229,7 +233,7 @@ inline void VecN<T>::resize(int n)
 
 	delete []mVec;
 	mDim = n;
-	mVec = new T[mDim];
+	if (n > 0)	mVec = new T[mDim];
 }
 
 template<typename T>
@@ -353,7 +357,7 @@ template<typename T>
 inline T VecN<T>::norm2() const 
 {
 	T sum(0);
-	for (int i = 0; i < mDim; ++i) sum += std::pow(mVec[i], 2);
+	for (int i = 0; i < mDim; ++i) sum += mVec[i] * mVec[i];
 	return std::sqrt(sum);
 }
 
