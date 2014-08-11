@@ -47,11 +47,12 @@ private:
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
 	void reconstructSpectralWavelet();
 	
-	void sparseCompressionTest();	// test compression performance using graph Laplacian basis
+	void testSparseCompression();	// test compression performance using graph Laplacian basis
 	void sparseDecompositionTest();  // test shape decomposition via sparse coding
 	void sparseDecompositionTest2(); // test shape decomposition and separation
 	void testArtificialShapeMCA();
 	void testShapeMCA();
+	void testDictionaryForDecomposition();
 
 	void sparseFeatureFindingTest1();  // test feature finding and correspondence using cot formula basis
 	void spectrumTest1();

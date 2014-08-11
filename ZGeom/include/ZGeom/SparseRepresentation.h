@@ -29,6 +29,7 @@ public:
 
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
 	void clear() { mAtoms.clear(); }
+	bool empty() const { return mAtoms.size() == 0; }
 
 	void expandTo(int N) 
 	{
@@ -37,6 +38,7 @@ public:
 	}
 
 	const std::vector<VecNd>& operator() () const { return mAtoms; }
+	friend void combineDictionary(const Dictionary& d1, const Dictionary& v2, Dictionary& v3);
 
 private:
 	std::vector<VecNd> mAtoms;

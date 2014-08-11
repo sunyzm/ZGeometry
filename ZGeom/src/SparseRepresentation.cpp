@@ -103,4 +103,16 @@ void multiChannelSplitSparseCoding(const std::vector<SparseCoding>& vCodings1, s
 		splitSparseCoding(vCodings1[c], vCodings2[c], vCodings3[c], funcSplit);
 }
 
+void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)
+{
+	assert(d1.atomDim() == d2.atomDim());
+	d3.mDim = d1.atomDim();
+	d3.mAtoms.clear();
+	d3.mAtoms.reserve(d1.atomCount() + d2.atomCount());
+	for (const VecNd& atom : d1.mAtoms) d3.mAtoms.push_back(atom);
+	for (const VecNd& atom : d2.mAtoms) d3.mAtoms.push_back(atom);
+}
+
+
 } // end of namespace
+

@@ -14,6 +14,7 @@
 
 using ZGeom::Dictionary;
 using ZGeom::SparseApproxMethod;
+using ZGeom::VecNd;
 
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
@@ -742,11 +743,12 @@ MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
 
 void ShapeEditor::runTests()
 {
-	//sparseCompressionTest();		// compression test
+	//testSparseCompression();		
 	//sparseDecompositionTest();
 	//sparseDecompositionTest2();
 	//testArtificialShapeMCA();
 	//testShapeMCA();
+	testDictionaryForDecomposition();
 }
 
 //// compute various eigenvectors indexed by Fiedler vector /////
@@ -791,7 +793,7 @@ void printEndSeparator(char c, int num) {
 
 //// Test partitioned approximation with graph Laplacian ////
 //
-void ShapeEditor::sparseCompressionTest()
+void ShapeEditor::testSparseCompression()
 {
 	revertCoordinates();
 	mStoredCoordinates.resize(5);
@@ -1578,106 +1580,64 @@ void ShapeEditor::testArtificialShapeMCA()
 
 void ShapeEditor::testShapeMCA()
 {
-	using ZGeom::VecNd;
+
+}
+
+void ShapeEditor::testDictionaryForDecomposition()
+{
+	using ZGeom::combineDictionary;
 	revertCoordinates();
-	std::cout << "\n======== Starting testShapeMCA ========\n";
+	std::cout << "\n======== Starting testDictionaryForDecomposition ========\n";
 	const int totalVertCount = mMesh->vertCount();
 	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
 	const double bbDiag = mMesh->getBoundingBox().length() * 2;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 	std::vector<ZGeom::VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
-	setStoredCoordinates(oldMeshCoord, 0);
 
-	const VecNd& vX0 = oldMeshCoord.getXCoord();
-	auto px1 = vX0.min_max_element();
-	double x_min = px1.first, x_max = px1.second;
-	std::string colorStr0 = "color_x_coord_base";
-	std::vector<ZGeom::Colorf> vColors0(totalVertCount);
-	for (int i = 0; i < totalVertCount; ++i) vColors0[i].falseColor((vX0[i] - x_min) / (x_max - x_min), 1.f, ZGeom::CM_JET);
-	addColorSignature(colorStr0, vColors0);
-	std::string colorStr1 = "color_x_coord_altered";
-
-	/// Do Eigendecomposition
-	//
+	/* Compute Laplacian and eigendecomposition */
 	std::cout << "==== Do Eigendecomposition ====\n";
 	int eigenCount = -1;					// -1 means full decomposition
-	MeshLaplacian graphLaplacian;
+	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, symCotLaplacian;
+	ZGeom::EigenSystem esGraph, esAniso, esCot, esSymCot;
 	graphLaplacian.constructUmbrella(mMesh);
-	ZGeom::EigenSystem es;
-	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
-
-	/************************************************************************/
-	/* test Laplacian smoothing                                             */
-	/************************************************************************/
-	int anchorCount = 0.05*totalVertCount;
-	ZGeom::SparseMatrix<double> matOptS(totalVertCount + anchorCount, totalVertCount);
-	matOptS.copyElements(graphLaplacian.getLS());
-	double posWeight = 10.;
-	std::vector<VecNd> vecB(3);
-	for (int j = 0; j < 3; ++j)	{
-		vecB[j].resize(totalVertCount + anchorCount, 0);
-	}
-	for (int i = 0; i < anchorCount; ++i) {
-		int selectedAnchor = int((double)rand()/(double)RAND_MAX * totalVertCount + 0.5);
-		matOptS.insertElem(totalVertCount + 1, selectedAnchor + 1, posWeight);
-		for (int j = 0; j < 3; ++j)
-			vecB[j][totalVertCount + i] = posWeight * vOriginalCoords[j][selectedAnchor];
-	}
+	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esGraph);
+	aniso1Laplacian.constructAnisotropic2(mMesh);
+	aniso1Laplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esAniso);
+	cotLaplacian.constructCotFormula(mMesh);
+	cotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esCot);
+	symCotLaplacian.constructSymCot(mMesh);	
+	symCotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esSymCot);
 	
-	std::vector<VecNd> vecX;
-	solveSparseMultiColumn(g_engineWrapper, matOptS, vecB, vecX);
-	MeshCoordinates mcLaplSmoothed(totalVertCount, vecX);
-	setStoredCoordinates(mcLaplSmoothed, 1);
-
-#if 0
-	/// Computer Dictionary
-	//
+	/* Computer Dictionary */
 	std::cout << "\n==== Compute Dictionaries ====\n";
-	Dictionary dict1, dict2;
-	computeDictionary(DT_Fourier, es, dict1);
-	computeDictionary(DT_SGW3, es, dict2);
+	std::vector<Dictionary> dict(10);
+	computeDictionary(DT_Fourier, esGraph, dict[0]);
+	computeDictionary(DT_SGW4, esGraph, dict[1]);
+	combineDictionary(dict[0], dict[1], dict[2]);
+	computeDictionary(DT_SGW4, esAniso, dict[3]);
+	combineDictionary(dict[0], dict[3], dict[4]);
+	computeDictionary(DT_SGW4, esCot, dict[5]);
+	combineDictionary(dict[0], dict[5], dict[6]);
+	computeDictionary(DT_Fourier, esSymCot, dict[7]);
+	computeDictionary(DT_SGW4, esSymCot, dict[8]);
+	combineDictionary(dict[7], dict[8], dict[9]);
 
-	/// Compute MCA decomposition
-	//
-	std::cout << "\n==== Compute MCA Decomposition ====\n";
-	std::vector<const Dictionary*> vDicts{ &dict1, &dict2 };
-	ZGeom::MCAoptions mcaOpts;
-	mcaOpts.nIter = 50;
-	mcaOpts.threshMode = ZGeom::MCAoptions::HARD_THRESH;
-	mcaOpts.threshStrategy = ZGeom::MCAoptions::MIN_OF_MAX;
-	std::vector<ZGeom::SparseCoding> vMCACodings[3];
-	for (int c = 0; c < 3; ++c) {
-		singleChannelMCA(vOriginalCoords[c], vDicts, vMCACodings[c], &mcaOpts);
+	/* Compute OMP Approximation */
+	std::cout << "\n==== Compute OMP Approximation ====\n";
+	ZGeom::SparseApproximationOptions approxOpts;
+	approxOpts.mCodingSize = 50;
+	approxOpts.mApproxMethod = ZGeom::SA_OMP;
+	std::cout << "- OMP reconstruction error: \n";
+	for (int i = 0; i < (int)dict.size(); ++i) {
+		if (dict[i].empty()) continue;
+		std::vector<ZGeom::SparseCoding> vOMPCodings;
+		std::vector<VecNd> vApproximatedCoords;
+		multiChannelSparseApproximate(vOriginalCoords, dict[i], vOMPCodings, approxOpts);
+		multiChannelSparseReconstruct(dict[i], vOMPCodings, vApproximatedCoords);
+		MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
+		std::cout << " Dict " << i << ": " << oldMeshCoord.difference(coordApproxOMP) << '\n';
 	}
-	std::vector<VecNd> vCartoon(3), vTexture(3);
-	for (int c = 0; c < 3; ++c) {
-		vCartoon[c] = singleChannelSparseReconstruct(dict1, vMCACodings[c][0]);
-		vTexture[c] = singleChannelSparseReconstruct(dict2, vMCACodings[c][1]);
-	}
-	MeshCoordinates mcCartoon(totalVertCount, vCartoon);
-	setStoredCoordinates(mcCartoon, 1);
-	//mMesh->setVertCoordinates(mStoredCoordinates[1]);
 
-	VecNd& vXC = vCartoon[0];
-	VecNd& vXT = vTexture[0];
-	vMCACodings[0][0].sortByCoeff(); vMCACodings[0][1].sortByCoeff();
-	std::cout << "- #MCA1: " << vMCACodings[0][0].size() << "\t#MCA2: " << vMCACodings[0][1].size() << '\n';
-	std::cout << "-- MCA1 coefficients: ";
-	for (auto p : vMCACodings[0][0].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
-	std::cout << "\n";
-	std::cout << "-- MCA2 coefficients: ";
-	for (auto p : vMCACodings[0][1].getApproxItems()) std::cout << "(" << p.index() << ", " << p.coeff() << ") ";
-	std::cout << "\n";
-
-	std::string colorStrMCA1 = "color_x_coord_mca1", colorStrMCA2 = "color_x_coord_mca2";
-	std::vector<ZGeom::Colorf> vColorsMCA1(totalVertCount), vColorsMCA2(totalVertCount);
-	for (int i = 0; i < totalVertCount; ++i) {
-		vColorsMCA1[i].falseColor((vXC[i] - x_min) / (x_max - x_min), 1.f, ZGeom::CM_JET);
-		vColorsMCA2[i].falseColor(min(float(fabs(vXT[i]/(0.02*bbDiag))), 1.f), 1.f, ZGeom::CM_COOL);
-	}
-	addColorSignature(colorStrMCA1, vColorsMCA1);
-	addColorSignature(colorStrMCA2, vColorsMCA2);
-#endif
 	std::cout << '\n';
 	printEndSeparator('=', 40);
 }

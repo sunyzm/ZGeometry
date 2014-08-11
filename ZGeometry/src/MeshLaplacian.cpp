@@ -147,8 +147,7 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 {
 	const int vertCount = tmesh->vertCount();
-	constructCotFormula(tmesh);
-	
+	constructCotFormula(tmesh);	
 	mW.setToIdentity(vertCount);
 	mConstructed = true;
 	mLaplacianType = SymCot;
@@ -217,21 +216,22 @@ void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, doub
 	mConstructed = true;
 }
 
-void MeshLaplacian::constructAnisotropic2( const CMesh* tmesh, double para1, double para2 )
+void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
 	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
 	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
-	vector<std::tuple<int,int,double> > vSparseElements;
-
+	vector<std::tuple<int,int,double> > vSparseElements;	
+	double avgMeanCurv(0);
+	for (double a : vMeanCurvatures) avgMeanCurv += fabs(a);
+	avgMeanCurv /= vertCount;
 	int nRing = 1;
 	double hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
 	double hPara2 = 0.2;
 
 	std::vector<double> vDiag(vertCount, 0);
-
 	for (int vi = 0; vi < vertCount; ++vi) {
 		const CVertex* pvi = tmesh->getVertex(vi); 
 		int outValence = pvi->outValence();
@@ -243,7 +243,8 @@ void MeshLaplacian::constructAnisotropic2( const CMesh* tmesh, double para1, dou
 
 			Vector3D vij = pvj->getPosition() - pvi->getPosition();
 			double w1 = std::exp(-vij.length2() / hPara1);
-			double w2 = std::exp(-pow(vMeanCurvatures[vi]-vMeanCurvatures[vj], 2) / hPara2);
+			double curvDiff = vMeanCurvatures[vi] - vMeanCurvatures[vj];
+			double w2 = std::exp(-curvDiff*curvDiff / hPara2);
 			double wij = w1 * w2;
 
 			vSparseElements.push_back(make_tuple(vi, vj, wij));
@@ -273,8 +274,11 @@ void MeshLaplacian::constructAnisotropic2( const CMesh* tmesh, double para1, dou
 	vWeights = vMixedAreas;
 
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
-	mW.convertFromDiagonal(vWeights);
-	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
+#ifndef _DEBUG
+	ZGeom::logic_assert(mLS.testSymmetric(), "the Ls matrix not symmetric");
+#endif
+	mW.convertFromDiagonal(vWeights);	
+	mLaplacianType = Anisotropic2;
 	mConstructed = true;
 }
 
