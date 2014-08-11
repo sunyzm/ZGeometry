@@ -126,13 +126,12 @@ void splitSparseCoding(const SparseCoding& coding1, SparseCoding& coding2, Spars
 void multiChannelSplitSparseCoding(const std::vector<SparseCoding>& vCodings1, std::vector<SparseCoding>& vCodings2, std::vector<SparseCoding>& vCodings3, std::function<bool(const SparseCodingItem&)> funcSplit);
 VecNd dictVecInnerProducts(const Dictionary& dict, const VecNd& vec);
 VecNd singleChannelDenseReconstruct(const Dictionary& dict, const VecNd& vCoeff);
-std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const std::vector<VecNd>& vCoeffs);
-VecNd singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& approx);
-VecNd singleChannelSparseReconstruct(const std::vector<VecNd>& vDictAtoms, const SparseCoding& approx);
-void  singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& coding, VecNd& signalReconstructed);
-std::vector<VecNd> SparseReconstructMultiChannel(const Dictionary& dict, const std::vector<SparseCoding>& vCodings);
-void multiChannelSparseReconstruct(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed);
-void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed);
+std::vector<VecNd> multiChannelDenseReconstruct(const Dictionary& dict, const std::vector<VecNd>& vCoeffs);
+VecNd singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& approx, int nCode = -1);
+VecNd singleChannelSparseReconstruct(const std::vector<VecNd>& vDictAtoms, const SparseCoding& approx, int nCode = -1);
+void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed, int nCode = -1);
+void multiChannelSparseReconstruct(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vApprox, std::vector<VecNd>& vReconstructed, int nCode = -1);
+//std::vector<VecNd> SparseReconstructMultiChannel(const Dictionary& dict, const std::vector<SparseCoding>& vCodings);
 
 }
 #endif

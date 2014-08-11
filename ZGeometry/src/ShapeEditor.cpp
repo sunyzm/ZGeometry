@@ -1624,20 +1624,29 @@ void ShapeEditor::testDictionaryForDecomposition()
 
 	/* Compute OMP Approximation */
 	std::cout << "\n==== Compute OMP Approximation ====\n";
+	std::vector<int> vCodeNum{ 20, 50, 100 };
+	std::vector<std::vector<double> > vErrors(dict.size());
 	ZGeom::SparseApproximationOptions approxOpts;
-	approxOpts.mCodingSize = 50;
+	approxOpts.mCodingSize = vCodeNum.back();
 	approxOpts.mApproxMethod = ZGeom::SA_OMP;
+
 	std::cout << "- OMP reconstruction error: \n";
 	for (int i = 0; i < (int)dict.size(); ++i) {
 		if (dict[i].empty()) continue;
 		std::vector<ZGeom::SparseCoding> vOMPCodings;
 		std::vector<VecNd> vApproximatedCoords;
-		multiChannelSparseApproximate(vOriginalCoords, dict[i], vOMPCodings, approxOpts);
-		multiChannelSparseReconstruct(dict[i], vOMPCodings, vApproximatedCoords);
-		MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
-		std::cout << " Dict " << i << ": " << oldMeshCoord.difference(coordApproxOMP) << '\n';
+		for (int j = 0; j < (int)vCodeNum.size(); ++j) {
+			approxOpts.mCodingSize = vCodeNum[j];
+			multiChannelSparseApproximate(vOriginalCoords, dict[i], vOMPCodings, approxOpts);
+			multiChannelSparseReconstruct(dict[i], vOMPCodings, vApproximatedCoords);
+			MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
+			vErrors[i].push_back(oldMeshCoord.difference(coordApproxOMP));
+		}		
+		std::cout << " dict " << i << ": ";
+		for (double e : vErrors[i]) std::cout << e << ", ";
+		std::cout << std::endl;
 	}
-
+	
 	std::cout << '\n';
 	printEndSeparator('=', 40);
 }

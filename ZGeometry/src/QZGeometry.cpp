@@ -484,8 +484,8 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
 	//computeLaplacian(Anisotropic1); 	
-	computeLaplacian(Anisotropic2);
-	setLaplacianType("Anisotropic2");
+	//computeLaplacian(Anisotropic2);
+	//setLaplacianType("Anisotropic2");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();

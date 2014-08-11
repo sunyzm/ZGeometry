@@ -3,6 +3,16 @@
 
 namespace ZGeom {
 
+void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)
+{
+	assert(d1.atomDim() == d2.atomDim());
+	d3.mDim = d1.atomDim();
+	d3.mAtoms.clear();
+	d3.mAtoms.reserve(d1.atomCount() + d2.atomCount());
+	for (const VecNd& atom : d1.mAtoms) d3.mAtoms.push_back(atom);
+	for (const VecNd& atom : d2.mAtoms) d3.mAtoms.push_back(atom);
+}
+
 ZGeom::VecNd singleChannelDenseReconstruct(const Dictionary& dict, const VecNd& vCoeff)
 {
 	assert(dict.atomCount() == vCoeff.size());
@@ -15,7 +25,7 @@ ZGeom::VecNd singleChannelDenseReconstruct(const Dictionary& dict, const VecNd& 
 	return vResult;
 }
 
-std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const std::vector<VecNd>& vCoeffs)
+std::vector<VecNd> multiChannelDenseReconstruct(const Dictionary& dict, const std::vector<VecNd>& vCoeffs)
 {
 	int channelCount = (int)vCoeffs.size();
 	std::vector<VecNd> vResults(channelCount);
@@ -25,42 +35,39 @@ std::vector<VecNd> DenseReconstructMultiChannel(const Dictionary& dict, const st
 	return vResults;
 }
 
-ZGeom::VecNd singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& coding)
+ZGeom::VecNd singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& coding, int nCode)
 {
-	return singleChannelSparseReconstruct(dict.getAtoms(), coding);
+	return singleChannelSparseReconstruct(dict.getAtoms(), coding, nCode);
 }
 
-ZGeom::VecNd singleChannelSparseReconstruct(const std::vector<ZGeom::VecNd>& vDictAtoms, const SparseCoding& coding)
+ZGeom::VecNd singleChannelSparseReconstruct(const std::vector<ZGeom::VecNd>& vDictAtoms, const SparseCoding& coding, int nCode)
 {
+	if (nCode < 0 || nCode > coding.size()) nCode = coding.size();
 	ZGeom::VecNd vApprox(vDictAtoms[0].size());
-	for (auto item : coding.getApproxItems()) {
+	for (int i = 0; i < nCode; ++i) {
+		auto item = coding[i];
 		vApprox += vDictAtoms[item.index()] * item.coeff();
 	}
 	return vApprox;
 }
 
-void singleChannelSparseReconstruct(const Dictionary& dict, const SparseCoding& coding, VecNd& signalReconstructed)
-{
-	signalReconstructed = singleChannelSparseReconstruct(dict, coding);
-}
-
-void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed)
+void multiChannelSparseReconstruct(const Dictionary& dict, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed, int nCode)
 {
 	int channelCount = (int)vCodings.size();
 	vReconstructed.resize(channelCount);
 
 	for (int c = 0; c < channelCount; ++c) {
-		singleChannelSparseReconstruct(dict, vCodings[c], vReconstructed[c]);
+		vReconstructed[c] = singleChannelSparseReconstruct(dict, vCodings[c], nCode);
 	}
 }
 
-void multiChannelSparseReconstruct(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed)
+void multiChannelSparseReconstruct(const std::vector<VecNd>& vAtoms, const std::vector<SparseCoding>& vCodings, std::vector<VecNd>& vReconstructed, int nCode)
 {
 	int nChannels = (int)vCodings.size();
 	vReconstructed.resize(nChannels);
 
-	for (int i = 0; i < nChannels; ++i) {
-		vReconstructed[i] = singleChannelSparseReconstruct(vAtoms, vCodings[i]);
+	for (int c = 0; c < nChannels; ++c) {
+		vReconstructed[c] = singleChannelSparseReconstruct(vAtoms, vCodings[c], nCode);
 	}
 }
 
@@ -103,16 +110,5 @@ void multiChannelSplitSparseCoding(const std::vector<SparseCoding>& vCodings1, s
 		splitSparseCoding(vCodings1[c], vCodings2[c], vCodings3[c], funcSplit);
 }
 
-void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)
-{
-	assert(d1.atomDim() == d2.atomDim());
-	d3.mDim = d1.atomDim();
-	d3.mAtoms.clear();
-	d3.mAtoms.reserve(d1.atomCount() + d2.atomCount());
-	for (const VecNd& atom : d1.mAtoms) d3.mAtoms.push_back(atom);
-	for (const VecNd& atom : d2.mAtoms) d3.mAtoms.push_back(atom);
-}
-
-
-} // end of namespace
+}	// end of namespace
 
