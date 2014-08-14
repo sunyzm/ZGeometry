@@ -5,25 +5,24 @@
 #include "MatlabEngineWrapper.h"
 #include "EigenSystem.h"
 
-namespace ZGeom
-{
+namespace ZGeom {
 
 class Laplacian
 {
 public:
-	Laplacian() : mOrder(0), mConstructed(false) {}
+	Laplacian() : mOrder(0) {}
 	virtual ~Laplacian(){}
 
 	const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
 	const ZGeom::SparseMatrix<double>& getW() const { return mW; }
 	void decompose(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized = true);
-	bool isLaplacianConstructed() const { return mConstructed; }
+	void decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB);
+	bool isLaplacianConstructed() const { return !mLS.empty(); }
 	void computeSubLaplacian(const std::vector<int>& vSelected, Laplacian& subLaplacian) const;
 
 protected:
 	int mOrder;
 	SparseMatrix<double> mLS, mW;
-	bool mConstructed;
 };
 
 } // end of namespace

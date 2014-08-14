@@ -38,8 +38,8 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 	mLS.convertFromCOO(mOrder, mOrder, vElem);
 	mW.convertFromDiagonal(vWeights);
 
-	mConstructed = true;
 	mLaplacianType = Tutte;
+	mSymmetric = false;
 }
 
 void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
@@ -49,8 +49,8 @@ void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 	mLS.scale(-1);
 	mW.setToIdentity(mOrder);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
 
-	mConstructed = true;
 	mLaplacianType = Umbrella;
+	mSymmetric = true;
 }
 
 void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
@@ -61,8 +61,8 @@ void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
 	mLS.scale(-1);
 	mW.setToIdentity(mOrder);
 
-	mConstructed = true;
 	mLaplacianType = NormalizedUmbrella;
+	mSymmetric = true;
 }
 
 /* Construct negative discrete Laplace operator */
@@ -140,8 +140,8 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
 
-	mConstructed = true;
 	mLaplacianType = CotFormula;
+	mSymmetric = false;
 }
 
 void MeshLaplacian::constructSymCot( const CMesh* tmesh )
@@ -149,11 +149,12 @@ void MeshLaplacian::constructSymCot( const CMesh* tmesh )
 	const int vertCount = tmesh->vertCount();
 	constructCotFormula(tmesh);	
 	mW.setToIdentity(vertCount);
-	mConstructed = true;
+
 	mLaplacianType = SymCot;
+	mSymmetric = true;
 }
 
-void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, double para2 )
+void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
@@ -209,11 +210,14 @@ void MeshLaplacian::constructAnisotropic( const CMesh* tmesh, double para1, doub
 
 	std::vector<double> vWeights(vertCount, 1.0);
 	vWeights = vMixedAreas;
-
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
+#ifdef _DEBUG
 	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
-	mConstructed = true;
+#endif
+	
+	mLaplacianType = Anisotropic1;
+	mSymmetric = false;
 }
 
 void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
@@ -274,15 +278,13 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 	vWeights = vMixedAreas;
 
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
-#ifndef _DEBUG
-	ZGeom::logic_assert(mLS.testSymmetric(), "the Ls matrix not symmetric");
-#endif
 	mW.convertFromDiagonal(vWeights);	
+
 	mLaplacianType = Anisotropic2;
-	mConstructed = true;
+	mSymmetric = false;
 }
 
-void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
+void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
 {
 	// based on curvature difference or bilateral filtering
 	const int vertCount = mOrder = tmesh->vertCount();
@@ -353,15 +355,12 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh, int nRing, double
 
 
 	vWeights.resize(mOrder, 1.0);	
-//	for (int i = 0; i < mOrder; ++i) vWeights[i] = std::fabs(vDiag[i]);
-
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
-
 	std::cout << "Anisotropic Laplacian is symmetric? " << mLS.testSymmetric() << '\n';
-
 	mW.convertFromDiagonal(vWeights);
 
-	mConstructed = true;
+	mLaplacianType = Anisotropic1;
+	mSymmetric = true;
 }
 
 void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
@@ -432,7 +431,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 	vWeights.resize(mOrder, 1.0);	
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
-	mConstructed = true;
+
 }
 
 void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
@@ -498,7 +497,6 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
-	mConstructed = true;
 }
 
 void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es)

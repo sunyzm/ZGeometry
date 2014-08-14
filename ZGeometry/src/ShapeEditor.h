@@ -50,8 +50,8 @@ private:
 	void testSparseCompression();	// test compression performance using graph Laplacian basis
 	void sparseDecompositionTest();  // test shape decomposition via sparse coding
 	void sparseDecompositionTest2(); // test shape decomposition and separation
-	void testArtificialShapeMCA();
-	void testShapeMCA();
+	void testArtificialShapeMCA();	// artificial signal + artificial noise
+	void testArtificailShapeMCA2();	// original signal + artificial noise
 	void testDictionaryForDecomposition();
 
 	void sparseFeatureFindingTest1();  // test feature finding and correspondence using cot formula basis

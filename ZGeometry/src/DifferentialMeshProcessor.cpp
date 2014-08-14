@@ -94,9 +94,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 
 	case Anisotropic1:
 		{
-			double para1 = 1.0;
-			double para2 = 1.0;
-			laplacian.constructAnisotropic(mMesh, para1, para2);
+			laplacian.constructAnisotropic1(mMesh);
 		}
 		break;
 

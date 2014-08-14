@@ -111,10 +111,11 @@ public:
 		});
 	}
 
-	void sortByCoeff() {
+	const SparseCoding& sortByCoeff() {
 		std::sort(mApproxItems.begin(), mApproxItems.end(), [](const SparseCodingItem& c1, const SparseCodingItem& c2){
 			return fabs(c1.coeff()) > fabs(c2.coeff());
 		});
+		return *this;
 	}
 
 private:

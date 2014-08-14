@@ -18,6 +18,14 @@ void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSy
 	}
 }
 
+void Laplacian::decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB)
+{
+	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
+	EigenCompute eigenCompute(ep);
+	std::cout << "Do generalized eigendecomposition!\n";
+	eigenCompute.solveGenSym(mLS, matB, nEig, eigSys);
+}
+
 void Laplacian::computeSubLaplacian( const std::vector<int>& vSelected, Laplacian& subLaplacian ) const
 {
 	const int subSize = (int)vSelected.size();
