@@ -2255,7 +2255,6 @@ void QZGeometryWindow::computeFaceNormals()
 		assert(fNormals.size() == faceCount);
 
 		MeshVectorList mvl;
-
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
 			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
 			mvl.push_back(std::make_pair(vc, fNormals[fIdx]));

@@ -9,8 +9,7 @@
 #include <functional>
 #include "common.h"
 
-namespace ZGeom
-{
+namespace ZGeom {
 
 template<typename T> class VecN;
 template<typename T> class SparseMatrix;
@@ -412,6 +411,6 @@ inline std::pair<T, T> VecN<T>::min_max_element() const
 typedef VecN<float>  VecNs;
 typedef VecN<double> VecNd;
 
-}// end of namespace ZGeom
+}	// end of namespace ZGeom
 
 #endif

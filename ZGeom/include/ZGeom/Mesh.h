@@ -2,17 +2,17 @@
 #define ZMESH_MESH_H
 #include <cstdio>
 #include <cmath>
-#include <list>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <set>
-#include <queue>
-#include <string>
 #include <algorithm>
 #include <functional>
+#include <fstream>
+#include <iostream>
+#include <list>
+#include <sstream>
+#include <set>
+#include <string>
+#include <queue>
 #include <unordered_map>
+#include <vector>
 #include "VecN.h"
 #include "Vec3.h"
 #include "Vector3D.h"
@@ -35,7 +35,6 @@ public:
 		std::copy_n(cy, meshSize, mCoordY.c_ptr());
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
-
 	MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
 	{
 		assert(meshSize == v1.size() && v1.size() == v2.size() && v2.size() == v3.size());
@@ -44,7 +43,6 @@ public:
 		mCoordY = v2;
 		mCoordZ = v3;
 	}
-
 	MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
 	{
 		assert(vCoords.size() >= 3 && meshSize == vCoords[0].size());
@@ -53,7 +51,6 @@ public:
 		mCoordY = vCoords[1];
 		mCoordZ = vCoords[2];
 	}
-
 	MeshCoordinates(const MeshCoordinates& mc)
 	{
 		this->mSize = mc.mSize;
@@ -74,7 +71,6 @@ public:
 	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
 
-	//resize coordinates size and initialize to 0
 	void resize(int n)	
 	{
 		mSize = n; 
@@ -320,6 +316,7 @@ private:
 	int*					m_piVertex;		// all vertex index
 	int*					m_piEdge;		// all half-edge index
 };
+
 
 //////////////////////////////////////////////////////
 //						CMesh   					//
