@@ -228,6 +228,7 @@
     <ClCompile Include="src\QZGeometry.cpp" />
     <ClCompile Include="src\ShapeEditor.cpp" />
     <ClCompile Include="src\ShapeMatcher.cpp" />
+    <ClCompile Include="src\SpectralGeometry.cpp" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -766,6 +767,7 @@
     <ClInclude Include="src\matching.h" />
     <ClInclude Include="src\MatchTestCase.h" />
     <ClInclude Include="src\Palette.h" />
+    <ClInclude Include="src\SpectralGeometry.h" />
     <CustomBuild Include="src\ShapeEditor.h">
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">$(QTDIR)\bin\moc.exe;%(FullPath)</AdditionalInputs>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Moc%27ing ShapeEditor.h...</Message>

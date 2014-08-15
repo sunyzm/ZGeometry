@@ -10,6 +10,7 @@
 #include <ZGeom/Approximation.h>
 #include <ZGeom/SparseSolver.h>
 #include <ZGeom/MCA.h>
+#include "SpectralGeometry.h"
 #include "global.h"
 
 using ZGeom::Dictionary;
@@ -527,147 +528,6 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	mMesh->setVertCoordinates(newCoord);
 }
 
-void ShapeEditor::deformSpectralWavelet()
-{
-	CStopWatch timer;	
-	timer.startTimer();
-
-	int anchorCount(0);
-	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
-	prepareAnchors(anchorCount, anchorIndex, anchorPos);
-	if (anchorCount == 0) {
-		//std::cout << "At least one anchor need to be picked!" << std::endl;
-//		return;
-	}
-
-	const int anchorWeight = 1.0;
-	const int vertCount = mMesh->vertCount();
-
-	MeshCoordinates oldCoord;
-	mMesh->retrieveVertCoordinates(oldCoord);
-	g_engineWrapper.addColVec(oldCoord.getXCoord(), "ecx");
-	g_engineWrapper.addColVec(oldCoord.getYCoord(), "ecy");
-	g_engineWrapper.addColVec(oldCoord.getZCoord(), "ecz");
-	
-	ZGeom::DenseMatrixd& matSGW = mProcessor->getWaveletMat();
-	if (matSGW.empty()) mProcessor->computeSGW1(CotFormula);
-	const int waveletCount = matSGW.rowCount();
-	g_engineWrapper.addDenseMat(matSGW, "matSGW");
-	
-#if 1
-	ZGeom::VecNd diffCoord[3];
-	ZGeom::DenseMatVecMultiplier mulMixedW(matSGW);	
-	for (int i = 0; i < 3; ++i) {
-		diffCoord[i].resize(waveletCount);
-		mulMixedW.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
-	}
-#endif
-
-	std::vector<int> fixedVerts;
-	std::set<int> freeVerts;
-	for (int i = 0; i < anchorCount; ++i) {
-		std::set<int> sFree;
-		mMesh->vertRingNeighborVerts(anchorIndex[i], 3, sFree, true);
-		for (int v : sFree) freeVerts.insert(v);
-	}
-
-	const int fixedCount = fixedVerts.size();
-
-	ZGeom::VecNd solveRHS[3];
-	for (int i = 0; i < 3; ++i ) {
-		solveRHS[i].resize(waveletCount + anchorCount + fixedCount, 0);
-
-		solveRHS[i].copyElements(diffCoord[i], 0);
-
-		for (int l = 0; l < anchorCount; ++l) {
-			solveRHS[i][waveletCount + l] = anchorWeight * anchorPos[l][i];
-		}
-
-		for (int l = 0; l < fixedCount; ++l) {
-			solveRHS[i][waveletCount + anchorCount + l] = anchorWeight * mMesh->getVertexPosition(fixedVerts[l])[i];
-		}
-	}
-	g_engineWrapper.addColVec(solveRHS[0], "dcx");
-	g_engineWrapper.addColVec(solveRHS[1], "dcy");
-	g_engineWrapper.addColVec(solveRHS[2], "dcz");
-
-	ZGeom::DenseMatrixd matOpt(matSGW);
-	matOpt.expand(waveletCount + anchorCount + fixedCount, vertCount);
-	for (int l = 0; l < anchorCount; ++l)
-		matOpt(waveletCount + l, anchorIndex[l]) = anchorWeight;
-	for (int l = 0; l < fixedCount; ++l)
-		matOpt(waveletCount + anchorCount + l, fixedVerts[l]) = anchorWeight;
-	g_engineWrapper.addDenseMat(matOpt, "matOpt");
-
-	timer.stopTimer("Prepare deformation time: ");
-
-	timer.startTimer();	
-	//g_engineWrapper.eval("lsx=cgls(matOpt, dcx);");
-	//g_engineWrapper.eval("lsy=cgls(matOpt, dcy);");
-	//g_engineWrapper.eval("lsz=cgls(matOpt, dcz);");
-	g_engineWrapper.eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
-	g_engineWrapper.eval("lsy=lsqr(matOpt, dcy);");
-	g_engineWrapper.eval("lsz=lsqr(matOpt, dcz);");
-	timer.stopTimer("Deformation time: ");
-
-	double *lsx = g_engineWrapper.getDblVariablePtr("lsx");
-	double *lsy = g_engineWrapper.getDblVariablePtr("lsy");
-	double *lsz = g_engineWrapper.getDblVariablePtr("lsz");
-
-	MeshCoordinates newCoord(vertCount, lsx, lsy, lsz);
-	//MeshCoordinates newCoord(oldCoord);
-	//newCoord.add(lsx, lsy, lsz);
-	mMesh->setVertCoordinates(newCoord);
-
-	evaluateApproximation(newCoord, "SGW deform");	
-}
-
-void ShapeEditor::reconstructSpectralWavelet()
-{
-	CStopWatch timer;	
-	timer.startTimer();
-
-	const int vertCount = mMesh->vertCount();	
-	const ZGeom::DenseMatrixd& matW = mProcessor->getWaveletMat();
-	if (matW.empty()) {
-		mProcessor->computeSGW1();
-		g_engineWrapper.addDenseMat(matW, "matSGW");
-	}
-	const int waveletCount = matW.rowCount();
-
-	ZGeom::VecNd solveRHS[3];
-	for (int i = 0; i < 3; ++i ) {
-		solveRHS[i].resize(waveletCount, 0);
-	}
-	g_engineWrapper.addColVec(solveRHS[0], "dcx");
-	g_engineWrapper.addColVec(solveRHS[1], "dcy");
-	g_engineWrapper.addColVec(solveRHS[2], "dcz");
-	g_engineWrapper.addDenseMat(matW, "matOpt");
-
-	timer.stopTimer("Prepare deformation time: ");
-
-	timer.startTimer();	
-	//g_engineWrapper.eval("lsx=cgls(matOpt, dcx);");
-	//g_engineWrapper.eval("lsy=cgls(matOpt, dcy);");
-	//g_engineWrapper.eval("lsz=cgls(matOpt, dcz);");
-	g_engineWrapper.eval("[lsx,flagx,resx]=lsqr(matOpt, dcx);");
-	g_engineWrapper.eval("lsy=lsqr(matOpt, dcy);");
-	g_engineWrapper.eval("lsz=lsqr(matOpt, dcz);");
-	timer.stopTimer("Deformation time: ");
-
-	double *lsx = g_engineWrapper.getDblVariablePtr("lsx");
-	double *lsy = g_engineWrapper.getDblVariablePtr("lsy");
-	double *lsz = g_engineWrapper.getDblVariablePtr("lsz");
-
-	MeshCoordinates newCoord;
-	mMesh->retrieveVertCoordinates(newCoord);
-	newCoord.add(lsx, lsy, lsz);
-	mMesh->setVertCoordinates(newCoord);
-
-	evaluateApproximation(newCoord, "SGW reconstruction");	
-}
-
 void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 {
 	const int vertCount = mMesh->vertCount();
@@ -734,8 +594,8 @@ void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const 
 	std::cout << "** Evaluate " << leadText << "\n";
 	double dif1 = oldCoord.difference(newCoord);
 	MeshCoordinates lCoord1, lCoord2;
-	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldCoord, lCoord1);
-	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, newCoord, lCoord2);
+	computeGeometricLaplacianCoordinate(*mMesh, oldCoord, lCoord1);
+	computeGeometricLaplacianCoordinate(*mMesh, newCoord, lCoord2);
 	double dif2 = lCoord1.difference(lCoord2);
 	std::cout << "-- Avg position error: " << dif1 / vertCount << '\n';
 	std::cout << "-- Avg geometric error:    " << (dif1 + dif2)/2.0/vertCount << '\n';
@@ -760,6 +620,7 @@ void ShapeEditor::runTests()
 	//sparseDecompositionTest2();
 	//testArtificialShapeMCA();
 	testArtificailShapeMCA2();
+	//testArtificialShapeMCA3();
 	//testDictionaryForDecomposition();
 }
 
@@ -806,7 +667,7 @@ void ShapeEditor::testSparseCompression()
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
 	setStoredCoordinates(oldMeshCoord, 0);
 	MeshCoordinates oldGeoCoord;
-	DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
+	computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
 
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
@@ -847,7 +708,7 @@ void ShapeEditor::testSparseCompression()
 
 		MeshCoordinates newGeoCoord;
 		for (int i = 0; i < ratiosCount; ++i) {			
-			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
 			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
@@ -861,11 +722,9 @@ void ShapeEditor::testSparseCompression()
 		MeshCoordinates newGeoCoord;
 
 		for (int i = 0; i < ratiosCount; ++i) {
-			mShapeApprox.findSparseRepresentationByCompressionRatio(method, vCompressRatio[i]);
-			
+			mShapeApprox.findSparseRepresentationByCompressionRatio(method, vCompressRatio[i]);			
 			mShapeApprox.doSparseReconstructionBySize(-1, vProgressiveCoords[i]);
-
-			DifferentialMeshProcessor::computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
+			computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
 			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
@@ -1033,8 +892,8 @@ void ShapeEditor::sparseFeatureFindingTest1()
 	for (int i = 0; i < nScales; ++i)
 		std::cout << "scale " << i << ": " << vAtomScaleCount[i] << '\n';
 
-	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
 	std::ofstream ofs("output/sparse_coding.csv");
+	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
 	for (auto c : vCoeff.getApproxItems()) {
 		int scl = c.index() / totalVertCount, idx = c.index() % totalVertCount;
 		double coef = c.coeff();
@@ -1043,9 +902,9 @@ void ShapeEditor::sparseFeatureFindingTest1()
 		vSparseFeatures->addFeature(new MeshFeature(idx, scl));
 		vSparseFeatures->back()->m_scalar1 = coef;
 	}
-	ofs.close();
 	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
-	
+	ofs.close();
+
 	printEndSeparator('=', 40);
 }
 
@@ -1440,6 +1299,74 @@ void ShapeEditor::sparseDecompositionTest2()
 	printEndSeparator('=', 40);	
 }
 
+void ShapeEditor::testDictionaryForDecomposition()
+{
+	using ZGeom::combineDictionary;
+	revertCoordinates();
+	std::cout << "\n======== Starting testDictionaryForDecomposition ========\n";
+	const int totalVertCount = mMesh->vertCount();
+	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
+	const double bbDiag = mMesh->getBoundingBox().length() * 2;
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	std::vector<ZGeom::VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
+
+	/* Compute Laplacian and eigendecomposition */
+	std::cout << "==== Do Eigendecomposition ====\n";
+	int eigenCount = -1;					// -1 means full decomposition
+	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, symCotLaplacian;
+	ZGeom::EigenSystem esGraph, esAniso, esCot, esSymCot;
+	graphLaplacian.constructUmbrella(mMesh);
+	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esGraph);
+	aniso1Laplacian.constructAnisotropic2(mMesh);
+	aniso1Laplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esAniso);
+	cotLaplacian.constructCotFormula(mMesh);
+	cotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esCot);
+	symCotLaplacian.constructSymCot(mMesh);	
+	symCotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esSymCot);
+	
+	/* Computer Dictionary */
+	std::cout << "\n==== Compute Dictionaries ====\n";
+	std::vector<Dictionary> dict(10);
+	computeDictionary(DT_Fourier, esGraph, dict[0]);
+	computeDictionary(DT_SGW4, esGraph, dict[1]);
+	combineDictionary(dict[0], dict[1], dict[2]);
+	computeDictionary(DT_SGW4, esAniso, dict[3]);
+	combineDictionary(dict[0], dict[3], dict[4]);
+	computeDictionary(DT_SGW4, esCot, dict[5]);
+	combineDictionary(dict[0], dict[5], dict[6]);
+	computeDictionary(DT_Fourier, esSymCot, dict[7]);
+	computeDictionary(DT_SGW4, esSymCot, dict[8]);
+	combineDictionary(dict[7], dict[8], dict[9]);
+
+	/* Compute OMP Approximation */
+	std::cout << "\n==== Compute OMP Approximation ====\n";
+	std::vector<int> vCodeNum{ 20, 50, 100 };
+	std::vector<std::vector<double> > vErrors(dict.size());
+	ZGeom::SparseApproximationOptions approxOpts;
+	approxOpts.mCodingSize = vCodeNum.back();
+	approxOpts.mApproxMethod = ZGeom::SA_OMP;
+
+	std::cout << "- OMP reconstruction error: \n";
+	for (int i = 0; i < (int)dict.size(); ++i) {
+		if (dict[i].empty()) continue;
+		std::vector<ZGeom::SparseCoding> vOMPCodings;
+		std::vector<VecNd> vApproximatedCoords;
+		for (int j = 0; j < (int)vCodeNum.size(); ++j) {
+			approxOpts.mCodingSize = vCodeNum[j];
+			multiChannelSparseApproximate(vOriginalCoords, dict[i], vOMPCodings, approxOpts);
+			multiChannelSparseReconstruct(dict[i], vOMPCodings, vApproximatedCoords);
+			MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
+			vErrors[i].push_back(oldMeshCoord.difference(coordApproxOMP));
+		}		
+		std::cout << " dict " << i << ": ";
+		for (double e : vErrors[i]) std::cout << e << ", ";
+		std::cout << std::endl;
+	}
+	
+	std::cout << '\n';
+	printEndSeparator('=', 40);
+}
+
 void ShapeEditor::testArtificialShapeMCA()
 {
 	revertCoordinates();
@@ -1714,75 +1641,22 @@ void ShapeEditor::testArtificailShapeMCA2()
 	addColorSignature(colorStrMCA1, vColorsMCA1);
 	addColorSignature(colorStrMCA2, vColorsMCA2);
 
+	/* add the origin of selected SGW as feature point */
+	MeshFeatureList vSparseFeatures;
+	for (auto c : vMCACodings[0][1].getApproxItems()) {
+		int scale = c.index() / totalVertCount, idx = c.index() % totalVertCount;
+		double coef = c.coeff();
+		vSparseFeatures.addFeature(new MeshFeature(idx, scale));
+		vSparseFeatures.back()->m_scalar1 = coef;
+	}
+	mMesh->addAttrMeshFeatures(vSparseFeatures, StrAttrFeatureMCA);
+
 	std::cout << '\n';
 	printEndSeparator('=', 40);
 }
 
 
-void ShapeEditor::testDictionaryForDecomposition()
+void ShapeEditor::testArtificialShapeMCA3()
 {
-	using ZGeom::combineDictionary;
-	revertCoordinates();
-	std::cout << "\n======== Starting testDictionaryForDecomposition ========\n";
-	const int totalVertCount = mMesh->vertCount();
-	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
-	const double bbDiag = mMesh->getBoundingBox().length() * 2;
-	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
-	std::vector<ZGeom::VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
 
-	/* Compute Laplacian and eigendecomposition */
-	std::cout << "==== Do Eigendecomposition ====\n";
-	int eigenCount = -1;					// -1 means full decomposition
-	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, symCotLaplacian;
-	ZGeom::EigenSystem esGraph, esAniso, esCot, esSymCot;
-	graphLaplacian.constructUmbrella(mMesh);
-	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esGraph);
-	aniso1Laplacian.constructAnisotropic2(mMesh);
-	aniso1Laplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esAniso);
-	cotLaplacian.constructCotFormula(mMesh);
-	cotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esCot);
-	symCotLaplacian.constructSymCot(mMesh);	
-	symCotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esSymCot);
-	
-	/* Computer Dictionary */
-	std::cout << "\n==== Compute Dictionaries ====\n";
-	std::vector<Dictionary> dict(10);
-	computeDictionary(DT_Fourier, esGraph, dict[0]);
-	computeDictionary(DT_SGW4, esGraph, dict[1]);
-	combineDictionary(dict[0], dict[1], dict[2]);
-	computeDictionary(DT_SGW4, esAniso, dict[3]);
-	combineDictionary(dict[0], dict[3], dict[4]);
-	computeDictionary(DT_SGW4, esCot, dict[5]);
-	combineDictionary(dict[0], dict[5], dict[6]);
-	computeDictionary(DT_Fourier, esSymCot, dict[7]);
-	computeDictionary(DT_SGW4, esSymCot, dict[8]);
-	combineDictionary(dict[7], dict[8], dict[9]);
-
-	/* Compute OMP Approximation */
-	std::cout << "\n==== Compute OMP Approximation ====\n";
-	std::vector<int> vCodeNum{ 20, 50, 100 };
-	std::vector<std::vector<double> > vErrors(dict.size());
-	ZGeom::SparseApproximationOptions approxOpts;
-	approxOpts.mCodingSize = vCodeNum.back();
-	approxOpts.mApproxMethod = ZGeom::SA_OMP;
-
-	std::cout << "- OMP reconstruction error: \n";
-	for (int i = 0; i < (int)dict.size(); ++i) {
-		if (dict[i].empty()) continue;
-		std::vector<ZGeom::SparseCoding> vOMPCodings;
-		std::vector<VecNd> vApproximatedCoords;
-		for (int j = 0; j < (int)vCodeNum.size(); ++j) {
-			approxOpts.mCodingSize = vCodeNum[j];
-			multiChannelSparseApproximate(vOriginalCoords, dict[i], vOMPCodings, approxOpts);
-			multiChannelSparseReconstruct(dict[i], vOMPCodings, vApproximatedCoords);
-			MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
-			vErrors[i].push_back(oldMeshCoord.difference(coordApproxOMP));
-		}		
-		std::cout << " dict " << i << ": ";
-		for (double e : vErrors[i]) std::cout << e << ", ";
-		std::cout << std::endl;
-	}
-	
-	std::cout << '\n';
-	printEndSeparator('=', 40);
 }

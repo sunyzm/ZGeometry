@@ -1,7 +1,7 @@
 #ifndef ZGEOM_DICTIONARY_H
 #define ZGEOM_DICTIONARY_H
-#include "VecN.h"
 #include <algorithm>
+#include "VecN.h"
 
 namespace ZGeom {
 
@@ -38,6 +38,7 @@ public:
 	}
 
 	const std::vector<VecNd>& operator() () const { return mAtoms; }
+	void mergeDict(const Dictionary& d2);
 	friend void combineDictionary(const Dictionary& d1, const Dictionary& v2, Dictionary& v3);
 
 private:

@@ -34,7 +34,6 @@ public:
 	void deformBiLaplacian();
 	void deformMixedLaplacian(double ks, double kb);
 	void deformThinShell2(double ks, double kb);
-	void deformSpectralWavelet();	
 
 signals:
 	void approxStepsChanged(int index, int newSize);
@@ -43,15 +42,13 @@ signals:
 
 private:
 	void addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors);
-
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
-	void reconstructSpectralWavelet();
-	
 	void testSparseCompression();	// test compression performance using graph Laplacian basis
 	void sparseDecompositionTest();  // test shape decomposition via sparse coding
 	void sparseDecompositionTest2(); // test shape decomposition and separation
-	void testArtificialShapeMCA();	// artificial signal + artificial noise
-	void testArtificailShapeMCA2();	// original signal + artificial noise
+	void testArtificialShapeMCA();	// MHB signal + SGW noise / MHB & SGW dictionary
+	void testArtificailShapeMCA2();	// original signal + SGW noise / MHB & SGW dictionary
+	void testArtificialShapeMCA3(); // original signal + (unrestricted) artificial noise
 	void testDictionaryForDecomposition();
 
 	void sparseFeatureFindingTest1();  // test feature finding and correspondence using cot formula basis

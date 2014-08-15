@@ -247,13 +247,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
-	QObject::connect(ui.actionReconstructSGW, SIGNAL(triggered()), this, SLOT(reconstructSGW()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
 	QObject::connect(ui.actionDeformLaplace2, SIGNAL(triggered()), this, SLOT(deformLaplace2()));
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
-	QObject::connect(ui.actionDeformSGW, SIGNAL(triggered()), this, SLOT(deformSGW()));
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
 	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
 	 
@@ -346,8 +344,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 				deformSimple();
 			else if (mDeformType == DEFORM_Laplace)
 				deformLaplace();
-			else if (mDeformType == DEFORM_SGW)
-				deformSGW();
 		}
 		break;
 
@@ -493,6 +489,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
+		updateDisplayFeatureMenu();
 		if (mMeshes[0]->hasAttr(StrAttrFeatureSparseSGW))
 			displayFeature(StrAttrFeatureSparseSGW.c_str());
 	}
@@ -645,14 +642,6 @@ void QZGeometryWindow::deformMixedLaplace()
 	double ks = 1.0, kb = 1.0;
 	mShapeEditor.deformMixedLaplacian(ks, kb);
 	mDeformType = DEFORM_Shell;
-	ui.glMeshWidget->update();
-	setEditModeMove();
-}
-
-void QZGeometryWindow::deformSGW()
-{
-	mShapeEditor.deformSpectralWavelet();
-	mDeformType = DEFORM_SGW;
 	ui.glMeshWidget->update();
 	setEditModeMove();
 }
@@ -1878,12 +1867,6 @@ double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, doub
 	
 	if (verbose) std::cout << "Parameter value: " << para << std::endl;
 	return para;
-}
-
-void QZGeometryWindow::reconstructSGW()
-{
-	mShapeEditor.reconstructSpectralWavelet();
-	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::computeGeodesics()

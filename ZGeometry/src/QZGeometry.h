@@ -109,13 +109,11 @@ private slots:
 	void nextBasisScale();
 	void addNoise();
 	void reconstructMHB();
-	void reconstructSGW();
 	void deformSimple();
 	void deformLaplace();
 	void deformLaplace2();
 	void deformBiLaplace();
 	void deformMixedLaplace();
-	void deformSGW();
 	void diffusionFlow();
 	void runTests();
 

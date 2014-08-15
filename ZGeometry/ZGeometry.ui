@@ -599,7 +599,6 @@
      <addaction name="actionDeformLaplace"/>
      <addaction name="actionDeformBiLaplace"/>
      <addaction name="actionDeformMixedLaplace"/>
-     <addaction name="actionDeformSGW"/>
      <addaction name="actionDeformLaplace2"/>
     </widget>
     <widget class="QMenu" name="menuReconstruct">
@@ -607,7 +606,6 @@
       <string>Reconstruct</string>
      </property>
      <addaction name="actionReconstructMHB"/>
-     <addaction name="actionReconstructSGW"/>
     </widget>
     <widget class="QMenu" name="menuFilter">
      <property name="title">

@@ -35,7 +35,8 @@ const std::string StrSignatureModeNames[] = {
 };
 
 enum LaplacianType {
-	Tutte = 0, Umbrella, NormalizedUmbrella, CotFormula, SymCot, 
+	Tutte = 0, Umbrella, NormalizedUmbrella, 
+	Geometric, CotFormula, SymCot, 
 	Anisotropic1, Anisotropic2, IsoApproximate, 
 	LaplacianTypeCount
 };
@@ -85,8 +86,9 @@ const std::string StrAttrFeatureMHWS		 = "mesh_feature_mhks";
 const std::string StrAttrFeatureNeighbors    = "mesh_feature_neighbors";
 const std::string StrAttrFeatureMultiHKS     = "mesh_feature_multi_hks";
 const std::string StrAttrFeatureSparseSGW    = "mesh_feature_sparse_sgw";
-const std::string StrAttrFeatureSparseSGW2    = "mesh_feature_sparse_sgw2";
-
+const std::string StrAttrFeatureSparseSGW2   = "mesh_feature_sparse_sgw2";
+const std::string StrAttrFeatureMCA          = "mesh_feature_mca";
+ 
 
 const std::string StrAttrVectUnnamed         = "mesh_vector_unnamed";
 const std::string StrAttrVecFaceNormal       = "mesh_vector_face_normals";

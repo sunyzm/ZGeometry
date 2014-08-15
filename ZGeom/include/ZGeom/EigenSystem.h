@@ -3,6 +3,7 @@
 #include <vector>
 #include <functional>
 #include "VecN.h"
+#include "DenseMatrix.h"
 #include "MatVecFunctor.h"
 
 namespace ZGeom {
@@ -23,6 +24,7 @@ public:
 	double getEigVal(int index) const { return mEigVals[index]; }
 	const VecNd& getEigVec(int index) const { return mEigVecs[index]; }
 	VecNd& getEigVec(int index) { return mEigVecs[index]; }
+	void ToDenseMatrix(ZGeom::DenseMatrixd& matEigVec) const;
 
 	void print(const std::string& file1, const std::string& file2) const;
 	void printEigVals(const std::string& file1) const;

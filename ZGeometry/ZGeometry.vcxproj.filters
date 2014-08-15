@@ -92,6 +92,9 @@
     <ClCompile Include="src\GeometryApproximation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\SpectralGeometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -169,6 +172,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\GeometryProcesser.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\SpectralGeometry.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -21,6 +21,8 @@ public:
 		mConstructFunc[NormalizedUmbrella] = &MeshLaplacian::constructNormalizedUmbrella;
 		mConstructFunc[CotFormula] = &MeshLaplacian::constructCotFormula;
 		mConstructFunc[SymCot] = &MeshLaplacian::constructSymCot;
+		mConstructFunc[Anisotropic1] = &MeshLaplacian::constructAnisotropic1;
+		mConstructFunc[Anisotropic2] = &MeshLaplacian::constructAnisotropic2;
 	}
 	virtual ~MeshLaplacian() {}
 

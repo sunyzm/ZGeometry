@@ -32,68 +32,52 @@ public:
 	DifferentialMeshProcessor();
 	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
 	~DifferentialMeshProcessor();
-
 	void init(CMesh* tm);
-	void init_lite(CMesh* tm, CMesh* originalMesh);
-	
+	void init_lite(CMesh* tm, CMesh* originalMesh);	
 	const CMesh* getMesh_const() const { return mMesh; }
 	const CMesh* getOriMesh_const() const { return mOriMesh; }
 	CMesh* getMesh() const { return mMesh; }
 	void setMesh(CMesh* newMesh);
 
-	// ---- computation ---- //
+	/* Laplacian and MHB related */
 	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
 	void	decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
+	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
+	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
+	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
+	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
+	const ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
+	bool isMHBCacheValid(const std::string& pathMHB, int eigenCount);
+	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
+
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
 	double	calHeatTrace(double timescale) const;
 	double	calBiharmonic(int v1, int v2) const;
 	double	calMHW(int v1, int v2, double timescale) const;
 	double	calSGW(int v1, int v2, double timescale, LaplacianType laplacianType) const;	
-	void	computeSGW1(LaplacianType laplacianType = CotFormula);
-	void	computeSGW2(LaplacianType laplacianType = CotFormula);
 	void    computeMixedAtoms1(LaplacianType laplacianType = CotFormula);
-	void	computeHeatKernelMat(double t, ZGeom::DenseMatrix<double>& hkmat);
-	void	computeHeatKernelMat_AMP(double t, ZGeom::DenseMatrix<double>& hkmat);
 	void	computeHeatDiffuseMat(double tMultiplier);
-
 	void	calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void	computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	void	computeSimilarityMap1(int refPoint);
 	void	computeSimilarityMap2(int refPoint);
 	void	computeSimilarityMap3(int refPoint);
+	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
+	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
+	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
-	// ---- editing ---- //
+	/* editing */
 	void addNewHandle(int hIdx);
 	int getActiveHandle() const { return mActiveHandle; }
 	void setActiveHandle(int h) { mActiveHandle = h; }
 	std::map<int, Vector3D>& getHandles() { return mHandles; }
 	const std::map<int, Vector3D>& getHandles() const { return mHandles; }
 	void clearAllHandles() { mHandles.clear(); }
-
-	// ---- attribute access --- //
-	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const {
-		return mMeshLaplacians[laplacianType]; 
-	}
-	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
-	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
-
-	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
-	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	const ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
-	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
-	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
-	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
-
 	int  getRefPointIndex() const { return mRefVert; }
 	void setRefPointIndex(int i) { mRefVert = i; }
 	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
-	bool isMHBCacheValid( const std::string& pathMHB, int eigenCount );
-
-	static void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinates& eCoord, MeshCoordinates& lCoord);
-	static void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
-	static void computeSGWMat2(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW);
 
 private:
 	CMesh* mMesh;
@@ -106,7 +90,6 @@ private:
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
-
 	ZGeom::DenseMatrixd mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;

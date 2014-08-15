@@ -3,6 +3,12 @@
 
 namespace ZGeom {
 
+void Dictionary::mergeDict(const Dictionary& d2)
+{
+	for (const VecNd& atom : d2.mAtoms) mAtoms.push_back(atom);
+	mDim = (int)mAtoms.size();
+}
+
 void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)
 {
 	assert(d1.atomDim() == d2.atomDim());

@@ -1,7 +1,7 @@
 #include "GeometryApproximation.h"
 #include <metis.h>
+#include "SpectralGeometry.h"
 #include "global.h"
-
 #define USE_SPAMS
 
 using ZGeom::VecNd;
@@ -27,20 +27,31 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 	return vPart;
 }
 
-void CalculateSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
+void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
 	ZGeom::DenseMatrixd matSGW;
-	DifferentialMeshProcessor::computeSGWMat(mhb, waveletScaleNum, matSGW);
-	
+	computeSGWMat(mhb, waveletScaleNum, matSGW);
 	const int vertCount = matSGW.colCount();
 	const int totalAtomCount = matSGW.rowCount();
 
 	// normalize atoms to have norm 1
 	dict.resize(totalAtomCount, vertCount);
 	for (int i = 0; i < totalAtomCount; ++i) {
-		ZGeom::VecNd newBasis = matSGW.getRowVec(i);
-		newBasis.normalize(ZGeom::RegularProductFunc);
-		dict[i] = newBasis;
+		dict[i] = matSGW.getRowVec(i);
+		dict[i].normalize(2.);
+	}
+}
+
+void calHKDict(const ZGeom::EigenSystem& es, double timescale, ZGeom::Dictionary& dict)
+{
+	ZGeom::DenseMatrixd matHK;
+	computeHKMat(es, timescale, matHK);
+	int vertCount = matHK.colCount(), atomCount = matHK.rowCount();
+
+	dict.resize(atomCount, vertCount);
+	for (int i = 0; i < atomCount; ++i) {
+		dict[i] = matHK.getRowVec(i);
+		dict[i].normalize(2.);
 	}
 }
 
@@ -62,6 +73,14 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 
 	switch (dictType)
 	{
+	case DT_UNIT:
+		dict.resize(vertCount, vertCount);
+		for (int i = 0; i < vertCount; ++i) {
+			dict[i].resize(vertCount, 0);
+			dict[i][i] = 1.;
+		}
+		break;
+
 	case DT_Fourier:
 		dict.resize(eigVecCount, vertCount);
 		for (int i = 0; i < eigVecCount; ++i)
@@ -79,25 +98,25 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 		break;
 
 	case DT_SGW1:
-		CalculateSGWDict(es, 1, dict);
+		calSGWDict(es, 1, dict);
 		break;
 	case DT_SGW3:
-		CalculateSGWDict(es, 3, dict);
+		calSGWDict(es, 3, dict);
 		break;
 	case DT_SGW4:
-		CalculateSGWDict(es, 4, dict);
+		calSGWDict(es, 4, dict);
 		break;
 	case DT_SGW5:
-		CalculateSGWDict(es, 5, dict);
+		calSGWDict(es, 5, dict);
 		break;
 	case DT_SGW3MHB:
-		CalculateSGWDict(es, 3, dict);
+		calSGWDict(es, 3, dict);
 		break;
 	case DT_SGW4MHB:
-		CalculateSGWDict(es, 4, dict);
+		calSGWDict(es, 4, dict);
 		break;
 	case DT_SGW5MHB:
-		CalculateSGWDict(es, 5, dict);
+		calSGWDict(es, 5, dict);
 		break;
 	}
 

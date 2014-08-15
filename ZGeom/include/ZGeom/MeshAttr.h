@@ -58,21 +58,27 @@ public:
 class MeshFeatureList
 {
 public:
+	MeshFeatureList() {}
+	MeshFeatureList(const MeshFeatureList& ml2)
+	{
+		this->m_vFeatures.clear();
+		for (MeshFeature* pf : ml2.m_vFeatures)
+			this->m_vFeatures.push_back(new MeshFeature(*pf));
+	}
 	~MeshFeatureList() { clear(); }
+	void clear()
+	{
+		for (MeshFeature* f : m_vFeatures) delete f;
+		m_vFeatures.clear();
+	}
 
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
 	void addFeature(int index, int scale) { m_vFeatures.push_back(new MeshFeature(index, scale)); }
 	MeshFeature* back() { return m_vFeatures.back(); }
 	std::vector<MeshFeature*>& getFeatureVector() { return m_vFeatures; }
 	const std::vector<MeshFeature*>& getFeatureVector() const { return m_vFeatures; }
-
-	void clear() 
-	{
-		for (MeshFeature* f : m_vFeatures) delete f;
-		m_vFeatures.clear();
-	}
-
-	int featureType;
+	
+public:
 	std::vector<MeshFeature*> m_vFeatures;
 };
 

@@ -6,10 +6,15 @@
 #include "DifferentialMeshProcessor.h"
 
 using ZGeom::SparseApproxMethod;
-enum DictionaryType {DT_Fourier, DT_FourierSpikes, DT_SGW1, DT_SGW3, DT_SGW4, DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB};
-
+enum DictionaryType {
+	DT_UNIT, DT_Fourier, DT_FourierSpikes, DT_SGW1, DT_SGW2, DT_SGW3, DT_SGW4, 
+	DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB, DT_HK
+};
 
 void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict);
+void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict);
+void calHKDict(const ZGeom::EigenSystem& es, double timescale, ZGeom::Dictionary& dict);
+
 
 struct SparseCodingOptions
 {
