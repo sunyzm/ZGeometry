@@ -1,5 +1,6 @@
 #include "SpectralGeometry.h"
 #include <ZGeom/zassert.h>
+#define USE_AMP
 
 void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::DenseMatrixd& matSGW)
 {
@@ -43,7 +44,12 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
 				vDiag[i] = genG(vWaveletScales[s] * pEigVals[i]);
 			}
 			double *pResult = matSGW.raw_ptr() + vertCount * vertCount * s;
-			ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+#ifdef USE_AMP
+			ZGeom::quadricFormAMP(
+#else		
+			ZGeom::quadricForm(
+#endif
+				vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 		}
 		//// compute scaling functions 	
 		std::function<double(double)> genH = [=](double x) {
@@ -53,7 +59,12 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
 			vDiag[i] = genH(pEigVals[i]);
 		}
 		double *pResult = matSGW.raw_ptr() + vertCount * vertCount * nWaveletScales;
-		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], pResult);
+#ifdef USE_AMP
+		ZGeom::quadricFormAMP(
+#else		
+		ZGeom::quadricForm(
+#endif
+			vertCount, eigCount, pEigVec, &vDiag[0], pResult);
 	}
 	/// single-scale wavelets
 	else if (waveletScaleNum == 1)
@@ -65,7 +76,12 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
 		for (int i = 0; i < eigCount; ++i) {
 			vDiag[i] = genG(minT * pEigVals[i]);
 		}
-		ZGeom::quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], matSGW.raw_ptr());
+#ifdef USE_AMP
+		ZGeom::quadricFormAMP(
+#else		
+		ZGeom::quadricForm(
+#endif
+		vertCount, eigCount, pEigVec, &vDiag[0], matSGW.raw_ptr());
 	}
 }
 

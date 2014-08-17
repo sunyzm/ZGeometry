@@ -20,14 +20,13 @@ public:
 	void revertCoordinates();
 	void changeCoordinates(int coordID);
 	void nextCoordinates();
-	void continuousReconstruct(int selectedApprox, int atomCount);
 	const MeshCoordinates& getOldMeshCoord() const { return mOriginalCoord; }
 	const Palette& getPalette() const { return mSegmentPalette; }
 
+	void continuousReconstruct(int selectedApprox, int atomCount);
 	void addNoise(double phi);
 	void fourierReconstruct(int nEig);
 	void meanCurvatureFlow(double tMultiplier, int nRepeat = 1);
-
 	void deformSimple();
 	void deformLaplacian();
 	void deformLaplacian_v2();
@@ -44,16 +43,13 @@ private:
 	void addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors);
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos) const;
 	void testSparseCompression();	// test compression performance using graph Laplacian basis
-	void sparseDecompositionTest();  // test shape decomposition via sparse coding
-	void sparseDecompositionTest2(); // test shape decomposition and separation
+	void testSparseDecomposition();  // test shape decomposition via sparse coding
+	void testSparseDecomposition2(); // test shape decomposition and separation
 	void testArtificialShapeMCA();	// MHB signal + SGW noise / MHB & SGW dictionary
 	void testArtificailShapeMCA2();	// original signal + SGW noise / MHB & SGW dictionary
 	void testArtificialShapeMCA3(); // original signal + (unrestricted) artificial noise
 	void testDictionaryForDecomposition();
-
-	void sparseFeatureFindingTest1();  // test feature finding and correspondence using cot formula basis
-	void spectrumTest1();
-	
+	void testSparseFeatureFinding();  // test feature finding and correspondence using cot formula basis
 	
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);

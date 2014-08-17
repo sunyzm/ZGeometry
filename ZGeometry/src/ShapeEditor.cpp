@@ -16,6 +16,7 @@
 using ZGeom::Dictionary;
 using ZGeom::SparseApproxMethod;
 using ZGeom::VecNd;
+using std::vector;
 
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
 ZGeom::Vec3d toVec3d(const Vector3D& v) { return ZGeom::Vec3d(v.x, v.y, v.z); }
@@ -153,6 +154,13 @@ void ShapeEditor::addNoise( double phi )
 	}
 
 	mMesh->setVertCoordinates(newCoord);
+}
+
+void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors)
+{
+	std::vector<ZGeom::Colorf>& vNewColors = mMesh->addColorAttr(colorSigName).attrValue();
+	vNewColors = vColors;
+	emit signatureComputed(QString(colorSigName.c_str()));
 }
 
 void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
@@ -620,36 +628,9 @@ void ShapeEditor::runTests()
 	//sparseDecompositionTest2();
 	//testArtificialShapeMCA();
 	//testArtificailShapeMCA2();
-	testArtificialShapeMCA3();
+	//testArtificialShapeMCA3();
 	//testDictionaryForDecomposition();
-}
-
-//// compute various eigenvectors indexed by Fiedler vector /////
-//
-void ShapeEditor::spectrumTest1()	
-{
-	const int vertCount = mMesh->vertCount();
-	LaplacianType lapType = SymCot;
-	ZGeom::SparseMatrixCSR<double, int> matW;
-	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
-	const ZGeom::EigenSystem &mhb = mProcessor->getMHB(lapType);
-	const int nEig = mhb.eigVecCount();
-
-	using ZGeom::VecNd;
-	const VecNd& fiedlerVec = mhb.getEigVec(1);
-	std::vector<std::pair<int, double> > vertFiedler;
-	for (int i = 0; i < vertCount; ++i) vertFiedler.push_back(std::make_pair(i, fiedlerVec[i]));
-
-	std::sort(vertFiedler.begin(), vertFiedler.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2) { return p1.second < p2.second; });
-	
-	std::ofstream ofs("output/SortedEigVec.txt");
-	for (auto p : vertFiedler) {
-		ofs << p.first;
-		for (int ek = 1; ek <= 10; ek += 1) {
-			ofs << ' ' << mhb.getEigVec(ek)[p.first];
-		}
-		ofs << std::endl;
-	}
+	testSparseFeatureFinding();
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -802,115 +783,80 @@ void ShapeEditor::testSparseCompression()
 
 //// Test approximation for feature analysis  ////
 //
-void ShapeEditor::sparseFeatureFindingTest1()
+void ShapeEditor::testSparseFeatureFinding()
 {
-	printBeginSeparator("Starting sparseFeatureFindingTest1",'=');
+	using ZGeom::combineDictionary;
+	revertCoordinates();
 	CStopWatch timer;
+	std::cout << "\n======== Starting testSparseFeatureFinding ========\n";
 
-	LaplacianType lapType;
-	DictionaryType dictType;
-	SparseApproxMethod approxMethod;
-	lapType = CotFormula;
-	lapType = Umbrella;
-	dictType = DT_SGW4;
-	approxMethod = ZGeom::SA_SOMP; 
-	//approxMethod = SA_LASSO; 
-	
-	// initializing, segmentation, coloring, and eigendecomposition
-	int totalVertCount = mMesh->vertCount();
-	int eigenCount = min(600, totalVertCount-1); // -1 means vertCount -1 
-	int maxPatchSize = 1000;					 // -1 means no segmentation
-	mShapeApprox.init(mMesh);
-	mShapeApprox.doSegmentation(maxPatchSize);
-	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
-	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
-	mShapeApprox.doEigenDecomposition(lapType, eigenCount);	
+	const int totalVertCount = mMesh->vertCount();
+	int eigenCount = min(1500, totalVertCount - 1); // -1 means vertCount -1 
+	eigenCount = -1;
+	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
+	const double bbDiag = mMesh->getBoundingBox().length() * 2;
+	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
+	std::vector<ZGeom::VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
+	setStoredCoordinates(oldMeshCoord, 0);
 
-	// possible signals: coordinate or curvature functions
-	MeshCoordinates meshCoord = mMesh->getVertCoordinates();
-	std::vector<double> vMeanCurvatures = mMesh->getMeanCurvature();
-	std::vector<double> vGaussCurvature = mMesh->getGaussCurvature();
+	/* Compute Laplacian and eigendecomposition */
+	std::cout << "==== Do Eigendecomposition ====\n";
+	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, symCotLaplacian;
+	ZGeom::EigenSystem esGraph, esAniso, esCot, esSymCot;
+	graphLaplacian.constructUmbrella(mMesh);
+	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esGraph);
+	aniso1Laplacian.constructAnisotropic2(mMesh);
+	//aniso1Laplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esAniso);
+	cotLaplacian.constructCotFormula(mMesh);
+	//cotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esCot);
+	symCotLaplacian.constructSymCot(mMesh);
+	//symCotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esSymCot);
 
-	// construct dictionary
-	timer.startTimer();
-	mShapeApprox.mSubMeshApprox[0].constructDict(dictType);
-	timer.stopTimer("Time to construct dictionary: ", "s");
+	/* Computer Dictionary */
+	std::cout << "\n==== Compute Dictionaries ====\n";
+	std::vector<Dictionary> dict(10);
+	computeDictionary(DT_Fourier, esGraph, dict[0]);
+	computeDictionary(DT_SGW4, esGraph, dict[1]);
+	combineDictionary(dict[0], dict[1], dict[2]);
+	//computeDictionary(DT_SGW4, esAniso, dict[3]);
+	//combineDictionary(dict[0], dict[3], dict[4]);
+	computeDictionary(DT_FourierSpikes, esGraph, dict[5]);
 
-	{ /** To print signals and dictionary data **/
-		std::ofstream ofs;
-		ofs.open("output/signals.txt");
-		for(int i = 0; i < totalVertCount; ++i) {
-			ofs << meshCoord.getXCoord()[i] << ' ' << meshCoord.getYCoord()[i] << ' ' 
-				<< meshCoord.getZCoord()[i] << ' ' << vMeanCurvatures[i] << ' ' 
-				<< vGaussCurvature[i] << '\n';
+	/* Compute OMP Approximation */
+	std::cout << "\n==== Compute OMP Approximation ====\n";
+	ZGeom::SparseApproximationOptions approxOpts;
+	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
+	approxOpts.mCodingSize = 100;
+	std::vector<ZGeom::SparseCoding> vOMPCodings;
+	std::vector<VecNd> vApproximatedCoords;
+	multiChannelSparseApproximate(vOriginalCoords, dict[1], vOMPCodings, approxOpts);
+	multiChannelSparseReconstruct(dict[1], vOMPCodings, vApproximatedCoords);
+	MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
+	std::cout << "reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
+	setStoredCoordinates(coordApproxOMP, 1);
+	changeCoordinates(1);
+
+	/* add the origin of selected SGW as feature point */
+	auto addFeatures = [&](const ZGeom::SparseCoding& sc, int numGlobalAtom, std::string featureName) {
+		MeshFeatureList vSparseFeatures;
+		for (auto c : sc.getApproxItems()) {
+			int scale = (c.index() - numGlobalAtom) / totalVertCount,
+				idx = (c.index() - numGlobalAtom) % totalVertCount;
+			if (scale > 0) vSparseFeatures.addFeature(new MeshFeature(idx, scale));
 		}
-		ofs.close();
-		ofs.open("output/dictionary.txt");
-		const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0].getDict();
-		for (int i = 0; i < totalVertCount; ++i) {
-			for (int k = 0; k < dict.size(); ++k) 
-				ofs << dict[k][i] << ((k < dict.size() - 1) ? ' ' : '\n');
-		}	
-		ofs.close();
-	}/** End of printing signals and dictionary data **/
-
-	// compute sparse coding
-	int dictSize = mShapeApprox.mSubMeshApprox[0].dictSize();
-	ZGeom::SparseCoding vCoeff;
-	//std::vector<double>& vSignal = meshCoord.getXCoord().toStdVector();
-	std::vector<double>& vSignal = vMeanCurvatures;
-
-	SparseCodingOptions opts;
-	opts.mApproxMethod = approxMethod;
-	opts.mCodingAtomCount = 323;
-	opts.lambda1 = 0.15;
-
-	timer.startTimer();
-	mShapeApprox.mSubMeshApprox[0].computeSparseCoding(vSignal, opts, vCoeff);
-	timer.stopTimer("Time to do sparse coding: ", "s");
-
-	ZGeom::VecNd vReconstruct = singleChannelSparseReconstruct(mShapeApprox.mSubMeshApprox[0].getDict(), vCoeff);
-	double residual = (ZGeom::VecNd(vSignal) - vReconstruct).norm2();	
-	std::cout << "Approximation residual (" << vCoeff.size() << " basis): " << residual << '\n';
-	
-	std::vector<std::pair<int,double> > vPursuit;
-	for (int i = 0; i < vCoeff.size(); ++i) 
-		vPursuit.push_back(std::make_pair(vCoeff[i].index(), vCoeff[i].coeff()));
-	std::sort(vPursuit.begin(), vPursuit.end(), [](const std::pair<int,double>& p1, const std::pair<int,double>& p2)->bool{
-		return std::fabs(p1.second) > std::fabs(p2.second);
-	});
-	//for (auto p : vPursuit) std::cout << p.first + 1 << ' ' << p.second << '\n';
-
-	// analysis of coding
-	int nScales = dictSize / totalVertCount;
-	std::vector<int> vAtomScaleCount(nScales, 0);
-	for (auto c : vCoeff.getApproxItems()) {
-		vAtomScaleCount[c.index() / totalVertCount]++;
-	}
-	for (int i = 0; i < nScales; ++i)
-		std::cout << "scale " << i << ": " << vAtomScaleCount[i] << '\n';
-
-	std::ofstream ofs("output/sparse_coding.csv");
-	MeshFeatureList* vSparseFeatures = new MeshFeatureList;
-	for (auto c : vCoeff.getApproxItems()) {
-		int scl = c.index() / totalVertCount, idx = c.index() % totalVertCount;
-		double coef = c.coeff();
-		ofs << scl << ", " << idx << ", " << coef << '\n';
-		
-		vSparseFeatures->addFeature(new MeshFeature(idx, scl));
-		vSparseFeatures->back()->m_scalar1 = coef;
-	}
-	mMesh->addAttrMeshFeatures(*vSparseFeatures, StrAttrFeatureSparseSGW);
-	ofs.close();
+		mMesh->addAttrMeshFeatures(vSparseFeatures, featureName);
+		std::cout << "Detected " << featureName << " (" << vSparseFeatures.size() << "): ";
+		for (auto f : vSparseFeatures.getFeatureVector()) std::cout << f->m_index << ", ";
+		std::cout << '\n';
+	};
+	addFeatures(vOMPCodings[0], 0, "mesh_feature_SOMP");
 
 	printEndSeparator('=', 40);
 }
 
 //// Test shape decomposition via signal separation
 //
-void ShapeEditor::sparseDecompositionTest()
+void ShapeEditor::testSparseDecomposition()
 {
 	/************************************************************************/
 	/* 1. Support decomposition w or w/o segmentation                       */
@@ -1009,14 +955,7 @@ void ShapeEditor::sparseDecompositionTest()
 	changeCoordinates(1);
 }
 
-void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors)
-{
-	std::vector<ZGeom::Colorf>& vNewColors = mMesh->addColorAttr(colorSigName).attrValue();
-	vNewColors = vColors;
-	emit signatureComputed(QString(colorSigName.c_str()));
-}
-
-void ShapeEditor::sparseDecompositionTest2()
+void ShapeEditor::testSparseDecomposition2()
 {
 	using ZGeom::VecNd;
 	/************************************************************************/
@@ -1556,7 +1495,7 @@ void ShapeEditor::testArtificailShapeMCA2()
 	std::vector<ZGeom::SparseCoding> vAddedCoeff(3);
 	std::mt19937 engine(0);
 	std::uniform_int_distribution<int> distNZ(0, dict2.size() - 1);
-	std::normal_distribution<double> distCoeff(0, bbDiag * 0.01);
+	std::normal_distribution<double> distCoeff(0, bbDiag * 0.015);
 	for (int i = 0; i < nnz2; ++i) {
 		int selectedNNZ = distNZ(engine);
 		for (int c = 0; c < 3; ++c) {

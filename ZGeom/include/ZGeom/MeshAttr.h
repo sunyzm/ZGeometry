@@ -71,7 +71,7 @@ public:
 		for (MeshFeature* f : m_vFeatures) delete f;
 		m_vFeatures.clear();
 	}
-
+	int size() const { return (int)m_vFeatures.size(); }
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
 	void addFeature(int index, int scale) { m_vFeatures.push_back(new MeshFeature(index, scale)); }
 	MeshFeature* back() { return m_vFeatures.back(); }

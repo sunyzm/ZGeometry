@@ -506,6 +506,10 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	while (!meshfiles.eof()) {
 		std::string meshFileName;
 		getline(meshfiles, meshFileName);
+		for (auto iter = meshFileName.begin(); iter != meshFileName.end(); ) {
+			if (*iter == ' ' || *iter == '\t') iter = meshFileName.erase(iter);
+			else ++iter;
+		}
 		if (meshFileName == "") continue;
 		if (meshFileName[0] == '#') continue;
 		else if (!fileExist(meshFileName))
