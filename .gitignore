@@ -42,6 +42,8 @@ ZGeometry/intermediate/
 ZGeometry/models/
 ZGeometry/output/
 ZGeometry/cache/
+ZGeometry/meshfiles.cfg
+ZGeometry/meshfiles_debug.cfg
 MeshMatch/intermediate/
 TestZGeom/bin/
 TestZGeom/intermediate/

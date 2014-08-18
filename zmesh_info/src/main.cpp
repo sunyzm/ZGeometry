@@ -3,7 +3,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
-#include <metis.h>
+#include <algorithm>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
 
@@ -32,10 +32,15 @@ int main(int argc, char *argv[])
 
 	std::string meshName = oriMesh.getMeshName();
 	int totalVertCount = oriMesh.vertCount();
-	
+	auto center = oriMesh.getCenter();
+	auto vVertesOnBoundary = oriMesh.getVertsOnBoundary();
+	int countVertsOnBoundary = (int)std::count_if(vVertesOnBoundary.begin(), vVertesOnBoundary.end(), [](bool bv){ return bv; });
+
 	std::cout << "** info of mesh " << meshName << " **\n";
 	std::cout << "- vertex count: " << totalVertCount << '\n';
 	std::cout << "- face count: " << oriMesh.faceCount() << '\n';
+	std::cout << "- center: (" << center.x << ", " << center.y << ", " << center.z << ")\n";
+	std::cout << "- boundary vert num: " << countVertsOnBoundary << '\n';
 
 #ifdef _DEBUG
 	std::system("PAUSE");

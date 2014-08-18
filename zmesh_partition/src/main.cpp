@@ -26,13 +26,18 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 }
 
 //////////////////////////////////////////////////////////////////////////
-// format: zmesh_partition [mesh_file_name] -n/-m [partitionCount/maxPatchSize] [outputPath]
+// usage: zmesh_partition [mesh-filename] -n/-m [partitionCount/maxPatchSize] [output-path]
 //
 int main(int argc, char *argv[])
 {
+	if (argc == 2 && argv[1] == std::string("--help")) {
+		std::cout << "usage: zmesh_partition [mesh-filename] -n/-m [partitionCount/maxPatchSize] [output-path]" << '\n';
+		exit(0);
+	}
+
 	if (argc < 4) {
-		std::cerr << "Lack argument!" << std::endl;
-		std::exit(-1);
+		std::cerr << "Lack " << 4 -argc << " arguments!" << std::endl;
+		exit(-1);
 	}
 	else if (argc > 5) {
 		std::cerr << "Excessive arguments ignored!" << std::endl;
@@ -114,5 +119,5 @@ int main(int argc, char *argv[])
 #ifdef _DEBUG
 	std::system("PAUSE");
 #endif
-	return 0;
+	exit(0);
 }
