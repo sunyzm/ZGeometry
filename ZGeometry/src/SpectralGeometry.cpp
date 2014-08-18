@@ -81,7 +81,7 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
 #else		
 		ZGeom::quadricForm(
 #endif
-		vertCount, eigCount, pEigVec, &vDiag[0], matSGW.raw_ptr());
+			vertCount, eigCount, pEigVec, &vDiag[0], matSGW.raw_ptr());
 	}
 }
 

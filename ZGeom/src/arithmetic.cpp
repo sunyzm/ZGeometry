@@ -71,20 +71,51 @@ void ZGeom::quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, doubl
 	// Y=X'*Q*X
 	array_view<double, 2> X(dim2, dim1, mat1);
 	array_view<double, 1> Q(dim2, diag);
-	array_view<double, 2> Y(dim1, dim1, matResult);	
-	Y.discard_data();
+	int maxDim = 1000;
+	int maxBlock = maxDim * maxDim;
 
-	parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp) {
-		int row = idx[0], col = idx[1];
-		if (row >= col) {
-			Y[idx] = 0;
-			for (int k = 0; k < dim2; ++k) {
-				Y[idx] += Q(k) * X(k, row) * X(k, col);
+	if (dim1 < maxDim) {
+		array_view<double, 2> Y(dim1, dim1, matResult);
+		Y.discard_data();
+		parallel_for_each(Y.extent, [=](index<2> idx) restrict(amp) {
+			int row = idx[0], col = idx[1];
+			if (row >= col) {
+				Y[idx] = 0;
+				for (int k = 0; k < dim2; ++k) {
+					Y[idx] += Q(k) * X(k, row) * X(k, col);
+				}
+				Y(col, row) = Y[idx];
 			}
-			Y(col, row) = Y[idx];
-		}	
-	});
-	Y.synchronize();
+		});
+		Y.synchronize();
+	} 
+	else
+	{
+		int maxIter = dim1 * dim1 / maxBlock + 1;
+		for (int l = 0; l < maxIter; ++l) {
+			int curPtr = maxBlock * l;
+			int blockSize = maxBlock;
+			if (l == maxIter - 1) blockSize = dim1*dim1 - curPtr;
+			array_view<double, 1> Y(blockSize, matResult + curPtr);
+			Y.discard_data();
+			parallel_for_each(Y.extent, [=](index<1> idx) restrict(amp) {
+				int pos = idx[0] + curPtr;
+				int row = pos / dim1, col = pos % dim1;
+				if (row >= col) {
+					Y[idx] = 0;
+					for (int k = 0; k < dim2; ++k) {
+						Y[idx] += Q(k) * X(k, row) * X(k, col);
+					}
+				}				
+			});
+			Y.synchronize();
+		}
+		for (int i = 0; i < dim1; ++i) {
+			for (int j = i + 1; j < dim1; ++j) {
+				matResult[i*dim1 + j] = matResult[j*dim1 + i];
+			}
+		}
+	}	
 }
 
 void ZGeom::matVecMulAMP( int dim1, int dim2, double *mat, double *vec, double *vResult )

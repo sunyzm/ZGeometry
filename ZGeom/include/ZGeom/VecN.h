@@ -156,6 +156,14 @@ public:
 		return *this; 
 	}
 
+	iterator operator + (size_t shift) {
+		return iterator(this->mVecN, mPos + shift);
+	}
+
+	iterator operator - (size_t shift) {
+		return iterator(this->mVecN, mPos - shift);
+	}
+
 private:
 	VecN<T>* mVecN;
 	int mPos;

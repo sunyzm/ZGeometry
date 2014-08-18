@@ -816,7 +816,8 @@ void ShapeEditor::testSparseFeatureFinding()
 	std::cout << "\n==== Compute Dictionaries ====\n";
 	std::vector<Dictionary> dict(10);
 	computeDictionary(DT_Fourier, esGraph, dict[0]);
-	computeDictionary(DT_SGW4, esGraph, dict[1]);
+	double sgw_dict_time = time_call_sec([&](){ computeDictionary(DT_SGW4, esGraph, dict[1]); });
+	std::cout << "** sgw_dict_time (s): " << sgw_dict_time << '\n';
 	combineDictionary(dict[0], dict[1], dict[2]);
 	//computeDictionary(DT_SGW4, esAniso, dict[3]);
 	//combineDictionary(dict[0], dict[3], dict[4]);
@@ -826,13 +827,13 @@ void ShapeEditor::testSparseFeatureFinding()
 	std::cout << "\n==== Compute OMP Approximation ====\n";
 	ZGeom::SparseApproximationOptions approxOpts;
 	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
-	approxOpts.mCodingSize = 100;
+	approxOpts.mCodingSize = 50;
 	std::vector<ZGeom::SparseCoding> vOMPCodings;
 	std::vector<VecNd> vApproximatedCoords;
 	multiChannelSparseApproximate(vOriginalCoords, dict[1], vOMPCodings, approxOpts);
 	multiChannelSparseReconstruct(dict[1], vOMPCodings, vApproximatedCoords);
 	MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
-	std::cout << "reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
+	std::cout << "-- reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
 	setStoredCoordinates(coordApproxOMP, 1);
 	changeCoordinates(1);
 
@@ -849,6 +850,7 @@ void ShapeEditor::testSparseFeatureFinding()
 		for (auto f : vSparseFeatures.getFeatureVector()) std::cout << f->m_index << ", ";
 		std::cout << '\n';
 	};
+
 	addFeatures(vOMPCodings[0], 0, "mesh_feature_SOMP");
 
 	printEndSeparator('=', 40);
@@ -1464,13 +1466,14 @@ void ShapeEditor::testArtificailShapeMCA2()
 	ZGeom::EigenSystem es;
 	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
 
-
 	/// Computer Dictionary
 	//
 	std::cout << "\n==== Compute Dictionaries ====\n";
 	Dictionary dict1, dict2;
 	computeDictionary(DT_Fourier, es, dict1);
-	computeDictionary(DT_SGW1, es, dict2);
+	double sgw_dict_time = time_call_sec([&](){ computeDictionary(DT_SGW1, es, dict2); });
+	std::cout << "** sgw_dict_time: " << sgw_dict_time << '\n';
+	
 
 	/// Compute OMP Approximation
 	//
