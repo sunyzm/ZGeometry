@@ -112,12 +112,8 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 
 void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");
-	
-	if (laplacianType == Tutte || laplacianType == CotFormula || laplacianType == Anisotropic1 || laplacianType == Anisotropic2)
-		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], true);
-	else 
-		mMeshLaplacians[laplacianType].decompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType], false);
+	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");	
+	mMeshLaplacians[laplacianType].meshEigenDecompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType]);
 }
 
 void DifferentialMeshProcessor::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
@@ -514,4 +510,22 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 
 	ZGeom::addMatMat(matW, matLc, -t, mHeatDiffuseMat);	//A = W - t*Lc
 	mHeatDiffuseSolver.initialize(mHeatDiffuseMat, true, true);
+}
+
+const ZGeom::EigenSystem& DifferentialMeshProcessor::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
+{
+	LaplacianType laplaceType = laplaceMat.laplacianType();
+	std::string pathMHB = generateMHBPath("cache/", laplaceType);
+	if (eigenCount == -1) eigenCount = mMesh->vertCount() - 1;
+
+	int useCache = gSettings.LOAD_MHB_CACHE;
+	if (useCache != 0 && isMHBCacheValid(pathMHB, eigenCount)) {
+		mMHBs[laplaceType].load(pathMHB);
+	}
+	else {
+		laplaceMat.meshEigenDecompose(eigenCount, &g_engineWrapper, mMHBs[laplaceType]);
+		mMHBs[laplaceType].save(pathMHB);
+	}
+	
+	return mMHBs[laplaceType];
 }

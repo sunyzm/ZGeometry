@@ -37,9 +37,9 @@ public:
 	void constructAnisotropic4(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructFromMesh5(const CMesh* tmesh);		
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
-	void meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper *eng, ZGeom::EigenSystem& es);
+	void meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper *eng, ZGeom::EigenSystem& es) const;
 	LaplacianType laplacianType() const { return mLaplacianType;  }
-
+	
 private:
 	bool mSymmetric;
 	LaplacianType mLaplacianType;

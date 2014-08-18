@@ -13,9 +13,10 @@
 #include "SpectralGeometry.h"
 #include "global.h"
 
-using ZGeom::Dictionary;
-using ZGeom::SparseApproxMethod;
 using ZGeom::VecNd;
+using ZGeom::Dictionary;
+using ZGeom::SparseCoding;
+using ZGeom::combineDictionary;
 using std::vector;
 
 Vector3D toVector3D(const ZGeom::Vec3d& v) { return Vector3D(v[0], v[1], v[2]); }
@@ -785,30 +786,28 @@ void ShapeEditor::testSparseCompression()
 //
 void ShapeEditor::testSparseFeatureFinding()
 {
-	using ZGeom::combineDictionary;
 	revertCoordinates();
 	CStopWatch timer;
 	std::cout << "\n======== Starting testSparseFeatureFinding ========\n";
 
 	const int totalVertCount = mMesh->vertCount();
-	int eigenCount = min(1500, totalVertCount - 1); // -1 means vertCount -1 
-	eigenCount = -1;
 	const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
 	const double bbDiag = mMesh->getBoundingBox().length() * 2;
 	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
-	std::vector<ZGeom::VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
+	vector<VecNd> vOriginalCoords{ oldMeshCoord.getXCoord(), oldMeshCoord.getYCoord(), oldMeshCoord.getZCoord() };
 	setStoredCoordinates(oldMeshCoord, 0);
 
 	/* Compute Laplacian and eigendecomposition */
 	std::cout << "==== Do Eigendecomposition ====\n";
+	int eigenCount = min(1500, totalVertCount - 1); // -1 means vertCount -1 
+	eigenCount = -1;
 	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, symCotLaplacian;
-	ZGeom::EigenSystem esGraph, esAniso, esCot, esSymCot;
 	graphLaplacian.constructUmbrella(mMesh);
-	graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esGraph);
+	const ZGeom::EigenSystem& esGraph = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
 	aniso1Laplacian.constructAnisotropic2(mMesh);
 	//aniso1Laplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esAniso);
 	cotLaplacian.constructCotFormula(mMesh);
-	//cotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esCot);
+	const ZGeom::EigenSystem& esCot = mProcessor->prepareEigenSystem(cotLaplacian, eigenCount);
 	symCotLaplacian.constructSymCot(mMesh);
 	//symCotLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, esSymCot);
 
@@ -821,24 +820,29 @@ void ShapeEditor::testSparseFeatureFinding()
 	combineDictionary(dict[0], dict[1], dict[2]);
 	//computeDictionary(DT_SGW4, esAniso, dict[3]);
 	//combineDictionary(dict[0], dict[3], dict[4]);
-	computeDictionary(DT_FourierSpikes, esGraph, dict[5]);
+	computeDictionary(DT_UNIT, esGraph, dict[4]);
+	combineDictionary(dict[0], dict[4], dict[5]);
 
-	/* Compute OMP Approximation */
-	std::cout << "\n==== Compute OMP Approximation ====\n";
-	ZGeom::SparseApproximationOptions approxOpts;
-	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
-	approxOpts.mCodingSize = 50;
-	std::vector<ZGeom::SparseCoding> vOMPCodings;
-	std::vector<VecNd> vApproximatedCoords;
-	multiChannelSparseApproximate(vOriginalCoords, dict[1], vOMPCodings, approxOpts);
-	multiChannelSparseReconstruct(dict[1], vOMPCodings, vApproximatedCoords);
-	MeshCoordinates coordApproxOMP(totalVertCount, vApproximatedCoords);
-	std::cout << "-- reconstruction error: " << oldMeshCoord.difference(coordApproxOMP) << '\n';
-	setStoredCoordinates(coordApproxOMP, 1);
-	changeCoordinates(1);
+	auto sparseApproximate = [&](
+		const MeshCoordinates& coordOld,
+		const Dictionary& sparseDict,
+		const ZGeom::SparseApproximationOptions& opts,
+		vector<SparseCoding>& vCodings,
+		MeshCoordinates& coordApprox) 
+	{
+		vector<VecNd> vOldCoords{ coordOld.getXCoord(), coordOld.getYCoord(), coordOld.getZCoord() };
+		std::vector<VecNd> vApproximatedCoords;
+		multiChannelSparseApproximate(vOldCoords, sparseDict, vCodings, opts);
+		multiChannelSparseReconstruct(sparseDict, vCodings, vApproximatedCoords);
+		coordApprox = MeshCoordinates(totalVertCount, vApproximatedCoords);
+		std::cout << "-- reconstruction error: " << coordOld.difference(coordApprox) << '\n';
+	};
 
-	/* add the origin of selected SGW as feature point */
-	auto addFeatures = [&](const ZGeom::SparseCoding& sc, int numGlobalAtom, std::string featureName) {
+	auto addFeatures = [&](
+		const ZGeom::SparseCoding& sc, 
+		int numGlobalAtom, 
+		std::string featureName) 
+	{
 		MeshFeatureList vSparseFeatures;
 		for (auto c : sc.getApproxItems()) {
 			int scale = (c.index() - numGlobalAtom) / totalVertCount,
@@ -846,13 +850,69 @@ void ShapeEditor::testSparseFeatureFinding()
 			if (scale > 0) vSparseFeatures.addFeature(new MeshFeature(idx, scale));
 		}
 		mMesh->addAttrMeshFeatures(vSparseFeatures, featureName);
-		std::cout << "Detected " << featureName << " (" << vSparseFeatures.size() << "): ";
+		std::cout << "-- detected " << featureName << " (" << vSparseFeatures.size() << "): ";
 		for (auto f : vSparseFeatures.getFeatureVector()) std::cout << f->m_index << ", ";
-		std::cout << '\n';
+		std::cout << "\n\n";
+	};
+	
+	enum AtomKeep { Before, After };
+	auto separateReconstruct = [&](
+		const Dictionary& sparseDict, 
+		const vector<SparseCoding>& vCodings,
+		int numAtomKeep, AtomKeep whichToKeep)
+		-> MeshCoordinates
+	{
+		vector<SparseCoding> vTruncatedCodings(3);
+		for (int l = 0; l < 3; ++l) {
+			if (whichToKeep == Before) {
+				for (auto c : vCodings[l].getApproxItems())
+					if (c.index() < numAtomKeep) vTruncatedCodings[l].addItem(c);
+			}
+			else {
+				for (auto c : vCodings[l].getApproxItems())
+					if (c.index() >= numAtomKeep) vTruncatedCodings[l].addItem(c);
+			}
+		}
+		std::vector<VecNd> vApproximatedCoords;
+		multiChannelSparseReconstruct(sparseDict, vTruncatedCodings, vApproximatedCoords);
+		return MeshCoordinates(totalVertCount, vApproximatedCoords);
 	};
 
-	addFeatures(vOMPCodings[0], 0, "mesh_feature_SOMP");
+	auto visualizeCoordDiff = [&](const MeshCoordinates& coordDiff, std::string colorSigNuame) 
+	{
+		std::vector<ZGeom::Colorf> vColors(totalVertCount);
+		double diffMax = bbDiag * 0.1;
+		for (int i = 0; i < totalVertCount; ++i) {
+			double diff = fabs(coordDiff.getVertCoordinate(i).length());
+			vColors[i].falseColor(diff / diffMax, ZGeom::CM_JET);
+		}
+		addColorSignature(colorSigNuame, vColors);
+	};
 
+	ZGeom::SparseApproximationOptions approxOpts;
+	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
+	approxOpts.mCodingSize = 50;
+	vector<SparseCoding> vApproxCodings[10];
+	MeshCoordinates coordApprox[10];
+	int coordCount = 1;
+	
+// 	sparseApproximate(oldMeshCoord, dict[1], approxOpts, vApproxCodings[0], coordApprox[0]);
+// 	setStoredCoordinates(coordApprox[0], coordCount++);
+// 	addFeatures(vApproxCodings[0][0], 0, "mesh_feature_SOMP1");
+
+	sparseApproximate(oldMeshCoord, dict[2], approxOpts, vApproxCodings[1], coordApprox[1]);
+	setStoredCoordinates(coordApprox[1], coordCount++);
+	addFeatures(vApproxCodings[1][0], dict[0].size(), "mesh_feature_SOMP2");
+	MeshCoordinates coordGlobal = separateReconstruct(dict[2], vApproxCodings[1], dict[0].size(), Before);
+	setStoredCoordinates(coordGlobal, coordCount++);
+	visualizeCoordDiff(oldMeshCoord.substract(coordGlobal), "color_coord_diff");
+	visualizeCoordDiff(separateReconstruct(dict[2], vApproxCodings[1], dict[0].size(), After), "color_coord_diff_sgw");
+
+// 	sparseApproximate(oldMeshCoord, dict[5], approxOpts, vApproxCodings[2], coordApprox[2]);
+// 	setStoredCoordinates(coordApprox[2], coordCount++);
+// 	addFeatures(vApproxCodings[2][0], dict[0].size(), "mesh_feature_SOMP3");
+
+	changeCoordinates(1);
 	printEndSeparator('=', 40);
 }
 

@@ -19,12 +19,12 @@ public:
 	int size() const { return (int)mAtoms.size(); }
 
 	void setDimension(int m) { mDim = m; }
-	void resize(int N) { mAtoms.resize(N); }
-	void resize(int N, int m)
+	void resize(int ct) { mAtoms.resize(ct); }
+	void resize(int ct, int dim)
 	{
-		mDim = m;
-		mAtoms.resize(N);
-		for (VecNd& v : mAtoms) v.resize(m);
+		mAtoms.resize(ct);
+		mDim = dim;
+		for (VecNd& v : mAtoms) v.resize(mDim);
 	}
 
 	const std::vector<VecNd>& getAtoms() const { return mAtoms; }

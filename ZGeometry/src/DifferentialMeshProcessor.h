@@ -21,7 +21,7 @@ enum FeatureID { FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
 
 double transferFunc2(double lambda, double t);	// Mexican-hat wavelet
 double heatKernelTransferFunc(double lambda, double t);  // heat kernel
-double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo)
+double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo's)
 
 typedef double (*TransferFunc)(double, double);
 typedef double (*ScalelessTransferFunc)(double);
@@ -50,6 +50,7 @@ public:
 	const ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
 	bool isMHBCacheValid(const std::string& pathMHB, int eigenCount);
 	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
+	const ZGeom::EigenSystem& prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount);
 
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);

@@ -35,9 +35,8 @@ const std::string StrSignatureModeNames[] = {
 };
 
 enum LaplacianType {
-	Tutte = 0, Umbrella, NormalizedUmbrella, 
-	Geometric, CotFormula, SymCot, 
-	Anisotropic1, Anisotropic2, IsoApproximate, 
+	Tutte = 0, Umbrella = 1, NormalizedUmbrella = 2, Geometric = 3, CotFormula = 4, 
+	SymCot = 5, Anisotropic1 = 6, Anisotropic2 = 7, IsoApproximate = 8, 
 	LaplacianTypeCount
 };
 

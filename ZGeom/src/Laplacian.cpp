@@ -5,7 +5,7 @@
 namespace ZGeom
 {
 
-void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ )
+void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ ) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
 	EigenCompute eigenCompute(ep);
@@ -18,7 +18,7 @@ void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSy
 	}
 }
 
-void Laplacian::decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB)
+void Laplacian::decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
 	EigenCompute eigenCompute(ep);

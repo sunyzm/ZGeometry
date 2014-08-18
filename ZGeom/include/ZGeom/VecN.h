@@ -34,8 +34,9 @@ public:
 	const VecN<T>& operator = (const VecN<T>& v2);
 	VecN<T>& operator = (VecN<T>&& v2);
 
-	T operator [] (uint i) const { return mVec[i]; }
-	T operator () (uint i) const { return mVec[i-1]; }
+	/* element access */
+	T operator [] (uint idx) const { return mVec[idx]; }
+	T operator () (uint idx) const { return mVec[idx-1]; }
 	T& operator [] (uint idx) { return mVec[idx]; }
 	T& operator () (uint idx) { return mVec[idx-1]; }
 	T at(int i) const { 
@@ -46,7 +47,6 @@ public:
 		if (idx < 0 || idx >= mDim) throw std::runtime_error("Invalid VecN subscript!");
 		return mVec[idx]; 
 	}
-
 	T* c_ptr() const { return mVec; }
 	T* c_ptr_end() const { return mVec + mDim; }
 	std::vector<T> toStdVector() const { return std::vector<T>(mVec, mVec + mDim); }
@@ -57,15 +57,13 @@ public:
 	void expandTo(int n);
 	void copyElements(const VecN<T>& v2, int startingPos = 0);
 
-	const VecN<T>& add(T* v2);
-
+	/* arithmetic operations and functions*/
 	const VecN<T>& operator += (const VecN<T>& v2);
 	const VecN<T>& operator -= (const VecN<T>& v2) { return (*this) += -v2; }
 	const VecN<T>& operator += (T trans);
 	const VecN<T>& operator -= (T trans) { return (*this) += -trans; }
 	const VecN<T>& operator *= (T scale);
 	const VecN<T>& operator /= (T scale) { return (*this) *= 1.0 / scale;}
-
 	VecN<T> operator - () const;
 	VecN<T> operator + (const VecN<T>& v2) const { VecN<T> v3(*this); v3 += v2; return v3; }
 	VecN<T> operator - (const VecN<T>& v2) const { return *this + (-v2); }
@@ -73,6 +71,7 @@ public:
 	VecN<T> operator / (T coeff) const { return (*this) * coeff; }
 	friend VecN<T> operator * (T t, const VecN<T>& v1) { return v1 * t; }
 
+	const VecN<T>& add(T* v2);
 	T norm1() const;
 	T norm2() const;
 	T normEuclidean() const { return norm2(); }
@@ -86,13 +85,11 @@ public:
 	T max_element() const;
 	T min_element() const;
 	std::pair<T, T> min_max_element() const;
-
 	T dot(const VecN<T>& v2) const;
 	T sum() const;
 	T mean() const;
 	T partial_sum(int a, int b) const;
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
-
 	void normalize(double p);
 	void normalize(const InnerProdcutFunc& innerProdFunc);
 
@@ -230,17 +227,31 @@ inline VecN<T>& VecN<T>::operator = (VecN<T>&& v2)
 template<typename T>
 inline void VecN<T>::resize(int n)
 {
-	if (n == mDim && mVec != NULL) return;
+	if (mDim == n) return;
+	if (n <= 0) {
+		mDim = 0;
+		delete[]mVec;
+		mVec = nullptr;		
+		return;
+	}
 
-	delete []mVec;
+	T *newVec = new T[n];
+	if (mVec) {
+		if (n >= mDim) std::copy_n(mVec, mDim, newVec);
+		else std::copy_n(mVec, n, newVec);
+	}
+
 	mDim = n;
-	if (n > 0)	mVec = new T[mDim];
+	delete []mVec;	
+	mVec = newVec;	
 }
 
 template<typename T>
 inline void VecN<T>::resize(int n, T val)
 {
-	resize(n);
+	delete[]mVec;
+	mDim = n;
+	mVec = new T[n];
 	for (int i = 0; i < mDim; ++i) mVec[i] = val;
 }
 

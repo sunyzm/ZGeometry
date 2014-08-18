@@ -499,7 +499,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 	mW.convertFromDiagonal(vWeights);
 }
 
-void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es)
+void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es) const
 {
 	int nActualEigen = nEig;
 	if (nEig == -1 || nEig >= mOrder) nActualEigen = mOrder - 1;
