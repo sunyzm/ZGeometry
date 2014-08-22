@@ -35,6 +35,7 @@
 bin/
 data/
 lib/
+thirdparty/
 ZGeom/intermediate/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/
@@ -47,8 +48,6 @@ ZGeometry/meshfiles_debug.cfg
 MeshMatch/intermediate/
 TestZGeom/bin/
 TestZGeom/intermediate/
-thirdparty/matlab/mex/
-thirdparty/matlab/tensor/ann_mwrapper/private/
 zmesh_partition/intermediate/
 zmesh_partition/output/
 zmesh_info/intermediate/
