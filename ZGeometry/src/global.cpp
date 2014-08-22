@@ -8,7 +8,7 @@ GlobalSettings gSettings;
 
 GlobalSettings::GlobalSettings()
 {
-	DEFAULT_EIGEN_SIZE      = 300;
+	DEFAULT_EIGEN_SIZE      = -1;
 	DEFAULT_DEFORM_RING     = 5;
 	LOAD_MHB_CACHE          = 0;
 	MIN_HK_TIMESCALE        = 1;

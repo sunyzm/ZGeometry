@@ -257,6 +257,7 @@ void QZGeometryWindow::makeConnections()
 	 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
+    QObject::connect(ui.actionChangeShadeMode, SIGNAL(triggered()), ui.glMeshWidget, SLOT(changeShadeMode()));
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
 	QObject::connect(ui.actionDisplayNeighbors, SIGNAL(triggered()), this, SLOT(displayNeighborVertices()));
@@ -475,13 +476,13 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	//computeLaplacian(Umbrella);
+	computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
-	//computeLaplacian(Anisotropic1); 	
-	//computeLaplacian(Anisotropic2);
-	//setLaplacianType("Anisotropic2");
+	computeLaplacian(Anisotropic1); 	
+	computeLaplacian(Anisotropic2);
+	setLaplacianType("Anisotropic1");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();
@@ -1628,7 +1629,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	s_idx[0] += (int)laplacianType;
 	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
 	
-	if (gSettings.LOAD_MHB_CACHE && fileExist(pathMHB) && laplacianType != Anisotropic1 )	// MHB cache available for the current mesh
+	if (gSettings.LOAD_MHB_CACHE && fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
 		std::ifstream ifs(pathMHB.c_str());
 		mp.loadMHB(pathMHB, laplacianType);
@@ -1669,23 +1670,18 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 
 	int totalToDecompose = 0;
 	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
-
+	
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		if (!mProcessors[obj]->hasLaplacian(laplacianType))
 			throw std::logic_error("Laplacian type not valid!");
-		if (laplacianRequireDecompose(obj, nEigVec, laplacianType)) 
-			++totalToDecompose;
+		int nEigen = (nEigVec == -1) ? (mMeshes[obj]->vertCount() - 1) : nEigVec;
+		if (laplacianRequireDecompose(obj, nEigen, laplacianType)) ++totalToDecompose;
 	}
 	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 
-	if (totalToDecompose <= 1 && mMeshCount > 1) {        
-		Concurrency::parallel_for(0, mMeshCount, [&](int obj){			
-			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-		});
-	} else {    // if both need explicit decomposition, then must run decomposition in sequence in Matlab
-		for(int obj = 0; obj < mMeshCount; ++obj) {
-			decomposeSingleLaplacian(obj, nEigVec, laplacianType);    
-		}
+	for(int obj = 0; obj < mMeshCount; ++obj) {
+		int nEigen = (nEigVec == -1) ? (mMeshes[obj]->vertCount() - 1) : nEigVec;
+		decomposeSingleLaplacian(obj, nEigen, laplacianType);
 	}
 
 	for (int l = 0; l < LaplacianTypeCount; ++l)

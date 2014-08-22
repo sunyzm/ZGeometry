@@ -662,6 +662,7 @@
      <addaction name="actionSigBandCurve01"/>
     </widget>
     <addaction name="menuDisplay_Type"/>
+    <addaction name="actionChangeShadeMode"/>
     <addaction name="actionDrawMatching"/>
     <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowRefPoint"/>
@@ -1371,6 +1372,11 @@
    </property>
    <property name="text">
     <string>Draw bbox</string>
+   </property>
+  </action>
+  <action name="actionChangeShadeMode">
+   <property name="text">
+    <string>Change Shade Mode</string>
    </property>
   </action>
  </widget>

@@ -17,7 +17,11 @@ const float ColorCyan[4]		= {0, 1.f, 1.f, 1.f};
 const float ColorYellow[4]		= {1.f, 1.f, 0, 1.f};
 const float ColorOrange[4]		= {1.f, 0.5f, 0, 1.f};
 const float ColorAzure[4]		= {0, 0.5f, 1.f, 1.f};
-const float* const RGBColors[] = { ColorRed, ColorGreen, ColorBlue, ColorYellow, ColorPurple, ColorMagenta, ColorCyan };	
+const float* const RGBPresetColors[] = { ColorRed, ColorGreen, ColorBlue, ColorYellow, ColorPurple, ColorMagenta, ColorCyan };	
+
+const float ColorMesh1[4] = { 0.53f, 0.7f, 0.93f, 1.0 };
+const float ColorMesh2[4] = { 0.99f, 0.73f, 0.62f, 1.0 };
+const float ColorMesh3[4] = { 0.63f, 0.78f, 0.63f, 1.0 };
 
 enum ColorMapType {CM_JET = 0, CM_COOL, CM_HOT, CM_COUNT};
 

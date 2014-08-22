@@ -44,6 +44,12 @@ struct SparseApproximationOptions
 	int mCodingSize;
 	bool mSimultaneousCoding;
 	SparseApproxMethod mApproxMethod;
+
+	const SparseApproximationOptions& setCodingSize(int s) 
+	{ 
+		mCodingSize = s; 
+		return *this;
+	}
 };
 
 void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dictionary& dict, std::vector<SparseCoding>& vCodings, SparseApproximationOptions opts);

@@ -64,6 +64,9 @@ signals:
 	void vertexPicked1(int pRef);
 	void vertexPicked2(int pRef);
 
+public slots:
+    void changeShadeMode();
+
 private:
 	void drawGL();
 	void setupViewport(int width, int height);
@@ -83,5 +86,7 @@ private:
 	double			mBaseFeatureRadius;
 	double			mFeatureSphereRadius;
 	double			mMeshPointSize;
+
+    int             mShadeMode;
 };
 

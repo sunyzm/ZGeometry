@@ -280,3 +280,13 @@ double TriArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3 )
 {
 	return TriAreaNormal(v1, v2, v3).length() / 2.;
 }
+
+Vector3D toVector3D(const ZGeom::Vec3d& v)
+{
+	return Vector3D(v[0], v[1], v[2]);
+}
+
+ZGeom::Vec3d toVec3d(const Vector3D& v)
+{
+	return ZGeom::Vec3d(v.x, v.y, v.z);
+}

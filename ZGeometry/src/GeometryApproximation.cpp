@@ -4,10 +4,14 @@
 #include "global.h"
 #define USE_SPAMS
 
+using std::vector;
 using ZGeom::VecNd;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::SparseApproxMethod;
+using ZGeom::Dictionary;
+using ZGeom::SparseCoding;
+
 
 std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 {
@@ -31,10 +35,10 @@ void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dicti
 {
 	ZGeom::DenseMatrixd matSGW;
 	computeSGWMat(mhb, waveletScaleNum, matSGW);
-	const int vertCount = matSGW.colCount();
-	const int totalAtomCount = matSGW.rowCount();
 
 	// normalize atoms to have norm 1
+	const int vertCount = matSGW.colCount();
+	const int totalAtomCount = matSGW.rowCount();
 	dict.resize(totalAtomCount, vertCount);
 	for (int i = 0; i < totalAtomCount; ++i) {
 		dict[i] = matSGW.getRowVec(i);
@@ -126,6 +130,98 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 		for (int i = 0; i < eigVecCount; ++i)
 			dict[atomCount + i] = es.getEigVec(i);
 	}
+}
+
+vector<SparseCoding> multiExtractFront(const vector<SparseCoding>& vCodings, int n) 
+{
+	vector<SparseCoding> vNewCodings;
+	for (auto sc : vCodings) vNewCodings.push_back(sc.extractFront(n));
+	return vNewCodings;
+}
+
+vector<SparseCoding> multiExtractAfter(const vector<SparseCoding>& vCodings, int n)
+{
+	vector<SparseCoding> vNewCodings;
+	for (auto sc : vCodings) vNewCodings.push_back(sc.extractBack(n));
+	return vNewCodings;
+}
+
+void multiDictSparseDecomposition(
+	const MeshCoordinates& coordInput, 
+	const vector<const Dictionary*>& vDicts, 
+	const vector<int>& vNNZ, 
+	vector<vector<SparseCoding> > &vFinalCodings)
+{
+	const int vertCount = coordInput.size();
+	vector<VecNd> vInputCoords = coordInput.to3Vec();
+
+	const Dictionary &dict1 = *vDicts[0], &dict2 = *vDicts[1];
+	Dictionary dictAll;
+	ZGeom::combineDictionary(dict1, dict2, dictAll);
+	int dictSize1 = dict1.size(), dictSize2 = dict2.size();
+	int nnz1 = vNNZ[0], nnz2 = vNNZ[1];
+	vFinalCodings.resize(2);	
+	vector<SparseCoding> &vCodingsDict1 = vFinalCodings[0], &vCodingsDict2 = vFinalCodings[1];
+	vector<SparseCoding> vInitCodings;
+	ZGeom::SparseApproximationOptions approxOpts;
+	approxOpts.mApproxMethod = ZGeom::SA_SOMP;
+	approxOpts.mCodingSize = nnz1 + nnz2;
+
+	vector<VecNd> vCoordDict1, vCoordDict2, vCoordInitApprox;
+	multiChannelSparseApproximate(vInputCoords, dictAll, vInitCodings, approxOpts);
+	multiChannelSparseReconstruct(dictAll, vInitCodings, vCoordInitApprox);
+	std::cout << "- S-OMP error: " << coordInput.difference(MeshCoordinates(vertCount, vCoordInitApprox)) << "\n";
+	auto vInitCodingFront = multiExtractFront(vInitCodings, dictSize1);
+	std::cout << "- initial #MCA1: " << vInitCodingFront[0].size() 
+		      << ", #MCA2: " << multiExtractAfter(vInitCodings, dictSize1)[0].size() << "\n";
+	multiChannelSparseReconstruct(dictAll, vInitCodingFront, vCoordDict1);
+	
+	int numIter = 10;
+	for (int k = 0; k < numIter; ++k)
+	{
+		multiChannelSparseApproximate(vCoordDict1, dict1, vCodingsDict1, approxOpts.setCodingSize(nnz1));
+		multiChannelSparseReconstruct(dict1, vCodingsDict1, vCoordDict1);
+		MeshCoordinates coordTMP1(vertCount, vCoordDict1);
+		vCoordDict2 = coordInput.substract(coordTMP1).to3Vec();
+		multiChannelSparseApproximate(vCoordDict2, dict2, vCodingsDict2, approxOpts.setCodingSize(nnz2));
+		multiChannelSparseReconstruct(dict2, vCodingsDict2, vCoordDict2);
+		MeshCoordinates coordTMP2(vertCount, vCoordDict2);
+		MeshCoordinates coordTMP3 = coordInput.substract(coordTMP2);
+		std::cout << "- Iteration " << k << " error: " << coordTMP3.difference(coordTMP1)<< "\n";
+		if (k < numIter - 1) vCoordDict1 = coordTMP3.to3Vec();		
+	}
+}
+
+ZGeom::VecNd singleChannelSparseInpaint(const ZGeom::VecNd& vSignal, const std::vector<int>& vMask, const ZGeom::Dictionary& dict, ZGeom::SparseCoding& sc)
+{
+    int signalSize = vSignal.size();
+    int atomCount = dict.size();
+    std::vector<double> vecSignalMasked;
+    for (int k = 0; k < signalSize; ++k) {
+        if (vMask[k] == 1) vecSignalMasked.push_back(vSignal[k]);
+    }
+    ZGeom::VecNd vSignalMasked(vecSignalMasked);
+    int maskedSignalSize = vSignalMasked.size();
+    ZGeom::Dictionary dictMasked;
+    dictMasked.resize(atomCount, maskedSignalSize);
+    for (int i = 0; i < atomCount; ++i) {
+        const ZGeom::VecNd& vAtom = dict[i];
+        std::vector<double> vecAtomMasked;
+        for (int k = 0; k < signalSize; ++k) {
+            if (vMask[k] == 1) vecAtomMasked.push_back(vAtom[k]);
+        }
+        dictMasked[i] = VecNd(vecAtomMasked);
+    }
+
+    ZGeom::SparseApproximationOptions approxOpts;
+    approxOpts.mCodingSize = 50;
+    approxOpts.mApproxMethod = ZGeom::SA_OMP;
+    vector<SparseCoding> vOMPCodings;
+    vector<VecNd> vApproximatedCoords;
+
+    ZGeom::multiChannelSparseApproximate(vector < VecNd > {vSignalMasked}, dictMasked, vOMPCodings, approxOpts);
+    sc = vOMPCodings[0];
+    return ZGeom::singleChannelSparseReconstruct(dict, sc);
 }
 
 void ShapeApprox::init( CMesh* mesh )

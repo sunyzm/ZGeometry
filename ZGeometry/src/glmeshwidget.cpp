@@ -45,6 +45,10 @@ GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
 	reset();
 }
 
+GLMeshWidget::~GLMeshWidget()
+{
+}
+
 void GLMeshWidget::reset()
 {
 	g_EyeZ = 10.0;
@@ -68,11 +72,8 @@ void GLMeshWidget::reset()
 	m_bShowWireframeOverlay = false;
 	m_bShowBoundingBox = false;
 	
+    mShadeMode = 0;
 	setAutoFillBackground(false);
-}
-
-GLMeshWidget::~GLMeshWidget()
-{
 }
 
 void GLMeshWidget::initializeGL()
@@ -90,7 +91,7 @@ void GLMeshWidget::initializeGL()
 	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
 	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
 
-	/* make sure OpenGL version 4.0 API is available */
+    /* make sure OpenGL version 4.0 API is available */
 	if(!GLEW_VERSION_4_0)
 		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
 	qout.output("********************", OUT_TERMINAL);
@@ -381,8 +382,9 @@ void GLMeshWidget::drawGL()
 	glClearColor(1., 1., 1., 0.);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	glShadeModel(GL_SMOOTH);
-	//glShadeModel(GL_FLAT);
+    if (mShadeMode == 0) glShadeModel(GL_FLAT);
+    else glShadeModel(GL_SMOOTH);
+	
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
@@ -408,8 +410,7 @@ void GLMeshWidget::drawGL()
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
 	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-	setupViewport(width(), height());
-	
+	setupViewport(width(), height());	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
@@ -872,5 +873,11 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 
 		gluDeleteQuadric(quadric);
 	}
+}
+
+void GLMeshWidget::changeShadeMode()
+{
+    mShadeMode = 1 - mShadeMode;
+    update();
 }
 

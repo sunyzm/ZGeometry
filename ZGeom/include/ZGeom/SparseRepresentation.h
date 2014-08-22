@@ -1,6 +1,7 @@
 #ifndef ZGEOM_DICTIONARY_H
 #define ZGEOM_DICTIONARY_H
 #include <algorithm>
+#include <functional>
 #include "VecN.h"
 
 namespace ZGeom {
@@ -106,17 +107,48 @@ public:
 		return os;
 	}
 
-	void sortByIndex() {
-		std::sort(mApproxItems.begin(), mApproxItems.end(),	[](const SparseCodingItem& c1, const SparseCodingItem& c2){
-			return c1.index() < c2.index();
+	void sortByIndex() 
+	{
+		std::sort(mApproxItems.begin(), mApproxItems.end(),	
+			[](const SparseCodingItem& c1, const SparseCodingItem& c2) {
+				return c1.index() < c2.index();
 		});
 	}
 
-	const SparseCoding& sortByCoeff() {
-		std::sort(mApproxItems.begin(), mApproxItems.end(), [](const SparseCodingItem& c1, const SparseCodingItem& c2){
-			return fabs(c1.coeff()) > fabs(c2.coeff());
+	const SparseCoding& sortByCoeff() 
+	{
+		std::sort(mApproxItems.begin(), mApproxItems.end(), 
+			[](const SparseCodingItem& c1, const SparseCodingItem& c2) {
+				return fabs(c1.coeff()) > fabs(c2.coeff());
 		});
 		return *this;
+	}
+
+	SparseCoding extract(std::function<bool(const SparseCodingItem&)> funcSelect) 
+	{
+		SparseCoding newSC;
+		for (auto sci : mApproxItems) {
+			if (funcSelect(sci)) newSC.addItem(sci);
+		}
+		return newSC;
+	}
+
+	SparseCoding extractFront(int n) 
+	{
+		SparseCoding newSC;
+		for (auto sci : mApproxItems) {
+			if (sci.index() < n) newSC.addItem(sci);
+		}
+		return newSC;
+	}
+
+	SparseCoding extractBack(int n)
+	{
+		SparseCoding newSC;
+		for (auto sci : mApproxItems) {
+			if (sci.index() >= n) newSC.addItem(sci);
+		}
+		return newSC;
 	}
 
 private:

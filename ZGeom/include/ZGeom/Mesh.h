@@ -145,6 +145,8 @@ public:
 		return errorSum;
 	}
 
+	std::vector<ZGeom::VecNd> to3Vec() const { return std::vector<ZGeom::VecNd>{mCoordX, mCoordY, mCoordZ}; }
+
 private:
 	int mSize;
 	ZGeom::VecNd mCoordX, mCoordY, mCoordZ;
@@ -397,10 +399,9 @@ public:
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
 	/*************************************************************************/
 	
-	/* geometry query, analysis and processing */
+	/* basic geometry query, analysis and processing */
 	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
-	double						 calFaceArea(int i) const;
 	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshBBox); }
 	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
@@ -413,6 +414,7 @@ public:
 	const std::vector<bool>&	 getVertsOnHole();
 	const std::vector<bool>&     getVertsOnHole_const() const;
 	const std::vector<bool>&	 getVertsOnBoundary();
+    double						 calFaceArea(int i) const;
 	Vector3D			         calMeshCenter() const;
 	Vector3D			         calBoundingBox(const Vector3D& center) const;
 	double				         calSurfaceArea() const;

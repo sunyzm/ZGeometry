@@ -209,15 +209,16 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 	}
 
 	std::vector<double> vWeights(vertCount, 1.0);
-	vWeights = vMixedAreas;
+	//vWeights = vMixedAreas;
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
+
 #ifdef _DEBUG
 	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
 #endif
 	
 	mLaplacianType = Anisotropic1;
-	mSymmetric = false;
+	mSymmetric = true;
 }
 
 void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
@@ -275,13 +276,13 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 	}
 
 	std::vector<double> vWeights(vertCount, 1.0);
-	vWeights = vMixedAreas;
+	//vWeights = vMixedAreas;
 
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);	
 
 	mLaplacianType = Anisotropic2;
-	mSymmetric = false;
+	mSymmetric = true;
 }
 
 void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
@@ -503,12 +504,6 @@ void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng
 {
 	int nActualEigen = nEig;
 	if (nEig == -1 || nEig >= mOrder) nActualEigen = mOrder - 1;
-	if (mLaplacianType == Tutte || mLaplacianType == CotFormula ||
-		mLaplacianType == Anisotropic1 || mLaplacianType == Anisotropic2) {
-		this->decompose(nActualEigen, eng, es, true);
-	}
-	else if (mLaplacianType == Umbrella || mLaplacianType == SymCot) {
-		this->decompose(nActualEigen, eng, es, false);
-	}
-	else throw std::logic_error("The symmetry property of Laplacian cannot be determined!");
+	if (mSymmetric) this->decompose(nActualEigen, eng, es, false);
+	else this->decompose(nActualEigen, eng, es, true);
 }

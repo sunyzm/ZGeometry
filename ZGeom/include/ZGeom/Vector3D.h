@@ -6,6 +6,7 @@
 #include <cmath>
 #include <cstdio>
 #include <string>
+#include "Vec3.h"
 
 const double DOUBLE_EPS = 1e-16;
 static inline bool EQUALZERO(double x) { return std::fabs((x)) < DOUBLE_EPS; }
@@ -90,5 +91,8 @@ Vector3D cross3D(const Vector3D& v1, const Vector3D& v2);
 Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
 Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
+
+Vector3D toVector3D(const ZGeom::Vec3d& v);
+ZGeom::Vec3d toVec3d(const Vector3D& v);
 
 #endif

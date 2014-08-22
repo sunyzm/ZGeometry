@@ -5,22 +5,25 @@
 #include <ZGeom/Mesh.h>
 #include "DifferentialMeshProcessor.h"
 
-using ZGeom::SparseApproxMethod;
 enum DictionaryType {
 	DT_UNIT, DT_Fourier, DT_FourierSpikes, DT_SGW1, DT_SGW2, DT_SGW3, DT_SGW4, 
 	DT_SGW5, DT_SGW3MHB, DT_SGW4MHB, DT_SGW5MHB, DT_HK
 };
 
+std::vector<ZGeom::SparseCoding> multiExtractFront(const std::vector<ZGeom::SparseCoding>& vCodings, int n);
+std::vector<ZGeom::SparseCoding> multiExtractAfter(const std::vector<ZGeom::SparseCoding>& vCodings, int n);
+
 void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZGeom::Dictionary& dict);
 void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict);
 void calHKDict(const ZGeom::EigenSystem& es, double timescale, ZGeom::Dictionary& dict);
+void multiDictSparseDecomposition(const MeshCoordinates& coordInput, const std::vector<const ZGeom::Dictionary*>& vDicts, const std::vector<int>& vNNZ, std::vector<std::vector<ZGeom::SparseCoding> > &vFinalCodings);
 
+ZGeom::VecNd singleChannelSparseInpaint(const ZGeom::VecNd& vSignal, const std::vector<int>& vMask, const ZGeom::Dictionary& dict, ZGeom::SparseCoding& sc);
 
 struct SparseCodingOptions
 {
 	SparseCodingOptions() : mApproxMethod(ZGeom::SA_SOMP), mCodingAtomCount(-1) {}
-
-	SparseApproxMethod mApproxMethod;
+	ZGeom::SparseApproxMethod mApproxMethod;
 	int mCodingAtomCount;
 	double mEpsilon;
 	double lambda1, lambda2;
@@ -37,7 +40,7 @@ public:
 	const std::vector<int>& mappedIdx() const { return mMappedIdx; }
 	void prepareEigenSystem(LaplacianType laplacianType, int mEigenCount);
 	void constructDict(DictionaryType dictType);
-	void doSparseCoding(SparseApproxMethod approxMethod, int codingAtomCount);
+	void doSparseCoding(ZGeom::SparseApproxMethod approxMethod, int codingAtomCount);
 	void sparseReconstruct(int reconstructAtomCount);
 	void sparseReconstructStep(int step);
 	int dictSize() const { return mDict.atomCount(); }
@@ -66,10 +69,10 @@ public:
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
 	void constructDictionaries(DictionaryType dictType);
-	void findSparseRepresentationBySize(SparseApproxMethod codingMethod, int codingSize);
-	void findSparseRepresentationByRatio(SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity);
-	void findSparseRepresentationByBasisRatio(SparseApproxMethod codingMethod, double basisRatio);
-	void findSparseRepresentationByCompressionRatio(SparseApproxMethod codingMethod, double compressionRatio);
+	void findSparseRepresentationBySize(ZGeom::SparseApproxMethod codingMethod, int codingSize);
+	void findSparseRepresentationByRatio(ZGeom::SparseApproxMethod codingMethod, double basisRatio, bool exploitSparsity);
+	void findSparseRepresentationByBasisRatio(ZGeom::SparseApproxMethod codingMethod, double basisRatio);
+	void findSparseRepresentationByCompressionRatio(ZGeom::SparseApproxMethod codingMethod, double compressionRatio);
 	void doSparseReconstructionBySize(int reconstructSize, MeshCoordinates& approxCoord);
 	void doSparseReconstructionByRatio(double basisRatio, MeshCoordinates& approxCoord, bool exploitSparsity);
 	void doSparseReconstructionByBasisRatio(double basisRatio, MeshCoordinates& approxCoord);
