@@ -1877,7 +1877,7 @@ void ShapeEditor::testSparseInpainting()
                 if (vMask[idx] == 0) vColorMissing[idx] = ZGeom::ColorRed;
                 else vColorMissing[idx] = ZGeom::ColorMesh1;
             }
-            addColorSignature("color_missing_vertex_" + boost::lexical_cast<std::string>(ratioMissing), vColorMissing);
+            addColorSignature("color_missing_vertex_0." + boost::lexical_cast<std::string>((int)std::round(ratioMissing*100)), vColorMissing);
         }            
 
         vector<VecNd> vCoordRecovered(3);
@@ -1890,9 +1890,9 @@ void ShapeEditor::testSparseInpainting()
         std::cout << "-- Inpainting error: " << coordOld.difference(coordRecovered) << "\n";
     };
 
-    inpaintingRecover(vOriginalCoords, .1, dictMHB, "feature_missing_vertex_0.1");
-    inpaintingRecover(vOriginalCoords, .3, dictMHB, "feature_missing_vertex_0.3");    
-    inpaintingRecover(vOriginalCoords, .5, dictMHB, "feature_missing_vertex_0.5");
+    inpaintingRecover(vOriginalCoords, .25, dictMHB, "feature_missing_vertex_0.25");
+    inpaintingRecover(vOriginalCoords, .5, dictMHB, "feature_missing_vertex_0.50");    
+    inpaintingRecover(vOriginalCoords, .75, dictMHB, "feature_missing_vertex_0.75");
 
 
     std::cout << '\n';
