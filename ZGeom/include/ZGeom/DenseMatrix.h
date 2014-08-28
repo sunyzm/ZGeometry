@@ -22,6 +22,7 @@ public:
 	DenseMatrix(DenseMatrix<T>&& m2);
 	DenseMatrix(const std::vector<VecN<T> >& vRowVecs);
 	const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
+    const DenseMatrix<T>& operator = (DenseMatrix<T>&& m2);
 	~DenseMatrix() { delete []mData; }
 
 	T& operator () (uint idx, uint j) { return mData[idx*mCol + j]; }	// 0-based subscript access to matrix elements
@@ -40,9 +41,11 @@ public:
 	void print(const std::string& filepath) const;
 	VecN<T> getRowVec(uint row) const;
 	VecN<T> getColVec(uint col) const;
-	void toVecs(std::vector <VecN<T> >& vRows) const;
+    std::vector<VecN<T> > toRowVecs() const;
+    std::vector<VecN<T> > toColVecs() const;
 	T rowSumNorm() const;
 	T frobeniusNorm() const;
+    DenseMatrix<T>& transpose();
 
 	void write(const std::string& filename);
 	void read(const std::string& filename);
@@ -57,7 +60,7 @@ typedef DenseMatrix<double> DenseMatrixd;
 typedef DenseMatrix<float>  DenseMatrixs;
 
 template<typename T>
-inline void ZGeom::DenseMatrix<T>::print( const std::string& filepath ) const
+inline void DenseMatrix<T>::print( const std::string& filepath ) const
 {
 	std::ofstream ofs(filepath.c_str());
 	for (uint i = 0; i < mRow; ++i) {
@@ -88,11 +91,13 @@ inline DenseMatrix<T>::DenseMatrix(const std::vector<VecN<T> >& vRowVecs)
 }
 
 template<typename T>
-inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2) : mRow(m2.mRow), mCol(m2.mCol)
+inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2)
 {
+    mRow = m2.mRow;
+    mCol = m2.mCol;
 	mData = m2.mData;
-	m2.mData = NULL;
 	m2.mRow = m2.mCol = 0;
+    m2.mData = nullptr;
 }
 
 template<typename T>
@@ -104,6 +109,31 @@ inline const DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2
 	mData = new T[mRow*mCol];
 	std::copy_n(m2.mData, mRow*mCol, mData);
 	return *this;
+}
+
+template<typename T>
+inline const DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& m2)
+{
+    delete []mData;
+    mRow = m2.mRow;
+    mCol = m2.mCol;
+    mData = m2.mData;
+    m2.mRow = m2.mCol = 0;
+    m2.mData = nullptr;
+    return *this;
+}
+
+template<typename T>
+inline DenseMatrix<T>& DenseMatrix<T>::transpose()
+{
+    T newData = new T[mRow*mCol];
+    for (int i = 0; i < mRow; ++i)
+        for (int j = 0; j < mCol; ++j)
+            newData[i*mCol + j] = mData[j*mRow + i];
+    delete[]mData;
+    mData = newData;
+    std::swap(mRow, mCol);
+    return *this;
 }
 
 template<typename T>
@@ -153,19 +183,28 @@ VecN<T> DenseMatrix<T>::getRowVec(uint row) const
 }
 
 template<typename T>
-void DenseMatrix<T>::toVecs(std::vector<VecN<T> >& vRows) const
+VecN<T> DenseMatrix<T>::getColVec(uint col) const
 {
-	vRows.resize(mRow);
-	for (int i = 0; i < mRow; ++i) vRows[i] = getRowVec(i);
+    assert(col < mCol);
+    VecN<T> vec(mRow);
+    for (int i = 0; i < mRow; ++i) vec[i] = mData[i*mCol + col];
+    return vec;
 }
 
 template<typename T>
-VecN<T> DenseMatrix<T>::getColVec(uint col) const
+std::vector<VecN<T> > DenseMatrix<T>::toRowVecs() const
 {
-	assert(col < mCol);
-	VecN<T> vec(mRow);
-	for (int i = 0; i < mRow; ++i) vec[i] = mData[i*mCol + col];
-	return vec;
+    std::vector<VecN<T> > vRows(mRow);
+	for (int i = 0; i < mRow; ++i) vRows[i] = getRowVec(i);
+    return vRows;
+}
+
+template<typename T>
+std::vector<VecN<T> > DenseMatrix<T>::toColVecs() const
+{
+    std::vector<VecN<T> > vCols(mCol);
+    for (int j = 0; j < mCol; ++j) vCols[j] = getColVec(j);
+    return vCols;
 }
 
 template<typename T>
@@ -185,7 +224,7 @@ inline void DenseMatrix<T>::copyRows(const DenseMatrix<T>& m2, int startingRow)
 }
 
 template<typename T>
-void ZGeom::DenseMatrix<T>::setRow(int rowIdx, const VecN<T>& vi)
+void DenseMatrix<T>::setRow(int rowIdx, const VecN<T>& vi)
 {
     assert(mData != nullptr);
 	if (rowIdx < 0 || rowIdx >= (int)mRow || vi.size() != mCol)

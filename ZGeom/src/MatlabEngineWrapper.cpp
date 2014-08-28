@@ -160,3 +160,26 @@ void ZGeom::MatlabEngineWrapper::addDenseMat(const DenseMatrix<double>& mat, con
     else 
         addArray(mat.raw_ptr(), mat.rowCount(), mat.colCount(), true, varName);  
 }
+
+ZGeom::DenseMatrixd ZGeom::MatlabEngineWrapper::getDenseMat(const std::string& name, bool getTranspose /*= false*/)
+{
+    eval(("[m,n]=size(" + name + ")").c_str());
+    int m = (int)*getDblVariablePtr("m");
+    int n = (int)*getDblVariablePtr("n");
+    double* pMat = getDblVariablePtr(name);
+    
+    if (getTranspose) 
+    {
+        ZGeom::DenseMatrixd mat(n, m);
+        std::copy_n(pMat, m*n, mat.raw_ptr());
+        return mat;
+    }
+    else 
+    {
+        ZGeom::DenseMatrixd mat(m, n);
+        for (int i = 0; i < m; ++i)
+            for (int j = 0; j < n; ++j)
+                mat.raw_ptr()[i*n + j] = pMat[j*m + i];
+        return mat;
+    }    
+}

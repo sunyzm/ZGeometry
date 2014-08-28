@@ -90,7 +90,7 @@ public:
 	double* getDblVariablePtr(const std::string& name);
 	int* getIntVariablePtr(const std::string& name);
 	void getSparseMat(const std::string& name, SparseMatrix<double>& mat);
-    
+    ZGeom::DenseMatrixd getDenseMat(const std::string& name, bool getTranspose = false);
 	void removeVariable(const std::string& varName);
 	
 private:

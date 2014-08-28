@@ -21,7 +21,8 @@ using ZGeom::Dictionary;
 using ZGeom::SparseCoding;
 using ZGeom::SparseApproxMethod;
 using ZGeom::combineDictionary;
-
+using ZGeom::DenseMatrix;
+using ZGeom::DenseMatrixd;
 
 bool readPursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) 
 {
@@ -66,6 +67,7 @@ void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette
 
 }
 
+/* Discrete Laplacian Regularization Smoothing */
 vector<VecNd> DLRS(ZGeom::MatlabEngineWrapper& engine, const SparseMatrix<double>& matL, double lambda, const vector<VecNd>& vSignals)
 {
     assert(matL.rowCount() == matL.colCount());
@@ -75,17 +77,14 @@ vector<VecNd> DLRS(ZGeom::MatlabEngineWrapper& engine, const SparseMatrix<double
     engine.addDoubleScalar(lambda, "lambda");
     ZGeom::DenseMatrixd matSignal(vSignals);
     engine.addDenseMat(matSignal, "matSignals", true);
+    
+    // solve (I + lambda*L^T*L) S = P
+    // cf. Decoupling noise and features via weighted L1-analysis compressed sensing (SIGGRAPH 2014)
     engine.eval("matDenoised=(eye(size(matL))+lambda*matL'*matL) \\ matSignals;");
-    double* ptrDenoised = engine.getDblVariablePtr("matDenoised");
-
-    vector<VecNd> vDenoisedSignal(nChannel);
-    for (int i = 0; i < nChannel; ++i) {
-        vDenoisedSignal[i].resize(nOrder);        
-        std::copy_n(ptrDenoised + i * nOrder, nOrder, vDenoisedSignal[i].c_ptr());
-    }
-    ZGeom::DenseMatrixd matDenoised(vDenoisedSignal);
-
-    return vDenoisedSignal;
+    
+    DenseMatrixd matDenoised = engine.getDenseMat("matDenoised", true);
+    vector<VecNd> vDenoised = matDenoised.toRowVecs();
+    return vDenoised;
 }
 
 vector<ZGeom::Colorf> colorCoordDiff(const MeshCoordinates& coordDiff, double diffMax, ZGeom::ColorMapType colorMapType = ZGeom::CM_JET)
