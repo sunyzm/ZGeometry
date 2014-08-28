@@ -23,6 +23,7 @@ using ZGeom::SparseApproxMethod;
 using ZGeom::combineDictionary;
 using ZGeom::DenseMatrix;
 using ZGeom::DenseMatrixd;
+using ZGeom::Colorf;
 
 bool readPursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) 
 {
@@ -116,7 +117,7 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 	mMesh = processor->getMesh();
 	mTotalScales = 0;
 	mCurCoordID = 0;
-	processor->getMesh()->retrieveVertCoordinates(mOriginalCoord); 
+    mOriginalCoord = mMesh->getVertCoordinates();
 	mStoredCoordinates.resize(1);
 	mStoredCoordinates[0] = mOriginalCoord;
 
@@ -125,7 +126,8 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
 
 void ShapeEditor::revertCoordinates()
 {
-	mMesh->setVertCoordinates(getOldMeshCoord());
+    setStoredCoordinates(getOldMeshCoord(), 0);
+    changeCoordinates(0);
 }
 
 void ShapeEditor::nextCoordinates()
@@ -169,25 +171,25 @@ void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorInde
 	}
 }
 
-void ShapeEditor::addNoise( double phi )
+MeshCoordinates ShapeEditor::getNoisyCoord(double phi)
 {
 	assert(phi > 0 && phi < 1);
 	const int vertCount = mMesh->vertCount();
 	const double avgLen = mMesh->getAvgEdgeLength();
-	MeshCoordinates newCoord;
-	mMesh->retrieveVertCoordinates(newCoord);
+    double bbDiag = mMesh->getBoundingBox().length() * 2;
+    MeshCoordinates newCoord = mMesh->getVertCoordinates();
 
 	std::default_random_engine generator;
 	std::normal_distribution<double> distribution(0, phi);
 
 	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
 		for (int a = 0; a < 3; ++a) {
-			double noise = avgLen * distribution(generator);
+			double noise = bbDiag * distribution(generator);
 			newCoord.getCoordFunc(a)[vIdx] += noise;
 		}
 	}
 
-	mMesh->setVertCoordinates(newCoord);
+    return newCoord;
 }
 
 void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors)
@@ -1935,24 +1937,34 @@ void ShapeEditor::testSparseInpainting()
 
 void ShapeEditor::testDenoisingDLRS()
 {
-    revertCoordinates();
     std::cout << "\n======== Starting testDenoisingDLRS ========\n";
     const int totalVertCount = mMesh->vertCount();
     const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
     const double bbDiag = mMesh->getBoundingBox().length() * 2;
+    revertCoordinates();
     const MeshCoordinates& coordOld = getOldMeshCoord();
     vector<VecNd> vOriginalCoords = coordOld.to3Vec();
-    std::mt19937 pnEngine(0);
-    std::uniform_int_distribution<int> distBlank(0, totalVertCount - 1);
+    MeshCoordinates coordNoisy = getNoisyCoord(0.005);
+    setStoredCoordinates(coordNoisy, 1);
+    
 
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 0.5, vOriginalCoords);
+    vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 0.8, coordNoisy.to3Vec());
     MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
-    setStoredCoordinates(coordDenoised, 1);
-
-    vector<ZGeom::Colorf> vColorDiff = colorCoordDiff(coordOld.substract(coordDenoised), 0.05*bbDiag, ZGeom::CM_JET);
+    setStoredCoordinates(coordDenoised, 2);
+    MeshCoordinates coordResidual = coordOld.substract(coordDenoised);
+    vector<ZGeom::Colorf> vColorDiff = colorCoordDiff(coordResidual, 0.05*bbDiag, ZGeom::CM_JET);
     addColorSignature("color_diff_DLRS", vColorDiff);
+
+    auto vNormals = mMesh->getVertNormals();
+    VecNd vResB(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i)
+        vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
+
+    vector<Colorf> vColorRes(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i) vColorRes[i].falseColor(fabs(vResB[i] / (0.05*bbDiag)));
+    addColorSignature("color_residual_DLRS", vColorRes);
 
     std::cout << '\n';
     printEndSeparator('=', 40);

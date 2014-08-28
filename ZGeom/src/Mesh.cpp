@@ -2854,7 +2854,7 @@ void CMesh::retrieveVertCoordinates( MeshCoordinates& coords ) const
 	ZGeom::VecNd& vz = coords.getCoordFunc(2);
 
 	for (int i = 0; i < m_nVertex; ++i) {
-		const Vector3D& vCoord = m_vVertices[i]->getPosition();
+		auto vCoord = m_vVertices[i]->getPosition();
 		vx[i] = vCoord.x;
 		vy[i] = vCoord.y;
 		vz[i] = vCoord.z;
@@ -2882,13 +2882,15 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 {
 	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
 
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i)	{
 		m_pVertex[i].setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 		
 		if (m_bIsPointerVectorExist)
 			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
+
+    calFaceNormals();
+    calVertNormals();
 }
 
 void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos)
@@ -2997,18 +2999,6 @@ Vector3D CMesh::calBoundingBox( const Vector3D& center ) const
 	boundBox.y = abs(boundBox.y - center.y);
 	boundBox.z = abs(boundBox.z - center.z);
 	return boundBox;
-}
-
-void CMesh::diffCoordinates( const MeshCoordinates& coordsToCompare, std::vector<double>& vDiff ) const
-{
-	const int vertCount = this->vertCount();
-	vDiff.resize(vertCount);
-
-	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
-		const Vector3D& v2 = m_vVertices[vIdx]->getPosition();
-		vDiff[vIdx] = (coordsToCompare[vIdx] - ZGeom::Vec3d(v2.x, v2.y, v2.z)).length();
-	}
-
 }
 
 void CMesh::saveToMetis( const std::string& sFileName ) const

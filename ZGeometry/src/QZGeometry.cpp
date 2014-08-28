@@ -944,14 +944,13 @@ void QZGeometryWindow::reconstructMHB()
 	double avgLen = mMeshes[0]->getAvgEdgeLength();
 
 	mShapeEditor.fourierReconstruct(nEig);
-	std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
+    std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
-	std::vector<double> vPosDiff;
-	mMeshes[0]->diffCoordinates(mShapeEditor.getOldMeshCoord(), vPosDiff);
-	for (double& v : vPosDiff) v /= avgLen;
-	std::cout << "Avg Error as ratio of AEL: " << ZGeom::vecMean(vPosDiff) << std::endl;
+    ZGeom::VecNd vPosDiff = mShapeEditor.getOldMeshCoord().vertDifference(mMeshes[0]->getVertCoordinates());
+    for (double& v : vPosDiff) v /= avgLen;
+    std::cout << "Avg Error as ratio of AEL: " << vPosDiff.mean() << std::endl;
 
-	addColorSignature(0, vPosDiff, StrAttrColorPosDiff);
+	addColorSignature(0, vPosDiff.toStdVector(), StrAttrColorPosDiff);
 	displaySignature(StrAttrColorPosDiff.c_str());
 	ui.glMeshWidget->update();
 }
@@ -1919,8 +1918,8 @@ void QZGeometryWindow::diffusionFlow()
 void QZGeometryWindow::addNoise()
 {
 	double phi = 0.1;
-	mShapeEditor.addNoise(phi);
-
+    MeshCoordinates noisyCoord = mShapeEditor.getNoisyCoord(phi);
+    mMeshes[0]->setVertCoordinates(noisyCoord);
 	std::cout << "Add Gauss noise with phi=" << phi << std::endl;
 	ui.glMeshWidget->update();
 }

@@ -21,9 +21,15 @@ Vector3D::operator std::string() const
 	return std::string(buffer);
 }
 
+Vector3D::operator ZGeom::Vec3d() const
+{
+    return ZGeom::Vec3d(x, y, z);
+}
+
 /////////////////////////////////////////////////////////////
 // Vector3D : 3D vector
 /////////////////////////////////////////////////////////////
+
 Vector3D& Vector3D::operator=(const Vector3D& v)
 {	
 	x = v.x;	y = v.y;	z = v.z;

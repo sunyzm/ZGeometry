@@ -24,7 +24,7 @@ public:
 	const Palette& getPalette() const { return mSegmentPalette; }
 
 	void continuousReconstruct(int selectedApprox, int atomCount);
-	void addNoise(double phi);
+    MeshCoordinates getNoisyCoord(double phi);
 	void fourierReconstruct(int nEig);
 	void meanCurvatureFlow(double tMultiplier, int nRepeat = 1);
 	void deformSimple();

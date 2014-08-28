@@ -23,9 +23,12 @@ public :
 	double x, y, z;
 
 	// constructions
-	Vector3D()									{ x = 0;	y = 0;		z = 0;	}
-	Vector3D(double xx, double yy, double zz)	{ x = xx;	y = yy;		z = zz; }
-	Vector3D(const Vector3D& v)					{ x = v.x;	y = v.y;	z = v.z;}
+	Vector3D()									{ x = 0;	y = 0;		z = 0;	 }
+	Vector3D(double xx, double yy, double zz)	{ x = xx;	y = yy;		z = zz;  }
+	Vector3D(const Vector3D& v)					{ x = v.x;	y = v.y;	z = v.z; }
+    Vector3D(const ZGeom::Vec3d& v)             { x = v.x;  y = v.y;    z = v.z; }
+    operator std::string() const;
+    operator ZGeom::Vec3d() const;
 
 	// operator
 	double	  length() const		{	return std::sqrt(x*x + y*y + z*z);	}
@@ -41,7 +44,7 @@ public :
 	Vector3D& operator ^=(const Vector3D& v);
 	double& operator[](int i);
 	double  operator[](int i) const;
-	operator std::string() const;
+
 
 	friend Vector3D operator-(const Vector3D& v);
 	friend Vector3D operator+(const Vector3D& lv, const Vector3D& rv);

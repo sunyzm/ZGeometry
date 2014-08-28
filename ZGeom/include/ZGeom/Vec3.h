@@ -27,6 +27,7 @@ public:
 	T operator [] (uint i) const;
 	T& operator [] (uint idx);
 	T length() const;
+    T dot(const Vec3<T>& v2) { return x*v2.x + y*v2.y + z*v2.z;  }
 
 	friend Vec3<T> operator - (const Vec3<T>& v);
 	friend T dot(const Vec3<T>& v1, const Vec3<T>& v2);

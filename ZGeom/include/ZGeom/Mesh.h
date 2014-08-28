@@ -28,14 +28,16 @@ class MeshCoordinates
 public:
 	MeshCoordinates() : mSize(0) {}
 	MeshCoordinates(int meshSize) { resize(meshSize); }
-	MeshCoordinates(int meshSize, double *cx, double *cy, double *cz) 
+	
+    MeshCoordinates(int meshSize, double *cx, double *cy, double *cz) 
 	{
 		resize(meshSize);
 		std::copy_n(cx, meshSize, mCoordX.c_ptr());
 		std::copy_n(cy, meshSize, mCoordY.c_ptr());
 		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
 	}
-	MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
+	
+    MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
 	{
 		assert(meshSize == v1.size() && v1.size() == v2.size() && v2.size() == v3.size());
 		mSize = meshSize;
@@ -43,7 +45,8 @@ public:
 		mCoordY = v2;
 		mCoordZ = v3;
 	}
-	MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
+	
+    MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
 	{
 		assert(vCoords.size() >= 3 && meshSize == vCoords[0].size());
 		mSize = meshSize;
@@ -51,13 +54,15 @@ public:
 		mCoordY = vCoords[1];
 		mCoordZ = vCoords[2];
 	}
-	MeshCoordinates(const MeshCoordinates& mc)
+	
+    MeshCoordinates(const MeshCoordinates& mc)
 	{
 		this->mSize = mc.mSize;
 		this->mCoordX = mc.mCoordX;
 		this->mCoordY = mc.mCoordY;
 		this->mCoordZ = mc.mCoordZ;
 	}
+    
     MeshCoordinates(MeshCoordinates&& mc)
     {
         this->mSize = mc.mSize;
@@ -66,9 +71,8 @@ public:
         this->mCoordY = std::move(mc.mCoordY);
         this->mCoordZ = std::move(mc.mCoordZ);
     }
-
-
-	MeshCoordinates& operator = (const MeshCoordinates& mc)
+    
+    MeshCoordinates& operator = (const MeshCoordinates& mc)
 	{
 		this->mSize = mc.mSize;
 		this->mCoordX = mc.mCoordX;
@@ -76,6 +80,17 @@ public:
 		this->mCoordZ = mc.mCoordZ;
 		return *this;
 	}
+
+    MeshCoordinates& operator = (MeshCoordinates&& mc)
+    {
+        this->mSize = mc.mSize;
+        mc.mSize = 0;
+        this->mCoordX = std::move(mc.mCoordX);
+        this->mCoordY = std::move(mc.mCoordY);
+        this->mCoordZ = std::move(mc.mCoordZ);
+        return *this;
+    }
+
 
 	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
@@ -136,7 +151,7 @@ public:
 
 	ZGeom::Vec3d getVertCoordinate(int v) const 
 	{
-		if (v < 0 || v >= mSize) throw std::logic_error("Vertex index out of bound!");
+        assert(v >= 0 && v < mSize);
 		return ZGeom::Vec3d(mCoordX[v], mCoordY[v], mCoordZ[v]);
 	}
 	
@@ -153,6 +168,15 @@ public:
 		errorSum = std::sqrt(errorSum);
 		return errorSum;
 	}
+
+    ZGeom::VecNd vertDifference(const MeshCoordinates& mc2) const 
+    {
+        assert(mSize == mc2.size());
+        ZGeom::VecNd vDiff(mSize);
+        for (int i = 0; i < mSize; ++i)
+            vDiff[i] = (getVertCoordinate(i) - mc2.getVertCoordinate(i)).length();
+        return vDiff;
+    }
 
 	std::vector<ZGeom::VecNd> to3Vec() const { return std::vector<ZGeom::VecNd>{mCoordX, mCoordY, mCoordZ}; }
 
@@ -447,7 +471,6 @@ public:
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
-	void				diffCoordinates(const MeshCoordinates& coordsToCompare, std::vector<double>& vDiff) const;
 
 	void				gatherStatistics();
 	bool				hasBoundary() const;

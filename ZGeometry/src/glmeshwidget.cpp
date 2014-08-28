@@ -72,7 +72,7 @@ void GLMeshWidget::reset()
 	m_bShowWireframeOverlay = false;
 	m_bShowBoundingBox = false;
 	
-    mShadeMode = 0;
+    mShadeMode = 1;
 	setAutoFillBackground(false);
 }
 
