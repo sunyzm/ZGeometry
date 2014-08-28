@@ -58,6 +58,15 @@ public:
 		this->mCoordY = mc.mCoordY;
 		this->mCoordZ = mc.mCoordZ;
 	}
+    MeshCoordinates(MeshCoordinates&& mc)
+    {
+        this->mSize = mc.mSize;
+        mc.mSize = 0;
+        this->mCoordX = std::move(mc.mCoordX);
+        this->mCoordY = std::move(mc.mCoordY);
+        this->mCoordZ = std::move(mc.mCoordZ);
+    }
+
 
 	MeshCoordinates& operator = (const MeshCoordinates& mc)
 	{

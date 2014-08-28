@@ -7,132 +7,132 @@
 #include "SparseMatrixCOO.h"
 #include "SparseMatrixCSR.h"
 
-namespace ZGeom
+namespace ZGeom {
+
+template<typename T> class MatElem;
+template<typename T> class VecN;
+template<typename T> class SparseMatrix;    
+template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+
+enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
+
+template<typename T>
+class MatElem
 {
-	template<typename T> class MatElem;
-	template<typename T> class VecN;
-	template<typename T> class SparseMatrix;    
-	template<typename T> VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+public:
+	friend class SparseMatrix<T>;
+	bool operator< (const MatElem<T>& t2) const {
+		return this->mRow < t2.mRow || (this->mRow == t2.mRow && this->mCol < t2.mCol);
+	}
 
-	enum MatrixForm {MAT_UPPER, MAT_LOWER, MAT_FULL};
+	MatElem() : mRow(0), mCol(0), mVal(0.) {}
+	MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
+	MatElem(const MatElem<T>& elem) : mRow(elem.mRow), mCol(elem.mCol), mVal(elem.mVal) {}
+	MatElem<T>& operator = (const MatElem<T>& elem) {
+		mRow = elem.mRow;
+		mCol = elem.mCol;
+		mVal = elem.mVal;
+		return *this;
+	}
+	uint row() const { return mRow; }
+	uint col() const { return mCol; }
+	T    val() const { return mVal; }
+	T&   val() { return mVal; }
 
-	template<typename T>
-	class MatElem
-	{
-	public:
-		friend class SparseMatrix<T>;
-		bool operator< (const MatElem<T>& t2) const {
-			return this->mRow < t2.mRow || (this->mRow == t2.mRow && this->mCol < t2.mCol);
-		}
+private:   
+	uint mRow, mCol;
+	T mVal;
+};
 
-		MatElem() : mRow(0), mCol(0), mVal(0.) {}
-		MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
-		MatElem(const MatElem<T>& elem) : mRow(elem.mRow), mCol(elem.mCol), mVal(elem.mVal) {}
-		MatElem<T>& operator = (const MatElem<T>& elem) {
-			mRow = elem.mRow;
-			mCol = elem.mCol;
-			mVal = elem.mVal;
-			return *this;
-		}
-		uint row() const { return mRow; }
-		uint col() const { return mCol; }
-		T    val() const { return mVal; }
-		T&   val() { return mVal; }
+template<typename T>
+class SparseMatrix
+{
+public:
+	SparseMatrix() : mRowCount(0), mColCount(0), mNonzeroCount(0) {}
+	SparseMatrix(int row, int col) : mRowCount(row), mColCount(col), mNonzeroCount(0) {}
 
-	private:   
-		uint mRow, mCol;
-		T mVal;
-	};
+	uint rowCount() const { return mRowCount; }
+	uint colCount() const { return mColCount; }
+	uint nonzeroCount() const { return mElements.size(); }
+	bool empty() const { return mRowCount == 0 || mColCount == 0; }
+	void resize(int row, int col) { mRowCount = row; mColCount = col; mNonzeroCount = 0; mElements.clear(); }
+	T frobeniusNorm() const;
+	T getElemValByIndex(uint index) const;
+	T& getElemValByIndex(uint index);
+	T getElemVal(uint row, uint col) const;
+	T& getElemVal(uint row, uint col);
+	MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
+	const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
+	const std::vector<MatElem<T> >& allElements() const { return mElements; }
+	std::vector<MatElem<T> >& allElements() { return mElements; }
 
-	template<typename T>
-	class SparseMatrix
-	{
-	public:
-		SparseMatrix() : mRowCount(0), mColCount(0), mNonzeroCount(0) {}
-		SparseMatrix(int row, int col) : mRowCount(row), mColCount(col), mNonzeroCount(0) {}
+	T operator() (uint row, uint col) const; 
+	T& operator() (uint row, uint col);
+	void insertElem(uint row, uint col, T val);
+	void removeElem(uint row, uint col);   
 
-		uint rowCount() const { return mRowCount; }
-		uint colCount() const { return mColCount; }
-		uint nonzeroCount() const { return mElements.size(); }
-		bool empty() const { return mRowCount == 0 || mColCount == 0; }
-		void resize(int row, int col) { mRowCount = row; mColCount = col; mNonzeroCount = 0; mElements.clear(); }
-		T frobeniusNorm() const;
-		T getElemValByIndex(uint index) const;
-		T& getElemValByIndex(uint index);
-		T getElemVal(uint row, uint col) const;
-		T& getElemVal(uint row, uint col);
-		MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
-		const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
-		const std::vector<MatElem<T> >& allElements() const { return mElements; }
-		std::vector<MatElem<T> >& allElements() { return mElements; }
+	void copyElements(const SparseMatrix<T>& mat2);
 
-		T operator() (uint row, uint col) const; 
-		T& operator() (uint row, uint col);
-		void insertElem(uint row, uint col, T val);
-		void removeElem(uint row, uint col);   
+	void computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const;
 
-		void copyElements(const SparseMatrix<T>& mat2);
+	template<typename F>
+	void getDiagonal(std::vector<F>& diag) const;
 
-		void computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const;
+	template<typename F>
+	void convertFromDiagonal(const std::vector<F>& diag);    
 
-		template<typename F>
-		void getDiagonal(std::vector<F>& diag) const;
+	template<typename U, typename F>
+	void convertFromCOO(uint rowCount, uint colCount, const std::vector<U>& rowInd, std::vector<U>& colInd, const std::vector<F>& val);
 
-		template<typename F>
-		void convertFromDiagonal(const std::vector<F>& diag);    
+	template<typename U, typename F>
+	void convertFromCOO(uint rowCount, uint colCount, const std::vector<std::tuple<U,U,F> >& vElem);
 
-		template<typename U, typename F>
-		void convertFromCOO(uint rowCount, uint colCount, const std::vector<U>& rowInd, std::vector<U>& colInd, const std::vector<F>& val);
+	template<typename U, typename F>
+	void convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd, std::vector<F>& val, MatrixForm form) const;
 
-		template<typename U, typename F>
-		void convertFromCOO(uint rowCount, uint colCount, const std::vector<std::tuple<U,U,F> >& vElem);
+	template<typename U, typename F>
+	void convertToCOO(U* rowInd, U* colInd, F* val, int& nonzeroCount, MatrixForm form) const;    
 
-		template<typename U, typename F>
-		void convertToCOO(std::vector<U>& rowInd, std::vector<U>& colInd, std::vector<F>& val, MatrixForm form) const;
+	template<typename U, typename F> 
+	void convertFromCSR(uint rowCount, uint colCount, F nzVal[], U colIdx[], U rowPtr[]);
 
-		template<typename U, typename F>
-		void convertToCOO(U* rowInd, U* colInd, F* val, int& nonzeroCount, MatrixForm form) const;    
+	template<typename U, typename F> 
+	void convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form) const;
 
-		template<typename U, typename F> 
-		void convertFromCSR(uint rowCount, uint colCount, F nzVal[], U colIdx[], U rowPtr[]);
+	template<typename U, typename F> 
+	void convertToCSR(SparseMatrixCSR<F,U>& MatCSR, MatrixForm form) const;
 
-		template<typename U, typename F> 
-		void convertToCSR(std::vector<F>& nzVal, std::vector<U>& colIdx, std::vector<U>& rowPtr, MatrixForm form) const;
+	template<typename F> 
+	void convertFromFull(F* fullMat, double sparse_eps = 1e-10);
 
-		template<typename U, typename F> 
-		void convertToCSR(SparseMatrixCSR<F,U>& MatCSR, MatrixForm form) const;
+	template<typename F> 
+	void convertToFull(F* fullMat, MatrixForm form) const;
 
-		template<typename F> 
-		void convertFromFull(F* fullMat, double sparse_eps = 1e-10);
+	bool testNoEmptyRow() const;
+	bool testSymmetric(double eps = 1e-7) const;
 
-		template<typename F> 
-		void convertToFull(F* fullMat, MatrixForm form) const;
+	void scale(T scalar);
+	void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
+	void symmetrize();              // turn upper or lower matrix into symmetric one
+	void fillEmptyDiagonal();       // fill empty diagonal elements with 0
+	void setToIdentity(uint order); // make the matrix an identity matrix
+	void makeLaplacian();			// make matrix a Laplacian by modifying the diagonal; must be square matrix
 
-		bool testNoEmptyRow() const;
-		bool testSymmetric(double eps = 1e-7) const;
+	void print(std::ostream& out) const;
+	void print(const std::string& paht) const;
+	void read(std::istream& in);
 
-		void scale(T scalar);
-		void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
-		void symmetrize();              // turn upper or lower matrix into symmetric one
-		void fillEmptyDiagonal();       // fill empty diagonal elements with 0
-		void setToIdentity(uint order); // make the matrix an identity matrix
-		void makeLaplacian();			// make matrix a Laplacian by modifying the diagonal; must be square matrix
+	const SparseMatrix<T>& operator *= (double coeff);
+	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
-		void print(std::ostream& out) const;
-		void print(const std::string& paht) const;
-		void read(std::istream& in);
+private:
+	std::vector<MatElem<T> > mElements;
+	uint mRowCount;
+	uint mColCount;
+	uint mNonzeroCount;
+};
 
-		const SparseMatrix<T>& operator *= (double coeff);
-		friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
-
-	private:
-		std::vector<MatElem<T> > mElements;
-		uint mRowCount;
-		uint mColCount;
-		uint mNonzeroCount;
-	};
-
-} // end of namespace ZGeom
+}   // end of namespace ZGeom
 
 #include "SparseMatrix.inl"
 

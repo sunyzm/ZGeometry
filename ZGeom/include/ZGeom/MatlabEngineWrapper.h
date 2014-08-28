@@ -85,12 +85,12 @@ public:
 	void addColVec(const VecNd& data, const std::string& name);
 	void addSparseMat(int *ii, int *jj, double *ss, int m, int n, int nnz, const std::string& name);
 	void addSparseMat(const SparseMatrix<double>& mat, const std::string& varName);
-	void addDenseMat(const DenseMatrix<double>& mat, const std::string& varName);
+	void addDenseMat(const DenseMatrix<double>& mat, const std::string& varName, bool asTranspose = false);
 
 	double* getDblVariablePtr(const std::string& name);
 	int* getIntVariablePtr(const std::string& name);
 	void getSparseMat(const std::string& name, SparseMatrix<double>& mat);
-
+    
 	void removeVariable(const std::string& varName);
 	
 private:

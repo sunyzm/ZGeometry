@@ -16,6 +16,7 @@
 
 using std::vector;
 using ZGeom::VecNd;
+using ZGeom::SparseMatrix;
 using ZGeom::Dictionary;
 using ZGeom::SparseCoding;
 using ZGeom::SparseApproxMethod;
@@ -63,6 +64,39 @@ void colorPartitions(const std::vector<int>& partIdx, const Palette& partPalette
 	for (int i = 0; i < nPoints; ++i)
 		vColors[i] = partPalette.getColor(partIdx[i]);
 
+}
+
+vector<VecNd> DLRS(ZGeom::MatlabEngineWrapper& engine, const SparseMatrix<double>& matL, double lambda, const vector<VecNd>& vSignals)
+{
+    assert(matL.rowCount() == matL.colCount());
+    int nOrder = matL.rowCount();
+    int nChannel = vSignals.size();
+    engine.addSparseMat(matL, "matL");
+    engine.addDoubleScalar(lambda, "lambda");
+    ZGeom::DenseMatrixd matSignal(vSignals);
+    engine.addDenseMat(matSignal, "matSignals", true);
+    engine.eval("matDenoised=(eye(size(matL))+lambda*matL'*matL) \\ matSignals;");
+    double* ptrDenoised = engine.getDblVariablePtr("matDenoised");
+
+    vector<VecNd> vDenoisedSignal(nChannel);
+    for (int i = 0; i < nChannel; ++i) {
+        vDenoisedSignal[i].resize(nOrder);        
+        std::copy_n(ptrDenoised + i * nOrder, nOrder, vDenoisedSignal[i].c_ptr());
+    }
+    ZGeom::DenseMatrixd matDenoised(vDenoisedSignal);
+
+    return vDenoisedSignal;
+}
+
+vector<ZGeom::Colorf> colorCoordDiff(const MeshCoordinates& coordDiff, double diffMax, ZGeom::ColorMapType colorMapType = ZGeom::CM_JET)
+{
+    int vertCount = coordDiff.size();
+    vector<ZGeom::Colorf> vColors(vertCount);
+    for (int i = 0; i < vertCount; ++i) {
+        double diff = fabs(coordDiff.getVertCoordinate(i).length());
+        vColors[i].falseColor(diff / diffMax, colorMapType);
+    }
+    return vColors;
 }
 
 void printBeginSeparator(std::string s, char c) {
@@ -303,13 +337,13 @@ void ShapeEditor::deformLaplacian()
 	const MeshLaplacian& ml = mProcessor->getMeshLaplacian(SymCot);
 	const ZGeom::SparseMatrix<double>& matLs = ml.getLS();
 	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
-	ZGeom::VecNd diffCoord[3];
+	VecNd diffCoord[3];
 	for (int i = 0; i < 3; ++i) {
 		diffCoord[i].resize(vertCount);
 		mulLs.mul(oldCoord.getCoordFunc(i), diffCoord[i]);
 	}
 
-	std::vector<ZGeom::VecNd> solveRHS(3);
+	vector<VecNd> solveRHS(3);
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount, 0);
 		solveRHS[i].copyElements(diffCoord[i], 0);
@@ -632,7 +666,8 @@ void ShapeEditor::runTests()
 	//testArtificialShapeMCA3();
 	//testDictionaryForDecomposition();
 	//testSparseFeatureFinding();
-    testSparseInpainting();
+    //testSparseInpainting();
+    testDenoisingDLRS();
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -1857,8 +1892,8 @@ void ShapeEditor::testSparseInpainting()
     std::cout << "\n==== Compute Dictionaries ====\n";
     Dictionary dictMHB, dictSGW, dictMixed;
     computeDictionary(DT_Fourier, es, dictMHB);
-//     computeDictionary(DT_SGW3, es, dictSGW);
-//     combineDictionary(dictMHB, dictSGW, dictMixed);
+//  computeDictionary(DT_SGW3, es, dictSGW);
+//  combineDictionary(dictMHB, dictSGW, dictMixed);
 
     int countCoord = 1;
     auto inpaintingRecover = [&](const vector<VecNd>& vecCoords, double ratioMissing, const Dictionary& dictInpaint, std::string featureName) {
@@ -1894,6 +1929,31 @@ void ShapeEditor::testSparseInpainting()
     inpaintingRecover(vOriginalCoords, .5, dictMHB, "feature_missing_vertex_0.50");    
     inpaintingRecover(vOriginalCoords, .75, dictMHB, "feature_missing_vertex_0.75");
 
+
+    std::cout << '\n';
+    printEndSeparator('=', 40);
+}
+
+void ShapeEditor::testDenoisingDLRS()
+{
+    revertCoordinates();
+    std::cout << "\n======== Starting testDenoisingDLRS ========\n";
+    const int totalVertCount = mMesh->vertCount();
+    const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
+    const double bbDiag = mMesh->getBoundingBox().length() * 2;
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+    std::mt19937 pnEngine(0);
+    std::uniform_int_distribution<int> distBlank(0, totalVertCount - 1);
+
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 0.5, vOriginalCoords);
+    MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
+    setStoredCoordinates(coordDenoised, 1);
+
+    vector<ZGeom::Colorf> vColorDiff = colorCoordDiff(coordOld.substract(coordDenoised), 0.05*bbDiag, ZGeom::CM_JET);
+    addColorSignature("color_diff_DLRS", vColorDiff);
 
     std::cout << '\n';
     printEndSeparator('=', 40);

@@ -187,8 +187,9 @@ inline void DenseMatrix<T>::copyRows(const DenseMatrix<T>& m2, int startingRow)
 template<typename T>
 void ZGeom::DenseMatrix<T>::setRow(int rowIdx, const VecN<T>& vi)
 {
+    assert(mData != nullptr);
 	if (rowIdx < 0 || rowIdx >= (int)mRow || vi.size() != mCol)
-		throw std::logic_error("Vector/index and DenseMatrix size not compatible!");
+		throw std::logic_error("Vector or index not compatible with matrix dimension!");
 	std::copy_n(vi.c_ptr(), mCol, mData + rowIdx * mCol);
 }
 

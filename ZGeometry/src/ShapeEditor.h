@@ -51,6 +51,7 @@ private:
 	void testDictionaryForDecomposition();
 	void testSparseFeatureFinding();  // test feature finding and correspondence using cot formula basis
 	void testSparseInpainting();
+    void testDenoisingDLRS();
 
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);

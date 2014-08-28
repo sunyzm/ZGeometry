@@ -152,7 +152,11 @@ void ZGeom::MatlabEngineWrapper::getSparseMat( const std::string& name, SparseMa
 	mat.convertFromCOO(m, n, vRow, vCol, vVal);
 }
 
-void ZGeom::MatlabEngineWrapper::addDenseMat( const DenseMatrix<double>& mat, const std::string& varName )
+void ZGeom::MatlabEngineWrapper::addDenseMat(const DenseMatrix<double>& mat, const std::string& varName, bool addAsTranspose)
 {
-	addArray(mat.raw_ptr(), mat.rowCount(), mat.colCount(), true, varName);
+    // if addAsTranspose, add as col-major; if not addAsTranspose, add as row-major
+    if (addAsTranspose)
+        addArray(mat.raw_ptr(), mat.colCount(), mat.rowCount(), false, varName);  
+    else 
+        addArray(mat.raw_ptr(), mat.rowCount(), mat.colCount(), true, varName);  
 }

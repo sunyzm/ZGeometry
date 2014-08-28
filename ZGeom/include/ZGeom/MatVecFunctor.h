@@ -1,8 +1,7 @@
 #ifndef ZGEOM_MAT_VEC_MUL_FUNCTOR_H
 #define ZGEOM_MAT_VEC_MUL_FUNCTOR_H
 
-namespace ZGeom
-{
+namespace ZGeom {
 
 class MatVecFunctor
 {
