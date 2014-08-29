@@ -539,6 +539,13 @@ void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::v
 	delete []pMatDict;
 }
 
+void singleChannelSparseApproximate(const VecNd& vSignal, const Dictionary& dict, SparseCoding& sc, SparseApproximationOptions opts)
+{
+    std::vector<SparseCoding> vsc;
+    multiChannelSparseApproximate(std::vector< VecNd>{vSignal}, dict, vsc, opts);
+    sc = vsc[0];
+}
+
 void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dictionary& dict, std::vector<SparseCoding>& vCodings, SparseApproximationOptions opts)
 {
 	runtime_assert(vSignals[0].size() == dict.atomDim(), "signal and atom size not equal");

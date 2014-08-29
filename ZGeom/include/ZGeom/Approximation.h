@@ -52,7 +52,17 @@ struct SparseApproximationOptions
 	}
 };
 
-void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dictionary& dict, std::vector<SparseCoding>& vCodings, SparseApproximationOptions opts);
+void singleChannelSparseApproximate(
+    const VecNd& vSignal, 
+    const Dictionary& dict, 
+    SparseCoding& sc, 
+    SparseApproximationOptions opts);
+
+void multiChannelSparseApproximate(
+    const std::vector<VecNd>& vSignals, 
+    const Dictionary& dict, 
+    std::vector<SparseCoding>& vCodings, 
+    SparseApproximationOptions opts);
 
 } // end of namespace
 

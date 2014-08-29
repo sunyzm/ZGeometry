@@ -1749,7 +1749,7 @@ void ShapeEditor::testSparseFeatureFinding()
 		MeshCoordinates& coordApprox) 
 	{
 		vector<VecNd> vOldCoords = oldMeshCoord.to3Vec();
-		std::vector<VecNd> vApproximatedCoords;
+		vector<VecNd> vApproximatedCoords;
 		multiChannelSparseApproximate(vOldCoords, sparseDict, vCodings, opts);
 		multiChannelSparseReconstruct(sparseDict, vCodings, vApproximatedCoords);
 		coordApprox = MeshCoordinates(totalVertCount, vApproximatedCoords);
@@ -1944,7 +1944,7 @@ void ShapeEditor::testDenoisingDLRS()
     revertCoordinates();
     const MeshCoordinates& coordOld = getOldMeshCoord();
     vector<VecNd> vOriginalCoords = coordOld.to3Vec();
-    MeshCoordinates coordNoisy = getNoisyCoord(0.005);
+    MeshCoordinates coordNoisy = getNoisyCoord(0.01);
     setStoredCoordinates(coordNoisy, 1);
     
 
@@ -1953,7 +1953,7 @@ void ShapeEditor::testDenoisingDLRS()
     vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 0.8, coordNoisy.to3Vec());
     MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
     setStoredCoordinates(coordDenoised, 2);
-    MeshCoordinates coordResidual = coordOld.substract(coordDenoised);
+    MeshCoordinates coordResidual = coordDenoised.substract(coordNoisy);
     vector<ZGeom::Colorf> vColorDiff = colorCoordDiff(coordResidual, 0.05*bbDiag, ZGeom::CM_JET);
     addColorSignature("color_diff_DLRS", vColorDiff);
 
@@ -1961,10 +1961,36 @@ void ShapeEditor::testDenoisingDLRS()
     VecNd vResB(totalVertCount);
     for (int i = 0; i < totalVertCount; ++i)
         vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
-
     vector<Colorf> vColorRes(totalVertCount);
     for (int i = 0; i < totalVertCount; ++i) vColorRes[i].falseColor(fabs(vResB[i] / (0.05*bbDiag)));
     addColorSignature("color_residual_DLRS", vColorRes);
+
+
+    vector<std::pair<int, double> > vResIdx;
+    for (int i = 0; i < totalVertCount; ++i) vResIdx.push_back(std::make_pair(i, fabs(vResB[i])));
+    using std::pair;
+    std::sort(vResIdx.begin(), vResIdx.end(), [](pair<int, double> p1, pair<int, double> p2){ return p1.second > p2.second; });
+    MeshFeatureList vFeatureMaxRes;
+    for (int i = 0; i < 30; ++i) vFeatureMaxRes.addFeature(new MeshFeature(vResIdx[i].first, vResIdx[i].second));
+    mMesh->addAttrMeshFeatures(vFeatureMaxRes, "feature_res_max");
+
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    Dictionary dictMHB, dictSGW, dictMixed;
+    computeDictionary(DT_Fourier, es, dictMHB);
+    computeDictionary(DT_SGW3, es, dictSGW);    
+    ZGeom::SparseApproximationOptions opts;
+    opts.mCodingSize = 30;
+    opts.mApproxMethod = ZGeom::SA_OMP;
+    vector<VecNd> vApproximatedCoords;
+    SparseCoding sc;
+    ZGeom::singleChannelSparseApproximate(vResB, dictSGW, sc, opts);
+    VecNd vResApprox = ZGeom::singleChannelSparseReconstruct(dictSGW, sc);
+    MeshFeatureList vFeatureOMP;
+    sc.sortByCoeff();
+    for (auto f : sc.getApproxItems())
+        vFeatureOMP.addFeature(new MeshFeature(f.index() % totalVertCount, f.coeff()));
+    mMesh->addAttrMeshFeatures(vFeatureOMP, "feature_res_omp");
+    
 
     std::cout << '\n';
     printEndSeparator('=', 40);
