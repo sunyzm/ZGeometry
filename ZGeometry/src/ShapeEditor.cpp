@@ -668,6 +668,7 @@ void ShapeEditor::runTests()
 	//testDictionaryForDecomposition();
 	//testSparseFeatureFinding();
     //testSparseInpainting();
+    testDictionaryCoherence();
     testDenoisingDLRS();
 }
 
@@ -1937,7 +1938,7 @@ void ShapeEditor::testSparseInpainting()
 
 void ShapeEditor::testDenoisingDLRS()
 {
-    std::cout << "\n======== Starting testDenoisingDLRS ========\n";
+    printBeginSeparator("Starting testDenoisingDLRS", '=');
     const int totalVertCount = mMesh->vertCount();
     const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
     const double bbDiag = mMesh->getBoundingBox().length() * 2;
@@ -1945,8 +1946,7 @@ void ShapeEditor::testDenoisingDLRS()
     const MeshCoordinates& coordOld = getOldMeshCoord();
     vector<VecNd> vOriginalCoords = coordOld.to3Vec();
     MeshCoordinates coordNoisy = getNoisyCoord(0.01);
-    setStoredCoordinates(coordNoisy, 1);
-    
+    setStoredCoordinates(coordNoisy, 1);    
 
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
@@ -1978,9 +1978,12 @@ void ShapeEditor::testDenoisingDLRS()
     Dictionary dictMHB, dictSGW, dictMixed;
     computeDictionary(DT_Fourier, es, dictMHB);
     computeDictionary(DT_SGW3, es, dictSGW);    
+    //combineDictionary(dictMHB, dictSGW, dictMixed);
+
     ZGeom::SparseApproximationOptions opts;
     opts.mCodingSize = 30;
     opts.mApproxMethod = ZGeom::SA_OMP;
+    opts.mMatlabEngine = &g_engineWrapper;
     vector<VecNd> vApproximatedCoords;
     SparseCoding sc;
     ZGeom::singleChannelSparseApproximate(vResB, dictSGW, sc, opts);
@@ -1989,9 +1992,35 @@ void ShapeEditor::testDenoisingDLRS()
     sc.sortByCoeff();
     for (auto f : sc.getApproxItems())
         vFeatureOMP.addFeature(new MeshFeature(f.index() % totalVertCount, f.coeff()));
-    mMesh->addAttrMeshFeatures(vFeatureOMP, "feature_res_omp");
-    
+    mMesh->addAttrMeshFeatures(vFeatureOMP, "feature_res_omp");    
 
-    std::cout << '\n';
+    printEndSeparator('=', 40);
+}
+
+void ShapeEditor::testDictionaryCoherence()
+{
+    printBeginSeparator("Starting testDictionaryCoherence", '=');
+
+    const int totalVertCount = mMesh->vertCount();
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    Dictionary dictMHB, dictSGW3, dictMixed, dictSGW1, dictSGW2, dictSGW3MHB, dictSpikes;
+    computeDictionary(DT_UNIT, es, dictSpikes);
+    computeDictionary(DT_Fourier, es, dictMHB);
+    computeDictionary(DT_SGW1, es, dictSGW1);
+    computeDictionary(DT_SGW3, es, dictSGW3);
+    //combineDictionary(dictMHB, dictSGW3, dictMixed);
+    
+    std::cout << "Coherence of dictMHB: " << dictMHB.calCoherence() << '\n';
+    std::cout << "Coherence of dictSGW3: " << dictSGW3.calCoherence() << '\n';
+//  double co, tco;
+//  tco = time_call([&](){co = dictMixed.calCoherence2(); });
+//  std::cout << "Time to calCoherence: " << tco / 1000. << "\n";
+//  std::cout << "Coherence of dictMixed: " << co << '\n';
+    std::cout << "Mutual coherence of dictMHB & dictSpikes: " << dictMHB.mutualCoherence(dictSpikes) << "\n";
+    std::cout << "Mutual coherence of dictMHB & dictSGW1: " << dictMHB.mutualCoherence(dictSGW1) << "\n";
+    std::cout << "Mutual coherence of dictMHB & dictSGW3: " << dictMHB.mutualCoherence(dictSGW3) << "\n";
+
     printEndSeparator('=', 40);
 }

@@ -104,6 +104,9 @@ void computeDictionary(DictionaryType dictType, const ZGeom::EigenSystem& es, ZG
 	case DT_SGW1:
 		calSGWDict(es, 1, dict);
 		break;
+    case DT_SGW2:
+        calSGWDict(es, 2, dict);
+        break;
 	case DT_SGW3:
 		calSGWDict(es, 3, dict);
 		break;

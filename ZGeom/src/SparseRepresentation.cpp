@@ -1,5 +1,12 @@
+#include <algorithm>
+#include <ppl.h>
+#include <concurrent_vector.h>
+#include <mkl.h>
 #include "SparseRepresentation.h"
 #include "MatVecArithmetic.h"
+#include "DenseMatrix.h"
+
+
 
 namespace ZGeom {
 
@@ -7,6 +14,74 @@ void Dictionary::mergeDict(const Dictionary& d2)
 {
 	for (const VecNd& atom : d2.mAtoms) mAtoms.push_back(atom);
 	mDim = (int)mAtoms.size();
+}
+
+double Dictionary::calCoherence() const
+{
+    using namespace concurrency;
+    int dictSize = (int)mAtoms.size();
+    int signalSize = mDim;
+    double **atomPtrs = new double*[dictSize];
+    for (int i = 0; i < dictSize; ++i) atomPtrs[i] = mAtoms[i].c_ptr();
+    concurrent_vector<double> vMaxCohere(dictSize - 1);
+    parallel_for(0, dictSize - 1, [&](int i){
+        double maxCohere = 0;
+        for (int j = i + 1; j < dictSize; ++j) {
+            double co = fabs(cblas_ddot(mDim, atomPtrs[i], 1, atomPtrs[j], 1));
+            maxCohere = std::max(maxCohere, co);
+        }
+        vMaxCohere[i] = maxCohere;
+    });
+
+    delete[]atomPtrs;
+    return *std::max_element(vMaxCohere.begin(), vMaxCohere.end());
+}
+
+double Dictionary::calCoherence2() const
+{
+    using namespace concurrency;
+    int dictSize = (int)mAtoms.size();
+    int signalSize = mDim;
+    double **atomPtrs = new double*[dictSize];
+    for (int i = 0; i < dictSize; ++i) atomPtrs[i] = mAtoms[i].c_ptr();
+
+    concurrent_vector<double> vMaxCohere(dictSize - 1);
+    parallel_for(0, dictSize - 1, [&](int i){
+        double maxCohere = 0;
+        for (int j = i + 1; j < dictSize; ++j) {
+            double co = fabs(cblas_ddot(mDim, atomPtrs[i], 1, atomPtrs[j], 1));
+            maxCohere = std::max(maxCohere, co);
+        }
+        vMaxCohere[i] = maxCohere;
+    });
+
+    delete[]atomPtrs;
+    return *std::max_element(vMaxCohere.begin(), vMaxCohere.end());
+}
+
+double Dictionary::mutualCoherence(const Dictionary& dict2) const
+{
+    assert(mDim == dict2.mDim);
+    using namespace concurrency;
+    int dictSize1 = (int)mAtoms.size(), dictSize2 = dict2.atomCount();
+    int signalSize = mDim;
+
+    double **atomPtrs1 = new double*[dictSize1], **atomPtrs2 = new double*[dictSize2];
+    for (int i = 0; i < dictSize1; ++i) atomPtrs1[i] = mAtoms[i].c_ptr();
+    for (int j = 0; j < dictSize2; ++j) atomPtrs2[j] = dict2.mAtoms[j].c_ptr();
+
+    concurrent_vector<double> vMaxCohere(dictSize1);
+    parallel_for(0, dictSize1, [&](int i){
+        double maxCohere = 0;
+        for (int j = 0; j < dictSize2; ++j) {
+            double co = fabs(cblas_ddot(mDim, atomPtrs1[i], 1, atomPtrs2[j], 1));
+            maxCohere = std::max(maxCohere, co);
+        }
+        vMaxCohere[i] = maxCohere;
+    });
+    
+    delete[]atomPtrs1; delete[]atomPtrs2;
+    return *std::max_element(vMaxCohere.begin(), vMaxCohere.end());
 }
 
 void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)

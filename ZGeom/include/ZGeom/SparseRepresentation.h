@@ -11,14 +11,30 @@ class Dictionary
 public:
 	Dictionary() : mDim(0) {}
 	Dictionary(int m) : mDim(m) {}
-
+    Dictionary(const Dictionary& dict) = default;
+    Dictionary& operator=(const Dictionary& dict) = default;
+    Dictionary(Dictionary&& dict)
+    {
+        mAtoms = std::move(dict.mAtoms);
+        mDim = dict.mDim;
+        dict.mDim = 0;
+    }
+    Dictionary& operator=(Dictionary&& dict)
+    {
+        mAtoms = std::move(dict.mAtoms);
+        mDim = dict.mDim;
+        dict.mDim = 0;
+        return *this;
+    }
 	const VecNd& operator [] (int i) const { return mAtoms[i]; }
 	VecNd& operator[] (int i) { return mAtoms[i]; }
 
+    const std::vector<VecNd>& getAtoms() const { return mAtoms; }
+    const std::vector<VecNd>& operator() () const { return mAtoms; }
+    
 	int atomDim() const { return mDim; }
 	int atomCount() const { return (int)mAtoms.size(); }
 	int size() const { return (int)mAtoms.size(); }
-
 	void setDimension(int m) { mDim = m; }
 	void resize(int ct) { mAtoms.resize(ct); }
 	void resize(int ct, int dim)
@@ -28,9 +44,11 @@ public:
 		for (VecNd& v : mAtoms) v.resize(mDim);
 	}
 
-	const std::vector<VecNd>& getAtoms() const { return mAtoms; }
 	void clear() { mAtoms.clear(); }
 	bool empty() const { return mAtoms.size() == 0; }
+    double calCoherence() const;
+    double calCoherence2() const;
+    double mutualCoherence(const Dictionary& dict2) const;
 
 	void expandTo(int N) 
 	{
@@ -38,7 +56,6 @@ public:
 		mAtoms.resize(N);
 	}
 
-	const std::vector<VecNd>& operator() () const { return mAtoms; }
 	void mergeDict(const Dictionary& d2);
 	friend void combineDictionary(const Dictionary& d1, const Dictionary& v2, Dictionary& v3);
 

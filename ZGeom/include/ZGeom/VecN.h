@@ -384,7 +384,7 @@ template<typename T>
 inline T VecN<T>::dot(const VecN<T>& v2) const
 {
 	assert(mDim == v2.mDim);	
-	return std::inner_product(mVec, mVec + mDim, v2.mVec, 0.0);
+	return std::inner_product(mVec, mVec + mDim, v2.mVec, (T)0);
 }
 
 template<typename T>

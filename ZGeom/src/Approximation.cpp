@@ -570,6 +570,11 @@ void multiChannelSparseApproximate(const std::vector<VecNd>& vSignals, const Dic
 			ZGeom::OMP(vSignals[c], dict.getAtoms(), opts.mCodingSize, vCodings[c]);
 		}
 	}
+    else if (opts.mApproxMethod == ZGeom::SA_OMP_SPAMS)
+    {
+        for (int c = 0; c < channelCount; ++c)
+            ZGeom::OMP_SPAMS(*opts.mMatlabEngine, vSignals[c], dict.getAtoms(), opts.mCodingSize, vCodings[c]);
+    }
 	else if (opts.mApproxMethod == ZGeom::SA_SOMP)
 	{
 		std::vector<ZGeom::SparseCoding*> vCodingPtrs;

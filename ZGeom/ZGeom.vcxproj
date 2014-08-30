@@ -272,6 +272,7 @@
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\fibheap.cpp" />
+    <ClCompile Include="src\VecN.cpp" />
     <ClCompile Include="src\Vector3D.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\Approximation.cpp" />

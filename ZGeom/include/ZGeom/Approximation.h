@@ -37,13 +37,14 @@ void GeneralizedOMP_MATLAB(const VecNd& vSignal, const std::vector<VecNd>& vBasi
 void OMP_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int supportSize, SparseCoding& fa);
 void LASSO_SPAMS(MatlabEngineWrapper& engine, const VecNd& vSignal, const std::vector<VecNd>& vAtoms, double lambda, SparseCoding& fa);
 
-enum SparseApproxMethod { SA_Truncation, SA_SMP, SA_OMP, SA_SOMP, SA_LASSO };
+enum SparseApproxMethod { SA_Truncation, SA_SMP, SA_OMP, SA_SOMP, SA_OMP_SPAMS, SA_LASSO };
 
 struct SparseApproximationOptions
 {
 	int mCodingSize;
 	bool mSimultaneousCoding;
 	SparseApproxMethod mApproxMethod;
+    MatlabEngineWrapper* mMatlabEngine;
 
 	const SparseApproximationOptions& setCodingSize(int s) 
 	{ 
