@@ -2846,34 +2846,28 @@ void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) co
 	}
 }
 
-void CMesh::retrieveVertCoordinates( MeshCoordinates& coords ) const
-{
-	coords.resize(m_nVertex);
-	ZGeom::VecNd& vx = coords.getCoordFunc(0);
-	ZGeom::VecNd& vy = coords.getCoordFunc(1);
-	ZGeom::VecNd& vz = coords.getCoordFunc(2);
-
-	for (int i = 0; i < m_nVertex; ++i) {
-		auto vCoord = m_vVertices[i]->getPosition();
-		vx[i] = vCoord.x;
-		vy[i] = vCoord.y;
-		vz[i] = vCoord.z;
-	}
-}
-
 MeshCoordinates CMesh::getVertCoordinates() const
 {
-	MeshCoordinates coords;
-	retrieveVertCoordinates(coords);
-	return coords;
+    MeshCoordinates coords(m_nVertex);
+    ZGeom::VecNd& vx = coords.getCoordFunc(0);
+    ZGeom::VecNd& vy = coords.getCoordFunc(1);
+    ZGeom::VecNd& vz = coords.getCoordFunc(2);
+    for (int i = 0; i < m_nVertex; ++i) {
+        auto vCoord = m_vVertices[i]->getPosition();
+        vx[i] = vCoord.x;
+        vy[i] = vCoord.y;
+        vz[i] = vCoord.z;
+    }
+
+    return coords;
 }
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
 	ZGeom::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
-	const std::vector<double> vx = coords.getCoordFunc(0).toStdVector();
-	const std::vector<double> vy = coords.getCoordFunc(1).toStdVector();
-	const std::vector<double> vz = coords.getCoordFunc(2).toStdVector();
+	std::vector<double> vx = coords.getCoordFunc(0).toStdVector(),
+	                    vy = coords.getCoordFunc(1).toStdVector(),
+	                    vz = coords.getCoordFunc(2).toStdVector();
 	
 	setVertexCoordinates(vx, vy, vz);
 }

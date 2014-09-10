@@ -518,8 +518,7 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 	const int atomCount = mDict.atomCount();
 	runtime_assert(atomCount >= selectedAtomCount);
 
-	MeshCoordinates vertCoords;
-	mSubMesh.retrieveVertCoordinates(vertCoords);
+    MeshCoordinates vertCoords = mSubMesh.getVertCoordinates();
 	std::vector<ZGeom::VecNd> vSignals;
 	vSignals.push_back(vertCoords.getXCoord()); 
 	vSignals.push_back(vertCoords.getYCoord());

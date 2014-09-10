@@ -63,9 +63,7 @@ private:
 							   MeshCoordinates& finalCoord);
 	void setStoredCoordinates(const MeshCoordinates& newCoord, int storeIdx);
 	MeshCoordinates& getStoredCoordinate(int idx);
-	const MeshCoordinates& getApproximateCoordinate(int selctedApprox, int coordIdx) {
-		return mContReconstructCoords[selctedApprox][coordIdx];
-	}
+	const MeshCoordinates& getApproximateCoordinate(int selctedApprox, int coordIdx) { return mContReconstructCoords[selctedApprox][coordIdx]; }
 
 // private fields
 	CMesh* mMesh;	

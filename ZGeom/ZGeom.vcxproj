@@ -218,9 +218,6 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <None Include="include\ZGeom\SparseMatrix.inl" />
-  </ItemGroup>
-  <ItemGroup>
     <ClInclude Include="include\ZGeom\Approximation.h" />
     <ClInclude Include="include\ZGeom\arcball.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />

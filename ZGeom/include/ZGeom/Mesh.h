@@ -15,6 +15,7 @@
 #include <vector>
 #include "VecN.h"
 #include "Vec3.h"
+#include "PointCloud.h"
 #include "Vector3D.h"
 #include "Quat.h"
 #include "MeshAttr.h"
@@ -90,7 +91,6 @@ public:
         this->mCoordZ = std::move(mc.mCoordZ);
         return *this;
     }
-
 
 	bool empty() const { return mSize == 0; }
 	int size() const { return mSize; }
@@ -476,7 +476,6 @@ public:
 
 	std::vector<int>    getOriginalVertexIndex() const;
 	void                getVertCoordinateFunction(int dim, std::vector<double>& vCoord) const;
-	void				retrieveVertCoordinates(MeshCoordinates& coords) const;
 	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
@@ -517,9 +516,11 @@ public:
 	}
 
 	template<typename T, AttrRate R> 
-	void addAttr(const T& data, const std::string& name, AttrType attrType = AttrType::AT_UNKNOWN) {
+    MeshAttr<T, R>& addAttr(const T& data, const std::string& name, AttrType attrType = AttrType::AT_UNKNOWN) {
 		removeAttr(name);
-		mAttributes.insert(std::make_pair(name, new MeshAttr<T,R>(data, name, attrType)));        
+		mAttributes.insert(std::make_pair(name, new MeshAttr<T,R>(data, name, attrType)));    
+        auto iter = mAttributes.find(name);
+        return *dynamic_cast<MeshAttr<T, R>*>(iter->second);
 	}
 
 	void removeAttr(const std::string& name) {
