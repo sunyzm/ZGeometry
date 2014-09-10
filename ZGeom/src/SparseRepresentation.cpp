@@ -5,6 +5,7 @@
 #include "SparseRepresentation.h"
 #include "MatVecArithmetic.h"
 #include "DenseMatrix.h"
+#include "zassert.h"
 
 
 
@@ -61,7 +62,7 @@ double Dictionary::calCoherence2() const
 
 double Dictionary::mutualCoherence(const Dictionary& dict2) const
 {
-    assert(mDim == dict2.mDim);
+    runtime_assert(mDim == dict2.mDim);
     using namespace concurrency;
     int dictSize1 = (int)mAtoms.size(), dictSize2 = dict2.atomCount();
     int signalSize = mDim;
@@ -96,7 +97,7 @@ void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d
 
 ZGeom::VecNd singleChannelDenseReconstruct(const Dictionary& dict, const VecNd& vCoeff)
 {
-	assert(dict.atomCount() == vCoeff.size());
+	runtime_assert(dict.atomCount() == vCoeff.size());
 	int atomCount = dict.atomCount();
 	int signalSize = dict.atomDim();
 	VecNd vResult(signalSize, 0);
@@ -157,8 +158,9 @@ ZGeom::VecNd dictVecInnerProducts(const Dictionary& dict, const VecNd& vec)
 	int vecSize = vec.size();
 	int dictSize = dict.size();
 	VecNd vCoeff(dictSize);
-	for (int i = 0; i < dictSize; ++i)
-		vCoeff[i] = RegularProductFunc(dict[i], vec);
+    concurrency::parallel_for(0, dictSize, [&](int i) {
+        vCoeff[i] = dict[i].dot(vec);
+    });
 	return vCoeff;
 }
 

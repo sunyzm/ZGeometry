@@ -10,6 +10,7 @@
 #include "DenseMatrix.h"
 #include "SparseMatrix.h"
 #include "EigenSystem.h"
+#include "PointCloud.h"
 #include "Mesh.h"
 #include "MeshProcessing.h"
 #include "SparseRepresentation.h"

@@ -70,28 +70,25 @@ public:
 	VecN<T> operator * (T coeff) const { VecN<T> v3(*this); v3 *= coeff; return v3; }
 	VecN<T> operator / (T coeff) const { return (*this) * coeff; }
 	friend VecN<T> operator * (T t, const VecN<T>& v1) { return v1 * t; }
+    const VecN<T>& add(T* v2);
+    T dot(const VecN<T>& v2) const;
 
-	const VecN<T>& add(T* v2);
 	T norm1() const;
 	T norm2() const;
+    T pNorm(double p) const;
+    T inftyNorm() const;
+    int pseudoNorm(double eps = 1e-6) const;	// pseudoNorm (p0-norm) counts the number of non-zero (>eps) elements 
 	T normEuclidean() const { return norm2(); }
-	T distEculidean2(const VecN<T>& v2) const {
-		T dist = (*this - v2).norm2();
-		return dist*dist;
-	}
-	T pNorm(double p) const;
-	T inftyNorm() const;
-	int pseudoNorm(double eps = 1e-6) const;	// pseudoNorm (p0-norm) counts the number of non-zero (>eps) elements 
+    T min_element() const;
 	T max_element() const;
-	T min_element() const;
 	std::pair<T, T> min_max_element() const;
-	T dot(const VecN<T>& v2) const;
 	T sum() const;
 	T mean() const;
 	T partial_sum(int a, int b) const;
 	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 	void normalize(double p);
 	void normalize(const InnerProdcutFunc& innerProdFunc);
+    T distEculidean2(const VecN<T>& v2) const { return ZGeom::sqr((*this - v2).norm2()); }
 
 	/* iterator operations */
 	iterator begin() { return iterator(this, 0); };
@@ -340,10 +337,9 @@ template<typename T>
 inline T VecN<T>::pNorm( double p ) const
 {
 	assert(p > 0);
-
 	double sum(0);
 	for (int i = 0; i < mDim; ++i) sum += std::pow(std::fabs((double)mVec[i]), p);
-	return std::pow(sum, 1.0/p);
+    return static_cast<T>(std::pow(sum, 1.0 / p));
 }
 
 template<typename T>
@@ -360,7 +356,7 @@ inline T ZGeom::VecN<T>::inftyNorm() const
 {
 	T maxNorm(0);
 	for (int i = 0; i < mDim; ++i) 
-		if (std::fabs(mVec[i]) > maxNorm) maxNorm = std::fabs(mVec[i]);
+        if (std::fabs(mVec[i]) > maxNorm) maxNorm = std::fabs(mVec[i]);
 	return maxNorm;
 }
 
@@ -390,7 +386,7 @@ inline T VecN<T>::dot(const VecN<T>& v2) const
 template<typename T>
 inline T VecN<T>::sum() const
 {
-	double retval(0);
+	T retval(0);
 	for (int i = 0; i < mDim; ++i) retval += mVec[i];
 	return retval;
 }

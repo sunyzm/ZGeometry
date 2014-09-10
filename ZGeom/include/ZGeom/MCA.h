@@ -20,7 +20,8 @@ struct MCAoptions
 };
 
 void singleChannelMCA(const VecNd& vSignal, const std::vector<const Dictionary*>& vDicts, std::vector<SparseCoding>& vCodings, MCAoptions* opts);
-
+void singleChannelMCA2(const VecNd& vSignal, const std::vector<const Dictionary*>& vDicts, std::vector<SparseCoding>& vCodings, MCAoptions* opts);
+void singleChannelMCA3(const VecNd& vSignal, const std::vector<const Dictionary*>& vDicts, std::vector<SparseCoding>& vCodings, MCAoptions* opts);
 void multiChannelMCA(const std::vector<VecNd>& vSignals, const std::vector<const Dictionary>*& dicts, std::vector<std::vector<SparseCoding> >& vMultiCodings, MCAoptions *opts);
 
 }

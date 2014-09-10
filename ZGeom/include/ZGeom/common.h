@@ -8,6 +8,12 @@ const double PI = 3.14159265358979323846;
 
 typedef unsigned int uint;
 
+template<typename T>
+inline T sqr(T x) { return x*x; }
+
+template<typename T>
+inline T cubic(T x) { return x*x*x; }
+
 } 
 
 

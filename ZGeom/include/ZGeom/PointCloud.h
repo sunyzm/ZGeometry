@@ -1,0 +1,26 @@
+#ifndef ZGEOM_POINT_CLOUD_H
+#define ZGEOM_POINT_CLOUD_H
+#include <vector>
+#include <string>
+#include "Vec3.h"
+#include "VecN.h"
+
+namespace ZGeom {
+
+template<typename T>
+class PointCloud
+{
+public:
+    void print(const std::string& filename);
+    int size() const { return (int)vPoints.size(); }
+private:
+    std::vector<T> vPoints;
+};
+
+typedef PointCloud<Vec3d> PointCloud3d;
+typedef PointCloud<VecNd> PointCloudNd;
+
+}   // end of namespace
+
+
+#endif

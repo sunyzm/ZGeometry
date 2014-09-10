@@ -51,30 +51,45 @@ public:
 	SparseMatrix() : mRowCount(0), mColCount(0), mNonzeroCount(0) {}
 	SparseMatrix(int row, int col) : mRowCount(row), mColCount(col), mNonzeroCount(0) {}
 
+    /* basic attributes and elements access */
 	uint rowCount() const { return mRowCount; }
 	uint colCount() const { return mColCount; }
 	uint nonzeroCount() const { return mElements.size(); }
 	bool empty() const { return mRowCount == 0 || mColCount == 0; }
-	void resize(int row, int col) { mRowCount = row; mColCount = col; mNonzeroCount = 0; mElements.clear(); }
-	T frobeniusNorm() const;
-	T getElemValByIndex(uint index) const;
-	T& getElemValByIndex(uint index);
-	T getElemVal(uint row, uint col) const;
-	T& getElemVal(uint row, uint col);
-	MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
-	const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
-	const std::vector<MatElem<T> >& allElements() const { return mElements; }
-	std::vector<MatElem<T> >& allElements() { return mElements; }
+    T getElemValByIndex(uint index) const;
+    T& getElemValByIndex(uint index);
+    T getElemVal(uint row, uint col) const;
+    T& getElemVal(uint row, uint col);
+    MatElem<T>& getElemByIndex(uint index) { return mElements[index]; }
+    const MatElem<T>& getElemByIndex(uint index) const { return mElements[index]; }
+    const std::vector<MatElem<T> >& allElements() const { return mElements; }
+    std::vector<MatElem<T> >& allElements() { return mElements; }
+    T operator() (uint row, uint col) const;
+    T& operator() (uint row, uint col);
 
-	T operator() (uint row, uint col) const; 
-	T& operator() (uint row, uint col);
+    /* modify elements */
+    void resize(int row, int col);
+    void clear() { resize(0, 0); }
 	void insertElem(uint row, uint col, T val);
 	void removeElem(uint row, uint col);   
-
 	void copyElements(const SparseMatrix<T>& mat2);
-
 	void computeSubMatrix(const std::vector<int>& vSelected, SparseMatrix<T>& subMat) const;
+    const SparseMatrix<T>& scale(T scalar);
+    const SparseMatrix<T>& operator *= (T coeff);
+    void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
+    void symmetrize();              // turn upper or lower matrix into symmetric one
+    void fillEmptyDiagonal();       // fill empty diagonal elements with 0
+    void setToIdentity(uint order); // make the matrix an identity matrix
+    void sortElements();
 
+    T frobeniusNorm() const;
+    bool testNoEmptyRow() const;
+    bool testSymmetric(double eps = 1e-7) const;
+    void print(std::ostream& out) const;
+    void print(const std::string& path) const;
+    void read(std::istream& in);
+
+    /* conversion between formats */
 	template<typename F>
 	void getDiagonal(std::vector<F>& diag) const;
 
@@ -108,22 +123,7 @@ public:
 	template<typename F> 
 	void convertToFull(F* fullMat, MatrixForm form) const;
 
-	bool testNoEmptyRow() const;
-	bool testSymmetric(double eps = 1e-7) const;
-
-	void scale(T scalar);
-	void truncate(MatrixForm form); // truncate matrix to upper or lower triangle matrix
-	void symmetrize();              // turn upper or lower matrix into symmetric one
-	void fillEmptyDiagonal();       // fill empty diagonal elements with 0
-	void setToIdentity(uint order); // make the matrix an identity matrix
-	void makeLaplacian();			// make matrix a Laplacian by modifying the diagonal; must be square matrix
-
-	void print(std::ostream& out) const;
-	void print(const std::string& paht) const;
-	void read(std::istream& in);
-
-	const SparseMatrix<T>& operator *= (double coeff);
-	friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
+    friend VecN<T> mulMatVec(const SparseMatrix<T>& mat, const VecN<T>& vec, bool matIsSym);
 
 private:
 	std::vector<MatElem<T> > mElements;

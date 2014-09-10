@@ -2,8 +2,7 @@
 #include "EigenCompute.h"
 #include "zassert.h"
 
-namespace ZGeom
-{
+namespace ZGeom {
 
 void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ ) const
 {
@@ -33,7 +32,8 @@ void Laplacian::computeSubLaplacian( const std::vector<int>& vSelected, Laplacia
 	mW.computeSubMatrix(vSelected, subLaplacian.mW);
 	mLS.computeSubMatrix(vSelected, subLaplacian.mLS);
 
-	subLaplacian.mLS.makeLaplacian();
+    //TODO: 
+	//subLaplacian.mLS.makeLaplacian();
 }
 
-}// end of namespace
+}   // end of namespace

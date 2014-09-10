@@ -95,11 +95,18 @@ public:
 	{
 		clear();
 		for (int i = 0; i < (int)vDense.size(); ++i) {
-			if (std::fabs(vDense[i]) >= epsilon) {
+			if (std::fabs(vDense[i]) > epsilon) {
 				addItem(i, vDense[i]);
 			}
 		}
 	}
+
+    VecNd toDense(int totalSize) const
+    {
+        VecNd vDense(totalSize, 0);
+        for (auto sci : mApproxItems) vDense[sci.index()] = sci.coeff();
+        return vDense;
+    }
 
 	void clear() { mApproxItems.clear(); }
 	void addItem(const SparseCodingItem& vi) { mApproxItems.push_back(vi);  }
