@@ -72,8 +72,10 @@ private slots:
 
 	void displaySignature(QString sigName);
 	void displayFeature(QString featureName);
+    void displayLine(QString lineName);
 	void updateDisplaySignatureMenu();
 	void updateDisplayFeatureMenu();
+    void updateDisplayLineMenu();
 	void setSignatureMode(const QString& sigModeName);
 	void updateSignatureMin(int sMin);
 	void updateSignatureMax(int sMax);
@@ -98,7 +100,7 @@ private slots:
 	void toggleShowFeatures(bool show = false);
 	void toggleShowWireframeOverlay(bool show = false);
 	void toggleShowBoundingBox(bool show = false);
-	void toggleShowVectors(bool show = false);
+	void toggleShowLines(bool show = false);
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
 	void toggleDrawRegistration(bool show = false);
@@ -159,9 +161,11 @@ private:
 	QSignalMapper*		  m_laplacianSignalMapper;	
 	QSignalMapper*		  m_signatureSignalMapper;
 	QSignalMapper*        m_featureSignalMapper;
+    QSignalMapper*        m_linesSignalMapper;
 	std::vector<QAction*> m_actionComputeLaplacians;
 	std::vector<QAction*> m_actionDisplaySignatures;
 	std::vector<QAction*> m_actionDisplayFeatures;
+    std::vector<QAction*> m_actionDisplayLines;
 	QLabel				  mStatusLabel1;
 
 	std::vector<CMesh*>	                    mMeshes;

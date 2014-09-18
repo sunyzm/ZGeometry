@@ -16,7 +16,7 @@ public:
 	bool m_bShowLegend;
 	bool m_bShowFeatures;
 	bool m_bShowSignature;
-	bool m_bShowVectors;
+	bool m_bShowLines;
 	bool m_bShowRefPoint;
 	bool m_bShowFeatureMatching;
 	bool m_bDrawRegistration;

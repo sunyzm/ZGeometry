@@ -36,8 +36,8 @@ public:
 	Vector3D display_shift;
 	const float* mesh_color;
 
-	std::string mActiveColorSignatureName;
-	std::string mActiveVectorName;
+	std::string mActiveColorSignatureName;	
 	std::string mActiveFeatureName;
+    std::string mActiveLineName;
 };
 

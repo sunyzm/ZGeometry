@@ -151,10 +151,12 @@ QZGeometryWindow::~QZGeometryWindow()
 	for (QAction* a : m_actionDisplaySignatures) delete a;
 	for (QAction* a : m_actionComputeLaplacians) delete a;
 	for (QAction* a : m_actionDisplayFeatures) delete a;
+    for (QAction* a : m_actionDisplayLines) delete a;
 
 	delete m_laplacianSignalMapper;
 	delete m_signatureSignalMapper;
 	delete m_featureSignalMapper;
+    delete m_linesSignalMapper;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -180,6 +182,10 @@ void QZGeometryWindow::makeConnections()
 	/* actionDisplayFeatures */
 	m_featureSignalMapper = new QSignalMapper(this);
 	QObject::connect(m_featureSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displayFeature(QString)));
+
+    /* actionDisplayLines */
+    m_linesSignalMapper = new QSignalMapper(this);
+    QObject::connect(m_linesSignalMapper, SIGNAL(mapped(QString)), this, SLOT(displayLine(QString)));
 
 	////////    Toolbar Controls    ////////
 	QObject::connect(ui.spinBox1, SIGNAL(valueChanged(int)), ui.glMeshWidget, SIGNAL(vertexPicked1(int)));
@@ -269,7 +275,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
 	QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
-	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowVectors(bool)));
+	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowLines(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
@@ -841,10 +847,10 @@ void QZGeometryWindow::toggleShowBoundingBox(bool show /*= false*/)
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::toggleShowVectors( bool show /*= false*/ )
+void QZGeometryWindow::toggleShowLines( bool show /*= false*/ )
 {
-	bool bToShow = !ui.glMeshWidget->m_bShowVectors;
-	ui.glMeshWidget->m_bShowVectors = bToShow;
+	bool bToShow = !ui.glMeshWidget->m_bShowLines;
+	ui.glMeshWidget->m_bShowLines = bToShow;
 	ui.actionShowVectors->setChecked(bToShow);
 
 	ui.glMeshWidget->update();
@@ -1186,6 +1192,22 @@ void QZGeometryWindow::repeatOperation()
 	}
 }
 
+void QZGeometryWindow::displayDiffPosition()
+{
+	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
+	int size = mMeshes[0]->vertCount();
+	std::vector<double> vDiff;
+	vDiff.resize(size);
+
+	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
+		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
+	}
+
+	addColorSignature(0, vDiff, StrAttrColorPosDiff);
+	displaySignature(StrAttrColorPosDiff.c_str());
+	updateDisplaySignatureMenu();
+}
+
 void QZGeometryWindow::displaySignature(QString sigName )
 {
 	for (int i = 0; i < mMeshCount; ++i) {
@@ -1210,27 +1232,21 @@ void QZGeometryWindow::displayFeature( QString featureName )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayDiffPosition()
+void QZGeometryWindow::displayLine(QString lineName)
 {
-	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
-	int size = mMeshes[0]->vertCount();
-	std::vector<double> vDiff;
-	vDiff.resize(size);
+    for (int obj = 0; obj < mMeshCount; ++obj) {
+        if (!isMeshSelected(obj)) continue;
+        mRenderManagers[obj]->mActiveLineName = lineName.toStdString();
+    }
 
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
-		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
-	}
-
-	addColorSignature(0, vDiff, StrAttrColorPosDiff);
-	displaySignature(StrAttrColorPosDiff.c_str());
-	updateDisplaySignatureMenu();
+    if (!ui.glMeshWidget->m_bShowLines) toggleShowLines(true);
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
 	std::vector<AttrVertColors*> vColorAttributes = mMeshes[obj]->getColorAttrList();
-
 	for (QAction* qa : m_actionDisplaySignatures) {
 		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
 			== vColorAttributes.end())
@@ -1239,14 +1255,13 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 				delete qa;	
 		}
 	}
-
 	for (AttrVertColors* attr : vColorAttributes) {
 		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
 			== m_actionDisplaySignatures.end())
 		{
 			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
 			m_actionDisplaySignatures.push_back(newDisplayAction);
-			ui.menuDisplaySignatures->addAction(m_actionDisplaySignatures.back());
+            ui.menuDisplaySignatures->addAction(newDisplayAction);
 			m_signatureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
 		}	
@@ -1257,27 +1272,62 @@ void QZGeometryWindow::updateDisplayFeatureMenu()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
 	std::vector<AttrMeshFeatures*> vFeatureAttr = mMeshes[obj]->getMeshFeatureList();
-
 	for (QAction* qa : m_actionDisplayFeatures) {
-		if (find_if(vFeatureAttr.begin(), vFeatureAttr.end(), [&](AttrMeshFeatures* attr){ return attr->attrName() == qa->text().toStdString();}) 
+		if (find_if(vFeatureAttr.begin(), vFeatureAttr.end(), 
+                    [&](AttrMeshFeatures* attr){ return attr->attrName() == qa->text().toStdString(); }) 
 			== vFeatureAttr.end())
 		{
 			ui.menuDisplayFeatures->removeAction(qa);
 			delete qa;	
 		}
 	}
-
 	for (AttrMeshFeatures* attr : vFeatureAttr) {
-		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
+		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), 
+                    [&](QAction* pa){ return pa->text().toStdString() == attr->attrName(); })
 			== m_actionDisplaySignatures.end())
 		{
 			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
 			m_actionDisplayFeatures.push_back(newDisplayAction);
-			ui.menuDisplayFeatures->addAction(m_actionDisplayFeatures.back());
+            ui.menuDisplayFeatures->addAction(newDisplayAction);
 			m_featureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_featureSignalMapper, SLOT(map()));
 		}	
 	}
+}
+
+void QZGeometryWindow::updateDisplayLineMenu()
+{
+    int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
+    vector<AttrMeshLines*> vLineAttr = mMeshes[obj]->getMeshLineList();
+    for (QAction *qa : m_actionDisplayLines) {
+        bool found = false;
+        for (AttrMeshLines* attr : vLineAttr) {
+            if (attr->attrName() == qa->text().toStdString()) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            ui.menuDisplayFeatures->removeAction(qa);
+            delete qa;
+        }
+    }
+    for (AttrMeshLines* attr : vLineAttr) {
+        bool found = false;
+        for (QAction *pa : m_actionDisplayLines) {
+            if (pa->text().toStdString() == attr->attrName()) {
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
+            m_actionDisplayLines.push_back(newDisplayAction);
+            ui.menuDisplayLines->addAction(newDisplayAction);
+            m_linesSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
+            QObject::connect(newDisplayAction, SIGNAL(triggered()), m_linesSignalMapper, SLOT(map()));
+        }
+    }
 }
 
 void QZGeometryWindow::setTaskRegistration()
@@ -2244,11 +2294,11 @@ void QZGeometryWindow::computeVertNormals()
 		}
 		
         mesh->addAttrLines(mvl, StrAttrVecVertNormal);
-		mRenderManagers[obj]->mActiveVectorName = StrAttrVecVertNormal;
+		mRenderManagers[obj]->mActiveLineName = StrAttrVecVertNormal;
 	}
 
-	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);
-	else ui.glMeshWidget->update();
+    updateDisplayLineMenu();
+    displayLine(StrAttrVecVertNormal.c_str());
 }
 
 void QZGeometryWindow::computeFaceNormals()
@@ -2266,9 +2316,9 @@ void QZGeometryWindow::computeFaceNormals()
 		}
 
         mesh->addAttrLines(mvl, StrAttrVecFaceNormal);
-		mRenderManagers[obj]->mActiveVectorName = StrAttrVecFaceNormal;
+		mRenderManagers[obj]->mActiveLineName = StrAttrVecFaceNormal;
 	}
 
-	if (!ui.glMeshWidget->m_bShowVectors) toggleShowVectors(true);
-	else ui.glMeshWidget->update();
+    updateDisplayLineMenu();
+    displayLine(StrAttrVecFaceNormal.c_str());
 }

@@ -474,6 +474,15 @@ public:
         addAttr<MeshLineList>(vVecs, name, AR_UNIFORM, AT_VEC_LINE);
     }
 
+    std::vector<AttrMeshLines*> getMeshLineList() {
+        std::vector<AttrMeshLines*> vMeshLines;
+        for (auto ap : mAttributes) {
+            if (ap.second->attrType() == AttrType::AT_VEC_LINE)
+                vMeshLines.push_back(dynamic_cast<AttrMeshLines*>(ap.second));
+        }
+        return vMeshLines;
+    }
+
 	/************************************************************************/
 	/* Vertex scalar attributes methods                                     */
 	/************************************************************************/

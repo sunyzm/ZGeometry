@@ -67,7 +67,7 @@ void GLMeshWidget::reset()
 	m_bShowLegend = false;
 	m_bShowFeatures = false;
 	m_bShowSignature = false;
-	m_bShowVectors = false;
+	m_bShowLines = false;
 	m_bShowRefPoint = false;
 	m_bDrawMatching = false;
 	m_bShowCorrespondenceLine = true;
@@ -545,9 +545,9 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	/* draw vectors on mesh */
-	if (m_bShowVectors && tmesh->hasAttr(pRS->mActiveVectorName))
+	if (m_bShowLines && tmesh->hasAttr(pRS->mActiveLineName))
 	{
-		const MeshLineList& meshVecs = tmesh->getAttrValue<MeshLineList>(pRS->mActiveVectorName);
+		const MeshLineList& meshVecs = tmesh->getAttrValue<MeshLineList>(pRS->mActiveLineName);
 		const double avgEdgeLen = tmesh->getAvgEdgeLength();
 		glLineWidth(1.0);
 		glBegin(GL_LINES);
