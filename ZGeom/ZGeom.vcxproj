@@ -225,6 +225,7 @@
     <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
+    <ClInclude Include="include\ZGeom\MeshCoordinates.h" />
     <ClInclude Include="include\ZGeom\PointCloud.h" />
     <ClInclude Include="include\ZGeom\SparseRepresentation.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />

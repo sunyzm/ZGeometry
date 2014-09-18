@@ -21,6 +21,8 @@
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
 
+using std::vector;
+using ZGeom::Colorf;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
@@ -501,8 +503,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
 	runtime_assert (fileExist(mesh_list_name),  "Cannot open file mesh list file!");
-	std::ifstream meshfiles(mesh_list_name);
-	
+	std::ifstream meshfiles(mesh_list_name);	
 	std::vector<std::string> vMeshFiles;
 	while (!meshfiles.eof()) {
 		std::string meshFileName;
@@ -513,8 +514,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		}
 		if (meshFileName == "") continue;
 		if (meshFileName[0] == '#') continue;
-		else if (!fileExist(meshFileName))
-			throw std::runtime_error("Cannot open file " + meshFileName);		
+        runtime_assert(fileExist(meshFileName), "Cannot open file " + meshFileName);
 		vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
@@ -522,24 +522,9 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		throw std::runtime_error("Not enough meshes in mesh list!");
 
 	allocateStorage(mMeshCount);
-
 	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
-		CMesh& mesh = *mMeshes[obj];
-		mesh.load(vMeshFiles[obj]);
-		mesh.scaleAreaToVertexNum();
-		mesh.gatherStatistics();        
+        loadMesh(vMeshFiles[obj], obj); 
 	});	
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		CMesh& mesh = *mMeshes[obj];
-		Vector3D center = mesh.getCenter();
-		Vector3D bbox = mesh.getBoundingBox();
-		qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
-		qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);	
-		
-		mProcessors[obj]->init(&mesh);
-		mRenderManagers[obj]->mesh_color = preset_mesh_colors[obj%2];
-	}
 
 	/* ---- update mesh-dependent ui ---- */
 	if (mMeshCount >= 1) {
@@ -560,6 +545,26 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 
 	mRenderManagers[0]->selected = true;
 	mObjInFocus = 0;
+}
+
+void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
+{
+    if (mMeshCount <= obj) throw std::runtime_error("Run allocateStorage first!");
+    CMesh& mesh = *mMeshes[obj];
+    mesh.load(mesh_filename);
+    mesh.scaleAreaToVertexNum();
+    mesh.gatherStatistics();
+    auto center = mesh.getCenter();
+    auto bbox = mesh.getBoundingBox();
+    qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
+    qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);
+
+    mProcessors[obj]->init(&mesh);
+    Colorf meshColor = preset_mesh_colors[obj % 2];
+    vector<Colorf> vDefaultColor(mesh.vertCount(), meshColor);
+    mesh.addColorAttr(StrAttrColorDefault, vDefaultColor);
+    mRenderManagers[obj]->mActiveColorSignatureName = StrAttrColorDefault;
+    mRenderManagers[obj]->mesh_color = meshColor;
 }
 
 void QZGeometryWindow::addMesh()
@@ -875,6 +880,7 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 void QZGeometryWindow::computeCurvatureMean()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
+        mMeshes[obj]->calCurvatures();
 		std::vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
@@ -888,7 +894,8 @@ void QZGeometryWindow::computeCurvatureMean()
 
 void QZGeometryWindow::computeCurvatureGauss()
 {
-	for (int obj = 0; obj < mMeshCount; ++obj) {		
+	for (int obj = 0; obj < mMeshCount; ++obj) {	
+        mMeshes[obj]->calCurvatures();
 		std::vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
 		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
 		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
@@ -1655,7 +1662,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
+	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
 
 	vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -1817,12 +1824,11 @@ void QZGeometryWindow::verifyAreas() const
 		}
 		double weightSum(0);
 		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(CotFormula);
-		std::vector<double> vAreas;
-		laplacian.getW().getDiagonal(vAreas);
+		std::vector<double> vAreas = laplacian.getW().getDiagonal();
 		for (int i = 0; i < mMeshes[obj]->vertCount(); ++i) {
 			weightSum += vAreas[i];
 		}
-		std::cout << "Vert count: " << mMeshes[obj]->vertCount() << std::endl;
+		std::cout << "Vertex count: " << mMeshes[obj]->vertCount() << std::endl;
 		std::cout << "Total surface area: " << areaSum << std::endl;
 		std::cout << "Total vert weight: " << weightSum << std::endl;
 	}

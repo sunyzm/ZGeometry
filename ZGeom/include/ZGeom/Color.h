@@ -29,6 +29,7 @@ class Colorf : public Vec4s
 {
 public:
 	Colorf();
+    Colorf(const Colorf& c);
 	Colorf(float r , float g , float b, float a = 1);
 	Colorf(const float *c) { setAs(c); }
 

@@ -135,6 +135,7 @@ private:
 	/* methods */
 	void makeConnections();
 	void loadInitialMeshes(const std::string& initial_mesh_list);
+    void loadMesh(std::string mesh_filename, int obj);
 	void registerPreprocess();
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation

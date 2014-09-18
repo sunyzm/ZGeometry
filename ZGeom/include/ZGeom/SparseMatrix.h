@@ -102,11 +102,13 @@ public:
     void print(const std::string& path) const;
     void read(std::istream& in);
 
+    std::vector<T> getDiagonal() const;
+
     /* conversion between formats */
 	template<typename F>
 	void getDiagonal(std::vector<F>& diag) const;
 
-	template<typename F>
+    template<typename F>
 	void convertFromDiagonal(const std::vector<F>& diag);    
 
 	template<typename U, typename F>
@@ -144,7 +146,6 @@ private:
 	uint mColCount;
 	uint mNonzeroCount;
 };
-
 
 template<typename T>
 inline void SparseMatrix<T>::read(std::istream& in)
@@ -405,11 +406,20 @@ inline void SparseMatrix<T>::computeSubMatrix(const std::vector<int>& vSelected,
 }
 
 template<typename T>
+std::vector<T> SparseMatrix<T>::getDiagonal() const
+{
+    std::vector<T> vDiag;
+    getDiagonal(vDiag);
+    return vDiag;
+}
+
+
+template<typename T>
 template<typename F>
 void SparseMatrix<T>::getDiagonal(std::vector<F>& diag) const
 {
     assert(mRowCount == mColCount);
-    diag.resize(mRowCount, 0.0);
+    diag.resize(mRowCount, 0);
     for (auto iter = mElements.begin(); iter != mElements.end(); ++iter) {
         if (iter->row() == iter->col())
             diag[iter->row() - 1] = iter->val();

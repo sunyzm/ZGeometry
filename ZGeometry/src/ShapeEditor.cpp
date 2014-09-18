@@ -3,6 +3,7 @@
 #include <random>
 #include <functional>
 #include <iomanip>
+#include <array>
 #include <ppl.h>
 #include <boost/lexical_cast.hpp>
 #include <ZGeom/ZGeom.h>
@@ -15,6 +16,8 @@
 #include "global.h"
 
 using std::vector;
+using std::array;
+using ZGeom::Vec3d;
 using ZGeom::VecNd;
 using ZGeom::SparseMatrix;
 using ZGeom::Dictionary;
@@ -118,8 +121,6 @@ void ShapeEditor::init( DifferentialMeshProcessor* processor )
     mOriginalCoord = mMesh->getVertCoordinates();
 	mStoredCoordinates.resize(1);
 	mStoredCoordinates[0] = mOriginalCoord;
-
-	std::cout << "Shape editor is initialized!" << std::endl;
 }
 
 void ShapeEditor::revertCoordinates()
@@ -652,8 +653,9 @@ void ShapeEditor::runTests()
 	//testSparseFeatureFinding();
     //testSparseInpainting();
     //testDictionaryCoherence();
-    testDenoisingDLRS();
+    //testDenoisingDLRS();
     //testSparseDecomposition2();
+    //testWaveletAnalysis();
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -1717,8 +1719,6 @@ void ShapeEditor::testSparseInpainting()
 
 void ShapeEditor::testDenoisingDLRS()
 {
-    double x = ZGeom::sqr(3.5);
-
     printBeginSeparator("Starting testDenoisingDLRS", '=');
     const int totalVertCount = mMesh->vertCount();
     const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
@@ -1807,5 +1807,151 @@ void ShapeEditor::testDictionaryCoherence()
 //  std::cout << "Mutual coherence of dictMHB & dictSGW1: " << dictMHB.mutualCoherence(dictSGW1) << "\n";
 //  std::cout << "Mutual coherence of dictMHB & dictSGW3: " << dictMHB.mutualCoherence(dictSGW3) << "\n";
 
+    printEndSeparator('=', 40);
+}
+
+void ShapeEditor::testWaveletAnalysis()
+{
+    using namespace concurrency;
+
+    printBeginSeparator("Starting testWaveletAnalysis", '=');
+    const int totalVertCount = mMesh->vertCount();
+    const double bbDiag = mMesh->getBoundingBox().length() * 2;
+    revertCoordinates();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+    MeshCoordinates coordNoisy = getNoisyCoord(0.005);
+    setStoredCoordinates(coordNoisy, 1);
+
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    Dictionary dictMHB, dictSGW;
+    computeDictionary(DT_Fourier, es, dictMHB);
+    computeDictionary(DT_SGW4, es, dictSGW);
+
+    int sgwScales = dictSGW.atomCount() / totalVertCount;
+    vector<array<VecNd,3>> vTransforms(sgwScales);
+    vector<VecNd> vCoeffNorm(sgwScales), vCoeffLaplace(sgwScales);
+    {
+        parallel_for(0, sgwScales, [&](int s) {
+            for (int c = 0; c < 3; ++c) {
+                const VecNd& vSig = coordOld.getCoordFunc(c);
+                vTransforms[s][c].resize(totalVertCount);
+                for (int i = 0; i < totalVertCount; ++i) {
+                    const VecNd& atom = dictSGW[s*totalVertCount + i];
+                    vTransforms[s][c][i] = vSig.dot(atom);
+                }
+            }
+            vCoeffNorm[s].resize(totalVertCount);
+            for (int i = 0; i < totalVertCount; ++i)
+                vCoeffNorm[s][i] = Vec3d(vTransforms[s][0][i], vTransforms[s][1][i], vTransforms[s][2][i]).length();
+
+            vCoeffLaplace[s] = ZGeom::mulMatVec<double>(graphLaplacian.getLS(), vCoeffNorm[s], true);
+            for (double &d : vCoeffLaplace[s]) d = fabs(d);
+        });
+        for (int s = 0; s < sgwScales; ++s) {
+            vector<Colorf> vColor(totalVertCount);
+            const VecNd& vSignal = vCoeffNorm[s];
+            double coeffMax = vSignal.max_element() + 1e-3;
+            for (int i = 0; i < totalVertCount; ++i)
+                vColor[i].falseColor(vSignal[i] / coeffMax);
+            addColorSignature("color_ori_coord_sgw_l" + Int2String(s), vColor);
+        }
+    }
+
+    {
+        parallel_for(0, sgwScales, [&](int s) {
+            for (int c = 0; c < 3; ++c) {
+                const VecNd& vSig = coordNoisy.getCoordFunc(c);
+                vTransforms[s][c].resize(totalVertCount);
+                for (int i = 0; i < totalVertCount; ++i) {
+                    const VecNd& atom = dictSGW[s*totalVertCount + i];
+                    vTransforms[s][c][i] = vSig.dot(atom);
+                }
+            }
+            vCoeffNorm[s].resize(totalVertCount);
+            for (int i = 0; i < totalVertCount; ++i)
+                vCoeffNorm[s][i] = Vec3d(vTransforms[s][0][i], vTransforms[s][1][i], vTransforms[s][2][i]).length();
+        });
+        for (int s = 0; s < sgwScales; ++s) {
+            vector<Colorf> vColor(totalVertCount);
+            const VecNd& vSignal = vCoeffNorm[s];
+            double coeffMax = vSignal.max_element() + 1e-3;
+            for (int i = 0; i < totalVertCount; ++i)
+                vColor[i].falseColor(vSignal[i] / coeffMax);
+            addColorSignature("color_noisy_coord_sgw_l" + Int2String(s), vColor);
+        }
+    }
+    
+     vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 1.0, coordOld.to3Vec());
+     MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
+     MeshCoordinates coordResidual = coordDenoised.substract(coordOld);
+     setStoredCoordinates(coordDenoised, 2);
+     changeCoordinates(2);
+     auto vNormals = mMesh->getVertNormals();
+     VecNd vResB(totalVertCount);
+     for (int i = 0; i < totalVertCount; ++i)
+         vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
+     vector<Colorf> vColorRes(totalVertCount);
+     for (int i = 0; i < totalVertCount; ++i) vColorRes[i].falseColor(fabs(vResB[i] / (0.05*bbDiag)));
+     addColorSignature("color_residual_DLRS", vColorRes);
+
+     {
+         VecNd vResBLaplace = ZGeom::mulMatVec<double>(graphLaplacian.getLS(), vResB, true);
+         for (double &d : vResBLaplace) d = fabs(d);
+         double resLapMax = vResBLaplace.max_element();
+         vector<Colorf> vColorResLaplace(totalVertCount);
+         for (int i = 0; i < totalVertCount; ++i) vColorResLaplace[i].falseColor(vResBLaplace[i] / resLapMax);
+         addColorSignature("color_residual_DLRS_laplace", vColorResLaplace);
+     }
+     
+//      vector<VecNd> vCoeffRes(sgwScales);
+//      parallel_for(0, sgwScales, [&](int s) {
+//          vCoeffRes[s].resize(totalVertCount);
+//          for (int i = 0; i < totalVertCount; ++i) {
+//              const VecNd& atom = dictSGW[s*totalVertCount + i];
+//              vCoeffRes[s][i] = fabs(vResB.dot(atom));
+//          }
+//      });
+//      for (int s = 0; s < sgwScales; ++s) {
+//          vector<Colorf> vColor(totalVertCount);
+//          const VecNd& vSignal = vCoeffRes[s];
+//          double coeffMax = vSignal.max_element() + 1e-3;
+//          for (int i = 0; i < totalVertCount; ++i) vColor[i].falseColor(vSignal[i] / coeffMax);
+//          addColorSignature("color_residual_sgw_l" + Int2String(s), vColor);
+//      }
+// 
+//     vector<std::pair<int, double> > vResIdx;
+//     for (int i = 0; i < totalVertCount; ++i) vResIdx.push_back(std::make_pair(i, fabs(vResB[i])));
+//     using std::pair;
+//     std::sort(vResIdx.begin(), vResIdx.end(), [](pair<int, double> p1, pair<int, double> p2){ return p1.second > p2.second; });
+//     MeshFeatureList vFeatureMaxRes;
+//     for (int i = 0; i < 30; ++i) vFeatureMaxRes.addFeature(new MeshFeature(vResIdx[i].first, vResIdx[i].second));
+//     mMesh->addAttrMeshFeatures(vFeatureMaxRes, "feature_res_max");
+// 
+//     const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+//     Dictionary dictMHB, dictSGW, dictMixed;
+//     computeDictionary(DT_Fourier, es, dictMHB);
+//     computeDictionary(DT_SGW3, es, dictSGW);
+//     //combineDictionary(dictMHB, dictSGW, dictMixed);
+//     ZGeom::SparseApproximationOptions opts;
+//     opts.mCodingSize = 30;
+//     opts.mApproxMethod = ZGeom::SA_OMP;
+//     opts.mMatlabEngine = &g_engineWrapper;
+//     vector<VecNd> vApproximatedCoords;
+//     SparseCoding sc;
+//     ZGeom::singleChannelSparseApproximate(vResB, dictSGW, sc, opts);
+//     VecNd vResApprox = ZGeom::singleChannelSparseReconstruct(dictSGW, sc);
+//     sc.sortByCoeff();
+//     MeshFeatureList vFeatureOMP;
+//     for (auto f : sc.getApproxItems())
+//         vFeatureOMP.addFeature(new MeshFeature(f.index() % totalVertCount, f.coeff()));
+//     mMesh->addAttrMeshFeatures(vFeatureOMP, "feature_res_omp");
+// 
+//     vector<Colorf> vColorResApprox(totalVertCount);
+//     for (int i = 0; i < totalVertCount; ++i) vColorResApprox[i].falseColor(fabs(vResApprox[i] / (0.05*bbDiag)));
+//     addColorSignature("color_residual_approx", vColorResApprox);
+// 
     printEndSeparator('=', 40);
 }

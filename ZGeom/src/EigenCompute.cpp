@@ -7,7 +7,7 @@ void EigenCompute::solveGenSym( const SparseMatrix<double>& mLs, const SparseMat
 	std::vector<int> vII, vJJ;
 	std::vector<double> vSS, vWeights;
 	mLs.convertToCOO(vII, vJJ, vSS, ZGeom::MAT_FULL);
-	mW.getDiagonal(vWeights);
+	vWeights = mW.getDiagonal();
 	int nOrder = mLs.rowCount();
 	int ns = (int) vII.size();
 	double numv = nEig;

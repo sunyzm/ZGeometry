@@ -214,9 +214,8 @@ CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
 //						CFace						//
 //////////////////////////////////////////////////////
 
-CFace::CFace(int s) : m_nType(s), m_piEdge(NULL), m_piVertex(NULL)
-{
-	m_bIsValid = true;
+CFace::CFace(int s) : m_nType(s), m_piEdge(NULL), m_piVertex(NULL), m_bIsValid(true)
+{	
 }
 
 CFace::CFace( const CFace& f )
@@ -227,7 +226,7 @@ CFace::CFace( const CFace& f )
 CFace& CFace::operator = (const CFace& f)
 {
 	clone(f);
-	return (*this);
+	return *this;
 }
 
 CFace::~CFace()
@@ -460,13 +459,12 @@ Vector3D CFace::calcNormal() const
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
 	Vector3D vNormal= v[0] ^ v[1];
 	vNormal.normalize();	
-
 	return vNormal;
 }
 
 Vector3D CFace::calBarycenter() const
 {
-	return (m_Vertices[0]->getPosition() + m_Vertices[1]->getPosition() + m_Vertices[2]->getPosition())/3.0;
+	return (m_Vertices[0]->getPosition() + m_Vertices[1]->getPosition() + m_Vertices[2]->getPosition()) / 3.0;
 }
 
 
@@ -490,22 +488,22 @@ CMesh::CMesh() : m_meshName(""),
 				 m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
 				 m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
 				 m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false),
-				 m_silenceOutput(true)
+				 m_verbose(true)
 {
 }
 
 CMesh::CMesh( const CMesh& oldMesh )
 {
 	cloneFrom(oldMesh);
-	this->m_meshName = oldMesh.m_meshName;
-	m_silenceOutput = true;
+	m_meshName = oldMesh.m_meshName;
+	m_verbose = oldMesh.m_verbose;
 }
 
 CMesh::~CMesh()
 {
-	if (!m_silenceOutput) std::cout << "Destroying Mesh '" + m_meshName << "'... ";
+	if (m_verbose) std::cout << "Destroying Mesh '" + m_meshName << "'... ";
 	clearMesh();	
-	if (!m_silenceOutput) std::cout << "Finished!" << std::endl;
+	if (m_verbose) std::cout << "Finished!" << std::endl;
 }
 
 void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".clone"*/)
@@ -620,27 +618,21 @@ void CMesh::clearMesh()
 
 void CMesh::load( const std::string& sFileName )
 {
-	clearMesh();
-	
+	clearMesh();	
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
 
-	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
-		loadFromOBJ(sFileName);
-	}
-	else if (ext == ".m" || ext == ".M") {
-		loadFromM(sFileName);
-	}
-	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") {
-		loadFromPLY(sFileName);
-	}
-	else if (ext == ".vert" || ext == ".VERT") {
-		loadFromVERT(sFileName);
-	}
-	else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
-		loadFromOFF(sFileName);
-	}
+	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") 
+        loadFromOBJ(sFileName);
+	else if (ext == ".m" || ext == ".M") 
+        loadFromM(sFileName);
+	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") 
+        loadFromPLY(sFileName);
+    else if (ext == ".vert" || ext == ".VERT")
+        loadFromVERT(sFileName);
+    else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
+        loadFromOFF(sFileName);
 	else throw runtime_error("Unrecognizable file extension!");
 }
 
@@ -2862,6 +2854,16 @@ MeshCoordinates CMesh::getVertCoordinates() const
     return coords;
 }
 
+ZGeom::PointCloud3d CMesh::toPointCloud() const
+{
+    std::vector<ZGeom::Vec3d> vPoints;
+    for (int i = 0; i < m_nVertex; ++i) 
+        vPoints.push_back(toVec3d(m_vVertices[i]->getPosition()));    
+    return ZGeom::PointCloud3d(vPoints);
+}
+
+
+
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
 	ZGeom::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
@@ -2883,6 +2885,7 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
 
+    // after changing coordinates, vert and face normals need recalculation
     calFaceNormals();
     calVertNormals();
 }
@@ -2936,7 +2939,7 @@ const std::vector<Vector3D>& CMesh::getFaceNormals()
 
 const std::vector<Vector3D>& CMesh::getVertNormals()
 {
-	if (!hasAttr(StrAttrVertNormal)) calFaceNormals();
+	if (!hasAttr(StrAttrVertNormal)) calVertNormals();
 	return getAttrValue<std::vector<Vector3D>,AR_VERTEX>(StrAttrVertNormal);
 }
 
@@ -3123,4 +3126,12 @@ const std::vector<double>& CMesh::getVertMixedAreas() const
 	return getAttrValue<std::vector<double>, AR_VERTEX>(StrAttrVertMixedArea);
 }
 
-
+std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
+{
+    using ZGeom::Vec3d;
+    vector<Vec3d> results(m_nVertex);
+    for (int i = 0; i < m_nVertex; ++i) {
+        results[i] = Vec3d(m_vVertices[i]->getPosition());
+    }
+    return results;
+}

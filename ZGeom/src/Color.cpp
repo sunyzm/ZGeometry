@@ -28,6 +28,11 @@ Colorf::Colorf( float r, float g, float b, float a )
 	mVal[3] = a;
 }
 
+Colorf::Colorf(const Colorf& c)
+{
+    for (int i = 0; i < 4; ++i) mVal[i] = c.mVal[i];
+}
+
 void Colorf::setAs( const float *c )
 {
 	assert( 0 <= c[0] && c[0] <= 1 && 0 <= c[1] && c[1] <= 1 &&

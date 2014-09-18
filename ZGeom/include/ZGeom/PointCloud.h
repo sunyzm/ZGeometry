@@ -13,8 +13,10 @@ class PointCloud
 public:
     PointCloud() = default;
     PointCloud(const PointCloud<T>& pc) = default;
-    PointCloud(PointCloud<T>&& pc);
+    PointCloud<T>& operator=(const PointCloud<T>& pc) { vPoints = pc.vPoints; return *this;  }
     PointCloud(const std::vector<T>& vp) : vPoints(vp) {}
+    PointCloud(PointCloud<T>&& pc) { vPoints = std::move(pc.vPoints); }
+    PointCloud<T>& operator = (PointCloud<T>&& pc) { vPoints = std::move(pc.vPoints); return *this; }
 
     void print(const std::string& filename);
     int size() const { return (int)vPoints.size(); }
@@ -25,12 +27,6 @@ private:
 
 typedef PointCloud<Vec3d> PointCloud3d;
 typedef PointCloud<VecNd> PointCloudNd;
-
-template<typename T>
-PointCloud<T>::PointCloud(PointCloud<T>&& pc)
-{
-    vPoints = std::move(pc.vPoints);
-}
 
 }   // end of namespace
 

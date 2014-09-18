@@ -59,7 +59,7 @@ struct GlobalSettings {
 extern GlobalSettings gSettings;
 
 /* mesh property names */
-const std::string StrAttrColorUnnamed        = "vert_color_unnamed";
+const std::string StrAttrColorDefault        = "vert_color_default";
 const std::string StrAttrColorGaussCurvature = "vert_color_gauss_curvature";
 const std::string StrAttrColorMeanCurvature  = "vert_color_mean_curvature";
 const std::string StrAttrColorEigenFunction  = "vert_color_eig_function";

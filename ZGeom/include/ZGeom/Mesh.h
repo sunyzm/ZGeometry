@@ -1,5 +1,5 @@
-﻿#ifndef ZMESH_MESH_H
-#define ZMESH_MESH_H
+﻿#ifndef ZGEOM_MESH_H
+#define ZGEOM_MESH_H
 #include <cstdio>
 #include <cmath>
 #include <algorithm>
@@ -15,185 +15,15 @@
 #include <vector>
 #include "VecN.h"
 #include "Vec3.h"
-#include "PointCloud.h"
 #include "Vector3D.h"
 #include "Quat.h"
+#include "PointCloud.h"
 #include "MeshAttr.h"
+#include "MeshCoordinates.h"
 
 const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
 const int MAX_HOLE_SIZE = 20;
-
-class MeshCoordinates
-{
-public:
-	MeshCoordinates() : mSize(0) {}
-	MeshCoordinates(int meshSize) { resize(meshSize); }
-	
-    MeshCoordinates(int meshSize, double *cx, double *cy, double *cz) 
-	{
-		resize(meshSize);
-		std::copy_n(cx, meshSize, mCoordX.c_ptr());
-		std::copy_n(cy, meshSize, mCoordY.c_ptr());
-		std::copy_n(cz, meshSize, mCoordZ.c_ptr());
-	}
-	
-    MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
-	{
-		assert(meshSize == v1.size() && v1.size() == v2.size() && v2.size() == v3.size());
-		mSize = meshSize;
-		mCoordX = v1;
-		mCoordY = v2;
-		mCoordZ = v3;
-	}
-	
-    MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
-	{
-		assert(vCoords.size() >= 3 && meshSize == vCoords[0].size());
-		mSize = meshSize;
-		mCoordX = vCoords[0];
-		mCoordY = vCoords[1];
-		mCoordZ = vCoords[2];
-	}
-	
-    MeshCoordinates(const MeshCoordinates& mc)
-	{
-		this->mSize = mc.mSize;
-		this->mCoordX = mc.mCoordX;
-		this->mCoordY = mc.mCoordY;
-		this->mCoordZ = mc.mCoordZ;
-	}
-    
-    MeshCoordinates(MeshCoordinates&& mc)
-    {
-        this->mSize = mc.mSize;
-        mc.mSize = 0;
-        this->mCoordX = std::move(mc.mCoordX);
-        this->mCoordY = std::move(mc.mCoordY);
-        this->mCoordZ = std::move(mc.mCoordZ);
-    }
-    
-    MeshCoordinates& operator = (const MeshCoordinates& mc)
-	{
-		this->mSize = mc.mSize;
-		this->mCoordX = mc.mCoordX;
-		this->mCoordY = mc.mCoordY;
-		this->mCoordZ = mc.mCoordZ;
-		return *this;
-	}
-
-    MeshCoordinates& operator = (MeshCoordinates&& mc)
-    {
-        this->mSize = mc.mSize;
-        mc.mSize = 0;
-        this->mCoordX = std::move(mc.mCoordX);
-        this->mCoordY = std::move(mc.mCoordY);
-        this->mCoordZ = std::move(mc.mCoordZ);
-        return *this;
-    }
-
-	bool empty() const { return mSize == 0; }
-	int size() const { return mSize; }
-
-	void resize(int n)	
-	{
-		mSize = n; 
-		mCoordX.resize(mSize, 0); 
-		mCoordY.resize(mSize, 0); 
-		mCoordZ.resize(mSize, 0); 
-	}
-
-	void add(double *cx, double *cy, double *cz) 
-	{
-		mCoordX.add(cx);
-		mCoordY.add(cy);
-		mCoordZ.add(cz);
-	}
-
-    MeshCoordinates add(const MeshCoordinates& mc2) const
-    {
-        assert(this->mSize == mc2.mSize);
-        MeshCoordinates mc3(this->mSize);
-        mc3.mCoordX = this->mCoordX + mc2.mCoordX;
-        mc3.mCoordY = this->mCoordY + mc2.mCoordY;
-        mc3.mCoordZ = this->mCoordZ + mc2.mCoordZ;
-        return mc3;
-    }
-
-	MeshCoordinates substract(const MeshCoordinates& mc2) const
-	{
-		assert(this->mSize == mc2.mSize);
-		MeshCoordinates mc3(this->mSize);
-		mc3.mCoordX = this->mCoordX - mc2.mCoordX;
-		mc3.mCoordY = this->mCoordY - mc2.mCoordY;
-		mc3.mCoordZ = this->mCoordZ - mc2.mCoordZ;
-		return mc3;
-	}
-
-	const ZGeom::VecNd& getCoordFunc(int i) const 
-	{
-		switch (i)
-		{
-		case 0: return mCoordX;
-		case 1: return mCoordY;
-		case 2: return mCoordZ;
-		default: throw std::logic_error("Invalid mesh coordinate");
-		}
-	}
-
-	ZGeom::VecNd& getCoordFunc(int i) 
-	{
-		switch (i) 
-		{
-		case 0: return mCoordX;
-		case 1: return mCoordY;
-		case 2: return mCoordZ;
-		default: throw std::logic_error("Invalid mesh coordinate");
-		}
-	}
-
-	ZGeom::VecNd& getXCoord() { return mCoordX; }
-	ZGeom::VecNd& getYCoord() { return mCoordY; }
-	ZGeom::VecNd& getZCoord() { return mCoordZ; }
-	const ZGeom::VecNd& getXCoord() const { return mCoordX; }
-	const ZGeom::VecNd& getYCoord() const { return mCoordY; }
-	const ZGeom::VecNd& getZCoord() const { return mCoordZ; }
-
-	ZGeom::Vec3d getVertCoordinate(int v) const 
-	{
-        assert(v >= 0 && v < mSize);
-		return ZGeom::Vec3d(mCoordX[v], mCoordY[v], mCoordZ[v]);
-	}
-	
-	ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
-
-	double difference(const MeshCoordinates& mc2) const
-	{
-		assert(this->mSize == mc2.mSize);
-
-		double errorSum(0);
-		for (int i = 0; i < mSize; ++i) {
-			errorSum += std::pow((this->getVertCoordinate(i) - mc2.getVertCoordinate(i)).length(), 2);
-		}
-		errorSum = std::sqrt(errorSum);
-		return errorSum;
-	}
-
-    ZGeom::VecNd vertDifference(const MeshCoordinates& mc2) const 
-    {
-        assert(mSize == mc2.size());
-        ZGeom::VecNd vDiff(mSize);
-        for (int i = 0; i < mSize; ++i)
-            vDiff[i] = (getVertCoordinate(i) - mc2.getVertCoordinate(i)).length();
-        return vDiff;
-    }
-
-	std::vector<ZGeom::VecNd> to3Vec() const { return std::vector<ZGeom::VecNd>{mCoordX, mCoordY, mCoordZ}; }
-
-private:
-	int mSize;
-	ZGeom::VecNd mCoordX, mCoordY, mCoordZ;
-};
 
 class GeoNote
 {
@@ -337,8 +167,8 @@ public:
 	void					create(int s);
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
+    int                     edgeCount() const { return m_nType; }
 	bool					hasVertex(int vidx) const;
-	bool					hasHalfEdge() const { return (m_piEdge != NULL); }
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }
 	
@@ -388,26 +218,23 @@ public:
 
 ////////////////   fields    ////////////////
 private:
+    int		                m_nVertex;				// number of vertices
+    int		                m_nHalfEdge;			// number of half-edges
+    int			            m_nFace;	 			// number of faces
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
+    CVertex*	            m_pVertex;				// array pointer of vertices
+    CHalfEdge*	            m_pHalfEdge; 			// array pointer of half-edges
+    CFace*		            m_pFace;				// array pointer of faces
+    std::string             m_meshName;				// name of the mesh
+    std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
 	bool		m_bIsPointerVectorExist;		// pointer vectors representation
 	bool		m_bIsIndexArrayExist;			// index array representation
 	bool		m_bSeparateStorage;				// indicate whether the point vectors and index arrays are stored separately 
+    bool        m_verbose;
 
-	int		    m_nVertex;				// number of vertices
-	int		    m_nHalfEdge;			// number of half-edges
-	int			m_nFace;	 			// number of faces
-
-	CVertex*	m_pVertex;				// array pointer of vertices
-	CHalfEdge*	m_pHalfEdge; 			// array pointer of half-edges
-	CFace*		m_pFace;				// array pointer of faces
-
-	std::string m_meshName;				// name of the mesh
-	std::unordered_map<std::string, MeshAttrBase*> mAttributes;
-
-	bool        m_silenceOutput;
 ////////////////    methods    ////////////////
 public:
 	/* ---- constructors ---- */
@@ -416,7 +243,7 @@ public:
 	~CMesh();
 
 	/* ---- options to control behaviors ---- */
-	void setOutputSilence(bool bSilent) { m_silenceOutput = bSilent; }
+	void setVerbose(bool verbose) { m_verbose = verbose; }
 
 	/* ---- Mesh IO and processing ---- */
 	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
@@ -428,7 +255,8 @@ public:
 	void		scaleAndTranslate(const Vector3D& center, double scale);
 	void		saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
 	void		getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
-	/* ---- geometry primitives access ---- */
+	
+    /* ---- geometry primitives access ---- */
 	void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
 	const std::string&	getMeshName() const { return m_meshName; }
 	int					vertCount() const { return (int)m_vVertices.size(); }
@@ -444,6 +272,7 @@ public:
 	
 	/* basic geometry query, analysis and processing */
 	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
+    std::vector<ZGeom::Vec3d>    getAllVertPositions() const;
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshBBox); }
 	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D,AR_UNIFORM>(StrAttrMeshCenter); }
@@ -490,12 +319,16 @@ public:
 	int					calMeshGenus();			// get mesh genus
 	double				calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
 	bool				calVertexArea(std::vector<double>& Av);
-	double				calGeodesic(int s, int t) const;
+    void	            calFaceNormals();			// compute face normals
+    void                calVertNormals();			// compute vertex normals
+    void	            calCurvatures();			// calculate Gaussian and mean curvatures
+    double				calGeodesic(int s, int t) const;
 	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
 	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
 
+    ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 	/*************************************************************************/
 
@@ -610,6 +443,7 @@ public:
 		}
 		return vColorAttr;
 	}
+        
 
 	/************************************************************************/
 	/* Mesh feature attributes methods                                      */
@@ -665,9 +499,6 @@ private:
 	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	void	saveToM(const std::string& sFileName );    // save mesh to .m file
 
-	void	calFaceNormals();			// compute face normals
-	void    calVertNormals();			// compute vertex normals
-	void	calCurvatures();			// calculate Gaussian and mean curvatures
 	void	findHoles();
 	double  calLocalGeodesic(int ia, int ib, int ic) const;	
 
