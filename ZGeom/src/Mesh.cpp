@@ -1045,7 +1045,7 @@ void CMesh::loadFromM( std::string sFileName )
 		vVertColors[i][2] = VertexColorList[3*i+2];
 	}
 	
-	addAttr<std::vector<ZGeom::Colorf>,AR_VERTEX>(vVertColors, StrAttrVertColors, AT_VEC_COLOR);
+    addColorAttr(StrAttrVertColors, vVertColors);
 
 	for(int i = 0; i < m_nFace; i++)
 	{
@@ -1109,7 +1109,7 @@ void CMesh::saveToM( const std::string& sFileName )
 	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
 	
 	std::vector<Colorf>* vColors = NULL;
-	if (hasAttr(StrAttrVertColors)) vColors = &getAttrValue<std::vector<Colorf>,AR_VERTEX>(StrAttrVertColors);	
+    if (hasAttr(StrAttrVertColors)) vColors = &getVertColors(StrAttrVertColors);
 
 	for (int i = 0; i < m_nVertex; i++)
 	{
@@ -1173,7 +1173,7 @@ void CMesh::findHoles()
 			vIsOnHole[it_v] = true;
 	}
 
-	addAttr<std::vector<bool>,AR_VERTEX>(vIsOnHole, StrAttrVertOnHole);
+	addAttr<std::vector<bool>>(vIsOnHole, StrAttrVertOnHole, AR_VERTEX);
 
 #if 0
 	for(int i = 0; i < m_nVertex; i++)
@@ -1332,7 +1332,7 @@ void CMesh::calFaceNormals()
 		vFaceNormals[fIndex].normalize();
 	}
 	
-	addAttr<std::vector<Vector3D>,AR_FACE>(vFaceNormals, StrAttrFaceNormal);
+    addAttr<std::vector<Vector3D>>(vFaceNormals, StrAttrFaceNormal, AR_FACE, AT_VEC_VEC3);
 }
  
 void CMesh::calVertNormals()
@@ -1361,7 +1361,7 @@ void CMesh::calVertNormals()
 		vVertNormals[vIndex] = vNormal;
 	}
 
-	addAttr<std::vector<Vector3D>,AR_VERTEX>(vVertNormals, StrAttrVertNormal);
+	addAttr<std::vector<Vector3D>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
 }
 
 double CMesh::getHalfEdgeLen( int iEdge ) const
@@ -1422,7 +1422,7 @@ int CMesh::calBoundaryNum()
 		}
 	}
 
-	addAttr<int,AR_UNIFORM>(boundaryNum, StrAttrBoundaryCount);
+	addAttr<int>(boundaryNum, StrAttrBoundaryCount, AR_UNIFORM, AT_INT);
 	return boundaryNum;
 }
 
@@ -1437,8 +1437,8 @@ int CMesh::calBoundaryVert()
 			bNum++;
 		} else vVertOnBoundary[i] = false;
 	}
-	addAttr<std::vector<bool>,AR_VERTEX>(vVertOnBoundary, StrAttrVertOnBoundary);
-	addAttr<int,AR_UNIFORM>(bNum, StrAttrBoundaryVertCount);
+    addAttr<std::vector<bool>>(vVertOnBoundary, StrAttrVertOnBoundary, AR_VERTEX, AT_VEC_BOOL);
+	addAttr<int>(bNum, StrAttrBoundaryVertCount, AR_UNIFORM, AT_INT);
 
 	if (m_bIsIndexArrayExist) {
 		for (int i = 0; i < m_nVertex; ++i) 
@@ -1532,8 +1532,8 @@ void CMesh::calCurvatures()
 		vMeanCurvatures[vIndex] = kh.length() / 2.0;	//half magnitude of 
 	}
 
-	addAttr<std::vector<double>, AR_VERTEX>(vGaussCurvatures, StrAttrVertGaussCurvatures);
-	addAttr<std::vector<double>, AR_VERTEX>(vMeanCurvatures, StrAttrVertMeanCurvatures);
+	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
+	addAttr<std::vector<double>>(vMeanCurvatures, StrAttrVertMeanCurvatures, AR_VERTEX, AT_VEC_DBL);
 }
 
 double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
@@ -2483,9 +2483,9 @@ void CMesh::gatherStatistics()
 	}
 	edgeLength /= m_nHalfEdge;
 
-	addAttr<double,AR_UNIFORM>(edgeLength, StrAttrAvgEdgeLength);
-	addAttr<Vector3D,AR_UNIFORM>(center, StrAttrMeshCenter);
-	addAttr<Vector3D,AR_UNIFORM>(boundBox, StrAttrMeshBBox);
+	addAttr<double>(edgeLength, StrAttrAvgEdgeLength, AR_UNIFORM, AT_DBL);
+	addAttr<Vector3D>(center, StrAttrMeshCenter, AR_UNIFORM, AT_VEC3);
+	addAttr<Vector3D>(boundBox, StrAttrMeshBBox, AR_UNIFORM, AT_VEC3);
 
 	calCurvatures();
 	calVertMixedAreas();
@@ -2810,7 +2810,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 bool CMesh::hasBoundary() const
 {
 	assert(hasAttr(StrAttrBoundaryVertCount));
-	const MeshAttr<int,AR_UNIFORM> *attrBoundary = getAttr<int,AR_UNIFORM>(StrAttrBoundaryVertCount);
+	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryVertCount);
 	return attrBoundary->attrValue() > 0;
 }
 
@@ -2907,7 +2907,7 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 
 double CMesh::getAvgEdgeLength() const
 {
-	const MeshAttr<double,AR_UNIFORM>* attrAvgEdgeLen = getAttr<double,AR_UNIFORM>(StrAttrAvgEdgeLength);
+	const MeshAttr<double>* attrAvgEdgeLen = getAttr<double>(StrAttrAvgEdgeLength);
 	if (attrAvgEdgeLen == NULL) throw std::logic_error("Attribute of average edge length not available!");
 	return attrAvgEdgeLen->attrValue();
 }
@@ -2915,56 +2915,56 @@ double CMesh::getAvgEdgeLength() const
 const std::vector<double>& CMesh::getMeanCurvature()
 {
 	if (!hasAttr(StrAttrVertMeanCurvatures)) this->calCurvatures();		
-	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertMeanCurvatures);
+	return getAttrValue<std::vector<double>>(StrAttrVertMeanCurvatures);
 }
 
 const std::vector<double>& CMesh::getMeanCurvature() const
 {
 	assert(hasAttr(StrAttrVertMeanCurvatures));
-	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertMeanCurvatures);
+	return getAttrValue<std::vector<double>>(StrAttrVertMeanCurvatures);
 }
 
 const std::vector<double>& CMesh::getGaussCurvature()
 {
 	if (!hasAttr(StrAttrVertGaussCurvatures)) calCurvatures();		
-	return getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrVertGaussCurvatures);
+	return getAttrValue<std::vector<double>>(StrAttrVertGaussCurvatures);
 }
 
 const std::vector<Vector3D>& CMesh::getFaceNormals()
 {
 	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
-	const std::vector<Vector3D>& vFaceNormals = getAttrValue<std::vector<Vector3D>,AR_FACE>(StrAttrFaceNormal);
+	const std::vector<Vector3D>& vFaceNormals = getAttrValue<std::vector<Vector3D>>(StrAttrFaceNormal);
 	return vFaceNormals;
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals()
 {
 	if (!hasAttr(StrAttrVertNormal)) calVertNormals();
-	return getAttrValue<std::vector<Vector3D>,AR_VERTEX>(StrAttrVertNormal);
+	return getAttrValue<std::vector<Vector3D>>(StrAttrVertNormal);
 }
 
 const std::vector<Vector3D>& CMesh::getVertNormals() const
 {
 	assert(hasAttr(StrAttrVertNormal));
-	return getAttrValue< std::vector<Vector3D>,AR_VERTEX>(StrAttrVertNormal);
+	return getAttrValue< std::vector<Vector3D>>(StrAttrVertNormal);
 }
 
 const std::vector<bool>& CMesh::getVertsOnHole()
 {
 	if(!hasAttr(StrAttrVertOnHole)) findHoles();
-	return getAttrValue<std::vector<bool>,AR_VERTEX>(StrAttrVertOnHole);
+	return getAttrValue<std::vector<bool>>(StrAttrVertOnHole);
 }
 
 const std::vector<bool>& CMesh::getVertsOnHole_const() const
 {
 	assert(hasAttr(StrAttrVertOnHole));
-	return getAttrValue<std::vector<bool>,AR_VERTEX>(StrAttrVertOnHole);
+	return getAttrValue<std::vector<bool>>(StrAttrVertOnHole);
 }
 
 const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
-	return getAttrValue< std::vector<bool>,AR_VERTEX>(StrAttrVertOnBoundary);
+	return getAttrValue< std::vector<bool>>(StrAttrVertOnBoundary);
 }
 
 double CMesh::calSurfaceArea() const
@@ -3111,19 +3111,19 @@ void CMesh::calVertMixedAreas()
 		vMixedAreas[vIndex] = amix;
 	}
 
-	addAttr<std::vector<double>, AR_VERTEX>(vMixedAreas, StrAttrVertMixedArea, AT_VEC_DBL);
+	addAttr<std::vector<double>>(vMixedAreas, StrAttrVertMixedArea, AR_VERTEX, AT_VEC_DBL);
 }
 
 const std::vector<double>& CMesh::getVertMixedAreas()
 {
 	if (!hasAttr(StrAttrVertMixedArea)) calVertMixedAreas();
-	return getAttrValue<std::vector<double>, AR_VERTEX>(StrAttrVertMixedArea);
+	return getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
 }
 
 const std::vector<double>& CMesh::getVertMixedAreas() const
 {
 	assert(hasAttr(StrAttrVertMixedArea));
-	return getAttrValue<std::vector<double>, AR_VERTEX>(StrAttrVertMixedArea);
+	return getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
 }
 
 std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const

@@ -1662,7 +1662,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
+	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<vector<double>>(StrAttrOriginalSignature);
 
 	vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -2074,7 +2074,7 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2090,7 +2090,7 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>,AR_VERTEX>(StrAttrOriginalSignature);
+	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2243,7 +2243,7 @@ void QZGeometryWindow::computeVertNormals()
 			mvl.push_back(std::make_pair(vi, vNormals[i]));
 		}
 		
-		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrAttrVecVertNormal, AT_VEC3);
+		mesh->addAttr<MeshVectorList>(mvl, StrAttrVecVertNormal, AR_VERTEX, AT_VEC_VEC3);
 		mRenderManagers[obj]->mActiveVectorName = StrAttrVecVertNormal;
 	}
 
@@ -2265,7 +2265,7 @@ void QZGeometryWindow::computeFaceNormals()
 			mvl.push_back(std::make_pair(vc, fNormals[fIdx]));
 		}
 
-		mesh->addAttr<MeshVectorList,AR_UNIFORM>(mvl, StrAttrVecFaceNormal, AT_VEC3);
+		mesh->addAttr<MeshVectorList>(mvl, StrAttrVecFaceNormal, AR_FACE, AT_VEC_VEC3);
 		mRenderManagers[obj]->mActiveVectorName = StrAttrVecFaceNormal;
 	}
 

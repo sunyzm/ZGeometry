@@ -5,15 +5,16 @@
 #include "Color.h"
 
 enum AttrRate {AR_UNIFORM, AR_FACE, AR_EDGE, AR_VERTEX, AR_FACE_VERT};
-enum AttrType {AT_DBL, AT_INT, AT_STRING, AT_VEC_DBL, AT_VEC3, AT_VEC_INT, AT_VEC_COLOR, AT_FEATURES, AT_UNKNOWN};
+enum AttrType {AT_DBL, AT_INT, AT_STRING, AT_VEC3, AT_VEC_DBL, AT_VEC_INT, AT_VEC_VEC3, AT_VEC_BOOL, AT_VEC_COLOR, AT_FEATURES, AT_UNKNOWN};
 
 class MeshAttrBase
 {
 public:
-	MeshAttrBase(const std::string& attrName, AttrType at_type = AT_UNKNOWN) : mAttrName(attrName), mType(at_type) {}
+    MeshAttrBase(const std::string& attrName, AttrRate at_rate, AttrType at_type = AT_UNKNOWN) : mAttrName(attrName), mRate(at_rate), mType(at_type) {}
 	virtual ~MeshAttrBase() = 0 {};
 	virtual MeshAttrBase* clone() const = 0;
 
+    AttrRate attrRate() const { return mRate;  }
 	AttrType attrType() const { return mType; }
 	const std::string& attrName() const { return mAttrName; }
 	std::string& attrName() { return mAttrName; }
@@ -21,17 +22,20 @@ public:
 protected:
 	std::string mAttrName;
 	AttrType mType;
+    AttrRate mRate;
 };
 
-template<typename T, AttrRate R>
+template<typename T>
 class MeshAttr : public MeshAttrBase
 {
 public:
-	MeshAttr(const std::string& attrName, AttrType type = UNKNOWN_TYPE) :  MeshAttrBase(attrName, type){}
-	MeshAttr(const T& data, const std::string& attrName, AttrType at_type = UNKNOWN_TYPE) : MeshAttrBase(attrName, at_type), mData(data) {}
+	MeshAttr(const std::string& attrName, AttrRate rate, AttrType type = UNKNOWN_TYPE) 
+        : MeshAttrBase(attrName, rate, type) {}
+	MeshAttr(const T& data, const std::string& attrName, AttrRate rate, AttrType at_type = UNKNOWN_TYPE)
+        : MeshAttrBase(attrName, rate, at_type), mData(data) {}
 	virtual ~MeshAttr(){}
 	virtual MeshAttrBase* clone() const {
-		MeshAttrBase* pattr = new MeshAttr<T,R>(mData, mAttrName, mType);
+		MeshAttrBase* pattr = new MeshAttr<T>(mData, mAttrName, mRate, mType);
 		return pattr;
 	}
 
@@ -84,11 +88,11 @@ public:
 
 typedef std::vector<std::pair<Vector3D,Vector3D> > MeshVectorList;
 
-typedef MeshAttr<std::vector<ZGeom::Colorf>, AR_VERTEX> AttrVertColors;
-typedef MeshAttr<std::vector<double>, AR_VERTEX> AttrVertScalars;
-typedef MeshAttr<double, AR_UNIFORM> AttrMeshScalar;
-typedef MeshAttr<int, AR_UNIFORM> AttrMeshInt;
-typedef MeshAttr<MeshFeatureList, AR_UNIFORM> AttrMeshFeatures;
-typedef MeshAttr<MeshVectorList, AR_UNIFORM> AttrMeshVectors;
+typedef MeshAttr<std::vector<ZGeom::Colorf>> AttrVertColors;
+typedef MeshAttr<std::vector<double>> AttrVertScalars;
+typedef MeshAttr<double> AttrMeshScalar;
+typedef MeshAttr<int> AttrMeshInt;
+typedef MeshAttr<MeshFeatureList> AttrMeshFeatures;
+typedef MeshAttr<MeshVectorList> AttrMeshVectors;
 
 #endif
