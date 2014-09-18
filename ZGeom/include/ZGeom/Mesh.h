@@ -411,7 +411,7 @@ public:
 	}
 
 	/************************************************************************/
-	/* Color attributes methods                                           */
+	/* Mesh color attributes methods                                        */
 	/************************************************************************/
 	AttrVertColors& getColorAttr(const std::string& colorAttrName) {
 		return *getAttr<std::vector<ZGeom::Colorf>>(colorAttrName);
@@ -470,6 +470,10 @@ public:
 		return vMeshFeatures;
 	}
 
+    void addAttrLines(const MeshLineList& vVecs, const std::string& name) {
+        addAttr<MeshLineList>(vVecs, name, AR_UNIFORM, AT_VEC_LINE);
+    }
+
 	/************************************************************************/
 	/* Vertex scalar attributes methods                                     */
 	/************************************************************************/
@@ -484,8 +488,7 @@ public:
 
 	std::vector<double>& getVertScalars(const std::string& name) {
 		return getAttrValue<std::vector<double>>(name);
-	}
-		
+	}		
 	//////////////////////////////////////////////////////////////////////////	
 
 private:

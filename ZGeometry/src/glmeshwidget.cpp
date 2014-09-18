@@ -547,7 +547,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	/* draw vectors on mesh */
 	if (m_bShowVectors && tmesh->hasAttr(pRS->mActiveVectorName))
 	{
-		const MeshVectorList& meshVecs = tmesh->getAttrValue<MeshVectorList>(pRS->mActiveVectorName);
+		const MeshLineList& meshVecs = tmesh->getAttrValue<MeshLineList>(pRS->mActiveVectorName);
 		const double avgEdgeLen = tmesh->getAvgEdgeLength();
 		glLineWidth(1.0);
 		glBegin(GL_LINES);

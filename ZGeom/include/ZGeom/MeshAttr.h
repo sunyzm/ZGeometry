@@ -4,8 +4,13 @@
 #include <vector>
 #include "Color.h"
 
-enum AttrRate {AR_UNIFORM, AR_FACE, AR_EDGE, AR_VERTEX, AR_FACE_VERT};
-enum AttrType {AT_DBL, AT_INT, AT_STRING, AT_VEC3, AT_VEC_DBL, AT_VEC_INT, AT_VEC_VEC3, AT_VEC_BOOL, AT_VEC_COLOR, AT_FEATURES, AT_UNKNOWN};
+enum AttrRate { AR_UNIFORM, AR_FACE, AR_EDGE, AR_VERTEX, AR_FACE_VERT };
+
+enum AttrType {
+    AT_DBL, AT_INT, AT_STRING, AT_VEC3, 
+    AT_VEC_DBL, AT_VEC_INT, AT_VEC_VEC3, AT_VEC_BOOL, AT_VEC_COLOR, AT_VEC_LINE,
+    AT_FEATURES, AT_UNKNOWN
+};
 
 class MeshAttrBase
 {
@@ -86,13 +91,13 @@ public:
 	std::vector<MeshFeature*> m_vFeatures;
 };
 
-typedef std::vector<std::pair<Vector3D,Vector3D> > MeshVectorList;
+typedef std::vector<std::pair<Vector3D,Vector3D>> MeshLineList;
 
 typedef MeshAttr<std::vector<ZGeom::Colorf>> AttrVertColors;
 typedef MeshAttr<std::vector<double>> AttrVertScalars;
 typedef MeshAttr<double> AttrMeshScalar;
 typedef MeshAttr<int> AttrMeshInt;
 typedef MeshAttr<MeshFeatureList> AttrMeshFeatures;
-typedef MeshAttr<MeshVectorList> AttrMeshVectors;
+typedef MeshAttr<MeshLineList> AttrMeshLines;
 
 #endif

@@ -2234,16 +2234,16 @@ void QZGeometryWindow::computeVertNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int vertCount = mesh->vertCount();
-		const std::vector<Vector3D>& vNormals = mesh->getVertNormals();
+		auto vNormals = mesh->getVertNormals();
 		assert(vNormals.size() == vertCount);
 		
-		MeshVectorList mvl;
+		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
 			const Vector3D& vi = mesh->getVertexPosition(i);
 			mvl.push_back(std::make_pair(vi, vNormals[i]));
 		}
 		
-		mesh->addAttr<MeshVectorList>(mvl, StrAttrVecVertNormal, AR_VERTEX, AT_VEC_VEC3);
+        mesh->addAttrLines(mvl, StrAttrVecVertNormal);
 		mRenderManagers[obj]->mActiveVectorName = StrAttrVecVertNormal;
 	}
 
@@ -2256,16 +2256,16 @@ void QZGeometryWindow::computeFaceNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int faceCount = mesh->faceCount();
-		const std::vector<Vector3D>& fNormals = mesh->getFaceNormals();
+		auto fNormals = mesh->getFaceNormals();
 		assert(fNormals.size() == faceCount);
 
-		MeshVectorList mvl;
+		MeshLineList mvl;
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
 			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
 			mvl.push_back(std::make_pair(vc, fNormals[fIdx]));
 		}
 
-		mesh->addAttr<MeshVectorList>(mvl, StrAttrVecFaceNormal, AR_FACE, AT_VEC_VEC3);
+        mesh->addAttrLines(mvl, StrAttrVecFaceNormal);
 		mRenderManagers[obj]->mActiveVectorName = StrAttrVecFaceNormal;
 	}
 
