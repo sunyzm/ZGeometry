@@ -459,7 +459,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
 	glBegin(GL_TRIANGLES);
-    for (int fIdx = 0; fIdx < tmesh->faceCount(); fIdx++) {
+    for (int fIdx = 0; fIdx < tmesh->faceCount(); fIdx++) 
+    {
         CFace* face = tmesh->getFace(fIdx);
         for (int j = 0; j < 3; j++) {
             int pi = face->getVertexIndex(j);
@@ -477,9 +478,11 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
     //////////////////////////////////////////////////////////////////////////
     // starting to draw illustrative lines and features
-	glDisable(GL_LIGHTING);     // disable lighting for lines
+	glDisable(GL_LIGHTING);     // disable lighting for overlaying lines
+
 	/* draw wireframe overlay */
-	if (m_bShowWireframeOverlay) {
+	if (m_bShowWireframeOverlay) 
+    {
 		glBegin(GL_LINES);
 		glLineWidth(2.0);
 		glColor4f(1.0, 0, 0, 1.0);
@@ -494,24 +497,24 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	/* highlight boundary edges */
-	const vector<bool>& vVertIsOnHole = tmesh->getVertsOnHole();
-	if (tmesh->hasBoundary()) 
+    const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
+    for (int i = 0; i < boundaryLoops.size(); ++i) 
     {
-		glBegin(GL_LINES);	
-		glLineWidth(2.0);
-		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
-			const CHalfEdge* hf = tmesh->getHalfEdge(i);
-			if(hf->isBoundaryEdge()) {	// may be on boundary or on holes
-				int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);				
-				if(vVertIsOnHole[p1]) glColor4f(0.0, 0.0, 1.0, 1.0); // show edges on holes in blue
-				else glColor4f(0.0, 0.0, 0.0, 1.0);					 // show edges on boundaries in black
-				const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
-				glVertex3d(v1.x, v1.y, v1.z);
-				glVertex3d(v2.x, v2.y, v2.z);
-			}
-		}
-		glEnd();
-	}
+        glBegin(GL_LINES);	
+        glLineWidth(4.0);
+        if (boundaryLoops[i].size() <= MAX_HOLE_SIZE)
+            glColor4f(0.0, 0.0, 1.0, 1.0);      // show edges on inner holes in blue
+        else
+            glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
+        for (int edgeIdx : boundaryLoops[i]) {
+            const CHalfEdge* hf = tmesh->getHalfEdge(edgeIdx);
+            int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);				
+            const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
+            glVertex3d(v1.x, v1.y, v1.z);
+            glVertex3d(v2.x, v2.y, v2.z);
+        }
+        glEnd();        
+    }
 	
 	/* draw bounding box */
 	if (m_bShowBoundingBox) 

@@ -159,7 +159,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
 
     int j, k, ia, ib, ic;
     double geo = 0.0;
-    auto vVertIsHole = mesh.getVertsOnHole();
+    auto vVertIsHole = mesh.getVertsOnHoles();
     auto vVertOnBoundary = mesh.getVertsOnBoundary();
     vector<bool> vNonHoleBoundaryVert(vertCount, false);
     int nonHoleBoundary(0);

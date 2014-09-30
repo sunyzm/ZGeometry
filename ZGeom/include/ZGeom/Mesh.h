@@ -23,7 +23,7 @@
 
 const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
-const int MAX_HOLE_SIZE = 20;
+const int MAX_HOLE_SIZE = 200;
 
 class CFace;
 class CHalfEdge;
@@ -35,11 +35,6 @@ class CMesh;
 class CVertex
 {
 public:
-	friend class CHalfEdge;
-	friend class CFace;
-	friend class CMesh;
-	
-	// ---- constructors ---- //
 	CVertex();
 	CVertex(double x, double y, double z);
 	CVertex(const Vector3D& v);
@@ -47,22 +42,20 @@ public:
 	CVertex& operator = (const CVertex& v);	
 	virtual ~CVertex();
 
-	// ---- operations ---- //
-	int					getIndex() const                { return m_vIndex; }
-	int					getVID() const                  { return m_vid; }
-	std::vector<const CFace*> getAdjacentFaces() const;
-	CHalfEdge*			getHalfEdge(int ei)             { return m_HalfEdges[ei]; }
-	const CHalfEdge*    getHalfEdge(int ei) const       { return m_HalfEdges[ei]; }    
-	const Vector3D&		pos() const                     { return m_vPosition; } 
-	int					outValence() const              { return (int)m_HalfEdges.size(); }
-	bool				judgeOnBoundary() const;
-	bool				isValid() const                 { return m_bIsValid; }
-	void                translateAndScale(const Vector3D& translation, double s);
-	void                setPosition(double x, double y, double z);
-	void                init();
-	void                clone(const CVertex& v);
+	int					    getIndex() const            { return m_vIndex; }
+	int					    getVID() const              { return m_vid; }
+	CHalfEdge*			    getHalfEdge(int ei)         { return m_HalfEdges[ei]; }
+	const CHalfEdge*        getHalfEdge(int ei) const   { return m_HalfEdges[ei]; }    
+	const Vector3D&		    pos() const                 { return m_vPosition; } 
+	int					    outValence() const          { return (int)m_HalfEdges.size(); }
+	bool				    isValid() const             { return m_bIsValid; }
+	void                    init();
+    bool				    judgeOnBoundary() const;
+    void                    setPosition(double x, double y, double z);
+    void                    clone(const CVertex& v); 
+    void                    translateAndScale(const Vector3D& translation, double s);
+    std::vector<const CFace*>   getAdjacentFaces() const;
 
-	// ---- fields ---- //
 public:
 	int						m_vIndex;           // index of the vertex 0-based
 	int						m_vid;				// ID of the vertex from original mesh 0-based
@@ -78,39 +71,30 @@ public:
 class CHalfEdge
 {
 public:
-	friend class CVertex;
-	friend class CFace;
-	friend class CMesh;
-
-	// -- constructors -- //
 	CHalfEdge();
 	CHalfEdge(const CHalfEdge& oldE);
 	virtual ~CHalfEdge();
 	CHalfEdge& operator = (const CHalfEdge& e);
 
-	// -- operations -- //	
-	const CFace*	 getAttachedFace() const { return m_Face; }
-	const CHalfEdge* twinHalfEdge() const { return m_eTwin; }
-	const CHalfEdge* nextHalfEdge() const { return m_eNext; }
-	const CHalfEdge* prevHalfEdge() const { return m_ePrev; }
-	const CVertex*	 vert(int i) const { return m_Vertices[i]; }
+    void                clone(const CHalfEdge& oldEdge);
+	const CFace*	    getAttachedFace() const     { return m_Face; }
+	const CHalfEdge*    twinHalfEdge() const        { return m_eTwin; }
+	const CHalfEdge*    nextHalfEdge() const        { return m_eNext; }
+	const CHalfEdge*    prevHalfEdge() const        { return m_ePrev; }
+	const CVertex*	    vert(int i) const           { return m_Vertices[i]; }
+	bool		        isBoundaryEdge() const      { return m_eTwin == NULL; }
+    int			        getVertIndex(int i) const   { return vert(i)->getIndex(); }
+	double		        getLength() const;
+	int                 getIndex() const            { return m_eIndex; }	
 
-	bool		isBoundaryEdge() const { return m_eTwin == NULL; }
-    int			getVertIndex(int i) const { return vert(i)->getIndex(); }
-	double		getLength() const;
-	bool		isValid() const { return m_bIsValid; }
-	int         getIndex() const { return m_eIndex; }
-	void        clone(const CHalfEdge& oldEdge);
-
-	// -- fields -- //
 public:
-	int			m_eIndex;		//half-edge id
-	CVertex*	m_Vertices[2];	//starting and ending vertices
-	CHalfEdge*	m_eTwin;		//reverse half-edge; null if boundary half edge
-	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
-	CHalfEdge*	m_ePrev;
-	CFace*		m_Face;			//attached face
-    bool		m_bIsValid;
+	int			        m_eIndex;		//half-edge id
+	CVertex*	        m_Vertices[2];	//starting and ending vertices
+	CHalfEdge*	        m_eTwin;		//reverse half-edge; null if boundary half edge
+	CHalfEdge*	        m_eNext;		//next half-edge (counterclockwise)
+	CHalfEdge*	        m_ePrev;
+	CFace*		        m_Face;			//attached face
+    bool		        m_bIsValid;
 };
 
 //////////////////////////////////////////////////////
@@ -119,33 +103,25 @@ public:
 class CFace
 {
 public:
-	friend class CVertex;
-	friend class CHalfEdge;
-	friend class CMesh;
-
-	// -- constructors -- //
 	CFace();
 	CFace(int s);
 	CFace(const CFace& oldF);
 	virtual ~CFace();
 	CFace& operator= (const CFace& f);
-    void clone(const CFace& f);
-
-	// -- operations -- //
-	void					create(int s);
+    
+    void                    clone(const CFace& f);
+    void					create(int s);
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
     int                     edgeCount() const { return m_nType; }
 	bool					hasVertex(int vidx) const;
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
-	int						getFaceIndex() const { return m_fIndex; }
-	
+	int						getFaceIndex() const { return m_fIndex; }	
 	double					calArea() const;
 	Vector3D				calBarycenter() const;
 	Vector3D				calcNormal() const;
 	std::vector<double>		getPlaneFunction();	
 
-    // ---- fields ---- // 
 public:	
 	int						m_fIndex;
 	bool					m_bIsValid;
@@ -164,6 +140,7 @@ public:
 	/* attribute strings */
 	static const std::string StrAttrBoundaryVertCount;
 	static const std::string StrAttrBoundaryLoopNum;
+    static const std::string StrAttrBoundaryLoops;
 	static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrMeshCenter;
 	static const std::string StrAttrMeshBBox;
@@ -237,9 +214,8 @@ public:
 	const std::vector<Vector3D>& getFaceNormals();
 	const std::vector<Vector3D>& getVertNormals();
 	const std::vector<Vector3D>& getVertNormals() const;
-	const std::vector<bool>&	 getVertsOnHole();
-	const std::vector<bool>&     getVertsOnHole_const() const;
 	const std::vector<bool>&	 getVertsOnBoundary();
+    std::vector<bool>            getVertsOnHoles();
     bool                         isVertOnBoundary(int vi);
     double						 calFaceArea(int i) const;
 	Vector3D			         calMeshCenter() const;
@@ -264,9 +240,8 @@ public:
 
 	void				gatherStatistics();
 	bool				hasBoundary();
-	int					calBoundaryLoopNum();   // compute number of (connective) boundaries
+	int					calBoundaryLoops();   // compute number of (connective) boundaries
 	int					calBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
-    void	            findHoles();
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
 	int					calMeshGenus();			// get mesh genus

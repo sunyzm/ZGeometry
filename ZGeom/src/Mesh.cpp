@@ -13,10 +13,12 @@
 
 using namespace std;
 using ZGeom::Colorf;
+using ZGeom::Vec3d;
 
 /* basic Mesh attribute names */
 const std::string CMesh::StrAttrBoundaryVertCount		= "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrBoundaryLoopNum		= "mesh_boundary_count";
+const std::string CMesh::StrAttrBoundaryLoopNum		    = "mesh_boundary_count";
+const std::string CMesh::StrAttrBoundaryLoops           = "mesh_boundary_loops";
 const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
@@ -28,6 +30,10 @@ const std::string CMesh::StrAttrVertOnHole				= "vert_on_hole";
 const std::string CMesh::StrAttrVertOnBoundary			= "vert_on_boundary";
 const std::string CMesh::StrAttrFaceNormal				= "face_normal";
 const std::string CMesh::StrAttrVertMixedArea			= "vert_scalar_mixed_area";
+
+//////////////////////////////////////////////////////
+//						CVertex						//
+//////////////////////////////////////////////////////
 
 CVertex::CVertex()
 {
@@ -51,18 +57,14 @@ CVertex::CVertex( const CVertex& v )
 	clone(v);
 }
 
+CVertex::~CVertex()
+{
+}
+
 CVertex& CVertex::operator = ( const CVertex& v )
 {	
 	clone(v);
 	return *this;
-}
-
-//////////////////////////////////////////////////////
-//						CVertex						//
-//////////////////////////////////////////////////////
-
-CVertex::~CVertex()
-{
 }
 
 void CVertex::init()
@@ -96,8 +98,7 @@ std::vector<const CFace*> CVertex::getAdjacentFaces() const
 bool CVertex::judgeOnBoundary() const
 {
 	for (auto he : m_HalfEdges) {
-		if (he->twinHalfEdge() == NULL || !he->twinHalfEdge()->isValid()) 
-			return true;
+		if (he->twinHalfEdge() == NULL) return true;
 	}	
 	return false;
 }
@@ -629,7 +630,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 			}
 		}
 
-	} //for each face
+	} // for each face
 
     // re-arrange each vertex's half-edges clockwise
 	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		
@@ -645,7 +646,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 			continue;
 		}		
 		++iter;
-	} //for each vertex
+	} // for each vertex
 	
 	assignElementsIndex();
 }
@@ -723,40 +724,41 @@ int CMesh::calEdgeCount()
     return halfedgeCount - twinEdgeCount / 2;
 }
 
-int CMesh::calBoundaryLoopNum()
+int CMesh::calBoundaryLoops()
 {
-	int boundaryNum = 0;
+    typedef vector<vector<int>> VecVecInt;
+    int boundaryNum = 0;
+    int vertCount = this->vertCount();
     const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
-	std::set<int> boundaryIndexSet;
-	for( int i = 0; i < m_nVertex; i++ ) {
-        if (vVertOnBoundary[i]) boundaryIndexSet.insert( i );
-	}
+    
+    VecVecInt boundaryEdges;
+    vector<bool> vertVisited(vertCount, false);
 
 	for( int i = 0; i < m_nVertex; i++ ) {
 		// find boundary loop from boundary vertex i if it is not in any loop 
-        if (vVertOnBoundary[i] && boundaryIndexSet.find(i) != boundaryIndexSet.end()) {
-			int currentIndex = i;
-			int nextIndex = i;
-			do {
-				currentIndex = nextIndex;
-				auto it = boundaryIndexSet.find( currentIndex );
-				boundaryIndexSet.erase( it );
-				
-				int edgeIndex = -1;
-                for (CHalfEdge* he : m_vVertices[i]->m_HalfEdges) {					
-					if( he->twinHalfEdge() == NULL ) {
-						edgeIndex = he->getIndex();
-						break;
-					}
+        if (!vVertOnBoundary[i] || vertVisited[i]) continue;
+        vector<int> edgeLoop;
+        int currentIndex = i;
+        do {
+            vertVisited[currentIndex] = true;
+			int edgeIndex = -1;
+            for (CHalfEdge* he : m_vVertices[currentIndex]->m_HalfEdges) {					
+				if(he->isBoundaryEdge()) {
+					edgeIndex = he->getIndex(); break;
 				}
-				nextIndex = m_vHalfEdges[edgeIndex]->vert(1)->getIndex();
-			} while( nextIndex != i );
+			}
+			currentIndex = m_vHalfEdges[edgeIndex]->getVertIndex(1);
+            edgeLoop.push_back(edgeIndex);
+        } while (currentIndex != i);
 
-			boundaryNum++;
-		}
+        boundaryEdges.push_back(edgeLoop);		
 	}
 
+    std::sort(boundaryEdges.begin(), boundaryEdges.end(),
+        [](const vector<int>& v1, const vector<int>& v2) { return v1.size() < v2.size(); });
+    boundaryNum = (int)boundaryEdges.size();    
 	addAttr<int>(boundaryNum, StrAttrBoundaryLoopNum, AR_UNIFORM, AT_INT);
+    addAttr<VecVecInt>(boundaryEdges, StrAttrBoundaryLoops, AR_UNIFORM);
 	return boundaryNum;
 }
 
@@ -765,7 +767,7 @@ int CMesh::calBoundaryVert()
 	vector<bool> vVertOnBoundary(m_nVertex, false);
 	int bNum = 0;
 	for(int i = 0; i < m_nVertex; ++i) {
-		if(m_vVertices[i]->judgeOnBoundary() ) {
+		if(m_vVertices[i]->judgeOnBoundary()) {
 			vVertOnBoundary[i] = true;
 			bNum++;
 		} 
@@ -776,38 +778,6 @@ int CMesh::calBoundaryVert()
 	return bNum;
 }
 
-void CMesh::findHoles()
-{
-	std::unordered_set<int> markedVertex;
-    const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
-	vector<bool> vIsOnHole(m_nVertex, false);
-
-	for(int i = 0; i < m_nVertex; i++)
-	{
-		if(!vVertOnBoundary[i] || markedVertex.find(i) == markedVertex.end())
-            continue;	// pass if vertex is not on boundary or is already visited
-		int vi = i;
-		const CVertex* pvi =  m_vVertices[i];
-		const CHalfEdge* peout = pvi->m_HalfEdges.back();
-		vector<int> vTmp;
-		markedVertex.insert(vi);
-		vTmp.push_back(vi);
-		while(peout->m_Vertices[1]->getIndex() != i && vTmp.size() <= MAX_HOLE_SIZE)
-		{
-			pvi = peout->m_Vertices[1];
-			vi = pvi->getIndex();
-			peout = pvi->m_HalfEdges.back();
-			markedVertex.insert(vi);
-			vTmp.push_back(vi);
-		}
-		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
-		
-		for (int iv : vTmp) vIsOnHole[iv] = true;
-	}
-
-	addAttr<std::vector<bool>>(vIsOnHole, StrAttrVertOnHole, AR_VERTEX);
-}
-
 int CMesh::calEulerNum(  )
 {
 	int edgeCount = calEdgeCount();
@@ -816,7 +786,7 @@ int CMesh::calEulerNum(  )
 
 int CMesh::calMeshGenus(  )
 {
-	int b = calBoundaryLoopNum();
+	int b = calBoundaryLoops();
 	int euler_number = calEulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
@@ -828,8 +798,8 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	cotan_a = cosa / sqrt(1.0 - cosa*cosa);
 	cotan_c = cosc / sqrt(1.0 - cosc*cosc);
 
-	if (a*a + c*c < b*b)
-	{
+	if (a*a + c*c < b*b) 
+    {
 		double s = (a+b+c)/2.0;
 		return sqrt(s*(s-a)*(s-b)*(s-c))/2.0;
 	}
@@ -838,8 +808,7 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 		double s = (a+b+c)/2.0;
 		return sqrt(s*(s-a)*(s-b)*(s-c))/4.0;
 	}
-	else 
-	{
+	else {
 		return (a*a*cotan_a + c*c*cotan_c)/8.0;
 	}
 }
@@ -992,15 +961,12 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 
 	CVertex* vOppo1 = halfEdge->m_eNext->m_Vertices[1];
 	CVertex* vOppo2(NULL);
-	if (halfEdge->m_eTwin && halfEdge->m_eTwin->m_bIsValid)
-	{
+	if (halfEdge->m_eTwin && halfEdge->m_eTwin->m_bIsValid)	{
 		vOppo2 = halfEdge->m_eTwin->m_eNext->m_Vertices[1];
 	}
 
-	for (list<CVertex*>::iterator iter1 = v1VList.begin(); iter1 != v1VList.end(); ++iter1)
-	{
-		for (list<CVertex*>::iterator iter2 = v2VList.begin(); iter2 != v2VList.end(); ++iter2)
-		{
+	for (list<CVertex*>::iterator iter1 = v1VList.begin(); iter1 != v1VList.end(); ++iter1) {
+		for (list<CVertex*>::iterator iter2 = v2VList.begin(); iter2 != v2VList.end(); ++iter2) {
 			if ( (*iter1 == *iter2) && (*iter1 != vOppo1) && (*iter2 != vOppo2))
 				return false;
 		}
@@ -1034,7 +1000,8 @@ void CMesh::gatherStatistics()
 	calFaceNormals();
 	calVertNormals();
 	calBoundaryVert();
-	
+    calBoundaryLoops();
+
 	Vector3D center = calMeshCenter();
 	Vector3D boundBox = calBoundingBox(center);
 
@@ -1050,7 +1017,6 @@ void CMesh::gatherStatistics()
 
 	calCurvatures();
 	calVertMixedAreas();
-	findHoles();
 }
 
 void CMesh::move( const Vector3D& translation )
@@ -1291,7 +1257,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 bool CMesh::hasBoundary()
 {
-    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryLoopNum();        
+    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryVert();        
     return getAttrValue<int>(StrAttrBoundaryVertCount) > 0;
 }
 
@@ -1342,8 +1308,6 @@ ZGeom::PointCloud3d CMesh::toPointCloud() const
         vPoints.push_back(toVec3d(m_vVertices[i]->pos()));    
     return ZGeom::PointCloud3d(vPoints);
 }
-
-
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
@@ -1422,18 +1386,6 @@ const std::vector<Vector3D>& CMesh::getVertNormals() const
 {
 	assert(hasAttr(StrAttrVertNormal));
 	return getAttrValue< std::vector<Vector3D>>(StrAttrVertNormal);
-}
-
-const std::vector<bool>& CMesh::getVertsOnHole()
-{
-	if(!hasAttr(StrAttrVertOnHole)) findHoles();
-	return getAttrValue<std::vector<bool>>(StrAttrVertOnHole);
-}
-
-const std::vector<bool>& CMesh::getVertsOnHole_const() const
-{
-	assert(hasAttr(StrAttrVertOnHole));
-	return getAttrValue<std::vector<bool>>(StrAttrVertOnHole);
 }
 
 const std::vector<bool>& CMesh::getVertsOnBoundary()
@@ -1609,7 +1561,6 @@ const std::vector<double>& CMesh::getVertMixedAreas() const
 
 std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
 {
-    using ZGeom::Vec3d;
     vector<Vec3d> results(m_nVertex);
     for (int i = 0; i < m_nVertex; ++i) {
         results[i] = Vec3d(m_vVertices[i]->pos());
@@ -1718,6 +1669,21 @@ void CMesh::saveToOBJ( std::string sFileName )
     }
 
 	fclose(f);
+}
+
+std::vector<bool> CMesh::getVertsOnHoles()
+{
+    if (!hasAttr(StrAttrBoundaryLoops)) calBoundaryLoops();
+    const vector<vector<int>>& boundaryEdges = getAttrValue<vector<vector<int>>>(StrAttrBoundaryLoops);
+    vector<bool> result(vertCount(), false);
+    for (int i = 0; i < boundaryEdges.size(); ++i) {
+        const vector<int>& vEdgeIdx = boundaryEdges[i];
+        if (vEdgeIdx.size() > MAX_HOLE_SIZE) continue;
+        auto he = getHalfEdge(vEdgeIdx[i]);
+        int pv1 = he->getVertIndex(0), pv2 = he->getVertIndex(1);
+        result[pv1] = result[pv2] = true;
+    }
+    return result;
 }
 
 #if 0
