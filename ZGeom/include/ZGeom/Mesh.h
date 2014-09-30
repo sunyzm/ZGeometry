@@ -38,7 +38,6 @@ public:
 	friend class CHalfEdge;
 	friend class CFace;
 	friend class CMesh;
-	friend class MeshPyramid;
 	
 	// ---- constructors ---- //
 	CVertex();
@@ -60,16 +59,14 @@ public:
 	bool				isValid() const                 { return m_bIsValid; }
 	void                translateAndScale(const Vector3D& translation, double s);
 	void                setPosition(double x, double y, double z);
-
-private:
 	void                init();
 	void                clone(const CVertex& v);
 
 	// ---- fields ---- //
+public:
 	int						m_vIndex;           // index of the vertex 0-based
 	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
-	int*					m_piEdge;			// half edge indices start from this vertex
 	int						mOutValence;		// out valence
 	Vector3D				m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
@@ -84,12 +81,10 @@ public:
 	friend class CVertex;
 	friend class CFace;
 	friend class CMesh;
-	friend class MeshPyramid;
 
 	// -- constructors -- //
 	CHalfEdge();
 	CHalfEdge(const CHalfEdge& oldE);
-	CHalfEdge(int iV0, int iV1);
 	virtual ~CHalfEdge();
 	CHalfEdge& operator = (const CHalfEdge& e);
 
@@ -98,32 +93,24 @@ public:
 	const CHalfEdge* twinHalfEdge() const { return m_eTwin; }
 	const CHalfEdge* nextHalfEdge() const { return m_eNext; }
 	const CHalfEdge* prevHalfEdge() const { return m_ePrev; }
-	const CVertex*	vert(int i) const { return m_Vertices[i]; }
+	const CVertex*	 vert(int i) const { return m_Vertices[i]; }
 
 	bool		isBoundaryEdge() const { return m_eTwin == NULL; }
     int			getVertIndex(int i) const { return vert(i)->getIndex(); }
 	double		getLength() const;
 	bool		isValid() const { return m_bIsValid; }
 	int         getIndex() const { return m_eIndex; }
-
-private:
-	void clone(const CHalfEdge& oldEdge);
+	void        clone(const CHalfEdge& oldEdge);
 
 	// -- fields -- //
+public:
 	int			m_eIndex;		//half-edge id
-	bool		m_bIsValid;
-
 	CVertex*	m_Vertices[2];	//starting and ending vertices
 	CHalfEdge*	m_eTwin;		//reverse half-edge; null if boundary half edge
 	CHalfEdge*	m_eNext;		//next half-edge (counterclockwise)
 	CHalfEdge*	m_ePrev;
 	CFace*		m_Face;			//attached face
-
-	int			m_iVertex[2];	// starting and ending vertex index
-	int			m_iTwinEdge;	// reverse half-edge index, -1 if boundary half edge
-	int			m_iNextEdge;	// next half-edge index ( counter-clock wise )
-	int			m_iPrevEdge;	// previous half-edge index
-	int			m_iFace;        // attaching face index ( on the left side )
+    bool		m_bIsValid;
 };
 
 //////////////////////////////////////////////////////
@@ -135,7 +122,6 @@ public:
 	friend class CVertex;
 	friend class CHalfEdge;
 	friend class CMesh;
-	friend class MeshPyramid;
 
 	// -- constructors -- //
 	CFace();
@@ -143,6 +129,7 @@ public:
 	CFace(const CFace& oldF);
 	virtual ~CFace();
 	CFace& operator= (const CFace& f);
+    void clone(const CFace& f);
 
 	// -- operations -- //
 	void					create(int s);
@@ -158,19 +145,13 @@ public:
 	Vector3D				calcNormal() const;
 	std::vector<double>		getPlaneFunction();	
 
-private:
-	void clone(const CFace& f);
-
-	// ---- fields ---- // 
+    // ---- fields ---- // 
+public:	
 	int						m_fIndex;
 	bool					m_bIsValid;
 	int						m_nType;		// number of polygon face edges
-
 	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
-		
-	int*					m_piVertex;		// all vertex index
-	int*					m_piEdge;		// all half-edge index
 };
 
 
@@ -180,8 +161,6 @@ private:
 class CMesh 
 {
 public:
-	friend class MeshPyramid;
-
 	/* attribute strings */
 	static const std::string StrAttrBoundaryVertCount;
 	static const std::string StrAttrBoundaryLoopNum;
@@ -198,23 +177,16 @@ public:
 	static const std::string StrAttrVertMixedArea;
 
 ////////////////   fields    ////////////////
-private:
+public:
     int		                m_nVertex;				// number of vertices
     int		                m_nHalfEdge;			// number of half-edges
     int			            m_nFace;	 			// number of faces
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
-    CVertex*	            m_pVertex;				// array pointer of vertices
-    CHalfEdge*	            m_pHalfEdge; 			// array pointer of half-edges
-    CFace*		            m_pFace;				// array pointer of faces
     std::string             m_meshName;				// name of the mesh
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
-
-	bool		m_bIsPointerVectorExist;		// pointer vectors representation
-	bool		m_bIsIndexArrayExist;			// index array representation
-	bool		m_bSeparateStorage;				// indicate whether the point vectors and index arrays are stored separately 
-    bool        m_verbose;
+    bool                    m_verbose;
 
 ////////////////    methods    ////////////////
 public:
@@ -227,6 +199,7 @@ public:
 	void setVerbose(bool verbose) { m_verbose = verbose; }
 
 	/* ---- Mesh IO and processing ---- */
+    void	    clearMesh();
 	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
 	void		load(const std::string& sFileName);		// load from file
 	void	    save(std::string sFileName);			// save to file
@@ -249,9 +222,9 @@ public:
 	const CFace*		getFace(int i) const { return m_vFaces[i]; }
 	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
-	/*************************************************************************/
-	
-	/* basic geometry query, analysis and processing */
+    void	            assignElementsIndex();
+
+    /* basic geometry query, analysis and processing */
 	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
     std::vector<ZGeom::Vec3d>    getAllVertPositions() const;
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
@@ -293,6 +266,7 @@ public:
 	bool				hasBoundary();
 	int					calBoundaryLoopNum();   // compute number of (connective) boundaries
 	int					calBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
+    void	            findHoles();
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
 	int					calMeshGenus();			// get mesh genus
@@ -302,6 +276,7 @@ public:
     void	            calCurvatures();			// calculate Gaussian and mean curvatures
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
+    bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
@@ -479,8 +454,7 @@ public:
 	//////////////////////////////////////////////////////////////////////////	
 
 private:
-	void	clearMesh();
-	void	construct();	// construct connectivity
+    void    construct(const std::vector<CVertex>& pVertex, const std::vector<std::vector<int>>& faceVerts, int nType = 3);	// construct connectivity
 	void	loadFromOBJ(std::string sFileName);	// load mesh from .obj file
 	void	loadFromM(std::string sFileName);	// load mesh from .m file
 	void	loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
@@ -488,11 +462,6 @@ private:
 	void	loadFromOFF(std::string sFileName);
 	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	void	saveToM(const std::string& sFileName );    // save mesh to .m file
-	void	findHoles();
-	void	buildPointerVectors();		//construct vectors of pointers based on array representations
-	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation
-	void	assignElementsIndex();
-	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
 	
 	/* helper functions */
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);

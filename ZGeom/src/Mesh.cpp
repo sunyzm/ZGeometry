@@ -63,12 +63,10 @@ CVertex& CVertex::operator = ( const CVertex& v )
 
 CVertex::~CVertex()
 {
-	delete[] m_piEdge;
 }
 
 void CVertex::init()
 {
-	m_piEdge = NULL;
 	mOutValence = 0;
 	m_bIsValid = true;
 }
@@ -82,12 +80,7 @@ void CVertex::clone(const CVertex& v)
 	mOutValence			= v.mOutValence;
 	m_bIsValid			= v.m_bIsValid;
 
-	if (v.m_piEdge != NULL) {
-		m_piEdge = new int[mOutValence];		// starting half-edge index array
-		for (int i = 0; i < mOutValence; ++i)
-			m_piEdge[i] = v.m_piEdge[i];
-	}
-	else m_piEdge = NULL;
+    m_HalfEdges.clear();
 }
 
 std::vector<const CFace*> CVertex::getAdjacentFaces() const
@@ -128,25 +121,9 @@ void CVertex::setPosition( double x, double y, double z )
 
 CHalfEdge::CHalfEdge()
 {
-	m_iVertex[0] = m_iVertex[1] = -1;
-	m_iTwinEdge = m_iNextEdge = m_iPrevEdge = m_iFace = -1;
-	
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin= m_eNext = m_ePrev = NULL;
 	m_Face = NULL;
-
-	m_bIsValid = true;
-}
-
-CHalfEdge::CHalfEdge( int iV0, int iV1 )
-{
-	m_iVertex[0] = iV0; m_iVertex[1] = iV1;
-	m_iTwinEdge = m_iNextEdge = m_iPrevEdge = m_iFace = -1;
-
-	m_Vertices[0] = m_Vertices[1] = NULL;
-	m_eTwin= m_eNext = m_ePrev = NULL;
-	m_Face = NULL;
-
 	m_bIsValid = true;
 }
 
@@ -169,18 +146,11 @@ void CHalfEdge::clone(const CHalfEdge& e)
 {
 	if (this == &e) return;
 	m_eIndex = e.m_eIndex;
+    m_bIsValid = e.m_bIsValid;
+
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin = m_eNext = m_ePrev = NULL;
-	m_Face = NULL;
-
-	m_iVertex[0]	= e.m_iVertex[0];		// starting and ending vertex, Vertex0 -­> Vertex1
-	m_iVertex[1]	= e.m_iVertex[1];       //
-	m_iTwinEdge		= e.m_iTwinEdge;        // reverse half-edge index, -1 if boundary half edge
-	m_iNextEdge		= e.m_iNextEdge;		// next half-edge index ( counter-clock wise )
-	m_iPrevEdge		= e.m_iPrevEdge;		// previous half-edge index (cc)
-	m_iFace			= e.m_iFace;			// attaching face index ( on the left side )
-
-	m_bIsValid      = e.m_bIsValid;
+	m_Face = NULL;	
 }
 
 double CHalfEdge::getLength() const
@@ -193,12 +163,11 @@ double CHalfEdge::getLength() const
 //						CFace						//
 //////////////////////////////////////////////////////
 
-CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
-{
-	m_bIsValid = true;
+CFace::CFace() : m_nType(0), m_bIsValid(true)
+{	
 }
 
-CFace::CFace(int s) : m_nType(s), m_piEdge(NULL), m_piVertex(NULL), m_bIsValid(true)
+CFace::CFace(int s) : m_nType(s), m_bIsValid(true)
 {	
 }
 
@@ -215,38 +184,19 @@ CFace& CFace::operator = (const CFace& f)
 
 CFace::~CFace()
 {
-	delete []m_piEdge;
-	delete []m_piVertex;
 }
 
 void CFace::clone( const CFace& f )
 {
 	if (this == &f) return;
-
 	m_fIndex	= f.m_fIndex;
 	m_nType		= f.m_nType;
-
-	m_piVertex = NULL;
-	m_piEdge = NULL;
-
-	if (f.m_piVertex && f.m_piEdge) {
-		m_piVertex = new int[m_nType];      // polygon vertex index
-		m_piEdge = new int[m_nType];        // polygon edge index
-
-		for(int i = 0; i < m_nType; i++) {
-			m_piVertex[i] = f.m_piVertex[i];
-			m_piEdge[i] = f.m_piEdge[i];
-		}
-	}
-
-	m_bIsValid = f.m_bIsValid;
+    m_bIsValid = f.m_bIsValid;
 }
 
 void CFace::create(int s)
 {
 	m_nType = s;
-	m_piEdge = new int[s];
-	m_piVertex = new int[s];
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -471,8 +421,6 @@ std::vector<double> CFace::getPlaneFunction()
 
 CMesh::CMesh() : m_meshName(""), 
 				 m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
-				 m_pVertex(NULL), m_pHalfEdge(NULL), m_pFace(NULL),
-				 m_bIsPointerVectorExist(false), m_bIsIndexArrayExist(false),
 				 m_verbose(true)
 {
 }
@@ -496,84 +444,60 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	if (this == &oldMesh) return;
 	clearMesh();
 
-	m_meshName = oldMesh.m_meshName + nameSuffix;
-	m_nVertex = oldMesh.m_nVertex;
-	m_nFace = oldMesh.m_nFace;
+	m_meshName  = oldMesh.m_meshName + nameSuffix;
+	m_nVertex   = oldMesh.m_nVertex;
+	m_nFace     = oldMesh.m_nFace;
 	m_nHalfEdge = oldMesh.m_nHalfEdge;
-
-	m_bIsPointerVectorExist = oldMesh.m_bIsPointerVectorExist;
-	m_bIsIndexArrayExist = oldMesh.m_bIsIndexArrayExist;
 
 	copyAttributes(oldMesh.mAttributes);
 
-	if (m_bIsPointerVectorExist)
-	{
-		for (int i = 0; i < m_nVertex; ++i) {
-			this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
-		}
-		for (int i = 0; i < m_nFace; ++i) {
-			this->m_vFaces.push_back(new CFace(*oldMesh.m_vFaces[i]));
-		}
-		for (int i = 0; i < m_nHalfEdge; ++i) {
-			this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh.m_vHalfEdges[i]));
-		}
-
-		for (int i = 0; i < m_nVertex; ++i) {
-			CVertex* curV = this->m_vVertices[i];
-			const CVertex* oldV = oldMesh.m_vVertices[i];
-			for (int j = 0; j < oldV->mOutValence; ++j) {
-				int eidx = oldV->m_HalfEdges[j]->m_eIndex;
-				curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
-			}
-		}
-		for (int i = 0; i < m_nFace; ++i) {
-			CFace* curF = this->m_vFaces[i];
-			const CFace* oldF = oldMesh.m_vFaces[i];
-			for (int j = 0; j < oldF->m_nType; ++j) {
-				int vidx = oldF->m_Vertices[j]->m_vIndex;
-				int eidx = oldF->m_HalfEdges[j]->m_eIndex;
-				curF->m_Vertices.push_back(this->m_vVertices[vidx]);
-				curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
-			}
-		}
-		for (int i = 0; i < m_nHalfEdge; ++i) {
-			CHalfEdge* curE = this->m_vHalfEdges[i];
-			const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
-			int vidx0 = oldE->m_Vertices[0]->m_vIndex,
-				vidx1 = oldE->m_Vertices[1]->m_vIndex,
-				neidx = oldE->m_eNext->m_eIndex,
-				peidx = oldE->m_ePrev->m_eIndex,
-				fidx = oldE->m_Face->m_fIndex;
-
-			curE->m_Vertices[0] = this->m_vVertices[vidx0];
-			curE->m_Vertices[1] = this->m_vVertices[vidx1];
-			curE->m_eNext = this->m_vHalfEdges[neidx];
-			curE->m_ePrev = this->m_vHalfEdges[peidx];
-			curE->m_Face = this->m_vFaces[fidx];
-			if (oldE->m_eTwin != NULL) {
-				int teidx = oldE->m_eTwin->m_eIndex;
-				curE->m_eTwin = this->m_vHalfEdges[teidx];
-			}
-			else curE->m_eTwin = NULL;
-		}
-
-		buildIndexArrays();
+	for (int i = 0; i < m_nVertex; ++i) {
+		this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 	}
-	else if (m_bIsIndexArrayExist)
-	{
-		m_pVertex = new CVertex[m_nVertex];			//array of vertices
-		for(int i = 0; i < m_nVertex; i++)
-			m_pVertex[i] = oldMesh.m_pVertex[i];
+	for (int i = 0; i < m_nFace; ++i) {
+		this->m_vFaces.push_back(new CFace(*oldMesh.m_vFaces[i]));
+	}
+	for (int i = 0; i < m_nHalfEdge; ++i) {
+		this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh.m_vHalfEdges[i]));
+	}
 
-		m_pHalfEdge = new CHalfEdge[m_nHalfEdge]; 	//array of half-edges
-		for(int i = 0; i < m_nHalfEdge; i++)
-			m_pHalfEdge[i] = oldMesh.m_pHalfEdge[i];
+	for (int i = 0; i < m_nVertex; ++i) {
+		CVertex* curV = this->m_vVertices[i];
+		const CVertex* oldV = oldMesh.m_vVertices[i];
+		for (int j = 0; j < oldV->mOutValence; ++j) {
+			int eidx = oldV->m_HalfEdges[j]->m_eIndex;
+			curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
+		}
+	}
+	for (int i = 0; i < m_nFace; ++i) {
+		CFace* curF = this->m_vFaces[i];
+		const CFace* oldF = oldMesh.m_vFaces[i];
+		for (int j = 0; j < oldF->m_nType; ++j) {
+			int vidx = oldF->m_Vertices[j]->m_vIndex;
+			int eidx = oldF->m_HalfEdges[j]->m_eIndex;
+			curF->m_Vertices.push_back(this->m_vVertices[vidx]);
+			curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
+		}
+	}
+	for (int i = 0; i < m_nHalfEdge; ++i) {
+		CHalfEdge* curE = this->m_vHalfEdges[i];
+		const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
+		int vidx0 = oldE->m_Vertices[0]->m_vIndex,
+			vidx1 = oldE->m_Vertices[1]->m_vIndex,
+			neidx = oldE->m_eNext->m_eIndex,
+			peidx = oldE->m_ePrev->m_eIndex,
+			fidx  = oldE->m_Face->m_fIndex;
 
-		m_pFace = new CFace[m_nFace];				//array of faces
-		for(int i = 0; i < m_nFace; i++)
-			m_pFace[i] = oldMesh.m_pFace[i];
-		
-		buildPointerVectors();
+		curE->m_Vertices[0] = this->m_vVertices[vidx0];
+		curE->m_Vertices[1] = this->m_vVertices[vidx1];
+		curE->m_eNext = this->m_vHalfEdges[neidx];
+		curE->m_ePrev = this->m_vHalfEdges[peidx];
+		curE->m_Face = this->m_vFaces[fidx];
+        if (oldE->m_eTwin == NULL) curE->m_eTwin = NULL;
+        else {
+			int teidx = oldE->m_eTwin->m_eIndex;
+			curE->m_eTwin = this->m_vHalfEdges[teidx];
+		}
 	}
 }
 
@@ -583,21 +507,15 @@ void CMesh::clearMesh()
 		delete iter->second;
 	mAttributes.clear();	
 
-	delete[] m_pVertex;   m_pVertex = NULL;
-	delete[] m_pHalfEdge; m_pHalfEdge = NULL;
-	delete[] m_pFace;     m_pFace = NULL;	
-		
-	if (m_bIsPointerVectorExist && m_bSeparateStorage) {
-		for (CVertex* v : m_vVertices)	delete v;
-		for (CHalfEdge* e : m_vHalfEdges) delete e;
-		for (CFace* f : m_vFaces) delete f;
-	}
+	for (CVertex* v : m_vVertices)	delete v;
+	for (CHalfEdge* e : m_vHalfEdges) delete e;
+	for (CFace* f : m_vFaces) delete f;
+
 	m_vVertices.clear();
 	m_vHalfEdges.clear();
 	m_vFaces.clear();
 
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
-	m_bIsIndexArrayExist = m_bIsPointerVectorExist = false;
 	m_meshName = "";
 }
 
@@ -608,569 +526,30 @@ void CMesh::load( const std::string& sFileName )
 	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
 
-	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") 
-        loadFromOBJ(sFileName);
-	else if (ext == ".m" || ext == ".M") 
-        loadFromM(sFileName);
-	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") 
-        loadFromPLY(sFileName);
-    else if (ext == ".vert" || ext == ".VERT")
-        loadFromVERT(sFileName);
-    else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
-        loadFromOFF(sFileName);
+	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") loadFromOBJ(sFileName);
+// 	else if (ext == ".m" || ext == ".M") 
+//         loadFromM(sFileName);
+// 	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") 
+//         loadFromPLY(sFileName);
+//     else if (ext == ".vert" || ext == ".VERT")
+//         loadFromVERT(sFileName);
+//     else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
+//         loadFromOFF(sFileName);
 	else throw runtime_error("Unrecognizable file extension!");
-}
-
-void CMesh::loadFromOBJ(std::string sFileName)
-{
-/* -----  format: smf, obj, dat -----
- * vertex:
- *      v x y z,
- * face(triangle):
- *      f v1 v2 v3  (the vertex index is 1-based)
- * ----------------------------------- */
-	//open the file
-	FILE *f;
-	fopen_s(&f, sFileName.c_str(), "r");
-	assert(f != NULL);
-
-	char ch = 0;
-	
-	std::list<Vector3D> VertexList;	//temporary vertex list
-	std::list<int> FaceList;			//temporary face list
-
-	Vector3D vec;
-
-	int l[3];
-	short j;
-
-	ch = fgetc(f);
-	while(ch > 0)	//save temporary information of vertex and face in list
-	{
-		switch(ch)
-		{
-		case 'v':	//vertex
-			ch = fgetc(f);
-			if((ch!=' ')&&(ch!='\t'))
-				break;
-			fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
-			VertexList.push_back(vec);
-
-		case 'f':	//face
-			ch = fgetc(f);
-			if((ch!=' ') && (ch!='\t'))
-				break;
-			fscanf_s(f, "%ld%ld%ld\n", &l[0], &l[1], &l[2]);
-			for(j = 0; j < 3; j++)
-				FaceList.push_back(l[j]-1);		//vid - 1
-			break;
-		
-		case '#':
-			while(ch != '\n' && ch > 0)
-				ch = fgetc(f);
-			break;
-		}
-		ch = fgetc(f);
-	}
-	fclose(f);
-		
-	m_nVertex = (int)VertexList.size();
-	m_nFace = (int)FaceList.size() / 3;
-	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
-
-	//read vertices and faces
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-
-	list<Vector3D>::iterator iVertex = VertexList.begin();
-	list<int>::iterator iFace = FaceList.begin();
-
-	for(int i = 0; i < m_nVertex; i++) {
-		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-	}
-
-	for(int i = 0; i < m_nFace; i++) {
-		m_pFace[i].create(3);
-		for(j = 0; j < 3; j++)
-			m_pFace[i].m_piVertex[j] = *iFace++;
-	}
-
-	construct();
-}
-
-void CMesh::loadFromPLY( std::string sFileName )
-{
-	FILE *f;
-	fopen_s(&f, sFileName.c_str(), "rb");
-	assert (f != NULL);
-
-	int p1, p2, p3, i, vNr, pNr;
-	char nr; 
-	float x, y, z;
-	char buffer[101];
-	vNr = pNr = 0;
-
-	fseek(f, 0, SEEK_SET);
-
-	// READ IN HEADER
-	while (fgetc(f) != '\n') // Reads all of the 1st line
-		;
-
-	// read the remainder of the header
-	// - interested in 3 parts only
-	// - format
-	// - number of vertices
-	// - number of polygons
-
-	fscanf_s(f, "%100s ", buffer);
-	while (_stricmp(buffer, "end_header") != 0)
-	{
-		if (_stricmp(buffer, "format") == 0)
-		{
-			fscanf_s(f, "%100s ", buffer);
-			if (_stricmp(buffer, "ascii") != 0)
-			{
-				throw runtime_error("PLY file format error: PLY ASCII support only.");
-			}
-		} else if (_stricmp(buffer, "element") == 0)
-		{
-			fscanf_s(f, "%100s ", buffer);
-			if (_stricmp(buffer, "vertex") == 0)
-			{
-				fscanf_s(f, "%100s", buffer);
-				vNr = atoi(buffer);
-			} else if (_stricmp(buffer, "face") == 0)
-			{
-				fscanf_s(f, "%100s", buffer);
-				pNr = atoi(buffer);
-			}
-		}
-		fscanf_s(f, "%100s ", buffer);
-	}
-
-	m_nVertex = vNr;
-	m_nFace = pNr;
-	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
-
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-
-	// READ IN VERTICES
-	for (i = 0; i < vNr; i++) // Reads the vertices
-	{
-		if (fscanf_s(f, "%f %f %f", &x, &y, &z) != 3)
-			throw runtime_error("PLY file format error: vertex list");
-		while (fgetc(f) != '\n'); // Read till end of the line
-		// to skip texture/color values
-
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-		m_pVertex[i].m_vPosition = Vector3D(x, y, z);
-
-	}
-
-	// READ IN POLYGONS
-	int triCount(0);
-	while ((triCount < pNr) && (!(feof(f)))) 
-	{
-		fscanf_s(f, "%c", &nr);
-
-		switch (nr)
-		{
-		case '2':
-			throw runtime_error("PLY file format error: polygon 2");
-
-		case '3':
-			if (fscanf_s(f, "%d %d %d\n", &p1, &p2, &p3) != 3)
-				throw runtime_error( "PLY file format error: polygon 3");
-			if ((p1 >= vNr) || (p2 >= vNr) || (p3 >= vNr))
-				throw runtime_error( "PLY file format error: vertex index out of range");
-			else 
-			{ 
-				m_pFace[triCount].create(3);
-				m_pFace[triCount].m_piVertex[0] = p1;
-				m_pFace[triCount].m_piVertex[1] = p2;
-				m_pFace[triCount].m_piVertex[2] = p3;
-			}
-			triCount++;
-			break;
-		case ' ':
-		case '\t':
-		case '\n':
-			// skip leading whitespace characters
-			break;
-		default:
-			// skip any lines that that we are not interested in
-			// (i.e. don't begin with the cases above)
-			// e.g. N vertex polygons of form "N v1 v2...vN" on the line
-			do {
-				nr = fgetc(f);
-			} while ((!(feof(f))) && nr != '\n');
-			break;
-		}
-
-
-	}
-	construct();
-}
-
-void CMesh::loadFromVERT( std::string sFileName )
-{
-	//open the file
-	ifstream infile(sFileName.c_str());
-	if( ! infile ) {
-		throw std::runtime_error("error: unable to open input vert file!");
-	}
-	list<Vector3D> VertexList;//temporary vertex list
-	list<int> FaceList;//temporary face list
-
-	string sline; // single line
-	double dx,dy,dz;
-	while( getline(infile, sline) )
-	{
-		istringstream sin(sline);
-		sin >> dx >> dy >> dz;
-		Vector3D vec(dx,dy,dz);
-		VertexList.push_back(vec);
-	}
-
-	string triName = sFileName.substr(0,sFileName.length()-4);
-	triName += "tri";
-
-	cout << triName << endl;
-	ifstream trifile(triName.c_str());
-	if(!trifile) {
-		throw std::runtime_error("unable to open input tri file");
-	}
-
-	int tx,ty,tz;
-	while( getline(trifile, sline) )
-	{
-		istringstream sin(sline);
-		sin >> tx >> ty >> tz;
-		FaceList.push_back(tx-1);
-		FaceList.push_back(ty-1);
-		FaceList.push_back(tz-1);
-	}
-
-	
-	m_nVertex = (int)VertexList.size();
-	m_nFace = (int)FaceList.size()/3;
-	m_nHalfEdge = 3*m_nFace;
-
-	//read vertices and faces
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-
-	int i;
-	list<Vector3D>::iterator iVertex = VertexList.begin();
-	list<int>::iterator iFace = FaceList.begin();
-
-	for(i=0; i<m_nVertex; i++)
-	{
-		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-	}
-	short j;
-	for(i=0; i<m_nFace; i++)
-	{
-		m_pFace[i].create(3);
-		for(j=0;j<3;j++)
-			m_pFace[i].m_piVertex[j] = *iFace++;
-	}
-
-	VertexList.clear();
-	FaceList.clear();
-	construct();
-}
-
-void CMesh::loadFromM( std::string sFileName )
-{
-	//open the file
-	ifstream infile;
-	infile.open(sFileName.c_str());
-
-	vector<Vector3D> VertexList;//temporary vertex list
-	//vector<int> VertexIDList;//temporary vertex list
-	//vector<Vector3D> VertexNormList;//temporary vertex list
-	vector<float> VertexColorList;//temporary vertex list
-	//vector<Vector2D> VertexParamList;//temporary vertex list
-	vector<int> FaceList;//temporary face list
-
-	const int MAX_TOKEN = 1000;
-	char str_buf[MAX_TOKEN];
-	char token[MAX_TOKEN];
-
-	do{
-		infile.getline(str_buf, MAX_TOKEN);
-
-		if(strstr(str_buf, "Vertex") == 0) {
-			;
-		}
-		else
-			break;
-	}while(!infile.eof());
-
-	int v_index = 1, prev_idx = 0; // start from 1
-	// Process vertex data
-	while( strstr(str_buf, "Vertex") ) {
-		// move the line to the stream buffer
-		istringstream strbuf(str_buf/*, strlen(str_buf)*/);
-
-		strbuf >> token; // "Vertex"
-
-		// vertex index
-		int v_idx;
-		strbuf >> v_idx;
-		prev_idx = v_idx;
-
-		//VertexIDList.push_back(v_idx);
-		Vector3D vert;
-		strbuf >> vert.x >> vert.y >> vert.z;
-		VertexList.push_back(vert);
-
-		char c;
-		strbuf >> c;
-		if( c == '{' && !strbuf.eof()) {
-			while(c != '}' && !strbuf.eof()) {
-				strbuf.getline(token, MAX_TOKEN);// >> c;
-
-				//read rgb
-				char *pstr = strstr(token,"rgb");
-				if(pstr != 0) {
-					pstr = strstr(pstr, "=");
-					pstr = strstr(pstr, "(");
-					pstr = &pstr[1];
-					istringstream strbuf(pstr/*, strlen(pstr)*/);
-					float r,g,b;
-					strbuf >> r >> g >> b;
-
-					//cout << ur << " " << ug << " " << ub << endl;
-					VertexColorList.push_back(r);
-					VertexColorList.push_back(g);
-					VertexColorList.push_back(b);
-				}
-
-				//read normal
-				/*pstr = strstr(token,"normal");
-				if(pstr != 0) {
-					pstr = strstr(pstr, "=");
-					pstr = strstr(pstr, "(");
-					pstr = &pstr[1];
-					istringstream strbuf(pstr, strlen(pstr));
-					Vector3D norm;
-					strbuf >> norm.x >> norm.y >> norm.z;
-					VertexNormList.push_back(norm);
-				}*/
-
-				//read uv
-				/*pstr = strstr(token,"uv");
-				if(pstr != 0) {
-					pstr = strstr(pstr, "=");
-					pstr = strstr(pstr, "(");
-					pstr = &pstr[1];
-					istringstream strbuf(pstr, strlen(pstr));
-					Vector2D uv;
-					strbuf >> uv.x >> uv.y;
-					VertexParamList.push_back(uv);
-				}*/
-				//read other properties ...
-			}
-		}
-		infile.getline(str_buf, MAX_TOKEN);
-	}
-
-	// process face data
-	int f_id = 1;
-	while( strstr(str_buf, "Face") ) {
-		// move the line to the stream buffer
-		istringstream strbuf(str_buf/*, strlen(str_buf)*/);
-
-		strbuf >> token; // "Face"
-
-		int f_num;
-		strbuf >> f_num;
-
-		int x_id,y_id,z_id;
-		strbuf >> x_id >> y_id >> z_id;
-
-		FaceList.push_back(x_id);
-		FaceList.push_back(y_id);
-		FaceList.push_back(z_id);
-
-		// face properties
-		char c;
-		strbuf >> c;
-		if( c == '{' && !strbuf.eof()) {			
-			while(c != '}' && !strbuf.eof()) {
-				strbuf.getline(token, MAX_TOKEN);// >> c;
-			}
-		}	
-
-		infile.getline(str_buf, MAX_TOKEN);
-	}
-
-
-	m_nVertex = (int)VertexList.size();
-	m_nFace = (int)FaceList.size()/3;
-	m_nHalfEdge = 3 * m_nFace;
-
-	// read vertices and faces
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-
-	std::vector<ZGeom::Colorf> vVertColors(m_nVertex);
-	for(int i = 0; i < m_nVertex; i++)
-	{
-		m_pVertex[i].m_vPosition= VertexList[i];  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-
-		vVertColors[i][0] = VertexColorList[3*i];
-		vVertColors[i][1] = VertexColorList[3*i+1];
-		vVertColors[i][2] = VertexColorList[3*i+2];
-	}
-	
-    addColorAttr(StrAttrVertColors, vVertColors);
-
-	for(int i = 0; i < m_nFace; i++)
-	{
-		m_pFace[i].create(3);
-		m_pFace[i].m_piVertex[0] = FaceList[i*3]-1;
-		m_pFace[i].m_piVertex[1] = FaceList[i*3+1]-1;
-		m_pFace[i].m_piVertex[2] = FaceList[i*3+2]-1;
-	}
-
-	construct();
 }
 
 void CMesh::save(string sFileName)
 {
 	string sExt = sFileName.substr(sFileName.length()-4);
-	if (sExt == ".obj" || sExt==".OBJ")
-		saveToOBJ(sFileName);
-	sExt = sFileName.substr(sFileName.length()-2);
-	if (sExt == ".m" || sExt==".M")
-		saveToM(sFileName);
+    if (sExt == ".obj" || sExt == ".OBJ" || sExt == ".Obj") saveToOBJ(sFileName);
+// 	sExt = sFileName.substr(sFileName.length()-2);
+// 	if (sExt == ".m" || sExt==".M")
+// 		saveToM(sFileName);
 }
 
-void CMesh::saveToOBJ( std::string sFileName )
+void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<std::vector<int>>& faceVerts, int nType /*= 3*/)
 {
-	assert( m_pVertex != NULL && m_pFace != NULL );
-
-	// open the file
-	FILE *f = NULL;
-	fopen_s(&f, sFileName.c_str(),"wb");
-	assert(f != NULL);
-
-	// file header
-	fprintf(f, "# vertices : %ld\r\n", m_nVertex);
-	fprintf(f, "# faces    : %ld\r\n", m_nFace);
-	fprintf(f, "\r\n");
-
-	
-	// vertices
-	Vector3D center = Vector3D(0, 0, 0); /*getCenter();*/
-	for (int i = 0; i < m_nVertex; i++)
-	{
-		Vector3D vt = m_pVertex[i].m_vPosition - center;
-		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
-	}
-
-	// faces
-	for (int i = 0; i < m_nFace; i++)
-		fprintf(f, "f %ld %ld %ld\r\n", m_pFace[i].m_piVertex[0] + 1, m_pFace[i].m_piVertex[1] + 1, m_pFace[i].m_piVertex[2] + 1);
-
-	fclose(f);
-}
-
-// Gu Mesh is used as a possible way to keep parameterizations
-// and the mesh together
-void CMesh::saveToM( const std::string& sFileName )
-{
-	FILE* fp;
-	fopen_s(&fp, sFileName.c_str(), "w+");
-	
-	const std::vector<Vector3D>& vVertNormals = getVertNormals();
-	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
-	
-	std::vector<Colorf>* vColors = NULL;
-    if (hasAttr(StrAttrVertColors)) vColors = &getVertColors(StrAttrVertColors);
-
-	for (int i = 0; i < m_nVertex; i++)
-	{
-		const Vector3D& pos = m_pVertex[i].m_vPosition;
-		const Vector3D& normal = vVertNormals[i];
-		float r(.5), g(.5), b(.5);
-		if (vColors) {
-			r = (*vColors)[i].r();
-			g = (*vColors)[i].g();
-			b = (*vColors)[i].b();
-		}
-		
-		fprintf(fp, "Vertex %ld  %.6f %.6f %.6f {rgb=(%.6f %.6f %.6f) normal=(%.6f %.6f %.6f)",
-			    i + 1, pos.x, pos.y, pos.z, r, g, b, normal.x, normal.y, normal.z);
-		fprintf(fp, "}\n");
-	}
-
-	for (int i = 0; i < m_nFace; i++)
-	{
-		// assert(m_pFace[i].m_nType == 3);
-		fprintf(fp, "Face %ld", i+ 1);
-
-		for (int j = 0; j < m_pFace[i].m_nType; j++)
-		{
-			int edge = m_pFace[i].m_piEdge[j];
-			int _vv_j = m_pHalfEdge[edge].m_iVertex[0] + 1;
-			fprintf(fp, " %ld", _vv_j);
-
-		}
-		fprintf(fp, "\n");
-	}
-
-	fclose(fp);
-}
-
-void CMesh::findHoles()
-{
-	std::unordered_set<int> markedVertex;
-    const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
-	vector<bool> vIsOnHole(m_nVertex, false);
-
-	for(int i = 0; i < m_nVertex; i++)
-	{
-		if(!vVertOnBoundary[i] || markedVertex.find(i) == markedVertex.end())
-            continue;	// pass if vertex is not on boundary or is already visited
-		int vi = i;
-		const CVertex* pvi =  m_vVertices[i];
-		const CHalfEdge* peout = pvi->m_HalfEdges.back();
-		vector<int> vTmp;
-		markedVertex.insert(vi);
-		vTmp.push_back(vi);
-		while(peout->m_Vertices[1]->getIndex() != i && vTmp.size() <= MAX_HOLE_SIZE)
-		{
-			pvi = peout->m_Vertices[1];
-			vi = pvi->getIndex();
-			peout = pvi->m_HalfEdges.back();
-			markedVertex.insert(vi);
-			vTmp.push_back(vi);
-		}
-		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
-		
-		for (int iv : vTmp) vIsOnHole[iv] = true;
-	}
-
-	addAttr<std::vector<bool>>(vIsOnHole, StrAttrVertOnHole, AR_VERTEX);
-}
-
-void CMesh::construct()
-{
-	// face normal and area, boundary vertices are computed in the process
-	assert(m_pVertex != NULL && m_pFace != NULL);
-
-	//delete old edge list
-	delete[] m_pHalfEdge;
-	m_pHalfEdge = NULL;	 
-
+    assert(nType == 3);
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////	code to construct primitives pointer vectors	///////////////
 	m_vVertices.reserve(m_nVertex);
@@ -1187,13 +566,13 @@ void CMesh::construct()
 
 	for (int i = 0; i < m_nFace; ++i)
 	{
-		CFace* newFace = new CFace(m_pFace[i]);
-		this->m_vFaces.push_back(newFace);
-		newFace->m_nType = 3;
+        CFace* newFace = new CFace();
+        newFace->create(nType);		
 		newFace->m_bIsValid = true;
+        this->m_vFaces.push_back(newFace);
 
-		for (int j = 0; j < 3; ++j)
-			newFace->m_Vertices.push_back( m_vVertices[m_pFace[i].m_piVertex[j]] );
+		for (int j = 0; j < nType; ++j)
+			newFace->m_Vertices.push_back(m_vVertices[faceVerts[i][j]]);
 
 		CHalfEdge* he1 = new CHalfEdge();
 		CHalfEdge* he2 = new CHalfEdge();
@@ -1252,7 +631,8 @@ void CMesh::construct()
 
 	} //for each face
 
-	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		//--re-arrange each vertex's half-edges clockwise--
+    // re-arrange each vertex's half-edges clockwise
+	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		
 	{
 		CVertex* pV = *iter;
 		if (pV == NULL) throw std::logic_error("Error: null CVertex pointer encountered!");
@@ -1264,15 +644,10 @@ void CMesh::construct()
 			iter = m_vVertices.erase(iter);
 			continue;
 		}		
-		//pV->judgeOnBoundary();
 		++iter;
 	} //for each vertex
 	
 	assignElementsIndex();
-	this->m_bIsPointerVectorExist = true;
-
-	buildIndexArrays();
-	this->m_bIsIndexArrayExist = true;
 }
 
 void CMesh::calFaceNormals()
@@ -1399,6 +774,38 @@ int CMesh::calBoundaryVert()
     addAttr<std::vector<bool>>(vVertOnBoundary, StrAttrVertOnBoundary, AR_VERTEX, AT_VEC_BOOL);
 	addAttr<int>(bNum, StrAttrBoundaryVertCount, AR_UNIFORM, AT_INT);
 	return bNum;
+}
+
+void CMesh::findHoles()
+{
+	std::unordered_set<int> markedVertex;
+    const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
+	vector<bool> vIsOnHole(m_nVertex, false);
+
+	for(int i = 0; i < m_nVertex; i++)
+	{
+		if(!vVertOnBoundary[i] || markedVertex.find(i) == markedVertex.end())
+            continue;	// pass if vertex is not on boundary or is already visited
+		int vi = i;
+		const CVertex* pvi =  m_vVertices[i];
+		const CHalfEdge* peout = pvi->m_HalfEdges.back();
+		vector<int> vTmp;
+		markedVertex.insert(vi);
+		vTmp.push_back(vi);
+		while(peout->m_Vertices[1]->getIndex() != i && vTmp.size() <= MAX_HOLE_SIZE)
+		{
+			pvi = peout->m_Vertices[1];
+			vi = pvi->getIndex();
+			peout = pvi->m_HalfEdges.back();
+			markedVertex.insert(vi);
+			vTmp.push_back(vi);
+		}
+		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
+		
+		for (int iv : vTmp) vIsOnHole[iv] = true;
+	}
+
+	addAttr<std::vector<bool>>(vIsOnHole, StrAttrVertOnHole, AR_VERTEX);
 }
 
 int CMesh::calEulerNum(  )
@@ -1548,112 +955,6 @@ std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) c
 	return vFaces;
 }
 
-void CMesh::buildPointerVectors()
-{
-	m_vHalfEdges.reserve(m_nHalfEdge);
-
-	for (int i = 0; i < m_nVertex; ++i)
-		m_vVertices.push_back(&m_pVertex[i]);
-	for (int i = 0; i < m_nHalfEdge; ++i)
-		m_vHalfEdges.push_back(&m_pHalfEdge[i]);
-	for (int i = 0; i < m_nFace; ++i)
-		m_vFaces.push_back(&m_pFace[i]);
-
-	for (int i = 0; i < m_nVertex; ++i) {	
-		CVertex* vert = m_vVertices[i];
-		for (int j = 0; j < vert->mOutValence; ++j)
-			vert->m_HalfEdges.push_back( m_vHalfEdges[vert->m_piEdge[j]] );
-	}
-
-	for (int i = 0; i < m_nHalfEdge; ++i) {
-		CHalfEdge* edg = m_vHalfEdges[i];
-		edg->m_Vertices[0] = m_vVertices[edg->m_iVertex[0]];
-		edg->m_Vertices[1] = m_vVertices[edg->m_iVertex[1]];
-		if (edg->m_iTwinEdge >= 0)
-			edg->m_eTwin = m_vHalfEdges[edg->m_iTwinEdge];
-		edg->m_eNext = m_vHalfEdges[edg->m_iNextEdge];
-		edg->m_ePrev = m_vHalfEdges[edg->m_iPrevEdge];
-		edg->m_Face = m_vFaces[edg->m_iFace];
-	}
-
-	for (int i = 0; i < m_nFace; ++i) {
-		CFace* fac = m_vFaces[i];
-		for (int j = 0; j < fac->m_nType; ++j) {
-			fac->m_Vertices.push_back( m_vVertices[fac->m_piVertex[j]] );
-			fac->m_HalfEdges.push_back( m_vHalfEdges[fac->m_piEdge[j]] );
-		}
-	}
-
-	m_bIsPointerVectorExist = true;
-	m_bSeparateStorage = false;
-}
-
-void CMesh::buildIndexArrays()
-{
-	// allocate memory for the half-edge array pointer
-	delete []m_pVertex;
-	delete []m_pFace;
-	delete []m_pHalfEdge;
-
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-	m_pHalfEdge = new CHalfEdge[m_nHalfEdge];
-
-	for (int i = 0; i < m_nVertex; ++i)
-	{
-		m_pVertex[i] = *m_vVertices[i];
-
-		if (m_pVertex[i].m_piEdge)
-			delete []m_pVertex[i].m_piEdge;
-
-		m_pVertex[i].m_piEdge = new int[m_pVertex[i].mOutValence];
-		for (int j = 0; j < m_pVertex[i].mOutValence; ++j)
-		{
-			m_pVertex[i].m_piEdge[j] = m_vVertices[i]->m_HalfEdges[j]->m_eIndex;
-		}
-	}
-	
-	for (int i = 0; i < m_nHalfEdge; ++i)
-	{
-		m_pHalfEdge[i] = *m_vHalfEdges[i];
-		CHalfEdge& he = m_pHalfEdge[i];
-		he.m_iFace = m_vHalfEdges[i]->m_Face->m_fIndex;
-		he.m_iTwinEdge = (m_vHalfEdges[i]->m_eTwin ? m_vHalfEdges[i]->m_eTwin->m_eIndex : -1);
-		he.m_iNextEdge = m_vHalfEdges[i]->m_eNext->m_eIndex;
-		he.m_iPrevEdge = m_vHalfEdges[i]->m_ePrev->m_eIndex;
-		int i1 = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
-		int i2 = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
-		
-		assert(i1 >= 0 && i1 < m_nVertex && i2 >= 0 && i2 < m_nVertex);
-		
-		he.m_iVertex[0] = m_vHalfEdges[i]->m_Vertices[0]->m_vIndex;
-		he.m_iVertex[1] = m_vHalfEdges[i]->m_Vertices[1]->m_vIndex;
-	}
-
-	for (int i = 0; i < m_nFace; ++i)
-	{
-		m_pFace[i] = *m_vFaces[i];
-		CFace& face = m_pFace[i];
-		if (face.m_piEdge) delete []face.m_piEdge;
-		if (face.m_piVertex) delete []face.m_piVertex;
-
-		face.m_piEdge = new int[face.m_nType];
-		face.m_piVertex = new int[face.m_nType];
-		for (int j = 0; j < face.m_nType; ++j)
-		{
-			int idx = m_vFaces[i]->m_Vertices[j]->m_vIndex;
-			
-			assert(idx >= 0 && idx < m_nVertex);
-			
-			face.m_piVertex[j] = m_vFaces[i]->m_Vertices[j]->m_vIndex;
-			face.m_piEdge[j] = m_vFaces[i]->m_HalfEdges[j]->m_eIndex;
-		}
-	}
-
-	m_bIsIndexArrayExist = true;
-	m_bSeparateStorage = true;
-}
-
 void CMesh::assignElementsIndex()
 {
 	assert(m_nVertex == m_vVertices.size() && m_nHalfEdge == m_vHalfEdges.size() && m_nFace == m_vFaces.size());
@@ -1666,34 +967,6 @@ void CMesh::assignElementsIndex()
 	
 	for (int i = 0; i < m_nFace; ++i)
 		m_vFaces[i]->m_fIndex = i;
-
-	for (int i = 0; i < m_nVertex; ++i) {
-		CVertex* pv = m_vVertices[i];
-		if (pv->m_piEdge)
-			delete []pv->m_piEdge;
-		pv->m_piEdge = new int[pv->mOutValence];
-		for (int j = 0; j < pv->mOutValence; ++j) {
-			pv->m_piEdge[j] = pv->m_HalfEdges[j]->m_eIndex;
-		}
-	}
-
-	for (int i = 0; i < m_nHalfEdge; ++i) {
-		CHalfEdge* he = m_vHalfEdges[i];
-		he->m_iVertex[0] = he->m_Vertices[0]->m_vIndex;
-		he->m_iVertex[1] = he->m_Vertices[1]->m_vIndex;
-		he->m_iTwinEdge = he->m_eTwin ? he->m_eTwin->m_eIndex : -1;
-		he->m_iNextEdge = he->m_eNext->m_eIndex;
-		he->m_iPrevEdge = he->m_ePrev->m_eIndex;
-		he->m_iFace = he->m_Face->m_fIndex;
-	}
-
-	for (int i = 0; i < m_nFace; ++i) {
-		CFace *pf = m_vFaces[i];
-		for (int j = 0; j < pf->m_nType; ++j) {
-			pf->m_piVertex[j] = pf->m_Vertices[j]->m_vIndex;
-			pf->m_piEdge[j] = pf->m_HalfEdges[j]->m_eIndex;
-		}
-	}
 }
 
 bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
@@ -1744,7 +1017,6 @@ void CMesh::scaleAreaToVertexNum()
 
 	for (int i = 0; i < m_nVertex; ++i) {
 		m_vVertices[i]->translateAndScale(-center, scale);
-		m_pVertex[i].translateAndScale(-center, scale);
 	}
 }
 
@@ -1783,10 +1055,9 @@ void CMesh::gatherStatistics()
 
 void CMesh::move( const Vector3D& translation )
 {
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i) {
 		m_vVertices[i]->translateAndScale(translation, 1.0);
-		m_pVertex[i].translateAndScale(translation, 1.0);
+	
 	}
 }
 
@@ -1803,13 +1074,10 @@ void CMesh::scaleEdgeLenToUnit()
 	for (int i = 0; i < m_nHalfEdge; ++i)
 		heVisisted[i] = false;
 
-	for (int i = 0; i < m_nHalfEdge; ++i)
-	{
-		if (heVisisted[i]) continue;
-		
+	for (int i = 0; i < m_nHalfEdge; ++i) {
+		if (heVisisted[i]) continue;		
 		edgeNum++;
 		length += m_vHalfEdges[i]->getLength();
-
 		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
 		if (ptwin != NULL) heVisisted[ptwin->getIndex()] = true;
 	}
@@ -1818,10 +1086,8 @@ void CMesh::scaleEdgeLenToUnit()
 	length /= edgeNum;
 	double scale = 1.0 / length;
 	
-	for (int i = 0; i < m_nVertex; ++i)
-	{
+	for (int i = 0; i < m_nVertex; ++i)	{
 		m_vVertices[i]->translateAndScale(-center, scale);
-		m_pVertex[i].translateAndScale(-center, scale);
 	}
 
 }
@@ -1830,7 +1096,6 @@ void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
 {
 	for (int i = 0; i < m_nVertex; ++i)	{
 		m_vVertices[i]->translateAndScale(-center, scale);
-		m_pVertex[i].translateAndScale(-center, scale);
 	}
 }
 
@@ -1918,75 +1183,6 @@ std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
 	}
 
 	return v3;
-}
-
-void CMesh::loadFromOFF( std::string sFileName )
-{
-	// -----  format: off
-	//                #v, #f, #v+#f
-	//vertex:
-	//      x y z,
-	//face(triangle):
-	//      v1 v2 v3  (the vertex index is 1-based)
-	
-	//open the file
-	FILE *f;
-	fopen_s(&f, sFileName.c_str(), "r");
-
-	char *line[100];
-	fscanf_s(f, "%s", line);
-	int vNum, fNum, vfNum;
-	fscanf_s(f, "%ld%ld%ld", &vNum, &fNum, &vfNum);
-	assert(vNum + fNum == vfNum);
-
-	cout << "#vertices" << vNum << "    #faces" << fNum << endl;
-
-	list<Vector3D> VertexList;	//temporary vertex list
-	list<int> FaceList;			//temporary face list
-
-	Vector3D vec;
-
-	int l[3];
-
-	for (int i = 0; i < vNum; ++i)
-	{
-		fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
-		VertexList.push_back(vec);
-	}
-	for (int i = 0; i < fNum; ++i)
-	{
-		fscanf_s(f, "%ld%ld%ld", l, l+1, l+2);
-		for (int j = 0; j < 3; ++j)
-			FaceList.push_back(l[j]-1);
-	}
-
-	m_nVertex = (int)VertexList.size();
-	m_nFace = (int)FaceList.size() / 3;
-	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
-
-	//read vertices and faces
-	m_pVertex = new CVertex[m_nVertex];
-	m_pFace = new CFace[m_nFace];
-
-	list<Vector3D>::iterator iVertex = VertexList.begin();
-	list<int>::iterator iFace = FaceList.begin();
-
-	for(int i = 0; i < m_nVertex; i++)
-	{
-		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-	}
-
-	for(int i = 0; i < m_nFace; i++)
-	{
-		m_pFace[i].create(3);
-		for(int j = 0; j < 3; j++)
-			m_pFace[i].m_piVertex[j] = *iFace++;
-	}
-
-	VertexList.clear();
-	FaceList.clear();
-	construct();
 }
 
 void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures )
@@ -2164,10 +1360,7 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
 
 	for (int i = 0; i < m_nVertex; ++i)	{
-		m_pVertex[i].setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
-		
-		if (m_bIsPointerVectorExist)
-			m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
+		m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
 
     // after changing coordinates, vert and face normals need recalculation
@@ -2183,10 +1376,7 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	size_t vsize = vDeformedIdx.size();
 	for (size_t i = 0; i < vsize; ++i)
 	{
-		m_pVertex[vDeformedIdx[i]].setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
-		
-		if (m_bIsPointerVectorExist)
-			m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
+		m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 	}
 }
 
@@ -2357,21 +1547,22 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 		subMesh.m_nFace = (int)FaceList.size() / 3;
 		subMesh.m_nHalfEdge = 3 * subMesh.m_nFace;
 
-		subMesh.m_pVertex = new CVertex[subMesh.m_nVertex];
-		subMesh.m_pFace = new CFace[subMesh.m_nFace];
-
+        vector<CVertex> m_pVertex(subMesh.m_nVertex);
+        vector<vector<int>> faceVerts(subMesh.m_nFace);
 		list<Vector3D>::iterator iVertex = VertexList.begin();
 		list<int>::iterator iFace = FaceList.begin();
-		for(int i = 0; i < subMesh.m_nVertex; i++) {
-			subMesh.m_pVertex[i].m_vPosition = *iVertex++;  
-			subMesh.m_pVertex[i].m_vIndex = subMesh.m_pVertex[i].m_vid = i;
-		}
-		for(int i = 0; i < subMesh.m_nFace; i++) {
-			subMesh.m_pFace[i].create(3);
-			for(int j = 0; j < 3; j++)
-				subMesh.m_pFace[i].m_piVertex[j] = *iFace++;
-		}
-		subMesh.construct();
+
+        for (int i = 0; i < subMesh.m_nVertex; i++) {
+            m_pVertex[i].m_vPosition = *iVertex++;
+            m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+        }
+        for (int i = 0; i < subMesh.m_nFace; i++) {
+            faceVerts[i].resize(3);
+            for (int j = 0; j < 3; ++j)
+                faceVerts[i][j] = *iFace++;
+        }
+
+        subMesh.construct(m_pVertex, faceVerts);
 	}	
 }
 
@@ -2425,3 +1616,569 @@ std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
     }
     return results;
 }
+
+void CMesh::loadFromOBJ(std::string sFileName)
+{
+/* -----  format: smf, obj, dat -----
+ * vertex:
+ *      v x y z,
+ * face(triangle):
+ *      f v1 v2 v3  (the vertex index is 1-based)
+ * ----------------------------------- */
+	//open the file
+	FILE *f;
+	fopen_s(&f, sFileName.c_str(), "r");
+	assert(f != NULL);
+
+	std::list<Vector3D> VertexList;	//temporary vertex list
+	std::list<int> FaceList;			//temporary face list
+
+	Vector3D vec;
+    char ch = 0;
+	int l[3];
+	short j;
+
+	ch = fgetc(f);
+	while(ch > 0)	//save temporary information of vertex and face in list
+	{
+		switch(ch)
+		{
+		case 'v':	//vertex
+			ch = fgetc(f);
+			if((ch!=' ')&&(ch!='\t'))
+				break;
+			fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
+			VertexList.push_back(vec);
+
+		case 'f':	//face
+			ch = fgetc(f);
+			if((ch!=' ') && (ch!='\t'))
+				break;
+			fscanf_s(f, "%ld%ld%ld\n", &l[0], &l[1], &l[2]);
+			for(j = 0; j < 3; j++)
+				FaceList.push_back(l[j] - 1);		// 0-based, vid - 1
+			break;
+		
+		case '#':
+			while(ch != '\n' && ch > 0)
+				ch = fgetc(f);
+			break;
+		}
+		ch = fgetc(f);
+	}
+	fclose(f);
+		
+	m_nVertex = (int)VertexList.size();
+	m_nFace = (int)FaceList.size() / 3;
+	m_nHalfEdge = 3 * m_nFace;		// number of half-edges
+
+	//read vertices and faces
+	vector<CVertex> m_pVertex(m_nVertex);
+    vector<vector<int>> faceVerts(m_nFace);
+	list<Vector3D>::iterator iVertex = VertexList.begin();
+	list<int>::iterator iFace = FaceList.begin();
+	for(int i = 0; i < m_nVertex; i++) {
+		m_pVertex[i].m_vPosition = *iVertex++;  
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+	}    
+    for (int i = 0; i < m_nFace; i++) {
+        faceVerts[i].resize(3);
+        for (j = 0; j < 3; ++j)
+            faceVerts[i][j] = *iFace++;
+    }
+
+	construct(m_pVertex, faceVerts);
+}
+
+void CMesh::saveToOBJ( std::string sFileName )
+{
+	// open the file
+	FILE *f = NULL;
+	fopen_s(&f, sFileName.c_str(),"wb");
+	assert(f != NULL);
+
+	// file header
+	fprintf(f, "# vertices : %ld\r\n", m_nVertex);
+	fprintf(f, "# faces    : %ld\r\n", m_nFace);
+	fprintf(f, "\r\n");
+	
+	// vertices
+	for (int i = 0; i < m_nVertex; i++)
+	{
+        Vector3D vt = m_vVertices[i]->pos();
+		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
+	}
+
+	// faces
+    for (int i = 0; i < m_nFace; i++) {
+        fprintf(f, "f %ld %ld %ld\r\n",
+                m_vFaces[i]->getVertexIndex(0) + 1, 
+                m_vFaces[i]->getVertexIndex(1) + 1, 
+                m_vFaces[i]->getVertexIndex(2) + 1);            
+    }
+
+	fclose(f);
+}
+
+#if 0
+void CMesh::loadFromPLY( std::string sFileName )
+{
+	FILE *f;
+	fopen_s(&f, sFileName.c_str(), "rb");
+	assert (f != NULL);
+
+	int p1, p2, p3, i, vNr, pNr;
+	char nr; 
+	float x, y, z;
+	char buffer[101];
+	vNr = pNr = 0;
+
+	fseek(f, 0, SEEK_SET);
+
+	// READ IN HEADER
+	while (fgetc(f) != '\n') // Reads all of the 1st line
+		;
+
+	// read the remainder of the header
+	// - interested in 3 parts only
+	// - format
+	// - number of vertices
+	// - number of polygons
+
+	fscanf_s(f, "%100s ", buffer);
+	while (_stricmp(buffer, "end_header") != 0)
+	{
+		if (_stricmp(buffer, "format") == 0)
+		{
+			fscanf_s(f, "%100s ", buffer);
+			if (_stricmp(buffer, "ascii") != 0)
+			{
+				throw runtime_error("PLY file format error: PLY ASCII support only.");
+			}
+		} else if (_stricmp(buffer, "element") == 0)
+		{
+			fscanf_s(f, "%100s ", buffer);
+			if (_stricmp(buffer, "vertex") == 0)
+			{
+				fscanf_s(f, "%100s", buffer);
+				vNr = atoi(buffer);
+			} else if (_stricmp(buffer, "face") == 0)
+			{
+				fscanf_s(f, "%100s", buffer);
+				pNr = atoi(buffer);
+			}
+		}
+		fscanf_s(f, "%100s ", buffer);
+	}
+
+	m_nVertex = vNr;
+	m_nFace = pNr;
+	m_nHalfEdge = 3 * m_nFace;		//number of half-edges
+
+	m_pVertex = new CVertex[m_nVertex];
+	m_pFace = new CFace[m_nFace];
+
+	// READ IN VERTICES
+	for (i = 0; i < vNr; i++) // Reads the vertices
+	{
+		if (fscanf_s(f, "%f %f %f", &x, &y, &z) != 3)
+			throw runtime_error("PLY file format error: vertex list");
+		while (fgetc(f) != '\n'); // Read till end of the line
+		// to skip texture/color values
+
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+		m_pVertex[i].m_vPosition = Vector3D(x, y, z);
+
+	}
+
+	// READ IN POLYGONS
+	int triCount(0);
+	while ((triCount < pNr) && (!(feof(f)))) 
+	{
+		fscanf_s(f, "%c", &nr);
+
+		switch (nr)
+		{
+		case '2':
+			throw runtime_error("PLY file format error: polygon 2");
+
+		case '3':
+			if (fscanf_s(f, "%d %d %d\n", &p1, &p2, &p3) != 3)
+				throw runtime_error( "PLY file format error: polygon 3");
+			if ((p1 >= vNr) || (p2 >= vNr) || (p3 >= vNr))
+				throw runtime_error( "PLY file format error: vertex index out of range");
+			else 
+			{ 
+				m_pFace[triCount].create(3);
+				m_pFace[triCount].m_piVertex[0] = p1;
+				m_pFace[triCount].m_piVertex[1] = p2;
+				m_pFace[triCount].m_piVertex[2] = p3;
+			}
+			triCount++;
+			break;
+		case ' ':
+		case '\t':
+		case '\n':
+			// skip leading whitespace characters
+			break;
+		default:
+			// skip any lines that that we are not interested in
+			// (i.e. don't begin with the cases above)
+			// e.g. N vertex polygons of form "N v1 v2...vN" on the line
+			do {
+				nr = fgetc(f);
+			} while ((!(feof(f))) && nr != '\n');
+			break;
+		}
+
+
+	}
+	construct(TODO, TODO);
+}
+
+void CMesh::loadFromOFF( std::string sFileName )
+{
+    // -----  format: off
+    //                #v, #f, #v+#f
+    //vertex:
+    //      x y z,
+    //face(triangle):
+    //      v1 v2 v3  (the vertex index is 1-based)
+
+    //open the file
+    FILE *f;
+    fopen_s(&f, sFileName.c_str(), "r");
+
+    char *line[100];
+    fscanf_s(f, "%s", line);
+    int vNum, fNum, vfNum;
+    fscanf_s(f, "%ld%ld%ld", &vNum, &fNum, &vfNum);
+    assert(vNum + fNum == vfNum);
+
+    cout << "#vertices" << vNum << "    #faces" << fNum << endl;
+
+    list<Vector3D> VertexList;	//temporary vertex list
+    list<int> FaceList;			//temporary face list
+
+    Vector3D vec;
+
+    int l[3];
+
+    for (int i = 0; i < vNum; ++i)
+    {
+        fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
+        VertexList.push_back(vec);
+    }
+    for (int i = 0; i < fNum; ++i)
+    {
+        fscanf_s(f, "%ld%ld%ld", l, l+1, l+2);
+        for (int j = 0; j < 3; ++j)
+            FaceList.push_back(l[j]-1);
+    }
+
+    m_nVertex = (int)VertexList.size();
+    m_nFace = (int)FaceList.size() / 3;
+    m_nHalfEdge = 3 * m_nFace;		//number of half-edges
+
+    //read vertices and faces
+    m_pVertex = new CVertex[m_nVertex];
+    m_pFace = new CFace[m_nFace];
+
+    list<Vector3D>::iterator iVertex = VertexList.begin();
+    list<int>::iterator iFace = FaceList.begin();
+
+    for(int i = 0; i < m_nVertex; i++)
+    {
+        m_pVertex[i].m_vPosition = *iVertex++;  
+        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+    }
+
+    for(int i = 0; i < m_nFace; i++)
+    {
+        m_pFace[i].create(3);
+        for(int j = 0; j < 3; j++)
+            m_pFace[i].m_piVertex[j] = *iFace++;
+    }
+
+    VertexList.clear();
+    FaceList.clear();
+    construct(TODO, TODO);
+}
+
+void CMesh::loadFromVERT( std::string sFileName )
+{
+	//open the file
+	ifstream infile(sFileName.c_str());
+	if( ! infile ) {
+		throw std::runtime_error("error: unable to open input vert file!");
+	}
+	list<Vector3D> VertexList;//temporary vertex list
+	list<int> FaceList;//temporary face list
+
+	string sline; // single line
+	double dx,dy,dz;
+	while( getline(infile, sline) )
+	{
+		istringstream sin(sline);
+		sin >> dx >> dy >> dz;
+		Vector3D vec(dx,dy,dz);
+		VertexList.push_back(vec);
+	}
+
+	string triName = sFileName.substr(0,sFileName.length()-4);
+	triName += "tri";
+
+	cout << triName << endl;
+	ifstream trifile(triName.c_str());
+	if(!trifile) {
+		throw std::runtime_error("unable to open input tri file");
+	}
+
+	int tx,ty,tz;
+	while( getline(trifile, sline) )
+	{
+		istringstream sin(sline);
+		sin >> tx >> ty >> tz;
+		FaceList.push_back(tx-1);
+		FaceList.push_back(ty-1);
+		FaceList.push_back(tz-1);
+	}
+
+	
+	m_nVertex = (int)VertexList.size();
+	m_nFace = (int)FaceList.size()/3;
+	m_nHalfEdge = 3*m_nFace;
+
+	//read vertices and faces
+	m_pVertex = new CVertex[m_nVertex];
+	m_pFace = new CFace[m_nFace];
+
+	int i;
+	list<Vector3D>::iterator iVertex = VertexList.begin();
+	list<int>::iterator iFace = FaceList.begin();
+
+	for(i=0; i<m_nVertex; i++)
+	{
+		m_pVertex[i].m_vPosition = *iVertex++;  
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+	}
+	short j;
+	for(i=0; i<m_nFace; i++)
+	{
+		m_pFace[i].create(3);
+		for(j=0;j<3;j++)
+			m_pFace[i].m_piVertex[j] = *iFace++;
+	}
+
+	VertexList.clear();
+	FaceList.clear();
+	construct(TODO, TODO);
+}
+
+void CMesh::loadFromM( std::string sFileName )
+{
+	//open the file
+	ifstream infile;
+	infile.open(sFileName.c_str());
+
+	vector<Vector3D> VertexList;//temporary vertex list
+	//vector<int> VertexIDList;//temporary vertex list
+	//vector<Vector3D> VertexNormList;//temporary vertex list
+	vector<float> VertexColorList;//temporary vertex list
+	//vector<Vector2D> VertexParamList;//temporary vertex list
+	vector<int> FaceList;//temporary face list
+
+	const int MAX_TOKEN = 1000;
+	char str_buf[MAX_TOKEN];
+	char token[MAX_TOKEN];
+
+	do{
+		infile.getline(str_buf, MAX_TOKEN);
+
+		if(strstr(str_buf, "Vertex") == 0) {
+			;
+		}
+		else
+			break;
+	}while(!infile.eof());
+
+	int v_index = 1, prev_idx = 0; // start from 1
+	// Process vertex data
+	while( strstr(str_buf, "Vertex") ) {
+		// move the line to the stream buffer
+		istringstream strbuf(str_buf/*, strlen(str_buf)*/);
+
+		strbuf >> token; // "Vertex"
+
+		// vertex index
+		int v_idx;
+		strbuf >> v_idx;
+		prev_idx = v_idx;
+
+		//VertexIDList.push_back(v_idx);
+		Vector3D vert;
+		strbuf >> vert.x >> vert.y >> vert.z;
+		VertexList.push_back(vert);
+
+		char c;
+		strbuf >> c;
+		if( c == '{' && !strbuf.eof()) {
+			while(c != '}' && !strbuf.eof()) {
+				strbuf.getline(token, MAX_TOKEN);// >> c;
+
+				//read rgb
+				char *pstr = strstr(token,"rgb");
+				if(pstr != 0) {
+					pstr = strstr(pstr, "=");
+					pstr = strstr(pstr, "(");
+					pstr = &pstr[1];
+					istringstream strbuf(pstr/*, strlen(pstr)*/);
+					float r,g,b;
+					strbuf >> r >> g >> b;
+
+					//cout << ur << " " << ug << " " << ub << endl;
+					VertexColorList.push_back(r);
+					VertexColorList.push_back(g);
+					VertexColorList.push_back(b);
+				}
+
+				//read normal
+				/*pstr = strstr(token,"normal");
+				if(pstr != 0) {
+					pstr = strstr(pstr, "=");
+					pstr = strstr(pstr, "(");
+					pstr = &pstr[1];
+					istringstream strbuf(pstr, strlen(pstr));
+					Vector3D norm;
+					strbuf >> norm.x >> norm.y >> norm.z;
+					VertexNormList.push_back(norm);
+				}*/
+
+				//read uv
+				/*pstr = strstr(token,"uv");
+				if(pstr != 0) {
+					pstr = strstr(pstr, "=");
+					pstr = strstr(pstr, "(");
+					pstr = &pstr[1];
+					istringstream strbuf(pstr, strlen(pstr));
+					Vector2D uv;
+					strbuf >> uv.x >> uv.y;
+					VertexParamList.push_back(uv);
+				}*/
+				//read other properties ...
+			}
+		}
+		infile.getline(str_buf, MAX_TOKEN);
+	}
+
+	// process face data
+	int f_id = 1;
+	while( strstr(str_buf, "Face") ) {
+		// move the line to the stream buffer
+		istringstream strbuf(str_buf/*, strlen(str_buf)*/);
+
+		strbuf >> token; // "Face"
+
+		int f_num;
+		strbuf >> f_num;
+
+		int x_id,y_id,z_id;
+		strbuf >> x_id >> y_id >> z_id;
+
+		FaceList.push_back(x_id);
+		FaceList.push_back(y_id);
+		FaceList.push_back(z_id);
+
+		// face properties
+		char c;
+		strbuf >> c;
+		if( c == '{' && !strbuf.eof()) {			
+			while(c != '}' && !strbuf.eof()) {
+				strbuf.getline(token, MAX_TOKEN);// >> c;
+			}
+		}	
+
+		infile.getline(str_buf, MAX_TOKEN);
+	}
+
+
+	m_nVertex = (int)VertexList.size();
+	m_nFace = (int)FaceList.size()/3;
+	m_nHalfEdge = 3 * m_nFace;
+
+	// read vertices and faces
+	m_pVertex = new CVertex[m_nVertex];
+	m_pFace = new CFace[m_nFace];
+
+	std::vector<ZGeom::Colorf> vVertColors(m_nVertex);
+	for(int i = 0; i < m_nVertex; i++)
+	{
+		m_pVertex[i].m_vPosition= VertexList[i];  
+		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+
+		vVertColors[i][0] = VertexColorList[3*i];
+		vVertColors[i][1] = VertexColorList[3*i+1];
+		vVertColors[i][2] = VertexColorList[3*i+2];
+	}
+	
+    addColorAttr(StrAttrVertColors, vVertColors);
+
+	for(int i = 0; i < m_nFace; i++)
+	{
+		m_pFace[i].create(3);
+		m_pFace[i].m_piVertex[0] = FaceList[i*3]-1;
+		m_pFace[i].m_piVertex[1] = FaceList[i*3+1]-1;
+		m_pFace[i].m_piVertex[2] = FaceList[i*3+2]-1;
+	}
+
+	construct(TODO, TODO);
+}
+
+
+// Gu Mesh is used as a possible way to keep parameterizations
+// and the mesh together
+void CMesh::saveToM( const std::string& sFileName )
+{
+	FILE* fp;
+	fopen_s(&fp, sFileName.c_str(), "w+");
+	
+	const std::vector<Vector3D>& vVertNormals = getVertNormals();
+	fprintf(fp, "# vertex=%ld, face=%ld\n", m_nVertex, m_nFace);
+	
+	std::vector<Colorf>* vColors = NULL;
+    if (hasAttr(StrAttrVertColors)) vColors = &getVertColors(StrAttrVertColors);
+
+	for (int i = 0; i < m_nVertex; i++)
+	{
+		const Vector3D& pos = m_pVertex[i].m_vPosition;
+		const Vector3D& normal = vVertNormals[i];
+		float r(.5), g(.5), b(.5);
+		if (vColors) {
+			r = (*vColors)[i].r();
+			g = (*vColors)[i].g();
+			b = (*vColors)[i].b();
+		}
+		
+		fprintf(fp, "Vertex %ld  %.6f %.6f %.6f {rgb=(%.6f %.6f %.6f) normal=(%.6f %.6f %.6f)",
+			    i + 1, pos.x, pos.y, pos.z, r, g, b, normal.x, normal.y, normal.z);
+		fprintf(fp, "}\n");
+	}
+
+	for (int i = 0; i < m_nFace; i++)
+	{
+		// assert(m_pFace[i].m_nType == 3);
+		fprintf(fp, "Face %ld", i+ 1);
+
+		for (int j = 0; j < m_pFace[i].m_nType; j++)
+		{
+			int edge = m_pFace[i].m_piEdge[j];
+			int _vv_j = m_pHalfEdge[edge].m_iVertex[0] + 1;
+			fprintf(fp, " %ld", _vv_j);
+
+		}
+		fprintf(fp, "\n");
+	}
+
+	fclose(fp);
+}
+#endif

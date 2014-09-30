@@ -31,11 +31,7 @@ MeshPyramid::MeshPyramid( CMesh* mesh )
 
 void MeshPyramid::setInitialMesh( CMesh* mesh )
 {
-	if(!mesh->m_bIsPointerVectorExist)
-		throw logic_error("Pointer Vector not exist for MeshPyramid::setInitialMesh()");
-
-	originalMesh = mesh;
-
+    originalMesh = mesh;
 	m_nVertices = originalMesh->m_nVertex;
 	m_nFace = originalMesh->m_nFace;
 
@@ -584,11 +580,10 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 		
 		m_ostr << "  Vertex Num: " << currentMesh->m_nVertex << endl
 			   << "  Face Num: " << currentMesh->m_nFace << endl
-			   << "  Half-edge Num: " << currentMesh->m_nHalfEdge << endl;
+			   << "  HalfEdge Num: " << currentMesh->m_nHalfEdge << endl;
 			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
 		
 		currentMesh->assignElementsIndex();
-		currentMesh->buildIndexArrays();
 		currentMesh->gatherStatistics();
 
 		//finally
