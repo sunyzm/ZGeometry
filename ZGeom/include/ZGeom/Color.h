@@ -40,7 +40,6 @@ public:
 	float toGrayscale() const { return 0.2989f * r() + 0.5870f * g() + 0.1140f * b(); }
 	void falseColor(float gray, float alpha = 1.f, ColorMapType cmt = CM_JET);
 	void posNegColor(float val, const float* colorPos = ColorOrange, const float* colorNeg = ColorAzure);
-
 	void setAs(const float *c);
 	operator const float* () const { return mVal; }
 };

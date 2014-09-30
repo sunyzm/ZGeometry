@@ -82,7 +82,7 @@ double Vector3D::operator[]( int i ) const
 	else return z;
 }
 
-Vector3D Vector3D::normalize()
+const Vector3D& Vector3D::normalize()
 {
 	double len = length();
 	if(!EQUALZERO(len)) 
@@ -274,25 +274,4 @@ Matrix3 vector3DMultiply( const Vector3D& v1, const Vector3D& v2 )
 	mat.data[2][2] = v1.z * v2.z;
 	
 	return mat;
-}
-
-Vector3D TriAreaNormal( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3 )
-{
-	Vector3D v12 = v2 - v1, v23 = v3 - v2;
-	return (v12 ^ v23);
-}
-
-double TriArea( const Vector3D& v1, const Vector3D& v2, const Vector3D& v3 )
-{
-	return TriAreaNormal(v1, v2, v3).length() / 2.;
-}
-
-Vector3D toVector3D(const ZGeom::Vec3d& v)
-{
-	return Vector3D(v[0], v[1], v[2]);
-}
-
-ZGeom::Vec3d toVec3d(const Vector3D& v)
-{
-	return ZGeom::Vec3d(v.x, v.y, v.z);
 }

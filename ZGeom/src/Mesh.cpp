@@ -457,14 +457,16 @@ Vector3D CFace::calcNormal() const
 	Vector3D v[2];
 	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
 	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
-	Vector3D vNormal= v[0] ^ v[1];
+	Vector3D vNormal = v[0] ^ v[1];
 	vNormal.normalize();	
 	return vNormal;
 }
 
 Vector3D CFace::calBarycenter() const
 {
-	return (m_Vertices[0]->getPosition() + m_Vertices[1]->getPosition() + m_Vertices[2]->getPosition()) / 3.0;
+    Vector3D center(0,0,0);
+    for (auto p : m_Vertices) center += p->getPosition();
+    return center / (double)m_Vertices.size();
 }
 
 
@@ -1169,36 +1171,10 @@ void CMesh::findHoles()
 		}
 		if((int)vTmp.size() > MAX_HOLE_SIZE) continue; // boundary	
 		
-		for (int it_v : vTmp) 
-			vIsOnHole[it_v] = true;
+		for (int iv : vTmp) vIsOnHole[iv] = true;
 	}
 
 	addAttr<std::vector<bool>>(vIsOnHole, StrAttrVertOnHole, AR_VERTEX);
-
-#if 0
-	for(int i = 0; i < m_nVertex; i++)
-	{
-		if(!m_pVertex[i].m_bIsBoundary || m_pVertex[i].m_mark > 0) continue;	// not boundary or visited
-		int vi = i;
-		int eout = m_pVertex[i].m_piEdge[m_pVertex[i].m_nValence - 1];
-		vector<int> v_temp;
-		while(m_pHalfEdge[eout].m_iVertex[1] != i)
-		{
-			v_temp.push_back(vi);
-			m_pVertex[vi].m_mark = 1;
-			clear_list.push_back(vi);
-			vi = m_pHalfEdge[eout].m_iVertex[1];
-			eout = m_pVertex[vi].m_piEdge[m_pVertex[vi].m_nValence - 1];
-		}
-		if((int)v_temp.size() > MAX_HOLE_SIZE) 
-			continue; // boundary	
-		for(vector<int>::iterator it_v = v_temp.begin(); it_v != v_temp.end(); it_v++) 
-			m_pVertex[*it_v].m_bIsHole = true;
-	}
-	vector<int>::iterator it_vc;	
-	for(it_vc = clear_list.begin(); it_vc != clear_list.end(); it_vc++) 
-		m_pVertex[*it_vc].m_mark = -1;
-#endif
 }
 
 void CMesh::construct()
@@ -1352,13 +1328,13 @@ void CMesh::calVertNormals()
 
 		Vector3D vNormal(0,0,0);
 		for(int fIndex : incidentFacecIdx) {
-			CFace* face = m_vFaces[fIndex];
-			Vector3D cv = (face->getVertex(0)->getPosition() + face->getVertex(1)->getPosition() + face->getVertex(2)->getPosition()) / 3.0;
-			double wt = 1.0 / (cv - vertex->getPosition()).length();
+			const CFace* face = m_vFaces[fIndex];
+            //double wt = 1.0;
+            //double wt = 1.0 / (face->calBarycenter() - vertex->getPosition()).length();
+            double wt = face->calArea();
 			vNormal += vFaceNormals[fIndex] * wt;
-		}
-		vNormal.normalize();
-		vVertNormals[vIndex] = vNormal;
+		}		
+        vVertNormals[vIndex] = vNormal.normalize();;
 	}
 
 	addAttr<std::vector<Vector3D>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
@@ -1374,17 +1350,17 @@ double CMesh::getHalfEdgeLen( int iEdge ) const
 
 int CMesh::calEdgeCount()
 {
-	assert (this->m_bIsPointerVectorExist);
+    int halfedgeCount = this->halfEdgeCount();
 	int twinEdgeCount = 0;
-	for (CHalfEdge* he :m_vHalfEdges) {
+	for (CHalfEdge* he : m_vHalfEdges) {
 		if (he->m_eTwin && he->m_eTwin->m_bIsValid)
-			twinEdgeCount++;
+            twinEdgeCount++;
 	}
 
 	if(twinEdgeCount % 2 != 0)
 		throw logic_error("Error: CMesh::getEdgeNum; twinEdgeNum should be even number");
 
-	return halfEdgeCount() - twinEdgeCount / 2;
+    return halfedgeCount - twinEdgeCount / 2;
 }
 
 int CMesh::calBoundaryNum()
@@ -1407,9 +1383,7 @@ int CMesh::calBoundaryNum()
 				boundaryIndexSet.erase( it );
 				
 				int edgeIndex = -1;
-				for( auto he_iter = m_vVertices[i]->m_HalfEdges.begin(); he_iter != m_vVertices[i]->m_HalfEdges.end(); ++he_iter ) 
-				{
-					CHalfEdge* he = *he_iter;
+                for (CHalfEdge* he : m_vVertices[i]->m_HalfEdges) {					
 					if( he->twinHalfEdge() == NULL ) {
 						edgeIndex = he->getIndex();
 						break;
@@ -1484,7 +1458,6 @@ double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double
 	}
 }
 
-
 // Calculate mean and Gauss curvatures                                                                       */
 //
 void CMesh::calCurvatures()
@@ -1551,668 +1524,6 @@ double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
 	}
 }
 
-bool CMesh::calVertexArea(vector<double>& Av)
-{
-	Av.resize(m_nVertex,0.0);
-	for(int f = 0; f < m_nFace; f++)
-	{
-		int i0 = m_pFace[f].m_piVertex[0];
-		int i1 = m_pFace[f].m_piVertex[1];
-		int i2 = m_pFace[f].m_piVertex[2];
-		Vector3D v0 = m_pVertex[i0].m_vPosition;
-		Vector3D v1 = m_pVertex[i1].m_vPosition;
-		Vector3D v2 = m_pVertex[i2].m_vPosition;
-		v1 = v1 - v0;
-		v2 = v2 - v0;
-		crossProduct3D(v1, v2, v0);		//v0 = cross(v1,v2)
-		double ff = v0.length()/(6.0);//*m_edge*m_edge);
-		Av[i0] += ff;
-		Av[i1] += ff;
-		Av[i2] += ff;
-	}
-	return true;
-}
-
-double CMesh::calLocalGeodesic( int ia, int ib, int ic ) const
-{
-	// ia - vertex with smaller geodesic; ib - with greater geodesic; ic - update
-	double la = (m_pVertex[ib].m_vPosition-m_pVertex[ic].m_vPosition).length();
-	double lb = (m_pVertex[ia].m_vPosition-m_pVertex[ic].m_vPosition).length();
-	double lc = (m_pVertex[ib].m_vPosition-m_pVertex[ia].m_vPosition).length();
-	double ctheta = (la*la+lb*lb-lc*lc)/(2*la*lb);
-	double stheta = sqrt(1-ctheta*ctheta);
-	double u = m_pVertex[ib].m_LocalGeodesic - m_pVertex[ia].m_LocalGeodesic;
-	double ld = lb-la*ctheta;
-	double le = la*stheta;
-	double delta = lc*lc-u*u;
-	double tc = m_pVertex[ic].m_LocalGeodesic;
-	if (delta >= 0.0) {
-		delta = sqrt(delta);
-		double t1 = lb*(u*ld+le*delta)/(lc*lc);//(-B+delta)/(2*A);
-		if(t1>u && lb*(t1-u)/t1>la*ctheta && lb*(t1-u)/t1<la/abs(ctheta))
-		{
-			if(tc<0.0) tc = t1+m_pVertex[ia].m_LocalGeodesic;
-			else tc = min(tc,t1+m_pVertex[ia].m_LocalGeodesic);
-		}
-		else
-		{
-			double minab = min(lb+m_pVertex[ia].m_LocalGeodesic,la+m_pVertex[ib].m_LocalGeodesic);
-			if(tc<0.0) tc = minab;
-			else tc = min(tc,minab);
-		}
-	}
-	else {
-		double minab = min(lb+m_pVertex[ia].m_LocalGeodesic,la+m_pVertex[ib].m_LocalGeodesic);
-		if(tc<0.0) tc = minab;
-		else tc = min(tc,minab);
-	}
-	return tc;
-}
-
-bool CMesh::vertGeoNeighborVerts(int i, double ring, vector<GeoNote>& nbg)
-{
-	GeoQueue heapqueue;
-
-	if(!nbg.empty()) nbg.clear();
-
-	CVertex& notei = m_pVertex[i];
-	notei.m_mark = i;
-	notei.m_LocalGeodesic = 0.0;
-	notei.m_inheap = true;
-	nbg.push_back(GeoNote(i,0.0));
-
-	int size = notei.mOutValence;
-	int j,k,ia,ib,ic;
-
-	bool flag = true;
-
-	for (j = 0; j < size; j++) {
-		int ee = notei.m_piEdge[j];
-		int endv = m_pHalfEdge[ee].m_iVertex[1];
-		m_pVertex[endv].m_inheap = true;
-		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[i].m_vPosition;
-		double mgeo = vt.length();
-		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
-		m_pVertex[endv].m_mark = i;
-		if(mgeo<ring) nbg.push_back(GeoNote(endv,mgeo));
-	}
-
-	for (j = 0; j < size; j++) {
-		int e1 = notei.m_piEdge[j];
-		ia = m_pHalfEdge[e1].m_iVertex[1];
-		int e2 = m_pHalfEdge[e1].m_iNextEdge;
-		ib = m_pHalfEdge[e2].m_iVertex[1];
-		if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic) {
-			int it = ia;
-			ia = ib;
-			ib = it;
-		}
-		e1 = m_pHalfEdge[e2].m_iTwinEdge;
-		if(e1<0) continue;
-		e2 = m_pHalfEdge[e1].m_iNextEdge;
-		ic = m_pHalfEdge[e2].m_iVertex[1];
-		double mgeo = calLocalGeodesic(ia,ib,ic);
-		m_pVertex[ic].m_LocalGeodesic = mgeo;
-		m_pVertex[ic].m_inheap = true;
-		if(mgeo<ring) heapqueue.push(GeoNote(ic,mgeo));
-	} // first ring
-
-	int itr = 0;
-	while (!heapqueue.empty())// && itr<MAX_NEIGHBOR_NUMBER) 
-	{
-		itr++;
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-
-		int sg = nt.m_id;
-		double sgd = nt.m_geodesic;
-		if(m_pVertex[sg].m_bIsBoundary) flag = false;
-
-		if(m_pVertex[sg].m_mark==i) continue;  // marched already
-		//if(m_pOctave[o].m_pNote[sg].m_LocalGeodesic < sgd) continue;
-		if(m_pVertex[sg].m_LocalGeodesic > ring) break;   // reach the upper bound
-		nbg.push_back(nt);
-		m_pVertex[sg].m_mark = i;
-
-		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].mOutValence; k++) {
-			ia = sg;
-			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ib].m_mark != i) continue; // unreached point
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				ia = ib;
-				ib = sg;
-			}
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != i) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					if(gg<ring) heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					if(gg<ring) heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-			e2 = m_pHalfEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nHalfEdge) continue;
-			e1 = m_pHalfEdge[e2].m_iNextEdge;
-			ic = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != i) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					if(gg<ring) heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					if(gg<ring) heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-		}
-	}
-
-	for (size_t ni=0; ni<nbg.size(); ni++)
-	{
-		int pos = nbg[ni].m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	// clear heap
-	while (!heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-		int pos = nt.m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-
-	return flag;
-}
-
-double CMesh::calGeodesic( int s, int t ) const
-{
-	if(s == t) return 0.0;
-
-	GeoQueue heapqueue;
-
-	vector<GeoNote> nbg;
-	CVertex& notei = m_pVertex[s];
-	notei.m_mark = s;
-	notei.m_LocalGeodesic = 0.0;
-	notei.m_inheap = true;
-	nbg.push_back(GeoNote(s,0.0));
-
-	int size = notei.mOutValence;
-	int j,k,ia,ib,ic;
-
-	bool stop = false;
-	double geo = 0.0;
-
-	for (j=0; j<size; j++)
-	{
-		int ee = notei.m_piEdge[j];
-		int endv = m_pHalfEdge[ee].m_iVertex[1];
-		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
-		double mgeo = vt.length();
-		
-		if(endv == t) {stop=true; geo=mgeo; break;}	// destination reached
-		m_pVertex[endv].m_inheap = true;
-		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
-		m_pVertex[endv].m_mark = s;
-		nbg.push_back(GeoNote(endv,mgeo));
-	}
-	if(!stop)
-	{
-		for (j=0; j<size; j++)
-		{
-			int e1 = notei.m_piEdge[j];
-			ia = m_pHalfEdge[e1].m_iVertex[1];
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ib = m_pHalfEdge[e2].m_iVertex[1];
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				int it = ia;
-				ia = ib;
-				ib = it;
-			}
-			e1 = m_pHalfEdge[e2].m_iTwinEdge;
-			if(e1<0) continue;
-			e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			double mgeo = calLocalGeodesic(ia,ib,ic);
-			m_pVertex[ic].m_LocalGeodesic = mgeo;
-			m_pVertex[ic].m_inheap = true;
-			heapqueue.push(GeoNote(ic,mgeo));
-		} // first ring
-	}
-	
-	int count = 0;
-	while (!stop && !heapqueue.empty())
-	{
-		//if(++count == m_nVertex) {break;}
-		//cout << ++count << endl;
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-
-		int sg = nt.m_id;
-		if(sg == t) 
-		{
-			stop=true; 
-			geo=nt.m_geodesic; 
-			nbg.push_back(nt); 
-			break;
-		}
-		
-		double sgd = nt.m_geodesic;
-//		if(m_pVertex[sg].m_bIsBoundary) continue;
-		if(m_pVertex[sg].m_mark==s) continue;  // matched already
-		m_pVertex[sg].m_mark = s;
-		nbg.push_back(nt);
-		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].mOutValence; k++)
-		{
-			ia = sg;
-			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				ia = ib;
-				ib = sg;
-			}
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-			e2 = m_pHalfEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nHalfEdge) continue;
-			e1 = m_pHalfEdge[e2].m_iNextEdge;
-			ic = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-		}
-	}
-
-	for (size_t ni=0; ni<nbg.size(); ni++)
-	{
-		int pos = nbg[ni].m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	// clear heap
-	while (!heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-		int pos = nt.m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	nbg.clear();
-	return geo;
-}
-
-double CMesh::getGeodesicToBoundary(int s) const
-{
-	GeoQueue heapqueue;
-
-	vector<GeoNote> nbg;
-	CVertex& notei = m_pVertex[s];
-	notei.m_mark = s;
-	notei.m_LocalGeodesic = 0.0;
-	notei.m_inheap = true;
-	nbg.push_back(GeoNote(s,0.0));
-
-	int size = notei.mOutValence;
-	int j, k, ia, ib, ic;
-
-	bool stop = false;
-	double geo = 0.0;
-
-	const std::vector<bool>& vVertIsHole = getVertsOnHole_const();
-
-	for (j = 0; j < size; j++)
-	{
-		int ee = notei.m_piEdge[j];
-		int endv = m_pHalfEdge[ee].m_iVertex[1];
-		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
-		double mgeo = vt.length();
-
-		if(m_pVertex[endv].m_bIsBoundary && !vVertIsHole[endv]) {stop=true; geo=mgeo; break;}	// destination reached
-		m_pVertex[endv].m_inheap = true;
-		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
-		m_pVertex[endv].m_mark = s;
-		nbg.push_back(GeoNote(endv,mgeo));
-	}
-	if(!stop)
-	{
-		for (j = 0; j < size; j++)
-		{
-			int e1 = notei.m_piEdge[j];
-			ia = m_pHalfEdge[e1].m_iVertex[1];
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ib = m_pHalfEdge[e2].m_iVertex[1];
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				int it = ia;
-				ia = ib;
-				ib = it;
-			}
-			e1 = m_pHalfEdge[e2].m_iTwinEdge;
-			if(e1<0) continue;
-			e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			double mgeo = calLocalGeodesic(ia,ib,ic);
-			m_pVertex[ic].m_LocalGeodesic = mgeo;
-			m_pVertex[ic].m_inheap = true;
-			heapqueue.push(GeoNote(ic,mgeo));
-		} // first ring
-	}
-
-	int count = -m_nVertex;
-	while (!stop && !heapqueue.empty())
-	{
-		if(++count == m_nVertex) {break;}
-
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-
-		int sg = nt.m_id;
-		if(m_pVertex[sg].m_bIsBoundary && !vVertIsHole[sg]) 
-		{
-			stop = true; 
-			geo = nt.m_geodesic; 
-			nbg.push_back(nt); 
-			break;
-		}
-
-		double sgd = nt.m_geodesic;
-		
-		if(m_pVertex[sg].m_mark == s) continue;  // marched already
-		m_pVertex[sg].m_mark = s;
-		if(vVertIsHole[sg]) continue;
-		nbg.push_back(nt);
-		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].mOutValence; k++)
-		{
-			ia = sg;
-			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				ia = ib;
-				ib = sg;
-			}
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-			e2 = m_pHalfEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nHalfEdge) continue;
-			e1 = m_pHalfEdge[e2].m_iNextEdge;
-			ic = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-		}
-	}
-
-	for (size_t ni=0; ni<nbg.size(); ni++)
-	{
-		int pos = nbg[ni].m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	// clear heap
-	while (!heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-		int pos = nt.m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-
-	//if(geo==0.0) cout<<s<<endl;
-	return geo;
-}
-
-double CMesh::getGeodesicToBoundary(int s, vector<GeoNote>& nbg)
-{
-	GeoQueue heapqueue;
-	if(!nbg.empty()) nbg.clear();
-	
-	CVertex& notei = m_pVertex[s];
-	notei.m_mark = s;
-	notei.m_LocalGeodesic = 0.0;
-	notei.m_inheap = true;
-	nbg.push_back(GeoNote(s,0.0));
-
-	int size = notei.mOutValence;
-	int j,k,ia,ib,ic;
-
-	bool stop = false;
-	double geo = 0.0;
-	const std::vector<bool>& vVertIsHole = getVertsOnHole();
-
-	for (j=0; j<size; j++)
-	{
-		int ee = notei.m_piEdge[j];
-		int endv = m_pHalfEdge[ee].m_iVertex[1];
-		Vector3D vt = m_pVertex[endv].m_vPosition - m_pVertex[s].m_vPosition;
-		double mgeo = vt.length();
-
-		if(m_pVertex[endv].m_bIsBoundary && !vVertIsHole[endv]) {stop=true; geo=mgeo; break;}	// destination reached
-		m_pVertex[endv].m_inheap = true;
-		m_pVertex[endv].m_LocalGeodesic = mgeo;   // geodesic in first ring
-		m_pVertex[endv].m_mark = s;
-		nbg.push_back(GeoNote(endv,mgeo));
-	}
-	if(!stop)
-	{
-		for (j=0; j<size; j++)
-		{
-			int e1 = notei.m_piEdge[j];
-			ia = m_pHalfEdge[e1].m_iVertex[1];
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ib = m_pHalfEdge[e2].m_iVertex[1];
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				int it = ia;
-				ia = ib;
-				ib = it;
-			}
-			e1 = m_pHalfEdge[e2].m_iTwinEdge;
-			if(e1<0) continue;
-			e2 = m_pHalfEdge[e1].m_iNextEdge;
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			double mgeo = calLocalGeodesic(ia,ib,ic);
-			m_pVertex[ic].m_LocalGeodesic = mgeo;
-			m_pVertex[ic].m_inheap = true;
-			heapqueue.push(GeoNote(ic,mgeo));
-		} // first ring
-	}
-
-	int count = 0;
-	while (!stop && !heapqueue.empty())
-	{
-		if(++count == m_nVertex) count = count;
-		if(s==2576) 
-		{
-			cout<<count<<endl;
-		}
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-
-		int sg = nt.m_id;
-		if(m_pVertex[sg].m_bIsBoundary && !vVertIsHole[sg]) 
-		{
-			stop=true; 
-			geo=nt.m_geodesic; 
-			nbg.push_back(nt); 
-			break;
-		}
-
-		double sgd = nt.m_geodesic;
-		
-		if(m_pVertex[sg].m_mark==s) continue;  // marched already
-		m_pVertex[sg].m_mark = s;
-		if(vVertIsHole[sg]) continue;
-
-		nbg.push_back(nt);
-		// update adjacent vertices of sg
-		for (k=0; k<m_pVertex[sg].mOutValence; k++)
-		{
-			ia = sg;
-			int e1 = m_pVertex[sg].m_piEdge[k];
-			ib = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ib].m_mark != s) continue; // unreached point
-			int e2 = m_pHalfEdge[e1].m_iNextEdge;
-			if (m_pVertex[ia].m_LocalGeodesic > m_pVertex[ib].m_LocalGeodesic)
-			{
-				ia = ib;
-				ib = sg;
-			}
-			ic = m_pHalfEdge[e2].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-			e2 = m_pHalfEdge[e1].m_iTwinEdge;
-			if(e2<0 || e2>=m_nHalfEdge) continue;
-			e1 = m_pHalfEdge[e2].m_iNextEdge;
-			ic = m_pHalfEdge[e1].m_iVertex[1];
-			if(m_pVertex[ic].m_mark != s) 
-			{
-				double gg = calLocalGeodesic(ia,ib,ic);   // update geodesic
-				if(m_pVertex[ic].m_LocalGeodesic < 0.0f)
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-				else if(gg < m_pVertex[ic].m_LocalGeodesic) // heaped, shorter patch came
-				{
-					m_pVertex[ic].m_LocalGeodesic = gg;
-					m_pVertex[ic].m_inheap = true;
-					heapqueue.push(GeoNote(ic,gg));
-				}
-			}
-		}
-	}
-
-	for (size_t ni=0; ni<nbg.size(); ni++)
-	{
-		int pos = nbg[ni].m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-	// clear heap
-	while (!heapqueue.empty())
-	{
-		GeoNote nt = heapqueue.top();
-		heapqueue.pop();
-		int pos = nt.m_id;
-		m_pVertex[pos].m_mark = -1;
-		m_pVertex[pos].m_LocalGeodesic = -1.0;
-		m_pVertex[pos].m_inheap = false;
-	}
-
-	//if(geo==0.0) cout<<s<<endl;
-	return geo;
-}
-
 double CMesh::calGaussianCurvatureIntegration()
 {
 	const std::vector<double>& vGaussCurv = getGaussCurvature();
@@ -2229,8 +1540,7 @@ double CMesh::calVolume() const
 		const Vector3D& v2 = face->getVertex(1)->getPosition();
 		const Vector3D& v3 = face->getVertex(2)->getPosition();
 
-		Vector3D vn;
-		crossProduct3D(v1, v2, vn);
+        Vector3D vn = v1 ^ v2;
 		vol += dotProduct3D(vn, v3);
 	}
 
@@ -2807,11 +2117,10 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	std::cout << std::endl;
 }
 
-bool CMesh::hasBoundary() const
+bool CMesh::hasBoundary()
 {
-	assert(hasAttr(StrAttrBoundaryVertCount));
-	const MeshAttr<int> *attrBoundary = getAttr<int>(StrAttrBoundaryVertCount);
-	return attrBoundary->attrValue() > 0;
+    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryNum();        
+    return getAttrValue<int>(StrAttrBoundaryVertCount) > 0;
 }
 
 double CMesh::calFaceArea( int i ) const
@@ -2970,8 +2279,8 @@ const std::vector<bool>& CMesh::getVertsOnBoundary()
 double CMesh::calSurfaceArea() const
 {
 	double totalSufaceArea(0);
-	for (int i = 0; i < m_nFace; ++i) 
-		totalSufaceArea += calFaceArea(i);
+    for (CFace* f : m_vFaces)
+        totalSufaceArea += f->calArea();
 	return totalSufaceArea;
 }
 

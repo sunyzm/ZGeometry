@@ -493,10 +493,10 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glEnd();
 	}
 
-	/* draw boundary edges in dark color */
+	/* highlight boundary edges */
 	const vector<bool>& vVertIsOnHole = tmesh->getVertsOnHole();
-	if (tmesh->hasBoundary() || !vVertIsOnHole.empty())   // highlight boundary edge 
-	{
+	if (tmesh->hasBoundary()) 
+    {
 		glBegin(GL_LINES);	
 		glLineWidth(2.0);
 		for(int i = 0; i < tmesh->halfEdgeCount(); i++) {
@@ -525,7 +525,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
                            Vec3d(bbox.x, -bbox.y, bbox.z),
                            Vec3d(bbox.x, bbox.y, -bbox.z),
                            Vec3d(bbox.x, bbox.y, bbox.z) };
-		auto drawQuad = [&verts](int i0, int i1, int i2, int i3){
+		auto drawQuad = [&verts](int i0, int i1, int i2, int i3) {
 			glBegin(GL_LINE_LOOP);
 			glVertex3d(verts[i0].x, verts[i0].y, verts[i0].z);
 			glVertex3d(verts[i1].x, verts[i1].y, verts[i1].z);
@@ -547,12 +547,12 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	/* draw vectors on mesh */
 	if (m_bShowLines && tmesh->hasAttr(pRS->mActiveLineName))
 	{
-		const MeshLineList& meshVecs = tmesh->getAttrValue<MeshLineList>(pRS->mActiveLineName);
+		const MeshLineList& meshLines = tmesh->getAttrValue<MeshLineList>(pRS->mActiveLineName);
 		const double avgEdgeLen = tmesh->getAvgEdgeLength();
 		glLineWidth(1.0);
 		glBegin(GL_LINES);
-		for (auto vec : meshVecs) {
-			Vector3D v1 = vec.first, vn = vec.second;
+		for (auto line : meshLines) {
+			Vector3D v1 = line.first, vn = line.second;
 			Vector3D v2 = v1 + vn * avgEdgeLen * 0.5;
 			Vector3D vc = (v1 + v2) / 2.0;
 			glColor4f(0, 0, 1.0, 1.0);	// vector line shooting from blue

@@ -91,7 +91,20 @@ public:
 	std::vector<MeshFeature*> m_vFeatures;
 };
 
-typedef std::vector<std::pair<Vector3D,Vector3D>> MeshLineList;
+class LineSegment
+{
+public:
+    LineSegment() : directional(false), color(ZGeom::ColorRed) {}
+    LineSegment(const ZGeom::Vec3d& p1, const ZGeom::Vec3d& p2, bool dir = false)
+        : first(p1), second(p2), directional(dir), color(ZGeom::ColorRed) {}
+    void setColor(const ZGeom::Colorf& c) { color = c; }
+public:    
+    ZGeom::Vec3d first, second;
+    bool directional;
+    ZGeom::Colorf color;
+};
+
+typedef std::vector<LineSegment> MeshLineList;
 
 typedef MeshAttr<std::vector<ZGeom::Colorf>> AttrVertColors;
 typedef MeshAttr<std::vector<double>> AttrVertScalars;

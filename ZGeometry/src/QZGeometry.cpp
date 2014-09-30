@@ -484,13 +484,13 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	computeLaplacian(Umbrella);
+	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
-	computeLaplacian(Anisotropic1); 	
-	computeLaplacian(Anisotropic2);
-	setLaplacianType("Anisotropic1");
+	//computeLaplacian(Anisotropic1); 	
+	//computeLaplacian(Anisotropic2);
+	//setLaplacianType("Anisotropic1");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();
@@ -1933,7 +1933,7 @@ void QZGeometryWindow::computeGeodesics()
 
 		std::vector<double> values(meshSize);
 		for (int vIdx = 0; vIdx < meshSize; ++vIdx) {
-			values[vIdx] = mMeshes[obj]->calGeodesic(refPoint, vIdx);
+			values[vIdx] = ZGeom::calGeodesic(*mMeshes[obj], refPoint, vIdx);
 		}
 
 		addColorSignature(obj, values, StrAttrColorGeodesics);
@@ -2290,7 +2290,7 @@ void QZGeometryWindow::computeVertNormals()
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
 			const Vector3D& vi = mesh->getVertexPosition(i);
-			mvl.push_back(std::make_pair(vi, vNormals[i]));
+			mvl.push_back(LineSegment(vi, vNormals[i], true));
 		}
 		
         mesh->addAttrLines(mvl, StrAttrVecVertNormal);
@@ -2312,7 +2312,7 @@ void QZGeometryWindow::computeFaceNormals()
 		MeshLineList mvl;
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
 			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
-			mvl.push_back(std::make_pair(vc, fNormals[fIdx]));
+			mvl.push_back(LineSegment(vc, fNormals[fIdx], true));
 		}
 
         mesh->addAttrLines(mvl, StrAttrVecFaceNormal);

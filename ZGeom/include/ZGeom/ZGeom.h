@@ -14,5 +14,6 @@
 #include "Mesh.h"
 #include "MeshProcessing.h"
 #include "SparseRepresentation.h"
+#include "Geodesic.h"
 
 #endif

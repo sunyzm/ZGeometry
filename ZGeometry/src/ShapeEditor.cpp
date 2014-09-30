@@ -12,6 +12,7 @@
 #include <ZGeom/Approximation.h>
 #include <ZGeom/SparseSolver.h>
 #include <ZGeom/MCA.h>
+#include <ZGeom/Geodesic.h>
 #include "SpectralGeometry.h"
 #include "global.h"
 
@@ -286,7 +287,7 @@ void ShapeEditor::deformSimple()
 	const int freeVertCount = vFreeIdx.size();
 	std::vector<double> vDist2Handle(freeVertCount);
 	concurrency::parallel_for (0, freeVertCount, [&](int i) {
-		double dist = mMesh->calGeodesic(hIdx, vFreeIdx[i]);
+        double dist = ZGeom::calGeodesic(*mMesh, hIdx, vFreeIdx[i]);
 		vDist2Handle[i] = dist;
 	});
 	double distMax = *std::max_element(vDist2Handle.begin(), vDist2Handle.end());
@@ -656,6 +657,7 @@ void ShapeEditor::runTests()
     //testDenoisingDLRS();
     //testSparseDecomposition2();
     //testWaveletAnalysis();
+    //testWaveletComputation();
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -1954,4 +1956,26 @@ void ShapeEditor::testWaveletAnalysis()
 //     addColorSignature("color_residual_approx", vColorResApprox);
 // 
     printEndSeparator('=', 40);
+}
+
+void ShapeEditor::testWaveletComputation()
+{
+    const int totalVertCount = mMesh->vertCount();
+    const double bbDiag = mMesh->getBoundingBox().length() * 2;
+    revertCoordinates();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+
+    CStopWatch timer;
+    timer.startTimer();
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, 500);
+    timer.stopTimer("Decomposition time: ");
+
+    Dictionary dictMHB, dictSGW;    
+    timer.startTimer();
+    computeDictionary(DT_SGW4, es, dictSGW);
+    timer.stopTimer("SGW dict time: ");
 }

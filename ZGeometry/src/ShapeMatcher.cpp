@@ -9,6 +9,7 @@
 #include <functional>
 #include <limits>
 #include <ppl.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
 #include <ZGeom/arithmetic.h>
 #include "OutputHelper.h"
@@ -20,6 +21,7 @@ using ZGeom::PI;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::VecNd;
+using ZGeom::calGeodesic;
 
 class MyNote
 {
@@ -54,11 +56,11 @@ const int	 ShapeMatcher::NUM_OF_EIGVAL_FOR_ESTIMATE	= 50;
 const int	 ShapeMatcher::DEFAULT_PYRAMID_LEVELS		= 3;
 const int	 ShapeMatcher::MAXIMAL_PYRAMID_LEVELS		= 5;
 
-double findTmax( const CMesh* tmesh, int s )
+double findTmax(CMesh* tmesh, int s)
 {
-	if (!tmesh->hasBoundary() ) return -1;
-	double geo = tmesh->getGeodesicToBoundary(s) / tmesh->getAvgEdgeLength();	//normalized by average edge length; requires isHole initialized
-	return geo*geo/4.0;
+ 	if (!tmesh->hasBoundary() ) return -1;
+ 	double geo = ZGeom::calGeodesicToBoundary(*tmesh, s) / tmesh->getAvgEdgeLength();	// normalized by average edge length; requires isHole initialized
+ 	return geo*geo/4.0;
 }
 
 void PointParam::clear()
@@ -534,8 +536,8 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 			{
 				int selectIdx = refIndex[i];
 				const MatchPair &mp1 = mpc1[selectIdx], &mp2 = vTmpMatchPairs[i_max];
-				double geodist1 = mesh1->calGeodesic(mp1.m_idx1, mp2.m_idx1),
-					   geodist2 = mesh2->calGeodesic(mp1.m_idx2, mp2.m_idx2);
+				double geodist1 = calGeodesic(*mesh1, mp1.m_idx1, mp2.m_idx1),
+                       geodist2 = calGeodesic(*mesh2, mp1.m_idx2, mp2.m_idx2);
 				double distError = std::abs(geodist1 - geodist2);
 
 				if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 3*mesh1->getAvgEdgeLength() : 0.3*geodist1) )
@@ -571,8 +573,8 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 						int selectIdx = refIndex[i];
 
 						const MatchPair &mp1 = mpc1[selectIdx], &mp2 = vTmpMatchPairs[mpCandidates[k].index];
-						double geodist1 = mesh1->calGeodesic(mp1.m_idx1, mp2.m_idx1),
-							   geodist2 = mesh2->calGeodesic(mp1.m_idx2, mp2.m_idx2);
+						double geodist1 = calGeodesic(*mesh1, mp1.m_idx1, mp2.m_idx1),
+							   geodist2 = calGeodesic(*mesh2, mp1.m_idx2, mp2.m_idx2);
 						double distError = std::abs(geodist1 - geodist2);
 
 						if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 3*mesh1->getAvgEdgeLength() : 0.3*geodist1) )
@@ -739,8 +741,8 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 				int selectIdx = int( double(matchSize)/5.0 * (k + double(rand()/double(RAND_MAX)))); 
 				//				int selectIdx = rand() % matchSize;
 				const MatchPair &mp1 = matchedPairsFine[selectIdx];
-				double geodist1 = mesh1->calGeodesic(mp1.m_idx1, maxIdx1),
-					   geodist2 = mesh2->calGeodesic(mp1.m_idx2, maxIdx2);
+				double geodist1 = calGeodesic(*mesh1, mp1.m_idx1, maxIdx1),
+					   geodist2 = calGeodesic(*mesh2, mp1.m_idx2, maxIdx2);
 				double distError = std::abs(geodist1 - geodist2);
 
 				if ( distError >= (geodist1 < 10*mesh1->getAvgEdgeLength() ? 2*mesh1->getAvgEdgeLength() : 0.2*geodist1) ) 
@@ -1892,7 +1894,7 @@ double ShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& vIdMatchP
 
 		if (idx_11 == idx_21) continue;
 
-		double dist1 = mesh1->calGeodesic(idx_11, idx_21), dist2 = mesh2->calGeodesic(idx_12, idx_22) * avg_len_ratio;
+		double dist1 = calGeodesic(*mesh1, idx_11, idx_21), dist2 = calGeodesic(*mesh2, idx_12, idx_22) * avg_len_ratio;
 
 		distortSum += abs(dist1 - dist2)/dist1;
 		count++;
@@ -1912,7 +1914,7 @@ double ShapeMatcher::evaluateDistance( const DifferentialMeshProcessor& mp1, con
 	{
 	case DISTANCE_GEODESIC:
 		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) { 
-			return mp.getMesh_const()->calGeodesic(v1, v2) / mp.getMesh_const()->getAvgEdgeLength(); };
+			return calGeodesic(*mp.getMesh_const(), v1, v2) / mp.getMesh_const()->getAvgEdgeLength(); };
 		break;
 	case DISTANCE_HK:
 		fDist = [](const DifferentialMeshProcessor& mp, int v1, int v2, const std::vector<double>& vParam) {
@@ -2327,7 +2329,7 @@ void ShapeMatcher::evaluateWithGroundTruth(const MatchResult& result, const Matc
 		else if (pOriginalMesh[1]->isInNeighborRing(idxTrue, idx2, 1)) { countValid1++; countValid2++; }
 		else if (pOriginalMesh[1]->isInNeighborRing(idxTrue, idx2, 2)) { countValid2++; }
 
-		double error = pOriginalMesh[1]->calGeodesic(idxTrue, idx2) / pOriginalMesh[1]->getAvgEdgeLength();
+		double error = calGeodesic(*pOriginalMesh[1], idxTrue, idx2) / pOriginalMesh[1]->getAvgEdgeLength();
 		if (error > 5) largeErrorCount++;
 		errorSum += error;
 	}

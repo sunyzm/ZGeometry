@@ -33,7 +33,7 @@ public :
 	// operator
 	double	  length() const		{	return std::sqrt(x*x + y*y + z*z);	}
 	double	  length2()	const	{	return x*x + y*y + z*z;	}
-	Vector3D  normalize();
+    const Vector3D& normalize();
 	double	  distantFrom( const Vector3D& v ) const { return std::sqrt( (x-v.x)*(x-v.x) + (y-v.y)*(y-v.y) + (z-v.z)*(z-v.z) ); }
 	bool	  equals(const Vector3D& v2) const { return abs(x-v2.x) < 1e-6 && abs(y-v2.y) < 1e-6 && abs(z-v2.z) < 1e-6; }
 	Vector3D& operator =(const Vector3D& v);
@@ -94,8 +94,27 @@ Vector3D cross3D(const Vector3D& v1, const Vector3D& v2);
 Matrix3 vector3DMultiply(const Vector3D& v1, const Vector3D& v2);
 Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
 double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3);
-
 Vector3D toVector3D(const ZGeom::Vec3d& v);
 ZGeom::Vec3d toVec3d(const Vector3D& v);
+
+inline Vector3D TriAreaNormal(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
+{    
+    return (v2 - v1) ^ (v3 - v2);
+}
+
+inline double TriArea(const Vector3D& v1, const Vector3D& v2, const Vector3D& v3)
+{
+    return TriAreaNormal(v1, v2, v3).length() / 2.;
+}
+
+inline Vector3D toVector3D(const ZGeom::Vec3d& v)
+{
+    return Vector3D(v[0], v[1], v[2]);
+}
+
+inline ZGeom::Vec3d toVec3d(const Vector3D& v)
+{
+    return ZGeom::Vec3d(v.x, v.y, v.z);
+}
 
 #endif

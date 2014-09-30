@@ -140,6 +140,9 @@
     <ClInclude Include="include\ZGeom\MeshCoordinates.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\Geodesic.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -224,6 +227,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\PointCloud.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Geodesic.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

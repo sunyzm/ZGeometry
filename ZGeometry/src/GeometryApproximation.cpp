@@ -1,4 +1,9 @@
 #include "GeometryApproximation.h"
+#include <ppl.h>
+#undef INT32_MIN
+#undef INT32_MAX
+#undef INT64_MIN
+#undef INT64_MAX
 #include <metis.h>
 #include "SpectralGeometry.h"
 #include "global.h"
@@ -34,16 +39,19 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
 	ZGeom::DenseMatrixd matSGW;
+    CStopWatch timer;
+    timer.startTimer();
 	computeSGWMat(mhb, waveletScaleNum, matSGW);
+    timer.stopTimer("Wavelet time only: ");
 
 	// normalize atoms to have norm 1
 	const int vertCount = matSGW.colCount();
 	const int totalAtomCount = matSGW.rowCount();
 	dict.resize(totalAtomCount, vertCount);
-	for (int i = 0; i < totalAtomCount; ++i) {
-		dict[i] = matSGW.getRowVec(i);
+    Concurrency::parallel_for(0, totalAtomCount, [&](int i) {
+    	dict[i] = matSGW.getRowVec(i);
 		dict[i].normalize(2.);
-	}
+    });
 }
 
 void calHKDict(const ZGeom::EigenSystem& es, double timescale, ZGeom::Dictionary& dict)

@@ -25,19 +25,6 @@ const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
 const int MAX_HOLE_SIZE = 20;
 
-class GeoNote
-{
-public:
-	int m_id;
-	double m_geodesic;
-public:
-	GeoNote(int mid, double geo) { m_id = mid; m_geodesic = geo; }
-	GeoNote& operator = (const GeoNote& note) { m_id = note.m_id; m_geodesic = note.m_geodesic; return(*this); }
-	friend bool operator > (const GeoNote& note1, const GeoNote& note2) { return note1.m_geodesic > note2.m_geodesic; }
-};
-
-typedef std::priority_queue<GeoNote, std::vector<GeoNote>, std::greater<GeoNote> > GeoQueue;
-
 class CFace;
 class CHalfEdge;
 class CMesh;
@@ -120,7 +107,7 @@ public:
 	const CVertex*	vert(int i) const { return m_Vertices[i]; }
 
 	bool		isBoundaryEdge() const { return m_eTwin == NULL; }
-	int			getVertIndex(int i) const { return m_iVertex[i]; }
+    int			getVertIndex(int i) const { return vert(i)->getIndex(); }
 	double		getLength() const;
 	bool		isValid() const { return m_bIsValid; }
 	int         getIndex() const { return m_eIndex; }
@@ -295,13 +282,10 @@ public:
 	const std::vector<double>&   getVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas() const;
 
-	void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
-	void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 	bool				isInNeighborRing(int ref, int query, int ring) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
 	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
 	std::vector<int>	getVertexAdjacentFaceIdx(int vIdx, int ring = 1) const;
-	bool				vertGeoNeighborVerts(int i, double ring, std::vector<GeoNote>& nbg); // geodesic vertex neighbor
 
 	std::vector<int>    getOriginalVertexIndex() const;
 	void                getVertCoordinateFunction(int dim, std::vector<double>& vCoord) const;
@@ -311,26 +295,25 @@ public:
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
 
 	void				gatherStatistics();
-	bool				hasBoundary() const;
+	bool				hasBoundary();
 	int					calBoundaryNum();    // compute number of (connective) boundaries
 	int					calBoundaryVert();	 // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
 	int					calMeshGenus();			// get mesh genus
 	double				calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
-	bool				calVertexArea(std::vector<double>& Av);
     void	            calFaceNormals();			// compute face normals
     void                calVertNormals();			// compute vertex normals
     void	            calCurvatures();			// calculate Gaussian and mean curvatures
-    double				calGeodesic(int s, int t) const;
-	double				getGeodesicToBoundary(int s) const;	// return 0.0 if in a manifold
-	double				getGeodesicToBoundary(int s, std::vector<GeoNote>& nbg);
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
 
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
-	/*************************************************************************/
+
+    void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
+    void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
+    /*************************************************************************/
 
 	/************************************************************************/
 	/* MeshAttr methods                                                     */
@@ -510,10 +493,7 @@ private:
 	void	loadFromOFF(std::string sFileName);
 	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	void	saveToM(const std::string& sFileName );    // save mesh to .m file
-
 	void	findHoles();
-	double  calLocalGeodesic(int ia, int ib, int ic) const;	
-
 	void	buildPointerVectors();		//construct vectors of pointers based on array representations
 	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
