@@ -277,7 +277,7 @@ void ShapeEditor::deformSimple()
 
 	const int vertCount = mMesh->vertCount();
 	int hIdx = anchorIndex[0];		// only use the first handle to deform
-	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->getPosition();
+	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->pos();
 
 	std::vector<int> vFreeIdx;
 	mMesh->vertRingNeighborVerts(hIdx, 5, vFreeIdx, true);
@@ -295,7 +295,7 @@ void ShapeEditor::deformSimple()
 	std::vector<Vector3D> vDeformedPos(freeVertCount);
 	for (int i = 0; i < freeVertCount; ++i) {
 		CVertex* pv = mMesh->getVertex(vFreeIdx[i]);
-		vDeformedPos[i] = pv->getPosition() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+		vDeformedPos[i] = pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 	}
 
     MeshCoordinates newCoord = mMesh->getVertCoordinates();

@@ -163,7 +163,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int hIdx = -1;
 				int vertCount = vpMP[obj_index]->getMesh()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi) {
-					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->getPosition());
+					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->pos());
 					if (d < dmin) {
 						dmin = d;
 						hIdx = vi;

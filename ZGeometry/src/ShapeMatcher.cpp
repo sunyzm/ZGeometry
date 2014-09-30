@@ -862,7 +862,8 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 
 	vector<MatchPair> newAnchorMatch;
 	vector<MatchPair> tmpReg1, tmpReg2;
-
+    auto vertOnBoundary1 = tmesh1->getVertsOnBoundary(),
+         vertOnBoundary2 = tmesh2->getVertsOnBoundary();
 	/************************************************************************/
 	/*                        1. Initialize/Compute HKC                     */
 	/************************************************************************/
@@ -966,8 +967,7 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 			if( vMatch1[vt] >= 0 && vMatch1[vt] < coarseSize2 ) 
 				continue;  // already registered
 
-			if (tmesh1->getVertex(vt)->isOnBoundary())
-				continue;
+            if (vertOnBoundary1[vt]) continue;
 			//  if( matcher1.m_vHKParamFine[vt].m_votes < thresh )
 			//		continue;	// low priority points skipped
 
@@ -1101,13 +1101,15 @@ double ShapeMatcher::computeMatchScore( int idx1, int idx2, double sigma /*= 0.0
 
 int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& match_score, int upper_level )
 {
-	assert( level < m_nRegistrationLevels);
+	assert( level < m_nRegistrationLevels);   
 
 	// search vi's match in vj's neighborhood
-	const CMesh* tmesh1 = getMesh(0, level);
-	const CMesh* tmesh2 = getMesh(1, level);
+	CMesh* tmesh1 = getMesh(0, level);
+	CMesh* tmesh2 = getMesh(1, level);
 	int vid_i = tmesh1->getVertex(vt)->getVID();
 	int vid_j = tmesh2->getVertex(vj)->getVID();
+    auto vertOnBoundary1 = tmesh1->getVertsOnBoundary(),
+         vertOnBoundary2 = tmesh2->getVertsOnBoundary();
 
 	/* find vj's neighbors/covered vertices */
 	list<int> vNeighbor;
@@ -1179,7 +1181,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 // 		if (tmesh2->m_pVertex[vt].m_vMatched >= 0 && tmesh2->m_pVertex[vt].m_vMatched < tmesh1->m_nVertex)
 // 			continue;	//injection, not a good idea
 		int vid_t = tmesh2->getVertex(vt)->getVID();
-		if (tmesh2->getVertex(vt)->isOnBoundary())
+		if (vertOnBoundary2[vt])
 			continue;
 		double dt = computeMatchScore(vid_i, vid_t, 12);
 		if(dt > smax)
@@ -1983,7 +1985,8 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 
 	vector<MatchPair> newAnchorMatch;
 	vector<MatchPair> tmpReg1, tmpReg2;
-
+    auto vertOnBoundary1 = tmesh1->getVertsOnBoundary(),
+         vertOnBoundary2 = tmesh2->getVertsOnBoundary();
 	/************************************************************************/
 	/*                        1. Initialize/Compute HKC                     */
 	/************************************************************************/
@@ -2170,7 +2173,7 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 			if( vMatch1[vt] >= 0 ) 
 				continue;  // already registered
 
-			if (tmesh1->getVertex(vt)->isOnBoundary())
+            if (vertOnBoundary1[vt])
 				continue;
 
 			//if( matcher1.m_vHKParamFine[vt].m_votes < thresh )

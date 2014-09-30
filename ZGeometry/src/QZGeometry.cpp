@@ -918,7 +918,7 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	DifferentialMeshProcessor& mp = *mProcessors[obj]; 
 
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
-	Vector3D originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->getPosition();
+	Vector3D originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->pos();
 	
 	mp.setRefPointPosition(originalPos.x, originalPos.y, originalPos.z);
 
@@ -1200,7 +1200,7 @@ void QZGeometryWindow::displayDiffPosition()
 	vDiff.resize(size);
 
 	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
-		vDiff[i] = (mMeshes[0]->getVertex(i)->getPosition() - mMeshes[1]->getVertex(i)->getPosition()).length() / mMeshes[0]->getAvgEdgeLength();
+		vDiff[i] = (mMeshes[0]->getVertex(i)->pos() - mMeshes[1]->getVertex(i)->pos()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
 	addColorSignature(0, vDiff, StrAttrColorPosDiff);

@@ -67,7 +67,7 @@ void DifferentialMeshProcessor::init(CMesh* tm)
 	mMesh = tm;
 	mOriMesh = tm;
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	mRefPos = mMesh->getVertex(mRefVert)->getPosition();
+	mRefPos = mMesh->getVertex(mRefVert)->pos();
 }
 
 void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
@@ -75,7 +75,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
 	mMesh = tm;
 	mOriMesh = originalMesh;
 	mRefVert = 0;
-	mRefPos = mMesh->getVertex(0)->getPosition();
+	mRefPos = mMesh->getVertex(0)->pos();
 }
 
 void DifferentialMeshProcessor::setMesh( CMesh* newMesh )
@@ -153,7 +153,7 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
-	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->getPosition()));	 
+	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->pos()));	 
 }
 
 void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType /*= CotFormula*/ )
@@ -367,9 +367,9 @@ void DifferentialMeshProcessor::computeSimilarityMap1( int refPoint )
 
 			double w1 = 1., w2 = 1.;
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+			w1 = std::exp(-(pvi->pos() - pvk->pos()).length2() / hPara1);
 //			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-			w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[refPoint], pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
+			w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[refPoint], pvi->pos() - pvk->pos()), 2) / hPara2);
 //			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
 
 			double svalue = w1 * w2;
@@ -416,7 +416,7 @@ void DifferentialMeshProcessor::computeSimilarityMap2( int refPoint )
 
 			double w1 = 1., w2 = 1.;
 //			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+			w1 = std::exp(-(pvi->pos() - pvk->pos()).length2() / hPara1);
 //			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
 //			w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
 			w2 = std::exp((dotProduct3D(vVertNormals[refPoint], vFaceNormals[fIndex]) - 1) / 1.0);
@@ -466,9 +466,9 @@ void DifferentialMeshProcessor::computeSimilarityMap3( int refPoint )
 
 			double w1 = 1., w2 = 1.;
 			//			double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-			w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+			w1 = std::exp(-(pvi->pos() - pvk->pos()).length2() / hPara1);
 			//			w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
-			w2 = std::exp(-dotProduct3D(vVertNormals[refPoint], pvk->getPosition() - pvi->getPosition()) / hPara2);
+			w2 = std::exp(-dotProduct3D(vVertNormals[refPoint], pvk->pos() - pvi->pos()) / hPara2);
 //			w2 = std::exp((dotProduct3D(pvi->getNormal(), pfi->getNormal()) - 1) / 1.0);
 
 			double svalue = w1 * w2;

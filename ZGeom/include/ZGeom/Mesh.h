@@ -49,22 +49,21 @@ public:
 	virtual ~CVertex();
 
 	// ---- operations ---- //
-	int					getIndex() const { return m_vIndex; }
-	int					getVID() const { return m_vid; }
+	int					getIndex() const                { return m_vIndex; }
+	int					getVID() const                  { return m_vid; }
 	std::vector<const CFace*> getAdjacentFaces() const;
-	CHalfEdge*			getHalfEdge(int ei) { return m_HalfEdges[ei]; }
-	const CHalfEdge*    getHalfEdge(int ei) const { return m_HalfEdges[ei]; }
-	const Vector3D&		getPosition() const { return m_vPosition; } 
-	int					outValence() const { return (int)m_HalfEdges.size(); }
-	bool				judgeOnBoundary();
-	bool				isOnBoundary() const { return m_bIsBoundary; }
-	bool				isValid() const { return m_bIsValid; }
+	CHalfEdge*			getHalfEdge(int ei)             { return m_HalfEdges[ei]; }
+	const CHalfEdge*    getHalfEdge(int ei) const       { return m_HalfEdges[ei]; }    
+	const Vector3D&		pos() const                     { return m_vPosition; } 
+	int					outValence() const              { return (int)m_HalfEdges.size(); }
+	bool				judgeOnBoundary() const;
+	bool				isValid() const                 { return m_bIsValid; }
 	void                translateAndScale(const Vector3D& translation, double s);
-	void                setPosition( double x, double y, double z );
+	void                setPosition(double x, double y, double z);
 
 private:
-	void init();
-	void clone(const CVertex& v);
+	void                init();
+	void                clone(const CVertex& v);
 
 	// ---- fields ---- //
 	int						m_vIndex;           // index of the vertex 0-based
@@ -74,11 +73,6 @@ private:
 	int						mOutValence;		// out valence
 	Vector3D				m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
-	bool					m_bIsBoundary;      // if boundary vertex
-
-	double					m_LocalGeodesic;	// geodesic from local vertex
-	bool					m_inheap;			// in heap or not
-	int						m_mark;
 };
 
 //////////////////////////////////////////////////////
@@ -190,7 +184,7 @@ public:
 
 	/* attribute strings */
 	static const std::string StrAttrBoundaryVertCount;
-	static const std::string StrAttrBoundaryCount;
+	static const std::string StrAttrBoundaryLoopNum;
 	static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrMeshCenter;
 	static const std::string StrAttrMeshBBox;
@@ -273,6 +267,7 @@ public:
 	const std::vector<bool>&	 getVertsOnHole();
 	const std::vector<bool>&     getVertsOnHole_const() const;
 	const std::vector<bool>&	 getVertsOnBoundary();
+    bool                         isVertOnBoundary(int vi);
     double						 calFaceArea(int i) const;
 	Vector3D			         calMeshCenter() const;
 	Vector3D			         calBoundingBox(const Vector3D& center) const;
@@ -296,8 +291,8 @@ public:
 
 	void				gatherStatistics();
 	bool				hasBoundary();
-	int					calBoundaryNum();    // compute number of (connective) boundaries
-	int					calBoundaryVert();	 // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
+	int					calBoundaryLoopNum();   // compute number of (connective) boundaries
+	int					calBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
 	int					calMeshGenus();			// get mesh genus
@@ -305,8 +300,8 @@ public:
     void	            calFaceNormals();			// compute face normals
     void                calVertNormals();			// compute vertex normals
     void	            calCurvatures();			// calculate Gaussian and mean curvatures
-	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures ) const;
-	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1) const;
+	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
+	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
 
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
@@ -498,7 +493,6 @@ private:
 	void	buildIndexArrays();			// already have the pointer-vector representation; fill in the array represenatation
 	void	assignElementsIndex();
 	bool	isHalfEdgeMergeable(const CHalfEdge* halfEdge);
-	void	clearVertexMark();
 	
 	/* helper functions */
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);

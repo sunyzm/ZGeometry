@@ -14,8 +14,9 @@
 using namespace std;
 using ZGeom::Colorf;
 
+/* basic Mesh attribute names */
 const std::string CMesh::StrAttrBoundaryVertCount		= "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrBoundaryCount			= "mesh_boundary_count";
+const std::string CMesh::StrAttrBoundaryLoopNum		= "mesh_boundary_count";
 const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
@@ -69,27 +70,17 @@ void CVertex::init()
 {
 	m_piEdge = NULL;
 	mOutValence = 0;
-	m_bIsBoundary = false;
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
 	m_bIsValid = true;
 }
 
 void CVertex::clone(const CVertex& v)
 {
 	if (this == &v) return;
-
 	m_vIndex			= v.m_vIndex;
 	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
 	mOutValence			= v.mOutValence;
-	m_bIsBoundary		= v.m_bIsBoundary;
 	m_bIsValid			= v.m_bIsValid;
-
-	m_mark = -1;
-	m_LocalGeodesic = -1.0;
-	m_inheap = false;
 
 	if (v.m_piEdge != NULL) {
 		m_piEdge = new int[mOutValence];		// starting half-edge index array
@@ -109,15 +100,12 @@ std::vector<const CFace*> CVertex::getAdjacentFaces() const
 	return pFaces;
 }
 
-bool CVertex::judgeOnBoundary()
+bool CVertex::judgeOnBoundary() const
 {
-	for (auto iter = m_HalfEdges.begin(); iter != m_HalfEdges.end(); ++iter) {
-		if ((*iter)->twinHalfEdge() == NULL || false == (*iter)->twinHalfEdge()->isValid()) {
-			m_bIsBoundary = true;
+	for (auto he : m_HalfEdges) {
+		if (he->twinHalfEdge() == NULL || !he->twinHalfEdge()->isValid()) 
 			return true;
-		}
-	}
-	m_bIsBoundary = false;
+	}	
 	return false;
 }
 
@@ -133,6 +121,10 @@ void CVertex::setPosition( double x, double y, double z )
 	m_vPosition.y = y;
 	m_vPosition.z = z;
 }
+
+//////////////////////////////////////////////////////
+//						CHalfEdge					//
+//////////////////////////////////////////////////////
 
 CHalfEdge::CHalfEdge()
 {
@@ -169,10 +161,6 @@ CHalfEdge& CHalfEdge::operator = (const CHalfEdge& e)
 	return *this;
 }
 
-//////////////////////////////////////////////////////
-//						CHalfEdge					//
-//////////////////////////////////////////////////////
-
 CHalfEdge::~CHalfEdge()
 {
 }
@@ -180,9 +168,7 @@ CHalfEdge::~CHalfEdge()
 void CHalfEdge::clone(const CHalfEdge& e)
 {
 	if (this == &e) return;
-
 	m_eIndex = e.m_eIndex;
-
 	m_Vertices[0] = m_Vertices[1] = NULL;
 	m_eTwin = m_eNext = m_ePrev = NULL;
 	m_Face = NULL;
@@ -197,22 +183,20 @@ void CHalfEdge::clone(const CHalfEdge& e)
 	m_bIsValid      = e.m_bIsValid;
 }
 
-
 double CHalfEdge::getLength() const
 {
-	Vector3D v = m_Vertices[0]->getPosition() - m_Vertices[1]->getPosition();
-	return v.length();
+	return (m_Vertices[0]->pos() - m_Vertices[1]->pos()).length();
 }
 
+
+//////////////////////////////////////////////////////
+//						CFace						//
+//////////////////////////////////////////////////////
 
 CFace::CFace() : m_nType(0), m_piVertex(NULL), m_piEdge(NULL)
 {
 	m_bIsValid = true;
 }
-
-//////////////////////////////////////////////////////
-//						CFace						//
-//////////////////////////////////////////////////////
 
 CFace::CFace(int s) : m_nType(s), m_piEdge(NULL), m_piVertex(NULL), m_bIsValid(true)
 {	
@@ -279,8 +263,8 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 	//baryCoord.resize(3, 0);
 	
 	/**** adapted from WildMagic ****/
-	Vector3D V[3] = {m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition()};
-	Vector3D p = vp->getPosition();
+	Vector3D V[3] = {m_Vertices[0]->pos(), m_Vertices[1]->pos(), m_Vertices[2]->pos()};
+	Vector3D p = vp->pos();
 
 	Vector3D diff = V[0] - p;
 	Vector3D edge0 = V[1] - V[0];
@@ -449,14 +433,14 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 
 double CFace::calArea() const
 {
-	return TriArea(m_Vertices[0]->getPosition(), m_Vertices[1]->getPosition(), m_Vertices[2]->getPosition());
+	return TriArea(m_Vertices[0]->pos(), m_Vertices[1]->pos(), m_Vertices[2]->pos());
 }
 
 Vector3D CFace::calcNormal() const
 {
 	Vector3D v[2];
-	v[0] = m_Vertices[2]->getPosition() - m_Vertices[0]->getPosition();
-	v[1] = m_Vertices[2]->getPosition() - m_Vertices[1]->getPosition();
+	v[0] = m_Vertices[2]->pos() - m_Vertices[0]->pos();
+	v[1] = m_Vertices[2]->pos() - m_Vertices[1]->pos();
 	Vector3D vNormal = v[0] ^ v[1];
 	vNormal.normalize();	
 	return vNormal;
@@ -465,10 +449,9 @@ Vector3D CFace::calcNormal() const
 Vector3D CFace::calBarycenter() const
 {
     Vector3D center(0,0,0);
-    for (auto p : m_Vertices) center += p->getPosition();
+    for (auto p : m_Vertices) center += p->pos();
     return center / (double)m_Vertices.size();
 }
-
 
 std::vector<double> CFace::getPlaneFunction()
 {
@@ -477,7 +460,7 @@ std::vector<double> CFace::getPlaneFunction()
 	para[0] = vNormal[0];
 	para[1] = vNormal[1];
 	para[2] = vNormal[2];
-	double d = vNormal * m_Vertices[0]->getPosition();
+	double d = vNormal * m_Vertices[0]->pos();
 	para[3] = -d;
 	return para;
 }
@@ -1150,11 +1133,13 @@ void CMesh::saveToM( const std::string& sFileName )
 void CMesh::findHoles()
 {
 	std::unordered_set<int> markedVertex;
-	std::vector<bool> vIsOnHole(m_nVertex, false);
+    const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
+	vector<bool> vIsOnHole(m_nVertex, false);
 
 	for(int i = 0; i < m_nVertex; i++)
 	{
-		if(!m_vVertices[i]->m_bIsBoundary || markedVertex.find(i) == markedVertex.end()) continue;	// pass if vertex is not boundary or is already visited
+		if(!vVertOnBoundary[i] || markedVertex.find(i) == markedVertex.end())
+            continue;	// pass if vertex is not on boundary or is already visited
 		int vi = i;
 		const CVertex* pvi =  m_vVertices[i];
 		const CHalfEdge* peout = pvi->m_HalfEdges.back();
@@ -1297,11 +1282,11 @@ void CMesh::calFaceNormals()
 	Vector3D v[2];
 	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
 		CFace* face = m_vFaces[fIndex];
-		v[0] = face->getVertex(2)->getPosition() - face->getVertex(0)->getPosition();
+		v[0] = face->getVertex(2)->pos() - face->getVertex(0)->pos();
 		if (face->m_nType == 3) {
-			v[1] = face->getVertex(2)->getPosition() - face->getVertex(1)->getPosition();
+			v[1] = face->getVertex(2)->pos() - face->getVertex(1)->pos();
 		} else {
-			v[1] = face->getVertex(3)->getPosition() - face->getVertex(1)->getPosition();
+			v[1] = face->getVertex(3)->pos() - face->getVertex(1)->pos();
 		}
 
 		vFaceNormals[fIndex] = v[0] ^ v[1];
@@ -1363,18 +1348,18 @@ int CMesh::calEdgeCount()
     return halfedgeCount - twinEdgeCount / 2;
 }
 
-int CMesh::calBoundaryNum()
+int CMesh::calBoundaryLoopNum()
 {
 	int boundaryNum = 0;
+    const vector<bool>& vVertOnBoundary = getVertsOnBoundary();
 	std::set<int> boundaryIndexSet;
 	for( int i = 0; i < m_nVertex; i++ ) {
-		if( m_vVertices[i]->m_bIsBoundary )
-			boundaryIndexSet.insert( i );
+        if (vVertOnBoundary[i]) boundaryIndexSet.insert( i );
 	}
 
 	for( int i = 0; i < m_nVertex; i++ ) {
 		// find boundary loop from boundary vertex i if it is not in any loop 
-		if( m_vVertices[i]->m_bIsBoundary && boundaryIndexSet.find(i) != boundaryIndexSet.end()) {
+        if (vVertOnBoundary[i] && boundaryIndexSet.find(i) != boundaryIndexSet.end()) {
 			int currentIndex = i;
 			int nextIndex = i;
 			do {
@@ -1396,29 +1381,23 @@ int CMesh::calBoundaryNum()
 		}
 	}
 
-	addAttr<int>(boundaryNum, StrAttrBoundaryCount, AR_UNIFORM, AT_INT);
+	addAttr<int>(boundaryNum, StrAttrBoundaryLoopNum, AR_UNIFORM, AT_INT);
 	return boundaryNum;
 }
 
 int CMesh::calBoundaryVert()
 {
-	std::vector<bool> vVertOnBoundary(m_nVertex, false);
+	vector<bool> vVertOnBoundary(m_nVertex, false);
 	int bNum = 0;
-	for(int i = 0; i < m_nVertex; ++i)
-	{
+	for(int i = 0; i < m_nVertex; ++i) {
 		if(m_vVertices[i]->judgeOnBoundary() ) {
 			vVertOnBoundary[i] = true;
 			bNum++;
-		} else vVertOnBoundary[i] = false;
+		} 
 	}
+
     addAttr<std::vector<bool>>(vVertOnBoundary, StrAttrVertOnBoundary, AR_VERTEX, AT_VEC_BOOL);
 	addAttr<int>(bNum, StrAttrBoundaryVertCount, AR_UNIFORM, AT_INT);
-
-	if (m_bIsIndexArrayExist) {
-		for (int i = 0; i < m_nVertex; ++i) 
-			m_pVertex[i].m_bIsBoundary = vVertOnBoundary[i];
-	}
-
 	return bNum;
 }
 
@@ -1430,7 +1409,7 @@ int CMesh::calEulerNum(  )
 
 int CMesh::calMeshGenus(  )
 {
-	int b = calBoundaryNum();
+	int b = calBoundaryLoopNum();
 	int euler_number = calEulerNum();
 	return ( 2 - euler_number - b ) / 2;
 }
@@ -1466,6 +1445,7 @@ void CMesh::calCurvatures()
 	const int vertNum = this->vertCount();
 	std::vector<double> vGaussCurvatures(vertNum);
 	std::vector<double> vMeanCurvatures(vertNum);
+    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
 
 	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
 	{
@@ -1474,10 +1454,9 @@ void CMesh::calCurvatures()
 		double amix = 0.0;
 		Vector3D kh;
 
-		if(vi->isOnBoundary()) {
-			// boundary vertex has zero curvature
-			vGaussCurvatures[vIndex] = 0.0;	
-			vMeanCurvatures[vIndex] = 0.0;
+        if (vertOnBoundary[vIndex]) {
+            // boundary vertex has zero curvature
+            vGaussCurvatures[vIndex] = vMeanCurvatures[vIndex] = 0.0;
 			continue;
 		}
 
@@ -1497,7 +1476,7 @@ void CMesh::calCurvatures()
 
 			const CVertex* pt1 = e1->vert(0);
 			const CVertex* pt2 = e1->vert(1);
-			kh += (vi->getPosition() - pt1->getPosition()) * cota + (vi->getPosition() - pt2->getPosition()) * cotc;
+			kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
 		}
 
 		vGaussCurvatures[vIndex] = (2.0 * pi - sum) / amix;
@@ -1536,9 +1515,9 @@ double CMesh::calVolume() const
 	double vol = 0.0;
 	for(int fi = 0; fi < m_nFace; fi++) {
 		CFace* face = m_vFaces[fi];
-		const Vector3D& v1 = face->getVertex(0)->getPosition();
-		const Vector3D& v2 = face->getVertex(1)->getPosition();
-		const Vector3D& v3 = face->getVertex(2)->getPosition();
+		const Vector3D& v1 = face->getVertex(0)->pos();
+		const Vector3D& v2 = face->getVertex(1)->pos();
+		const Vector3D& v3 = face->getVertex(2)->pos();
 
         Vector3D vn = v1 ^ v2;
 		vol += dotProduct3D(vn, v3);
@@ -1811,17 +1790,11 @@ void CMesh::move( const Vector3D& translation )
 	}
 }
 
-void CMesh::clearVertexMark()
-{
-	for (int i = 0; i < m_nVertex; i++) 
-		m_pVertex[i].m_mark = -1;
-}
-
 void CMesh::scaleEdgeLenToUnit()
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_vVertices[i]->getPosition();
+		center += m_vVertices[i]->pos();
 	center /= m_nVertex;
 
 	double length = 0.;
@@ -2016,8 +1989,10 @@ void CMesh::loadFromOFF( std::string sFileName )
 	construct();
 }
 
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures ) const
+void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures )
 {
+    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
+
 	const int STATE_IDLE = 0;
 	const int STATE_MIN	= -1;
 	const int STATE_MAX	=  1;
@@ -2035,7 +2010,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
 		state = STATE_IDLE;
-		if (m_pVertex[j].m_bIsBoundary) 
+		if (vertOnBoundary[j]) 
 			continue;  // ignore boundary vertex
 
 		if (vSigVal[j] < lowThresh)				//too small signature discarded
@@ -2064,9 +2039,10 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	}
 }
 
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary/* = 1*/ ) const
+void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary/* = 1*/ )
 {
-	const int STATE_IDLE = 0;
+    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
+    const int STATE_IDLE = 0;
 	const int STATE_MIN	= -1;
 	const int STATE_MAX	=  1;
 
@@ -2084,7 +2060,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
 	{
-		if (m_vVertices[j]->m_bIsBoundary) continue;  // ignore boundary vertex
+        if (vertOnBoundary[j]) continue;  // ignore boundary vertex
 		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
 			continue;
 		vertRingNeighborVerts(j, ring, nb, false);	
@@ -2119,7 +2095,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 bool CMesh::hasBoundary()
 {
-    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryNum();        
+    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryLoopNum();        
     return getAttrValue<int>(StrAttrBoundaryVertCount) > 0;
 }
 
@@ -2134,13 +2110,13 @@ void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) co
 	vCoord.resize(m_nVertex);
 	switch(dim) {
 	case 0:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().x; 
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().x; 
 		break;
 	case 1:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().y; 
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().y; 
 		break;
 	case 2:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->getPosition().z; 
+		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().z; 
 		break;
 	default:
 		throw std::logic_error("Invalid coordinate dimension!");
@@ -2154,7 +2130,7 @@ MeshCoordinates CMesh::getVertCoordinates() const
     ZGeom::VecNd& vy = coords.getCoordFunc(1);
     ZGeom::VecNd& vz = coords.getCoordFunc(2);
     for (int i = 0; i < m_nVertex; ++i) {
-        auto vCoord = m_vVertices[i]->getPosition();
+        auto vCoord = m_vVertices[i]->pos();
         vx[i] = vCoord.x;
         vy[i] = vCoord.y;
         vz[i] = vCoord.z;
@@ -2167,7 +2143,7 @@ ZGeom::PointCloud3d CMesh::toPointCloud() const
 {
     std::vector<ZGeom::Vec3d> vPoints;
     for (int i = 0; i < m_nVertex; ++i) 
-        vPoints.push_back(toVec3d(m_vVertices[i]->getPosition()));    
+        vPoints.push_back(toVec3d(m_vVertices[i]->pos()));    
     return ZGeom::PointCloud3d(vPoints);
 }
 
@@ -2273,7 +2249,12 @@ const std::vector<bool>& CMesh::getVertsOnHole_const() const
 const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
-	return getAttrValue< std::vector<bool>>(StrAttrVertOnBoundary);
+	return getAttrValue<std::vector<bool>>(StrAttrVertOnBoundary);
+}
+
+bool CMesh::isVertOnBoundary(int vi)
+{
+    return getVertsOnBoundary()[vi];
 }
 
 double CMesh::calSurfaceArea() const
@@ -2288,7 +2269,7 @@ Vector3D CMesh::calMeshCenter() const
 {
 	Vector3D center(0, 0, 0);
 	for (int i = 0; i < m_nVertex; ++i)
-		center += m_vVertices[i]->getPosition();
+		center += m_vVertices[i]->pos();
 	center /= m_nVertex;
 	return center;
 }
@@ -2440,7 +2421,7 @@ std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
     using ZGeom::Vec3d;
     vector<Vec3d> results(m_nVertex);
     for (int i = 0; i < m_nVertex; ++i) {
-        results[i] = Vec3d(m_vVertices[i]->getPosition());
+        results[i] = Vec3d(m_vVertices[i]->pos());
     }
     return results;
 }

@@ -178,7 +178,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 			int vj = pvj->getIndex();
 			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
 
-			Vector3D vij = pvj->getPosition() - pvi->getPosition();
+			Vector3D vij = pvj->pos() - pvi->pos();
 			double w1 = std::exp(-vij.length2() / hPara1);
 			double w2 = std::exp(-pow(
 				(fabs(dotProduct3D(vVertNormals[vi], vij)) + std::fabs(dotProduct3D(vVertNormals[vj], vij)))
@@ -246,7 +246,7 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 			int vj = pvj->getIndex();
 			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
 
-			Vector3D vij = pvj->getPosition() - pvi->getPosition();
+			Vector3D vij = pvj->pos() - pvi->pos();
 			double w1 = std::exp(-vij.length2() / hPara1);
 			double curvDiff = vMeanCurvatures[vi] - vMeanCurvatures[vj];
 			double w2 = std::exp(-curvDiff*curvDiff / hPara2);
@@ -309,7 +309,7 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 				if (vi == vki) continue;
 				const CVertex* pvk = pfi->getVertex(k);
 
-				Vector3D vpw = pvi->getPosition() - pvk->getPosition();
+				Vector3D vpw = pvi->pos() - pvk->pos();
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-vpw.length2() / hPara1);
 //				double w2 = std::exp(-std::pow(vMeanCurvatures[vi] - vMeanCurvatures[vki], 2)  / hPara2);
@@ -394,10 +394,10 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 
 				double w1 = 1., w2 = 1.;
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
-				w1 = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / hPara1);
+				w1 = std::exp(-(pvi->pos() - pvk->pos()).length2() / hPara1);
 //				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
 //				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-				w2 = std::exp(dotProduct3D(vVertNormals[vi], pvk->getPosition() - pvi->getPosition()) / hPara2);
+				w2 = std::exp(dotProduct3D(vVertNormals[vi], pvk->pos() - pvi->pos()) / hPara2);
 				
 				double svalue = w1 * w2;
 				svalue *= face_area;
@@ -461,7 +461,7 @@ void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
 				if (vki == vi) continue;
 				const CVertex* pvk = pfi->getVertex(k);
 
-				double svalue = std::exp(-(pvi->getPosition() - pvk->getPosition()).length2() / (4 * hPara1));
+				double svalue = std::exp(-(pvi->pos() - pvk->pos()).length2() / (4 * hPara1));
 				svalue = svalue * face_area / (3 * 4 * PI * hPara1 * hPara1);
 
 				vSparseElements.push_back(make_tuple(vi, vki, svalue));

@@ -78,13 +78,13 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 		int bV1 = pHE->m_Vertices[0]->m_vid, bv2 = pHE->m_Vertices[1]->m_vid;
 
 		Vector3D vf = faceNormals[pHE->m_Face->getFaceIndex()];
-		Vector3D ve = pHE->m_Vertices[1]->getPosition() - pHE->m_Vertices[0]->getPosition();
+		Vector3D ve = pHE->m_Vertices[1]->pos() - pHE->m_Vertices[0]->pos();
 		Vector3D vn = vf ^ ve;
 		vn.normalize();
 		double para_a = vn[0], 
 			   para_b = vn[1],
 			   para_c = vn[2],
-			   para_d = vn * pHE->m_Vertices[0]->getPosition(),
+			   para_d = vn * pHE->m_Vertices[0]->pos(),
 			   para_area = ve.length2(); 
 		Quadric bQ = Quadric(para_a, para_b, para_c, para_d, para_area);
 		bQ *= bQ.getArea() * BOUNDARY_PENALTY;
@@ -244,9 +244,9 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 					CVertex *v1 = (*he_iter)->m_eNext->m_Vertices[0],
 							*v2 = (*he_iter)->m_eNext->m_Vertices[1],
 							*v3 = vKeep;
-					Vector3D l1 = v1->getPosition() - v2->getPosition(),
-							 l2 = v2->getPosition() - v3->getPosition(),
-							 l3 = v3->getPosition() - v1->getPosition();
+					Vector3D l1 = v1->pos() - v2->pos(),
+							 l2 = v2->pos() - v3->pos(),
+							 l3 = v3->pos() - v1->pos();
 					double area = (l1 ^ l2).length() / 2;
 					double gamma = 4.0 * std::sqrt(3.0) * area / (l1.length2() + l2.length2() + l3.length2());
 					if (gamma < SILVER_TRIANGLE_TRHESH)
@@ -720,7 +720,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 
 	for (int i = 0; i < tmesh->m_nVertex; ++i)
 	{
-		valOut << i << '\t' << tmesh->m_vVertices[i]->mOutValence << '\t' << tmesh->getVertex(i)->mOutValence << endl;
+		valOut << i << '\t' << tmesh->m_vVertices[i]->outValence() << '\t' << tmesh->getVertex(i)->outValence() << endl;
 	}
 
 	valOut.close();
