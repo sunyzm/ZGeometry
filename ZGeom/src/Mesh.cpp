@@ -70,7 +70,6 @@ CVertex& CVertex::operator = ( const CVertex& v )
 
 void CVertex::init()
 {
-	mOutValence = 0;
 	m_bIsValid = true;
 }
 
@@ -80,7 +79,6 @@ void CVertex::clone(const CVertex& v)
 	m_vIndex			= v.m_vIndex;
 	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
-	mOutValence			= v.mOutValence;
 	m_bIsValid			= v.m_bIsValid;
 
     m_HalfEdges.clear();
@@ -163,7 +161,7 @@ void CHalfEdge::clone(const CHalfEdge& e)
 	m_Face = NULL;	
 }
 
-double CHalfEdge::getLength() const
+double CHalfEdge::length() const
 {
 	return (m_Vertices[0]->pos() - m_Vertices[1]->pos()).length();
 }
@@ -486,7 +484,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	for (int i = 0; i < m_nVertex; ++i) {
 		CVertex* curV = this->m_vVertices[i];
 		const CVertex* oldV = oldMesh.m_vVertices[i];
-		for (int j = 0; j < oldV->mOutValence; ++j) {
+		for (int j = 0; j < oldV->outValence(); ++j) {
 			int eidx = oldV->m_HalfEdges[j]->m_eIndex;
 			curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 		}
@@ -588,7 +586,6 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 	for (int i = 0; i < m_nVertex; ++i) {
 		CVertex* newVertex = new CVertex(m_pVertex[i]);
 		newVertex->m_bIsValid = true;
-		newVertex->mOutValence = 0;
 		newVertex->m_HalfEdges.clear();
 		m_vVertices.push_back(newVertex);
 	}
@@ -618,8 +615,6 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 
 			newFace->m_HalfEdges.push_back(heInFace[j]);
 			newFace->m_Vertices[j]->m_HalfEdges.push_back(heInFace[j]);
-			newFace->m_Vertices[j]->mOutValence++;
-
 			this->m_vHalfEdges.push_back(heInFace[j]); 
 		}
 		
@@ -630,7 +625,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 		he3->m_Vertices[0] = newFace->m_Vertices[2];
 		he3->m_Vertices[1] = newFace->m_Vertices[0];
 
-		for (int j = 0; j < newFace->m_Vertices[1]->mOutValence; ++j)
+		for (int j = 0; j < newFace->m_Vertices[1]->outValence(); ++j)
 		{
 			if (newFace->m_Vertices[1]->m_HalfEdges[j]->m_Vertices[1] == he1->m_Vertices[0])
 			{
@@ -639,7 +634,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 				break;
 			}
 		}
-		for (int j = 0; j < newFace->m_Vertices[2]->mOutValence; ++j)
+		for (int j = 0; j < newFace->m_Vertices[2]->outValence(); ++j)
 		{
 			if (newFace->m_Vertices[2]->m_HalfEdges[j]->m_Vertices[1] == he2->m_Vertices[0])
 			{
@@ -648,7 +643,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 				break;
 			}
 		}
-		for (int j = 0; j < newFace->m_Vertices[0]->mOutValence; ++j)
+		for (int j = 0; j < newFace->m_Vertices[0]->outValence(); ++j)
 		{
 			if (newFace->m_Vertices[0]->m_HalfEdges[j]->m_Vertices[1] == he3->m_Vertices[0])
 			{
@@ -665,10 +660,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 	{
 		CVertex* pV = *iter;
 		if (pV == NULL) throw std::logic_error("Error: null CVertex pointer encountered!");
-		if(pV->mOutValence != pV->m_HalfEdges.size())
-			throw logic_error("Error: CMesh::construct; pV->m_nValence != pV->m_HalfEdges.size()");
-
-		if (pV->mOutValence == 0) {
+		if (pV->outValence() == 0) {
 			delete pV;
 			iter = m_vVertices.erase(iter);
 			continue;
@@ -868,9 +860,9 @@ void CMesh::calCurvatures()
 			CHalfEdge* e0 = *he;
 			CHalfEdge* e1 = e0->m_eNext;
 			CHalfEdge* e2 = e1->m_eNext;
-			double len0 = e0->getLength();
-			double len1 = e1->getLength();
-			double len2 = e2->getLength();
+			double len0 = e0->length();
+			double len1 = e1->length();
+			double len2 = e2->length();
 
 			// compute corner angle by cosine law 
 			double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
@@ -1035,7 +1027,7 @@ void CMesh::gatherStatistics()
 
 	double edgeLength = 0;
 	for (int i = 0; i < m_nHalfEdge; ++i) {
-		edgeLength += m_vHalfEdges[i]->getLength();
+		edgeLength += m_vHalfEdges[i]->length();
 	}
 	edgeLength /= m_nHalfEdge;
 
@@ -1071,7 +1063,7 @@ void CMesh::scaleEdgeLenToUnit()
 	for (int i = 0; i < m_nHalfEdge; ++i) {
 		if (heVisisted[i]) continue;		
 		edgeNum++;
-		length += m_vHalfEdges[i]->getLength();
+		length += m_vHalfEdges[i]->length();
 		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
 		if (ptwin != NULL) heVisisted[ptwin->getIndex()] = true;
 	}
@@ -1562,9 +1554,9 @@ void CMesh::calVertMixedAreas()
 			CHalfEdge* e0 = *he;
 			CHalfEdge* e1 = e0->m_eNext;
 			CHalfEdge* e2 = e1->m_eNext;
-			double len0 = e0->getLength();
-			double len1 = e1->getLength();
-			double len2 = e2->getLength();
+			double len0 = e0->length();
+			double len1 = e1->length();
+			double len2 = e2->length();
 			double cota, cotc;
 			amix += calAreaMixed(len0, len1, len2, cota, cotc);
 		}

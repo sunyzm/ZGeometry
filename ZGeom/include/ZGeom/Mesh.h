@@ -49,7 +49,7 @@ public:
 	const Vector3D&		    pos() const                 { return m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }
-    void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); mOutValence++; }
+    void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); }
 	void                    init();
     bool				    judgeOnBoundary() const;
     void                    setPosition(double x, double y, double z);
@@ -62,7 +62,6 @@ public:
 	int						m_vIndex;           // index of the vertex 0-based
 	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
-	int						mOutValence;		// out valence
 	Vector3D				m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
 };
@@ -86,7 +85,7 @@ public:
 	CVertex*    	    vert(int i) const           { return m_Vertices[i]; }
 	bool		        isBoundaryEdge() const      { return m_eTwin == NULL; }
     int			        getVertIndex(int i) const   { return vert(i)->getIndex(); }
-	double		        getLength() const;
+	double		        length() const;
 	int                 getIndex() const            { return m_eIndex; }	
     void                setVerts(CVertex* v1, CVertex* v2) { m_Vertices[0] = v1; m_Vertices[1] = v2; }
 

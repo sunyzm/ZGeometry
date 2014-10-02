@@ -570,8 +570,6 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			}
 			else
 			{
-				curV->mOutValence = int(curV->m_HalfEdges.size());
-				curV->judgeOnBoundary();
 				iter++;
 			}
 		}

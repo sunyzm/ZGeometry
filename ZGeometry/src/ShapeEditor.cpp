@@ -1988,7 +1988,6 @@ void ShapeEditor::fillHole()
 
     vector<int> boundaryEdgeIdx = mMesh->getBoundaryLoopEdges()[0];
     vector<int> boundaryVertIdx = mMesh->getBoundaryLoopVerts()[0];
-
     int N = (int)boundaryVertIdx.size();
     vector<CVertex*> boundaryVertPtr(N);
     vector<Vec3d> boundaryVertPos(N);
@@ -1996,6 +1995,15 @@ void ShapeEditor::fillHole()
         boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
         boundaryVertPos[i] = boundaryVertPtr[i]->pos();        
     }   
+
+    vector<int> lengthAttr(N);
+    for (int i = 0; i < N; ++i) {
+        CVertex* pv = boundaryVertPtr[i];
+        double avgLen(0);
+        for (CHalfEdge *he : pv->m_HalfEdges) avgLen += he->length();
+        avgLen /= pv->outValence();
+        lengthAttr[i] = avgLen;
+    }
 
     /* triangulation */
     vector<vector<int>> weights(N);
@@ -2108,4 +2116,6 @@ void ShapeEditor::fillHole()
     emit meshFeatureChanged();
 
     /* refinement */
+
+
 }

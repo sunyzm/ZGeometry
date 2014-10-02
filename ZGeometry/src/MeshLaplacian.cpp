@@ -86,9 +86,9 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 			const CVertex* vj = e0->vert(1);
 			const CHalfEdge* e2twin = e2->twinHalfEdge();
 
-			double len0 = e0->getLength();
-			double len1 = e1->getLength();
-			double len2 = e2->getLength();
+			double len0 = e0->length();
+			double len1 = e1->length();
+			double len2 = e2->length();
 			amix += ZGeom::calMixedTriArea(len0, len1, len2);
 			
 			double cot_a11(0), cot_a12(0), cot_a21(0), cot_a22(0);
@@ -98,8 +98,8 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 				const CHalfEdge* e10 = e0->twinHalfEdge();
 				const CHalfEdge* e11 = e10->nextHalfEdge();
 				const CHalfEdge* e12 = e11->nextHalfEdge();
-				len1 = e11->getLength();
-				len2 = e12->getLength();
+				len1 = e11->length();
+				len2 = e12->length();
 
 				ZGeom::triangleCot(len0, len1, len2, cot_a21, cot_a22);
 			}
@@ -114,9 +114,9 @@ void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
 				const CHalfEdge* e20 = e2;
 				const CHalfEdge* e21 = e20->nextHalfEdge();
 				const CHalfEdge* e22 = e21->nextHalfEdge();
-				len0 = e20->getLength();
-				len1 = e21->getLength();
-				len2 = e22->getLength();
+				len0 = e20->length();
+				len1 = e21->length();
+				len2 = e22->length();
 				double cot_a1, cot_a2;
 				ZGeom::triangleCot(len0, len1, len2, cot_a1, cot_a2);
 				double cota = cot_a1 / 2.0;
