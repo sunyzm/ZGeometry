@@ -439,8 +439,7 @@ std::vector<double> CFace::getPlaneFunction()
 //////////////////////////////////////////////////////
 
 CMesh::CMesh() : m_meshName(""), 
-				 m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
-                 m_verbose(true), m_defaultColor(Colorf(0.53f, 0.70f, 0.93f, 1.0f))
+				 m_verbose(true), m_defaultColor(Colorf(0.53f, 0.70f, 0.93f, 1.0f))
 {
 }
 
@@ -464,24 +463,21 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	clearMesh();
 
 	m_meshName      = oldMesh.m_meshName + nameSuffix;
-	m_nVertex       = oldMesh.m_nVertex;
-	m_nFace         = oldMesh.m_nFace;
-	m_nHalfEdge     = oldMesh.m_nHalfEdge;
     m_defaultColor  = oldMesh.m_defaultColor;
 
 	copyAttributes(oldMesh.mAttributes);
 
-	for (int i = 0; i < m_nVertex; ++i) {
+	for (int i = 0; i < oldMesh.vertCount(); ++i) {
 		this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 	}
-	for (int i = 0; i < m_nFace; ++i) {
+	for (int i = 0; i < oldMesh.faceCount(); ++i) {
 		this->m_vFaces.push_back(new CFace(*oldMesh.m_vFaces[i]));
 	}
-	for (int i = 0; i < m_nHalfEdge; ++i) {
+	for (int i = 0; i < oldMesh.halfEdgeCount(); ++i) {
 		this->m_vHalfEdges.push_back(new CHalfEdge(*oldMesh.m_vHalfEdges[i]));
 	}
 
-	for (int i = 0; i < m_nVertex; ++i) {
+	for (int i = 0; i < oldMesh.vertCount(); ++i) {
 		CVertex* curV = this->m_vVertices[i];
 		const CVertex* oldV = oldMesh.m_vVertices[i];
 		for (int j = 0; j < oldV->outValence(); ++j) {
@@ -489,7 +485,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 			curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 		}
 	}
-	for (int i = 0; i < m_nFace; ++i) {
+	for (int i = 0; i < oldMesh.faceCount(); ++i) {
 		CFace* curF = this->m_vFaces[i];
 		const CFace* oldF = oldMesh.m_vFaces[i];
 		for (int j = 0; j < oldF->m_nType; ++j) {
@@ -499,7 +495,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 			curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 		}
 	}
-	for (int i = 0; i < m_nHalfEdge; ++i) {
+	for (int i = 0; i < oldMesh.halfEdgeCount(); ++i) {
 		CHalfEdge* curE = this->m_vHalfEdges[i];
 		const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
 		int vidx0 = oldE->m_Vertices[0]->m_vIndex,
@@ -532,7 +528,6 @@ void CMesh::clearMesh()
 	m_vHalfEdges.clear();
 	m_vFaces.clear();
 
-	m_nVertex = m_nHalfEdge = m_nFace = 0;
 	m_meshName = "";
 }
 
@@ -579,18 +574,21 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
     assert(nType == 3);
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////	code to construct primitives pointer vectors	///////////////
-	m_vVertices.reserve(m_nVertex);
-	m_vFaces.reserve(m_nFace);
-	m_vHalfEdges.reserve(m_nHalfEdge);
+	m_vVertices.reserve(m_pVertex.size());
+	m_vFaces.reserve(faceVerts.size());
+	m_vHalfEdges.reserve(faceVerts.size()*3);
 
-	for (int i = 0; i < m_nVertex; ++i) {
+    int nVertex = (int)m_pVertex.size();
+    int nFace = (int)faceVerts.size();
+
+    for (int i = 0; i < nVertex; ++i) {
 		CVertex* newVertex = new CVertex(m_pVertex[i]);
 		newVertex->m_bIsValid = true;
 		newVertex->m_HalfEdges.clear();
 		m_vVertices.push_back(newVertex);
 	}
 
-	for (int i = 0; i < m_nFace; ++i)
+	for (int i = 0; i < nFace; ++i)
 	{
         CFace* newFace = new CFace();
         newFace->create(nType);		
@@ -754,7 +752,7 @@ int CMesh::calBoundaryLoops()
     VecVecInt boundaryEdges;
     vector<bool> vertVisited(vertCount, false);
 
-	for( int i = 0; i < m_nVertex; i++ ) {
+	for( int i = 0; i < vertCount; i++ ) {
 		// find boundary loop from boundary vertex i if it is not in any loop 
         if (!vVertOnBoundary[i] || vertVisited[i]) continue;
         vector<int> edgeLoop;
@@ -784,9 +782,9 @@ int CMesh::calBoundaryLoops()
 
 int CMesh::calBoundaryVert()
 {
-	vector<bool> vVertOnBoundary(m_nVertex, false);
+	vector<bool> vVertOnBoundary(vertCount(), false);
 	int bNum = 0;
-	for(int i = 0; i < m_nVertex; ++i) {
+	for(int i = 0; i < vertCount(); ++i) {
 		if(m_vVertices[i]->judgeOnBoundary()) {
 			vVertOnBoundary[i] = true;
 			bNum++;
@@ -801,7 +799,7 @@ int CMesh::calBoundaryVert()
 int CMesh::calEulerNum(  )
 {
 	int edgeCount = calEdgeCount();
-	return m_nVertex - edgeCount + m_nFace;
+	return vertCount() - edgeCount + faceCount();
 }
 
 int CMesh::calMeshGenus(  )
@@ -909,7 +907,7 @@ double CMesh::calGaussianCurvatureIntegration()
 double CMesh::calVolume() const
 {
 	double vol = 0.0;
-	for(int fi = 0; fi < m_nFace; fi++) {
+	for(int fi = 0; fi < faceCount(); fi++) {
 		CFace* face = m_vFaces[fi];
 		const Vector3D& v1 = face->getVertex(0)->pos();
 		const Vector3D& v2 = face->getVertex(1)->pos();
@@ -946,15 +944,13 @@ std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) c
 
 void CMesh::assignElementsIndex()
 {
-	assert(m_nVertex == m_vVertices.size() && m_nHalfEdge == m_vHalfEdges.size() && m_nFace == m_vFaces.size());
-	
-	for (int i = 0; i < m_nVertex; ++i)
+	for (int i = 0; i < (int)m_vVertices.size(); ++i)
 		m_vVertices[i]->m_vIndex = i;
 	
-	for (int i = 0; i < m_nHalfEdge; ++i)
+	for (int i = 0; i < (int)m_vHalfEdges.size(); ++i)
 		m_vHalfEdges[i]->m_eIndex = i;
 	
-	for (int i = 0; i < m_nFace; ++i)
+	for (int i = 0; i < (int)m_vFaces.size(); ++i)
 		m_vFaces[i]->m_fIndex = i;
 }
 
@@ -999,9 +995,9 @@ void CMesh::scaleAreaToVertexNum()
 {
 	Vector3D center = calMeshCenter();
 	double totalSufaceArea = calSurfaceArea();
-	double scale = sqrt( double(m_nVertex) / totalSufaceArea );
+	double scale = sqrt( double(vertCount()) / totalSufaceArea );
 
-	for (int i = 0; i < m_nVertex; ++i) {
+	for (int i = 0; i < vertCount(); ++i) {
 		m_vVertices[i]->translateAndScale(-center, scale);
 	}
 }
@@ -1026,10 +1022,10 @@ void CMesh::gatherStatistics()
 	Vector3D boundBox = calBoundingBox(center);
 
 	double edgeLength = 0;
-	for (int i = 0; i < m_nHalfEdge; ++i) {
+	for (int i = 0; i < halfEdgeCount(); ++i) {
 		edgeLength += m_vHalfEdges[i]->length();
 	}
-	edgeLength /= m_nHalfEdge;
+	edgeLength /= halfEdgeCount();
 
 	addAttr<double>(edgeLength, StrAttrAvgEdgeLength, AR_UNIFORM, AT_DBL);
 	addAttr<Vector3D>(center, StrAttrMeshCenter, AR_UNIFORM, AT_VEC3);
@@ -1041,38 +1037,34 @@ void CMesh::gatherStatistics()
 
 void CMesh::move( const Vector3D& translation )
 {
-	for (int i = 0; i < m_nVertex; ++i) {
-		m_vVertices[i]->translateAndScale(translation, 1.0);
-	
+	for (int i = 0; i < vertCount(); ++i) {
+		m_vVertices[i]->translateAndScale(translation, 1.0);	
 	}
 }
 
 void CMesh::scaleEdgeLenToUnit()
 {
 	Vector3D center(0, 0, 0);
-	for (int i = 0; i < m_nVertex; ++i)
+	for (int i = 0; i < vertCount(); ++i)
 		center += m_vVertices[i]->pos();
-	center /= m_nVertex;
+	center /= vertCount();
 
 	double length = 0.;
 	int edgeNum = 0;
-	bool *heVisisted = new bool[m_nHalfEdge];
-	for (int i = 0; i < m_nHalfEdge; ++i)
-		heVisisted[i] = false;
+    vector<bool> heVisited(halfEdgeCount(), false);
 
-	for (int i = 0; i < m_nHalfEdge; ++i) {
-		if (heVisisted[i]) continue;		
+	for (int i = 0; i < halfEdgeCount(); ++i) {
+		if (heVisited[i]) continue;		
 		edgeNum++;
 		length += m_vHalfEdges[i]->length();
 		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
-		if (ptwin != NULL) heVisisted[ptwin->getIndex()] = true;
+		if (ptwin != NULL) heVisited[ptwin->getIndex()] = true;
 	}
-	delete []heVisisted;
-
+	
 	length /= edgeNum;
 	double scale = 1.0 / length;
 	
-	for (int i = 0; i < m_nVertex; ++i)	{
+	for (int i = 0; i < vertCount(); ++i)	{
 		m_vVertices[i]->translateAndScale(-center, scale);
 	}
 
@@ -1080,7 +1072,7 @@ void CMesh::scaleEdgeLenToUnit()
 
 void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
 {
-	for (int i = 0; i < m_nVertex; ++i)	{
+	for (int i = 0; i < vertCount(); ++i)	{
 		m_vVertices[i]->translateAndScale(-center, scale);
 	}
 }
@@ -1179,7 +1171,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	const int STATE_MIN	= -1;
 	const int STATE_MAX	=  1;
 
-	assert(vSigVal.size() == m_nVertex);
+	assert(vSigVal.size() == vertCount());
 	vFeatures.clear();
 	
 	int state = STATE_IDLE;
@@ -1189,7 +1181,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 	double pz = 1e-5;		//1e-5
 	double nz = -1e-5;
 
-	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
+	for(int j = 0; j < vertCount(); j++)		//m_size: size of the mesh
 	{
 		state = STATE_IDLE;
 		if (vertOnBoundary[j]) 
@@ -1228,7 +1220,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 	const int STATE_MIN	= -1;
 	const int STATE_MAX	=  1;
 
-	assert(vSigVal.size() == m_nVertex);
+	assert(vSigVal.size() == vertCount());
 	vFeatures.clear();
 
 	int state = STATE_IDLE;
@@ -1240,7 +1232,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 	vector<double> sigDetected;
 
-	for(int j = 0; j < m_nVertex; j++)		//m_size: size of the mesh
+	for(int j = 0; j < vertCount(); j++)		//m_size: size of the mesh
 	{
         if (vertOnBoundary[j]) continue;  // ignore boundary vertex
 		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
@@ -1289,16 +1281,16 @@ double CMesh::calFaceArea( int i ) const
 
 void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) const
 {
-	vCoord.resize(m_nVertex);
+	vCoord.resize(vertCount());
 	switch(dim) {
 	case 0:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().x; 
+		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().x; 
 		break;
 	case 1:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().y; 
+		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().y; 
 		break;
 	case 2:
-		for (int i = 0; i < m_nVertex; ++i) vCoord[i] = m_vVertices[i]->pos().z; 
+		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().z; 
 		break;
 	default:
 		throw std::logic_error("Invalid coordinate dimension!");
@@ -1307,11 +1299,11 @@ void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) co
 
 MeshCoordinates CMesh::getVertCoordinates() const
 {
-    MeshCoordinates coords(m_nVertex);
+    MeshCoordinates coords(vertCount());
     ZGeom::VecNd& vx = coords.getCoordFunc(0);
     ZGeom::VecNd& vy = coords.getCoordFunc(1);
     ZGeom::VecNd& vz = coords.getCoordFunc(2);
-    for (int i = 0; i < m_nVertex; ++i) {
+    for (int i = 0; i < vertCount(); ++i) {
         auto vCoord = m_vVertices[i]->pos();
         vx[i] = vCoord.x;
         vy[i] = vCoord.y;
@@ -1324,14 +1316,14 @@ MeshCoordinates CMesh::getVertCoordinates() const
 ZGeom::PointCloud3d CMesh::toPointCloud() const
 {
     std::vector<ZGeom::Vec3d> vPoints;
-    for (int i = 0; i < m_nVertex; ++i) 
+    for (int i = 0; i < vertCount(); ++i) 
         vPoints.push_back(toVec3d(m_vVertices[i]->pos()));    
     return ZGeom::PointCloud3d(vPoints);
 }
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
-	ZGeom::logic_assert(coords.size() == m_nVertex, "Size of coordinates and mesh not compatible!");
+	ZGeom::logic_assert(coords.size() == vertCount(), "Size of coordinates and mesh not compatible!");
 	std::vector<double> vx = coords.getCoordFunc(0).toStdVector(),
 	                    vy = coords.getCoordFunc(1).toStdVector(),
 	                    vz = coords.getCoordFunc(2).toStdVector();
@@ -1341,9 +1333,9 @@ void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 
 void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
 {
-	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == m_nVertex);
+	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == vertCount());
 
-	for (int i = 0; i < m_nVertex; ++i)	{
+	for (int i = 0; i < vertCount(); ++i)	{
 		m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
 
@@ -1430,16 +1422,16 @@ double CMesh::calSurfaceArea() const
 Vector3D CMesh::calMeshCenter() const
 {
 	Vector3D center(0, 0, 0);
-	for (int i = 0; i < m_nVertex; ++i)
+	for (int i = 0; i < vertCount(); ++i)
 		center += m_vVertices[i]->pos();
-	center /= m_nVertex;
+	center /= vertCount();
 	return center;
 }
 
 Vector3D CMesh::calBoundingBox( const Vector3D& center ) const
 {
 	Vector3D boundBox(0.0, 0.0, 0.0);
-	for (int i = 0; i < m_nVertex; ++i) {
+	for (int i = 0; i < vertCount(); ++i) {
 		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
 		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
 		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
@@ -1515,20 +1507,20 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 		for (auto k : FaceList) setIsolatedVert.erase(k);
 		assert(setIsolatedVert.empty());
 
-		subMesh.m_nVertex = (int)VertexList.size();
-		subMesh.m_nFace = (int)FaceList.size() / 3;
-		subMesh.m_nHalfEdge = 3 * subMesh.m_nFace;
+        int nVertex = (int)VertexList.size();
+		int nFace = (int)FaceList.size() / 3;
+		int nHalfEdge = 3 * nFace;
 
-        vector<CVertex> m_pVertex(subMesh.m_nVertex);
-        vector<vector<int>> faceVerts(subMesh.m_nFace);
+        vector<CVertex> m_pVertex(nVertex);
+        vector<vector<int>> faceVerts(nFace);
 		list<Vector3D>::iterator iVertex = VertexList.begin();
 		list<int>::iterator iFace = FaceList.begin();
 
-        for (int i = 0; i < subMesh.m_nVertex; i++) {
+        for (int i = 0; i < nVertex; i++) {
             m_pVertex[i].m_vPosition = *iVertex++;
             m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
         }
-        for (int i = 0; i < subMesh.m_nFace; i++) {
+        for (int i = 0; i < nFace; i++) {
             faceVerts[i].resize(3);
             for (int j = 0; j < 3; ++j)
                 faceVerts[i][j] = *iFace++;
@@ -1581,8 +1573,8 @@ const std::vector<double>& CMesh::getVertMixedAreas() const
 
 std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
 {
-    vector<Vec3d> results(m_nVertex);
-    for (int i = 0; i < m_nVertex; ++i) {
+    vector<Vec3d> results(vertCount());
+    for (int i = 0; i < vertCount(); ++i) {
         results[i] = Vec3d(m_vVertices[i]->pos());
     }
     return results;
@@ -1590,8 +1582,8 @@ std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
 
 std::vector<Vector3D> CMesh::allVertPos() const
 {
-    vector<Vector3D> results(m_nVertex);
-    for (int i = 0; i < m_nVertex; ++i) {
+    vector<Vector3D> results(vertCount());
+    for (int i = 0; i < vertCount(); ++i) {
         results[i] = m_vVertices[i]->pos();
     }
     return results;
@@ -1647,21 +1639,20 @@ void CMesh::loadFromOBJ(std::string sFileName)
 		ch = fgetc(f);
 	}
 	fclose(f);
-		
-	m_nVertex = (int)VertexList.size();
-	m_nFace = (int)FaceList.size() / 3;
-	m_nHalfEdge = 3 * m_nFace;		// number of half-edges
+	
+    int nVertex = (int)VertexList.size();
+    int nFace = (int)FaceList.size() / 3;
 
 	//read vertices and faces
-	vector<CVertex> m_pVertex(m_nVertex);
-    vector<vector<int>> faceVerts(m_nFace);
+    vector<CVertex> m_pVertex(nVertex);
+    vector<vector<int>> faceVerts(nFace);
 	list<Vector3D>::iterator iVertex = VertexList.begin();
 	list<int>::iterator iFace = FaceList.begin();
-	for(int i = 0; i < m_nVertex; i++) {
+    for (int i = 0; i < nVertex; i++) {
 		m_pVertex[i].m_vPosition = *iVertex++;  
 		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
 	}    
-    for (int i = 0; i < m_nFace; i++) {
+    for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
         for (j = 0; j < 3; ++j)
             faceVerts[i][j] = *iFace++;
@@ -1678,19 +1669,19 @@ void CMesh::saveToOBJ( std::string sFileName )
 	assert(f != NULL);
 
 	// file header
-	fprintf(f, "# vertices : %ld\r\n", m_nVertex);
-	fprintf(f, "# faces    : %ld\r\n", m_nFace);
+	fprintf(f, "# vertices : %ld\r\n", vertCount());
+	fprintf(f, "# faces    : %ld\r\n", faceCount());
 	fprintf(f, "\r\n");
 	
 	// vertices
-	for (int i = 0; i < m_nVertex; i++)
+	for (int i = 0; i < vertCount(); i++)
 	{
         Vector3D vt = m_vVertices[i]->pos();
 		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
 	}
 
 	// faces
-    for (int i = 0; i < m_nFace; i++) {
+    for (int i = 0; i < faceCount(); i++) {
         fprintf(f, "f %ld %ld %ld\r\n",
                 m_vFaces[i]->getVertexIndex(0) + 1, 
                 m_vFaces[i]->getVertexIndex(1) + 1, 

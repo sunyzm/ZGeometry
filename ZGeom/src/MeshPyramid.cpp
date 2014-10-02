@@ -32,8 +32,8 @@ MeshPyramid::MeshPyramid( CMesh* mesh )
 void MeshPyramid::setInitialMesh( CMesh* mesh )
 {
     originalMesh = mesh;
-	m_nVertices = originalMesh->m_nVertex;
-	m_nFace = originalMesh->m_nFace;
+	int nVertex = originalMesh->vertCount();
+	int nFace = originalMesh->faceCount();
 
 	//calculate initial quadric for each face and vertex
 	m_FaceQuadrics.clear();
@@ -41,7 +41,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	m_FaceQuadrics.resize(m_nFace);
 	m_VertexQuadrics.reserve(m_nVertices);
 
-	for (int i = 0; i < m_nFace; ++i)
+    for (int i = 0; i < nFace; ++i)
 	{
 		CFace* pFace = originalMesh->m_vFaces[i];
 		vector<double> funcPara = pFace->getPlaneFunction();
@@ -51,7 +51,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	}
 
 	// calculate initial quadric for each vertex
-	for (int i = 0; i < m_nVertices; ++i) {
+    for (int i = 0; i < nVertex; ++i) {
 		const CVertex* pV = originalMesh->m_vVertices[i];
 		// iterate through each face incident on v; 
 		// TODO: consider boundary constraint
@@ -63,9 +63,9 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 		m_VertexQuadrics.push_back(q);
 	}
 
-	//add boundary constraints on every boundary edge
+	// add boundary constraints on every boundary edge
 	const std::vector<Vector3D>& faceNormals = mesh->getFaceNormals();
-	for (int i = 0; i < originalMesh->m_nHalfEdge; ++i)
+	for (int i = 0; i < originalMesh->halfEdgeCount(); ++i)
 	{
 		const CHalfEdge* pHE = originalMesh->m_vHalfEdges[i];
 		if (pHE->m_eTwin && pHE->m_eTwin->m_bIsValid)
@@ -103,9 +103,9 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 	if (!originalMesh) throw logic_error("Initial mesh required for building pyramid!");
 
 	m_ostr << "------- Original Mesh --------" << endl;
-	m_ostr << "  Vertex Num: " << originalMesh->m_nVertex << endl
-		   << "  Face Num: " << originalMesh->m_nFace << endl
-		   << "  Half-edge Num: " << originalMesh->m_nHalfEdge << endl;
+	m_ostr << "  Vertex Num: " << originalMesh->vertCount() << endl
+		   << "  Face Num: " << originalMesh->faceCount() << endl
+		   << "  Half-edge Num: " << originalMesh->halfEdgeCount() << endl;
 		 //<< "  Edge Num: " << originalMesh->GetEdgeNum() << endl 
 	
 	/* construct multi-resolution mesh structure */
@@ -128,10 +128,10 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 		list<VertexPair> vertexPairsList;
 		//initialize vertex pairs
 		{
-			bool *isHalfEdgeVisited = new bool[currentMesh->m_nHalfEdge];
-			for (int i = 0; i < currentMesh->m_nHalfEdge; ++i)
+			bool *isHalfEdgeVisited = new bool[currentMesh->halfEdgeCount()];
+			for (int i = 0; i < currentMesh->halfEdgeCount(); ++i)
 				isHalfEdgeVisited[i] = false;
-			for (int i = 0; i < currentMesh->m_nHalfEdge; ++i)
+			for (int i = 0; i < currentMesh->halfEdgeCount(); ++i)
 			{
 				CHalfEdge* curHE = currentMesh->m_vHalfEdges[i];
 				if (!isHalfEdgeVisited[i])
@@ -163,7 +163,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 
 		if (level == 1) // build initial verticesCoverFull		
 		{			
-			for (int i = 0; i < currentMesh->m_nVertex; ++i)
+			for (int i = 0; i < currentMesh->vertCount(); ++i)
 			{
 				//assign initial vertex cover; each vertex only cover itself
 				list<int> coverList;
@@ -527,7 +527,6 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			assert(curHe->m_Vertices[0]->m_bIsValid && curHe->m_Vertices[1]->m_bIsValid);
 			iter++;
 		}
-		currentMesh->m_nHalfEdge = (int)currentMesh->m_vHalfEdges.size();
 
 		for (vector<CFace*>::iterator iter = currentMesh->m_vFaces.begin(); iter != currentMesh->m_vFaces.end();)
 		{
@@ -552,7 +551,6 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			}
 			iter++;
 		}
-		currentMesh->m_nFace = (int)currentMesh->m_vFaces.size();
 
 		for (vector<CVertex*>::iterator iter = currentMesh->m_vVertices.begin(); iter != currentMesh->m_vVertices.end();)
 		{
@@ -573,12 +571,10 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 				iter++;
 			}
 		}
-		currentMesh->m_nVertex = (int)currentMesh->m_vVertices.size();
-		currentMesh->m_nFace = (int)currentMesh->m_vFaces.size();
 		
-		m_ostr << "  Vertex Num: " << currentMesh->m_nVertex << endl
-			   << "  Face Num: " << currentMesh->m_nFace << endl
-			   << "  HalfEdge Num: " << currentMesh->m_nHalfEdge << endl;
+		m_ostr << "  Vertex Num: " << currentMesh->vertCount() << endl
+			   << "  Face Num: " << currentMesh->faceCount() << endl
+			   << "  HalfEdge Num: " << currentMesh->halfEdgeCount() << endl;
 			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
 		
 		currentMesh->assignElementsIndex();
@@ -612,7 +608,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			const list<int>& vlist = miter->second;
 
 			int matchedIdx = -1;
-			for (int j = 0; j < mesh_l->m_nVertex; ++j)
+			for (int j = 0; j < mesh_l->vertCount(); ++j)
 			{
 				if (mesh_l->getVertex(j)->m_vid == cvid)
 				{
@@ -711,7 +707,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 	ofstream valOut(filename.c_str(), ios::trunc);
 	CMesh* tmesh = getMesh(level);
 
-	for (int i = 0; i < tmesh->m_nVertex; ++i)
+	for (int i = 0; i < tmesh->vertCount(); ++i)
 	{
 		valOut << i << '\t' << tmesh->m_vVertices[i]->outValence() << '\t' << tmesh->getVertex(i)->outValence() << endl;
 	}

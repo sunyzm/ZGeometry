@@ -2103,6 +2103,7 @@ void ShapeEditor::fillHole()
         patchEdges[i]->m_eIndex = nOldEdges + i;
         mMesh->m_vHalfEdges.push_back(patchEdges[i]);
     }
+
     for (size_t i = 0; i < patchFaces.size(); ++i) {
         patchFaces[i]->m_fIndex = nOldFaces + i;
         mMesh->m_vFaces.push_back(patchFaces[i]);
@@ -2116,6 +2117,5 @@ void ShapeEditor::fillHole()
     emit meshFeatureChanged();
 
     /* refinement */
-
 
 }

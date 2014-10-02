@@ -161,9 +161,6 @@ public:
 
 ////////////////   fields    ////////////////
 public:
-    int		                m_nVertex;				// number of vertices
-    int		                m_nHalfEdge;			// number of half-edges
-    int			            m_nFace;	 			// number of faces
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
@@ -171,6 +168,7 @@ public:
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
     bool                    m_verbose;
     ZGeom::Colorf           m_defaultColor;
+
 ////////////////    methods    ////////////////
 public:
 	/* ---- constructors ---- */
