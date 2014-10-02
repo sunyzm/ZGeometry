@@ -446,7 +446,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	CMesh* tmesh = pMP->getMesh();
     const vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
     const vector<Vec3d> vVertPos = tmesh->getAllVertPositions();
-    const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : StrAttrColorDefault);
+    const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -459,9 +459,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
 	glBegin(GL_TRIANGLES);
-    for (int fIdx = 0; fIdx < tmesh->faceCount(); fIdx++) 
+    for (CFace* face : tmesh->m_vFaces) 
     {
-        CFace* face = tmesh->getFace(fIdx);
         for (int j = 0; j < 3; j++) {
             int pi = face->getVertexIndex(j);
             const Vector3D& norm = vVertNormals[pi];
@@ -503,7 +502,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
         glBegin(GL_LINES);	
         glLineWidth(4.0);
         if (boundaryLoops[i].size() <= MAX_HOLE_SIZE)
-            glColor4f(0.0, 0.0, 1.0, 1.0);      // show edges on inner holes in blue
+            glColor4f(0.0, 0, 1.0, 1.0);      // show edges on inner holes in blue
         else
             glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
         for (int edgeIdx : boundaryLoops[i]) {
@@ -555,15 +554,23 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		glLineWidth(1.0);
 		glBegin(GL_LINES);
 		for (auto line : meshLines) {
-			Vector3D v1 = line.first, vn = line.second;
-			Vector3D v2 = v1 + vn * avgEdgeLen * 0.5;
-			Vector3D vc = (v1 + v2) / 2.0;
-			glColor4f(0, 0, 1.0, 1.0);	// vector line shooting from blue
-			glVertex3d(v1.x, v1.y, v1.z);	
-			glVertex3d(vc.x, vc.y, vc.z);
-			glColor4f(1.0, 0, 0, 1.0);	// to red
-			glVertex3d(vc.x, vc.y, vc.z);
-			glVertex3d(v2.x, v2.y, v2.z);
+            if (line.directional) {
+                Vec3d v1 = line.first, vn = line.second;
+                Vec3d v2 = v1 + vn * avgEdgeLen * 0.5;
+                Vec3d vc = (v1 + v2) / 2.0;
+                glColor4f(0, 0, 1.0, 1.0);	// vector line shooting from blue
+                glVertex3d(v1.x, v1.y, v1.z);
+                glVertex3d(vc.x, vc.y, vc.z);
+                glColor4f(1.0, 0, 0, 1.0);	// to red
+                glVertex3d(vc.x, vc.y, vc.z);
+                glVertex3d(v2.x, v2.y, v2.z);
+            }
+            else {
+                Vec3d v1 = line.first, v2 = line.second;
+                glColor4f(0, 1., 0, 1.);    
+                glVertex3d(v1.x, v1.y, v1.z);
+                glVertex3d(v2.x, v2.y, v2.z);
+            }			
 		}
 		glEnd();
 	}

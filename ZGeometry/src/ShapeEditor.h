@@ -33,11 +33,16 @@ public:
 	void deformBiLaplacian();
 	void deformMixedLaplacian(double ks, double kb);
 	void deformThinShell2(double ks, double kb);
+    
+    void fillHole();
 
 signals:
 	void approxStepsChanged(int index, int newSize);
-	void signatureComputed(QString sigName);
 	void coordinateSelected(int selectedApprox, int coordIdx);
+    void meshSignatureAdded();
+    void meshFeatureChanged();    
+    void meshLineFeatureChanged();
+    void showSignature(QString sigName);
 
 private:
 	void addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors);

@@ -303,8 +303,10 @@ void QZGeometryWindow::makeConnections()
 
 	////////    mShapeEditor    ////////
 	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
-	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(displaySignature(QString)));
-	QObject::connect(&mShapeEditor, SIGNAL(signatureComputed(QString)), this, SLOT(updateDisplaySignatureMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshFeatureChanged()), this, SLOT(updateDisplayFeatureMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshSignatureAdded()), this, SLOT(updateDisplaySignatureMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshLineFeatureChanged()), this, SLOT(updateDisplayLineMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(showSignature(QString)), this, SLOT(displaySignature(QString)));
 	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
 }
 
@@ -498,7 +500,6 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
-		updateDisplayFeatureMenu();
 		if (mMeshes[0]->hasAttr(StrAttrFeatureSparseSGW))
 			displayFeature(StrAttrFeatureSparseSGW.c_str());
 	}
@@ -567,9 +568,8 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
 
     mProcessors[obj]->init(&mesh);
     Colorf meshColor = preset_mesh_colors[obj % 2];
-    vector<Colorf> vDefaultColor(mesh.vertCount(), meshColor);
-    mesh.addColorAttr(StrAttrColorDefault, vDefaultColor);
-    mRenderManagers[obj]->mActiveColorSignatureName = StrAttrColorDefault;
+    mesh.addDefaultColor(meshColor);
+    mRenderManagers[obj]->mActiveColorSignatureName = CMesh::StrAttrColorDefault;
     mRenderManagers[obj]->mesh_color = meshColor;
 }
 

@@ -98,6 +98,7 @@ public:
     LineSegment(const ZGeom::Vec3d& p1, const ZGeom::Vec3d& p2, bool dir = false)
         : first(p1), second(p2), directional(dir), color(ZGeom::ColorRed) {}
     void setColor(const ZGeom::Colorf& c) { color = c; }
+
 public:    
     ZGeom::Vec3d first, second;
     bool directional;

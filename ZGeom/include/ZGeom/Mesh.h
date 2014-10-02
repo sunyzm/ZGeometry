@@ -49,12 +49,14 @@ public:
 	const Vector3D&		    pos() const                 { return m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }
+    void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); mOutValence++; }
 	void                    init();
     bool				    judgeOnBoundary() const;
     void                    setPosition(double x, double y, double z);
     void                    clone(const CVertex& v); 
     void                    translateAndScale(const Vector3D& translation, double s);
     std::vector<const CFace*>   getAdjacentFaces() const;
+    CHalfEdge *adjacentTo(CVertex* v2) const;
 
 public:
 	int						m_vIndex;           // index of the vertex 0-based
@@ -77,15 +79,18 @@ public:
 	CHalfEdge& operator = (const CHalfEdge& e);
 
     void                clone(const CHalfEdge& oldEdge);
-	const CFace*	    getAttachedFace() const     { return m_Face; }
-	const CHalfEdge*    twinHalfEdge() const        { return m_eTwin; }
-	const CHalfEdge*    nextHalfEdge() const        { return m_eNext; }
-	const CHalfEdge*    prevHalfEdge() const        { return m_ePrev; }
-	const CVertex*	    vert(int i) const           { return m_Vertices[i]; }
+	CFace*	            getAttachedFace() const     { return m_Face; }
+	CHalfEdge*          twinHalfEdge() const        { return m_eTwin; }
+	CHalfEdge*          nextHalfEdge() const        { return m_eNext; }
+	CHalfEdge*          prevHalfEdge() const        { return m_ePrev; }
+	CVertex*    	    vert(int i) const           { return m_Vertices[i]; }
 	bool		        isBoundaryEdge() const      { return m_eTwin == NULL; }
     int			        getVertIndex(int i) const   { return vert(i)->getIndex(); }
 	double		        getLength() const;
 	int                 getIndex() const            { return m_eIndex; }	
+    void                setVerts(CVertex* v1, CVertex* v2) { m_Vertices[0] = v1; m_Vertices[1] = v2; }
+
+    static void         makeTwins(CHalfEdge* e1, CHalfEdge* e2);
 
 public:
 	int			        m_eIndex;		//half-edge id
@@ -114,6 +119,7 @@ public:
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
     int                     edgeCount() const { return m_nType; }
+    bool                    hasVertex(CVertex* pv) const;
 	bool					hasVertex(int vidx) const;
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }	
@@ -145,6 +151,7 @@ public:
 	static const std::string StrAttrMeshCenter;
 	static const std::string StrAttrMeshBBox;
 	static const std::string StrAttrVertColors;
+    static const std::string StrAttrColorDefault;
 	static const std::string StrAttrVertGaussCurvatures;
 	static const std::string StrAttrVertMeanCurvatures;
 	static const std::string StrAttrVertNormal;
@@ -164,7 +171,7 @@ public:
     std::string             m_meshName;				// name of the mesh
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
     bool                    m_verbose;
-
+    ZGeom::Colorf           m_defaultColor;
 ////////////////    methods    ////////////////
 public:
 	/* ---- constructors ---- */
@@ -177,6 +184,7 @@ public:
 
 	/* ---- Mesh IO and processing ---- */
     void	    clearMesh();
+    void        clearAttributes();
 	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
 	void		load(const std::string& sFileName);		// load from file
 	void	    save(std::string sFileName);			// save to file
@@ -203,7 +211,9 @@ public:
 
     /* basic geometry query, analysis and processing */
 	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
+    ZGeom::Vec3d                 getVertPos(int iv) const { return (ZGeom::Vec3d)m_vVertices[iv]->pos(); }
     std::vector<ZGeom::Vec3d>    getAllVertPositions() const;
+    std::vector<Vector3D>        allVertPos() const;
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
 	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
 	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
@@ -240,7 +250,9 @@ public:
 
 	void				gatherStatistics();
 	bool				hasBoundary();
-	int					calBoundaryLoops();   // compute number of (connective) boundaries
+	int					calBoundaryLoops();     // compute number of (connective) boundaries
+    std::vector<std::vector<int>> getBoundaryLoopVerts(); // get the vertex indices of each boundary loop
+    std::vector<std::vector<int>> getBoundaryLoopEdges();   // get the halfedge indices of each boundary loop
 	int					calBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
@@ -358,6 +370,8 @@ public:
 		}
 	}
 
+    void addDefaultColor(ZGeom::Colorf color);
+
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName) {
 		return getAttrValue<std::vector<ZGeom::Colorf>>(colorAttrName);
 	}
@@ -379,6 +393,8 @@ public:
 	AttrMeshFeatures& addAttrMeshFeatures(const std::string& name) {
 		return addAttr<MeshFeatureList>(name, AR_UNIFORM, AT_FEATURES);
 	}
+
+    void addAttrMeshFeatures(const std::vector<int>& featureIdx, const std::string& name);
 
 	void addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name) {
 		addAttr<MeshFeatureList>(mfl, name, AR_UNIFORM, AT_FEATURES);

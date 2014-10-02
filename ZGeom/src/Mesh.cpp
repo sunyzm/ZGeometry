@@ -23,6 +23,7 @@ const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
 const std::string CMesh::StrAttrVertColors				= "vert_color";
+const std::string CMesh::StrAttrColorDefault            = "vert_color_default";
 const std::string CMesh::StrAttrVertGaussCurvatures		= "vert_gauss_curvature";
 const std::string CMesh::StrAttrVertMeanCurvatures		= "vert_mean_curvature";
 const std::string CMesh::StrAttrVertNormal				= "vert_normal";
@@ -116,6 +117,14 @@ void CVertex::setPosition( double x, double y, double z )
 	m_vPosition.z = z;
 }
 
+CHalfEdge * CVertex::adjacentTo(CVertex* v2) const
+{
+    for (CHalfEdge* he : m_HalfEdges) {
+        if (he->vert(1) == v2) return he;
+    }
+    return NULL;
+}
+
 //////////////////////////////////////////////////////
 //						CHalfEdge					//
 //////////////////////////////////////////////////////
@@ -157,6 +166,12 @@ void CHalfEdge::clone(const CHalfEdge& e)
 double CHalfEdge::getLength() const
 {
 	return (m_Vertices[0]->pos() - m_Vertices[1]->pos()).length();
+}
+
+void CHalfEdge::makeTwins(CHalfEdge* e1, CHalfEdge* e2)
+{
+    e1->m_eTwin = e2;
+    e2->m_eTwin = e1;
 }
 
 
@@ -207,6 +222,11 @@ bool CFace::hasVertex( int vidx ) const
 	}
 
 	return false;
+}
+
+bool CFace::hasVertex(CVertex* pv) const
+{
+    return std::find(m_Vertices.begin(), m_Vertices.end(), pv) != m_Vertices.end();
 }
 
 double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoord )
@@ -422,7 +442,7 @@ std::vector<double> CFace::getPlaneFunction()
 
 CMesh::CMesh() : m_meshName(""), 
 				 m_nVertex(0), m_nHalfEdge(0), m_nFace(0), 
-				 m_verbose(true)
+                 m_verbose(true), m_defaultColor(Colorf(0.53f, 0.70f, 0.93f, 1.0f))
 {
 }
 
@@ -445,10 +465,11 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	if (this == &oldMesh) return;
 	clearMesh();
 
-	m_meshName  = oldMesh.m_meshName + nameSuffix;
-	m_nVertex   = oldMesh.m_nVertex;
-	m_nFace     = oldMesh.m_nFace;
-	m_nHalfEdge = oldMesh.m_nHalfEdge;
+	m_meshName      = oldMesh.m_meshName + nameSuffix;
+	m_nVertex       = oldMesh.m_nVertex;
+	m_nFace         = oldMesh.m_nFace;
+	m_nHalfEdge     = oldMesh.m_nHalfEdge;
+    m_defaultColor  = oldMesh.m_defaultColor;
 
 	copyAttributes(oldMesh.mAttributes);
 
@@ -504,20 +525,27 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 
 void CMesh::clearMesh()
 {
-	for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
-		delete iter->second;
-	mAttributes.clear();	
+    clearAttributes();
 
 	for (CVertex* v : m_vVertices)	delete v;
 	for (CHalfEdge* e : m_vHalfEdges) delete e;
 	for (CFace* f : m_vFaces) delete f;
-
 	m_vVertices.clear();
 	m_vHalfEdges.clear();
 	m_vFaces.clear();
 
 	m_nVertex = m_nHalfEdge = m_nFace = 0;
 	m_meshName = "";
+}
+
+void CMesh::clearAttributes()
+{
+    for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
+        delete iter->second;
+    mAttributes.clear();
+
+    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
+    addColorAttr(StrAttrColorDefault, vDefaultColors);
 }
 
 void CMesh::load( const std::string& sFileName )
@@ -759,7 +787,7 @@ int CMesh::calBoundaryLoops()
     boundaryNum = (int)boundaryEdges.size();    
 	addAttr<int>(boundaryNum, StrAttrBoundaryLoopNum, AR_UNIFORM, AT_INT);
     addAttr<VecVecInt>(boundaryEdges, StrAttrBoundaryLoops, AR_UNIFORM);
-	return boundaryNum;
+    return boundaryNum;
 }
 
 int CMesh::calBoundaryVert()
@@ -1568,6 +1596,15 @@ std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
     return results;
 }
 
+std::vector<Vector3D> CMesh::allVertPos() const
+{
+    vector<Vector3D> results(m_nVertex);
+    for (int i = 0; i < m_nVertex; ++i) {
+        results[i] = m_vVertices[i]->pos();
+    }
+    return results;
+}
+
 void CMesh::loadFromOBJ(std::string sFileName)
 {
 /* -----  format: smf, obj, dat -----
@@ -1684,6 +1721,38 @@ std::vector<bool> CMesh::getVertsOnHoles()
         result[pv1] = result[pv2] = true;
     }
     return result;
+}
+
+void CMesh::addDefaultColor( ZGeom::Colorf color )
+{
+    m_defaultColor = color;
+    vector<Colorf> vDefaultColors(vertCount(), color);
+    addColorAttr(StrAttrColorDefault, vDefaultColors);
+}
+
+std::vector<std::vector<int>> CMesh::getBoundaryLoopEdges()
+{
+    if (!hasAttr(StrAttrBoundaryLoops)) calBoundaryLoops();
+    return getAttrValue<vector<vector<int>>>(StrAttrBoundaryLoops);
+}
+
+std::vector<std::vector<int>> CMesh::getBoundaryLoopVerts()
+{
+    const vector<vector<int>> &boundaryEdges = getBoundaryLoopEdges();
+    vector<vector<int>> boundaryVerts;
+    for (vector<int> ve : boundaryEdges) {
+        vector<int> vt;
+        for (int e : ve) vt.push_back(m_vHalfEdges[e]->getVertIndex(0));
+        boundaryVerts.push_back(vt);
+    }
+    return boundaryVerts;
+}
+
+void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::string& name )
+{
+    MeshFeatureList fl;
+    for (int vi : featureIdx) fl.addFeature(vi, 0);
+    addAttrMeshFeatures(fl, name);
 }
 
 #if 0

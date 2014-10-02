@@ -4,6 +4,7 @@
 #include <functional>
 #include <iomanip>
 #include <array>
+#include <queue>
 #include <ppl.h>
 #include <boost/lexical_cast.hpp>
 #include <ZGeom/ZGeom.h>
@@ -196,7 +197,7 @@ void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::
 {
 	std::vector<ZGeom::Colorf>& vNewColors = mMesh->addColorAttr(colorSigName).attrValue();
 	vNewColors = vColors;
-	emit signatureComputed(QString(colorSigName.c_str()));
+    emit meshSignatureAdded();
 }
 
 void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
@@ -210,7 +211,7 @@ void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
 	/* visualize the coordinate difference against the original coordinate */
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPosDiff).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrAttrColorPosDiff.c_str()));
+    emit meshSignatureAdded();
 	emit coordinateSelected(selected, contCoordIdx);
 
 	/* show SGW approximation features */
@@ -658,6 +659,7 @@ void ShapeEditor::runTests()
     //testSparseDecomposition2();
     //testWaveletAnalysis();
     //testWaveletComputation();
+    fillHole();
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -682,7 +684,7 @@ void ShapeEditor::testSparseCompression()
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
+    emit meshSignatureAdded();
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
@@ -834,7 +836,7 @@ void ShapeEditor::testSparseDecomposition()
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
 	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-	emit signatureComputed(QString(StrAttrColorPartitions.c_str()));
+    emit meshSignatureAdded();
 	
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 
@@ -1978,4 +1980,132 @@ void ShapeEditor::testWaveletComputation()
     timer.startTimer();
     computeDictionary(DT_SGW4, es, dictSGW);
     timer.stopTimer("SGW dict time: ");
+}
+
+void ShapeEditor::fillHole()
+{
+    using namespace std;
+
+    vector<int> boundaryEdgeIdx = mMesh->getBoundaryLoopEdges()[0];
+    vector<int> boundaryVertIdx = mMesh->getBoundaryLoopVerts()[0];
+
+    int N = (int)boundaryVertIdx.size();
+    vector<CVertex*> boundaryVertPtr(N);
+    vector<Vec3d> boundaryVertPos(N);
+    for (int i = 0; i < N; ++i) {
+        boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
+        boundaryVertPos[i] = boundaryVertPtr[i]->pos();        
+    }   
+
+    /* triangulation */
+    vector<vector<int>> weights(N);
+    vector<vector<int>> midIdx(N);
+    for (int i = 0; i < N; ++i) {
+        weights[i].resize(N, 0);
+        midIdx[i].resize(N, 0);
+    }
+
+    for (int i = 0; i < N - 2; ++i) {
+        int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
+        if (mMesh->getHalfEdge(boundaryEdgeIdx[i + 1])->nextHalfEdge()->getVertIndex(1) == vIdx1) {
+            weights[i][i + 2] = 1e20;
+        }
+        else {
+            weights[i][i + 2] = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[i + 1], boundaryVertPos[i + 2]);
+        }        
+        midIdx[i][i + 2] = i + 1;
+    }
+
+    for (int j = 3; j < N; ++j) {
+        for (int i = 0; i < N - j; ++i) {
+            int k = i + j;
+            int minMidIdx = -1;
+            double minWeightIK = 1e20;
+            for (int m = i + 1; m < k; ++m) {
+                double w = weights[i][m] + weights[m][k] + TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
+                if (w < minWeightIK) {
+                    minWeightIK = w;
+                    minMidIdx = m;
+                }
+            }
+            midIdx[i][k] = minMidIdx;
+        }
+    }
+
+    vector<CHalfEdge*> patchEdges;
+    for (int i = 0; i < N; ++i) {
+        CHalfEdge* newHe = new CHalfEdge();
+        CHalfEdge* twinHe = mMesh->getHalfEdge(boundaryEdgeIdx[i]);
+        newHe->setVerts(twinHe->m_Vertices[1], twinHe->m_Vertices[0]);
+        CHalfEdge::makeTwins(newHe, twinHe);
+        newHe->m_Vertices[0]->addHalfEdge(newHe);
+        patchEdges.push_back(newHe);
+    }
+
+    MeshLineList triangulationLines;
+    queue<pair<int, int>> linePairs;
+    int mid0 = midIdx[0][N - 1];
+    linePairs.push(make_pair(0, mid0));
+    linePairs.push(make_pair(mid0, N - 1));
+    while (!linePairs.empty()) {
+        pair<int, int> lineIdx = linePairs.front();
+        linePairs.pop();
+        int i = lineIdx.first, j = lineIdx.second;
+        if (abs(j - i) <= 1) continue;
+
+        triangulationLines.emplace_back(boundaryVertPos[i], boundaryVertPos[j], false);
+        int mid = midIdx[lineIdx.first][lineIdx.second];
+        linePairs.push(make_pair(i, mid));
+        linePairs.push(make_pair(mid, j));
+
+        CVertex* v1 = mMesh->getVertex(boundaryVertIdx[i]), *v2 = mMesh->getVertex(boundaryVertIdx[j]);
+        CHalfEdge* newHe1 = new CHalfEdge(), *newHe2 = new CHalfEdge();
+        CHalfEdge::makeTwins(newHe1, newHe2);
+        newHe1->setVerts(v1, v2);
+        newHe2->setVerts(v2, v1);
+        v1->addHalfEdge(newHe1);
+        v2->addHalfEdge(newHe2);
+        patchEdges.push_back(newHe1);
+        patchEdges.push_back(newHe2);
+    }
+
+    vector<CFace*> patchFaces;
+    for (int i = 0; i < N - 2; ++i) {
+        for (int j = i + 1; j < N - 1; ++j) {
+            for (int k = j + 1; k < N; ++k) {
+                // i->k->j->i
+                CHalfEdge* eik = boundaryVertPtr[i]->adjacentTo(boundaryVertPtr[k]);
+                CHalfEdge* ekj = boundaryVertPtr[k]->adjacentTo(boundaryVertPtr[j]);
+                CHalfEdge* eji = boundaryVertPtr[j]->adjacentTo(boundaryVertPtr[i]);
+                if (eik && ekj && eji) {
+                    CFace* f = new CFace(3);
+                    f->m_Vertices = { boundaryVertPtr[k], boundaryVertPtr[j], boundaryVertPtr[i] };
+                    f->m_HalfEdges = { ekj, eji, eik };
+                    ekj->m_Face = eji->m_Face = eik->m_Face = f;
+                    eik->m_eNext = ekj; ekj->m_eNext = eji; eji->m_eNext = eik;
+                    eik->m_ePrev = eji; ekj->m_ePrev = eik; eji->m_ePrev = ekj;
+                    patchFaces.push_back(f);
+                }
+            }
+        }        
+    }
+    
+    int nOldEdges = mMesh->halfEdgeCount(), nOldFaces = mMesh->faceCount();
+    for (size_t i = 0; i < patchEdges.size(); ++i) {
+        patchEdges[i]->m_eIndex = nOldEdges + i;
+        mMesh->m_vHalfEdges.push_back(patchEdges[i]);
+    }
+    for (size_t i = 0; i < patchFaces.size(); ++i) {
+        patchFaces[i]->m_fIndex = nOldFaces + i;
+        mMesh->m_vFaces.push_back(patchFaces[i]);
+    }
+
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics();
+    mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
+    emit meshLineFeatureChanged();
+    mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
+    emit meshFeatureChanged();
+
+    /* refinement */
 }
