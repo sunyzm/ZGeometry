@@ -50,6 +50,7 @@ public:
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }
     void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); }
+    void                    removeHalfEdge(CHalfEdge *he);
 	void                    init();
     bool				    judgeOnBoundary() const;
     void                    setPosition(double x, double y, double z);
@@ -90,14 +91,15 @@ public:
     void                setVerts(CVertex* v1, CVertex* v2) { m_Vertices[0] = v1; m_Vertices[1] = v2; }
 
     static void         makeTwins(CHalfEdge* e1, CHalfEdge* e2);
+    static void         makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3);
 
 public:
-	int			        m_eIndex;		//half-edge id
-	CVertex*	        m_Vertices[2];	//starting and ending vertices
-	CHalfEdge*	        m_eTwin;		//reverse half-edge; null if boundary half edge
-	CHalfEdge*	        m_eNext;		//next half-edge (counterclockwise)
+	int			        m_eIndex;		// half-edge id
+	CVertex*	        m_Vertices[2];	// starting and ending vertices
+	CHalfEdge*	        m_eTwin;		// reverse half-edge; null if boundary half edge
+	CHalfEdge*	        m_eNext;		// next half-edge (counterclockwise)
 	CHalfEdge*	        m_ePrev;
-	CFace*		        m_Face;			//attached face
+	CFace*		        m_Face;			// attached face
     bool		        m_bIsValid;
 };
 
@@ -115,6 +117,7 @@ public:
     
     void                    clone(const CFace& f);
     void					create(int s);
+    CHalfEdge*              getHalfEdge(int i) { return m_HalfEdges[i]; }
 	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
 	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
     int                     edgeCount() const { return m_nType; }
@@ -233,6 +236,15 @@ public:
 	const std::vector<double>&   getVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas() const;
 
+    void                addVertex(CVertex *v);
+    void                addHalfEdge(CHalfEdge *e);
+    void                addFace(CFace *f);
+    void                faceSplit(int fIdx);
+    CVertex*            faceSplit(CFace* face);
+    void                edgeSwap(int v1, int v2);
+    void                edgeSwap(CHalfEdge* he);
+    bool                relaxEdge(CHalfEdge* he);
+    
 	bool				isInNeighborRing(int ref, int query, int ring) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
 	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
@@ -450,10 +462,13 @@ private:
 	void	loadFromOFF(std::string sFileName);
 	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
 	void	saveToM(const std::string& sFileName );    // save mesh to .m file
-	
+
+public:
 	/* helper functions */
 	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
 	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
+    static void   makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
+    static void   assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
 }; //CMesh
 
 #endif

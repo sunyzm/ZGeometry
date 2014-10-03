@@ -16,10 +16,11 @@ public:
 	Vec3(const Vec3<T>& v2) : x(v2.x), y(v2.y), z(v2.z) {}
 	const Vec3<T>& operator = (const Vec3<T>& v2) { x = v2.x; y = v2.y; z = v2.z; return *this; }
 
-	Vec3<T> operator + (const Vec3<T>& v2);
-	Vec3<T> operator - (const Vec3<T>& v2);
-	Vec3<T> operator * (T lambda);
-	Vec3<T> operator / (T lambda);
+	Vec3<T> operator + (const Vec3<T>& v2) const;
+	Vec3<T> operator - (const Vec3<T>& v2) const;
+	Vec3<T> operator * (T lambda) const;
+	Vec3<T> operator / (T lambda) const;
+    Vec3<T> operator ^ (const Vec3<T>& v2) const;
 	const Vec3<T>& operator += (const Vec3<T>& v2);
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
 	const Vec3<T>& operator *= (T coeff);
@@ -34,11 +35,9 @@ public:
 	friend Vec3<T> cross(const Vec3<T>& v1, const Vec3<T>& v2);
 
 	template<typename U>
-	operator Vec3<U>()
-	{
-		return Vec3<U>(this->x, this->y, this->z);
-	}
+    operator Vec3<U>() { return Vec3<U>(this->x, this->y, this->z); }
 
+public:
 	T x, y, z;
 };
 
@@ -107,33 +106,39 @@ inline const Vec3<T>& Vec3<T>::operator += ( const Vec3<T>& v2 )
 }
 
 template<typename T>
-inline Vec3<T> operator - (const Vec3<T>& v)
+inline Vec3<T> operator -(const Vec3<T>& v)
 {
 	return Vec3<T>(-v.x, -v.y, -v.z);
 }
 
 template<typename T>
-inline Vec3<T> Vec3<T>::operator + (const Vec3<T>& v2)
+inline Vec3<T> Vec3<T>::operator +(const Vec3<T>& v2) const
 {
 	return Vec3<T>(x + v2.x, y + v2.y, z + v2.z);
 }
 
 template<typename T>
-inline Vec3<T> Vec3<T>::operator - (const Vec3<T>& v2)
+inline Vec3<T> Vec3<T>::operator -(const Vec3<T>& v2) const
 {
 	return Vec3<T>(x - v2.x, y - v2.y, z - v2.z);
 }
 
 template<typename T>
-inline Vec3<T> Vec3<T>::operator * (T coeff)
+inline Vec3<T> Vec3<T>::operator *(T coeff) const
 {
 	return Vec3<T>(x * coeff, y * coeff, z * coeff);
 }
 
 template<typename T>
-inline Vec3<T> Vec3<T>::operator / (T coeff)
+inline Vec3<T> Vec3<T>::operator /(T coeff) const
 {
 	return Vec3<T>(x / coeff, y / coeff, z / coeff);
+}
+
+template<typename T>
+inline Vec3<T> Vec3<T>::operator ^(const Vec3<T>& v2) const
+{
+    return Vec3<T>(this->y*v2.z - this->z*v2.y, this->z*v2.x - this->x*v2.z, this->x*v2.y - this->y*v2.x);
 }
 
 template<typename T> 

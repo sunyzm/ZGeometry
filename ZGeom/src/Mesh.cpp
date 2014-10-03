@@ -123,6 +123,11 @@ CHalfEdge * CVertex::adjacentTo(CVertex* v2) const
     return NULL;
 }
 
+void CVertex::removeHalfEdge(CHalfEdge *he)
+{
+    std::remove(m_HalfEdges.begin(), m_HalfEdges.end(), he);
+}
+
 //////////////////////////////////////////////////////
 //						CHalfEdge					//
 //////////////////////////////////////////////////////
@@ -171,6 +176,14 @@ void CHalfEdge::makeTwins(CHalfEdge* e1, CHalfEdge* e2)
     e1->m_eTwin = e2;
     e2->m_eTwin = e1;
 }
+
+void CHalfEdge::makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3)
+{
+    e1->m_eNext = e3->m_ePrev = e2;
+    e2->m_eNext = e1->m_ePrev = e3;
+    e3->m_eNext = e2->m_ePrev = e1;
+}
+
 
 
 //////////////////////////////////////////////////////
@@ -1736,6 +1749,111 @@ void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::strin
     MeshFeatureList fl;
     for (int vi : featureIdx) fl.addFeature(vi, 0);
     addAttrMeshFeatures(fl, name);
+}
+
+void CMesh::faceSplit( int fIdx )
+{
+    faceSplit(m_vFaces[fIdx]);
+}
+
+CVertex* CMesh::faceSplit( CFace* face )
+{
+    auto center = face->calBarycenter();
+    CVertex* vc = new CVertex();
+    vc->setPosition(center.x, center.y, center.z);
+
+    CHalfEdge *e12 = face->m_HalfEdges[0], *e23 = face->m_HalfEdges[1], *e31 = face->m_HalfEdges[2];
+    CVertex* v1 = e12->m_Vertices[0], *v2 = e23->m_Vertices[0], *v3 = e31->m_Vertices[0];
+    CFace *f12c = face, *f23c = new CFace(3), *f31c = new CFace(3);
+    CHalfEdge *e1c = new CHalfEdge(), *ec1 = new CHalfEdge(),
+              *e2c = new CHalfEdge(), *ec2 = new CHalfEdge(),
+              *e3c = new CHalfEdge(), *ec3 = new CHalfEdge();
+    assoicateVertEdges(v1, vc, e1c, ec1);
+    assoicateVertEdges(v2, vc, e2c, ec2);
+    assoicateVertEdges(v3, vc, e3c, ec3);
+    makeFace(e12, e2c, ec1, f12c);    
+    makeFace(e23, e3c, ec2, f23c);
+    makeFace(e31, e1c, ec3, f31c);
+
+    addVertex(vc);
+    CHalfEdge *arrEdge[6] = { e1c, ec1, e2c, ec2, e3c, ec3 };
+    for (int i = 0; i < 6; ++i) addHalfEdge(arrEdge[i]);    
+    addFace(f23c); 
+    addFace(f31c);    
+
+    return vc;
+}
+
+void CMesh::makeFace( CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f )
+{
+    CHalfEdge::makeLoop(e1, e2, e3);
+    e1->m_Face = e2->m_Face = e3->m_Face = f;
+    f->create(3);
+    f->m_HalfEdges = { e1, e2, e3 };
+    f->m_Vertices = { e1->vert(0), e2->vert(0), e3->vert(0) };
+}
+
+void CMesh::addVertex( CVertex *v )
+{
+    v->m_vIndex = (int)m_vVertices.size();
+    m_vVertices.push_back(v);
+}
+
+void CMesh::addHalfEdge( CHalfEdge *e )
+{
+    e->m_eIndex = (int)m_vHalfEdges.size();
+    m_vHalfEdges.push_back(e);
+}
+
+void CMesh::addFace( CFace *f )
+{
+    f->m_fIndex = (int)m_vFaces.size();
+    m_vFaces.push_back(f);
+}
+
+void CMesh::assoicateVertEdges( CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21 )
+{
+    v1->addHalfEdge(e12);
+    v2->addHalfEdge(e21);
+    e12->setVerts(v1, v2);
+    e21->setVerts(v2, v1);
+    CHalfEdge::makeTwins(e12, e21);
+}
+
+void CMesh::edgeSwap( CHalfEdge* e1 )
+{
+    CHalfEdge *te1 = e1->m_eTwin;
+    if (te1 == NULL) return;
+    CHalfEdge *e2 = e1->nextHalfEdge(), *e3 = e1->prevHalfEdge();
+    CHalfEdge *te2 = te1->nextHalfEdge(), *te3 = te1->prevHalfEdge();
+    CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
+    CVertex *v3 = e2->vert(1), *v4 = te2->vert(1);
+    CFace *f1 = e1->getAttachedFace(), *f2 = te1->getAttachedFace();
+    assoicateVertEdges(v4, v3, e1, te1);
+    v1->removeHalfEdge(e1); v2->removeHalfEdge(te1);
+    makeFace(e1, e3, te2, f1);
+    makeFace(te1, te3, e2, f2);
+}
+
+bool CMesh::relaxEdge(CHalfEdge* e1)
+{
+    CHalfEdge *te1 = e1->m_eTwin;
+    if (te1 == NULL) return false;
+    CHalfEdge *e2 = e1->nextHalfEdge(), *e3 = e1->prevHalfEdge();
+    CHalfEdge *te2 = te1->nextHalfEdge(), *te3 = te1->prevHalfEdge();
+    CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
+    CVertex *v3 = e2->vert(1), *v4 = te2->vert(1);
+    pair<Vec3d, double> center1 = ZGeom::circumcenter(v1->pos(), v2->pos(), v3->pos()),
+                        center2 = ZGeom::circumcenter(v1->pos(), v2->pos(), v4->pos());
+
+    // test whether non-mutual vertices lie outside of circum-sphere of opposing triangle
+    if ((center1.first - (Vec3d)v4->pos()).length() > center1.second &&
+        (center2.first - (Vec3d)v3->pos()).length() > center2.second)
+        return false;
+    else {
+        edgeSwap(e1);
+        return true;
+    }    
 }
 
 #if 0

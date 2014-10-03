@@ -1996,13 +1996,13 @@ void ShapeEditor::fillHole()
         boundaryVertPos[i] = boundaryVertPtr[i]->pos();        
     }   
 
-    vector<int> lengthAttr(N);
+    map<int, double> lengthAttr;
     for (int i = 0; i < N; ++i) {
         CVertex* pv = boundaryVertPtr[i];
         double avgLen(0);
         for (CHalfEdge *he : pv->m_HalfEdges) avgLen += he->length();
         avgLen /= pv->outValence();
-        lengthAttr[i] = avgLen;
+        lengthAttr[pv->getIndex()] = avgLen;
     }
 
     /* triangulation */
@@ -2041,6 +2041,7 @@ void ShapeEditor::fillHole()
     }
 
     vector<CHalfEdge*> patchEdges;
+    set<CHalfEdge*> boundaryHalfEdges;
     for (int i = 0; i < N; ++i) {
         CHalfEdge* newHe = new CHalfEdge();
         CHalfEdge* twinHe = mMesh->getHalfEdge(boundaryEdgeIdx[i]);
@@ -2048,8 +2049,9 @@ void ShapeEditor::fillHole()
         CHalfEdge::makeTwins(newHe, twinHe);
         newHe->m_Vertices[0]->addHalfEdge(newHe);
         patchEdges.push_back(newHe);
+        boundaryHalfEdges.insert(newHe);
     }
-
+    
     MeshLineList triangulationLines;
     queue<pair<int, int>> linePairs;
     int mid0 = midIdx[0][N - 1];
@@ -2068,11 +2070,7 @@ void ShapeEditor::fillHole()
 
         CVertex* v1 = mMesh->getVertex(boundaryVertIdx[i]), *v2 = mMesh->getVertex(boundaryVertIdx[j]);
         CHalfEdge* newHe1 = new CHalfEdge(), *newHe2 = new CHalfEdge();
-        CHalfEdge::makeTwins(newHe1, newHe2);
-        newHe1->setVerts(v1, v2);
-        newHe2->setVerts(v2, v1);
-        v1->addHalfEdge(newHe1);
-        v2->addHalfEdge(newHe2);
+        CMesh::assoicateVertEdges(v1, v2, newHe1, newHe2);
         patchEdges.push_back(newHe1);
         patchEdges.push_back(newHe2);
     }
@@ -2087,18 +2085,16 @@ void ShapeEditor::fillHole()
                 CHalfEdge* eji = boundaryVertPtr[j]->adjacentTo(boundaryVertPtr[i]);
                 if (eik && ekj && eji) {
                     CFace* f = new CFace(3);
-                    f->m_Vertices = { boundaryVertPtr[k], boundaryVertPtr[j], boundaryVertPtr[i] };
-                    f->m_HalfEdges = { ekj, eji, eik };
-                    ekj->m_Face = eji->m_Face = eik->m_Face = f;
-                    eik->m_eNext = ekj; ekj->m_eNext = eji; eji->m_eNext = eik;
-                    eik->m_ePrev = eji; ekj->m_ePrev = eik; eji->m_ePrev = ekj;
+                    CMesh::makeFace(eik, ekj, eji, f);
                     patchFaces.push_back(f);
                 }
             }
         }        
     }
     
-    int nOldEdges = mMesh->halfEdgeCount(), nOldFaces = mMesh->faceCount();
+    int nOldVerts = mMesh->vertCount();
+    int nOldEdges = mMesh->halfEdgeCount();
+    int nOldFaces = mMesh->faceCount();
     for (size_t i = 0; i < patchEdges.size(); ++i) {
         patchEdges[i]->m_eIndex = nOldEdges + i;
         mMesh->m_vHalfEdges.push_back(patchEdges[i]);
@@ -2109,13 +2105,95 @@ void ShapeEditor::fillHole()
         mMesh->m_vFaces.push_back(patchFaces[i]);
     }
 
+    /* refinement */
+    double alpha = sqrt(2.);
+    bool noFaceSplit(true), noEdgeSwap(true);
+    while (true)
+    {
+        noFaceSplit = true;
+        for (int i = nOldFaces; i < mMesh->faceCount(); ++i) {
+            CFace* face = mMesh->getFace(i);
+            Vector3D vc = mMesh->getFace(i)->calBarycenter();
+            CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+            CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+            double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+            bool splitTest = true;
+            for (int m = 0; m < 3; ++m) {
+                double a = alpha * (fv[m]->pos() - vc).length();
+                if (a <= lengthAttr[fv[m]->getIndex()] || a <= vcLenAttr) {
+                    splitTest = false; 
+                    break;
+                }
+            }
+            // do faceSplit if splitTest fails
+            if (splitTest) {    
+                CVertex* centroid = mMesh->faceSplit(face);            
+                lengthAttr[centroid->getIndex()] = vcLenAttr;
+                // relaxing (vi, vj), (vi, vk), and (vj, vk)
+                for (int i = 0; i < 3; ++i) {
+                    if (boundaryHalfEdges.find(fe[i]) == boundaryHalfEdges.end()) {
+                        mMesh->relaxEdge(fe[i]);
+                    }
+                }
+                noFaceSplit = false;
+                //break;
+            }
+        }
+        if (noFaceSplit) break;
+
+        // relaxing all interior half-edges
+        while (true) {
+            noEdgeSwap = true;
+            for (int i = nOldEdges; i < mMesh->m_vHalfEdges.size(); ++i) {
+                if (boundaryHalfEdges.find(mMesh->getHalfEdge(i)) != boundaryHalfEdges.end()) continue;
+                if (mMesh->relaxEdge(mMesh->getHalfEdge(i))) {
+                    noEdgeSwap = false;
+                    break;
+                }
+            }
+            if (noEdgeSwap) break;
+        }                
+    }
+
     mMesh->clearAttributes();
     mMesh->gatherStatistics();
     mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
     emit meshLineFeatureChanged();
     mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
     emit meshFeatureChanged();
+    this->mOriginalCoord = mMesh->getVertCoordinates();
 
-    /* refinement */
+    /* inpainting */
+    setStoredCoordinates(mOriginalCoord, 0);
+    const int totalVertCount = mMesh->vertCount();
+    const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
+    const double bbDiag = mMesh->getBoundingBox().length() * 2;
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
 
+    std::cout << "==== Do Eigendecomposition ====\n";
+    int eigenCount = -1;					// -1 means full decomposition
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+
+    std::cout << "\n==== Compute Dictionaries ====\n";
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    vector<int> vMask(totalVertCount, 1);
+    for (int i = nOldVerts; i < totalVertCount; ++i) vMask[i] = 0;
+    vector<ZGeom::Colorf> vColorMissing(totalVertCount);
+    for (int idx = 0; idx < totalVertCount; ++idx) {
+        if (vMask[idx] == 0) vColorMissing[idx] = ZGeom::ColorRed;
+        else vColorMissing[idx] = mMesh->m_defaultColor;
+    }
+    addColorSignature("color_triangulated_vertex", vColorMissing);
+    
+    vector<VecNd> vCoordRecovered(3);
+    vector<SparseCoding> vCodingInpaint(3);
+    for (int i = 0; i < 3; ++i)
+        vCoordRecovered[i] = singleChannelSparseInpaint(vOriginalCoords[i], vMask, dictMHB, vCodingInpaint[i]);
+    MeshCoordinates coordRecovered(totalVertCount, vCoordRecovered);
+    setStoredCoordinates(coordRecovered, 1);
 }

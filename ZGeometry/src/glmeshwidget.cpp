@@ -479,22 +479,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
     // starting to draw illustrative lines and features
 	glDisable(GL_LIGHTING);     // disable lighting for overlaying lines
 
-	/* draw wireframe overlay */
-	if (m_bShowWireframeOverlay) 
-    {
-		glBegin(GL_LINES);
-		glLineWidth(2.0);
-		glColor4f(1.0, 0, 0, 1.0);
-		for (int i = 0; i < tmesh->halfEdgeCount(); ++i) {
-			const CHalfEdge* hf = tmesh->getHalfEdge(i);
-			int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);
-            const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
-			glVertex3d(v1.x, v1.y, v1.z);
-			glVertex3d(v2.x, v2.y, v2.z);
-		}
-		glEnd();
-	}
-
 	/* highlight boundary edges */
     const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
     for (int i = 0; i < boundaryLoops.size(); ++i) 
@@ -574,6 +558,22 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		}
 		glEnd();
 	}
+
+    /* draw wireframe overlay */
+    if (m_bShowWireframeOverlay)
+    {
+        glBegin(GL_LINES);
+        glLineWidth(2.0);
+        glColor4f(1.0, 0, 0, 1.0);
+        for (int i = 0; i < tmesh->halfEdgeCount(); ++i) {
+            const CHalfEdge* hf = tmesh->getHalfEdge(i);
+            int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);
+            const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
+            glVertex3d(v1.x, v1.y, v1.z);
+            glVertex3d(v2.x, v2.y, v2.z);
+        }
+        glEnd();
+    }
 
     glEnable(GL_LIGHTING);  // enable lighting for points
 	/* draw reference point */
