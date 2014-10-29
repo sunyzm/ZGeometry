@@ -652,7 +652,7 @@
     </widget>
     <widget class="QMenu" name="menuDisplayLines">
      <property name="title">
-       <string>Lines</string>
+      <string>Lines</string>
      </property>
     </widget>
     <widget class="QMenu" name="menuSignatureMode">
@@ -672,10 +672,10 @@
     <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
+    <addaction name="actionShowVectors"/>
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
-    <addaction name="actionShowVectors"/>
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
@@ -1330,8 +1330,11 @@
    </property>
   </action>
   <action name="actionShowVectors">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
-    <string>Show vectors</string>
+    <string>Show lines</string>
    </property>
   </action>
   <action name="actionComputeVertNormals">

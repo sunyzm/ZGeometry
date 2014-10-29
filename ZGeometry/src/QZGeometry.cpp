@@ -511,7 +511,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
 	runtime_assert (fileExist(mesh_list_name),  "Cannot open file mesh list file!");
 	std::ifstream meshfiles(mesh_list_name);	
-	std::vector<std::string> vMeshFiles;
+	vector<std::string> vMeshFiles;
 	while (!meshfiles.eof()) {
 		std::string meshFileName;
 		getline(meshfiles, meshFileName);
