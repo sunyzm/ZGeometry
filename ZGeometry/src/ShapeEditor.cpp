@@ -1985,27 +1985,25 @@ void ShapeEditor::testWaveletComputation()
 void ShapeEditor::fillHole()
 {
     using namespace std;
+    int numBoundaries = mMesh->getBoundaryLoopEdges().size();
+    if (numBoundaries == 0) return;
 
     vector<int> boundaryEdgeIdx = mMesh->getBoundaryLoopEdges()[0];
     vector<int> boundaryVertIdx = mMesh->getBoundaryLoopVerts()[0];
-    int N = (int)boundaryVertIdx.size();
+    int N = (int)boundaryVertIdx.size();    // count of boundary vertices
     vector<CVertex*> boundaryVertPtr(N);
     vector<Vec3d> boundaryVertPos(N);
     for (int i = 0; i < N; ++i) {
         boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
         boundaryVertPos[i] = boundaryVertPtr[i]->pos();        
     }   
+    int nOldVerts = mMesh->vertCount();
+    int nOldEdges = mMesh->halfEdgeCount();
+    int nOldFaces = mMesh->faceCount();
 
-    map<int, double> lengthAttr;
-    for (int i = 0; i < N; ++i) {
-        CVertex* pv = boundaryVertPtr[i];
-        double avgLen(0);
-        for (CHalfEdge *he : pv->m_HalfEdges) avgLen += he->length();
-        avgLen /= pv->outValence();
-        lengthAttr[pv->getIndex()] = avgLen;
-    }
+    //////////////////////////////////////////////////////////////////////////
 
-    /* triangulation */
+    /* triangulating hole */
     vector<vector<int>> weights(N);
     vector<vector<int>> midIdx(N);
     for (int i = 0; i < N; ++i) {
@@ -2015,12 +2013,10 @@ void ShapeEditor::fillHole()
 
     for (int i = 0; i < N - 2; ++i) {
         int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
-        if (mMesh->getHalfEdge(boundaryEdgeIdx[i + 1])->nextHalfEdge()->getVertIndex(1) == vIdx1) {
-            weights[i][i + 2] = 1e20;
-        }
-        else {
-            weights[i][i + 2] = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[i + 1], boundaryVertPos[i + 2]);
-        }        
+        if (mMesh->getHalfEdge(boundaryEdgeIdx[i+1])->nextHalfEdge()->getVertIndex(1) == vIdx1) 
+            weights[i][i + 2] = 1e20;  // if (v1, v2, v3) already make a triangle, don't link v1 and v3
+        else 
+            weights[i][i + 2] = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[i+1], boundaryVertPos[i+2]);            
         midIdx[i][i + 2] = i + 1;
     }
 
@@ -2039,74 +2035,80 @@ void ShapeEditor::fillHole()
             midIdx[i][k] = minMidIdx;
         }
     }
+     
+    MeshLineList triangulationLines;
+    vector<vector<int>> patchTri;
+    queue<pair<int, int>> tracePairs;
+    tracePairs.push(make_pair(0, N - 1));
+    while (!tracePairs.empty()) {
+        pair<int, int> lineIdx = tracePairs.front();
+        tracePairs.pop();
+        int i = lineIdx.first, k = lineIdx.second;
+        if (i + 2 == k) {
+            patchTri.push_back(vector<int>{ i, i + 1, k });
+            triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));
+        }
+        else {
+            int o = midIdx[i][k];
+            if (o > i + 1) tracePairs.push(make_pair(i, o));
+            patchTri.push_back(vector<int>{ i, o, k });
+            if (k - i < N - 1)
+                triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));
+            if (o < k - 1) tracePairs.push(make_pair(o, k));
+        }
+    }
 
     vector<CHalfEdge*> patchEdges;
-    set<CHalfEdge*> boundaryHalfEdges;
-    for (int i = 0; i < N; ++i) {
-        CHalfEdge* newHe = new CHalfEdge();
-        CHalfEdge* twinHe = mMesh->getHalfEdge(boundaryEdgeIdx[i]);
-        newHe->setVerts(twinHe->m_Vertices[1], twinHe->m_Vertices[0]);
-        CHalfEdge::makeTwins(newHe, twinHe);
-        newHe->m_Vertices[0]->addHalfEdge(newHe);
-        patchEdges.push_back(newHe);
-        boundaryHalfEdges.insert(newHe);
-    }
-    
-    MeshLineList triangulationLines;
-    queue<pair<int, int>> linePairs;
-    int mid0 = midIdx[0][N - 1];
-    linePairs.push(make_pair(0, mid0));
-    linePairs.push(make_pair(mid0, N - 1));
-    while (!linePairs.empty()) {
-        pair<int, int> lineIdx = linePairs.front();
-        linePairs.pop();
-        int i = lineIdx.first, j = lineIdx.second;
-        if (abs(j - i) <= 1) continue;
-
-        triangulationLines.emplace_back(boundaryVertPos[i], boundaryVertPos[j], false);
-        int mid = midIdx[lineIdx.first][lineIdx.second];
-        linePairs.push(make_pair(i, mid));
-        linePairs.push(make_pair(mid, j));
-
-        CVertex* v1 = mMesh->getVertex(boundaryVertIdx[i]), *v2 = mMesh->getVertex(boundaryVertIdx[j]);
-        CHalfEdge* newHe1 = new CHalfEdge(), *newHe2 = new CHalfEdge();
-        CMesh::assoicateVertEdges(v1, v2, newHe1, newHe2);
-        patchEdges.push_back(newHe1);
-        patchEdges.push_back(newHe2);
-    }
-
     vector<CFace*> patchFaces;
-    for (int i = 0; i < N - 2; ++i) {
-        for (int j = i + 1; j < N - 1; ++j) {
-            for (int k = j + 1; k < N; ++k) {
-                // i->k->j->i
-                CHalfEdge* eik = boundaryVertPtr[i]->adjacentTo(boundaryVertPtr[k]);
-                CHalfEdge* ekj = boundaryVertPtr[k]->adjacentTo(boundaryVertPtr[j]);
-                CHalfEdge* eji = boundaryVertPtr[j]->adjacentTo(boundaryVertPtr[i]);
-                if (eik && ekj && eji) {
-                    CFace* f = new CFace(3);
-                    CMesh::makeFace(eik, ekj, eji, f);
-                    patchFaces.push_back(f);
-                }
-            }
+    for (vector<int> tri : patchTri) {
+        CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
+                *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
+                *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
+        CFace *f = new CFace(3);
+        CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
+        eik->setVerts(vi, vk); ekj->setVerts(vk, vj); eji->setVerts(vj, vi);
+        vi->addHalfEdge(eik); vj->addHalfEdge(eji); vk->addHalfEdge(ekj);
+        CMesh::makeFace(eik, ekj, eji, f);
+        patchEdges.push_back(eik); patchEdges.push_back(ekj); patchEdges.push_back(eji);
+        patchFaces.push_back(f);
+    }
+    for (CHalfEdge* he : patchEdges) {
+        if (he->twinHalfEdge() == NULL) {
+            CVertex *v1 = he->vert(0), *v2 = he->vert(1);
+            CHalfEdge* e21 = v2->adjacentTo(v1);
+            CHalfEdge::makeTwins(he, e21);
         }        
     }
-    
-    int nOldVerts = mMesh->vertCount();
-    int nOldEdges = mMesh->halfEdgeCount();
-    int nOldFaces = mMesh->faceCount();
     for (size_t i = 0; i < patchEdges.size(); ++i) {
         patchEdges[i]->m_eIndex = nOldEdges + i;
         mMesh->m_vHalfEdges.push_back(patchEdges[i]);
     }
-
     for (size_t i = 0; i < patchFaces.size(); ++i) {
         patchFaces[i]->m_fIndex = nOldFaces + i;
         mMesh->m_vFaces.push_back(patchFaces[i]);
+    }    
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics();
+ 
+    mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
+    emit meshLineFeatureChanged();
+    mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
+    emit meshFeatureChanged();
+    /*  end of triangulating hole  */
+
+    //////////////////////////////////////////////////////////////////////////
+#if 0
+    /* Delaunay refinement */
+    map<int, double> lengthAttr;
+    for (int i = 0; i < N; ++i) {
+        CVertex* pv = boundaryVertPtr[i];
+        double avgLen(0);
+        for (CHalfEdge *he : pv->m_HalfEdges) avgLen += he->length();
+        avgLen /= pv->outValence();
+        lengthAttr[pv->getIndex()] = avgLen;
     }
 
-    /* refinement */
-    double alpha = sqrt(2.);
+    double alpha = 2.; //sqrt(2.);
     bool noFaceSplit(true), noEdgeSwap(true);
     while (true)
     {
@@ -2121,8 +2123,7 @@ void ShapeEditor::fillHole()
             for (int m = 0; m < 3; ++m) {
                 double a = alpha * (fv[m]->pos() - vc).length();
                 if (a <= lengthAttr[fv[m]->getIndex()] || a <= vcLenAttr) {
-                    splitTest = false; 
-                    break;
+                    splitTest = false; break;
                 }
             }
             // do faceSplit if splitTest fails
@@ -2142,7 +2143,8 @@ void ShapeEditor::fillHole()
         if (noFaceSplit) break;
 
         // relaxing all interior half-edges
-        while (true) {
+        int swapCount = 0;
+        while (true && swapCount++ < 1000) {
             noEdgeSwap = true;
             for (int i = nOldEdges; i < mMesh->m_vHalfEdges.size(); ++i) {
                 if (boundaryHalfEdges.find(mMesh->getHalfEdge(i)) != boundaryHalfEdges.end()) continue;
@@ -2157,11 +2159,11 @@ void ShapeEditor::fillHole()
 
     mMesh->clearAttributes();
     mMesh->gatherStatistics();
-    mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
-    emit meshLineFeatureChanged();
-    mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
-    emit meshFeatureChanged();
     this->mOriginalCoord = mMesh->getVertCoordinates();
+
+    /*  end of Delaunay refinement  */
+
+    //////////////////////////////////////////////////////////////////////////
 
     /* inpainting */
     setStoredCoordinates(mOriginalCoord, 0);
@@ -2172,7 +2174,7 @@ void ShapeEditor::fillHole()
     vector<VecNd> vOriginalCoords = coordOld.to3Vec();
 
     std::cout << "==== Do Eigendecomposition ====\n";
-    int eigenCount = -1;					// -1 means full decomposition
+    int eigenCount = 300;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
@@ -2192,8 +2194,14 @@ void ShapeEditor::fillHole()
     
     vector<VecNd> vCoordRecovered(3);
     vector<SparseCoding> vCodingInpaint(3);
-    for (int i = 0; i < 3; ++i)
+    for (int i = 0; i < 3; ++i) {
         vCoordRecovered[i] = singleChannelSparseInpaint(vOriginalCoords[i], vMask, dictMHB, vCodingInpaint[i]);
+        for (int j = 0; j < totalVertCount; ++j) {
+            if (vMask[j]) vCoordRecovered[i][j] = vOriginalCoords[i][j];
+        }
+    }
     MeshCoordinates coordRecovered(totalVertCount, vCoordRecovered);
     setStoredCoordinates(coordRecovered, 1);
+#endif
+
 }

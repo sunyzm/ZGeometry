@@ -173,6 +173,7 @@ double CHalfEdge::length() const
 
 void CHalfEdge::makeTwins(CHalfEdge* e1, CHalfEdge* e2)
 {
+    if (e1 == NULL || e2 == NULL) return;
     e1->m_eTwin = e2;
     e2->m_eTwin = e1;
 }
@@ -785,8 +786,10 @@ int CMesh::calBoundaryLoops()
         boundaryEdges.push_back(edgeLoop);		
 	}
 
+    // sort by number of edges of boundaries
     std::sort(boundaryEdges.begin(), boundaryEdges.end(),
         [](const vector<int>& v1, const vector<int>& v2) { return v1.size() < v2.size(); });
+
     boundaryNum = (int)boundaryEdges.size();    
 	addAttr<int>(boundaryNum, StrAttrBoundaryLoopNum, AR_UNIFORM, AT_INT);
     addAttr<VecVecInt>(boundaryEdges, StrAttrBoundaryLoops, AR_UNIFORM);
