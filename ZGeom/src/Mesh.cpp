@@ -419,14 +419,13 @@ double CFace::calArea() const
 	return TriArea(m_Vertices[0]->pos(), m_Vertices[1]->pos(), m_Vertices[2]->pos());
 }
 
-Vector3D CFace::calcNormal() const
+ZGeom::Vec3d CFace::calcNormal() const
 {
-	Vector3D v[2];
+    using ZGeom::Vec3d;
+	Vec3d v[2];
 	v[0] = m_Vertices[2]->pos() - m_Vertices[0]->pos();
 	v[1] = m_Vertices[2]->pos() - m_Vertices[1]->pos();
-	Vector3D vNormal = v[0] ^ v[1];
-	vNormal.normalize();	
-	return vNormal;
+    return (v[0] ^ v[1]).normalize();
 }
 
 Vector3D CFace::calBarycenter() const

@@ -33,7 +33,7 @@ CQrot CArcball::update( int nx, int ny )
 	Vec3d position;
 	_plane2sphere(ZGeom::Vec2d(nx, ny), position);
 	Vec3d cp = ZGeom::cross<double>(m_position, position);
-	CQrot r(ZGeom::dot<double>(m_position, position), cp.x, cp.y, cp.z);
+	CQrot r(m_position.dot(position), cp.x, cp.y, cp.z);
 	m_position = position;
 
 	return r;

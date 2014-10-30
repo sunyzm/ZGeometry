@@ -1985,6 +1985,7 @@ void ShapeEditor::testWaveletComputation()
 void ShapeEditor::fillHole()
 {
     using namespace std;
+    using namespace ZGeom;
     int numBoundaries = mMesh->getBoundaryLoopEdges().size();
     if (numBoundaries == 0) return;
 
@@ -2004,35 +2005,82 @@ void ShapeEditor::fillHole()
     //////////////////////////////////////////////////////////////////////////
 
     /* triangulating hole */
-    vector<vector<int>> weights(N);
+    struct WeightSet
+    {
+        double angle, area;
+        
+        WeightSet() : angle(0), area(0) {}
+        WeightSet(double a, double s) : angle(a), area(s) {}
+
+        bool operator < (const WeightSet &w2) const {
+            return angle < w2.angle || (angle == w2.angle && area < w2.area);
+        }
+
+        WeightSet operator+ (const WeightSet &w2) const {
+            WeightSet result;
+            result.angle = max(this->angle, w2.angle);
+            result.area = this->area + w2.area;
+            return result;
+        }
+    };
+
+    vector<vector<WeightSet>> weights(N);
     vector<vector<int>> midIdx(N);
     for (int i = 0; i < N; ++i) {
-        weights[i].resize(N, 0);
+        weights[i].resize(N);
         midIdx[i].resize(N, 0);
     }
-
     for (int i = 0; i < N - 2; ++i) {
         int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
-        if (mMesh->getHalfEdge(boundaryEdgeIdx[i+1])->nextHalfEdge()->getVertIndex(1) == vIdx1) 
-            weights[i][i + 2] = 1e20;  // if (v1, v2, v3) already make a triangle, don't link v1 and v3
-        else 
-            weights[i][i + 2] = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[i+1], boundaryVertPos[i+2]);            
+        CVertex *v1 = mMesh->getVertex(vIdx1), *v2 = mMesh->getVertex(vIdx2), *v3 = mMesh->getVertex(vIdx3);
+        CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
+        Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
+        Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
+        weights[i][i + 2].angle = max(vecAngle(vn, vn12), vecAngle(vn, vn23));
+        weights[i][i + 2].area = triArea(boundaryVertPos[i], boundaryVertPos[i+1], boundaryVertPos[i+2]);            
         midIdx[i][i + 2] = i + 1;
     }
 
     for (int j = 3; j < N; ++j) {
         for (int i = 0; i < N - j; ++i) {
             int k = i + j;
+            CVertex *vi = boundaryVertPtr[i], *vk = boundaryVertPtr[k];
             int minMidIdx = -1;
-            double minWeightIK = 1e20;
+            WeightSet minWeight_ik(4, 1e30);
+
             for (int m = i + 1; m < k; ++m) {
-                double w = weights[i][m] + weights[m][k] + TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
-                if (w < minWeightIK) {
-                    minWeightIK = w;
+                CVertex *vm = boundaryVertPtr[m];
+                WeightSet triWeight;
+                triWeight.area = TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
+
+                Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
+                Vec3d vn_im, vn_mk;
+                if (m == i + 1) 
+                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calcNormal();
+                else {
+                    int l1 = midIdx[i][m];
+                    vn_im = triNormal(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[l1]);
+                }
+                if (k == m + 1) 
+                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calcNormal();
+                else {
+                    int l2 = midIdx[m][k];
+                    vn_mk = triNormal(boundaryVertPos[m], boundaryVertPos[k], boundaryVertPos[l2]);
+                }
+                triWeight.angle = max(vecAngle(vn_ikm, vn_im), vecAngle(vn_ikm, vn_mk));
+                if (k == i + N - 1) {
+                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calcNormal();
+                    triWeight.angle = max(triWeight.angle, vecAngle(vn_ikm, vn_ik));
+                }
+                
+                WeightSet weight_imk = weights[i][m] + weights[m][k] + triWeight;                           
+                if (weight_imk < minWeight_ik) {
+                    minWeight_ik = weight_imk;
                     minMidIdx = m;
                 }
             }
             midIdx[i][k] = minMidIdx;
+            weights[i][k] = minWeight_ik;
         }
     }
      
@@ -2052,11 +2100,13 @@ void ShapeEditor::fillHole()
             int o = midIdx[i][k];
             if (o > i + 1) tracePairs.push(make_pair(i, o));
             patchTri.push_back(vector<int>{ i, o, k });
-            if (k - i < N - 1)
-                triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));
+            triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));            
             if (o < k - 1) tracePairs.push(make_pair(o, k));
         }
     }
+
+    cout << "boundary vert count: " << boundaryVertIdx.size() << endl;
+    cout << "patching face count: " << patchTri.size() << endl;
 
     vector<CHalfEdge*> patchEdges;
     vector<CFace*> patchFaces;
@@ -2064,6 +2114,10 @@ void ShapeEditor::fillHole()
         CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
                 *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
                 *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
+        // skip if (vi->vj->vk->vi) is already a triangle
+        // if (vk->adjacentTo(vi) && vi->adjacentTo(vj) && vj->adjacentTo(vk)) continue;
+
+        // construct new face (vi->vk->vj->vi)
         CFace *f = new CFace(3);
         CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
         eik->setVerts(vi, vk); ekj->setVerts(vk, vj); eji->setVerts(vj, vi);

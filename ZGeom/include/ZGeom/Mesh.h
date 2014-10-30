@@ -127,7 +127,7 @@ public:
 	int						getFaceIndex() const { return m_fIndex; }	
 	double					calArea() const;
 	Vector3D				calBarycenter() const;
-	Vector3D				calcNormal() const;
+    ZGeom::Vec3d            calcNormal() const;
 	std::vector<double>		getPlaneFunction();	
 
 public:	
