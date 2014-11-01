@@ -2284,12 +2284,13 @@ void QZGeometryWindow::computeVertNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int vertCount = mesh->vertCount();
+        mesh->calVertNormals();
 		auto vNormals = mesh->getVertNormals();
 		assert(vNormals.size() == vertCount);
 		
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
-			const Vector3D& vi = mesh->getVertexPosition(i);
+			const Vector3D& vi = mesh->getVertexPosition(i);            
 			mvl.push_back(LineSegment(vi, vNormals[i], true));
 		}
 		
@@ -2306,6 +2307,7 @@ void QZGeometryWindow::computeFaceNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int faceCount = mesh->faceCount();
+        mesh->calFaceNormals();
 		auto fNormals = mesh->getFaceNormals();
 		assert(fNormals.size() == faceCount);
 

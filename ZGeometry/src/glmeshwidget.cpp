@@ -28,6 +28,11 @@ const GLfloat featureColors[][4] = {{1.0, 0.0, 0.0, 1.0},	//red
 const int gFeatureColorNum = 6;
 Qt::MouseButton gButton;
 
+void glColorRed() { glColor4f(1.0, 0.0, 0.0, 1.0);  }
+void glColorGreen() { glColor4f(0.0, 1.0, 0.0, 1.0); }
+void glColorBlue() { glColor4f(0.0, 0.0, 1.0, 1.0); }
+void glColorf(ZGeom::Colorf c) { glColor4f(c[0], c[1], c[2], c[3]);  }
+
 void glColorCoded(float v, float pf)
 {
 	int ic = v;
@@ -542,16 +547,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
                 Vec3d v1 = line.first, vn = line.second;
                 Vec3d v2 = v1 + vn * avgEdgeLen * 0.5;
                 Vec3d vc = (v1 + v2) / 2.0;
-                glColor4f(0, 0, 1.0, 1.0);	// vector line shooting from blue
+                glColorf(line.color1);	// vector line shooting from color1
                 glVertex3d(v1.x, v1.y, v1.z);
                 glVertex3d(vc.x, vc.y, vc.z);
-                glColor4f(1.0, 0, 0, 1.0);	// to red
+                glColorf(line.color2);	// to color2
                 glVertex3d(vc.x, vc.y, vc.z);
                 glVertex3d(v2.x, v2.y, v2.z);
             }
             else {
                 Vec3d v1 = line.first, v2 = line.second;
-                glColor4f(0, 1., 0, 1.);    
+                glColorf(line.color1);
                 glVertex3d(v1.x, v1.y, v1.z);
                 glVertex3d(v2.x, v2.y, v2.z);
             }			
@@ -564,7 +569,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
     {
         glBegin(GL_LINES);
         glLineWidth(2.0);
-        glColor4f(1.0, 0, 0, 1.0);
+        glColorGreen();
         for (int i = 0; i < tmesh->halfEdgeCount(); ++i) {
             const CHalfEdge* hf = tmesh->getHalfEdge(i);
             int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);

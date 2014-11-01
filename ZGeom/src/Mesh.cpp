@@ -428,9 +428,9 @@ ZGeom::Vec3d CFace::calcNormal() const
     return (v[0] ^ v[1]).normalize();
 }
 
-Vector3D CFace::calBarycenter() const
+ZGeom::Vec3d CFace::calBarycenter() const
 {
-    Vector3D center(0,0,0);
+    Vec3d center(0,0,0);
     for (auto p : m_Vertices) center += p->pos();
     return center / (double)m_Vertices.size();
 }
@@ -890,7 +890,7 @@ void CMesh::calCurvatures()
 
 		vGaussCurvatures[vIndex] = (2.0 * pi - sum) / amix;
 		kh = kh / (2.0 * amix);
-		vMeanCurvatures[vIndex] = kh.length() / 2.0;	//half magnitude of 
+		vMeanCurvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
 	}
 
 	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);

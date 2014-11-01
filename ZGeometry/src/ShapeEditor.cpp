@@ -296,7 +296,7 @@ void ShapeEditor::deformSimple()
 	std::vector<Vector3D> vDeformedPos(freeVertCount);
 	for (int i = 0; i < freeVertCount; ++i) {
 		CVertex* pv = mMesh->getVertex(vFreeIdx[i]);
-		vDeformedPos[i] = pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+		vDeformedPos[i] = (Vector3D)pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 	}
 
     MeshCoordinates newCoord = mMesh->getVertCoordinates();
@@ -1989,6 +1989,7 @@ void ShapeEditor::fillHole()
     int numBoundaries = mMesh->getBoundaryLoopEdges().size();
     if (numBoundaries == 0) return;
 
+    double avgEdgeLen = mMesh->getAvgEdgeLength();
     vector<int> boundaryEdgeIdx = mMesh->getBoundaryLoopEdges()[0];
     vector<int> boundaryVertIdx = mMesh->getBoundaryLoopVerts()[0];
     int N = (int)boundaryVertIdx.size();    // count of boundary vertices
@@ -2114,9 +2115,6 @@ void ShapeEditor::fillHole()
         CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
                 *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
                 *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
-        // skip if (vi->vj->vk->vi) is already a triangle
-        // if (vk->adjacentTo(vi) && vi->adjacentTo(vj) && vj->adjacentTo(vk)) continue;
-
         // construct new face (vi->vk->vj->vi)
         CFace *f = new CFace(3);
         CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
@@ -2141,18 +2139,15 @@ void ShapeEditor::fillHole()
         patchFaces[i]->m_fIndex = nOldFaces + i;
         mMesh->m_vFaces.push_back(patchFaces[i]);
     }    
-    mMesh->clearAttributes();
-    mMesh->gatherStatistics();
- 
-    mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
-    emit meshLineFeatureChanged();
-    mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
-    emit meshFeatureChanged();
+
     /*  end of triangulating hole  */
 
     //////////////////////////////////////////////////////////////////////////
-#if 0
-    /* Delaunay refinement */
+
+    /* Delaunay-like refinement */
+    set<CHalfEdge*> boundaryHalfEdges;
+    for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mMesh->getHalfEdge(ei));
+
     map<int, double> lengthAttr;
     for (int i = 0; i < N; ++i) {
         CVertex* pv = boundaryVertPtr[i];
@@ -2162,73 +2157,133 @@ void ShapeEditor::fillHole()
         lengthAttr[pv->getIndex()] = avgLen;
     }
 
-    double alpha = 2.; //sqrt(2.);
+    double alpha = 3.; //sqrt(2.);
     bool noFaceSplit(true), noEdgeSwap(true);
     while (true)
     {
-        noFaceSplit = true;
+        vector<CFace*> splitCandidates;
         for (int i = nOldFaces; i < mMesh->faceCount(); ++i) {
             CFace* face = mMesh->getFace(i);
-            Vector3D vc = mMesh->getFace(i)->calBarycenter();
+            Vec3d vc = mMesh->getFace(i)->calBarycenter();
             CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
             CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
             double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
             bool splitTest = true;
             for (int m = 0; m < 3; ++m) {
                 double a = alpha * (fv[m]->pos() - vc).length();
-                if (a <= lengthAttr[fv[m]->getIndex()] || a <= vcLenAttr) {
+                if (a <= max(lengthAttr[fv[m]->getIndex()], vcLenAttr)) {
                     splitTest = false; break;
                 }
             }
-            // do faceSplit if splitTest fails
-            if (splitTest) {    
-                CVertex* centroid = mMesh->faceSplit(face);            
-                lengthAttr[centroid->getIndex()] = vcLenAttr;
-                // relaxing (vi, vj), (vi, vk), and (vj, vk)
-                for (int i = 0; i < 3; ++i) {
-                    if (boundaryHalfEdges.find(fe[i]) == boundaryHalfEdges.end()) {
-                        mMesh->relaxEdge(fe[i]);
-                    }
-                }
-                noFaceSplit = false;
-                //break;
-            }
-        }
-        if (noFaceSplit) break;
+            // do faceSplit if splitTest passed
+            if (splitTest) splitCandidates.push_back(face);
+       }
+
+       if (splitCandidates.empty()) break;
+       else {
+           for (CFace* face : splitCandidates) {
+               CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+               CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+               double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+               CVertex* centroid = mMesh->faceSplit(face);
+               lengthAttr[centroid->getIndex()] = vcLenAttr;
+           }
+       }
 
         // relaxing all interior half-edges
         int swapCount = 0;
-        while (true && swapCount++ < 1000) {
+        while (true && swapCount++ < 100) {
             noEdgeSwap = true;
             for (int i = nOldEdges; i < mMesh->m_vHalfEdges.size(); ++i) {
-                if (boundaryHalfEdges.find(mMesh->getHalfEdge(i)) != boundaryHalfEdges.end()) continue;
+                if (boundaryHalfEdges.find(mMesh->getHalfEdge(i)->twinHalfEdge()) != boundaryHalfEdges.end()) continue;
                 if (mMesh->relaxEdge(mMesh->getHalfEdge(i))) {
-                    noEdgeSwap = false;
-                    break;
+                    noEdgeSwap = false; // break;
                 }
             }
             if (noEdgeSwap) break;
         }                
     }
 
-    mMesh->clearAttributes();
-    mMesh->gatherStatistics();
-    this->mOriginalCoord = mMesh->getVertCoordinates();
-
     /*  end of Delaunay refinement  */
 
-    //////////////////////////////////////////////////////////////////////////
+    /* calculate and visualize normals */
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics();   
+    const int newVertCount = mMesh->vertCount();
+    vector<int> affectedVert = boundaryVertIdx;
+    for (int vi = nOldVerts; vi < mMesh->vertCount(); ++vi) affectedVert.push_back(vi);
+    vector<LineSegment> vNormalLines;
 
+    /* normals calculated from filled model */
+    vector<Vector3D> vNormals1 = mMesh->getVertNormals();
+    for (int vi : affectedVert) {
+        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
+        ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
+        vNormalLines.push_back(ls);
+    }
+
+    /* inpaint affected normals */
+    std::cout << "==== Do Eigendecomposition ====\n";
+    int eigenCount = 500;					// -1 means full decomposition
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    std::cout << "\n==== Compute Dictionaries ====\n";
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    vector<int> vMask(newVertCount, 1);
+    for (int i : affectedVert) vMask[i] = 0;
+    vector<VecNd> vNormalOld(3), vNormalRecovered(3);
+    for (int i = 0; i < 3; ++i) {
+        vNormalOld[i].resize(newVertCount);
+        for (int j = 0; j < newVertCount; ++j)
+            vNormalOld[i][j] = vNormals1[j][i];
+    }
+    
+    vector<SparseCoding> vCodingInpaint(3);
+    for (int i = 0; i < 3; ++i) {
+        vNormalRecovered[i] = singleChannelSparseInpaint(vNormalOld[i], vMask, dictMHB, vCodingInpaint[i]);
+    }
+    vector<Vector3D> vNormals2(newVertCount);
+    for (int i = 0; i < newVertCount; ++i) {
+        if (vMask[i]) vNormals2[i] = vNormals1[i];
+        else {
+            vNormals2[i] = Vector3D(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
+            vNormals2[i].normalize();
+        }        
+    }
+    for (int vi : affectedVert) {
+        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals2[vi], true);
+        ls.color1 = ZGeom::ColorRed; ls.color2 = ZGeom::ColorRed;
+        vNormalLines.push_back(ls);
+    }
+
+    /* inpaint mean curvature values */
+    VecNd oldCurvature = VecNd(mMesh->getMeanCurvature());
+    VecNd newCurvature = singleChannelSparseInpaint(oldCurvature, vMask, dictMHB, vCodingInpaint[0]);
+    for (int vi = 0; vi < newVertCount; ++vi) {
+        if (vMask[vi]) newCurvature[vi] = oldCurvature[vi];
+    }
+    auto minmax_curv = std::minmax_element(oldCurvature.c_ptr(), oldCurvature.c_ptr_end());
+    double min_curv = *minmax_curv.first, max_curv = *minmax_curv.second;
+    vector<Colorf> colorOldCurv(newVertCount), colorNewCurv(newVertCount);
+    for (int i = 0; i < newVertCount; ++i) {
+        colorOldCurv[i].falseColor((oldCurvature[i] - min_curv) / (max_curv - min_curv));
+        colorNewCurv[i].falseColor((newCurvature[i] - min_curv) / (max_curv - min_curv));
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+#if 0
     /* inpainting */
+    this->mOriginalCoord = mMesh->getVertCoordinates();
     setStoredCoordinates(mOriginalCoord, 0);
     const int totalVertCount = mMesh->vertCount();
-    const double originalAvgEdgeLen = mMesh->getAvgEdgeLength();
-    const double bbDiag = mMesh->getBoundingBox().length() * 2;
     const MeshCoordinates& coordOld = getOldMeshCoord();
     vector<VecNd> vOriginalCoords = coordOld.to3Vec();
 
     std::cout << "==== Do Eigendecomposition ====\n";
-    int eigenCount = 300;					// -1 means full decomposition
+    int eigenCount = 500;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
@@ -2244,7 +2299,7 @@ void ShapeEditor::fillHole()
         if (vMask[idx] == 0) vColorMissing[idx] = ZGeom::ColorRed;
         else vColorMissing[idx] = mMesh->m_defaultColor;
     }
-    addColorSignature("color_triangulated_vertex", vColorMissing);
+    //addColorSignature("color_triangulated_vertex", vColorMissing);
     
     vector<VecNd> vCoordRecovered(3);
     vector<SparseCoding> vCodingInpaint(3);
@@ -2258,4 +2313,13 @@ void ShapeEditor::fillHole()
     setStoredCoordinates(coordRecovered, 1);
 #endif
 
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics(); 
+    mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
+    emit meshFeatureChanged();
+    mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
+    mMesh->addAttrLines(vNormalLines, "hole_affected_vert_normals");
+    emit meshLineFeatureChanged();
+    addColorSignature("color_old_curv", colorOldCurv);
+    addColorSignature("color_approximate_curv", colorNewCurv);
 }

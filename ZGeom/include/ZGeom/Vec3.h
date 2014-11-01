@@ -29,6 +29,7 @@ public:
 	T& operator [] (uint idx);
 
     T length() const;
+    T length2() const;
     T dot(const Vec3<T>& v2) const { return x*v2.x + y*v2.y + z*v2.z;  }
     Vec3<T> cross(const Vec3<T> &v2) const;
     const Vec3<T>& normalize();
@@ -66,6 +67,12 @@ template<typename T>
 inline T Vec3<T>::length() const
 {
 	return std::sqrt(x*x + y*y + z*z);
+}
+
+template<typename T>
+inline T Vec3<T>::length2() const
+{
+    return x*x + y*y + z*z;
 }
 
 template<typename T>

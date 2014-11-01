@@ -46,7 +46,7 @@ public:
 	int					    getVID() const              { return m_vid; }
 	CHalfEdge*			    getHalfEdge(int ei)         { return m_HalfEdges[ei]; }
 	const CHalfEdge*        getHalfEdge(int ei) const   { return m_HalfEdges[ei]; }    
-	const Vector3D&		    pos() const                 { return m_vPosition; } 
+	ZGeom::Vec3d		    pos() const                 { return (ZGeom::Vec3d)m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }
     void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); }
@@ -126,7 +126,7 @@ public:
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }	
 	double					calArea() const;
-	Vector3D				calBarycenter() const;
+    ZGeom::Vec3d            calBarycenter() const;
     ZGeom::Vec3d            calcNormal() const;
 	std::vector<double>		getPlaneFunction();	
 
