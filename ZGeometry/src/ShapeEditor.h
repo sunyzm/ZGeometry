@@ -34,7 +34,10 @@ public:
 	void deformMixedLaplacian(double ks, double kb);
 	void deformThinShell2(double ks, double kb);
     
+    void fillHoles(bool skipExternalBoundary);
+    void fillBoundedHole(const std::vector<int>& boundaryLoopEdges);
     void fillHole();
+    
 
 signals:
 	void approxStepsChanged(int index, int newSize);
@@ -72,7 +75,7 @@ private:
 	MeshCoordinates& getStoredCoordinate(int idx);
 	const MeshCoordinates& getApproximateCoordinate(int selctedApprox, int coordIdx) { return mContReconstructCoords[selctedApprox][coordIdx]; }
 
-// private fields
+    /* private fields */
 	CMesh* mMesh;	
 	DifferentialMeshProcessor* mProcessor;
 	ShapeApprox mShapeApprox;
@@ -84,6 +87,13 @@ private:
 	std::vector<MeshCoordinates> mStoredCoordinates;
 	
 	std::vector<ZGeom::VecNd> mEditBasis;	
-	std::vector<ZGeom::VecNd> mAtoms;
 	int mTotalScales;	
+
+    /* fields for boundaries */
+    struct FilledHoleVerts {
+        std::vector<int> vert_on_boundary;
+        std::vector<int> vert_inside;
+    };
+
+    std::vector<FilledHoleVerts> filled_boundaries;
 };

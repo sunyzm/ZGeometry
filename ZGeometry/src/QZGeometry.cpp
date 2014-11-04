@@ -2197,7 +2197,6 @@ void QZGeometryWindow::nextBasisScale()
 	if (mShapeEditor.mTotalScales <= 0) return;
 	mCurrentBasisScale = (mCurrentBasisScale + 1) % mShapeEditor.mTotalScales;
 	std::cout << "Current basis scale: " << mCurrentBasisScale << std::endl;
-
 	computeDictAtom();
 }
 

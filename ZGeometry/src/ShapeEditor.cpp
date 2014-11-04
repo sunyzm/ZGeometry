@@ -659,7 +659,8 @@ void ShapeEditor::runTests()
     //testSparseDecomposition2();
     //testWaveletAnalysis();
     //testWaveletComputation();
-    fillHole();
+    //fillHole();
+    fillHoles(false);
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -1980,6 +1981,253 @@ void ShapeEditor::testWaveletComputation()
     timer.startTimer();
     computeDictionary(DT_SGW4, es, dictSGW);
     timer.stopTimer("SGW dict time: ");
+}
+
+void ShapeEditor::fillHoles(bool skipExternalBoundary)
+{
+    int numBoundaries = mMesh->getBoundaryLoopEdges().size();
+    if (skipExternalBoundary) numBoundaries--;
+    if (numBoundaries <= 0) return;
+
+    auto boundaryLoopEdges = mMesh->getBoundaryLoopEdges();
+    for (int i = 0; i < numBoundaries; ++i) {
+        vector<int> boundaryEdges = boundaryLoopEdges[i];
+        fillBoundedHole(boundaryEdges);
+    }
+
+    vector<int> allBoundaryVertIdx;
+    for (FilledHoleVerts &fhv : filled_boundaries)
+        for (int vb : fhv.vert_on_boundary) allBoundaryVertIdx.push_back(vb);
+    mMesh->addAttrMeshFeatures(allBoundaryVertIdx, "all_boundary_verts");
+    emit meshFeatureChanged();
+}
+
+
+
+void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
+{
+    using namespace std;
+    using namespace ZGeom;
+    int nOldVerts = mMesh->vertCount();
+    int nOldEdges = mMesh->halfEdgeCount();
+    int nOldFaces = mMesh->faceCount();
+
+    int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
+    vector<int> boundaryVertIdx(N);
+    vector<CVertex*> boundaryVertPtr(N);
+    vector<Vec3d> boundaryVertPos(N);
+    for (int i = 0; i < N; ++i) {
+        boundaryVertIdx[i] = mMesh->getHalfEdge(boundaryEdgeIdx[i])->getVertIndex(0);
+        boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
+        boundaryVertPos[i] = boundaryVertPtr[i]->pos();
+    }
+
+    //////////////////////////////////////////////////////////////////////////
+
+    /* triangulating hole */
+    struct WeightSet
+    {
+        double angle, area;
+
+        WeightSet() : angle(0), area(0) {}
+        WeightSet(double a, double s) : angle(a), area(s) {}
+        bool operator < (const WeightSet &w2) const {
+            return angle < w2.angle || (angle == w2.angle && area < w2.area);
+        }
+        WeightSet operator+ (const WeightSet &w2) const {
+            WeightSet result;
+            result.angle = max(this->angle, w2.angle);
+            result.area = this->area + w2.area;
+            return result;
+        }
+    };
+
+    vector<vector<WeightSet>> weights(N);
+    vector<vector<int>> midIdx(N);
+    for (int i = 0; i < N; ++i) {
+        weights[i].resize(N);
+        midIdx[i].resize(N, 0);
+    }
+    for (int i = 0; i < N - 2; ++i) {
+        int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
+        CVertex *v1 = mMesh->getVertex(vIdx1), *v2 = mMesh->getVertex(vIdx2), *v3 = mMesh->getVertex(vIdx3);
+        CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
+        Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
+        Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
+        weights[i][i + 2].angle = max(vecAngle(vn, vn12), vecAngle(vn, vn23));
+        weights[i][i + 2].area = triArea(boundaryVertPos[i], boundaryVertPos[i + 1], boundaryVertPos[i + 2]);
+        midIdx[i][i + 2] = i + 1;
+    }
+
+    for (int j = 3; j < N; ++j) {
+        for (int i = 0; i < N - j; ++i) {
+            int k = i + j;
+            CVertex *vi = boundaryVertPtr[i], *vk = boundaryVertPtr[k];
+            int minMidIdx = -1;
+            WeightSet minWeight_ik(4, 1e30);
+
+            for (int m = i + 1; m < k; ++m) {
+                CVertex *vm = boundaryVertPtr[m];
+                WeightSet triWeight;
+                triWeight.area = TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
+
+                Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
+                Vec3d vn_im, vn_mk;
+                if (m == i + 1)
+                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calcNormal();
+                else {
+                    int l1 = midIdx[i][m];
+                    vn_im = triNormal(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[l1]);
+                }
+                if (k == m + 1)
+                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calcNormal();
+                else {
+                    int l2 = midIdx[m][k];
+                    vn_mk = triNormal(boundaryVertPos[m], boundaryVertPos[k], boundaryVertPos[l2]);
+                }
+                triWeight.angle = max(vecAngle(vn_ikm, vn_im), vecAngle(vn_ikm, vn_mk));
+                if (k == i + N - 1) {
+                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calcNormal();
+                    triWeight.angle = max(triWeight.angle, vecAngle(vn_ikm, vn_ik));
+                }
+
+                WeightSet weight_imk = weights[i][m] + weights[m][k] + triWeight;
+                if (weight_imk < minWeight_ik) {
+                    minWeight_ik = weight_imk;
+                    minMidIdx = m;
+                }
+            }
+            midIdx[i][k] = minMidIdx;
+            weights[i][k] = minWeight_ik;
+        }
+    }
+
+    MeshLineList triangulationLines;
+    vector<vector<int>> patchTri;
+    queue<pair<int, int>> tracePairs;
+    tracePairs.push(make_pair(0, N - 1));
+    while (!tracePairs.empty()) {
+        pair<int, int> lineIdx = tracePairs.front();
+        tracePairs.pop();
+        int i = lineIdx.first, k = lineIdx.second;
+        if (i + 2 == k) {
+            patchTri.push_back(vector < int > { i, i + 1, k });
+            triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));
+        }
+        else {
+            int o = midIdx[i][k];
+            if (o > i + 1) tracePairs.push(make_pair(i, o));
+            patchTri.push_back(vector < int > { i, o, k });
+            triangulationLines.push_back(LineSegment(boundaryVertPos[i], boundaryVertPos[k]));
+            if (o < k - 1) tracePairs.push(make_pair(o, k));
+        }
+    }
+
+    cout << "boundary vert count: " << boundaryVertIdx.size() << endl;
+    cout << "patching face count: " << patchTri.size() << endl;
+
+    vector<CHalfEdge*> patchEdges;
+    vector<CFace*> patchFaces;
+    for (vector<int> tri : patchTri) {
+        CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
+                *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
+                *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
+        // construct new face (vi->vk->vj->vi)
+        CFace *f = new CFace(3);
+        CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
+        eik->setVerts(vi, vk); ekj->setVerts(vk, vj); eji->setVerts(vj, vi);
+        vi->addHalfEdge(eik); vj->addHalfEdge(eji); vk->addHalfEdge(ekj);
+        CMesh::makeFace(eik, ekj, eji, f);
+        patchEdges.push_back(eik); patchEdges.push_back(ekj); patchEdges.push_back(eji);
+        patchFaces.push_back(f);
+    }
+    for (CHalfEdge* he : patchEdges) {
+        if (he->twinHalfEdge() == NULL) {
+            CVertex *v1 = he->vert(0), *v2 = he->vert(1);
+            CHalfEdge* e21 = v2->adjacentTo(v1);
+            CHalfEdge::makeTwins(he, e21);
+        }
+    }
+    for (size_t i = 0; i < patchEdges.size(); ++i) {
+        patchEdges[i]->m_eIndex = nOldEdges + i;
+        mMesh->m_vHalfEdges.push_back(patchEdges[i]);
+    }
+    for (size_t i = 0; i < patchFaces.size(); ++i) {
+        patchFaces[i]->m_fIndex = nOldFaces + i;
+        mMesh->m_vFaces.push_back(patchFaces[i]);
+    }
+    /*  end of triangulating hole  */
+
+    //////////////////////////////////////////////////////////////////////////
+
+    /* Delaunay-like refinement */
+    set<CHalfEdge*> boundaryHalfEdges;
+    for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mMesh->getHalfEdge(ei));
+
+    map<int, double> lengthAttr;
+    for (int i = 0; i < N; ++i) {
+        CVertex* pv = boundaryVertPtr[i];
+        double avgLen(0);
+        for (CHalfEdge *he : pv->m_HalfEdges) avgLen += he->length();
+        avgLen /= pv->outValence();
+        lengthAttr[pv->getIndex()] = avgLen;
+    }
+
+    double alpha = 3.; //sqrt(2.);
+    bool noFaceSplit(true), noEdgeSwap(true);
+    while (true)
+    {
+        vector<CFace*> splitCandidates;
+        for (int i = nOldFaces; i < mMesh->faceCount(); ++i) {
+            CFace* face = mMesh->getFace(i);
+            Vec3d vc = mMesh->getFace(i)->calBarycenter();
+            CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+            CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+            double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+            bool splitTest = true;
+            for (int m = 0; m < 3; ++m) {
+                double a = alpha * (fv[m]->pos() - vc).length();
+                if (a <= max(lengthAttr[fv[m]->getIndex()], vcLenAttr)) {
+                    splitTest = false; break;
+                }
+            }
+            // do faceSplit if splitTest passed
+            if (splitTest) splitCandidates.push_back(face);
+        }
+
+        if (splitCandidates.empty()) break;
+        else {
+            for (CFace* face : splitCandidates) {
+                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+                CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+                CVertex* centroid = mMesh->faceSplit(face);
+                lengthAttr[centroid->getIndex()] = vcLenAttr;
+            }
+        }
+
+        // relaxing all interior half-edges
+        int swapCount = 0;
+        while (true && swapCount++ < 100) {
+            noEdgeSwap = true;
+            for (int i = nOldEdges; i < mMesh->m_vHalfEdges.size(); ++i) {
+                if (boundaryHalfEdges.find(mMesh->getHalfEdge(i)->twinHalfEdge()) != boundaryHalfEdges.end()) continue;
+                if (mMesh->relaxEdge(mMesh->getHalfEdge(i))) {
+                    noEdgeSwap = false; // break;
+                }
+            }
+            if (noEdgeSwap) break;
+        }
+    }
+    /*  end of Delaunay refinement  */
+    
+    FilledHoleVerts newHole;
+    newHole.vert_on_boundary = boundaryVertIdx;
+    for (int i = nOldVerts; i < mMesh->vertCount(); ++i)
+        newHole.vert_inside.push_back(i);
+    this->filled_boundaries.push_back(newHole);
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics();
 }
 
 void ShapeEditor::fillHole()
