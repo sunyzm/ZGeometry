@@ -1220,26 +1220,57 @@ void QZGeometryWindow::displaySignature(QString sigName )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayFeature( QString featureName )
+void QZGeometryWindow::displayFeature( QString pointFeatureName )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		if (!isMeshSelected(obj)) continue;
-		mRenderManagers[obj]->mActiveFeatureName = featureName.toStdString();
+        auto &activePointFeatures = mRenderManagers[obj]->mActivePointFeatures;
+        std::string newPointFeature = pointFeatureName.toStdString();
+        QAction *activeAction = nullptr;
+        for (QAction *qa : m_actionDisplayFeatures) {
+            if (qa->text() == pointFeatureName) {
+                activeAction = qa;
+                break;
+            }
+        }
+        if (activePointFeatures.find(newPointFeature) == activePointFeatures.end()) {            
+            activePointFeatures.insert(newPointFeature);
+            if (activeAction) activeAction->setChecked(true);
+            if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures(true);
+        }
+        else {
+            activePointFeatures.erase(newPointFeature);
+            if (activeAction) activeAction->setChecked(false);            
+        }
 	}
 
-	if (!ui.glMeshWidget->m_bShowFeatures) 
-		toggleShowFeatures(true);
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayLine(QString lineName)
+void QZGeometryWindow::displayLine(QString lineFeatureName)
 {
     for (int obj = 0; obj < mMeshCount; ++obj) {
         if (!isMeshSelected(obj)) continue;
-        mRenderManagers[obj]->mActiveLineName = lineName.toStdString();
+        auto &activeLineFeatures = mRenderManagers[obj]->mActiveLineNames;
+        std::string newLineFeature = lineFeatureName.toStdString();
+        QAction *activeAction = nullptr;
+        for (QAction *qa : m_actionDisplayLines) {
+            if (qa->text() == lineFeatureName) {
+                activeAction = qa;
+                break;
+            }
+        }
+        if (activeLineFeatures.find(newLineFeature) == activeLineFeatures.end()) {
+            activeLineFeatures.insert(newLineFeature);
+            if (activeAction) activeAction->setChecked(true);
+            if (!ui.glMeshWidget->m_bShowLines) toggleShowLines(true);
+        }
+        else {
+            activeLineFeatures.erase(newLineFeature);
+            if (activeAction) activeAction->setChecked(false);
+        }
     }
 
-    if (!ui.glMeshWidget->m_bShowLines) toggleShowLines(true);
     ui.glMeshWidget->update();
 }
 
@@ -1289,6 +1320,7 @@ void QZGeometryWindow::updateDisplayFeatureMenu()
 			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
 			m_actionDisplayFeatures.push_back(newDisplayAction);
             ui.menuDisplayFeatures->addAction(newDisplayAction);
+            newDisplayAction->setCheckable(true);
 			m_featureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
 			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_featureSignalMapper, SLOT(map()));
 		}	
@@ -1324,6 +1356,7 @@ void QZGeometryWindow::updateDisplayLineMenu()
             QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
             m_actionDisplayLines.push_back(newDisplayAction);
             ui.menuDisplayLines->addAction(newDisplayAction);
+            newDisplayAction->setCheckable(true);
             m_linesSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
             QObject::connect(newDisplayAction, SIGNAL(triggered()), m_linesSignalMapper, SLOT(map()));
         }
@@ -2285,8 +2318,6 @@ void QZGeometryWindow::computeVertNormals()
 		int vertCount = mesh->vertCount();
         mesh->calVertNormals();
 		auto vNormals = mesh->getVertNormals();
-		assert(vNormals.size() == vertCount);
-		
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
 			const Vector3D& vi = mesh->getVertexPosition(i);            
@@ -2294,7 +2325,6 @@ void QZGeometryWindow::computeVertNormals()
 		}
 		
         mesh->addAttrLines(mvl, StrAttrVecVertNormal);
-		mRenderManagers[obj]->mActiveLineName = StrAttrVecVertNormal;
 	}
 
     updateDisplayLineMenu();
@@ -2308,8 +2338,6 @@ void QZGeometryWindow::computeFaceNormals()
 		int faceCount = mesh->faceCount();
         mesh->calFaceNormals();
 		auto fNormals = mesh->getFaceNormals();
-		assert(fNormals.size() == faceCount);
-
 		MeshLineList mvl;
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
 			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
@@ -2317,7 +2345,6 @@ void QZGeometryWindow::computeFaceNormals()
 		}
 
         mesh->addAttrLines(mvl, StrAttrVecFaceNormal);
-		mRenderManagers[obj]->mActiveLineName = StrAttrVecFaceNormal;
 	}
 
     updateDisplayLineMenu();

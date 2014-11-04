@@ -482,7 +482,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 
     //////////////////////////////////////////////////////////////////////////
     // starting to draw illustrative lines and features
-	glDisable(GL_LIGHTING);     // disable lighting for overlaying lines
+	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
 
 	/* highlight boundary edges */
     const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
@@ -535,35 +535,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 		drawQuad(0, 1, 5, 4);		
 	}
 
-	/* draw vectors on mesh */
-	if (m_bShowLines && tmesh->hasAttr(pRS->mActiveLineName))
-	{
-		const MeshLineList& meshLines = tmesh->getAttrValue<MeshLineList>(pRS->mActiveLineName);
-		const double avgEdgeLen = tmesh->getAvgEdgeLength();
-		glLineWidth(1.0);
-		glBegin(GL_LINES);
-		for (auto line : meshLines) {
-            if (line.directional) {
-                Vec3d v1 = line.first, vn = line.second;
-                Vec3d v2 = v1 + vn * avgEdgeLen * 0.5;
-                Vec3d vc = (v1 + v2) / 2.0;
-                glColorf(line.color1);	// vector line shooting from color1
-                glVertex3d(v1.x, v1.y, v1.z);
-                glVertex3d(vc.x, vc.y, vc.z);
-                glColorf(line.color2);	// to color2
-                glVertex3d(vc.x, vc.y, vc.z);
-                glVertex3d(v2.x, v2.y, v2.z);
-            }
-            else {
-                Vec3d v1 = line.first, v2 = line.second;
-                glColorf(line.color1);
-                glVertex3d(v1.x, v1.y, v1.z);
-                glVertex3d(v2.x, v2.y, v2.z);
-            }			
-		}
-		glEnd();
-	}
-
     /* draw wireframe overlay */
     if (m_bShowWireframeOverlay)
     {
@@ -578,6 +549,38 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
             glVertex3d(v2.x, v2.y, v2.z);
         }
         glEnd();
+    }
+
+	/* draw vectors on mesh */
+    if (m_bShowLines) 
+    {
+        for (std::string activeLineName : pRS->mActiveLineNames) {
+            if (!tmesh->hasAttr(activeLineName)) continue;
+            const MeshLineList& meshLines = tmesh->getAttrValue<MeshLineList>(activeLineName);
+            const double avgEdgeLen = tmesh->getAvgEdgeLength();
+            glLineWidth(1.0);
+            glBegin(GL_LINES);
+            for (auto line : meshLines) {
+                if (line.directional) {
+                    Vec3d v1 = line.first, vn = line.second;
+                    Vec3d v2 = v1 + vn * avgEdgeLen * 0.5;
+                    Vec3d vc = (v1 + v2) / 2.0;
+                    glColorf(line.color1);	// vector line shooting from color1
+                    glVertex3d(v1.x, v1.y, v1.z);
+                    glVertex3d(vc.x, vc.y, vc.z);
+                    glColorf(line.color2);	// to color2
+                    glVertex3d(vc.x, vc.y, vc.z);
+                    glVertex3d(v2.x, v2.y, v2.z);
+                }
+                else {
+                    Vec3d v1 = line.first, v2 = line.second;
+                    glColorf(line.color1);
+                    glVertex3d(v1.x, v1.y, v1.z);
+                    glVertex3d(v2.x, v2.y, v2.z);
+                }
+            }
+            glEnd();
+        }    
     }
 
     glEnable(GL_LIGHTING);  // enable lighting for points
@@ -595,33 +598,37 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	}
 
 	/* draw feature points */
-	if (m_bShowFeatures && tmesh->hasAttr(pRS->mActiveFeatureName))
-	{
-		const MeshFeatureList& feature_list = tmesh->getMeshFeatures(pRS->mActiveFeatureName);
-		/* draw as gluSphere */ 
-		bool visualizingScales = (pRS->mActiveFeatureName == StrAttrFeatureSparseSGW);
-		const float *feature_color1 = ZGeom::ColorGreen;
-		const float *feature_color2 = ZGeom::ColorMagenta;	
-		GLUquadric* quadric = gluNewQuadric();
-		for (MeshFeature* feature : feature_list.getFeatureVector()) {
-            Vec3d vt = vVertPos[feature->m_index];
-			if (visualizingScales) {
-				int feature_scale = feature->m_scale;
-				int color_index = feature_scale % gFeatureColorNum;
-				glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-			} else {
-				glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);	
-			}			
+    if (m_bShowFeatures) 
+    {
+        for (std::string activePointFeature : pRS->mActivePointFeatures) {
+            if (!tmesh->hasAttr(activePointFeature)) continue;
+            const MeshFeatureList& feature_list = tmesh->getMeshFeatures(activePointFeature);
+            /* draw as gluSphere */
+            bool visualizingScales = (activePointFeature == StrAttrFeatureSparseSGW);
+            const float *feature_color1 = ZGeom::ColorGreen;
+            const float *feature_color2 = ZGeom::ColorMagenta;
+            GLUquadric* quadric = gluNewQuadric();
+            for (MeshFeature* feature : feature_list.getFeatureVector()) {
+                Vec3d vt = vVertPos[feature->m_index];
+                if (visualizingScales) {
+                    int feature_scale = feature->m_scale;
+                    int color_index = feature_scale % gFeatureColorNum;
+                    glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
+                }
+                else {
+                    glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);
+                }
 
-			gluQuadricDrawStyle(quadric, GLU_FILL);
-			glPushMatrix();
-			glTranslated(vt.x, vt.y, vt.z);
-			if (visualizingScales) gluSphere(quadric, mFeatureSphereRadius * (0.3 + 0.25 * std::fabs(feature->m_scalar1)), 16, 8);
-			else gluSphere(quadric, mFeatureSphereRadius, 16, 8);
-			glPopMatrix();
-		}
-		gluDeleteQuadric(quadric);
-	}
+                gluQuadricDrawStyle(quadric, GLU_FILL);
+                glPushMatrix();
+                glTranslated(vt.x, vt.y, vt.z);
+                if (visualizingScales) gluSphere(quadric, mFeatureSphereRadius * (0.3 + 0.25 * std::fabs(feature->m_scalar1)), 16, 8);
+                else gluSphere(quadric, mFeatureSphereRadius, 16, 8);
+                glPopMatrix();
+            }
+            gluDeleteQuadric(quadric);        
+        }    
+    } 
 
 	/* draw handle points */
 	if (!pMP->getHandles().empty())

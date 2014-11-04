@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <set>
 #include <iostream>
 #include <ZGeom/Vector3D.h>
 #include <ZGeom/Quat.h>
@@ -21,8 +22,7 @@ public:
 		mesh_color(preset_mesh_colors[0]), displayType(Mesh), 
 		selected(false), glPolygonMode(Z_FILL), display_shift(0, 0, 0),
 		obj_rot(1,0,0,0), obj_trans(0,0,0),
-		mActiveColorSignatureName(StrAttrColorPreset), 
-		mActiveFeatureName(StrAttrFeatureUnnamed)
+		mActiveColorSignatureName(StrAttrColorPreset)
 	{
 		
 	}
@@ -37,7 +37,7 @@ public:
 	const float* mesh_color;
 
 	std::string mActiveColorSignatureName;	
-	std::string mActiveFeatureName;
-    std::string mActiveLineName;
+	std::set<std::string> mActivePointFeatures;
+    std::set<std::string> mActiveLineNames;
 };
 

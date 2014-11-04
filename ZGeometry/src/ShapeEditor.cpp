@@ -1995,14 +1995,16 @@ void ShapeEditor::fillHoles(bool skipExternalBoundary)
         fillBoundedHole(boundaryEdges);
     }
 
-    vector<int> allBoundaryVertIdx;
-    for (FilledHoleVerts &fhv : filled_boundaries)
+    int count = 0;
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        vector<int> allBoundaryVertIdx;
         for (int vb : fhv.vert_on_boundary) allBoundaryVertIdx.push_back(vb);
-    mMesh->addAttrMeshFeatures(allBoundaryVertIdx, "all_boundary_verts");
+        std::string feature_name = "boundary_verts_1";
+        feature_name.back() += count++;
+        mMesh->addAttrMeshFeatures(allBoundaryVertIdx, feature_name);
+    }
     emit meshFeatureChanged();
 }
-
-
 
 void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
 {
