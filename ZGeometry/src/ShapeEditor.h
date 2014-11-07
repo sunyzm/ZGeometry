@@ -37,13 +37,14 @@ public:
     void fillHoles(bool skipExternalBoundary);
     void fillBoundedHole(const std::vector<int>& boundaryLoopEdges);
     void fillHole();
-    
+    void holeFairing();
+    void visualizeBoundaries();
 
 signals:
 	void approxStepsChanged(int index, int newSize);
 	void coordinateSelected(int selectedApprox, int coordIdx);
     void meshSignatureAdded();
-    void meshFeatureChanged();    
+    void meshPointFeatureChanged();    
     void meshLineFeatureChanged();
     void showSignature(QString sigName);
 

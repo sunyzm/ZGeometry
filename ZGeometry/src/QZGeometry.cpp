@@ -262,6 +262,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
 	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
+    QObject::connect(ui.actionFillHoles, SIGNAL(triggered()), this, SLOT(fillHoles()));
 	 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -500,8 +501,6 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
-		if (mMeshes[0]->hasAttr(StrAttrFeatureSparseSGW))
-			displayFeature(StrAttrFeatureSparseSGW.c_str());
 	}
 
 	return true;
@@ -2349,4 +2348,21 @@ void QZGeometryWindow::computeFaceNormals()
 
     updateDisplayLineMenu();
     displayLine(StrAttrVecFaceNormal.c_str());
+}
+
+void QZGeometryWindow::fillHoles()
+{
+    bool skipExternal = false;
+    mShapeEditor.fillHoles(skipExternal);
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::holeFairingOMP()
+{
+
+}
+
+void QZGeometryWindow::holeFairingLeastSquare()
+{
+
 }

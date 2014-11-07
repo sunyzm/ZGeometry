@@ -558,7 +558,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
             if (!tmesh->hasAttr(activeLineName)) continue;
             const MeshLineList& meshLines = tmesh->getAttrValue<MeshLineList>(activeLineName);
             const double avgEdgeLen = tmesh->getAvgEdgeLength();
-            glLineWidth(1.0);
+            glLineWidth(1.0 * meshLines.lineWidthScale);
             glBegin(GL_LINES);
             for (auto line : meshLines) {
                 if (line.directional) {

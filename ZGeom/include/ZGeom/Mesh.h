@@ -147,7 +147,6 @@ class CMesh
 public:
 	/* attribute strings */
 	static const std::string StrAttrBoundaryVertCount;
-	static const std::string StrAttrBoundaryLoopNum;
     static const std::string StrAttrBoundaryLoops;
 	static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrMeshCenter;

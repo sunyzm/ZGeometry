@@ -17,7 +17,6 @@ using ZGeom::Vec3d;
 
 /* basic Mesh attribute names */
 const std::string CMesh::StrAttrBoundaryVertCount		= "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrBoundaryLoopNum		    = "mesh_boundary_count";
 const std::string CMesh::StrAttrBoundaryLoops           = "mesh_boundary_loops";
 const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
@@ -793,7 +792,6 @@ int CMesh::calBoundaryLoops()
         [](const vector<int>& v1, const vector<int>& v2) { return v1.size() < v2.size(); });
 
     boundaryNum = (int)boundaryEdges.size();    
-	addAttr<int>(boundaryNum, StrAttrBoundaryLoopNum, AR_UNIFORM, AT_INT);
     addAttr<VecVecInt>(boundaryEdges, StrAttrBoundaryLoops, AR_UNIFORM);
     return boundaryNum;
 }

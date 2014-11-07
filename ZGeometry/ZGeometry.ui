@@ -617,7 +617,7 @@
      <property name="title">
       <string>Hole Faring</string>
      </property>
-     <addaction name="actionHoleFairingOMP"/>
+     <addaction name="actionHoleFairingAll"/>
     </widget>
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
@@ -630,6 +630,7 @@
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
     <addaction name="menuDeform"/>
+    <addaction name="actionFillHoles"/>
     <addaction name="menuHole_Faring"/>
     <addaction name="separator"/>
     <addaction name="actionRunTests"/>
@@ -1395,9 +1396,14 @@
     <string>Change Shade Mode</string>
    </property>
   </action>
-  <action name="actionHoleFairingOMP">
+  <action name="actionHoleFairingAll">
    <property name="text">
-    <string>OMP</string>
+    <string>All</string>
+   </property>
+  </action>
+  <action name="actionFillHoles">
+   <property name="text">
+    <string>Fill Holes</string>
    </property>
   </action>
  </widget>

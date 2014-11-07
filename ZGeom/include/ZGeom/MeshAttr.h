@@ -105,7 +105,14 @@ public:
     ZGeom::Colorf color1, color2;
 };
 
-typedef std::vector<LineSegment> MeshLineList;
+class MeshLineList : public std::vector < LineSegment >
+{
+public:
+    MeshLineList() : lineWidthScale(1.0) {}
+
+public:
+    double lineWidthScale; 
+};
 
 typedef MeshAttr<std::vector<ZGeom::Colorf>> AttrVertColors;
 typedef MeshAttr<std::vector<double>> AttrVertScalars;

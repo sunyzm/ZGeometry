@@ -662,8 +662,8 @@ void ShapeEditor::runTests()
     //testWaveletComputation();
     //fillHole();
     
-    bool skipExternalBoundary = false;
-    fillHoles(skipExternalBoundary);
+    //bool skipExternalBoundary = false;
+    //fillHoles(skipExternalBoundary);
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -1988,9 +1988,13 @@ void ShapeEditor::testWaveletComputation()
 
 void ShapeEditor::fillHoles(bool skipExternalBoundary)
 {
+    mMesh->calBoundaryLoops();
     int numBoundaries = mMesh->getBoundaryLoopEdges().size();
     if (skipExternalBoundary) numBoundaries--;
-    if (numBoundaries <= 0) return;
+    if (numBoundaries <= 0) {
+        std::cout << "No hole detected!" << std::endl;
+        return;
+    }
 
     auto boundaryLoopEdges = mMesh->getBoundaryLoopEdges();
     for (int i = 0; i < numBoundaries; ++i) {
@@ -1998,15 +2002,7 @@ void ShapeEditor::fillHoles(bool skipExternalBoundary)
         fillBoundedHole(boundaryEdges);
     }
 
-    int count = 0;
-    for (FilledHoleVerts &fhv : filled_boundaries) {
-        vector<int> allBoundaryVertIdx;
-        for (int vb : fhv.vert_on_boundary) allBoundaryVertIdx.push_back(vb);
-        std::string feature_name = "boundary_verts_1";
-        feature_name.back() += count++;
-        mMesh->addAttrMeshFeatures(allBoundaryVertIdx, feature_name);
-    }
-    emit meshFeatureChanged();
+    visualizeBoundaries();
 }
 
 void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
@@ -2465,7 +2461,7 @@ void ShapeEditor::fillHole()
     const int newVertCount = mMesh->vertCount();
     vector<int> affectedVert = boundaryVertIdx;
     for (int vi = nOldVerts; vi < mMesh->vertCount(); ++vi) affectedVert.push_back(vi);
-    vector<LineSegment> vNormalLines;
+    MeshLineList vNormalLines;
 
     /* normals calculated from filled model */
     vector<Vector3D> vNormals1 = mMesh->getVertNormals();
@@ -2569,7 +2565,7 @@ void ShapeEditor::fillHole()
     mMesh->clearAttributes();
     mMesh->gatherStatistics(); 
     mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
-    emit meshFeatureChanged();
+    emit meshPointFeatureChanged();
     mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
     mMesh->addAttrLines(vNormalLines, "hole_affected_vert_normals");
     emit meshLineFeatureChanged();
@@ -2585,4 +2581,26 @@ void ShapeEditor::testSurfaceArea()
     vector<double> vertMixedAreas = mMesh->getAttrValue<vector<double>>(CMesh::StrAttrVertMixedArea);
     for (double a : vertMixedAreas) areaSum2 += a;
     std::cout << "Surface area1: " << areaSum1 << "\tSurface area2: " << areaSum2 << std::endl;
+}
+
+void ShapeEditor::visualizeBoundaries()
+{
+    MeshLineList boundaryLines;
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        int nVert = fhv.vert_on_boundary.size();
+        for (int i = 0; i < nVert; ++i) {
+            int v1 = fhv.vert_on_boundary[i], v2 = fhv.vert_on_boundary[(i + 1) % nVert];
+            LineSegment ls(mMesh->getVertPos(v1), mMesh->getVertPos(v2), false);
+            ls.color1 = ZGeom::ColorAzure;
+            boundaryLines.push_back(ls);
+        }
+    }
+    boundaryLines.lineWidthScale = 2.0;
+    mMesh->addAttrLines(boundaryLines, "hole_boundaries");
+    emit meshLineFeatureChanged();
+}
+
+void ShapeEditor::holeFairing()
+{
+
 }
