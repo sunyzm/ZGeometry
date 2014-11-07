@@ -63,6 +63,7 @@ private:
     void testDictionaryCoherence();
     void testWaveletAnalysis();
     void testWaveletComputation();
+    void testSurfaceArea();
 
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);

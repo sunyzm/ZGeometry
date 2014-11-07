@@ -647,6 +647,7 @@ void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const 
 
 void ShapeEditor::runTests()
 {
+    //testSurfaceArea();
 	//testSparseCompression();		
 	//testArtificialShapeMCA();
 	//testArtificailShapeMCA2();
@@ -660,7 +661,9 @@ void ShapeEditor::runTests()
     //testWaveletAnalysis();
     //testWaveletComputation();
     //fillHole();
-    fillHoles(false);
+    
+    bool skipExternalBoundary = false;
+    fillHoles(skipExternalBoundary);
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -2572,4 +2575,14 @@ void ShapeEditor::fillHole()
     emit meshLineFeatureChanged();
     addColorSignature("color_old_curv", colorOldCurv);
     addColorSignature("color_approximate_curv", colorNewCurv);
+}
+
+void ShapeEditor::testSurfaceArea()
+{
+    double areaSum1(0), areaSum2(0);
+    for (CFace* face : mMesh->m_vFaces) areaSum1 += face->calArea();
+    mMesh->calVertMixedAreas();
+    vector<double> vertMixedAreas = mMesh->getAttrValue<vector<double>>(CMesh::StrAttrVertMixedArea);
+    for (double a : vertMixedAreas) areaSum2 += a;
+    std::cout << "Surface area1: " << areaSum1 << "\tSurface area2: " << areaSum2 << std::endl;
 }

@@ -465,8 +465,6 @@ private:
 
 public:
 	/* helper functions */
-	static double calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c);
-	static double calHalfAreaMixed(double a, double b, double c, double& cotan_a);
     static void   makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
     static void   assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
 }; //CMesh

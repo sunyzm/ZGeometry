@@ -706,27 +706,30 @@ void CMesh::calFaceNormals()
 void CMesh::calVertNormals()
 {
 	const int vertNum = vertCount();
-	const std::vector<Vector3D>& vFaceNormals = getFaceNormals();
-	std::vector<Vector3D> vVertNormals(vertNum);
-
-	for (int vIndex = 0; vIndex < vertNum; ++vIndex) {
+    calFaceNormals();
+	const vector<Vector3D>& vFaceNormals = getFaceNormals();
+	vector<Vector3D> vVertNormals(vertNum, Vector3D(0,0,0));
+    
+    for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
+    {
 		CVertex* vertex = m_vVertices[vIndex];
-		std::vector<int> incidentFacecIdx = getVertexAdjacentFaceIdx(vIndex, 1);
-				
-		if(incidentFacecIdx.empty()) {
-			vVertNormals[vIndex] = Vector3D(0,0,0);
-			continue;
-		}
+        if (vertex->m_HalfEdges.empty()) continue;
+        Vector3D vNormal;
+        for (CHalfEdge *e0 : vertex->m_HalfEdges) {
+            CHalfEdge* e1 = e0->m_eNext;
+            CHalfEdge* e2 = e1->m_eNext;
+            double len0 = e0->length();
+            double len1 = e1->length();
+            double len2 = e2->length();
+            CFace *face = e0->getAttachedFace();
 
-		Vector3D vNormal(0,0,0);
-		for(int fIndex : incidentFacecIdx) {
-			const CFace* face = m_vFaces[fIndex];
-            //double wt = 1.0;
-            //double wt = 1.0 / (face->calBarycenter() - vertex->getPosition()).length();
-            double wt = face->calArea();
-			vNormal += vFaceNormals[fIndex] * wt;
-		}		
-        vVertNormals[vIndex] = vNormal.normalize();;
+            double wt = 1.0;
+            //wt = 1.0 / (face->calBarycenter() - vertex->pos()).length();
+            //wt = face->calArea();
+            wt = ZGeom::calMixedTriArea(len0, len1, len2);
+            vNormal += vFaceNormals[face->getFaceIndex()] * wt;
+            vVertNormals[vIndex] = vNormal.normalize();
+        }
 	}
 
 	addAttr<std::vector<Vector3D>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
@@ -824,28 +827,6 @@ int CMesh::calMeshGenus(  )
 	return ( 2 - euler_number - b ) / 2;
 }
 
-double CMesh::calAreaMixed(double a, double b, double c, double& cotan_a, double& cotan_c)
-{
-	double cosa = (b*b+c*c-a*a)/(2.0*b*c);
-	double cosc = (b*b+a*a-c*c)/(2.0*b*a);
-	cotan_a = cosa / sqrt(1.0 - cosa*cosa);
-	cotan_c = cosc / sqrt(1.0 - cosc*cosc);
-
-	if (a*a + c*c < b*b) 
-    {
-		double s = (a+b+c)/2.0;
-		return sqrt(s*(s-a)*(s-b)*(s-c))/2.0;
-	}
-	else if (a*a + b*b < c*c || b*b + c*c < a*a)
-	{
-		double s = (a+b+c)/2.0;
-		return sqrt(s*(s-a)*(s-b)*(s-c))/4.0;
-	}
-	else {
-		return (a*a*cotan_a + c*c*cotan_c)/8.0;
-	}
-}
-
 // Calculate mean and Gauss curvatures                                                                       */
 //
 void CMesh::calCurvatures()
@@ -863,8 +844,8 @@ void CMesh::calCurvatures()
 		double amix = 0.0;
 		Vector3D kh;
 
-        if (vertOnBoundary[vIndex]) {
-            // boundary vertex has zero curvature
+        // boundary vertex has zero curvature     
+        if (vertOnBoundary[vIndex]) {        
             vGaussCurvatures[vIndex] = vMeanCurvatures[vIndex] = 0.0;
 			continue;
 		}
@@ -881,7 +862,7 @@ void CMesh::calCurvatures()
 			double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
 			sum += corner;
 			double cota, cotc;
-			amix += calAreaMixed(len0, len1, len2, cota, cotc);
+			amix += ZGeom::calMixedTriArea(len0, len1, len2, cota, cotc);
 
 			const CVertex* pt1 = e1->vert(0);
 			const CVertex* pt2 = e1->vert(1);
@@ -895,21 +876,6 @@ void CMesh::calCurvatures()
 
 	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
 	addAttr<std::vector<double>>(vMeanCurvatures, StrAttrVertMeanCurvatures, AR_VERTEX, AT_VEC_DBL);
-}
-
-double CMesh::calHalfAreaMixed( double a, double b, double c, double& cotan_a )
-{
-	if ( a*a + c*c < b*b ) {
-		double s = (a+b+c)/2.0;
-		return sqrt(s*(s-a)*(s-b)*(s-c))/4.0;
-	} else if ( a*a + b*b < c*c || b*b + c*c < a*a) {
-		double s = (a+b+c) / 2.0;
-		return sqrt(s*(s-a)*(s-b)*(s-c)) / 8.0;
-	} else {
-		double cosa = (b*b + c*c - a*a) / (2.0*b*c);
-		cotan_a = cosa / sqrt(1 - cosa*cosa);
-		return (a*a*cotan_a) / 8.0;
-	}
 }
 
 double CMesh::calGaussianCurvatureIntegration()
@@ -1549,29 +1515,24 @@ void CMesh::calVertMixedAreas()
 {
 	const double pi = ZGeom::PI;
 	const int vertCount = this->vertCount();
-	std::vector<double> vMixedAreas(vertCount, 0); 
+	vector<double> vMixedAreas(vertCount, 0); 
 
 	for (int vIndex = 0; vIndex < vertCount; ++vIndex) 
 	{
 		CVertex* vi = m_vVertices[vIndex];
-		double sum = 0.0;		// sum of attaching corner's angle
 		double amix = 0.0;
-
-		for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
-			CHalfEdge* e0 = *he;
+        for (CHalfEdge* e0 : vi->m_HalfEdges) {
 			CHalfEdge* e1 = e0->m_eNext;
 			CHalfEdge* e2 = e1->m_eNext;
 			double len0 = e0->length();
 			double len1 = e1->length();
 			double len2 = e2->length();
-			double cota, cotc;
-			amix += calAreaMixed(len0, len1, len2, cota, cotc);
+			amix += ZGeom::calMixedTriArea(len0, len1, len2);
 		}
-
 		vMixedAreas[vIndex] = amix;
 	}
 
-	addAttr<std::vector<double>>(vMixedAreas, StrAttrVertMixedArea, AR_VERTEX, AT_VEC_DBL);
+	addAttr<vector<double>>(vMixedAreas, StrAttrVertMixedArea, AR_VERTEX, AT_VEC_DBL);
 }
 
 const std::vector<double>& CMesh::getVertMixedAreas()

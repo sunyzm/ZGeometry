@@ -46,20 +46,52 @@ double calMixedTriArea(double a, double b, double c)
     double cosc = (b*b + a*a - c*c) / (2.0*b*a);
     double cotan_a = cosa / sqrt(1.0 - cosa*cosa);
     double cotan_c = cosc / sqrt(1.0 - cosc*cosc);
+    double s = (a + b + c) / 2.0;
 
-    if (a*a + c*c < b*b)
-    {
-        double s = (a + b + c) / 2.0;
+    if (a*a + c*c < b*b) {        
         return sqrt(s*(s - a)*(s - b)*(s - c)) / 2.0;
     }
-    else if (a*a + b*b < c*c || b*b + c*c < a*a)
-    {
+    else if (a*a + b*b < c*c || b*b + c*c < a*a) {
+         return sqrt(s*(s - a)*(s - b)*(s - c)) / 4.0;
+    }
+    else {
+        return (a*a*cotan_a + c*c*cotan_c) / 8.0;
+    }
+}
+
+double calMixedTriArea(double a, double b, double c, double& cotan_a, double& cotan_c)
+{
+    double cosa = (b*b + c*c - a*a) / (2.0*b*c);
+    double cosc = (b*b + a*a - c*c) / (2.0*b*a);
+    cotan_a = cosa / sqrt(1.0 - cosa*cosa);
+    cotan_c = cosc / sqrt(1.0 - cosc*cosc);
+    double s = (a + b + c) / 2.0;
+
+    if (a*a + c*c < b*b) {
+        return sqrt(s*(s - a)*(s - b)*(s - c)) / 2.0;
+    }
+    else if (a*a + b*b < c*c || b*b + c*c < a*a) {
+        return sqrt(s*(s - a)*(s - b)*(s - c)) / 4.0;
+    }
+    else {
+        return (a*a*cotan_a + c*c*cotan_c) / 8.0;
+    }
+}
+
+double calHalfMixedTriArea(double a, double b, double c, double& cotan_a)
+{
+    if (a*a + c*c < b*b) {
         double s = (a + b + c) / 2.0;
         return sqrt(s*(s - a)*(s - b)*(s - c)) / 4.0;
     }
-    else
-    {
-        return (a*a*cotan_a + c*c*cotan_c) / 8.0;
+    else if (a*a + b*b < c*c || b*b + c*c < a*a) {
+        double s = (a + b + c) / 2.0;
+        return sqrt(s*(s - a)*(s - b)*(s - c)) / 8.0;
+    }
+    else {
+        double cosa = (b*b + c*c - a*a) / (2.0*b*c);
+        cotan_a = cosa / sqrt(1 - cosa*cosa);
+        return (a*a*cotan_a) / 8.0;
     }
 }
 
@@ -153,4 +185,4 @@ void matVecMulAMP(int dim1, int dim2, double *mat, double *vec, double *vResult)
     Y.synchronize();
 }
 
-}
+}   // end of namespace
