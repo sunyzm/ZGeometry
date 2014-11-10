@@ -110,6 +110,8 @@ double calHalfMixedTriArea(double a, double b, double c, double& cotan_a);
 void quadricForm(int dim1, int dim2, double* mat1, double* diag, double *matResult);
 std::pair<Vec3d, double> circumcenter(Vec3d p1, Vec3d p2, Vec3d p3);
 
+std::vector<double> linspace(double lo, double hi, int N);
+
 //////////////////////////////////////////////////////////////////////////
 //// fast numerical computation with AMP
 void quadricFormAMP(int dim1, int dim2, double* mat1, double* diag, double *matResult);

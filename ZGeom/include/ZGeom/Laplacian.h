@@ -19,6 +19,7 @@ public:
 	void decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB) const;
 	bool isLaplacianConstructed() const { return !mLS.empty(); }
 	void computeSubLaplacian(const std::vector<int>& vSelected, Laplacian& subLaplacian) const;
+    ZGeom::SparseMatrix<double> getSparseMatrix() const;
 
 protected:
 	int mOrder;

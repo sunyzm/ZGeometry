@@ -16,8 +16,6 @@ using ZGeom::Colorf;
 using ZGeom::Vec3d;
 
 /* basic Mesh attribute names */
-const std::string CMesh::StrAttrBoundaryVertCount		= "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrBoundaryLoops           = "mesh_boundary_loops";
 const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
@@ -25,11 +23,15 @@ const std::string CMesh::StrAttrVertColors				= "vert_color";
 const std::string CMesh::StrAttrColorDefault            = "vert_color_default";
 const std::string CMesh::StrAttrVertGaussCurvatures		= "vert_gauss_curvature";
 const std::string CMesh::StrAttrVertMeanCurvatures		= "vert_mean_curvature";
+const std::string CMesh::StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
+const std::string CMesh::StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string CMesh::StrAttrVertNormal				= "vert_normal";
-const std::string CMesh::StrAttrVertOnHole				= "vert_on_hole";
-const std::string CMesh::StrAttrVertOnBoundary			= "vert_on_boundary";
 const std::string CMesh::StrAttrFaceNormal				= "face_normal";
 const std::string CMesh::StrAttrVertMixedArea			= "vert_scalar_mixed_area";
+const std::string CMesh::StrAttrBoundaryVertCount       = "mesh_boundary_vert_count";
+const std::string CMesh::StrAttrBoundaryLoops           = "mesh_boundary_loops";
+const std::string CMesh::StrAttrVertOnHole              = "vert_on_hole";
+const std::string CMesh::StrAttrVertOnBoundary          = "vert_on_boundary";
 
 //////////////////////////////////////////////////////
 //						CVertex						//
@@ -838,7 +840,7 @@ void CMesh::calCurvatures()
 	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
 	{
 		CVertex* vi = m_vVertices[vIndex];
-		double sum = 0.0;		// sum of attaching corner's angle
+		double angleSum = 0.0;		// sum of attaching corner's angle
 		double amix = 0.0;
 		Vector3D kh;
 
@@ -858,18 +860,17 @@ void CMesh::calCurvatures()
 
 			// compute corner angle by cosine law 
 			double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
-			sum += corner;
+			angleSum += corner;
 			double cota, cotc;
 			amix += ZGeom::calMixedTriArea(len0, len1, len2, cota, cotc);
 
-			const CVertex* pt1 = e1->vert(0);
-			const CVertex* pt2 = e1->vert(1);
+			const CVertex *pt1 = e1->vert(0), *pt2 = e1->vert(1);
 			kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
 		}
 
-		vGaussCurvatures[vIndex] = (2.0 * pi - sum) / amix;
-		kh = kh / (2.0 * amix);
-		vMeanCurvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
+        kh = kh / (2.0 * amix);
+        vMeanCurvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
+		vGaussCurvatures[vIndex] = (2.0 * pi - angleSum) / amix;		
 	}
 
 	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
@@ -1056,21 +1057,11 @@ void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
 	}
 }
 
-std::vector<int> CMesh::getOriginalVertexIndex() const
-{
-	vector<int> vret;
-	for (CVertex* v : m_vVertices) 
-		vret.push_back(v->m_vIndex);
-	return vret;
-}
-
 void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::vector<int>& nbr, bool inclusive /*= false*/ ) const
 {	
 	std::set<int> snb;
-	vertRingNeighborVerts(vIndex, ring, snb, inclusive);
-	
-	nbr.clear();
-	for (int vn : snb) nbr.push_back(vn);
+	vertRingNeighborVerts(vIndex, ring, snb, inclusive);	
+    nbr = std::vector<int>(snb.begin(), snb.end());
 }
 
 void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::set<int>& nbr, bool inclusive /*= false*/ ) const
@@ -1256,24 +1247,6 @@ double CMesh::calFaceArea( int i ) const
 {
 	const CFace* f = m_vFaces[i];
 	return f->calArea();
-}
-
-void CMesh::getVertCoordinateFunction( int dim, std::vector<double>& vCoord ) const
-{
-	vCoord.resize(vertCount());
-	switch(dim) {
-	case 0:
-		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().x; 
-		break;
-	case 1:
-		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().y; 
-		break;
-	case 2:
-		for (int i = 0; i < vertCount(); ++i) vCoord[i] = m_vVertices[i]->pos().z; 
-		break;
-	default:
-		throw std::logic_error("Invalid coordinate dimension!");
-	}
 }
 
 MeshCoordinates CMesh::getVertCoordinates() const
@@ -1815,6 +1788,20 @@ bool CMesh::relaxEdge(CHalfEdge* e1)
         edgeSwap(e1);
         return true;
     }    
+}
+
+std::vector<double> CMesh::calPrincipalCurvature( int k )
+{
+    assert(k == 1 || k == 2);
+    int N = vertCount();
+    auto curvMean = getMeanCurvature(), curvGauss = getGaussCurvature();
+    std::vector<double> result(N);
+    for (int i = 0; i < N; ++i) {
+        double delta = curvMean[i] * curvMean[i] - curvGauss[i];
+        if (delta < 0) delta = 0;
+        result[i] = curvMean[i] + sqrt(delta) * (k == 1 ? 1 : -1);
+    }
+    return result;
 }
 
 #if 0

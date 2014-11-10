@@ -185,4 +185,15 @@ void matVecMulAMP(int dim1, int dim2, double *mat, double *vec, double *vResult)
     Y.synchronize();
 }
 
+std::vector<double> linspace(double x1, double x2, int N)
+{
+    assert(N >= 1);
+    if (N == 1) return std::vector < double > {x2};
+    std::vector<double> result(N);
+    for (int i = 0; i < N; ++i) {
+        result[i] = ((N - 1 - i) * x1 + i * x2) / double(N - 1);
+    }
+    return result;
+}
+
 }   // end of namespace

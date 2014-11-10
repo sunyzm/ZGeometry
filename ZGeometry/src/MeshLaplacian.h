@@ -26,8 +26,9 @@ public:
 	}
 	virtual ~MeshLaplacian() {}
 
-	void constructUmbrella(const CMesh* tmesh);				// negative symmetric graph Laplacian. L = A - D
-	void constructNormalizedUmbrella(const CMesh* tmesh);	// negative symmetric, normalized graph Laplacian; L = D^(-1/2) * (A-D) * D^(-1/2) = D^(-1/2) * A * D^(-1/2) - I
+    void constructUmbrella(const CMesh* tmesh);				// negative symmetric graph Laplacian. L = A - D
+    void constructGeometricUmbrella(const CMesh *tmesh);    // negative symmetric graph Laplacian. w_ij is weighted by the inverse of length between i and j
+    void constructNormalizedUmbrella(const CMesh* tmesh);	// negative symmetric, normalized graph Laplacian; L = D^(-1/2) * (A-D) * D^(-1/2) = D^(-1/2) * A * D^(-1/2) - I
 	void constructTutte(const CMesh* tmesh);				// negative asymmetric graph Laplacian; random walk. L = D^(-1) * (A-D) = D^(-1)*A - I
 	void constructCotFormula(const CMesh* tmesh);			// negative cotangent formula
 	void constructSymCot(const CMesh* tmesh);				// negative symmetric cotangent formula
@@ -35,11 +36,11 @@ public:
 	void constructAnisotropic2(const CMesh* tmesh);		// combine distance and curvature difference
 	void constructAnisotropic3(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
 	void constructAnisotropic4(const CMesh* tmesh, int nRing, double hPara1, double hPara2);
-	void constructFromMesh5(const CMesh* tmesh);		
+	void constructIsoApprox(const CMesh* tmesh);		
 	MeshLaplacianConstruct getConstructFunc(LaplacianType laplacianType) { return mConstructFunc[laplacianType]; }
 	void meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper *eng, ZGeom::EigenSystem& es) const;
 	LaplacianType laplacianType() const { return mLaplacianType;  }
-	
+
 private:
 	bool mSymmetric;
 	LaplacianType mLaplacianType;

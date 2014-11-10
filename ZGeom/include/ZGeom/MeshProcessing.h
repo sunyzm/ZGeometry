@@ -10,7 +10,8 @@ namespace ZGeom
 {
 	enum MeshMatrixType { 
 		MM_ADJACENCY, MM_DEGREE, MM_INV_DEGREE, MM_WALK, 
-		MM_GRAPH_LAPLACE, MM_NORMALIZED_GRAPH_LAPLACE
+		MM_GRAPH_LAPLACE, MM_NORMALIZED_GRAPH_LAPLACE,
+        MM_INV_LENGTH
 	};
 
 	void ConstructMeshMatrix(const CMesh& mesh, MeshMatrixType mmt, SparseMatrix<double>& meshMat);

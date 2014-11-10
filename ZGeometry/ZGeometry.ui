@@ -617,7 +617,10 @@
      <property name="title">
       <string>Hole Faring</string>
      </property>
-     <addaction name="actionHoleFairingAll"/>
+     <addaction name="actionHoleFairingLS"/>
+     <addaction name="actionHoleFairingFourierOMP"/>
+     <addaction name="actionHoleEstimateCurvature"/>
+     <addaction name="actionEstimateNormals"/>
     </widget>
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
@@ -631,6 +634,7 @@
     <addaction name="menuFilter"/>
     <addaction name="menuDeform"/>
     <addaction name="actionFillHoles"/>
+    <addaction name="actionFairFilledHoles"/>
     <addaction name="menuHole_Faring"/>
     <addaction name="separator"/>
     <addaction name="actionRunTests"/>
@@ -1396,14 +1400,34 @@
     <string>Change Shade Mode</string>
    </property>
   </action>
-  <action name="actionHoleFairingAll">
+  <action name="actionHoleFairingLS">
    <property name="text">
-    <string>All</string>
+    <string>Least Square</string>
    </property>
   </action>
   <action name="actionFillHoles">
    <property name="text">
     <string>Fill Holes</string>
+   </property>
+  </action>
+  <action name="actionFairFilledHoles">
+   <property name="text">
+    <string>Fair Filled Holes</string>
+   </property>
+  </action>
+  <action name="actionHoleFairingFourierOMP">
+   <property name="text">
+    <string>FourierOMP</string>
+   </property>
+  </action>
+  <action name="actionHoleEstimateCurvature">
+   <property name="text">
+    <string>EstimateCurvature</string>
+   </property>
+  </action>
+  <action name="actionEstimateNormals">
+   <property name="text">
+    <string>EstimateNormals</string>
    </property>
   </action>
  </widget>

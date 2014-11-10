@@ -263,6 +263,10 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
 	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
     QObject::connect(ui.actionFillHoles, SIGNAL(triggered()), this, SLOT(fillHoles()));
+    QObject::connect(ui.actionFairFilledHoles, SIGNAL(triggered()), this, SLOT(holeFairingAll()));
+    QObject::connect(ui.actionHoleFairingLS, SIGNAL(triggered()), this, SLOT(holeFairingLS()));
+    QObject::connect(ui.actionHoleFairingFourierOMP, SIGNAL(triggered()), this, SLOT(holeFairingFourierOMP()));
+    QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
 	 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -501,6 +505,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
+        displayLine("hole_boundaries");
 	}
 
 	return true;
@@ -973,8 +978,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	int ring = (mCommonParameter > sliderCenter) ? (mCommonParameter - sliderCenter) : 1;
 
 	int ref = mProcessors[0]->getRefPointIndex();
-	std::vector<int> vn;
-	mProcessors[0]->getMesh_const()->vertRingNeighborVerts(ref, ring, vn, false);
+	std::vector<int> vn = mProcessors[0]->getMesh_const()->getVertNeighborVerts(ref, ring, false);
 	MeshFeatureList *mfl = new MeshFeatureList;
 
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
@@ -2357,12 +2361,33 @@ void QZGeometryWindow::fillHoles()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::holeFairingOMP()
+void QZGeometryWindow::holeFairingAll()
 {
-
+    mShapeEditor.holeFairingFourierOMP();
+    ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::holeFairingLeastSquare()
+void QZGeometryWindow::holeFairingLS()
 {
-
+    mShapeEditor.holeFairingLeastSquare();
+    ui.glMeshWidget->update();
 }
+
+void QZGeometryWindow::holeFairingFourierOMP()
+{
+    mShapeEditor.holeFairingFourierOMP();
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::holeEstimateCurvature()
+{
+    mShapeEditor.holeEstimateCurvature();
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::holeEstimateNormals()
+{
+    mShapeEditor.holeEstimateNormals();
+    ui.glMeshWidget->update();
+}
+

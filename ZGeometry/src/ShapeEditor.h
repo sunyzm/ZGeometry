@@ -17,10 +17,15 @@ public:
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 	void init(DifferentialMeshProcessor* processor);
 	void runTests();
+    void resetStoredCoordinates();
 	void revertCoordinates();
 	void changeCoordinates(int coordID);
+    void changeCoordinates(std::string coordName);
 	void nextCoordinates();
-	const MeshCoordinates& getOldMeshCoord() const { return mOriginalCoord; }
+    void setStoredCoordinates(const MeshCoordinates& newCoord, int storeIdx, std::string coordName = "");
+    void addCoordinate(const MeshCoordinates &newCoord, std::string coordName);
+    MeshCoordinates getStoredCoordinate(int idx);
+	const MeshCoordinates& getOldMeshCoord() const { return mStoredCoordinates[0].second; }
 	const Palette& getPalette() const { return mSegmentPalette; }
 
 	void continuousReconstruct(int selectedApprox, int atomCount);
@@ -37,8 +42,15 @@ public:
     void fillHoles(bool skipExternalBoundary);
     void fillBoundedHole(const std::vector<int>& boundaryLoopEdges);
     void fillHole();
-    void holeFairing();
     void visualizeBoundaries();
+    void holeFairing();
+    void holeFairingFourierOMP();
+    void holeFairingFourierLS();
+    void holeFairingLeastSquare();
+    void holeEstimateCurvature();
+    void holeEstimateNormals();
+
+    static std::string strOriginalCoord;
 
 signals:
 	void approxStepsChanged(int index, int newSize);
@@ -73,8 +85,6 @@ private:
 							   int nReconstruct, 
 							   std::vector<MeshCoordinates>& continuousCoords, 
 							   MeshCoordinates& finalCoord);
-	void setStoredCoordinates(const MeshCoordinates& newCoord, int storeIdx);
-	MeshCoordinates& getStoredCoordinate(int idx);
 	const MeshCoordinates& getApproximateCoordinate(int selctedApprox, int coordIdx) { return mContReconstructCoords[selctedApprox][coordIdx]; }
 
     /* private fields */
@@ -85,8 +95,7 @@ private:
 
 	std::vector<MeshCoordinates> mContReconstructCoords[5];
 	int mCurCoordID;
-	MeshCoordinates mOriginalCoord;
-	std::vector<MeshCoordinates> mStoredCoordinates;
+    std::vector<std::pair<std::string, MeshCoordinates>> mStoredCoordinates;
 	
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	int mTotalScales;	

@@ -4,6 +4,8 @@
 
 namespace ZGeom {
 
+using namespace std;
+
 void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ ) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
@@ -34,6 +36,17 @@ void Laplacian::computeSubLaplacian( const std::vector<int>& vSelected, Laplacia
 
     //TODO: 
 	//subLaplacian.mLS.makeLaplacian();
+}
+
+ZGeom::SparseMatrix<double> Laplacian::getSparseMatrix() const
+{
+    SparseMatrix<double> result = getLS();
+    vector<double> vWeight = getW().getDiagonal();
+
+    for (MatElem<double> &elem : result.allElements()) {
+        elem.mVal /= vWeight[elem.row() - 1];
+    }
+    return result;
 }
 
 }   // end of namespace

@@ -37,7 +37,7 @@ public:
 	T&   val() { return mVal; }
     bool operator< (const MatElem<T>& t2) const;
 
-private:   
+public:   
 	uint mRow, mCol;
 	T mVal;
 };

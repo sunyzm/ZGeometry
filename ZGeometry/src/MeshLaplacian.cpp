@@ -17,26 +17,11 @@ using ZGeom::uint;
 
 void MeshLaplacian::constructTutte( const CMesh* tmesh )
 {
+    // L = D^-1 * (A - D)
 	mOrder = tmesh->vertCount();
-	std::vector<std::tuple<int,int,double> > vElem;
-	std::vector<double> vWeights(mOrder);
-
-	for (int i = 0; i < mOrder; ++i) {
-		const CVertex* vi = tmesh->getVertex(i);
-		vector<int> vNeighbors;
-		tmesh->vertRingNeighborVerts(i, 1, vNeighbors, false);
-		const int valence = vNeighbors.size();
-
-		for (int j = 0; j < valence; ++j) {
-			vElem.push_back(std::make_tuple(i+1, vNeighbors[j]+1, 1.0));
-		}
-		vElem.push_back(std::make_tuple(i+1, i+1, -double(valence)));	// diagonal elements
-
-		vWeights[i] = double(valence);
-	}
-
-	mLS.convertFromCOO(mOrder, mOrder, vElem);
-	mW.convertFromDiagonal(vWeights);
+    ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
+    mLS.scale(-1.0);
+    ConstructMeshMatrix(*tmesh, ZGeom::MM_DEGREE, mW);
 
 	mLaplacianType = Tutte;
 	mSymmetric = false;
@@ -44,6 +29,7 @@ void MeshLaplacian::constructTutte( const CMesh* tmesh )
 
 void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 {
+    // L = A - D
 	mOrder = tmesh->vertCount();
 	ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
 	mLS.scale(-1);
@@ -51,6 +37,11 @@ void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
 
 	mLaplacianType = Umbrella;
 	mSymmetric = true;
+}
+
+void MeshLaplacian::constructGeometricUmbrella(const CMesh *tmesh)
+{
+
 }
 
 void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
@@ -435,7 +426,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 
 }
 
-void MeshLaplacian::constructFromMesh5( const CMesh* tmesh )
+void MeshLaplacian::constructIsoApprox( const CMesh* tmesh )
 {
 	mOrder = tmesh->vertCount();
 

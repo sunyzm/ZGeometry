@@ -6,33 +6,36 @@ namespace ZGeom {
 
 void ConstructMeshMatrix( const CMesh& mesh, MeshMatrixType mmt, SparseMatrix<double>& meshMat )
 {
+    using namespace std;
 	const int vertCount = mesh.vertCount();	
 
 	if (mmt == MM_DEGREE) {
-		std::vector<int> vDiagDegree(vertCount);
+		vector<int> vDiagDegree(vertCount);
 		for (int i = 0; i < vertCount; ++i) {
 			vDiagDegree[i] = (int)mesh.getVertNeighborVerts(i, 1, false).size();
-			assert(vDiagDegree[i] > 0);
 		}
 		meshMat.convertFromDiagonal(vDiagDegree);
 	} 
 	else if (mmt == MM_INV_DEGREE) {
-		std::vector<double> vDiagDegree(vertCount);
+		vector<double> vDiagDegree(vertCount);
 		for (int i = 0; i < vertCount; ++i) {
 			vDiagDegree[i] = 1.0 / (int)mesh.getVertNeighborVerts(i, 1, false).size();
 		}
 		meshMat.convertFromDiagonal(vDiagDegree);
 	}
 	else if (mmt == MM_ADJACENCY) {
-		std::vector<std::tuple<int,int,double> > vElem;
+		vector<tuple<int,int,double> > vElem;
 		for (int i = 0; i < vertCount; ++i) {
-			std::vector<int> vNeighbors = mesh.getVertNeighborVerts(i, 1, false);
+			vector<int> vNeighbors = mesh.getVertNeighborVerts(i, 1, false);
 			int valence = (int)vNeighbors.size();
 			for (int j = 0; j < valence; ++j)
 				vElem.push_back(std::make_tuple(i+1, vNeighbors[j]+1, 1.));
 		}
 		meshMat.convertFromCOO(vertCount, vertCount, vElem);
 	}
+    else if (mmt == MM_INV_LENGTH) {
+        
+    }
 	else if (mmt == MM_WALK) {
 		// W = D^(-1)*A
 		ZGeom::SparseMatrix<double> matInvD, matA;

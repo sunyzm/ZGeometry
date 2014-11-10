@@ -30,6 +30,8 @@ using ZGeom::DenseMatrix;
 using ZGeom::DenseMatrixd;
 using ZGeom::Colorf;
 
+std::string ShapeEditor::strOriginalCoord = "original";
+
 bool readPursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) 
 {
 	if (!fileExist(pursuitFile)) 
@@ -114,20 +116,25 @@ void printEndSeparator(char c, int num) {
 	std::cout << std::setfill(c) << std::setw(num) << '\n';
 }
 
-void ShapeEditor::init( DifferentialMeshProcessor* processor )
+
+void ShapeEditor::init(DifferentialMeshProcessor* processor)
 {
-	mProcessor = processor; 
-	mMesh = processor->getMesh();
-	mTotalScales = 0;
-	mCurCoordID = 0;
-    mOriginalCoord = mMesh->getVertCoordinates();
-	mStoredCoordinates.resize(1);
-	mStoredCoordinates[0] = mOriginalCoord;
+    mProcessor = processor;
+    mMesh = processor->getMesh();
+    mTotalScales = 0;
+    mCurCoordID = 0;
+    resetStoredCoordinates();
+}
+
+void ShapeEditor::resetStoredCoordinates()
+{
+    mStoredCoordinates.resize(1);
+    mStoredCoordinates[0] = std::make_pair(strOriginalCoord, mMesh->getVertCoordinates());
+    mCurCoordID = 0;
 }
 
 void ShapeEditor::revertCoordinates()
 {
-    setStoredCoordinates(getOldMeshCoord(), 0);
     changeCoordinates(0);
 }
 
@@ -140,24 +147,44 @@ void ShapeEditor::changeCoordinates( int coordID )
 {
 	if (coordID < 0 || coordID >= mStoredCoordinates.size()) return;
 	mCurCoordID = coordID;
-	qout.output("Current coordinate ID: " + Int2String(mCurCoordID), OUT_STATUS);
+	qout.output("Change coord: " + mStoredCoordinates[mCurCoordID].first, OUT_CONSOLE);
 
-	if (mStoredCoordinates[mCurCoordID].empty())
+	if (mStoredCoordinates[mCurCoordID].second.empty())
 		qout.output("!! Selected coordinate is empty!", OUT_CONSOLE);
 	else 
-		mMesh->setVertCoordinates(mStoredCoordinates[mCurCoordID]);
+		mMesh->setVertCoordinates(mStoredCoordinates[mCurCoordID].second);
 }
 
-void ShapeEditor::setStoredCoordinates( const MeshCoordinates& newCoord, int idx )
+void ShapeEditor::changeCoordinates(std::string coordName)
 {
-	if (idx >= mStoredCoordinates.size()) mStoredCoordinates.resize(idx + 1);
-	mStoredCoordinates[idx] = newCoord;
+    for (int i = 0; i < (int)mStoredCoordinates.size(); ++i) {
+        if (coordName == mStoredCoordinates[i].first) {
+            changeCoordinates(i); break;
+        }
+    }
 }
 
-MeshCoordinates& ShapeEditor::getStoredCoordinate( int idx )
+void ShapeEditor::setStoredCoordinates(const MeshCoordinates& newCoord, int idx, std::string coordName)
 {
 	if (idx >= mStoredCoordinates.size()) mStoredCoordinates.resize(idx + 1);
-	return mStoredCoordinates[idx];
+	mStoredCoordinates[idx] = std::make_pair(coordName, newCoord);
+}
+
+MeshCoordinates ShapeEditor::getStoredCoordinate( int idx )
+{
+    if (idx >= mStoredCoordinates.size()) return MeshCoordinates();
+	else return mStoredCoordinates[idx].second;
+}
+
+void ShapeEditor::addCoordinate(const MeshCoordinates &newCoord, std::string coordName)
+{
+    for (int i = 0; i < (int)mStoredCoordinates.size(); ++i) {
+        if (mStoredCoordinates[i].first == coordName) {
+            mStoredCoordinates[i].second = newCoord;
+            return;
+        }
+    }
+    mStoredCoordinates.push_back(std::make_pair(coordName, newCoord));
 }
 
 void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
@@ -280,8 +307,7 @@ void ShapeEditor::deformSimple()
 	int hIdx = anchorIndex[0];		// only use the first handle to deform
 	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->pos();
 
-	std::vector<int> vFreeIdx;
-	mMesh->vertRingNeighborVerts(hIdx, 5, vFreeIdx, true);
+	std::vector<int> vFreeIdx = mMesh->getVertNeighborVerts(hIdx, 5, true);
 //	vFreeIdx.resize(vertCount);
 //	for (int i = 0; i < vertCount; ++i) vFreeIdx[i] = i;
 
@@ -2002,6 +2028,9 @@ void ShapeEditor::fillHoles(bool skipExternalBoundary)
         fillBoundedHole(boundaryEdges);
     }
 
+    mMesh->clearAttributes();
+    mMesh->gatherStatistics();
+    this->resetStoredCoordinates();
     visualizeBoundaries();
 }
 
@@ -2221,14 +2250,12 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
         }
     }
     /*  end of Delaunay refinement  */
-    
+   
     FilledHoleVerts newHole;
     newHole.vert_on_boundary = boundaryVertIdx;
     for (int i = nOldVerts; i < mMesh->vertCount(); ++i)
         newHole.vert_inside.push_back(i);
     this->filled_boundaries.push_back(newHole);
-    mMesh->clearAttributes();
-    mMesh->gatherStatistics();
 }
 
 void ShapeEditor::fillHole()
@@ -2406,7 +2433,7 @@ void ShapeEditor::fillHole()
         lengthAttr[pv->getIndex()] = avgLen;
     }
 
-    double alpha = 3.; //sqrt(2.);
+    double alpha = 2.; //sqrt(2.);
     bool noFaceSplit(true), noEdgeSwap(true);
     while (true)
     {
@@ -2472,10 +2499,10 @@ void ShapeEditor::fillHole()
     }
 
     /* inpaint affected normals */
-    std::cout << "==== Do Eigendecomposition ====\n";
     int eigenCount = 500;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
+    std::cout << "==== Do Eigendecomposition ====\n";
     const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
     std::cout << "\n==== Compute Dictionaries ====\n";
     Dictionary dictMHB;
@@ -2601,6 +2628,181 @@ void ShapeEditor::visualizeBoundaries()
 }
 
 void ShapeEditor::holeFairing()
+{
+    holeFairingFourierOMP();
+}
+
+void ShapeEditor::holeFairingFourierOMP()
+{
+    const int totalVertCount = mMesh->vertCount();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+
+    std::cout << "==== Do Eigendecomposition ====\n";
+    int eigenCount = 500;					// -1 means full decomposition
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    vector<int> vMask(totalVertCount, 1);
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        for (int vi : fhv.vert_inside) vMask[vi] = 0;
+    }
+
+    vector<VecNd> vCoordRecovered(3);
+    vector<SparseCoding> vCodingInpaint(3);
+    for (int i = 0; i < 3; ++i) {
+        vCoordRecovered[i] = singleChannelSparseInpaint(vOriginalCoords[i], vMask, dictMHB, vCodingInpaint[i]);
+        for (int j = 0; j < totalVertCount; ++j) {
+            if (vMask[j]) vCoordRecovered[i][j] = vOriginalCoords[i][j];
+        }
+    }
+    MeshCoordinates coordRecovered(totalVertCount, vCoordRecovered);
+    addCoordinate(coordRecovered, "faired_OMP");
+    std::cout << "OMP fairing finished!" << std::endl;
+    changeCoordinates("faired_OMP");
+}
+
+void ShapeEditor::holeFairingFourierLS()
+{
+}
+
+void ShapeEditor::holeFairingLeastSquare()
+{
+    using namespace std;
+    revertCoordinates();
+    const int totalVertCount = mMesh->vertCount();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+    MeshLaplacian matLaplacian;
+    matLaplacian.constructTutte(mMesh);
+    set<int> controlVerts;
+    for (int i = 0; i < totalVertCount; ++i) controlVerts.insert(i);
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        for (int vi : fhv.vert_inside) controlVerts.erase(vi);
+    }
+    int controlVertCount = controlVerts.size();
+    vector<int> vControlVerts(controlVerts.begin(), controlVerts.end());
+
+    double controlWeight = 1.0;
+    vector<int> rowIdxA, colIdxA;
+    vector<double> valsA;
+    matLaplacian.getSparseMatrix().convertToCOO(rowIdxA, colIdxA, valsA, ZGeom::MAT_FULL);
+    for (int i = 0; i < controlVertCount; ++i) {
+        rowIdxA.push_back(totalVertCount + i + 1);
+        colIdxA.push_back(vControlVerts[i] + 1);
+        valsA.push_back(controlWeight);
+    }
+    SparseMatrix<double> matA(totalVertCount + controlVertCount, totalVertCount);
+    matA.convertFromCOO(totalVertCount + controlVertCount, totalVertCount, rowIdxA, colIdxA, valsA);
+
+    DenseMatrixd matB(totalVertCount + controlVertCount, 3);
+    for (int i = 0; i < controlVertCount; ++i) {
+        for (int j = 0; j < 3; ++j)
+            matB(totalVertCount + i, j) = controlWeight * vOriginalCoords[j][vControlVerts[i]];
+    }
+
+    g_engineWrapper.addSparseMat(matA, "matA");
+    g_engineWrapper.addDenseMat(matB, "matB");
+    g_engineWrapper.eval("matX=matA\\matB;");
+    DenseMatrixd matX = g_engineWrapper.getDenseMat("matX");
+
+    vector<VecNd> vCoordRecovered = vOriginalCoords;
+    for (int i = 0; i < totalVertCount; ++i) {
+        if (controlVerts.find(i) == controlVerts.end()) {
+            // replace vertices inside holes with recovered coordinate
+            for (int j = 0; j < 3; ++j)  vCoordRecovered[j][i] = matX(i, j);     
+        }
+    }    
+    MeshCoordinates coordRecovered(totalVertCount, vCoordRecovered);
+    addCoordinate(coordRecovered, "faired_least_square");
+    std::cout << "Least Square Fairing finished!\n";
+    changeCoordinates("faired_least_square");
+}
+
+void ShapeEditor::holeEstimateCurvature()
+{
+    revertCoordinates();
+    int totalVertCount = mMesh->vertCount();
+    vector<int> affectedVert;
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        for (int vi : fhv.vert_inside) affectedVert.push_back(vi);
+        for (int vi : fhv.vert_on_boundary) affectedVert.push_back(vi);
+    }
+    vector<int> vMask(totalVertCount, 1);
+    for (int i : affectedVert) vMask[i] = 0;
+
+    int eigenCount = 300;					// -1 means full decomposition
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    std::cout << "==== Do Eigendecomposition ====\n";
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    std::cout << "\n==== Compute Dictionaries ====\n";
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    MeshLineList vNormalLines;
+
+    /* normals calculated from filled model */
+    mMesh->calVertNormals();
+    vector<Vector3D> vNormals1 = mMesh->getVertNormals();
+    for (int vi : affectedVert) {
+        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
+        ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
+        vNormalLines.push_back(ls);
+    }
+
+    /* inpaint affected normals */
+    vector<VecNd> vNormalOld(3), vNormalRecovered(3);
+    for (int i = 0; i < 3; ++i) {
+        vNormalOld[i].resize(totalVertCount);
+        for (int j = 0; j < totalVertCount; ++j)
+            vNormalOld[i][j] = vNormals1[j][i];
+    }
+
+    vector<SparseCoding> vCodingInpaint(3);
+    for (int i = 0; i < 3; ++i) {
+        vNormalRecovered[i] = singleChannelSparseInpaint(vNormalOld[i], vMask, dictMHB, vCodingInpaint[i]);
+    }
+    vector<Vector3D> vNormals2(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i) {
+        if (vMask[i]) vNormals2[i] = vNormals1[i];
+        else {
+            vNormals2[i] = Vector3D(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
+            vNormals2[i].normalize();
+        }
+    }
+    for (int vi : affectedVert) {
+        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals2[vi], true);
+        ls.color1 = ZGeom::ColorRed; ls.color2 = ZGeom::ColorRed;
+        vNormalLines.push_back(ls);
+    }
+
+    /* inpaint mean curvature values */
+    mMesh->calCurvatures();
+    VecNd oldCurvature = VecNd(mMesh->getMeanCurvature());
+    VecNd newCurvature = singleChannelSparseInpaint(oldCurvature, vMask, dictMHB, vCodingInpaint[0]);
+    for (int vi = 0; vi < totalVertCount; ++vi) {
+        if (vMask[vi]) newCurvature[vi] = oldCurvature[vi];
+    }
+    auto minmax_curv = std::minmax_element(oldCurvature.c_ptr(), oldCurvature.c_ptr_end());
+    double min_curv = *minmax_curv.first, max_curv = *minmax_curv.second;
+    vector<Colorf> colorOldCurv(totalVertCount), colorNewCurv(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i) {
+        colorOldCurv[i].falseColor((oldCurvature[i] - min_curv) / (max_curv - min_curv));
+        colorNewCurv[i].falseColor((newCurvature[i] - min_curv) / (max_curv - min_curv));
+    }
+
+    mMesh->addAttrLines(vNormalLines, "hole_affected_vert_normals");
+    emit meshLineFeatureChanged();
+    addColorSignature("color_old_curvature", colorOldCurv);
+    addColorSignature("color_estimated_curvature", colorNewCurv);
+    std::cout << "Finished!\n";
+}
+
+void ShapeEditor::holeEstimateNormals()
 {
 
 }

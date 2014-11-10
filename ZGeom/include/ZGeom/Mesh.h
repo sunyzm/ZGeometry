@@ -155,6 +155,8 @@ public:
     static const std::string StrAttrColorDefault;
 	static const std::string StrAttrVertGaussCurvatures;
 	static const std::string StrAttrVertMeanCurvatures;
+    static const std::string StrAttrVertPrincipalCurvatures1;
+    static const std::string StrAttrVertPrincipalCurvatures2;
 	static const std::string StrAttrVertNormal;
 	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
@@ -173,30 +175,33 @@ public:
 
 ////////////////    methods    ////////////////
 public:
-	/* ---- constructors ---- */
+	/* constructors */
 	CMesh();
 	CMesh(const CMesh& oldMesh);
-	~CMesh();
+	~CMesh();	
 
-	/* ---- options to control behaviors ---- */
-	void setVerbose(bool verbose) { m_verbose = verbose; }
+    /* mesh basics */
+    void	            clearMesh();
+    void                clearAttributes();
+    void                cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
+    void                setVerbose(bool verbose) { m_verbose = verbose; }
+    void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
+    std::string	        getMeshName() const { return m_meshName; }
 
-	/* ---- Mesh IO and processing ---- */
-    void	    clearMesh();
-    void        clearAttributes();
-	void        cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
-	void		load(const std::string& sFileName);		// load from file
-	void	    save(std::string sFileName);			// save to file
-	void        move(const Vector3D& translation);		// translate mesh
-	void	    scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
-	void        scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
-	void		scaleAndTranslate(const Vector3D& center, double scale);
-	void		saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
-	void		getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
-	
-    /* ---- geometry primitives access ---- */
-	void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
-	const std::string&	getMeshName() const { return m_meshName; }
+	/* Mesh IO and processing */
+	void		        load(const std::string& sFileName);		// load from file
+	void	            save(std::string sFileName);			// save to file
+    void                construct(const std::vector<CVertex>& pVertex, const std::vector<std::vector<int>>& faceVerts, int nType = 3);	// construct connectivity
+    void	            loadFromOBJ(std::string sFileName);	// load mesh from .obj file
+    void	            loadFromM(std::string sFileName);	// load mesh from .m file
+    void	            loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
+    void	            loadFromPLY(std::string sFileName);	// load mesh from .ply files
+    void	            loadFromOFF(std::string sFileName);
+    void	            saveToOBJ(std::string sFileName);	// save mesh to .obj file
+    void	            saveToM(const std::string& sFileName);    // save mesh to .m file
+
+
+    /* primitives access */
 	int					vertCount() const { return (int)m_vVertices.size(); }
 	int					faceCount() const { return (int)m_vFaces.size(); }
 	int					halfEdgeCount() const { return (int)m_vHalfEdges.size(); }
@@ -234,6 +239,7 @@ public:
 	void                         calVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas() const;
+    std::vector<double>          calPrincipalCurvature(int k);  // k = 1 or 2
 
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);
@@ -243,18 +249,24 @@ public:
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
+    void                move(const Vector3D& translation);		// translate mesh
+    void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
+    void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
+    void		        scaleAndTranslate(const Vector3D& center, double scale);
+    void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
+    void		        getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
     
 	bool				isInNeighborRing(int ref, int query, int ring) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
 	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
 	std::vector<int>	getVertexAdjacentFaceIdx(int vIdx, int ring = 1) const;
 
-	std::vector<int>    getOriginalVertexIndex() const;
-	void                getVertCoordinateFunction(int dim, std::vector<double>& vCoord) const;
 	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+    void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
+    void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
 	void				gatherStatistics();
 	bool				hasBoundary();
@@ -272,12 +284,12 @@ public:
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
     bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);
-
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 
-    void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
-    void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
+    static void         makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
+    static void         assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
+
     /*************************************************************************/
 
 	/************************************************************************/
@@ -452,20 +464,6 @@ public:
 	}		
 	//////////////////////////////////////////////////////////////////////////	
 
-private:
-    void    construct(const std::vector<CVertex>& pVertex, const std::vector<std::vector<int>>& faceVerts, int nType = 3);	// construct connectivity
-	void	loadFromOBJ(std::string sFileName);	// load mesh from .obj file
-	void	loadFromM(std::string sFileName);	// load mesh from .m file
-	void	loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
-	void	loadFromPLY(std::string sFileName);	// load mesh from .ply files
-	void	loadFromOFF(std::string sFileName);
-	void	saveToOBJ(std::string sFileName);	// save mesh to .obj file
-	void	saveToM(const std::string& sFileName );    // save mesh to .m file
-
-public:
-	/* helper functions */
-    static void   makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
-    static void   assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
-}; //CMesh
+};  // CMesh
 
 #endif

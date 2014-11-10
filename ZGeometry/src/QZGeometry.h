@@ -70,8 +70,11 @@ private slots:
 	void continuousApprox4(int level);
 	void visualizeCompression(int selctedApprox, int coordIdx);
     void fillHoles();
-    void holeFairingOMP();
-    void holeFairingLeastSquare();
+    void holeFairingAll();
+    void holeFairingLS();
+    void holeFairingFourierOMP();
+    void holeEstimateCurvature();
+    void holeEstimateNormals();
 
 	void displaySignature(QString sigName);
 	void displayFeature(QString featureName);

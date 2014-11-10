@@ -102,7 +102,7 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 		break;
 
 	case IsoApproximate:
-		laplacian.constructFromMesh5(mMesh);                
+		laplacian.constructIsoApprox(mMesh);                
 		break;
 
 	default: throw std::logic_error("Unrecognized Laplacian type");
