@@ -727,17 +727,10 @@
      </property>
      <addaction name="actionComputeHKSFeatures"/>
     </widget>
-    <widget class="QMenu" name="menuCurvature">
-     <property name="title">
-      <string>Curvature</string>
-     </property>
-     <addaction name="actionComputeMeanCurvature"/>
-     <addaction name="actionComputeGaussCurvature"/>
-    </widget>
     <addaction name="menuComputeLaplacian"/>
     <addaction name="separator"/>
     <addaction name="actionEigenfunction"/>
-    <addaction name="menuCurvature"/>
+    <addaction name="actionComputeCurvatures"/>
     <addaction name="menuKernel_Signature"/>
     <addaction name="menuComputeFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
@@ -1428,6 +1421,11 @@
   <action name="actionEstimateNormals">
    <property name="text">
     <string>EstimateNormals</string>
+   </property>
+  </action>
+  <action name="actionComputeCurvatures">
+   <property name="text">
+    <string>Curvatures</string>
    </property>
   </action>
  </widget>

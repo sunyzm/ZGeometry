@@ -27,6 +27,16 @@ using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
 
+std::vector<ZGeom::Colorf> signatureToColor(const std::vector<double>& vSig, ZGeom::ColorMapType cm_type = ZGeom::CM_JET)
+{
+    int N = (int)vSig.size();
+    auto iResult = std::minmax_element(vSig.begin(), vSig.end());
+    double sMin = *(iResult.first);
+    double sMax = *(iResult.second);
+    vector<Colorf> result(N);
+    for (int i = 0; i < N; ++i) result[i].falseColor((vSig[i] - sMin)/(sMax - sMin), cm_type);
+    return result;
+}
 
 void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vector<double>& vDisplaySignature)
 {
@@ -233,8 +243,7 @@ void QZGeometryWindow::makeConnections()
 	////  Compute  ////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
 	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
-	QObject::connect(ui.actionComputeMeanCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureMean()));
-	QObject::connect(ui.actionComputeGaussCurvature, SIGNAL(triggered()), this, SLOT(computeCurvatureGauss()));
+    QObject::connect(ui.actionComputeCurvatures, SIGNAL(triggered()), this, SLOT(computeCurvatures()));
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
@@ -887,34 +896,33 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::computeCurvatureMean()
+void QZGeometryWindow::computeCurvatures()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
         mMeshes[obj]->calCurvatures();
-		std::vector<double> vCurvature = mMeshes[obj]->getMeanCurvature();
-		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrAttrColorMeanCurvature);
+        vector<double> vCM = mMeshes[obj]->getMeanCurvature();
+        vector<double> vCG = mMeshes[obj]->getGaussCurvature();
+        vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
+        vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
+        vector<Colorf> colorCM = signatureToColor(vCM);
+        vector<Colorf> colorCG = signatureToColor(vCG);
+        vector<Colorf> colorCP1 = signatureToColor(vCP1);
+        vector<Colorf> colorCP2 = signatureToColor(vCP2);
+
+        mMeshes[obj]->addColorAttr("color_mean_curvature", colorCM);
+        mMeshes[obj]->addColorAttr("color_gauss_curvature", colorCG);
+        mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
+        mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
+
+        auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
+        auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
+        qout.output(QString().sprintf("- mean curvature -  min: %d, max: %d"), *mm1.first, *mm1.second);
+        qout.output(QString().sprintf("- gaussian curvature -  min: %d, max: %d"), *mm2.first, *mm2.second);
 	}
 
 	updateDisplaySignatureMenu();
-	displaySignature(StrAttrColorMeanCurvature.c_str());
+    displaySignature("color_mean_curvature");
 	qout.output("Visualize mean curvature");	
-}
-
-void QZGeometryWindow::computeCurvatureGauss()
-{
-	for (int obj = 0; obj < mMeshCount; ++obj) {	
-        mMeshes[obj]->calCurvatures();
-		std::vector<double> vCurvature = mMeshes[obj]->getGaussCurvature();
-		auto mm = std::minmax_element(vCurvature.begin(), vCurvature.end());
-		qout.output(QString().sprintf("Min curvature: %d  Max curvature: %d", *mm.first, *mm.second));
-		addColorSignature(obj, vCurvature, StrAttrColorGaussCurvature);
-	}
-
-	updateDisplaySignatureMenu();
-	displaySignature(StrAttrColorGaussCurvature.c_str());
-	qout.output("Visualize Gauss curvature");
 }
 
 void QZGeometryWindow::updateReferenceMove( int obj )

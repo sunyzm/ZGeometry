@@ -47,8 +47,7 @@ private slots:
 	/* computation */
 	void computeLaplacian(int laplacianType);
 	void computeEigenfunction();
-	void computeCurvatureMean();
-	void computeCurvatureGauss();
+	void computeCurvatures();
 	void computeVertNormals();
 	void computeFaceNormals();
 	void computeEditBasis();
