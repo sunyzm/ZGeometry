@@ -904,20 +904,25 @@ void QZGeometryWindow::computeCurvatures()
         vector<double> vCG = mMeshes[obj]->getGaussCurvature();
         vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
         vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
+        vector<double> vCtotal = mMeshes[obj]->calPrincipalCurvature(0);
         vector<Colorf> colorCM = signatureToColor(vCM);
         vector<Colorf> colorCG = signatureToColor(vCG);
         vector<Colorf> colorCP1 = signatureToColor(vCP1);
         vector<Colorf> colorCP2 = signatureToColor(vCP2);
+        vector<Colorf> colorCtotal = signatureToColor(vCtotal);
 
         mMeshes[obj]->addColorAttr("color_mean_curvature", colorCM);
         mMeshes[obj]->addColorAttr("color_gauss_curvature", colorCG);
         mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
         mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
+        mMeshes[obj]->addColorAttr("color_total_curvature", colorCtotal);
 
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
         auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
-        qout.output(QString().sprintf("- mean curvature -  min: %d, max: %d"), *mm1.first, *mm1.second);
-        qout.output(QString().sprintf("- gaussian curvature -  min: %d, max: %d"), *mm2.first, *mm2.second);
+        auto mm3 = std::minmax_element(vCtotal.begin(), vCtotal.end());
+        qout.output(QString("-mean curvature-  min: %1, max: %2").arg(QString::number(*mm1.first), QString::number(*mm1.second)), OUT_TERMINAL);
+        qout.output(QString("-gauss curvature-  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
+        qout.output(QString("-total curvature-  min: %1, max: %2").arg(QString::number(*mm3.first), QString::number(*mm3.second)), OUT_TERMINAL);
 	}
 
 	updateDisplaySignatureMenu();

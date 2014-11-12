@@ -239,7 +239,7 @@ public:
 	void                         calVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas();
 	const std::vector<double>&   getVertMixedAreas() const;
-    std::vector<double>          calPrincipalCurvature(int k);  // k = 1 or 2
+    std::vector<double>          calPrincipalCurvature(int k);  // k = 0 or 1 or 2
 
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);

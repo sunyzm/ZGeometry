@@ -833,8 +833,9 @@ void CMesh::calCurvatures()
 {
 	const double pi = ZGeom::PI;
 	const int vertNum = this->vertCount();
-	std::vector<double> vGaussCurvatures(vertNum);
-	std::vector<double> vMeanCurvatures(vertNum);
+	std::vector<double> vGaussCurvatures(vertNum, 0);
+	std::vector<double> vMeanCurvatures(vertNum, 0);
+    calBoundaryVert();
     const vector<bool>& vertOnBoundary = getVertsOnBoundary();
 
 	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
@@ -844,11 +845,8 @@ void CMesh::calCurvatures()
 		double amix = 0.0;
 		Vector3D kh;
 
-        // boundary vertex has zero curvature     
-        if (vertOnBoundary[vIndex]) {        
-            vGaussCurvatures[vIndex] = vMeanCurvatures[vIndex] = 0.0;
-			continue;
-		}
+        // boundary vertex default to zero curvature     
+        if (vertOnBoundary[vIndex]) continue;		
 
 		for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
 			CHalfEdge* e0 = *he;
@@ -868,9 +866,9 @@ void CMesh::calCurvatures()
 			kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
 		}
 
-        kh = kh / (2.0 * amix);
+        kh /= 2.0 * amix;
         vMeanCurvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
-		vGaussCurvatures[vIndex] = (2.0 * pi - angleSum) / amix;		
+		vGaussCurvatures[vIndex] = (2.0 * pi - angleSum) / amix;		// >0: convex; <0: concave
 	}
 
 	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
@@ -1792,14 +1790,17 @@ bool CMesh::relaxEdge(CHalfEdge* e1)
 
 std::vector<double> CMesh::calPrincipalCurvature( int k )
 {
-    assert(k == 1 || k == 2);
+//    assert(k >= 0 && k < = 2); // k == 0 means total curvature; k_total = k1^2 + k2^2 = 4(kh^2 - kg)
     int N = vertCount();
     auto curvMean = getMeanCurvature(), curvGauss = getGaussCurvature();
     std::vector<double> result(N);
     for (int i = 0; i < N; ++i) {
-        double delta = curvMean[i] * curvMean[i] - curvGauss[i];
-        if (delta < 0) delta = 0;
-        result[i] = curvMean[i] + sqrt(delta) * (k == 1 ? 1 : -1);
+        double delta = std::max(0., curvMean[i]*curvMean[i] - curvGauss[i]);        
+        switch (k) {
+        case 0: result[i] = std::max(0., 4.*curvMean[i]*curvMean[i] - 2.*curvGauss[i]); break;
+        case 1: result[i] = curvMean[i] + sqrt(delta); break;
+        case 2: result[i] = curvMean[i] - sqrt(delta); break;
+        }        
     }
     return result;
 }
