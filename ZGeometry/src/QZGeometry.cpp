@@ -920,7 +920,7 @@ void QZGeometryWindow::computeCurvatures()
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
         auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
         auto mm3 = std::minmax_element(vCtotal.begin(), vCtotal.end());
-        qout.output(QString("-mean curvature-  min: %1, max: %2").arg(QString::number(*mm1.first), QString::number(*mm1.second)), OUT_TERMINAL);
+        qout.output(QString("-mean curvature-  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
         qout.output(QString("-gauss curvature-  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
         qout.output(QString("-total curvature-  min: %1, max: %2").arg(QString::number(*mm3.first), QString::number(*mm3.second)), OUT_TERMINAL);
 	}

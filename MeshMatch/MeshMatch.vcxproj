@@ -78,7 +78,7 @@
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IncludePath>$(SolutionDir)ZGeom/include;$(SolutionDir)ZUtil/include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
-    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -92,7 +92,7 @@
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IncludePath>$(SolutionDir)ZGeom/include;$(IncludePath)</IncludePath>
     <LibraryPath>$(SolutionDir)ZGeom/lib;$(LibraryPath)</LibraryPath>
-    <IntDir>intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <IntDir>$(SolutionDir)intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

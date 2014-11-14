@@ -15,136 +15,6 @@ using namespace std;
 using ZGeom::PI;
 using ZGeom::uint;
 
-void MeshLaplacian::constructTutte( const CMesh* tmesh )
-{
-    // L = D^-1 * (A - D)
-	mOrder = tmesh->vertCount();
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
-    mLS.scale(-1.0);
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_DEGREE, mW);
-
-	mLaplacianType = Tutte;
-	mSymmetric = false;
-}
-
-void MeshLaplacian::constructUmbrella( const CMesh* tmesh )
-{
-    // L = A - D
-	mOrder = tmesh->vertCount();
-	ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
-	mLS.scale(-1);
-	mW.setToIdentity(mOrder);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
-
-	mLaplacianType = Umbrella;
-	mSymmetric = true;
-}
-
-void MeshLaplacian::constructGeometricUmbrella(const CMesh *tmesh)
-{
-
-}
-
-void MeshLaplacian::constructNormalizedUmbrella( const CMesh* tmesh )
-{
-	/* L = D^(-1/2) * (D-A) * D^(-1/2) */
-	mOrder = tmesh->vertCount();
-	ConstructMeshMatrix(*tmesh, ZGeom::MM_NORMALIZED_GRAPH_LAPLACE, mLS);
-	mLS.scale(-1);
-	mW.setToIdentity(mOrder);
-
-	mLaplacianType = NormalizedUmbrella;
-	mSymmetric = true;
-}
-
-/* Construct negative discrete Laplace operator */
-void MeshLaplacian::constructCotFormula( const CMesh* tmesh )
-{
-	const int vertCount = tmesh->vertCount();
-	mOrder = vertCount;
-	std::vector<int> vII, vJJ;
-	std::vector<double> vSS;
-	std::vector<double> vWeights(vertCount);
-
-	std::vector<double> diagW(vertCount, 0);
-	for (int vIdx = 0; vIdx < vertCount; ++vIdx)  //for every vertex
-	{
-		double amix = 0; //mixed area
-		const CVertex* vi = tmesh->getVertex(vIdx);
-		for (int j = 0; j < vi->outValence(); ++j) {
-			const CHalfEdge* e0 = vi->getHalfEdge(j);
-			const CHalfEdge* e1 = e0->nextHalfEdge();
-			const CHalfEdge* e2 = e1->nextHalfEdge();
-			const CVertex* vj = e0->vert(1);
-			const CHalfEdge* e2twin = e2->twinHalfEdge();
-
-			double len0 = e0->length();
-			double len1 = e1->length();
-			double len2 = e2->length();
-			amix += ZGeom::calMixedTriArea(len0, len1, len2);
-			
-			double cot_a11(0), cot_a12(0), cot_a21(0), cot_a22(0);
-			ZGeom::triangleCot(len0, len1, len2, cot_a11, cot_a12);
-
-			if (e0->twinHalfEdge() != NULL) {
-				const CHalfEdge* e10 = e0->twinHalfEdge();
-				const CHalfEdge* e11 = e10->nextHalfEdge();
-				const CHalfEdge* e12 = e11->nextHalfEdge();
-				len1 = e11->length();
-				len2 = e12->length();
-
-				ZGeom::triangleCot(len0, len1, len2, cot_a21, cot_a22);
-			}
-			double cota = (cot_a11 + cot_a21) / 2.0;
-
-			vII.push_back(vIdx + 1);
-			vJJ.push_back(vj->getIndex() + 1);
-			vSS.push_back(cota);
-			diagW[vIdx] -= cota;
-
-			if (e2twin == NULL) { //met an boundary fan edge
-				const CHalfEdge* e20 = e2;
-				const CHalfEdge* e21 = e20->nextHalfEdge();
-				const CHalfEdge* e22 = e21->nextHalfEdge();
-				len0 = e20->length();
-				len1 = e21->length();
-				len2 = e22->length();
-				double cot_a1, cot_a2;
-				ZGeom::triangleCot(len0, len1, len2, cot_a1, cot_a2);
-				double cota = cot_a1 / 2.0;
-				
-				vII.push_back(vIdx + 1);
-				vJJ.push_back(e20->getVertIndex(0) + 1);
-				vSS.push_back(cota);
-				diagW[vIdx] -= cota;
-			}
-		} // for each incident halfedge
-
-		vWeights[vIdx] = amix;
-	}
-
-	for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
-		vII.push_back(vIdx + 1);
-		vJJ.push_back(vIdx + 1);
-		vSS.push_back(diagW[vIdx]);
-	}
-
-	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
-	mW.convertFromDiagonal(vWeights);
-
-	mLaplacianType = CotFormula;
-	mSymmetric = false;
-}
-
-void MeshLaplacian::constructSymCot( const CMesh* tmesh )
-{
-	const int vertCount = tmesh->vertCount();
-	constructCotFormula(tmesh);	
-	mW.setToIdentity(vertCount);
-
-	mLaplacianType = SymCot;
-	mSymmetric = true;
-}
-
 void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 {
 	using namespace std;
@@ -208,7 +78,6 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 	std::cout << "Anisotropic Laplacian is symmetric? " << (bool)mLS.testSymmetric() << '\n';
 #endif
 	
-	mLaplacianType = Anisotropic1;
 	mSymmetric = true;
 }
 
@@ -272,7 +141,6 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 	mLS.convertFromCOO(vertCount, vertCount, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);	
 
-	mLaplacianType = Anisotropic2;
 	mSymmetric = true;
 }
 
@@ -351,7 +219,6 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 	std::cout << "Anisotropic Laplacian is symmetric? " << mLS.testSymmetric() << '\n';
 	mW.convertFromDiagonal(vWeights);
 
-	mLaplacianType = Anisotropic1;
 	mSymmetric = true;
 }
 
@@ -497,4 +364,40 @@ void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng
 	if (nEig == -1 || nEig >= mOrder) nActualEigen = mOrder - 1;
 	if (mSymmetric) this->decompose(nActualEigen, eng, es, false);
 	else this->decompose(nActualEigen, eng, es, true);
+}
+
+void MeshLaplacian::constructUmbrella(const CMesh* tmesh)
+{
+    Laplacian::constructUmbrella(tmesh);
+    mLaplacianType = Umbrella;
+}
+
+void MeshLaplacian::constructGeometricUmbrella(const CMesh *tmesh)
+{
+    Laplacian::constructGeometricUmbrella(tmesh);
+    mLaplacianType = Geometric;
+}
+
+void MeshLaplacian::constructNormalizedUmbrella(const CMesh* tmesh)
+{
+    Laplacian::constructNormalizedUmbrella(tmesh);
+    mLaplacianType = NormalizedUmbrella;
+}
+
+void MeshLaplacian::constructTutte(const CMesh* tmesh)
+{
+    Laplacian::constructTutte(tmesh);
+    mLaplacianType = Tutte;   
+}
+
+void MeshLaplacian::constructCotFormula(const CMesh* tmesh)
+{
+    Laplacian::constructCotFormula(tmesh);
+    mLaplacianType = CotFormula;
+}
+
+void MeshLaplacian::constructSymCot(const CMesh* tmesh)
+{
+    Laplacian::constructSymCot(tmesh);
+    mLaplacianType = SymCot;
 }

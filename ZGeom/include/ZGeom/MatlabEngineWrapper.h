@@ -69,6 +69,7 @@ public:
 	~MatlabEngineWrapper();
 
 	void open(const char* startcmd = NULL);
+    void close();
 	bool isOpened() const { return (m_ep != NULL); }
 	Engine* getEngine() const { return m_ep; }
 	void eval(const std::string& str) const { engEvalString(m_ep, str.c_str()); }

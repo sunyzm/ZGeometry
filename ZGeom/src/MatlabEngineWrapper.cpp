@@ -11,10 +11,7 @@ ZGeom::MatlabEngineWrapper::MatlabEngineWrapper( int bufSize )
 
 ZGeom::MatlabEngineWrapper::~MatlabEngineWrapper()
 {
-	for (MatlabArrayWrapper* arr : mVariables) delete arr;
-	engClose(m_ep);
-	delete []mBuffer;
-	std::cout << "MatlabEngineWrapper destroyed!" << std::endl;
+    if (isOpened()) close();	
 }
 
 void ZGeom::MatlabEngineWrapper::open( const char* startcmd/*=NULL*/ )
@@ -25,6 +22,14 @@ void ZGeom::MatlabEngineWrapper::open( const char* startcmd/*=NULL*/ )
 		throw std::runtime_error("Fail to open Matlab engine");
 	}
 	engOutputBuffer(m_ep, mBuffer, mBufSize);
+}
+
+void ZGeom::MatlabEngineWrapper::close()
+{
+    for (MatlabArrayWrapper* arr : mVariables) delete arr;
+    engClose(m_ep);
+    delete[]mBuffer;
+    m_ep = NULL;
 }
 
 void ZGeom::MatlabEngineWrapper::resizeBuffer( int bufSize )

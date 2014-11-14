@@ -14,7 +14,7 @@ class MeshLaplacian : public ZGeom::Laplacian
 public:
 	typedef void (MeshLaplacian::*MeshLaplacianConstruct)(const CMesh* tmesh);	
 
-	MeshLaplacian() : ZGeom::Laplacian(), mSymmetric(true)
+	MeshLaplacian() : ZGeom::Laplacian()
 	{ 
 		mConstructFunc[Tutte] = &MeshLaplacian::constructTutte; 
 		mConstructFunc[Umbrella] = &MeshLaplacian::constructUmbrella;
@@ -42,7 +42,6 @@ public:
 	LaplacianType laplacianType() const { return mLaplacianType;  }
 
 private:
-	bool mSymmetric;
-	LaplacianType mLaplacianType;
 	MeshLaplacianConstruct mConstructFunc[LaplacianTypeCount];
+    LaplacianType mLaplacianType;
 };

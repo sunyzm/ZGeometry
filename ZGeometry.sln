@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
-VisualStudioVersion = 12.0.30501.0
+VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ZGeometry", "ZGeometry\ZGeometry.vcxproj", "{F46F71A6-D59D-48C4-9755-5D9F2981CDA3}"
 	ProjectSection(ProjectDependencies) = postProject
@@ -26,6 +26,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_partition", "zmesh_pa
 	EndProjectSection
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_info", "zmesh_info\zmesh_info.vcxproj", "{C29D0FD1-DE76-4192-995A-EDDF1F6F21D4}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
+	EndProjectSection
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_operator", "zmesh_operator\zmesh_operator.vcxproj", "{5546A265-51A9-47D8-AA45-BCEF153B1D16}"
 	ProjectSection(ProjectDependencies) = postProject
 		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
 	EndProjectSection
@@ -110,6 +115,15 @@ Global
 		{C29D0FD1-DE76-4192-995A-EDDF1F6F21D4}.Release|Win32.ActiveCfg = Release|x64
 		{C29D0FD1-DE76-4192-995A-EDDF1F6F21D4}.Release|x64.ActiveCfg = Release|x64
 		{C29D0FD1-DE76-4192-995A-EDDF1F6F21D4}.Release|x64.Build.0 = Release|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Debug|Mixed Platforms.ActiveCfg = Debug|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Debug|Mixed Platforms.Build.0 = Debug|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Debug|Win32.ActiveCfg = Debug|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Debug|x64.ActiveCfg = Debug|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|Mixed Platforms.Build.0 = Release|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|Win32.ActiveCfg = Release|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|x64.ActiveCfg = Release|x64
+		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

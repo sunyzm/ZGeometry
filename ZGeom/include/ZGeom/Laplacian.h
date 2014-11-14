@@ -4,13 +4,14 @@
 #include "SparseMatrix.h"
 #include "MatlabEngineWrapper.h"
 #include "EigenSystem.h"
+#include "Mesh.h"
 
 namespace ZGeom {
 
 class Laplacian
 {
 public:
-	Laplacian() : mOrder(0) {}
+	Laplacian() : mOrder(0), mSymmetric(true) {}
 	virtual ~Laplacian(){}
 
 	const ZGeom::SparseMatrix<double>& getLS() const { return mLS; }
@@ -21,9 +22,17 @@ public:
 	void computeSubLaplacian(const std::vector<int>& vSelected, Laplacian& subLaplacian) const;
     ZGeom::SparseMatrix<double> getSparseMatrix() const;
 
+    void constructUmbrella(const CMesh* tmesh);				// negative symmetric graph Laplacian. L = A - D
+    void constructGeometricUmbrella(const CMesh *tmesh);    // negative symmetric graph Laplacian. w_ij is weighted by the inverse of length between i and j
+    void constructNormalizedUmbrella(const CMesh* tmesh);	// negative symmetric, normalized graph Laplacian; L = D^(-1/2) * (A-D) * D^(-1/2) = D^(-1/2) * A * D^(-1/2) - I
+    void constructTutte(const CMesh* tmesh);				// negative asymmetric graph Laplacian; random walk. L = D^(-1) * (A-D) = D^(-1)*A - I
+    void constructCotFormula(const CMesh* tmesh);			// negative cotangent formula
+    void constructSymCot(const CMesh* tmesh);				// negative symmetric cotangent formula
+
 protected:
 	int mOrder;
 	SparseMatrix<double> mLS, mW;
+    bool mSymmetric;
 };
 
 } // end of namespace
