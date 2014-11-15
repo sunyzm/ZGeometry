@@ -42,7 +42,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <IncludePath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013b\extern\include;D:\dev\boost\boost_1_55_0;D:\dev\include;D:\dev\glew\glew-1.10.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013b\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <LibraryPath>$(SolutionDir)ZGeom\lib;C:\MATLAB\R2013b\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>

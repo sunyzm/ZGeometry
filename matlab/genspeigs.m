@@ -1,21 +1,13 @@
 function [evecs, evals]=hspeigs(II, JJ, SS, AA, Numv)
-% hou sparse eigs
+% sparse general eigendecomposition
 
 order = length(AA);
-W = sparse(II, JJ, SS, order, order);
-Am = sparse(diag(AA));
-nev = min(Numv, order-1);
+Ls = sparse(II, JJ, SS, order, order);
+W = sparse(diag(AA));
+nev = min(Numv, order-2);
 opts.issym = 1;
 
-[evecs evals] = eigs(W, Am, nev, 'sm', opts);
+% solve
+[evecs evals] = eigs(Ls, W, nev, 'sm', opts);
 evals = -diag(evals);
 evecs = -evecs;
-%evals = evals./evals(2);
-
-%area = sum(A);
-   
-%A = (1/area) * A;
-   
-%evals = area * evals;
-   
-%evecs = sqrt(area) * evecs;

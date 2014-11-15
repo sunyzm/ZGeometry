@@ -65,7 +65,7 @@ private:
 class MatlabEngineWrapper
 {
 public:
-	MatlabEngineWrapper(int bufSize = 256);
+	MatlabEngineWrapper(int bufSize = 1024);
 	~MatlabEngineWrapper();
 
 	void open(const char* startcmd = NULL);
@@ -93,7 +93,8 @@ public:
 	void getSparseMat(const std::string& name, SparseMatrix<double>& mat);
     ZGeom::DenseMatrixd getDenseMat(const std::string& name, bool getTranspose = false);
 	void removeVariable(const std::string& varName);
-	
+    std::string getMatlabVersion();
+
 private:
 	char *mBuffer;
 	int  mBufSize;

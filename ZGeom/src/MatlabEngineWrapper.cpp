@@ -1,6 +1,6 @@
 #include "MatlabEngineWrapper.h"
 #include <iostream>
-
+#include <regex>
 
 ZGeom::MatlabEngineWrapper::MatlabEngineWrapper( int bufSize )
 {
@@ -34,8 +34,8 @@ void ZGeom::MatlabEngineWrapper::close()
 
 void ZGeom::MatlabEngineWrapper::resizeBuffer( int bufSize )
 {
-	mBufSize = bufSize;
-	delete []mBuffer;
+    delete[]mBuffer;
+    mBufSize = bufSize;	
 	mBuffer = new char[bufSize + 1]; 
 	mBuffer[bufSize] = '\0';
 }
@@ -187,4 +187,18 @@ ZGeom::DenseMatrixd ZGeom::MatlabEngineWrapper::getDenseMat(const std::string& n
                 mat.raw_ptr()[i*n + j] = pMat[j*m + i];
         return mat;
     }    
+}
+
+std::string ZGeom::MatlabEngineWrapper::getMatlabVersion()
+{
+    eval("matlabver");
+    std::string verstr = std::string(getOutput());
+    std::regex ver_regex("R[0-9]{4}[ab]");
+    std::smatch ver_match;
+    std::regex_search(verstr, ver_match, ver_regex);
+    if (ver_match.size() > 0) {
+        std::ssub_match sub_match = ver_match[0];
+        return sub_match.str();
+    }
+    else return "";
 }

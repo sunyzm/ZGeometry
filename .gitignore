@@ -30,6 +30,7 @@
 *.asv
 *.mexw32
 *.mexw64
+*.mat
 
 # project specific
 bin/
@@ -37,6 +38,7 @@ data/
 lib/
 thirdparty/
 intermediate/
+matlab/workspace/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/
 ZGeometry/models/

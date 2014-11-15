@@ -1022,10 +1022,7 @@ void CMesh::move( const Vector3D& translation )
 
 void CMesh::scaleEdgeLenToUnit()
 {
-	Vector3D center(0, 0, 0);
-	for (int i = 0; i < vertCount(); ++i)
-		center += m_vVertices[i]->pos();
-	center /= vertCount();
+    Vector3D center = calMeshCenter();
 
 	double length = 0.;
 	int edgeNum = 0;
@@ -1051,7 +1048,7 @@ void CMesh::scaleEdgeLenToUnit()
 void CMesh::scaleAndTranslate( const Vector3D& center, double scale )
 {
 	for (int i = 0; i < vertCount(); ++i)	{
-		m_vVertices[i]->translateAndScale(-center, scale);
+		m_vVertices[i]->translateAndScale(center, scale);
 	}
 }
 
