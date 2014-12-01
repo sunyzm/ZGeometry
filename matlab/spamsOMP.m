@@ -2,7 +2,7 @@ function [ idx, coeff ] = spamsOMP( X, D, L0)
 % Name: spamsOMP
 %
 % Description: call mexOMP to solve 
-%   min_{alpha} ||x-Dalpha||_2^2  s.t. ||alpha||_0 <= L
+%   min_{alpha} ||x-D*alpha||_2^2  s.t. ||alpha||_0 <= L
 %
 % Inputs:  X: double m x 1 vector (input signal)
 %          D: double m x p matrix (dictionary)
@@ -14,6 +14,6 @@ tic;
 alpha = mexOMP(X,D,param);
 t = toc;
 fprintf('Decomposition time(s): %f\n',t);
-[idx,col,coeff] = find(alpha);
+[idx,~,coeff] = find(alpha);
 end
 
