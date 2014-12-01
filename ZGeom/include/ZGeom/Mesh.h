@@ -375,26 +375,30 @@ public:
 	/* Mesh color attributes methods                                        */
 	/************************************************************************/
 	AttrVertColors& getColorAttr(const std::string& colorAttrName) {
-		return *getAttr<std::vector<ZGeom::Colorf>>(colorAttrName);
+		return *getAttr<ZGeom::ColorSignature>(colorAttrName);
 	}
 
 	AttrVertColors& addColorAttr(const std::string& colorAttrName) {
 		if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
-		else return addAttr<std::vector<ZGeom::Colorf>>(colorAttrName, AttrRate::AR_VERTEX, AttrType::AT_VEC_COLOR);
+		else return addAttr<ZGeom::ColorSignature>(colorAttrName, AttrRate::AR_VERTEX, AttrType::AT_VEC_COLOR);
 	}
 
-	void addColorAttr(const std::string& colorAttrName, const std::vector<ZGeom::Colorf>& vColors) {
+	void addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors) {
 		if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
 		else {
-			std::vector<ZGeom::Colorf>& vNewColor = addColorAttr(colorAttrName).attrValue();
+            ZGeom::ColorSignature& vNewColor = addColorAttr(colorAttrName).attrValue();
 			vNewColor = vColors;
 		}
 	}
 
     void addDefaultColor(ZGeom::Colorf color);
 
+    ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName) {
+        return getAttrValue<ZGeom::ColorSignature>(colorAttrName);
+    }
+
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName) {
-		return getAttrValue<std::vector<ZGeom::Colorf>>(colorAttrName);
+        return getAttrValue<ZGeom::ColorSignature>(colorAttrName).getColors();
 	}
 
 	std::vector<AttrVertColors*> getColorAttrList() {

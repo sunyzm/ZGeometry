@@ -222,8 +222,7 @@ MeshCoordinates ShapeEditor::getNoisyCoord(double phi)
 
 void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors)
 {
-	std::vector<ZGeom::Colorf>& vNewColors = mMesh->addColorAttr(colorSigName).attrValue();
-	vNewColors = vColors;
+    mMesh->addColorAttr(colorSigName, ZGeom::ColorSignature(vColors));
     emit meshSignatureAdded();
 }
 
@@ -236,23 +235,11 @@ void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
 	mMesh->setVertCoordinates(mContReconstructCoords[selected][contCoordIdx]);
 
 	/* visualize the coordinate difference against the original coordinate */
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPosDiff).attrValue();
-	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+	ZGeom::ColorSignature cs = mMesh->addColorAttr(StrAttrColorPosDiff).attrValue();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, cs.getColors());
     emit meshSignatureAdded();
 	emit coordinateSelected(selected, contCoordIdx);
 
-	/* show SGW approximation features */
-#if 0
-	if (selected == 2) {
-		const int vertCount = mMesh->vertCount();
-		MeshProperty* curAtomLocation = mProcessor->retrievePropertyByID(FEATURE_SGW_SOMP);
-		if (NULL == curAtomLocation) return;
-		MeshFeatureList *mfl = dynamic_cast<MeshFeatureList*>(curAtomLocation);
-		mfl->clear();
-		int atomIdx = mApproxCoeff[selected][atomCount].index();
-		mfl->addFeature(new MeshFeature(atomIdx % vertCount, atomIdx / vertCount));
-	}
-#endif
 }
 
 void ShapeEditor::fourierReconstruct( int nEig )
@@ -712,7 +699,7 @@ void ShapeEditor::testSparseCompression()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue().getColors();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
     emit meshSignatureAdded();
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
@@ -864,7 +851,7 @@ void ShapeEditor::testSparseDecomposition()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue().getColors();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
     emit meshSignatureAdded();
 	

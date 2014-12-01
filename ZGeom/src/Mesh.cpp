@@ -1652,7 +1652,7 @@ void CMesh::addDefaultColor( ZGeom::Colorf color )
 {
     m_defaultColor = color;
     vector<Colorf> vDefaultColors(vertCount(), color);
-    addColorAttr(StrAttrColorDefault, vDefaultColors);
+    addColorAttr(StrAttrColorDefault, ZGeom::ColorSignature(vDefaultColors));
 }
 
 std::vector<std::vector<int>> CMesh::getBoundaryLoopEdges()

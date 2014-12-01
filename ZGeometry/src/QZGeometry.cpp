@@ -26,82 +26,7 @@ using ZGeom::Colorf;
 using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
-
-std::vector<ZGeom::Colorf> signatureToColor(const std::vector<double>& vSig, ZGeom::ColorMapType cm_type = ZGeom::CM_PARULA)
-{
-    int N = (int)vSig.size();
-    auto iResult = std::minmax_element(vSig.begin(), vSig.end());
-    double sMin = *(iResult.first);
-    double sMax = *(iResult.second);
-    vector<Colorf> result(N);
-    for (int i = 0; i < N; ++i) result[i].falseColor((vSig[i] - sMin)/(sMax - sMin), 1.0, cm_type);
-    return result;
-}
-
-void normalizeSignature(const std::vector<double>& vOriginalSignature, std::vector<double>& vDisplaySignature)
-{
-	auto iResult = minmax_element(vOriginalSignature.begin(), vOriginalSignature.end());
-	double sMin = *(iResult.first); 
-	double sMax = *(iResult.second);
-
-	vDisplaySignature.resize(vOriginalSignature.size());
-	std::transform(vOriginalSignature.begin(), vOriginalSignature.end(), 
-				   vDisplaySignature.begin(),
-				   [=](double v){ return (v-sMin)/(sMax-sMin); });
-}
-
-void QZGeometryWindow::signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode/* = SignatureMode::Normalized*/)
-{
-	size_t vSize = vOriSig.size();
-	vColors.resize(vSize);
-	std::vector<double> tmpSig = vOriSig;
-
-	if (smode == SM_BandCurved) {
-		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
-		double sMin = *mmp.first, sMax = *mmp.second;
-		double bandMin = (double)ui.sliderSigMin->value() / ui.sliderSigMin->maximum() * (sMax - sMin) + sMin;
-		double bandMax = (double)ui.sliderSigMax->value() / ui.sliderSigMax->maximum() * (sMax - sMin) + sMin;
-
-		for (size_t a = 0; a < vSize; ++a) {
-			if (tmpSig[a] < bandMin) tmpSig[a] = bandMin;
-			if (tmpSig[a] > bandMax) tmpSig[a] = bandMax;
-		}
-	}
-	
-	if (smode == SM_AbsNormalized) {
-		for (double& v : tmpSig) v = std::fabs(v);
-	}
-
-	if (smode == SM_LogNormalized) {
-		double sMin = *(std::minmax_element(tmpSig.begin(), tmpSig.end()).first);
-		if (sMin <= 0) return;
-		for (double& v : tmpSig) v = std::log(v);		
-	}
-
-	if (smode == SM_PosNegPlot)
-	{
-		auto mmp = std::minmax_element(tmpSig.begin(), tmpSig.end());
-		double sMin = *mmp.first, smax = *mmp.second;
-		double absMax = std::max(std::fabs(sMin), std::fabs(smax));
-		for (int i = 0; i < vSize; ++i) 
-			vColors[i].posNegColor(tmpSig[i] / absMax, ZGeom::ColorOrange, ZGeom::ColorAzure);
-	} 
-	else if (smode == SM_Normalized || smode == SM_AbsNormalized || smode == SM_BandCurved ||
-			 smode == SM_LogNormalized || smode == SM_MarkNegNormalized) 
-	{
-		std::vector<double> normalizedSig;
-		normalizeSignature(tmpSig, normalizedSig);	
-		for (int i = 0; i < vSize; ++i) {
-			vColors[i].falseColor(normalizedSig[i], 1.f, mColorMapType);		
-		}
-	}	
-
-	if (smode == SM_MarkNegNormalized) {
-		for (int i = 0; i < vSize; ++i) {
-			if (vOriSig[i] < 0) vColors[i].setAs(ZGeom::ColorBlack);
-		}
-	}
-}
+using ZGeom::ColorSignature;
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
@@ -110,9 +35,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mCommonParameter		= gSettings.PARAMETER_SLIDER_CENTER;
 	mLastOperation			= None;
 	mDeformType				= DEFORM_Simple;
-	mSignatureMode			= SM_Normalized;
-	mActiveLalacian			= CotFormula;
-	mColorMapType			= ZGeom::CM_JET;
+    mSignatureMode          = ZGeom::SM_Normalized;
+	mActiveLalacian			= Umbrella;
+	mColorMapType			= ZGeom::CM_PARULA;
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
@@ -124,7 +49,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	
 	// comboBoxSigMode
 	ui.comboBoxSigMode->clear();
-	for (int i = 0; i < SM_CountSigModes; ++i)
+    for (int i = 0; i < ZGeom::SM_CountSigModes; ++i)
 		ui.comboBoxSigMode->addItem(QString(StrSignatureModeNames[i].c_str()));
 
 	// comboBoxLaplacian
@@ -317,8 +242,8 @@ void QZGeometryWindow::makeConnections()
 
 	////////    mShapeEditor    ////////
 	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
-    QObject::connect(&mShapeEditor, SIGNAL(meshFeatureChanged()), this, SLOT(updateDisplayFeatureMenu()));
     QObject::connect(&mShapeEditor, SIGNAL(meshSignatureAdded()), this, SLOT(updateDisplaySignatureMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshPointFeatureChanged()), this, SLOT(updateDisplayFeatureMenu()));
     QObject::connect(&mShapeEditor, SIGNAL(meshLineFeatureChanged()), this, SLOT(updateDisplayLineMenu()));
     QObject::connect(&mShapeEditor, SIGNAL(showSignature(QString)), this, SLOT(displaySignature(QString)));
 	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
@@ -500,7 +425,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	//computeLaplacian(Umbrella);
+	computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
@@ -901,25 +826,22 @@ void QZGeometryWindow::computeCurvatures()
         vector<double> vCG = mMeshes[obj]->getGaussCurvature();
         vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
         vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
-        vector<double> vCtotal = mMeshes[obj]->calPrincipalCurvature(0);
-        vector<Colorf> colorCM = signatureToColor(vCM);
-        vector<Colorf> colorCG = signatureToColor(vCG);
-        vector<Colorf> colorCP1 = signatureToColor(vCP1);
-        vector<Colorf> colorCP2 = signatureToColor(vCP2);
-        vector<Colorf> colorCtotal = signatureToColor(vCtotal);
+
+        ColorSignature colorCM(vCM, mColorMapType);
+        ColorSignature colorCG(vCG, mColorMapType);
+        ColorSignature colorCP1(vCP1, mColorMapType);
+        ColorSignature colorCP2(vCP2, mColorMapType);
 
         mMeshes[obj]->addColorAttr("color_mean_curvature", colorCM);
         mMeshes[obj]->addColorAttr("color_gauss_curvature", colorCG);
         mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
         mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
-        mMeshes[obj]->addColorAttr("color_total_curvature", colorCtotal);
+
 
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
         auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
-        auto mm3 = std::minmax_element(vCtotal.begin(), vCtotal.end());
         qout.output(QString("-mean curvature-  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
         qout.output(QString("-gauss curvature-  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
-        qout.output(QString("-total curvature-  min: %1, max: %2").arg(QString::number(*mm3.first), QString::number(*mm3.second)), OUT_TERMINAL);
 	}
 
 	updateDisplaySignatureMenu();
@@ -1008,8 +930,8 @@ void QZGeometryWindow::computeEigenfunction()
 	
 	for (int i = 0; i < mMeshCount; ++i) {
 		DifferentialMeshProcessor& mp = *mProcessors[i];
-		std::vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
-		addColorSignature(i, eigVec, StrAttrColorEigenFunction);
+		vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
+        mMeshes[i]->addColorAttr(StrAttrColorEigenFunction, ColorSignature(eigVec, mColorMapType));
 	}
 
 	displaySignature(StrAttrColorEigenFunction.c_str());
@@ -1946,15 +1868,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	std::vector<double>& vSig = mMeshes[obj]->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
 	vSig = vVals;
 
-	mMeshes[obj]->addColorAttr(sigName);
-	std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(sigName);
-	signaturesToColors(vVals, vColors, mSignatureMode);	
-
-	/* update color legend */
-	ui.glMeshWidget->mLegendColors.resize(256);
-	std::vector<double> vLegendVals(256);
-	for (int i = 0; i <= 255; ++i) vLegendVals[i] = sMin + (double)i/255.*(sMax-sMin);
-	signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
+    mMeshes[obj]->addColorAttr(sigName, ColorSignature(vVals, mColorMapType));
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -2026,25 +1940,14 @@ void QZGeometryWindow::addNoise()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::updateSignature( SignatureMode smode )
+void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		const std::string& currentSig = mRenderManagers[obj]->mActiveColorSignatureName;
-		if (!mMeshes[obj]->hasAttr(currentSig) || !mMeshes[obj]->hasAttr(StrAttrOriginalSignature)) continue;
-
-		const std::vector<double>& vSig = mMeshes[obj]->getVertScalars(StrAttrOriginalSignature);
-		std::vector<ZGeom::Colorf>& vColors = mMeshes[obj]->getVertColors(currentSig);
-		signaturesToColors(vSig, vColors, smode);
-
-		if (obj == 0) {
-			auto iResult = minmax_element(vSig.begin(), vSig.end());
-			double sMin = *(iResult.first); 
-			double sMax = *(iResult.second);
-			ui.glMeshWidget->mLegendColors.resize(256);
-			std::vector<double> vLegendVals(256);
-			for (int i = 0; i <= 255; ++i) vLegendVals[i] = sMin + (double)i/255.*(sMax-sMin);
-			signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
-		}
+		if (!mMeshes[obj]->hasAttr(currentSig)) continue;
+        ColorSignature colors = mMeshes[obj]->getColorSignature(currentSig);
+        colors.changeColorMap(mColorMapType);
+        colors.changeSignatureMode(smode);
 	}
 
 	ui.glMeshWidget->update();
@@ -2137,7 +2040,7 @@ void QZGeometryWindow::displayBasis( int idx )
 	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
 	updateDisplaySignatureMenu();
 
-	if (mSignatureMode == SM_BandCurved) {
+	if (mSignatureMode == ZGeom::SM_BandCurved) {
 		ui.sliderSigMin->triggerAction(QAbstractSlider::SliderToMinimum);
 		ui.sliderSigMax->triggerAction(QAbstractSlider::SliderToMaximum);
 		updateSignatureMin(ui.sliderSigMin->minimum());
@@ -2147,10 +2050,10 @@ void QZGeometryWindow::displayBasis( int idx )
 
 void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 {
-	for (int i = 0; i < SM_CountSigModes; ++i)
-		if (sigModeName == StrSignatureModeNames[i].c_str()) mSignatureMode = (SignatureMode)i;
+    for (int i = 0; i < ZGeom::SM_CountSigModes; ++i)
+        if (sigModeName == StrSignatureModeNames[i].c_str()) mSignatureMode = (ZGeom::SignatureMode)i;
 	
-	if (mSignatureMode == SM_BandCurved) {
+    if (mSignatureMode == ZGeom::SM_BandCurved) {
 		ui.sliderSigMin->setEnabled(true);
 		ui.sliderSigMax->setEnabled(true);
 		ui.sliderSigMin->setValue(ui.sliderSigMin->minimum());
@@ -2166,7 +2069,7 @@ void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 
 void QZGeometryWindow::updateSignatureMin( int sMin )
 {
-	if (mSignatureMode != SM_BandCurved) return;
+    if (mSignatureMode != ZGeom::SM_BandCurved) return;
 	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
@@ -2177,12 +2080,12 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 	double newVal = (double)sMin / (double)ui.sliderSigMin->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMin->setText("Min: " + QString::number(newVal));
 	
-	updateSignature(SM_BandCurved);
+    updateSignature(ZGeom::SM_BandCurved);
 }
 
 void QZGeometryWindow::updateSignatureMax( int sMax )
 {
-	if (mSignatureMode != SM_BandCurved) return;
+    if (mSignatureMode != ZGeom::SM_BandCurved) return;
 	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
@@ -2193,7 +2096,7 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	double newVal = (double)sMax / (double)ui.sliderSigMax->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMax->setText("Max: " + QString::number(newVal));
 
-	updateSignature(SM_BandCurved);
+    updateSignature(ZGeom::SM_BandCurved);
 }
 
 void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
@@ -2286,23 +2189,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 		vDiff[i] = (oldCoord[i] - newCoord[i]).length();
 	}
 
-	auto iResult = std::minmax_element(vDiff.begin(), vDiff.end());
-	double sMin = *(iResult.first); 
-	double sMax = *(iResult.second);
-	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
-
-	mMeshes[0]->addColorAttr(StrAttrColorPosDiff);
-	std::vector<ZGeom::Colorf>& vColors = mMeshes[0]->getVertColors(StrAttrColorPosDiff);
-	for (int i = 0; i < vertCount; ++i) {
-		if (vDiff[i] <= mDiffMax) vColors[i].falseColor(vDiff[i]/mDiffMax, 1.f, mColorMapType);
-		else vColors[i].falseColor(1.0f, 1.f, mColorMapType);
-	}
-	
-	/* update color legend */
-	ui.glMeshWidget->mLegendColors.resize(256);
-	std::vector<double> vLegendVals(256);
-	for (int i = 0; i <= 255; ++i) vLegendVals[i] = float(i)/255.0;
-	signaturesToColors(vLegendVals, ui.glMeshWidget->mLegendColors, mSignatureMode);
+    mMeshes[0]->addColorAttr(StrAttrColorPosDiff, ColorSignature(vDiff));
 
 	displaySignature(StrAttrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();

@@ -223,6 +223,7 @@
     <ClInclude Include="include\ZGeom\arithmetic.h" />
     <ClInclude Include="include\ZGeom\Color.h" />
     <ClInclude Include="include\ZGeom\ColorMap.h" />
+    <ClInclude Include="include\ZGeom\ColorSignature.h" />
     <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
@@ -270,6 +271,7 @@
     <ClCompile Include="src\arithmetic.cpp" />
     <ClCompile Include="src\Color.cpp" />
     <ClCompile Include="src\ColorMap.cpp" />
+    <ClCompile Include="src\ColorSignature.cpp" />
     <ClCompile Include="src\dataio.cpp" />
     <ClCompile Include="src\DenseMatVecMultiplier.cpp" />
     <ClCompile Include="src\Differential.cpp" />

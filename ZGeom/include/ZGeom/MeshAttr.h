@@ -2,7 +2,7 @@
 #define ZMESH_MESH_ATTR_H
 #include <string>
 #include <vector>
-#include "Color.h"
+#include "ColorSignature.h"
 
 enum AttrRate { AR_UNIFORM, AR_FACE, AR_EDGE, AR_VERTEX, AR_FACE_VERT };
 
@@ -114,7 +114,7 @@ public:
     double lineWidthScale; 
 };
 
-typedef MeshAttr<std::vector<ZGeom::Colorf>> AttrVertColors;
+typedef MeshAttr<ZGeom::ColorSignature> AttrVertColors;
 typedef MeshAttr<std::vector<double>> AttrVertScalars;
 typedef MeshAttr<double> AttrMeshScalar;
 typedef MeshAttr<int> AttrMeshInt;

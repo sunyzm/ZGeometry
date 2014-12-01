@@ -24,11 +24,7 @@ enum SignatureID {
 	SIGNATURE_BIHARMONIC_DISTANCE, SIGNATURE_SIMILARITY_MAP, 
 	SIGNATURE_ID_COUNT
 };
-enum SignatureMode {
-	SM_Normalized = 0, SM_LogNormalized, SM_MarkNegNormalized, 
-	SM_AbsNormalized, SM_BandCurved, SM_PosNegPlot, 
-	SM_CountSigModes
-};
+
 const std::string StrSignatureModeNames[] = {
 	"Normalized", "Log-Normalized", "Mark-Neg", 
 	"Abs-Normalized", "Band-Curved", "Pos-Neg Plot"

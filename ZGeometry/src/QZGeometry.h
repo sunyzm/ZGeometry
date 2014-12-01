@@ -150,7 +150,7 @@ private:
 	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType) const;
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
-	void updateSignature(SignatureMode smode);
+	void updateSignature(ZGeom::SignatureMode smode);
 
 	/* helper functions */
 	bool isMeshSelected(int obj);
@@ -159,7 +159,6 @@ private:
 	void verifyAreas() const;
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
-	void signaturesToColors(const std::vector<double>& vOriSig, std::vector<ZGeom::Colorf>& vColors, SignatureMode smode = SignatureMode::SM_Normalized);
 
 	/* fields */
 	Ui::ZGeometryClass	  ui;
@@ -180,10 +179,10 @@ private:
 	ShapeMatcher mShapeMatcher;
 	ShapeEditor	 mShapeEditor;
 
-	DeformType			mDeformType;
-	LaplacianType       mActiveLalacian;
-	SignatureMode		mSignatureMode;
-	ZGeom::ColorMapType mColorMapType;
+	DeformType			    mDeformType;
+	LaplacianType           mActiveLalacian;
+	ZGeom::SignatureMode	mSignatureMode;
+	ZGeom::ColorMapType     mColorMapType;
 
 	int					mMeshCount;
 	int					mObjInFocus;	
