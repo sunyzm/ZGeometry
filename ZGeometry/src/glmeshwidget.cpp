@@ -11,7 +11,6 @@
 #include "global.h"
 
 using std::vector;
-using ZGeom::FalseColorMap;
 using ZGeom::Vec3d;
 using ZGeom::Colorf;
 
@@ -64,7 +63,7 @@ void GLMeshWidget::reset()
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	mBaseFeatureRadius = 0.5;
+	mBaseFeatureRadius = 0.03;
 	mFeatureSphereRadius = mBaseFeatureRadius;
 	mMeshPointSize = 2;
 	m_nMeshLevel = 0;

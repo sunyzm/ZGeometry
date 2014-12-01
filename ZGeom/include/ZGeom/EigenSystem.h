@@ -15,33 +15,26 @@ public:
 	EigenSystem() : mOrder(0), mEvCount(0) {}
 
 	void setSize(int order, int nev);
-	bool empty() const { return mEvCount == 0 ; }
-	uint eigVecSize() const { return mOrder; }
-	uint eigVecCount() const { return mEvCount; }
+	bool empty() const { return mEigVecs.empty(); }
+	int eigVecSize() const { return mOrder; }
+	int eigVecCount() const { return (int) mEigVecs.size(); }
 	void setValues(int index, double eigVal, double eigVec[]);
 	void setValues(int index, double eigVal, const std::vector<double>& eigVec);
-	const std::vector<double>& getEigVals() const { return mEigVals; }
+	const std::vector<double>& getAllEigVals() const { return mEigVals; }
+    const std::vector<VecNd>& getAllEigVecs() const { return mEigVecs; }
 	double getEigVal(int index) const { return mEigVals[index]; }
 	const VecNd& getEigVec(int index) const { return mEigVecs[index]; }
 	VecNd& getEigVec(int index) { return mEigVecs[index]; }
-	void ToDenseMatrix(ZGeom::DenseMatrixd& matEigVec) const;
 
+    ZGeom::DenseMatrixd toDenseMatrix() const;
 	void print(const std::string& file1, const std::string& file2) const;
 	void printEigVals(const std::string& file1) const;
 	void save(const std::string& file) const;
 	void load(const std::string& file);
 
-	void evalError(MatVecFunctor* A, std::vector<double>& vErrors) const;
-	void evalGeneralError(MatVecFunctor* A, MatVecFunctor* M, std::vector<double>& vErrors) const;
-	void inverseEigVals();
-
-	double heatKernel(uint x, uint y, double t) const;
-	double kernel(uint x, uint y, std::function<double(double)> transferFunc) const;
-	double kernel(uint x, uint y, double t, std::function<double(double, double)> transferFunc) const;
-
-protected:
-	uint mOrder;
-	uint mEvCount;
+public:
+	int mOrder;
+	int mEvCount;
 	std::vector<double> mEigVals;
 	std::vector<VecNd> mEigVecs;
 };

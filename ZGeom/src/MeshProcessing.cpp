@@ -70,7 +70,7 @@ void ComputeHeatKernelMatrix( const EigenSystem& hb, double t, DenseMatrixd& hk 
 	const int eigCount = hb.eigVecCount();
 
 	DenseMatrixd matEigVecs(eigCount, vertCount);	
-	const double *pEigVals = &(hb.getEigVals()[0]);
+	const double *pEigVals = &(hb.getAllEigVals()[0]);
 	double *pEigVec = matEigVecs.raw_ptr();
 	for (int i = 0; i < eigCount; ++i) 
 		std::copy_n(hb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);
@@ -90,7 +90,7 @@ void ComputeKernelMatrix( const EigenSystem& hb, double t, std::function<double(
 	const int eigCount = hb.eigVecCount();
 
 	DenseMatrixd matEigVecs(eigCount, vertCount);	
-	const double *pEigVals = &(hb.getEigVals()[0]);
+	const double *pEigVals = &(hb.getAllEigVals()[0]);
 	double *pEigVec = matEigVecs.raw_ptr();
 	for (int i = 0; i < eigCount; ++i) 
 		std::copy_n(hb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);

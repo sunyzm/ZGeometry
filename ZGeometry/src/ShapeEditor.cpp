@@ -623,7 +623,7 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 	}
 
 	mMesh->setVertCoordinates(newCoord);	
-	mMesh->scaleAreaToVertexNum();
+//	mMesh->scaleAreaToVertexNum();
 // 	double newVol = mMesh->calVolume();
 // 	double volPreserveScale = std::pow(oriVol/newVol, 1.0/3.0);
 // 	mMesh->scaleAndTranslate(Vector3D(0,0,0), volPreserveScale);

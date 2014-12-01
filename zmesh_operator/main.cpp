@@ -33,6 +33,7 @@ int main(int argc, char *argv[])
 
     CMesh mesh;    
     mesh.load(meshfile);
+    mesh.scaleToUnitBox();
     int N = mesh.vertCount();
     mesh.scaleAndTranslate(-mesh.calMeshCenter(), 1.0);
     Laplacian umbrella, goemUmbrella, cotformula;

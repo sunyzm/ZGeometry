@@ -8,9 +8,8 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
 	const int nWaveletScales = waveletScaleNum;
-	const double *pEigVals = &(mhb.getEigVals()[0]);
-	ZGeom::DenseMatrixd matEigVecs;
-	mhb.ToDenseMatrix(matEigVecs);
+	const double *pEigVals = &(mhb.getAllEigVals()[0]);
+	ZGeom::DenseMatrixd matEigVecs = mhb.toDenseMatrix();
  	double *pEigVec = matEigVecs.raw_ptr();
 
 	std::function<double(double)> genG = [](double x) {
@@ -89,9 +88,8 @@ void computeHKMat(const ZGeom::EigenSystem& mhb, double timescale, ZGeom::DenseM
 {
 	const int vertCount = mhb.eigVecSize();
 	const int eigCount = mhb.eigVecCount();
-	const double *pEigVals = &(mhb.getEigVals()[0]);
-	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);
-	mhb.ToDenseMatrix(matEigVecs);
+	const double *pEigVals = &(mhb.getAllEigVals()[0]);
+	ZGeom::DenseMatrixd matEigVecs = mhb.toDenseMatrix();
 	double *pEigVec = matEigVecs.raw_ptr();
 
 	matHK.resize(vertCount, vertCount);
@@ -123,7 +121,7 @@ void computeSGWMat2(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::D
 	matSGW.resize(totalAtomCount, vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);
-	const double *pEigVals = &(mhb.getEigVals()[0]);
+	const double *pEigVals = &(mhb.getAllEigVals()[0]);
 	double *pEigVec = matEigVecs.raw_ptr();
 	for (int i = 0; i < eigCount; ++i)
 		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);

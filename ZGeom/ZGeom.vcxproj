@@ -222,9 +222,11 @@
     <ClInclude Include="include\ZGeom\arcball.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />
     <ClInclude Include="include\ZGeom\Color.h" />
+    <ClInclude Include="include\ZGeom\ColorMap.h" />
     <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
+    <ClInclude Include="include\ZGeom\Differential.h" />
     <ClInclude Include="include\ZGeom\Geodesic.h" />
     <ClInclude Include="include\ZGeom\MeshCoordinates.h" />
     <ClInclude Include="include\ZGeom\PointCloud.h" />
@@ -267,8 +269,10 @@
     <ClCompile Include="src\arcball.cpp" />
     <ClCompile Include="src\arithmetic.cpp" />
     <ClCompile Include="src\Color.cpp" />
+    <ClCompile Include="src\ColorMap.cpp" />
     <ClCompile Include="src\dataio.cpp" />
     <ClCompile Include="src\DenseMatVecMultiplier.cpp" />
+    <ClCompile Include="src\Differential.cpp" />
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\fibheap.cpp" />

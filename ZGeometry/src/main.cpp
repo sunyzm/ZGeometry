@@ -18,10 +18,10 @@ int main(int argc, char *argv[])
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", gSettings.DEFUALT_HK_TIMESCALE);
 	g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", gSettings.DEFAULT_EIGEN_SIZE);
 	
-	CStopWatch timer;
-	timer.startTimer();
-	g_engineWrapper.open();     
-	timer.stopTimer("-- Matlab engine opening time: ", " --");
+    CStopWatch timer;
+    timer.startTimer();
+    g_engineWrapper.open();
+    timer.stopTimer("-- Matlab engine opening time: ", " --");
 
 	QApplication a(argc, argv);
 	QZGeometryWindow w;

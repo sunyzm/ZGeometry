@@ -16,6 +16,8 @@ ZGeom::MatlabEngineWrapper::~MatlabEngineWrapper()
 
 void ZGeom::MatlabEngineWrapper::open( const char* startcmd/*=NULL*/ )
 {
+    if (isOpened()) return;
+
 	m_ep = engOpen(NULL);
 	if (!m_ep) {
 		std::cerr << "FAIL to open Matlab engine!" << std::endl;
@@ -30,6 +32,11 @@ void ZGeom::MatlabEngineWrapper::close()
     engClose(m_ep);
     delete[]mBuffer;
     m_ep = NULL;
+}
+
+void ZGeom::MatlabEngineWrapper::eval(const std::string& str) const
+{
+    engEvalString(m_ep, str.c_str());
 }
 
 void ZGeom::MatlabEngineWrapper::resizeBuffer( int bufSize )

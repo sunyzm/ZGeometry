@@ -193,7 +193,7 @@ void DifferentialMeshProcessor::computeMixedAtoms1( LaplacianType laplacianType 
 	mMatAtoms.resize(vertCount * (nWaveletScales + mScalingScales), vertCount);
 
 	ZGeom::DenseMatrixd matEigVecs(eigCount, vertCount);	
-	const double *pEigVals = &(mhb.getEigVals()[0]);
+	const double *pEigVals = &(mhb.getAllEigVals()[0]);
 	double *pEigVec = matEigVecs.raw_ptr();
 	for (int i = 0; i < eigCount; ++i) 
 		std::copy_n(mhb.getEigVec(i).c_ptr(), vertCount, pEigVec + i*vertCount);

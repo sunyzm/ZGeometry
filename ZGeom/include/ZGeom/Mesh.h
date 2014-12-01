@@ -250,9 +250,10 @@ public:
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
     void                move(const Vector3D& translation);		// translate mesh
-    void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
-    void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
     void		        scaleAndTranslate(const Vector3D& center, double scale);
+    void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
+    void                scaleToUnitBox();                       // move to origin and scale the mesh to inside the unit box
+    void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
     void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
     void		        getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
     

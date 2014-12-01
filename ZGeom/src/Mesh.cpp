@@ -715,7 +715,7 @@ void CMesh::calVertNormals()
     {
 		CVertex* vertex = m_vVertices[vIndex];
         if (vertex->m_HalfEdges.empty()) continue;
-        Vector3D vNormal;
+        Vector3D vNormal(0, 0, 0);
         for (CHalfEdge *e0 : vertex->m_HalfEdges) {
             CHalfEdge* e1 = e0->m_eNext;
             CHalfEdge* e2 = e1->m_eNext;
@@ -728,9 +728,9 @@ void CMesh::calVertNormals()
             //wt = 1.0 / (face->calBarycenter() - vertex->pos()).length();
             //wt = face->calArea();
             wt = ZGeom::calMixedTriArea(len0, len1, len2);
-            vNormal += vFaceNormals[face->getFaceIndex()] * wt;
-            vVertNormals[vIndex] = vNormal.normalize();
+            vNormal += vFaceNormals[face->getFaceIndex()] * wt;            
         }
+        vVertNormals[vIndex] = vNormal.normalize();
 	}
 
 	addAttr<std::vector<Vector3D>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
@@ -974,10 +974,37 @@ void CMesh::scaleAreaToVertexNum()
 	Vector3D center = calMeshCenter();
 	double totalSufaceArea = calSurfaceArea();
 	double scale = sqrt( double(vertCount()) / totalSufaceArea );
+    scaleAndTranslate(-center, scale);
+}
 
-	for (int i = 0; i < vertCount(); ++i) {
-		m_vVertices[i]->translateAndScale(-center, scale);
+void CMesh::scaleToUnitBox()
+{
+    move(-calMeshCenter());
+    double maxCoord = 0;
+    for (int i = 0; i < vertCount(); ++i) {
+        for (int j = 0; j < 3; ++j)
+            maxCoord = max(maxCoord, fabs(getVertPos(i)[j]));
+    }
+    scaleAndTranslate(Vector3D(0, 0, 0), 1. / maxCoord);
+}
+
+void CMesh::scaleEdgeLenToUnit()
+{
+    Vector3D center = calMeshCenter();
+	double length = 0.;
+	int edgeNum = 0;
+    vector<bool> heVisited(halfEdgeCount(), false);
+	for (int i = 0; i < halfEdgeCount(); ++i) {
+		if (heVisited[i]) continue;		
+		edgeNum++;
+		length += m_vHalfEdges[i]->length();
+		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
+		if (ptwin != NULL) heVisited[ptwin->getIndex()] = true;
 	}
+	
+	length /= edgeNum;
+	double scale = 1.0 / length;	
+    scaleAndTranslate(-center, scale);
 }
 
 void CMesh::gatherStatistics()
@@ -1015,34 +1042,7 @@ void CMesh::gatherStatistics()
 
 void CMesh::move( const Vector3D& translation )
 {
-	for (int i = 0; i < vertCount(); ++i) {
-		m_vVertices[i]->translateAndScale(translation, 1.0);	
-	}
-}
-
-void CMesh::scaleEdgeLenToUnit()
-{
-    Vector3D center = calMeshCenter();
-
-	double length = 0.;
-	int edgeNum = 0;
-    vector<bool> heVisited(halfEdgeCount(), false);
-
-	for (int i = 0; i < halfEdgeCount(); ++i) {
-		if (heVisited[i]) continue;		
-		edgeNum++;
-		length += m_vHalfEdges[i]->length();
-		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
-		if (ptwin != NULL) heVisited[ptwin->getIndex()] = true;
-	}
-	
-	length /= edgeNum;
-	double scale = 1.0 / length;
-	
-	for (int i = 0; i < vertCount(); ++i)	{
-		m_vVertices[i]->translateAndScale(-center, scale);
-	}
-
+    scaleAndTranslate(translation, 1.0);
 }
 
 void CMesh::scaleAndTranslate( const Vector3D& center, double scale )

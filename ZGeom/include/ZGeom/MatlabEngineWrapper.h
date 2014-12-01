@@ -32,27 +32,6 @@ public:
 		engPutVariable(ep, mName.c_str(), mData);
 	}
 
-#if 0
-	MatlabArrayWrapper(Engine *ep, int *data, int row, int col, bool rowMajor, const std::string& name) 
-		: mName(name), mRow(row), mCol(col)
-	{
-		mData = engGetVariable(ep, name.c_str());
-		if (mData) mxDestroyArray(mData);
-	
-		mwSize dims[] = {row, col};
-		mData = mxCreateNumericArray(2, dims, mxINT32_CLASS, mxREAL);
-		int *aa = (int*)mxGetData(mData);
-		if (rowMajor) {
-			for (int j = 0; j < col; ++j)
-				for (int i = 0; i < row; ++i)
-					aa[j*row + i] = data[i*col + j];
-		} else {
-			std::copy_n(data, row*col, aa);
-		}
-		engPutVariable(ep, mName.c_str(), mData);
-	}
-#endif
-
 	~MatlabArrayWrapper() { mxDestroyArray(mData); }
 	const std::string& name() const { return mName; }
 
@@ -70,9 +49,9 @@ public:
 
 	void open(const char* startcmd = NULL);
     void close();
-	bool isOpened() const { return (m_ep != NULL); }
+	bool isOpened() const { return m_ep != NULL; }
 	Engine* getEngine() const { return m_ep; }
-	void eval(const std::string& str) const { engEvalString(m_ep, str.c_str()); }
+	void eval(const std::string& str) const;
 	const char* getOutput() const { return mBuffer; }
 	void resizeBuffer(int bufSize);
 	mxArray* getVariable(const char *name) const; /* Get a variable with the specified name from MATLAB's workspace  */

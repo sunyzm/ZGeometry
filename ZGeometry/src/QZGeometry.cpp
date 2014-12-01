@@ -27,14 +27,14 @@ using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
 
-std::vector<ZGeom::Colorf> signatureToColor(const std::vector<double>& vSig, ZGeom::ColorMapType cm_type = ZGeom::CM_JET)
+std::vector<ZGeom::Colorf> signatureToColor(const std::vector<double>& vSig, ZGeom::ColorMapType cm_type = ZGeom::CM_PARULA)
 {
     int N = (int)vSig.size();
     auto iResult = std::minmax_element(vSig.begin(), vSig.end());
     double sMin = *(iResult.first);
     double sMax = *(iResult.second);
     vector<Colorf> result(N);
-    for (int i = 0; i < N; ++i) result[i].falseColor((vSig[i] - sMin)/(sMax - sMin), cm_type);
+    for (int i = 0; i < N; ++i) result[i].falseColor((vSig[i] - sMin)/(sMax - sMin), 1.0, cm_type);
     return result;
 }
 
@@ -572,7 +572,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     if (mMeshCount <= obj) throw std::runtime_error("Run allocateStorage first!");
     CMesh& mesh = *mMeshes[obj];
     mesh.load(mesh_filename);
-    mesh.scaleAreaToVertexNum();
+    mesh.scaleToUnitBox();
     mesh.gatherStatistics();
     auto center = mesh.getCenter();
     auto bbox = mesh.getBoundingBox();
@@ -583,7 +583,6 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     Colorf meshColor = preset_mesh_colors[obj % 2];
     mesh.addDefaultColor(meshColor);
     mRenderManagers[obj]->mActiveColorSignatureName = CMesh::StrAttrColorDefault;
-    mRenderManagers[obj]->mesh_color = meshColor;
 }
 
 void QZGeometryWindow::addMesh()
@@ -597,7 +596,7 @@ void QZGeometryWindow::addMesh()
 	timer.startTimer();
 	CMesh& mesh = *mMeshes[cur_obj];
 	mesh.load(filenames.begin()->toStdString());
-	mesh.scaleAreaToVertexNum();
+    mesh.move(-mesh.calMeshCenter());
 	mesh.gatherStatistics();
 	timer.stopTimer();
 	std::cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << std::endl;
@@ -609,7 +608,6 @@ void QZGeometryWindow::addMesh()
 	mProcessors[cur_obj]->init(&mesh);
 
 	mRenderManagers[cur_obj]->selected = true;
-	mRenderManagers[cur_obj]->mesh_color = preset_mesh_colors[cur_obj%2];
 
 	if (cur_obj == 0) {
 		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
@@ -633,7 +631,6 @@ void QZGeometryWindow::clone()
 	mMeshes[1]->cloneFrom(*mMeshes[0]);
 	mMeshes[1]->gatherStatistics();
 	mProcessors[1]->init(mMeshes[1]);
-	mRenderManagers[1]->mesh_color = preset_mesh_colors[1];
 
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
 	
@@ -1033,7 +1030,7 @@ void QZGeometryWindow::computeHK()
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-			values[vIdx] = mhb.heatKernel(refPoint, vIdx, time_scale);
+            values[vIdx] = ZGeom::calHeatKernel(mhb, refPoint, vIdx, time_scale);
 		});
 
 		addColorSignature(obj, values, StrAttrColorHK);
@@ -1056,7 +1053,7 @@ void QZGeometryWindow::computeHKS()
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
-			values[k] = mhb.heatKernel(k, k, time_scale);
+            values[k] = ZGeom::calHeatKernel(mhb, k, k, time_scale);
 		});
 
 		addColorSignature(i, values, StrAttrColorHKS);
@@ -1747,8 +1744,8 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 		qout.output("MHB saved to " + pathMHB, OUT_CONSOLE);
 	}
 
-	std::cout << "Min EigVal: " << mp.getMHB(laplacianType).getEigVals().front() 
-			  << "; Max EigVal: " << mp.getMHB(laplacianType).getEigVals().back() << std::endl;
+	std::cout << "Min EigVal: " << mp.getMHB(laplacianType).getAllEigVals().front() 
+			  << "; Max EigVal: " << mp.getMHB(laplacianType).getAllEigVals().back() << std::endl;
 }
 
 void QZGeometryWindow::saveSignature()
