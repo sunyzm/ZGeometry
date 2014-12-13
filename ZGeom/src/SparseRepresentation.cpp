@@ -85,6 +85,15 @@ double Dictionary::mutualCoherence(const Dictionary& dict2) const
     return *std::max_element(vMaxCohere.begin(), vMaxCohere.end());
 }
 
+ZGeom::DenseMatrixd Dictionary::toDenseMatrix() const
+{
+    DenseMatrixd mat(atomDim(), atomCount());
+    for (int i = 0; i < atomDim(); ++i)
+        for (int j = 0; j < atomCount(); ++j)
+            mat(i, j) = mAtoms[j][i];
+    return mat;
+}
+
 void combineDictionary(const Dictionary& d1, const Dictionary& d2, Dictionary& d3)
 {
 	assert(d1.atomDim() == d2.atomDim());

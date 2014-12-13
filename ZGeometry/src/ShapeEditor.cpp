@@ -32,6 +32,23 @@ using ZGeom::Colorf;
 
 std::string ShapeEditor::strOriginalCoord = "original";
 
+struct WeightSet
+{
+    double angle, area;
+
+    WeightSet() : angle(0), area(0) {}
+    WeightSet(double a, double s) : angle(a), area(s) {}
+    bool operator < (const WeightSet &w2) const {
+        return angle < w2.angle || (angle == w2.angle && area < w2.area);
+    }
+    WeightSet operator+ (const WeightSet &w2) const {
+        WeightSet result;
+        result.angle = max(this->angle, w2.angle);
+        result.area = this->area + w2.area;
+        return result;
+    }
+};
+
 bool readPursuits(const std::string& pursuitFile, ZGeom::SparseCoding *vPursuits[]) 
 {
 	if (!fileExist(pursuitFile)) 
@@ -2042,23 +2059,6 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     //////////////////////////////////////////////////////////////////////////
 
     /* triangulating hole */
-    struct WeightSet
-    {
-        double angle, area;
-
-        WeightSet() : angle(0), area(0) {}
-        WeightSet(double a, double s) : angle(a), area(s) {}
-        bool operator < (const WeightSet &w2) const {
-            return angle < w2.angle || (angle == w2.angle && area < w2.area);
-        }
-        WeightSet operator+ (const WeightSet &w2) const {
-            WeightSet result;
-            result.angle = max(this->angle, w2.angle);
-            result.area = this->area + w2.area;
-            return result;
-        }
-    };
-
     vector<vector<WeightSet>> weights(N);
     vector<vector<int>> midIdx(N);
     for (int i = 0; i < N; ++i) {
@@ -2269,25 +2269,6 @@ void ShapeEditor::fillHole()
     //////////////////////////////////////////////////////////////////////////
 
     /* triangulating hole */
-    struct WeightSet
-    {
-        double angle, area;
-        
-        WeightSet() : angle(0), area(0) {}
-        WeightSet(double a, double s) : angle(a), area(s) {}
-
-        bool operator < (const WeightSet &w2) const {
-            return angle < w2.angle || (angle == w2.angle && area < w2.area);
-        }
-
-        WeightSet operator+ (const WeightSet &w2) const {
-            WeightSet result;
-            result.angle = max(this->angle, w2.angle);
-            result.area = this->area + w2.area;
-            return result;
-        }
-    };
-
     vector<vector<WeightSet>> weights(N);
     vector<vector<int>> midIdx(N);
     for (int i = 0; i < N; ++i) {
@@ -2650,6 +2631,54 @@ void ShapeEditor::holeFairingFourierOMP()
     addCoordinate(coordRecovered, "faired_OMP");
     std::cout << "OMP fairing finished!" << std::endl;
     changeCoordinates("faired_OMP");
+}
+
+ZGeom::DenseMatrixd inpaintLARS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, double eps)
+{
+    g_engineWrapper.addDenseMat(matCoord, "coord");
+    g_engineWrapper.addDenseMat(matDict, "dict");
+
+    ZGeom::VecNd vecMissing(vMissingIdx.size());
+    for (int i = 0; i < vecMissing.size(); ++i) vecMissing[i] = double(vMissingIdx[i] + 1);
+    g_engineWrapper.addColVec(vecMissing, "missing_idx");
+    g_engineWrapper.addDoubleScalar(eps, "lambda");
+
+    g_engineWrapper.eval("coord_est =  zmesh_inpaint_lars(dict, coord, missing_idx, lambda);");
+
+    ZGeom::DenseMatrixd result = g_engineWrapper.getDenseMat("coord_est");
+    return result;
+}
+
+
+void ShapeEditor::holeFairingFourierLARS()
+{
+    const int totalVertCount = mMesh->vertCount();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+
+    std::cout << "==== Do Eigendecomposition ====\n";
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    int eigenCount = -1;    // -1 means full decomposition
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    vector<int> inpaintVert;
+    for (FilledHoleVerts &fhv : filled_boundaries) {
+        for (int vi : fhv.vert_inside) inpaintVert.push_back(vi);
+    }
+    ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
+    ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
+    double eps = 0.0001;
+    
+    ZGeom::DenseMatrixd matCoordInpainted = inpaintLARS(matCoordOld, matDict, inpaintVert, eps);
+
+    MeshCoordinates coordInpainted(totalVertCount);
+    coordInpainted.fromDenseMatrix(matCoordInpainted);
+
+    addCoordinate(coordInpainted, "faired_LARS");
+    std::cout << "LARS fairing finished!" << std::endl;
+    changeCoordinates("faired_LARS");
 }
 
 void ShapeEditor::holeFairingFourierLS()

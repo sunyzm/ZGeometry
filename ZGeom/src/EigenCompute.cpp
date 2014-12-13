@@ -62,7 +62,7 @@ void EigenCompute::solveStdSym( const SparseMatrix<double>& mLs, int nEig, Eigen
 	double *evec = m_ep->getDblVariablePtr("evecs");
 	double *eval = m_ep->getDblVariablePtr("evals");
 
-	eigSys.setSize(nOrder, numEig + 1);
+	eigSys.setSize(nOrder, numEig);
 	for (int i = 0; i < numEig; ++i) {
 		eigSys.mEigVals[i] = std::fabs(eval[i]);
         std::copy_n(evec + i*nOrder, nOrder, eigSys.mEigVecs[i].c_ptr());

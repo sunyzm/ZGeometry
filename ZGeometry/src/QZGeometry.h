@@ -71,6 +71,7 @@ private slots:
     void fillHoles();
     void holeFairingAll();
     void holeFairingLS();
+    void holeFairingLARS();
     void holeFairingFourierOMP();
     void holeEstimateCurvature();
     void holeEstimateNormals();

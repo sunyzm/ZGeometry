@@ -120,11 +120,6 @@ void GLMeshWidget::paintEvent( QPaintEvent *event )
 	painter.end();
 }
 
-void GLMeshWidget::showEvent( QShowEvent *event )
-{
-	Q_UNUSED(event);
-}
-
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
@@ -415,7 +410,7 @@ void GLMeshWidget::drawGL()
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
 	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-	setupViewport(width(), height());	
+	//setupViewport(width(), height());	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);

@@ -618,6 +618,7 @@
       <string>Hole Faring</string>
      </property>
      <addaction name="actionHoleFairingLS"/>
+     <addaction name="actionFourierLARS"/>
      <addaction name="actionHoleFairingFourierOMP"/>
      <addaction name="actionHoleEstimateCurvature"/>
      <addaction name="actionEstimateNormals"/>
@@ -1426,6 +1427,11 @@
   <action name="actionComputeCurvatures">
    <property name="text">
     <string>Curvatures</string>
+   </property>
+  </action>
+  <action name="actionFourierLARS">
+   <property name="text">
+    <string>Fourier LARS</string>
    </property>
   </action>
  </widget>

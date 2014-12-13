@@ -200,6 +200,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionFairFilledHoles, SIGNAL(triggered()), this, SLOT(holeFairingAll()));
     QObject::connect(ui.actionHoleFairingLS, SIGNAL(triggered()), this, SLOT(holeFairingLS()));
     QObject::connect(ui.actionHoleFairingFourierOMP, SIGNAL(triggered()), this, SLOT(holeFairingFourierOMP()));
+    QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
 	 
 	////  Display  ////
@@ -425,7 +426,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
 	/* compute and decompose mesh Laplacians */
-	computeLaplacian(Umbrella);
+	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
 	//computeLaplacian(SymCot);
@@ -2112,7 +2113,7 @@ void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 
 void QZGeometryWindow::captureGL()
 {
-	QImage img = ui.glMeshWidget->grabFrameBuffer();
+    QImage img = ui.glMeshWidget->grabFrameBuffer();
 	QString filename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	
 	if (img.save(filename))
@@ -2121,7 +2122,7 @@ void QZGeometryWindow::captureGL()
 
 void QZGeometryWindow::captureGLAs()
 {
-	QImage img = ui.glMeshWidget->grabFrameBuffer();
+    QImage img = ui.glMeshWidget->grabFrameBuffer();
 	QString defaultFilename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	QString filename = QFileDialog::getSaveFileName(this, tr("Save screenshot"),
 													defaultFilename,
@@ -2276,6 +2277,13 @@ void QZGeometryWindow::holeFairingFourierOMP()
     ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::holeFairingLARS()
+{
+    mShapeEditor.holeFairingFourierLARS();
+    ui.glMeshWidget->update();
+}
+
+
 void QZGeometryWindow::holeEstimateCurvature()
 {
     mShapeEditor.holeEstimateCurvature();
@@ -2287,4 +2295,3 @@ void QZGeometryWindow::holeEstimateNormals()
     mShapeEditor.holeEstimateNormals();
     ui.glMeshWidget->update();
 }
-

@@ -4,7 +4,7 @@
 #include <vector>
 #include "Vec3.h"
 #include "VecN.h"
-
+#include "DenseMatrix.h"
 
 class MeshCoordinates
 {
@@ -171,6 +171,27 @@ public:
     }
 
     std::vector<ZGeom::VecNd> to3Vec() const { return std::vector<ZGeom::VecNd> {mCoordX, mCoordY, mCoordZ}; }
+    
+    ZGeom::DenseMatrixd toDenseMatrix() const 
+    {
+        ZGeom::VecNd coords[3] = { mCoordX, mCoordY, mCoordZ };
+        ZGeom::DenseMatrixd mat(mSize, 3);
+        for (int i = 0; i < mSize; ++i) {
+            mat(i, 0) = mCoordX[i];
+            mat(i, 1) = mCoordY[i];
+            mat(i, 2) = mCoordZ[i];
+        }
+        return mat;
+    }
+
+    void fromDenseMatrix(const ZGeom::DenseMatrixd& mat)
+    {
+        for (int i = 0; i < mSize; ++i) {
+            mCoordX[i] = mat(i, 0);
+            mCoordY[i] = mat(i, 1);
+            mCoordZ[i] = mat(i, 2);
+        }
+    }
 
 private:
     int mSize;

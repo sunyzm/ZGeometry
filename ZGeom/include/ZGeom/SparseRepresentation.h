@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <functional>
 #include "VecN.h"
+#include "DenseMatrix.h"
 
 namespace ZGeom {
 
@@ -56,9 +57,11 @@ public:
 		mAtoms.resize(N);
 	}
 
+    DenseMatrixd toDenseMatrix() const;
+
 	void mergeDict(const Dictionary& d2);
 	friend void combineDictionary(const Dictionary& d1, const Dictionary& v2, Dictionary& v3);
-
+    
 private:
 	std::vector<VecNd> mAtoms;
 	int mDim;

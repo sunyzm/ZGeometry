@@ -45,6 +45,7 @@ public:
     void visualizeBoundaries();
     void holeFairing();
     void holeFairingFourierOMP();
+    void holeFairingFourierLARS();
     void holeFairingFourierLS();
     void holeFairingLeastSquare();
     void holeEstimateCurvature();

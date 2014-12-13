@@ -60,7 +60,7 @@ void ColorSignature::changeSignatureMode(SignatureMode smode)
         double sMin = *mmp.first, smax = *mmp.second;
         double absMax = std::max(std::fabs(sMin), std::fabs(smax));
         for (int i = 0; i < vSize; ++i)
-            mColors[i].posNegColor(mValues[i] / absMax, ZGeom::ColorOrange, ZGeom::ColorAzure);
+            mColors[i].posNegColor(float(mValues[i] / absMax), ZGeom::ColorOrange, ZGeom::ColorAzure);
     }
     else if (smode == ZGeom::SM_Normalized || smode == ZGeom::SM_AbsNormalized || smode == ZGeom::SM_BandCurved ||
             smode == ZGeom::SM_LogNormalized || smode == ZGeom::SM_MarkNegNormalized)

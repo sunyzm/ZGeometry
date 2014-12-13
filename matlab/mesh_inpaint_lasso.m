@@ -11,4 +11,4 @@ alpha = mexLassoMask(coord, dict, projmask, param);
 result = dict * alpha;
 
 err = mse(coord(missing_idx,:), result(missing_idx,:));
-disp(['Mesh inpainting error (lasso, ', num2str(missing_percent), '%): ', num2str(err)]);
+disp(['Mesh inpainting error (LARS, ', num2str(missing_percent), '%): ', num2str(err)]);
