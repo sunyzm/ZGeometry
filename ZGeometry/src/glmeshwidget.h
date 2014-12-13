@@ -52,7 +52,8 @@ public:
 protected:
 	void initializeGL();
 	void resizeGL(int width, int height);
-    void paintEvent(QPaintEvent *event);
+    void paintGL();
+    //void paintEvent(QPaintEvent *event);
 	void mousePressEvent(QMouseEvent *event);
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
@@ -72,7 +73,7 @@ public slots:
 private:
 	void drawGL();
 	void setupViewport(int width, int height);
-	bool glPick(int x, int y, Vector3D& _p, int obj = 0);
+    bool glPick(int x, int y, ZGeom::Vec3d& _p, int obj = 0);
 
 	std::vector<DifferentialMeshProcessor*>* mProcessors;
 	std::vector<RenderSettings*>* mRenderSettings;

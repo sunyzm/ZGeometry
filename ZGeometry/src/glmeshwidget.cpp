@@ -109,16 +109,21 @@ void GLMeshWidget::resizeGL( int width, int height )
 	setupViewport(width, height);
 }
 
-void GLMeshWidget::paintEvent( QPaintEvent *event )
+void GLMeshWidget::paintGL()
 {
-	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
-	
-	drawGL();
-
-	QPainter painter(this);
-	if (m_bShowLegend) drawLegend(&painter);
-	painter.end();
+    drawGL();
 }
+
+// void GLMeshWidget::paintEvent( QPaintEvent *event )
+// {
+// 	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
+// 	
+// 	drawGL();
+// 
+// 	QPainter painter(this);
+// 	if (m_bShowLegend) drawLegend(&painter);
+// 	painter.end();
+// }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
@@ -149,7 +154,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 	{
 		if (event->button() == Qt::LeftButton) {
 			/// for picking up a vertex
-			Vector3D p;
+			Vec3d p;
 			int obj_index = -1;
 
 			if (meshCount >= 2) {
@@ -162,7 +167,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int hIdx = -1;
 				int vertCount = vpMP[obj_index]->getMesh()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi) {
-					double d = p.distantFrom(vpMP[obj_index]->getMesh_const()->getVertex(vi)->pos());
+					double d = (p - vpMP[obj_index]->getMesh_const()->getVertex(vi)->pos()).length();
 					if (d < dmin) {
 						dmin = d;
 						hIdx = vi;
@@ -195,7 +200,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 		} else if (vpRS[0]->selected) obj_index = 0;
 
 		if (obj_index >= 0 && !vpMP[obj_index]->getHandles().empty()) {
-			Vector3D p;
+			Vec3d p;
 			if (glPick(x, y, p, obj_index)) {
 				// find closest handle
 				DifferentialMeshProcessor* pMP = vpMP[obj_index];
@@ -663,13 +668,11 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 //	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
 }
 
-bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
+bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 {
 	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
 	int meshCount = mProcessors->size();
-
-	if (obj >= meshCount || vpRS[obj]->selected == false) 
-		return false;
+	if (obj >= meshCount || vpRS[obj]->selected == false) return false;
 
 	GLdouble  modelview[16], projection[16];
 	GLint     viewport[4];
@@ -697,8 +700,7 @@ bool GLMeshWidget::glPick( int x, int y, Vector3D& _p, int obj /*= 0*/ )
 
 	glPopMatrix();
 
-	if (z != 1.0f)
-	{
+	if (z != 1.0f) {
 		_p = Vector3D(pos[0], pos[1], pos[2]);
 		return true;
 	}
@@ -758,8 +760,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 			gluSphere(quadric, mFeatureSphereRadius, 16, 8);
 			glPopMatrix();
 
-			if (m_bShowCorrespondenceLine)
-			{
+			if (m_bShowCorrespondenceLine) {
 				if (vmp[i].m_note == -1)
 // 					glColor4f(1.0, 0, 0, 1.0);
 // 				else
@@ -821,44 +822,6 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 		}
 		glPopMatrix();
 		
-// 		for (int i = 0; i < size; i++)
-// 		{
-// 			const int loc1 = vdr[i].m_idx1;
-// 			const int loc2 = vdr[i].m_idx2;
-// 			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
-// 			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
-// 
-// 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
-// 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
-// 			double z1 = rot1[2]*pos1.x + rot1[6]*pos1.y + rot1[10]*pos1.z + trans1.z;
-// 
-// 			double x2 = rot2[0]*pos2.x + rot2[4]*pos2.y + rot2[8]*pos2.z + trans2.x;
-// 			double y2 = rot2[1]*pos2.x + rot2[5]*pos2.y + rot2[9]*pos2.z + trans2.y;
-// 			double z2 = rot2[2]*pos2.x + rot2[6]*pos2.y + rot2[10]*pos2.z + trans2.z;
-// 
-// 			int color = i;
-// 			
-// 			if (colorClass1[loc1] != -1)
-// 				color = colorClass2[loc2] = colorClass1[loc1];
-// 			else if (colorClass2[loc2] != -1)
-// 				color = colorClass1[loc1] = colorClass2[loc2];
-// 			else 
-// 				colorClass1[loc1] = colorClass2[loc2] = color;
-// 
-// 			float cc = (color*1.0f) / ((float)size-1.0f);
-// 
-// 			glColorCoded(cc*4.0f, 0.9);
-// 			glPushMatrix();
-// 			glTranslated(x1, y1, z1);
-// 			gluSphere(quadric, tmesh1->getAvgEdgeLength()*0.2, 16, 8);
-// 			glPopMatrix();
-// 
-// 			glPushMatrix();
-// 			glTranslated(x2, y2, z2);
-// 			gluSphere(quadric, tmesh2->getAvgEdgeLength()*0.2, 16, 8);
-// 			glPopMatrix();			
-// 		}
-
 		gluDeleteQuadric(quadric);
 	}
 }
@@ -873,4 +836,3 @@ QImage GLMeshWidget::getScreenShot()
 {
     return grabFrameBuffer();
 }
-
