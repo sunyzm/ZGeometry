@@ -4,6 +4,7 @@
 #include <fstream>
 #include <vector>
 #include <QFile>
+#include <QPainter>
 #include <ZGeom/util.h>
 #include <ZGeom/arithmetic.h>
 #include <ZGeom/Color.h>
@@ -47,7 +48,7 @@ void glColorCoded(float v, float pf)
 	}
 }
 
-GLMeshWidget::GLMeshWidget(QWidget *parent) : QGLWidget(parent)
+GLMeshWidget::GLMeshWidget(QWidget *parent) : QOpenGLWidget(parent)
 {
 	reset();
 }
@@ -382,16 +383,14 @@ void GLMeshWidget::drawGL()
 	//static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
 
 	makeCurrent();
-	glPushAttrib(GL_ALL_ATTRIB_BITS);
-	glMatrixMode(GL_MODELVIEW);
-	glPushMatrix();
+    glClearColor(1., 1., 1., 0.);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	glClearColor(1., 1., 1., 0.);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+	glPushAttrib(GL_ALL_ATTRIB_BITS);
+    	
     if (m_nShadeMode == 0) glShadeModel(GL_FLAT);
     else glShadeModel(GL_SMOOTH);
-	
+
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
@@ -415,7 +414,8 @@ void GLMeshWidget::drawGL()
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
 	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-	glMatrixMode(GL_MODELVIEW);
+    glMatrixMode(GL_MODELVIEW);
+    glPushMatrix();
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
@@ -433,13 +433,13 @@ void GLMeshWidget::drawGL()
 			drawCorrespondences(mMatcher, mRenderSettings->at(0), mRenderSettings->at(1));
 		}
 	}
-	
-	glShadeModel(GL_FLAT);
+
+    glMatrixMode(GL_MODELVIEW);
+    glPopMatrix();
+
 	glDisable(GL_CULL_FACE);
 	glDisable(GL_DEPTH_TEST);
 	glDisable(GL_LIGHTING);
-	glMatrixMode(GL_MODELVIEW);
-	glPopMatrix();
 	glPopAttrib();
 }
 
@@ -677,8 +677,10 @@ bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 	GLdouble  modelview[16], projection[16];
 	GLint     viewport[4];
 
+    makeCurrent();
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
+
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 	const CQrot& rot = vpRS[obj]->obj_rot;
@@ -704,8 +706,7 @@ bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 		_p = Vector3D(pos[0], pos[1], pos[2]);
 		return true;
 	}
-
-	return false;
+    else return false;
 }
 
 void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2 ) const
@@ -834,5 +835,5 @@ void GLMeshWidget::changeShadeMode()
 
 QImage GLMeshWidget::getScreenShot()
 {
-    return grabFrameBuffer();
+    return grabFramebuffer();
 }

@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <QGLWidget>
+#include <QOpenGLWidget>
 #include <QImage>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/arcball.h>
@@ -9,7 +9,7 @@
 #include "ShapeMatcher.h"
 #include "ShapeEditor.h"
 
-class GLMeshWidget : public QGLWidget
+class GLMeshWidget : public QOpenGLWidget
 {
 	Q_OBJECT
 
