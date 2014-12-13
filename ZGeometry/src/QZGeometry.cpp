@@ -2113,7 +2113,7 @@ void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 
 void QZGeometryWindow::captureGL()
 {
-    QImage img = ui.glMeshWidget->grabFrameBuffer();
+    QImage img = ui.glMeshWidget->getScreenShot();
 	QString filename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	
 	if (img.save(filename))
@@ -2122,7 +2122,7 @@ void QZGeometryWindow::captureGL()
 
 void QZGeometryWindow::captureGLAs()
 {
-    QImage img = ui.glMeshWidget->grabFrameBuffer();
+    QImage img = ui.glMeshWidget->getScreenShot();
 	QString defaultFilename = "output/screenshots/" + QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss") + ".png";
 	QString filename = QFileDialog::getSaveFileName(this, tr("Save screenshot"),
 													defaultFilename,

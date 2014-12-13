@@ -79,7 +79,7 @@ void GLMeshWidget::reset()
 	m_bShowWireframeOverlay = false;
 	m_bShowBoundingBox = false;
 	
-    mShadeMode = 1;
+    m_nShadeMode = 1;
 	setAutoFillBackground(false);
 }
 
@@ -384,7 +384,7 @@ void GLMeshWidget::drawGL()
 	glClearColor(1., 1., 1., 0.);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-    if (mShadeMode == 0) glShadeModel(GL_FLAT);
+    if (m_nShadeMode == 0) glShadeModel(GL_FLAT);
     else glShadeModel(GL_SMOOTH);
 	
 	glEnable(GL_DEPTH_TEST);
@@ -410,7 +410,6 @@ void GLMeshWidget::drawGL()
 	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
 	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
-	//setupViewport(width(), height());	
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
@@ -866,7 +865,12 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 
 void GLMeshWidget::changeShadeMode()
 {
-    mShadeMode = 1 - mShadeMode;
+    m_nShadeMode = 1 - m_nShadeMode;
     update();
+}
+
+QImage GLMeshWidget::getScreenShot()
+{
+    return grabFrameBuffer();
 }
 

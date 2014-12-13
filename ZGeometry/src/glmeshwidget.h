@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <QGLWidget>
+#include <QImage>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/arcball.h>
 #include "DifferentialMeshProcessor.h"
@@ -24,6 +25,8 @@ public:
 	bool m_bShowCorrespondenceLine;
 	bool m_bShowWireframeOverlay;
 	bool m_bShowBoundingBox;
+
+    int  m_nShadeMode;
 	int	 m_nMeshLevel;
 	std::vector<ZGeom::Colorf> mLegendColors;
 
@@ -44,6 +47,7 @@ public:
 	void setBasePointSize(double r) { mFeatureSphereRadius *= r / mBaseFeatureRadius; mBaseFeatureRadius = r; }
 	void fieldView(const Vector3D &center, const Vector3D &bbox);
 	void reset();
+    QImage getScreenShot();
 
 protected:
 	void initializeGL();
@@ -84,7 +88,5 @@ private:
 	double			mBaseFeatureRadius;
 	double			mFeatureSphereRadius;
 	double			mMeshPointSize;
-
-    int             mShadeMode;
 };
 
