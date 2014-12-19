@@ -17,6 +17,8 @@ namespace ZGeom
 	void ConstructMeshMatrix(const CMesh& mesh, MeshMatrixType mmt, SparseMatrix<double>& meshMat);
 	void ComputeHeatKernelMatrix(const EigenSystem& hb, double t, DenseMatrixd& hk);
 	void ComputeKernelMatrix(const EigenSystem& hb, double t, std::function<double(double,double)> gen, DenseMatrixd& hk);
+
+    std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed = -1);
 }
 
 #endif

@@ -538,7 +538,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
     {
         glBegin(GL_LINES);
         glLineWidth(2.0);
-        glColorGreen();
+        glColor4f(0.2f, 0.2f, 0.2f, 1.0f);
         for (int i = 0; i < tmesh->halfEdgeCount(); ++i) {
             const CHalfEdge* hf = tmesh->getHalfEdge(i);
             int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);

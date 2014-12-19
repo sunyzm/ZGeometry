@@ -1,4 +1,6 @@
 #include "MeshProcessing.h"
+#include <cstdlib>
+#include <random>
 #include "MatVecArithmetic.h"
 #include "arithmetic.h"
 
@@ -104,4 +106,46 @@ void ComputeKernelMatrix( const EigenSystem& hb, double t, std::function<double(
 	quadricFormAMP(vertCount, eigCount, pEigVec, &vDiag[0], hk.raw_ptr());
 }
 
-} //end of namespace
+std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed /*= -1*/)
+{
+    using std::vector;
+    assert(hole_size >= 1);
+    int N = mesh.vertCount();
+    std::default_random_engine generator;
+    if (seed == -1) {
+        std::uniform_int_distribution<int> distribution(0, N-1);
+        seed = distribution(generator);
+    }
+
+    std::set<int> vertInHole;
+    std::vector<int> vertFeasible;
+
+    vertInHole.insert(seed);
+    vertFeasible.push_back(seed)
+        ;
+    while (vertInHole.size() < hole_size && !vertFeasible.empty()) {
+        std::uniform_int_distribution<int> distr1(0, (int)vertFeasible.size() - 1);
+        int selPos = distr1(generator);
+        int selIdx = vertFeasible[selPos];
+        vector<int> neighbors = mesh.getVertNeighborVerts(selIdx, 1, false);
+        vector<int> feasibleNeighbors;
+        for (int vIdx : neighbors) {
+            if (vertInHole.find(vIdx) == vertInHole.end())
+                feasibleNeighbors.push_back(vIdx);
+        }
+        if (feasibleNeighbors.empty()) {
+            vertFeasible.erase(vertFeasible.begin() + selPos);
+        }
+        else {
+            std::uniform_int_distribution<int> distr2(0, (int)feasibleNeighbors.size() - 1);
+            int selNeighbor = feasibleNeighbors[distr2(generator)];
+            vertInHole.insert(selNeighbor);
+            if (feasibleNeighbors.size() == 1) vertFeasible.erase(vertFeasible.begin() + selPos);
+            vertFeasible.push_back(selNeighbor);        
+        }
+    }
+
+    return vector<int>(vertInHole.begin(), vertInHole.end());
+}
+
+} // end of namespace

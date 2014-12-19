@@ -639,6 +639,11 @@
     <addaction name="menuHole_Faring"/>
     <addaction name="separator"/>
     <addaction name="actionRunTests"/>
+    <addaction name="separator"/>
+    <addaction name="actionGenerateHoles"/>
+    <addaction name="actionAutoGenHoles"/>
+    <addaction name="actionDegradeHoles"/>
+    <addaction name="actionInpaintHoles1"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -1432,6 +1437,26 @@
   <action name="actionFourierLARS">
    <property name="text">
     <string>Fourier LARS</string>
+   </property>
+  </action>
+  <action name="actionGenerateHoles">
+   <property name="text">
+    <string>Generate Holes</string>
+   </property>
+  </action>
+  <action name="actionAutoGenHoles">
+   <property name="text">
+    <string>Auto Generate Holes</string>
+   </property>
+  </action>
+  <action name="actionDegradeHoles">
+   <property name="text">
+    <string>Degrade Holes</string>
+   </property>
+  </action>
+  <action name="actionInpaintHoles1">
+   <property name="text">
+    <string>Inpaint Holes 1</string>
    </property>
   </action>
  </widget>

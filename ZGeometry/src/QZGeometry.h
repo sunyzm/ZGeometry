@@ -125,6 +125,14 @@ private slots:
 	void diffusionFlow();
 	void runTests();
 
+    /* hole filling related */
+    void generateHoles();
+    void autoGenerateHoles();
+    void degradeHoles();
+    void inpaintHoles1();
+//     void cutHoles();
+//     void inpaintHoles();
+
 	void registerAutomatic();
 	void buildHierarchy();
 	void detectFeatures();

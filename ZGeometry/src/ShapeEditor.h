@@ -14,6 +14,8 @@ class ShapeEditor : public QObject
 
 public:
 	friend class QZGeometryWindow;
+    static std::string strOriginalCoord;
+
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
 	void init(DifferentialMeshProcessor* processor);
 	void runTests();
@@ -37,7 +39,6 @@ public:
 	void deformLaplacian_v2();
 	void deformBiLaplacian();
 	void deformMixedLaplacian(double ks, double kb);
-	void deformThinShell2(double ks, double kb);
     
     void fillHoles(bool skipExternalBoundary);
     void fillBoundedHole(const std::vector<int>& boundaryLoopEdges);
@@ -51,7 +52,8 @@ public:
     void holeEstimateCurvature();
     void holeEstimateNormals();
 
-    static std::string strOriginalCoord;
+    void generateNoise(const std::vector<int>& selectedVerts, double sigma = 0.02);
+    void inpaintHoles(const std::vector<int>& selectedVerts, int method = 1);
 
 signals:
 	void approxStepsChanged(int index, int newSize);
@@ -102,10 +104,14 @@ private:
 	int mTotalScales;	
 
     /* fields for boundaries */
-    struct FilledHoleVerts {
+    struct BoundaryVerts {
         std::vector<int> vert_on_boundary;
         std::vector<int> vert_inside;
     };
 
-    std::vector<FilledHoleVerts> filled_boundaries;
+    std::vector<BoundaryVerts> filled_boundaries;
+
+public:
+    std::vector<int> vHoleVerts;
+
 };

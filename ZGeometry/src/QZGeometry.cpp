@@ -8,12 +8,14 @@
 #include <vector>
 #include <deque>
 #include <set>
+#include <random>
 #include <stdexcept>
 #include <ppl.h>
 #include <boost/lexical_cast.hpp>
 #include <Shellapi.h>
 #include <QMessageBox>
 #include <QFileDialog>
+#include <QInputDialog>
 #include <QTime>
 #include <QImage>
 #include <ZGeom/util.h>
@@ -202,7 +204,12 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleFairingFourierOMP, SIGNAL(triggered()), this, SLOT(holeFairingFourierOMP()));
     QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
-	 
+   
+    QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
+    QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
+    QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
+    QObject::connect(ui.actionInpaintHoles1, SIGNAL(triggered()), this, SLOT(inpaintHoles1()));
+
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
     QObject::connect(ui.actionChangeShadeMode, SIGNAL(triggered()), ui.glMeshWidget, SLOT(changeShadeMode()));
@@ -2295,3 +2302,60 @@ void QZGeometryWindow::holeEstimateNormals()
     mShapeEditor.holeEstimateNormals();
     ui.glMeshWidget->update();
 }
+
+void QZGeometryWindow::generateHoles()
+{
+    int refIdx = mProcessors[0]->getRefPointIndex();
+    int holeVertCount = 30;
+
+    bool ok;
+    int i = QInputDialog::getInt(this, tr("Input hole size"),
+        tr("Hole size:"), 25, 1, 10000, 1, &ok);
+    if (ok) holeVertCount = i;        
+
+    vector<int> holeVertIdx = ZGeom::randomHoleVertex(*mMeshes[0], holeVertCount, refIdx);
+    mMeshes[0]->addAttrMeshFeatures(holeVertIdx, "hole_vertex");
+    updateDisplayFeatureMenu();
+    displayFeature("hole_vertex");
+
+    mShapeEditor.vHoleVerts = holeVertIdx;
+}
+
+void QZGeometryWindow::autoGenerateHoles()
+{
+    int N = mMeshes[0]->vertCount();
+    int nHoles = 5;
+    vector<vector<int>> allHoles(nHoles);
+
+    std::default_random_engine generator(std::time(NULL));
+    std::uniform_int_distribution<int> distribution1(0, N - 1);
+    std::normal_distribution<double> distribution2(N * 0.02, 4);
+    for (int i = 0; i < nHoles; ++i) {
+        int origin = distribution1(generator);
+        int hole_size = std::max<int>(1, (int)distribution2(generator));
+        allHoles[i] = ZGeom::randomHoleVertex(*mMeshes[0], hole_size, origin);
+    }
+    std::set<int> setHoleVerts;
+    for (vector<int> &vVerts : allHoles) {
+        for (int vi : vVerts) setHoleVerts.insert(vi);
+    }
+
+    mShapeEditor.vHoleVerts = vector < int > {setHoleVerts.begin(), setHoleVerts.end()};
+    mMeshes[0]->addAttrMeshFeatures(mShapeEditor.vHoleVerts, "hole_vertex");    
+
+    updateDisplayFeatureMenu();
+    displayFeature("hole_vertex");
+}
+
+void QZGeometryWindow::degradeHoles()
+{
+    mShapeEditor.generateNoise(mShapeEditor.vHoleVerts, 0.03);
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::inpaintHoles1()
+{
+    mShapeEditor.inpaintHoles(mShapeEditor.vHoleVerts, 1);
+    ui.glMeshWidget->update();
+}
+

@@ -148,6 +148,12 @@ public:
     }
 
     ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
+    double& operator() (int idx, int c) {
+        if (c == 0) return mCoordX[idx];
+        else if (c == 1) return mCoordY[idx];
+        else if (c == 2) return mCoordZ[idx];
+        else throw std::logic_error("Invalid coordinate inquiry");
+    }
 
     double difference(const MeshCoordinates& mc2) const
     {

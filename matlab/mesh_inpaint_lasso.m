@@ -1,4 +1,4 @@
-function result = mesh_inpaint_lasso(dict, coord, missing_idx, opts)
+function [result,alpha] = mesh_inpaint_lasso(dict, coord, missing_idx, opts)
 
 N = size(coord, 1);
 missing_percent = round(length(missing_idx) * 100 / N); 

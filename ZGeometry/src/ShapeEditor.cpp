@@ -2238,7 +2238,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     }
     /*  end of Delaunay refinement  */
    
-    FilledHoleVerts newHole;
+    BoundaryVerts newHole;
     newHole.vert_on_boundary = boundaryVertIdx;
     for (int i = nOldVerts; i < mMesh->vertCount(); ++i)
         newHole.vert_inside.push_back(i);
@@ -2581,7 +2581,7 @@ void ShapeEditor::testSurfaceArea()
 void ShapeEditor::visualizeBoundaries()
 {
     MeshLineList boundaryLines;
-    for (FilledHoleVerts &fhv : filled_boundaries) {
+    for (BoundaryVerts &fhv : filled_boundaries) {
         int nVert = fhv.vert_on_boundary.size();
         for (int i = 0; i < nVert; ++i) {
             int v1 = fhv.vert_on_boundary[i], v2 = fhv.vert_on_boundary[(i + 1) % nVert];
@@ -2615,7 +2615,7 @@ void ShapeEditor::holeFairingFourierOMP()
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> vMask(totalVertCount, 1);
-    for (FilledHoleVerts &fhv : filled_boundaries) {
+    for (BoundaryVerts &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) vMask[vi] = 0;
     }
 
@@ -2664,7 +2664,7 @@ void ShapeEditor::holeFairingFourierLARS()
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> inpaintVert;
-    for (FilledHoleVerts &fhv : filled_boundaries) {
+    for (BoundaryVerts &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) inpaintVert.push_back(vi);
     }
     ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
@@ -2696,7 +2696,7 @@ void ShapeEditor::holeFairingLeastSquare()
     matLaplacian.constructTutte(mMesh);
     set<int> controlVerts;
     for (int i = 0; i < totalVertCount; ++i) controlVerts.insert(i);
-    for (FilledHoleVerts &fhv : filled_boundaries) {
+    for (BoundaryVerts &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) controlVerts.erase(vi);
     }
     int controlVertCount = controlVerts.size();
@@ -2743,7 +2743,7 @@ void ShapeEditor::holeEstimateCurvature()
     revertCoordinates();
     int totalVertCount = mMesh->vertCount();
     vector<int> affectedVert;
-    for (FilledHoleVerts &fhv : filled_boundaries) {
+    for (BoundaryVerts &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) affectedVert.push_back(vi);
         for (int vi : fhv.vert_on_boundary) affectedVert.push_back(vi);
     }
@@ -2821,4 +2821,47 @@ void ShapeEditor::holeEstimateCurvature()
 void ShapeEditor::holeEstimateNormals()
 {
 
+}
+
+void ShapeEditor::generateNoise(const std::vector<int>& selectedVerts, double sigma /*= 0.02*/)
+{
+    std::mt19937 engine(0);
+    std::normal_distribution<double> distCoeff(0, sigma);
+    MeshCoordinates noisyCoord = getOldMeshCoord();
+    for (int vIdx : selectedVerts) {
+        for (int c = 0; c < 3; ++c) {
+            noisyCoord(vIdx, c) += distCoeff(engine);
+        }
+    }
+    
+    addCoordinate(noisyCoord, "coord_hole_noisy");
+    changeCoordinates("coord_hole_noisy");
+}
+
+void ShapeEditor::inpaintHoles(const std::vector<int>& selectedVerts, int method /*= 1*/)
+{
+    const int totalVertCount = mMesh->vertCount();
+    const MeshCoordinates& coordOld = getOldMeshCoord();
+
+    std::cout << "==== Do Eigendecomposition ====\n";
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    int eigenCount = -1;    // -1 means full decomposition
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    vector<int> inpaintVert = vHoleVerts;
+    ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
+    ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
+    double eps = 1e-4;
+
+    ZGeom::DenseMatrixd matCoordInpainted = inpaintLARS(matCoordOld, matDict, inpaintVert, eps);
+
+    MeshCoordinates coordInpainted(totalVertCount);
+    coordInpainted.fromDenseMatrix(matCoordInpainted);
+
+    addCoordinate(coordInpainted, "hole_inpainted_LARS");
+    std::cout << "LARS hole inpainting finished!" << std::endl;
+    changeCoordinates("hole_inpainted_LARS");
 }
