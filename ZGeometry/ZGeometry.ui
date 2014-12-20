@@ -644,6 +644,7 @@
     <addaction name="actionAutoGenHoles"/>
     <addaction name="actionDegradeHoles"/>
     <addaction name="actionInpaintHoles1"/>
+    <addaction name="actionCut_Holes"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -692,6 +693,7 @@
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowVectors"/>
     <addaction name="actionShowSignature"/>
+    <addaction name="actionShowHoles"/>
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
     <addaction name="actionShowColorLegend"/>
@@ -1457,6 +1459,22 @@
   <action name="actionInpaintHoles1">
    <property name="text">
     <string>Inpaint Holes 1</string>
+   </property>
+  </action>
+  <action name="actionCut_Holes">
+   <property name="text">
+    <string>Cut Holes</string>
+   </property>
+  </action>
+  <action name="actionShowHoles">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Holes</string>
    </property>
   </action>
  </widget>

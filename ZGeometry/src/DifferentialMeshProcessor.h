@@ -37,7 +37,6 @@ public:
 	const CMesh* getMesh_const() const { return mMesh; }
 	const CMesh* getOriMesh_const() const { return mOriMesh; }
 	CMesh* getMesh() const { return mMesh; }
-	void setMesh(CMesh* newMesh);
 
 	/* Laplacian and MHB related */
 	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
@@ -57,16 +56,9 @@ public:
 	double	calHeatTrace(double timescale) const;
 	double	calBiharmonic(int v1, int v2) const;
 	double	calMHW(int v1, int v2, double timescale) const;
-	double	calSGW(int v1, int v2, double timescale, LaplacianType laplacianType) const;	
-	void    computeMixedAtoms1(LaplacianType laplacianType = CotFormula);
 	void	computeHeatDiffuseMat(double tMultiplier);
 	void	calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
 	void	computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
-	void	computeSimilarityMap1(int refPoint);
-	void	computeSimilarityMap2(int refPoint);
-	void	computeSimilarityMap3(int refPoint);
-	const ZGeom::DenseMatrixd& getWaveletMat() const { return mMatAtoms; }
-	ZGeom::DenseMatrixd& getWaveletMat() { return mMatAtoms; }
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	/* editing */
@@ -91,7 +83,6 @@ private:
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
-	ZGeom::DenseMatrixd mMatAtoms;
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 };

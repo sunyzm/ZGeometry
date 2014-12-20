@@ -16,5 +16,6 @@
 #include "SparseRepresentation.h"
 #include "Geodesic.h"
 #include "Differential.h"
+#include "MeshHole.h"
 
 #endif

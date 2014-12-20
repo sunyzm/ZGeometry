@@ -79,6 +79,7 @@ void GLMeshWidget::reset()
 	m_bDrawRegistration = false;
 	m_bShowWireframeOverlay = false;
 	m_bShowBoundingBox = false;
+    m_bShowHoles = true;
 	
     m_nShadeMode = 1;
 	setAutoFillBackground(false);
@@ -456,24 +457,46 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	setupObject(pRS->obj_rot, pRS->obj_trans + pRS->display_shift);
 	glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
 	glPointSize(mMeshPointSize);
-
+    
     //////////////////////////////////////////////////////////////////////////
 	// draw mesh with color signature
+    std::set<int> holeFaceIdx;
+    if (tmesh->hasAttr("hole_faces")) {
+        auto holevert = tmesh->getAttrValue<vector<int>>("hole_faces");
+        holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
+    }
+    
     glEnable(GL_POLYGON_OFFSET_FILL);
     glPolygonOffset(1.0, 1.0);
 	glBegin(GL_TRIANGLES);
     for (CFace* face : tmesh->m_vFaces) 
     {
-        for (int j = 0; j < 3; j++) {
-            int pi = face->getVertexIndex(j);
-            const Vector3D& norm = vVertNormals[pi];
-            const Vec3d& vt = vVertPos[pi];
-            const Colorf& vc = vVertColors[pi];
-            glNormal3f(norm.x, norm.y, norm.z);
-            glColor4f(vc[0], vc[1], vc[2], 1.0);
-            glVertex3f(vt.x, vt.y, vt.z);
+        if (m_bShowHoles && !holeFaceIdx.empty() && holeFaceIdx.find(face->getFaceIndex()) != holeFaceIdx.end()) {
+            for (int fi : holeFaceIdx) {
+                CFace *face = tmesh->getFace(fi);
+                for (int j = 0; j < 3; j++) {
+                    int pi = face->getVertexIndex(j);
+                    const Vector3D& norm = vVertNormals[pi];
+                    const Vec3d& vt = vVertPos[pi];
+                    const Colorf& vc = vVertColors[pi];
+                    glNormal3f(norm.x, norm.y, norm.z);
+                    glColor4f(ZGeom::ColorYellow[0], ZGeom::ColorYellow[1], ZGeom::ColorYellow[2], 1.0);
+                    glVertex3f(vt.x, vt.y, vt.z);
+                }
+            }
         }
-    }
+        else {
+            for (int j = 0; j < 3; j++) {
+                int pi = face->getVertexIndex(j);
+                const Vector3D& norm = vVertNormals[pi];
+                const Vec3d& vt = vVertPos[pi];
+                const Colorf& vc = vVertColors[pi];
+                glNormal3f(norm.x, norm.y, norm.z);
+                glColor4f(vc[0], vc[1], vc[2], 1.0);
+                glVertex3f(vt.x, vt.y, vt.z);
+            }
+        }
+    }    
 	glEnd();
 	glDisable(GL_POLYGON_OFFSET_FILL);
     //////////////////////////////////////////////////////////////////////////
@@ -602,26 +625,16 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
             if (!tmesh->hasAttr(activePointFeature)) continue;
             const MeshFeatureList& feature_list = tmesh->getMeshFeatures(activePointFeature);
             /* draw as gluSphere */
-            bool visualizingScales = (activePointFeature == StrAttrFeatureSparseSGW);
             const float *feature_color1 = ZGeom::ColorGreen;
             const float *feature_color2 = ZGeom::ColorMagenta;
             GLUquadric* quadric = gluNewQuadric();
             for (MeshFeature* feature : feature_list.getFeatureVector()) {
-                Vec3d vt = vVertPos[feature->m_index];
-                if (visualizingScales) {
-                    int feature_scale = feature->m_scale;
-                    int color_index = feature_scale % gFeatureColorNum;
-                    glColor4f(featureColors[color_index][0], featureColors[color_index][1], featureColors[color_index][2], featureColors[color_index][3]);
-                }
-                else {
-                    glColor4f(feature_color1[0], feature_color1[1], feature_color1[2], 1);
-                }
-
+                const Vec3d& vt = vVertPos[feature->m_index];
+                glColor4f(feature->m_color[0], feature->m_color[1], feature->m_color[2], 1.0);                
                 gluQuadricDrawStyle(quadric, GLU_FILL);
                 glPushMatrix();
                 glTranslated(vt.x, vt.y, vt.z);
-                if (visualizingScales) gluSphere(quadric, mFeatureSphereRadius * (0.3 + 0.25 * std::fabs(feature->m_scalar1)), 16, 8);
-                else gluSphere(quadric, mFeatureSphereRadius, 16, 8);
+                gluSphere(quadric, mFeatureSphereRadius, 16, 8);
                 glPopMatrix();
             }
             gluDeleteQuadric(quadric);        

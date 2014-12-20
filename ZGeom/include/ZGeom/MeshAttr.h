@@ -57,10 +57,12 @@ public:
 	int m_index;
 	int m_scale;
 	int m_note;
-	double m_scalar1;
-	MeshFeature() : m_index(-1), m_scale(-1), m_note(0) {}
-	MeshFeature(int i) : m_index(i), m_scale(0), m_note(0) {}
-	MeshFeature(int i, int s) : m_index(i), m_scale(s), m_note(0) {}
+    ZGeom::Colorf m_color;
+    double m_scalar1;
+    
+	MeshFeature() : m_index(-1), m_scale(-1), m_note(0), m_color(ZGeom::ColorGreen) {}
+    MeshFeature(int i) : m_index(i), m_scale(0), m_note(0), m_color(ZGeom::ColorGreen) {}
+    MeshFeature(int i, int s) : m_index(i), m_scale(s), m_note(0), m_color(ZGeom::ColorGreen) {}
 	virtual ~MeshFeature() {}
 };
 
@@ -68,13 +70,23 @@ class MeshFeatureList
 {
 public:
 	MeshFeatureList() {}
+    MeshFeatureList(const std::vector<int> vecIdx, ZGeom::Colorf featureColor)
+    {
+        for (int vi : vecIdx) addFeature(vi);
+        for (MeshFeature* mf : m_vFeatures) mf->m_color = featureColor;
+    }
 	MeshFeatureList(const MeshFeatureList& ml2)
 	{
-		this->m_vFeatures.clear();
 		for (MeshFeature* pf : ml2.m_vFeatures)
 			this->m_vFeatures.push_back(new MeshFeature(*pf));
 	}
+    MeshFeatureList(MeshFeatureList&& ml2)
+    {
+        this->m_vFeatures = ml2.m_vFeatures;
+        ml2.m_vFeatures.clear();
+    }
 	~MeshFeatureList() { clear(); }
+
 	void clear()
 	{
 		for (MeshFeature* f : m_vFeatures) delete f;
@@ -82,6 +94,7 @@ public:
 	}
 	int size() const { return (int)m_vFeatures.size(); }
 	void addFeature(MeshFeature* mf) { m_vFeatures.push_back(mf); }
+    void addFeature(int index) { m_vFeatures.push_back(new MeshFeature(index)); }
 	void addFeature(int index, int scale) { m_vFeatures.push_back(new MeshFeature(index, scale)); }
 	MeshFeature* back() { return m_vFeatures.back(); }
 	std::vector<MeshFeature*>& getFeatureVector() { return m_vFeatures; }

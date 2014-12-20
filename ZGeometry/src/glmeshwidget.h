@@ -25,6 +25,7 @@ public:
 	bool m_bShowCorrespondenceLine;
 	bool m_bShowWireframeOverlay;
 	bool m_bShowBoundingBox;
+    bool m_bShowHoles;
 
     int  m_nShadeMode;
 	int	 m_nMeshLevel;

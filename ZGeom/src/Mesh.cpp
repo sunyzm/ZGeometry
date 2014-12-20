@@ -1734,6 +1734,7 @@ void CMesh::addHalfEdge( CHalfEdge *e )
     m_vHalfEdges.push_back(e);
 }
 
+
 void CMesh::addFace( CFace *f )
 {
     f->m_fIndex = (int)m_vFaces.size();

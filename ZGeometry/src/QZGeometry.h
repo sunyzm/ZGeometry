@@ -51,13 +51,11 @@ private slots:
 	void computeVertNormals();
 	void computeFaceNormals();
 	void computeEditBasis();
-	void computeDictAtom();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
 	void computeMHW();
 	void computeMHWS();
-	void computeSGW();
 	void computeBiharmonic();
 	void computeGeodesics();
 	void computeHeatTransfer();
@@ -110,11 +108,11 @@ private slots:
 	void toggleDrawMatching(bool show = false);
 	void toggleShowMatchingLines(bool show = false);
 	void toggleDrawRegistration(bool show = false);
+    void toggleShowHoles(bool show = false);
 	
 	void clone();
 	void revert();
 	void nextCoordinate();
-	void nextBasisScale();
 	void addNoise();
 	void reconstructMHB();
 	void deformSimple();
@@ -130,7 +128,7 @@ private slots:
     void autoGenerateHoles();
     void degradeHoles();
     void inpaintHoles1();
-//     void cutHoles();
+    void cutHoles();
 //     void inpaintHoles();
 
 	void registerAutomatic();

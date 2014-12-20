@@ -46,6 +46,7 @@ public:
 	int					    getVID() const              { return m_vid; }
 	CHalfEdge*			    getHalfEdge(int ei)         { return m_HalfEdges[ei]; }
 	const CHalfEdge*        getHalfEdge(int ei) const   { return m_HalfEdges[ei]; }    
+    const std::vector<CHalfEdge*> getHalfEdges() const  { return m_HalfEdges;  }
 	ZGeom::Vec3d		    pos() const                 { return (ZGeom::Vec3d)m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }

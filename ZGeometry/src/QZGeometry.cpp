@@ -22,6 +22,7 @@
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
+#include <ZGeom/MeshHole.h>
 
 using std::vector;
 using ZGeom::Colorf;
@@ -176,11 +177,9 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
 	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
 	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
-	QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
-	QObject::connect(ui.actionComputeDictionaryAtom, SIGNAL(triggered()), this, SLOT(computeDictAtom()));
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
 	QObject::connect(ui.actionComputeFaceNormals, SIGNAL(triggered()), this, SLOT(computeFaceNormals()));
 
@@ -220,6 +219,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowRefPoint, SIGNAL(triggered(bool)), this, SLOT(toggleShowRefPoint(bool)));
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
+    QObject::connect(ui.actionShowHoles, SIGNAL(triggered(bool)), this, SLOT(toggleShowHoles(bool)));
 	QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowLines(bool)));
@@ -283,7 +283,6 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_B:
-		nextBasisScale();
 		break;
 
 	case Qt::Key_C:
@@ -799,6 +798,16 @@ void QZGeometryWindow::toggleShowLines( bool show /*= false*/ )
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::toggleShowHoles(bool show /*= false*/)
+{
+    bool bToShow = !ui.glMeshWidget->m_bShowHoles;
+    ui.glMeshWidget->m_bShowHoles = bToShow;
+    ui.actionShowHoles->setChecked(bToShow);
+
+    ui.glMeshWidget->update();
+}
+
+
 void QZGeometryWindow::toggleDrawMatching(bool show)
 {
 	bool bToShow = !ui.glMeshWidget->m_bDrawMatching;
@@ -1078,30 +1087,6 @@ void QZGeometryWindow::computeMHWS()
 	mLastOperation = Compute_MHWS;
 }
 
-
-void QZGeometryWindow::computeSGW()
-{
-	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE, true);
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
-		const int meshSize = mp.getMesh()->vertCount();
-		const int refPoint = mp.getRefPointIndex();
-		const ZGeom::EigenSystem& mhb = mp.getMHB(mActiveLalacian);
-
-		std::vector<double> values(meshSize);
-		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-			values[vIdx] = mp.calSGW(refPoint, vIdx, time_scale, mActiveLalacian);
-		});
-
-		addColorSignature(obj, values, StrAttrColorSGW);
-	}
-
-	displaySignature(StrAttrColorSGW.c_str());
-	updateDisplaySignatureMenu();
-	mLastOperation = Compute_SGW;
-}
-
 void QZGeometryWindow::repeatOperation()
 {
 	switch(mLastOperation)
@@ -1126,9 +1111,6 @@ void QZGeometryWindow::repeatOperation()
 
 	case Compute_MHW:
 		computeMHW(); break;
-
-	case Compute_SGW:
-		computeSGW(); break;
 
 	case Compute_Heat:
 		computeHeatTransfer(); break;
@@ -2149,30 +2131,6 @@ void QZGeometryWindow::openSreenshotLocation()
 	ShellExecute(NULL, L"explore", L".\\output\\screenshots", NULL, NULL, SW_RESTORE);
 }
 
-void QZGeometryWindow::nextBasisScale()
-{
-	if (mShapeEditor.mTotalScales <= 0) return;
-	mCurrentBasisScale = (mCurrentBasisScale + 1) % mShapeEditor.mTotalScales;
-	std::cout << "Current basis scale: " << mCurrentBasisScale << std::endl;
-	computeDictAtom();
-}
-
-void QZGeometryWindow::computeDictAtom()
-{
-	DifferentialMeshProcessor& mp = *mProcessors[0];
-	const int meshSize = mp.getMesh()->vertCount();
-	const int refPoint = mp.getRefPointIndex();
-
-	std::vector<double> values(meshSize);
-	values = mp.getWaveletMat().getRowVec(meshSize * mCurrentBasisScale + refPoint).toStdVector();
-
-	addColorSignature(0, values, StrAttrColorDictAtom);	
-
-	displaySignature(StrAttrColorDictAtom.c_str());
-	updateDisplaySignatureMenu();
-	mLastOperation = Compute_Dict_Atom;
-}
-
 void QZGeometryWindow::resizeApproxSlider( int slider, int newSize )
 {
 	if (slider == 0) ui.sliderApprox1->setMaximum(newSize);
@@ -2314,11 +2272,15 @@ void QZGeometryWindow::generateHoles()
     if (ok) holeVertCount = i;        
 
     vector<int> holeVertIdx = ZGeom::randomHoleVertex(*mMeshes[0], holeVertCount, refIdx);
-    mMeshes[0]->addAttrMeshFeatures(holeVertIdx, "hole_vertex");
+    MeshHole hole = autoGenerateHole(*mMeshes[0], refIdx, holeVertCount);
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
     displayFeature("hole_vertex");
+    displayFeature("hole_boundary_verts");
 
-    mShapeEditor.vHoleVerts = holeVertIdx;
+    mShapeEditor.vHoleVerts = hole.mHoleVerts;
+    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
 }
 
 void QZGeometryWindow::autoGenerateHoles()
@@ -2359,3 +2321,7 @@ void QZGeometryWindow::inpaintHoles1()
     ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::cutHoles()
+{
+
+}
