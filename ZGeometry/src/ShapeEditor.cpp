@@ -206,7 +206,7 @@ void ShapeEditor::addCoordinate(const MeshCoordinates &newCoord, std::string coo
 
 void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
 {
-	const std::map<int, Vector3D>& anchors = mProcessor->getHandles();
+	const auto& anchors = mProcessor->getHandles();
 	anchorCount = anchors.size();
 	anchorIndex.clear();
 	anchorPos.clear();

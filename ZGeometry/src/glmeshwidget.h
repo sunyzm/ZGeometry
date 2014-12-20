@@ -36,12 +36,13 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 
-	void setup(std::vector<DifferentialMeshProcessor*>* processors, std::vector<RenderSettings*>* rs, ShapeMatcher* matcher, ShapeEditor* editor) 
+    void setup(std::vector<DifferentialMeshProcessor*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
 	{
 		mProcessors = processors;
 		mRenderSettings = rs;
 		mMatcher = matcher;
-		mEditor = editor;
+        mMeshes.clear();
+        for (auto p : mProcessors) mMeshes.push_back(p->getMesh());
 	}
 
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
@@ -75,8 +76,9 @@ private:
 	void setupViewport(int width, int height);
     bool glPick(int x, int y, ZGeom::Vec3d& _p, int obj = 0);
 
-	std::vector<DifferentialMeshProcessor*>* mProcessors;
-	std::vector<RenderSettings*>* mRenderSettings;
+	std::vector<DifferentialMeshProcessor*> mProcessors;
+    std::vector<CMesh*> mMeshes;
+	std::vector<RenderSettings*> mRenderSettings;
 	ShapeMatcher* mMatcher;
 	ShapeEditor* mEditor;
 

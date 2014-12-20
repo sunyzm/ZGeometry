@@ -182,10 +182,9 @@ private:
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
-
-	ShapeMatcher mShapeMatcher;
-	ShapeEditor	 mShapeEditor;
-
+	ShapeMatcher                            mShapeMatcher;
+	ShapeEditor	                            mShapeEditor;
+    
 	DeformType			    mDeformType;
 	LaplacianType           mActiveLalacian;
 	ZGeom::SignatureMode	mSignatureMode;

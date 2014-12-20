@@ -30,6 +30,7 @@ public:
 
     T length() const;
     T length2() const;
+    T distanceTo(const Vec3<T>& v2) const { return (*this - v2).length(); }
     T dot(const Vec3<T>& v2) const { return x*v2.x + y*v2.y + z*v2.z;  }
     Vec3<T> cross(const Vec3<T> &v2) const;
     const Vec3<T>& normalize();

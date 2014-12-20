@@ -47,7 +47,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 
 	/* setup ui and connections */
 	ui.setupUi(this);
-	ui.glMeshWidget->setup(&mProcessors, &mRenderManagers, &mShapeMatcher, &mShapeEditor);
 	this->makeConnections();
 	
 	// comboBoxSigMode
@@ -431,6 +430,8 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 	loadInitialMeshes(mesh_list_name); 
 
+    ui.glMeshWidget->setup(mProcessors, mRenderManagers, &mShapeMatcher);
+    
 	/* compute and decompose mesh Laplacians */
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
@@ -2281,6 +2282,8 @@ void QZGeometryWindow::generateHoles()
 
     mShapeEditor.vHoleVerts = hole.mHoleVerts;
     mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
+
+
 }
 
 void QZGeometryWindow::autoGenerateHoles()
@@ -2311,7 +2314,12 @@ void QZGeometryWindow::autoGenerateHoles()
 
 void QZGeometryWindow::degradeHoles()
 {
-    mShapeEditor.generateNoise(mShapeEditor.vHoleVerts, 0.03);
+    double sigma = 0.02;
+    bool ok;
+    double s = QInputDialog::getDouble(this, tr("Input noise sigma"),
+        tr("Noise Signal:"), 0.02, 0, 0.1, 3, &ok);
+    if (ok) sigma = s;
+    mShapeEditor.generateNoise(mShapeEditor.vHoleVerts, sigma);
     ui.glMeshWidget->update();
 }
 

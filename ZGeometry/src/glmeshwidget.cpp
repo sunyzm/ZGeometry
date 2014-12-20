@@ -66,7 +66,7 @@ void GLMeshWidget::reset()
 
 	mBaseFeatureRadius = 0.03;
 	mFeatureSphereRadius = mBaseFeatureRadius;
-	mMeshPointSize = 2;
+	mMeshPointSize = 1;
 	m_nMeshLevel = 0;
 
 	m_bShowLegend = false;
@@ -82,7 +82,7 @@ void GLMeshWidget::reset()
     m_bShowHoles = true;
 	
     m_nShadeMode = 1;
-	setAutoFillBackground(false);
+//	setAutoFillBackground(false);
 }
 
 void GLMeshWidget::initializeGL()
@@ -132,8 +132,8 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
 
-	std::vector<DifferentialMeshProcessor*>& vpMP = *mProcessors;
-	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	std::vector<DifferentialMeshProcessor*>& vpMP = mProcessors;
+	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
 	if (editMode == QZ_MOVE)
@@ -209,7 +209,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int imin(-1);
 				double d, dmin(1e10);
 				for (auto handle : pMP->getHandles()) {
-					d = handle.second.distantFrom(p);
+					d = handle.second.distanceTo(p);
 					if (d < dmin) { 
 						dmin = d; 
 						imin = handle.first; 
@@ -227,8 +227,8 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
-	std::vector<DifferentialMeshProcessor*>& vpMP = *mProcessors;
-	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
+	std::vector<DifferentialMeshProcessor*>& vpMP = mProcessors;
+	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
 	if (editMode == QZ_PICK) return;
@@ -317,12 +317,12 @@ void GLMeshWidget::mouseReleaseEvent( QMouseEvent *event )
 
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
 {
-	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
-	int meshCount = mProcessors->size();
+	std::vector<RenderSettings*>& vpRS = mRenderSettings;
+	int meshCount = mMeshes.size();
 
 	if (event->modifiers() & Qt::ControlModifier) {
 		int numSteps = event->delta();
-		float scale = 5.0 * (*mProcessors)[0]->getMesh_const()->getBoundingBox().x / this->height();
+		float scale = 5.0 * mMeshes[0]->getBoundingBox().x / this->height();
 		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
 		
 		for (int i = 0; i < meshCount; ++i) {
@@ -421,17 +421,17 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (g_task == TASK_EDITING || g_task == TASK_VIEWING) {
-        for (unsigned obj = 0; obj < mProcessors->size(); ++obj) {
-            drawMeshExt((*mProcessors)[obj], (*mRenderSettings)[obj]);
+        for (unsigned obj = 0; obj < mMeshes.size(); ++obj) {
+            drawMeshExt(mProcessors[obj], mRenderSettings[obj]);
         }
 	}
 	else if (g_task == TASK_REGISTRATION) {
-		assert(mProcessors->size() == 2);
-		drawMeshExt(mMatcher->getMeshProcessor(0, m_nMeshLevel), mRenderSettings->at(0));
-		drawMeshExt(mMatcher->getMeshProcessor(1, m_nMeshLevel), mRenderSettings->at(1));
+		assert(mMeshes.size() == 2);
+        drawMeshExt(mMatcher->getMeshProcessor(0, m_nMeshLevel), mRenderSettings[0]);
+        drawMeshExt(mMatcher->getMeshProcessor(1, m_nMeshLevel), mRenderSettings[1]);
 
 		if (m_bDrawMatching || m_bDrawRegistration) {
-			drawCorrespondences(mMatcher, mRenderSettings->at(0), mRenderSettings->at(1));
+			drawCorrespondences(mMatcher, mRenderSettings[0], mRenderSettings[1]);
 		}
 	}
 
@@ -471,6 +471,8 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glBegin(GL_TRIANGLES);
     for (CFace* face : tmesh->m_vFaces) 
     {
+        const float *holeColor = ZGeom::ColorPaleVioletRed2;
+        //const float *holeColor = ZGeom::ColorYellow;
         if (m_bShowHoles && !holeFaceIdx.empty() && holeFaceIdx.find(face->getFaceIndex()) != holeFaceIdx.end()) {
             for (int fi : holeFaceIdx) {
                 CFace *face = tmesh->getFace(fi);
@@ -480,7 +482,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
                     const Vec3d& vt = vVertPos[pi];
                     const Colorf& vc = vVertColors[pi];
                     glNormal3f(norm.x, norm.y, norm.z);
-                    glColor4f(ZGeom::ColorYellow[0], ZGeom::ColorYellow[1], ZGeom::ColorYellow[2], 1.0);
+                    glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
                     glVertex3f(vt.x, vt.y, vt.z);
                 }
             }
@@ -683,8 +685,8 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 
 bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 {
-	std::vector<RenderSettings*>& vpRS = *mRenderSettings;
-	int meshCount = mProcessors->size();
+	std::vector<RenderSettings*>& vpRS = mRenderSettings;
+	int meshCount = mMeshes.size();
 	if (obj >= meshCount || vpRS[obj]->selected == false) return false;
 
 	GLdouble  modelview[16], projection[16];

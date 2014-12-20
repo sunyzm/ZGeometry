@@ -65,20 +65,20 @@ public:
 	void addNewHandle(int hIdx);
 	int getActiveHandle() const { return mActiveHandle; }
 	void setActiveHandle(int h) { mActiveHandle = h; }
-	std::map<int, Vector3D>& getHandles() { return mHandles; }
-	const std::map<int, Vector3D>& getHandles() const { return mHandles; }
+	std::map<int, ZGeom::Vec3d>& getHandles() { return mHandles; }
+	const std::map<int, ZGeom::Vec3d>& getHandles() const { return mHandles; }
 	void clearAllHandles() { mHandles.clear(); }
 	int  getRefPointIndex() const { return mRefVert; }
 	void setRefPointIndex(int i) { mRefVert = i; }
-	void setRefPointPosition(int x, int y, int z) { mRefPos = Vector3D(x, y, z); }
+	void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
 
 private:
 	CMesh* mMesh;
 	CMesh* mOriMesh;
 
 	int mRefVert;
-	Vector3D mRefPos;
-	std::map<int, Vector3D> mHandles;
+	ZGeom::Vec3d mRefPos;
+	std::map<int, ZGeom::Vec3d> mHandles;
 	int mActiveHandle;
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
