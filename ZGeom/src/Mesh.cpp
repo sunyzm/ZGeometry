@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cstdlib>
 #include <set>
+#include <map>
 #include <unordered_set>
 #include <stdexcept>
 #include <algorithm>
@@ -478,9 +479,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 
 	m_meshName      = oldMesh.m_meshName + nameSuffix;
     m_defaultColor  = oldMesh.m_defaultColor;
-
-	copyAttributes(oldMesh.mAttributes);
-
+    
 	for (int i = 0; i < oldMesh.vertCount(); ++i) {
 		this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 	}
@@ -529,6 +528,9 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 			curE->m_eTwin = this->m_vHalfEdges[teidx];
 		}
 	}
+
+    copyAttributes(oldMesh.mAttributes);
+    setDefaultColor(m_defaultColor);
 }
 
 void CMesh::clearMesh()
@@ -1477,6 +1479,104 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 	}	
 }
 
+void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string subMeshName, CMesh& submesh )
+{
+    submesh.clearMesh();
+    submesh.setMeshName(subMeshName);
+
+    std::list<Vector3D> VertexList;
+    std::list<int> FaceList;
+    std::map<int, int> oldidx2newidx;
+    for (int fIdx : vSubFaces) {
+        CFace* f = m_vFaces[fIdx];
+        int fvOld[3] = { f->getVertexIndex(0), f->getVertexIndex(1), f->getVertexIndex(2) };
+        for (int k = 0; k < 3; ++k) {
+            int oldVIdx = fvOld[k];
+            if (oldidx2newidx.find(oldVIdx) == oldidx2newidx.end()) {
+                // add new vertex
+                oldidx2newidx[oldVIdx] = (int)VertexList.size();
+                VertexList.push_back(m_vVertices[oldVIdx]->pos());
+            }
+            FaceList.push_back(oldidx2newidx[oldVIdx]);
+        }
+    }
+
+    int nVertex = (int)VertexList.size();
+    int nFace = (int)FaceList.size() / 3;
+    vector<CVertex> m_pVertex(nVertex);
+    vector<vector<int>> faceVerts(nFace);
+    list<Vector3D>::iterator iVertex = VertexList.begin();
+    list<int>::iterator iFace = FaceList.begin();
+    for (int i = 0; i < nVertex; i++) {
+        m_pVertex[i].m_vPosition = *iVertex++;
+        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+    }
+    for (int i = 0; i < nFace; i++) {
+        faceVerts[i].resize(3);
+        for (int j = 0; j < 3; ++j)
+            faceVerts[i][j] = *iFace++;
+    }
+
+    submesh.construct(m_pVertex, faceVerts);
+    submesh.addDefaultColorAttr();
+}
+
+void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMeshName, CMesh& subMesh)
+{
+    subMesh.clearMesh();
+    subMesh.setMeshName(subMeshName);
+
+    const int subVertCount = (int)subMappedIdx.size();
+
+    std::list<Vector3D> VertexList;	//temporary vertex list
+    std::list<int> FaceList;		//temporary face list
+
+    for (int i = 0; i < subVertCount; ++i) {
+        VertexList.push_back(this->getVertexPosition(subMappedIdx[i]));
+    }
+    for (CFace* f : m_vFaces) {
+        int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
+        int sfv1 = -1, sfv2 = -1, sfv3 = -1;
+        for (int i = 0; i < subVertCount; ++i) {
+            if (subMappedIdx[i] == fv1) sfv1 = i;
+            else if (subMappedIdx[i] == fv2) sfv2 = i;
+            else if (subMappedIdx[i] == fv3) sfv3 = i;
+        }
+        if (sfv1 >= 0 && sfv2 >= 0 && sfv3 >= 0) {
+            FaceList.push_back(sfv1);
+            FaceList.push_back(sfv2);
+            FaceList.push_back(sfv3);
+        }
+    }
+
+    std::set<int> setIsolatedVert;
+    for (int i = 0; i < subVertCount; ++i) setIsolatedVert.insert(i);
+    for (auto k : FaceList) setIsolatedVert.erase(k);
+    assert(setIsolatedVert.empty());
+
+    int nVertex = (int)VertexList.size();
+    int nFace = (int)FaceList.size() / 3;
+    int nHalfEdge = 3 * nFace;
+
+    vector<CVertex> m_pVertex(nVertex);
+    vector<vector<int>> faceVerts(nFace);
+    list<Vector3D>::iterator iVertex = VertexList.begin();
+    list<int>::iterator iFace = FaceList.begin();
+
+    for (int i = 0; i < nVertex; i++) {
+        m_pVertex[i].m_vPosition = *iVertex++;
+        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+    }
+    for (int i = 0; i < nFace; i++) {
+        faceVerts[i].resize(3);
+        for (int j = 0; j < 3; ++j)
+            faceVerts[i][j] = *iFace++;
+    }
+
+    subMesh.construct(m_pVertex, faceVerts);
+    subMesh.addDefaultColorAttr();
+}
+
 void CMesh::calVertMixedAreas()
 {
 	const double pi = ZGeom::PI;
@@ -1584,8 +1684,6 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	
     int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
-
-	//read vertices and faces
     vector<CVertex> m_pVertex(nVertex);
     vector<vector<int>> faceVerts(nFace);
 	list<Vector3D>::iterator iVertex = VertexList.begin();
@@ -1648,10 +1746,16 @@ std::vector<bool> CMesh::getVertsOnHoles()
     return result;
 }
 
-void CMesh::addDefaultColor( ZGeom::Colorf color )
+void CMesh::setDefaultColor( ZGeom::Colorf color )
 {
     m_defaultColor = color;
-    vector<Colorf> vDefaultColors(vertCount(), color);
+    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
+    addColorAttr(StrAttrColorDefault, ZGeom::ColorSignature(vDefaultColors));
+}
+
+void CMesh::addDefaultColorAttr()
+{
+    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
     addColorAttr(StrAttrColorDefault, ZGeom::ColorSignature(vDefaultColors));
 }
 

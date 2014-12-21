@@ -508,23 +508,26 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
 
 	/* highlight boundary edges */
-    const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
-    for (int i = 0; i < boundaryLoops.size(); ++i) 
+    if (tmesh->hasAttr(CMesh::StrAttrBoundaryLoops)) 
     {
-        glBegin(GL_LINES);	
-        glLineWidth(4.0);
-        if (boundaryLoops[i].size() <= MAX_HOLE_SIZE)
-            glColor4f(0.0, 0, 1.0, 1.0);      // show edges on inner holes in blue
-        else
-            glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
-        for (int edgeIdx : boundaryLoops[i]) {
-            const CHalfEdge* hf = tmesh->getHalfEdge(edgeIdx);
-            int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);				
-            const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
-            glVertex3d(v1.x, v1.y, v1.z);
-            glVertex3d(v2.x, v2.y, v2.z);
+        const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
+        for (int i = 0; i < boundaryLoops.size(); ++i)
+        {
+            glBegin(GL_LINES);
+            glLineWidth(4.0);
+            if (boundaryLoops[i].size() <= MAX_HOLE_SIZE)
+                glColor4f(0.0, 0, 1.0, 1.0);      // show edges on inner holes in blue
+            else
+                glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
+            for (int edgeIdx : boundaryLoops[i]) {
+                const CHalfEdge* hf = tmesh->getHalfEdge(edgeIdx);
+                int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);
+                const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
+                glVertex3d(v1.x, v1.y, v1.z);
+                glVertex3d(v2.x, v2.y, v2.z);
+            }
+            glEnd();
         }
-        glEnd();        
     }
 	
 	/* draw bounding box */

@@ -44,6 +44,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
+    backupMesh = nullptr;
 
 	/* setup ui and connections */
 	ui.setupUi(this);
@@ -68,12 +69,12 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	ui.horizontalSliderParamter->setSliderPosition(gSettings.PARAMETER_SLIDER_CENTER);
 
 	// status bar
-	mStatusLabel1.setParent(ui.statusBar);
-	ui.statusBar->addPermanentWidget(&mStatusLabel1);
-	qout.setLabel(&mStatusLabel1);
+	mStatusLabel.setParent(ui.statusBar);
+	ui.statusBar->addPermanentWidget(&mStatusLabel);
+	qout.setLabel(&mStatusLabel);
 	qout.setConsole(ui.consoleOutput);
 	qout.setStatusBar(ui.statusBar);    	
-	mStatusLabel1.setText("Editing");
+	mStatusLabel.setText("Editing");
 
 	setDisplayMesh();
 	setEditModeMove();
@@ -94,6 +95,8 @@ QZGeometryWindow::~QZGeometryWindow()
 	delete m_signatureSignalMapper;
 	delete m_featureSignalMapper;
     delete m_linesSignalMapper;
+
+    delete backupMesh;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -207,6 +210,8 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
     QObject::connect(ui.actionInpaintHoles1, SIGNAL(triggered()), this, SLOT(inpaintHoles1()));
+    QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
+    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -514,7 +519,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
 
     mProcessors[obj]->init(&mesh);
     Colorf meshColor = preset_mesh_colors[obj % 2];
-    mesh.addDefaultColor(meshColor);
+    mesh.setDefaultColor(meshColor);
     mRenderManagers[obj]->mActiveColorSignatureName = CMesh::StrAttrColorDefault;
 }
 
@@ -2280,10 +2285,9 @@ void QZGeometryWindow::generateHoles()
     displayFeature("hole_vertex");
     displayFeature("hole_boundary_verts");
 
-    mShapeEditor.vHoleVerts = hole.mHoleVerts;
+    vHoleVerts = hole.mHoleVerts;
+    vHoleFaces = hole.mHoleFaces;
     mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
-
-
 }
 
 void QZGeometryWindow::autoGenerateHoles()
@@ -2305,8 +2309,8 @@ void QZGeometryWindow::autoGenerateHoles()
         for (int vi : vVerts) setHoleVerts.insert(vi);
     }
 
-    mShapeEditor.vHoleVerts = vector < int > {setHoleVerts.begin(), setHoleVerts.end()};
-    mMeshes[0]->addAttrMeshFeatures(mShapeEditor.vHoleVerts, "hole_vertex");    
+    vHoleVerts = vector < int > {setHoleVerts.begin(), setHoleVerts.end()};
+    mMeshes[0]->addAttrMeshFeatures(vHoleVerts, "hole_vertex");    
 
     updateDisplayFeatureMenu();
     displayFeature("hole_vertex");
@@ -2319,17 +2323,36 @@ void QZGeometryWindow::degradeHoles()
     double s = QInputDialog::getDouble(this, tr("Input noise sigma"),
         tr("Noise Signal:"), 0.02, 0, 0.1, 3, &ok);
     if (ok) sigma = s;
-    mShapeEditor.generateNoise(mShapeEditor.vHoleVerts, sigma);
+    mShapeEditor.generateNoise(vHoleVerts, sigma);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::inpaintHoles1()
 {
-    mShapeEditor.inpaintHoles(mShapeEditor.vHoleVerts, 1);
+    mShapeEditor.inpaintHoles(vHoleVerts, 1);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::cutHoles()
 {
+     if (backupMesh != nullptr) return;
+     if (vHoleVerts.empty()) return;
 
+     backupMesh = new CMesh(*mMeshes[0]);
+     mMeshes[0]->getSubMeshFromFaces(vHoleFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
+     
+     std::swap(mMeshes[0], backupMesh); 
+     mProcessors[0]->init(mMeshes[0]);
+     mShapeEditor.init(mProcessors[0]);
+     ui.glMeshWidget->setup(0, mProcessors[0], mRenderManagers[0]);
+     ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::switchMesh()
+{
+    std::swap(mMeshes[0], backupMesh);
+    mProcessors[0]->init(mMeshes[0]);
+    mShapeEditor.init(mProcessors[0]);
+    ui.glMeshWidget->setup(0, mProcessors[0], mRenderManagers[0]);
+    ui.glMeshWidget->update();
 }

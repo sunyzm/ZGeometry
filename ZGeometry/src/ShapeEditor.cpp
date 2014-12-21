@@ -2838,7 +2838,7 @@ void ShapeEditor::generateNoise(const std::vector<int>& selectedVerts, double si
     changeCoordinates("coord_hole_noisy");
 }
 
-void ShapeEditor::inpaintHoles(const std::vector<int>& selectedVerts, int method /*= 1*/)
+void ShapeEditor::inpaintHoles(const std::vector<int>& inpaintVert, int method /*= 1*/)
 {
     const int totalVertCount = mMesh->vertCount();
     const MeshCoordinates& coordOld = getOldMeshCoord();
@@ -2851,7 +2851,6 @@ void ShapeEditor::inpaintHoles(const std::vector<int>& selectedVerts, int method
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
 
-    vector<int> inpaintVert = vHoleVerts;
     ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
     ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
     double eps = 1e-4;

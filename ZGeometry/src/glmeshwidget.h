@@ -36,6 +36,13 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 
+    void setup(int obj, DifferentialMeshProcessor* processor, RenderSettings* rs)
+    {
+        mProcessors[obj] = processor;
+        mRenderSettings[obj] = rs;
+        mMeshes[obj] = processor->getMesh();
+    }
+
     void setup(std::vector<DifferentialMeshProcessor*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
 	{
 		mProcessors = processors;

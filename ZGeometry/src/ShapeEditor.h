@@ -111,7 +111,4 @@ private:
 
     std::vector<BoundaryVerts> filled_boundaries;
 
-public:
-    std::vector<int> vHoleVerts;
-
 };

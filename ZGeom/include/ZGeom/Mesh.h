@@ -200,7 +200,8 @@ public:
     void	            loadFromOFF(std::string sFileName);
     void	            saveToOBJ(std::string sFileName);	// save mesh to .obj file
     void	            saveToM(const std::string& sFileName);    // save mesh to .m file
-
+    void                getSubMesh(const std::vector<int>& vSubIdx, std::string subMeshName, CMesh& submesh);
+    void                getSubMeshFromFaces(const std::vector<int>& vSubFaces, std::string subMeshName, CMesh& submesh);
 
     /* primitives access */
 	int					vertCount() const { return (int)m_vVertices.size(); }
@@ -392,7 +393,8 @@ public:
 		}
 	}
 
-    void addDefaultColor(ZGeom::Colorf color);
+    void setDefaultColor(ZGeom::Colorf color);
+    void addDefaultColorAttr();
 
     ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName) {
         return getAttrValue<ZGeom::ColorSignature>(colorAttrName);

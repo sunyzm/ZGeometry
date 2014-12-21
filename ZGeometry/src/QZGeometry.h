@@ -129,7 +129,7 @@ private slots:
     void degradeHoles();
     void inpaintHoles1();
     void cutHoles();
-//     void inpaintHoles();
+    void switchMesh();
 
 	void registerAutomatic();
 	void buildHierarchy();
@@ -177,7 +177,7 @@ private:
 	std::vector<QAction*> m_actionDisplaySignatures;
 	std::vector<QAction*> m_actionDisplayFeatures;
     std::vector<QAction*> m_actionDisplayLines;
-	QLabel				  mStatusLabel1;
+	QLabel				  mStatusLabel;
 
 	std::vector<CMesh*>	                    mMeshes;
 	std::vector<DifferentialMeshProcessor*>	mProcessors;
@@ -185,6 +185,10 @@ private:
 	ShapeMatcher                            mShapeMatcher;
 	ShapeEditor	                            mShapeEditor;
     
+    CMesh*  backupMesh;
+    std::vector<int> vHoleVerts;
+    std::vector<int> vHoleFaces;
+
 	DeformType			    mDeformType;
 	LaplacianType           mActiveLalacian;
 	ZGeom::SignatureMode	mSignatureMode;
