@@ -137,16 +137,6 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	return sum;
 }
 
-double DifferentialMeshProcessor::calHeatTrace(double timescale) const
-{
-	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
-	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k) {
-		sum += std::exp(-mhb.getEigVal(k) * timescale);
-	}
-	return sum;
-}
-
 void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
 {
 	const int vertCount = mMesh->vertCount();

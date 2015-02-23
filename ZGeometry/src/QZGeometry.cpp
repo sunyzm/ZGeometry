@@ -540,7 +540,7 @@ void QZGeometryWindow::addMesh()
 	timer.stopTimer();
 	std::cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << std::endl;
 
-	Vector3D center = mesh.getCenter(), bbox = mesh.getBoundingBox();
+	ZGeom::Vec3d center = mesh.getCenter(), bbox = mesh.getBoundingBox();
 	qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_CONSOLE);
 	qout.output(QString().sprintf("Center: (%f,%f,%f)\nDimension: (%f,%f,%f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_CONSOLE);
 
@@ -878,7 +878,7 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	DifferentialMeshProcessor& mp = *mProcessors[obj]; 
 
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
-	Vector3D originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->pos();
+	ZGeom::Vec3d originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->pos();
 	
 	mp.setRefPointPosition(originalPos.x, originalPos.y, originalPos.z);
 
@@ -2115,7 +2115,7 @@ void QZGeometryWindow::computeVertNormals()
 		auto vNormals = mesh->getVertNormals();
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
-			const Vector3D& vi = mesh->getVertexPosition(i);            
+			const ZGeom::Vec3d& vi = mesh->getVertexPosition(i);            
 			mvl.push_back(LineSegment(vi, vNormals[i], true));
 		}
 		
@@ -2135,7 +2135,7 @@ void QZGeometryWindow::computeFaceNormals()
 		auto fNormals = mesh->getFaceNormals();
 		MeshLineList mvl;
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
-			Vector3D vc = mesh->getFace(fIdx)->calBarycenter();
+			ZGeom::Vec3d vc = mesh->getFace(fIdx)->calBarycenter();
 			mvl.push_back(LineSegment(vc, fNormals[fIdx], true));
 		}
 

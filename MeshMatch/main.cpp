@@ -28,9 +28,9 @@ int main(int argc, char *argv[])
 
 	int meshSize1 = mesh1.vertCount(), meshSize2 = mesh2.vertCount();
 	for (int i = 0; i < meshSize1; ++i) {
-		const Vector3D& v1 = mesh1.getVertex(i)->pos();
+		const ZGeom::Vec3d& v1 = mesh1.getVertex(i)->pos();
 		for (int j = 0; j < meshSize2; ++j) {
-			const Vector3D& v2 = mesh2.getVertex(j)->pos();
+			const ZGeom::Vec3d& v2 = mesh2.getVertex(j)->pos();
 			if (v1.equals(v2)) {
 				matchPairs.push_back(std::make_pair(i,j));
 				break;

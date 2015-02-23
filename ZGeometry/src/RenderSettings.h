@@ -2,7 +2,7 @@
 #include <vector>
 #include <set>
 #include <iostream>
-#include <ZGeom/Vector3D.h>
+#include <ZGeom/Vec3.h>
 #include <ZGeom/Quat.h>
 
 const int Z_POINT = 0x1B00;
@@ -29,9 +29,9 @@ public:
 	
 	unsigned int glPolygonMode;	
 	bool selected;
-	Vector3D obj_trans;
+	ZGeom::Vec3d obj_trans;
 	CQrot obj_rot;
-	Vector3D display_shift;
+	ZGeom::Vec3d display_shift;
 	std::string mActiveColorSignatureName;	
 	std::set<std::string> mActivePointFeatures;
     std::set<std::string> mActiveLineNames;

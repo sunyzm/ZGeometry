@@ -74,7 +74,7 @@ double ZGeom::calGeodesic(const CMesh& mesh, int s, int t)
     for (j = 0; j < notei.outValence(); ++j) {
         auto ee = notei.getHalfEdge(j);
         int endv = ee->getVertIndex(1);
-        Vector3D vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
+        ZGeom::Vec3d vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
         double mgeo = vt.length();
         if (endv == t) return mgeo; // destination reached
         vVertNotes[endv].m_LocalGeodesic = mgeo;
@@ -174,7 +174,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
     for (j = 0; j < notei.outValence(); ++j) {
         auto ee = notei.getHalfEdge(j);
         int endv = ee->getVertIndex(1);
-        Vector3D vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
+        ZGeom::Vec3d vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
         double mgeo = vt.length();
         if (vNonHoleBoundaryVert[endv]) return mgeo;
         vVertNotes[endv].m_LocalGeodesic = mgeo;

@@ -235,7 +235,6 @@
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
     <ClInclude Include="include\ZGeom\EigenSystem.h" />
     <ClInclude Include="include\ZGeom\fibheap.h" />
-    <ClInclude Include="include\ZGeom\Vector3D.h" />
     <ClInclude Include="include\ZGeom\Laplacian.h" />
     <ClInclude Include="include\ZGeom\MatlabEngineWrapper.h" />
     <ClInclude Include="include\ZGeom\MatVecArithmetic.h" />
@@ -279,8 +278,8 @@
     <ClCompile Include="src\Geodesic.cpp" />
     <ClCompile Include="src\MeshHole.cpp" />
     <ClCompile Include="src\PointCloud.cpp" />
+    <ClCompile Include="src\Vec3.cpp" />
     <ClCompile Include="src\VecN.cpp" />
-    <ClCompile Include="src\Vector3D.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
     <ClCompile Include="src\Approximation.cpp" />
     <ClCompile Include="src\MatlabEngineWrapper.cpp" />

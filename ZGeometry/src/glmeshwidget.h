@@ -55,7 +55,7 @@ public:
 
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
 	void setBasePointSize(double r) { mFeatureSphereRadius *= r / mBaseFeatureRadius; mBaseFeatureRadius = r; }
-	void fieldView(const Vector3D &center, const Vector3D &bbox);
+	void fieldView(const ZGeom::Vec3d &center, const ZGeom::Vec3d &bbox);
 	void reset();
     QImage getScreenShot();
 
@@ -67,7 +67,7 @@ protected:
 	void mouseMoveEvent(QMouseEvent *event);
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
-	void setupObject(const CQrot& qrot, const Vector3D& trans) const;
+	void setupObject(const CQrot& qrot, const ZGeom::Vec3d& trans) const;
 	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
 	void drawLegend(QPainter* painter);
 	void drawCorrespondences(const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;

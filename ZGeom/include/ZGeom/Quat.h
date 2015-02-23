@@ -1,6 +1,6 @@
 #ifndef ZGEOM_QUAT_H
 #define ZGEOM_QUAT_H
-#include "Vector3D.h"
+#include "Vec3.h"
 
 typedef double mat44[4][4];
 
@@ -38,7 +38,7 @@ public:
   
 	CQrot& operator^(double p);
 	void convert( double * ) const;
-	Vector3D operator*( const Vector3D & v );
+	ZGeom::Vec3d operator*( const ZGeom::Vec3d & v );
 
 	//multiplication
 	friend CQrot    operator*(const CQrot &p, const CQrot & q );

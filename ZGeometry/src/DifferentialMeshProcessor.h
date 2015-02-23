@@ -35,7 +35,6 @@ public:
 
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
-	double	calHeatTrace(double timescale) const;
 	void	computeHeatDiffuseMat(double tMultiplier);
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 

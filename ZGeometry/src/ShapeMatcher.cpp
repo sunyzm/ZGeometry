@@ -1480,7 +1480,7 @@ double ShapeMatcher::TensorGraphMatching6( Engine *ep,
 	);
 	// invoke matlab for tensor matching
 
-	double ht1 = pmp1->calHeatTrace(para_t), ht2 = pmp2->calHeatTrace(para_t);
+    double ht1 = calHeatTrace(es1, para_t), ht2 = calHeatTrace(es2, para_t);
 	transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
 	transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
 
@@ -2353,7 +2353,7 @@ void ShapeMatcher::registerTesting1()
 			{
 				double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter1, *iter2);
 				//hk = std::log(4.*PI*hk);
-				hk /= pOriginalProcessor[obj]->calHeatTrace(*iter2);
+				hk /= calHeatTrace(pOriginalProcessor[obj]->getMHB(CotFormula), *iter2);
 				ofs << ", " << hk;
 			}
 			ofs << endl;
@@ -2423,7 +2423,7 @@ void ShapeMatcher::regsiterTesting2()
 			{
 				double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter2, 32);
 				//hk = std::log(4.*PI*hk);
-				hk /= pOriginalProcessor[obj]->calHeatTrace(32);
+                hk /= calHeatTrace(pOriginalProcessor[obj]->getMHB(CotFormula), 32);
 				ofs << ", " << hk;
 			}
 			ofs << endl;
@@ -2511,6 +2511,7 @@ double ShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* 
 
 void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
 {
+    const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 	matchedResult.clear();
 
 	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
@@ -2520,8 +2521,8 @@ void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, c
 	vector<double> vTrace1(tsize), vTrace2(tsize);
 	for (int s = 0; s < tsize; ++s)
 	{
-		vTrace1[s] = pmp1->calHeatTrace(vTimes[s]);
-		vTrace2[s] = pmp2->calHeatTrace(vTimes[s]);
+        vTrace1[s] = calHeatTrace(es1, vTimes[s]);
+        vTrace2[s] = calHeatTrace(es2, vTimes[s]);
 	}
 
 	for (int i = 0; i < vsize1; ++i) 
@@ -2613,6 +2614,8 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProces
 	** vPara[2]: timescale 2
 
 	******************************/
+    const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+
 	vMatchedPairs.clear();
 	const int vsize1 = (int)vFeatures1.size();	// input feature size 1
 	const int vsize2 = (int)vFeatures2.size();    // input feature size 2
@@ -2903,14 +2906,12 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProces
 	}
 
 	// invoke matlab for tensor matching
-	//ofstream ofeature("output/high_order_feature.txt");
-	//for (double* p = pfeat1; p < pfeat1+FeatureDim*tsize1; p += 6)
-	//	ofeature << *p << endl << *(p+1) << endl << *(p+2) << endl;
+
 #define HK_NORMALIZE
 #ifdef HK_NORMALIZE
 	if (highOrderFeatureType == 1 || highOrderFeatureType == 2)	// scaling hk on different models
 	{
-		double ht1 = pmp1->calHeatTrace(vPara[0]), ht2 = pmp2->calHeatTrace(vPara[0]);
+		double ht1 = calHeatTrace(es1, vPara[0]), ht2 = calHeatTrace(es2, vPara[0]);
 		transform(pfeat1, pfeat1+FeatureDim*tsize1, pfeat1, [=](double v){ return v/ht1; });
 		transform(pfeat2, pfeat2+FeatureDim*tsize2, pfeat2, [=](double v){ return v/ht2; });
 	}
@@ -3051,6 +3052,7 @@ double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcesso
 	 ** vPara[1] = thresh2
 	 ** vPara[2] = thresh3
 	*/
+    const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 	vMatchedPair.clear();
 	int size1 = (int)vFeatures1.size();
 	int size2 = (int)vFeatures2.size();
@@ -3069,8 +3071,8 @@ double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcesso
 	for (int i = 0; i < tn; ++i)
 	{
 		vTimes.push_back(tl * pow(2.0,i));
-		vHT1.push_back(pmp1->calHeatTrace(vTimes.back()));
-		vHT2.push_back(pmp2->calHeatTrace(vTimes.back()));
+        vHT1.push_back(calHeatTrace(es1, vTimes.back()));
+		vHT2.push_back(calHeatTrace(es2, vTimes.back()));
 	}
 
 	double *tmpScores = new double[size1*size2];
@@ -3214,6 +3216,7 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 	** vPara[3] = anchor1
 	** vPara[4] = anchor2 (may not be necessary)
 	*********************************/
+    const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 	double tl = vPara[0];
 	double tu = vPara[1];
 	double thresh = vPara[2];	//0.1
@@ -3235,8 +3238,8 @@ void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const 
 	vector<double> vTrace1(tsize), vTrace2(tsize);
 	for (int s = 0; s < tsize; ++s)
 	{
-		vTrace1[s] = pmp1->calHeatTrace(vTimes[s]);
-		vTrace2[s] = pmp2->calHeatTrace(vTimes[s]);
+        vTrace1[s] = calHeatTrace(es1, vTimes[s]);
+        vTrace2[s] = calHeatTrace(es2, vTimes[s]);
 	}
 
 	if (method == 0)

@@ -235,7 +235,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 	if (editMode == QZ_PICK) return;
 	else if (editMode == QZ_MOVE)
 	{	
-		Vector3D trans;
+		ZGeom::Vec3d trans;
 		CQrot    rot;
 		
 		if (gButton == Qt::LeftButton) {
@@ -246,7 +246,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			}
 		} else if (gButton == Qt::MidButton) {
 			float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / win_height;
-			trans = Vector3D(scale * (x - g_startx), scale * (g_starty - y), 0);
+			trans = ZGeom::Vec3d(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
 			for (int i = 0; i < meshCount; ++i) {
@@ -256,7 +256,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		}
 		else if (gButton == Qt::RightButton ) {
 			float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().y / win_height;
-			trans =  Vector3D(0, 0, scale * (g_starty - y));
+			trans =  ZGeom::Vec3d(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
 			for (int i = 0; i < meshCount; ++i) {
@@ -291,19 +291,19 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			glLoadIdentity();
 			gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 			CQrot& rot = vpRS[obj_index]->obj_rot;
-			Vector3D& trans = vpRS[obj_index]->obj_trans;
+			ZGeom::Vec3d& trans = vpRS[obj_index]->obj_trans;
 			setupObject(rot, trans);
 
 			glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
 			glGetDoublev(GL_PROJECTION_MATRIX, projection);
 			glGetIntegerv(GL_VIEWPORT, viewport);
 
-			const Vector3D& handlePos = pMP->getHandles()[pMP->getActiveHandle()];
+			const ZGeom::Vec3d& handlePos = pMP->getHandles()[pMP->getActiveHandle()];
 			int y_new = viewport[3] - y; // in OpenGL y is zero at the 'bottom'
 			GLdouble ox, oy, oz, wx, wy, wz;
 			gluProject(handlePos.x, handlePos.y, handlePos.z, modelview, projection, viewport, &wx, &wy, &wz);
 			gluUnProject(x, y_new, wz, modelview, projection, viewport, &ox, &oy, &oz);
-			pMP->getHandles()[pMP->getActiveHandle()] = Vector3D(ox, oy, oz);
+			pMP->getHandles()[pMP->getActiveHandle()] = ZGeom::Vec3d(ox, oy, oz);
 
 			glPopMatrix();	
 		}	
@@ -324,7 +324,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	if (event->modifiers() & Qt::ControlModifier) {
 		int numSteps = event->delta();
 		float scale = 5.0 * mMeshes[0]->getBoundingBox().x / this->height();
-		Vector3D trans =  Vector3D(0, 0, scale * numSteps);
+		ZGeom::Vec3d trans =  ZGeom::Vec3d(0, 0, scale * numSteps);
 		
 		for (int i = 0; i < meshCount; ++i) {
 			if (vpRS[i]->selected)
@@ -335,7 +335,7 @@ void GLMeshWidget::wheelEvent(QWheelEvent *event)
 	update();
 }
 
-void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
+void GLMeshWidget::setupObject(const CQrot& qrot, const ZGeom::Vec3d& trans) const
 {
 	glMatrixMode(GL_MODELVIEW);
 	glTranslated(trans.x, trans.y, trans.z);
@@ -344,7 +344,7 @@ void GLMeshWidget::setupObject(const CQrot& qrot, const Vector3D& trans) const
 	glMultMatrixd(( GLdouble*)rot );
 }
 
-void GLMeshWidget::fieldView( const Vector3D &center, const Vector3D &bbox )
+void GLMeshWidget::fieldView( const ZGeom::Vec3d &center, const ZGeom::Vec3d &bbox )
 {
 	g_EyeZ = 15.0 * (float)bbox.y;
 	g_myFar = 100.0 * (float)bbox.y;
@@ -449,7 +449,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 {
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
-    const vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+    const vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
     const vector<Vec3d> vVertPos = tmesh->getAllVertPositions();
     const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
 
@@ -477,7 +477,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
         for (CFace* face : tmesh->m_vFaces) {
             for (int j = 0; j < 3; j++) {
                 int pi = face->getVertexIndex(j);
-                const Vector3D& norm = vVertNormals[pi];
+                const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
                 glNormal3f(norm.x, norm.y, norm.z);
@@ -497,7 +497,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
             CFace* face = tmesh->m_vFaces[fIdx];
             for (int j = 0; j < 3; j++) {
                 int pi = face->getVertexIndex(j);
-                const Vector3D& norm = vVertNormals[pi];
+                const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
                 glNormal3f(norm.x, norm.y, norm.z);
@@ -516,7 +516,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
         for (CFace* face : tmesh->m_vFaces) {
             for (int j = 0; j < 3; j++) {
                 int pi = face->getVertexIndex(j);
-                const Vector3D& norm = vVertNormals[pi];
+                const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
                 glNormal3f(norm.x, norm.y, norm.z);
@@ -561,7 +561,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	/* draw bounding box */
 	if (m_bShowBoundingBox) 
     {
-		const Vector3D& bbox = tmesh->getBoundingBox();
+		const ZGeom::Vec3d& bbox = tmesh->getBoundingBox();
 		Vec3d verts[8] = { Vec3d(-bbox.x, -bbox.y, -bbox.z),
                            Vec3d(-bbox.x, -bbox.y, bbox.z),
                            Vec3d(-bbox.x, bbox.y, -bbox.z),
@@ -678,7 +678,7 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
 	if (!pMP->getHandles().empty())
 	{
 		for (auto handle :pMP->getHandles()) {
-			Vector3D vt = handle.second;
+			ZGeom::Vec3d vt = handle.second;
 			glColor4f(color_handle[0], color_handle[1], color_handle[2], color_handle[3]);
 			GLUquadric* quadric = gluNewQuadric();
 			gluQuadricDrawStyle(quadric, GLU_FILL);
@@ -730,7 +730,7 @@ bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 	glLoadIdentity();
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 	const CQrot& rot = vpRS[obj]->obj_rot;
-	const Vector3D& trans = vpRS[obj]->obj_trans;
+	const ZGeom::Vec3d& trans = vpRS[obj]->obj_trans;
 	setupObject(rot, trans);
 
 	glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
@@ -749,7 +749,7 @@ bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 	glPopMatrix();
 
 	if (z != 1.0f) {
-		_p = Vector3D(pos[0], pos[1], pos[2]);
+		_p = ZGeom::Vec3d(pos[0], pos[1], pos[2]);
 		return true;
 	}
     else return false;
@@ -767,8 +767,8 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 	double rot1[16], rot2[16];
 	rs1->obj_rot.convert(rot1);
 	rs2->obj_rot.convert(rot2);
-	const Vector3D& trans1 = rs1->obj_trans;
-	const Vector3D& trans2 = rs2->obj_trans;
+	const ZGeom::Vec3d& trans1 = rs1->obj_trans;
+	const ZGeom::Vec3d& trans2 = rs2->obj_trans;
 		
 	if (m_bDrawMatching)
 	{
@@ -786,8 +786,8 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 			int loc1 = vmp[i].m_idx1;
 			int loc2 = vmp[i].m_idx2;
 
-			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
-			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
+			const ZGeom::Vec3d& pos1 = tmesh1->getVertexPosition(loc1);
+			const ZGeom::Vec3d& pos2 = tmesh2->getVertexPosition(loc2);
 
 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
@@ -840,7 +840,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 		for (int i = 0; i < size; i++)
 		{
 			const int loc1 = vdr[i].m_idx1;
-			const Vector3D& pos1 = tmesh1->getVertexPosition(loc1);
+			const ZGeom::Vec3d& pos1 = tmesh1->getVertexPosition(loc1);
 			int color = i;
 			float cc = (color*1.0f) / ((float)size-1.0f);
 
@@ -857,7 +857,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 		for (int i = 0; i < size; i++)
 		{
 			const int loc2 = vdr[i].m_idx2;
-			const Vector3D& pos2 = tmesh2->getVertexPosition(loc2);
+			const ZGeom::Vec3d& pos2 = tmesh2->getVertexPosition(loc2);
 			int color = i;
 			float cc = (color*1.0f) / ((float)size-1.0f);
 

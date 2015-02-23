@@ -64,7 +64,7 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 	}
 
 	// add boundary constraints on every boundary edge
-	const std::vector<Vector3D>& faceNormals = mesh->getFaceNormals();
+	const std::vector<ZGeom::Vec3d>& faceNormals = mesh->getFaceNormals();
 	for (int i = 0; i < originalMesh->halfEdgeCount(); ++i)
 	{
 		const CHalfEdge* pHE = originalMesh->m_vHalfEdges[i];
@@ -73,14 +73,14 @@ void MeshPyramid::setInitialMesh( CMesh* mesh )
 
 		int bV1 = pHE->m_Vertices[0]->m_vid, bv2 = pHE->m_Vertices[1]->m_vid;
 
-		Vector3D vf = faceNormals[pHE->m_Face->getFaceIndex()];
-		Vector3D ve = pHE->m_Vertices[1]->pos() - pHE->m_Vertices[0]->pos();
-		Vector3D vn = vf ^ ve;
+		ZGeom::Vec3d vf = faceNormals[pHE->m_Face->getFaceIndex()];
+		ZGeom::Vec3d ve = pHE->m_Vertices[1]->pos() - pHE->m_Vertices[0]->pos();
+		ZGeom::Vec3d vn = vf ^ ve;
 		vn.normalize();
 		double para_a = vn[0], 
 			   para_b = vn[1],
 			   para_c = vn[2],
-			   para_d = vn * pHE->m_Vertices[0]->pos(),
+			   para_d = vn.dot(pHE->m_Vertices[0]->pos()),
 			   para_area = ve.length2(); 
 		Quadric bQ = Quadric(para_a, para_b, para_c, para_d, para_area);
 		bQ *= bQ.getArea() * BOUNDARY_PENALTY;
@@ -240,7 +240,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 					CVertex *v1 = (*he_iter)->m_eNext->m_Vertices[0],
 							*v2 = (*he_iter)->m_eNext->m_Vertices[1],
 							*v3 = vKeep;
-					Vector3D l1 = v1->pos() - v2->pos(),
+					ZGeom::Vec3d l1 = v1->pos() - v2->pos(),
 							 l2 = v2->pos() - v3->pos(),
 							 l3 = v3->pos() - v1->pos();
 					double area = (l1 ^ l2).length() / 2;

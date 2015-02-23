@@ -29,7 +29,7 @@ CQrot & CQrot::operator^(double p)
 	double theta = 2 * acos( m_w );
 	if( theta < 1e-10 ) return (*this); 
 
-	Vector3D axis( m_x,m_y,m_z );
+	ZGeom::Vec3d axis( m_x,m_y,m_z );
 	axis.normalize();
 	theta *= p;
 	m_w   = cos( theta * 0.5 );
@@ -42,13 +42,13 @@ CQrot & CQrot::operator^(double p)
 	return (*this);
 }
 
-Vector3D  CQrot::operator*(  const Vector3D & p )
+ZGeom::Vec3d  CQrot::operator*(  const ZGeom::Vec3d & p )
 {
     CQrot   q(m_w,m_x,m_y,m_z);
     CQrot pq( 0, p.x,p.y, p.z);
     CQrot iq = q^(-1);
     CQrot r =     q *  pq * iq ;
-    return Vector3D(r.m_x,r.m_y, r.m_z);
+    return ZGeom::Vec3d(r.m_x,r.m_y, r.m_z);
 }
 
 
@@ -59,7 +59,7 @@ CQrot operator^(const CQrot & r, double p)
 	double theta = 2 * acos( q.m_w );
 	if( theta < 1e-10 ) return q; 
 
-	Vector3D axis( q.m_x, q.m_y, q.m_z );
+	ZGeom::Vec3d axis( q.m_x, q.m_y, q.m_z );
 	axis.normalize();
 	theta *= p;
 	q.m_w   = cos( theta * 0.5 );
@@ -77,14 +77,14 @@ CQrot operator*( const CQrot & p, const CQrot & q )
 {
 
     double   sp = p.m_w;
-    Vector3D vp( p.m_x, p.m_y, p.m_z );
+    ZGeom::Vec3d vp( p.m_x, p.m_y, p.m_z );
 
     double   sq = q.m_w;
-    Vector3D vq( q.m_x, q.m_y, q.m_z );
+    ZGeom::Vec3d vq( q.m_x, q.m_y, q.m_z );
  
-    double   sr = sp * sq - vp * vq;
+    double   sr = sp * sq - vp.dot(vq);
 
-    Vector3D vr;
+    ZGeom::Vec3d vr;
     vr = sq * vp + sp * vq  + (vp^vq);
 
     return CQrot( sr, vr.x, vr.y, vr.z);

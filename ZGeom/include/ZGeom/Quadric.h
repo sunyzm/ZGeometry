@@ -1,6 +1,6 @@
 #ifndef ZGEOM_QUADRIC_H
 #define ZGEOM_QUADRIC_H
-#include "Vector3D.h"
+#include "Vec3.h"
 
 class Quadric
 {
@@ -10,18 +10,18 @@ public:
 	Quadric(const Quadric& q);
 	Quadric& operator =(const Quadric& q);
 
-	double		eval(const Vector3D& v);
-	Matrix3		getTensor() const;
-	Vector3D	getVector() const;
-	double		getOffset() const {return d2;}
-	double		getArea() const {return area;}
-	Quadric&	operator +=(const Quadric& q1);
-	Quadric&	operator -=(const Quadric& q1);
-	Quadric&	operator *=(double coeff);
+    double          eval(const ZGeom::Vec3d& v);
+	ZGeom::Matrix3	getTensor() const;
+	ZGeom::Vec3d	getVector() const;
+	double		    getOffset() const {return d2;}
+	double		    getArea() const {return area;}
+	Quadric&	    operator +=(const Quadric& q1);
+	Quadric&	    operator -=(const Quadric& q1);
+	Quadric&	    operator *=(double coeff);
 	
-	friend Quadric operator +(const Quadric& q1, const Quadric& q2);
-	friend Quadric operator -(const Quadric& q1, const Quadric& q2);
-	friend Quadric operator *(const Quadric& q1, double coeff);
+	friend Quadric  operator +(const Quadric& q1, const Quadric& q2);
+	friend Quadric  operator -(const Quadric& q1, const Quadric& q2);
+	friend Quadric  operator *(const Quadric& q1, double coeff);
 
 private:
 	void initInternal();

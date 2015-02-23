@@ -2,7 +2,7 @@
 
 using namespace std;
 
-double Quadric::eval( const Vector3D& v )
+double Quadric::eval(const ZGeom::Vec3d& v)
 {
 	double x = v.x, y = v.y, z = v.z;
 	double ret = x*x*a2	+ 2*x*y*ab	+ 2*x*z*ac	+ 2*x*ad
@@ -71,9 +71,9 @@ void Quadric::initInternal()
 	pData[10] = &area;
 }
 
-Matrix3 Quadric::getTensor() const
+ZGeom::Matrix3 Quadric::getTensor() const
 {
-	Matrix3 tensor;
+	ZGeom::Matrix3 tensor;
 	tensor(0,0) = a2;
 	tensor(0,1) = ab;
 	tensor(0,2) = ac;
@@ -86,9 +86,9 @@ Matrix3 Quadric::getTensor() const
 	return tensor;
 }
 
-Vector3D Quadric::getVector() const
+ZGeom::Vec3d Quadric::getVector() const
 {
-	Vector3D vec;
+    ZGeom::Vec3d vec;
 	vec[0] = ad;
 	vec[1] = bd;
 	vec[2] = cd;

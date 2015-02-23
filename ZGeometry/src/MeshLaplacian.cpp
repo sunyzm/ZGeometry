@@ -19,7 +19,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
 	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
 	vector<std::tuple<int,int,double> > vSparseElements;
@@ -39,10 +39,10 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 			int vj = pvj->getIndex();
 			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
 
-			Vector3D vij = pvj->pos() - pvi->pos();
+			ZGeom::Vec3d vij = pvj->pos() - pvi->pos();
 			double w1 = std::exp(-vij.length2() / hPara1);
 			double w2 = std::exp(-pow(
-				(fabs(dotProduct3D(vVertNormals[vi], vij)) + std::fabs(dotProduct3D(vVertNormals[vj], vij)))
+				(fabs(dot(vVertNormals[vi], vij)) + std::fabs(dot(vVertNormals[vj], vij)))
 				/vij.length(), 2) / hPara2);
 			double wij = w1 * w2;
 
@@ -85,7 +85,7 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
 	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
 	vector<std::tuple<int,int,double> > vSparseElements;	
@@ -106,7 +106,7 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 			int vj = pvj->getIndex();
 			if (vi > vj && phe->twinHalfEdge() != NULL) continue;
 
-			Vector3D vij = pvj->pos() - pvi->pos();
+			ZGeom::Vec3d vij = pvj->pos() - pvi->pos();
 			double w1 = std::exp(-vij.length2() / hPara1);
 			double curvDiff = vMeanCurvatures[vi] - vMeanCurvatures[vj];
 			double w2 = std::exp(-curvDiff*curvDiff / hPara2);
@@ -152,7 +152,7 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 	hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
 	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
 
 	vector<std::tuple<int,int,double> > vSparseElements;
@@ -168,11 +168,11 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 				if (vi == vki) continue;
 				const CVertex* pvk = pfi->getVertex(k);
 
-				Vector3D vpw = pvi->pos() - pvk->pos();
+				ZGeom::Vec3d vpw = pvi->pos() - pvk->pos();
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
 				double w1 = std::exp(-vpw.length2() / hPara1);
 //				double w2 = std::exp(-std::pow(vMeanCurvatures[vi] - vMeanCurvatures[vki], 2)  / hPara2);
-				double w2 = std::exp(-std::pow(dotProduct3D(vVertNormals[vi], vpw), 2) / hPara2);
+				double w2 = std::exp(-std::pow(dot(vVertNormals[vi], vpw), 2) / hPara2);
 
 				double svalue = face_area * w1 * w2;
 
@@ -237,7 +237,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
-	const std::vector<Vector3D>& vVertNormals = tmesh->getVertNormals();
+	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
 
 	for (int vi = 0; vi < mOrder; ++vi)	{
 		const CVertex* pvi = tmesh->getVertex(vi); 
@@ -255,7 +255,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 				w1 = std::exp(-(pvi->pos() - pvk->pos()).length2() / hPara1);
 //				w2 = std::exp(-std::pow(pvi->getMeanCurvature() - pvk->getMeanCurvature(), 2) );// / hPara2);
 //				w2 = std::exp(-std::pow(dotProduct3D(pvi->getNormal(), pvi->getPosition() - pvk->getPosition()), 2) / hPara2);
-				w2 = std::exp(dotProduct3D(vVertNormals[vi], pvk->pos() - pvi->pos()) / hPara2);
+				w2 = std::exp(dot(vVertNormals[vi], pvk->pos() - pvi->pos()) / hPara2);
 				
 				double svalue = w1 * w2;
 				svalue *= face_area;

@@ -15,11 +15,8 @@ void mulMatMat(const SparseMatrix<double>& mat1, const SparseMatrix<double>& mat
 void addMatMat(const SparseMatrix<double>& mat1, const SparseMatrix<double>& mat2, double beta, SparseMatrix<double>& mat3);	// compute mat3 = mat1 + beta * mat2
 	
 double innerProductStd(const std::vector<double>& v1, const std::vector<double>& v2);
-
 double innerProductSym(const std::vector<double>& v1, SparseMatVecMultiplier* mulA, const std::vector<double>& v2);
-
 double innerProductSym(const std::vector<double>& v1, const SparseMatrixCSR<double, int>& A, const std::vector<double>& v2);
-
 double innerProductSym(const VecNd& v1, const SparseMatrixCSR<double, int>& A, const VecNd& v2);
 
 double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2);
@@ -35,6 +32,6 @@ T innerProductDiag(const VecN<T>& v1, const VecN<T>& v2, const VecN<T>& v3)
 	return sum;
 }
 
-} //end of namespace
+}   // end of namespace
 
 #endif

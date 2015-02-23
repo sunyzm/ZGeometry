@@ -205,7 +205,7 @@ void ShapeEditor::addCoordinate(const MeshCoordinates &newCoord, std::string coo
     mStoredCoordinates.push_back(std::make_pair(coordName, newCoord));
 }
 
-void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<Vector3D>& anchorPos ) const
+void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<ZGeom::Vec3d>& anchorPos ) const
 {
 	const auto& anchors = mProcessor->getHandles();
 	anchorCount = anchors.size();
@@ -301,7 +301,7 @@ void ShapeEditor::deformSimple()
 
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
+	std::vector<ZGeom::Vec3d> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
 		std::cout << "At least one anchor need to be picked!";
@@ -310,7 +310,7 @@ void ShapeEditor::deformSimple()
 
 	const int vertCount = mMesh->vertCount();
 	int hIdx = anchorIndex[0];		// only use the first handle to deform
-	Vector3D handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->pos();
+	ZGeom::Vec3d handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->pos();
 
 	std::vector<int> vFreeIdx = mMesh->getVertNeighborVerts(hIdx, 5, true);
 //	vFreeIdx.resize(vertCount);
@@ -324,10 +324,10 @@ void ShapeEditor::deformSimple()
 	});
 	double distMax = *std::max_element(vDist2Handle.begin(), vDist2Handle.end());
 
-	std::vector<Vector3D> vDeformedPos(freeVertCount);
+	std::vector<ZGeom::Vec3d> vDeformedPos(freeVertCount);
 	for (int i = 0; i < freeVertCount; ++i) {
 		CVertex* pv = mMesh->getVertex(vFreeIdx[i]);
-		vDeformedPos[i] = (Vector3D)pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
+		vDeformedPos[i] = (ZGeom::Vec3d)pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 	}
 
     MeshCoordinates newCoord = mMesh->getVertCoordinates();
@@ -352,7 +352,7 @@ void ShapeEditor::deformLaplacian()
 
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
+	std::vector<ZGeom::Vec3d> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
 		std::cout << "At least one anchor need to be picked!";
@@ -401,7 +401,7 @@ void ShapeEditor::deformLaplacian_v2()
 
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
+	std::vector<ZGeom::Vec3d> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
 		std::cout << "At least one anchor need to be picked!";
@@ -467,7 +467,7 @@ void ShapeEditor::deformBiLaplacian()
 
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
+	std::vector<ZGeom::Vec3d> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
 		std::cout << "At least one anchor need to be picked!";
@@ -530,7 +530,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 
 	int anchorCount(0);
 	std::vector<int> anchorIndex;
-	std::vector<Vector3D> anchorPos;
+	std::vector<ZGeom::Vec3d> anchorPos;
 	prepareAnchors(anchorCount, anchorIndex, anchorPos);
 	if (anchorCount == 0) {
 		std::cout << "At least one anchor need to be picked!";
@@ -573,7 +573,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount + fixedCount, 0);
 		for (int l = 0; l < anchorCount; ++l) {
-			const Vector3D& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
+			const ZGeom::Vec3d& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * (anchorPos[l][i] - oldPos[i]);
 		}
 	}
@@ -2091,7 +2091,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
             for (int m = i + 1; m < k; ++m) {
                 CVertex *vm = boundaryVertPtr[m];
                 WeightSet triWeight;
-                triWeight.area = TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
+                triWeight.area = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
 
                 Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
                 Vec3d vn_im, vn_mk;
@@ -2301,7 +2301,7 @@ void ShapeEditor::fillHole()
             for (int m = i + 1; m < k; ++m) {
                 CVertex *vm = boundaryVertPtr[m];
                 WeightSet triWeight;
-                triWeight.area = TriArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
+                triWeight.area = ZGeom::triArea(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[k]);
 
                 Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
                 Vec3d vn_im, vn_mk;
@@ -2464,7 +2464,7 @@ void ShapeEditor::fillHole()
     MeshLineList vNormalLines;
 
     /* normals calculated from filled model */
-    vector<Vector3D> vNormals1 = mMesh->getVertNormals();
+    vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
     for (int vi : affectedVert) {
         LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
@@ -2494,11 +2494,11 @@ void ShapeEditor::fillHole()
     for (int i = 0; i < 3; ++i) {
         vNormalRecovered[i] = singleChannelSparseInpaint(vNormalOld[i], vMask, dictMHB, vCodingInpaint[i]);
     }
-    vector<Vector3D> vNormals2(newVertCount);
+    vector<ZGeom::Vec3d> vNormals2(newVertCount);
     for (int i = 0; i < newVertCount; ++i) {
         if (vMask[i]) vNormals2[i] = vNormals1[i];
         else {
-            vNormals2[i] = Vector3D(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
+            vNormals2[i] = ZGeom::Vec3d(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
             vNormals2[i].normalize();
         }        
     }
@@ -2797,7 +2797,7 @@ void ShapeEditor::holeEstimateCurvature()
 
     /* normals calculated from filled model */
     mMesh->calVertNormals();
-    vector<Vector3D> vNormals1 = mMesh->getVertNormals();
+    vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
     for (int vi : affectedVert) {
         LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
@@ -2816,11 +2816,11 @@ void ShapeEditor::holeEstimateCurvature()
     for (int i = 0; i < 3; ++i) {
         vNormalRecovered[i] = singleChannelSparseInpaint(vNormalOld[i], vMask, dictMHB, vCodingInpaint[i]);
     }
-    vector<Vector3D> vNormals2(totalVertCount);
+    vector<ZGeom::Vec3d> vNormals2(totalVertCount);
     for (int i = 0; i < totalVertCount; ++i) {
         if (vMask[i]) vNormals2[i] = vNormals1[i];
         else {
-            vNormals2[i] = Vector3D(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
+            vNormals2[i] = ZGeom::Vec3d(vNormalRecovered[0][i], vNormalRecovered[1][i], vNormalRecovered[2][i]);
             vNormals2[i].normalize();
         }
     }

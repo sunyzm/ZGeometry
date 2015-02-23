@@ -15,7 +15,6 @@
 #include <vector>
 #include "VecN.h"
 #include "Vec3.h"
-#include "Vector3D.h"
 #include "Quat.h"
 #include "PointCloud.h"
 #include "MeshAttr.h"
@@ -55,7 +54,7 @@ public:
     bool				    judgeOnBoundary() const;
     void                    setPosition(double x, double y, double z);
     void                    clone(const CVertex& v); 
-    void                    translateAndScale(const Vector3D& translation, double s);
+    void                    translateAndScale(const ZGeom::Vec3d& translation, double s);
     std::vector<const CFace*>   getAdjacentFaces() const;
     CHalfEdge*              adjacentTo(CVertex* v2) const;
 
@@ -63,7 +62,7 @@ public:
 	int						m_vIndex;           // index of the vertex 0-based
 	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
-	Vector3D				m_vPosition;		// vertex coordinates
+	ZGeom::Vec3d			m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
 };
 
@@ -215,26 +214,26 @@ public:
     void	            assignElementsIndex();
 
     /* basic geometry query, analysis and processing */
-	const Vector3D&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
+	const ZGeom::Vec3d&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
     ZGeom::Vec3d                 getVertPos(int iv) const { return (ZGeom::Vec3d)m_vVertices[iv]->pos(); }
     std::vector<ZGeom::Vec3d>    getAllVertPositions() const;
-    std::vector<Vector3D>        allVertPos() const;
+    std::vector<ZGeom::Vec3d>        allVertPos() const;
 	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
-	const Vector3D&			     getBoundingBox() const { return getAttrValue<Vector3D>(StrAttrMeshBBox); }
-	const Vector3D&		         getCenter() const { return getAttrValue<Vector3D>(StrAttrMeshCenter); }
+	const ZGeom::Vec3d&			     getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
+	const ZGeom::Vec3d&		         getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
 	const std::vector<double>&   getMeanCurvature();
 	const std::vector<double>&   getMeanCurvature() const;
 	const std::vector<double>&   getGaussCurvature();
-	const std::vector<Vector3D>& getFaceNormals();
-	const std::vector<Vector3D>& getVertNormals();
-	const std::vector<Vector3D>& getVertNormals() const;
+	const std::vector<ZGeom::Vec3d>& getFaceNormals();
+	const std::vector<ZGeom::Vec3d>& getVertNormals();
+	const std::vector<ZGeom::Vec3d>& getVertNormals() const;
 	const std::vector<bool>&	 getVertsOnBoundary();
     std::vector<bool>            getVertsOnHoles();
     bool                         isVertOnBoundary(int vi);
     double						 calFaceArea(int i) const;
-	Vector3D			         calMeshCenter() const;
-	Vector3D			         calBoundingBox(const Vector3D& center) const;
+	ZGeom::Vec3d			         calMeshCenter() const;
+	ZGeom::Vec3d			         calBoundingBox(const ZGeom::Vec3d& center) const;
 	double				         calSurfaceArea() const;
 	double				         calVolume() const;
 	void                         calVertMixedAreas();
@@ -250,8 +249,8 @@ public:
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
-    void                move(const Vector3D& translation);		// translate mesh
-    void		        scaleAndTranslate(const Vector3D& center, double scale);
+    void                move(const ZGeom::Vec3d& translation);		// translate mesh
+    void		        scaleAndTranslate(const ZGeom::Vec3d& center, double scale);
     void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
     void                scaleToUnitBox();                       // move to origin and scale the mesh to inside the unit box
     void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
@@ -266,7 +265,7 @@ public:
 	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
-	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<Vector3D>& vNewPos);
+	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
     void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
     void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
