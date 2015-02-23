@@ -84,7 +84,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 QZGeometryWindow::~QZGeometryWindow()
 {
 	for (CMesh* m : mMeshes) delete m;
-	for (DifferentialMeshProcessor* p : mProcessors) delete p;
+	for (MeshHelper* p : mProcessors) delete p;
 	for (RenderSettings* rs : mRenderManagers) delete rs;
 
 	for (QAction* a : m_actionDisplaySignatures) delete a;
@@ -875,7 +875,7 @@ void QZGeometryWindow::computeCurvatures()
 
 void QZGeometryWindow::updateReferenceMove( int obj )
 {
-	DifferentialMeshProcessor& mp = *mProcessors[obj]; 
+	MeshHelper& mp = *mProcessors[obj]; 
 
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
 	ZGeom::Vec3d originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->pos();
@@ -953,7 +953,7 @@ void QZGeometryWindow::computeEigenfunction()
 	int select_eig = (mCommonParameter >= sliderCenter) ? (mCommonParameter - sliderCenter + 1) : 1;
 	
 	for (int i = 0; i < mMeshCount; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
+		MeshHelper& mp = *mProcessors[i];
 		vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
         mMeshes[i]->addColorAttr(StrAttrColorEigenFunction, ColorSignature(eigVec, mColorMapType));
 	}
@@ -969,7 +969,7 @@ void QZGeometryWindow::computeHK()
 	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		MeshHelper& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
 		const ZGeom::EigenSystem &mhb = mp.getMHB(mActiveLalacian);
@@ -993,7 +993,7 @@ void QZGeometryWindow::computeHKS()
 	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int i = 0; i < mMeshCount; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
+		MeshHelper& mp = *mProcessors[i];
 		const int meshSize = mp.getMesh()->vertCount();
 		const ZGeom::EigenSystem& mhb = mp.getMHB(mActiveLalacian);
 
@@ -1015,7 +1015,7 @@ void QZGeometryWindow::computeBiharmonic()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		MeshHelper& mp = *mProcessors[obj];
 		const int vertCount = mMeshes[obj]->vertCount();
 		const int refPoint = mp.getRefPointIndex();
         const ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
@@ -1562,7 +1562,7 @@ void QZGeometryWindow::showCoarser()
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, LaplacianType laplacianType /*= CotFormula*/ )
 {
-	DifferentialMeshProcessor& mp = *mProcessors[obj];
+	MeshHelper& mp = *mProcessors[obj];
 	const CMesh& mesh = *mMeshes[obj];
 	const int vertCount = mesh.vertCount();
 	if (nEigVec >= vertCount) nEigVec = vertCount - 1;
@@ -1684,7 +1684,7 @@ void QZGeometryWindow::registerTest()
 
 bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, LaplacianType laplacianType ) const
 {
-	const DifferentialMeshProcessor& mp = *mProcessors[obj];
+	const MeshHelper& mp = *mProcessors[obj];
 	const CMesh& mesh = *mMeshes[obj];
 	
 	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
@@ -1712,7 +1712,7 @@ void QZGeometryWindow::allocateStorage( int newMeshCount )
 	assert(newMeshCount > existingMeshCount);
 	for (int k = 0; k < newMeshCount - existingMeshCount; ++k) {
 		mMeshes.push_back(new CMesh());
-		mProcessors.push_back(new DifferentialMeshProcessor());
+		mProcessors.push_back(new MeshHelper());
 		mRenderManagers.push_back(new RenderSettings());
 	}
 	mMeshCount = newMeshCount;
@@ -1806,7 +1806,7 @@ double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, doub
 void QZGeometryWindow::computeGeodesics()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
+		MeshHelper& mp = *mProcessors[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
 
@@ -1827,7 +1827,7 @@ void QZGeometryWindow::computeHeatTransfer()
 {
 	double tMultiplier = 1.0;
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor *mp = mProcessors[obj];
+		MeshHelper *mp = mProcessors[obj];
 		const int vertCount = mMeshes[obj]->vertCount();
 		const int vSrc = mp->getRefPointIndex();
 		std::vector<double> vHeat;
@@ -1949,7 +1949,7 @@ void QZGeometryWindow::displayBasis( int idx )
 	int select_basis = idx;
 
 	for (int i = 0; i < 1; ++i) {
-		DifferentialMeshProcessor& mp = *mProcessors[i];
+		MeshHelper& mp = *mProcessors[i];
 		std::vector<double> eigVec = mShapeEditor.mEditBasis[idx].toStdVector();
 		addColorSignature(i, eigVec, StrAttrColorWaveletBasis);
 	}

@@ -3,7 +3,7 @@
 #include <ZGeom/Approximation.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/Mesh.h>
-#include "DifferentialMeshProcessor.h"
+#include "MeshHelper.h"
 
 enum DictionaryType {
 	DT_UNIT, DT_Fourier, DT_FourierSpikes, DT_SGW1, DT_SGW2, DT_SGW3, DT_SGW4, 
@@ -52,7 +52,7 @@ public:
 
 private:
 	CMesh mSubMesh;
-	DifferentialMeshProcessor mMeshProcessor;
+	MeshHelper mMeshProcessor;
 	std::vector<int> mMappedIdx;
 	ZGeom::EigenSystem mEigenSystem;
 	ZGeom::Dictionary mDict;

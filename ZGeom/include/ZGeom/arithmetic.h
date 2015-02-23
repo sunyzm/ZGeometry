@@ -9,30 +9,25 @@
 namespace ZGeom {
 
 template<typename T>
-inline T vecMean(const std::vector<T>& vec)
+inline T sqr(T x) { return x*x; }
+
+template<typename T>
+inline T cubic(T x) { return x*x*x; }
+
+std::vector<double> linspace(double lo, double hi, int N);
+
+template<typename T>
+inline T mean(const std::vector<T>& vec)
 {
 	double sum(0);
 	for (T a: vec) sum += a;
-	return sum / static_cast<T>(vec.size());
+	return T(sum / (double)vec.size());
 }
 
 inline double sinc(double x)
 {
 	if (fabs(x) < 1e-10) return 1.0;
 	else return std::sin(PI*x) / (PI*x);
-}
-
-inline double VectorDotProduct( const std::vector<double>& v1, const std::vector<double>& v2 )
-{
-	if(v1.size() != v2.size())
-		throw std::logic_error("incompatible eigenfunctions!");
-
-	double sum(0);
-	size_t size = v1.size();
-	for (size_t i = 0; i < size; ++i)
-		sum += v1[i] * v2[i];
-
-	return sum;
 }
 
 inline double VectorScalarProduct( const std::vector<double>& v1, const std::vector<double>& v2, const std::vector<double>& s )
@@ -67,7 +62,7 @@ inline void VectorPointwiseDivide( const std::vector<double>& v1, const std::vec
 	}
 }
 
-/// judge whether the given three lengths can form a triangle
+//// judge whether the given three lengths can form a triangle
 inline bool validAsTriangle(double e1, double e2, double e3) {
 	return e1 > 0 && e2 > 0 && e3 > 0 && 
 		e1 + e2 > e3 && e1 + e3 > e2 && e2 + e3 > e1;
@@ -75,10 +70,10 @@ inline bool validAsTriangle(double e1, double e2, double e3) {
 
 void triangleCot( double a, double b, double c, double &cotan_a, double &cotan_c );
 
-/// compute cosine of the angle opposite to e3
+//// compute cosine of the angle opposite to e3
 double cosTriSides(double e1, double e2, double e3);
 
-/// compute the area of the triangle of given side lengths
+//// compute the area of the triangle of given side lengths
 double triArea(double e1, double e2, double e3);
 
 inline double triArea(Vec3d v1, Vec3d v2, Vec3d v3)
@@ -109,8 +104,6 @@ double calMixedTriArea(double a, double b, double c, double& cotan_a, double& co
 double calHalfMixedTriArea(double a, double b, double c, double& cotan_a);
 void quadricForm(int dim1, int dim2, double* mat1, double* diag, double *matResult);
 std::pair<Vec3d, double> circumcenter(Vec3d p1, Vec3d p2, Vec3d p3);
-
-std::vector<double> linspace(double lo, double hi, int N);
 
 //////////////////////////////////////////////////////////////////////////
 //// fast numerical computation with AMP

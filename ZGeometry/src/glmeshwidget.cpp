@@ -7,7 +7,7 @@
 #include <QFile>
 #include <QPainter>
 #include <ZGeom/util.h>
-#include <ZGeom/arithmetic.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/Color.h>
 #include "OutputHelper.h"
 #include "global.h"
@@ -117,23 +117,12 @@ void GLMeshWidget::paintGL()
     drawGL();
 }
 
-// void GLMeshWidget::paintEvent( QPaintEvent *event )
-// {
-// 	// To achieve 2D graphics and 3d OpenGL overlay, we have to implement paintEvent instead of relying on paintGL()
-// 	
-// 	drawGL();
-// 
-// 	QPainter painter(this);
-// 	if (m_bShowLegend) drawLegend(&painter);
-// 	painter.end();
-// }
-
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
 
-	std::vector<DifferentialMeshProcessor*>& vpMP = mProcessors;
+	std::vector<MeshHelper*>& vpMP = mProcessors;
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
@@ -206,7 +195,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 			Vec3d p;
 			if (glPick(x, y, p, obj_index)) {
 				// find closest handle
-				DifferentialMeshProcessor* pMP = vpMP[obj_index];
+				MeshHelper* pMP = vpMP[obj_index];
 				int imin(-1);
 				double d, dmin(1e10);
 				for (auto handle : pMP->getHandles()) {
@@ -228,7 +217,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
-	std::vector<DifferentialMeshProcessor*>& vpMP = mProcessors;
+	std::vector<MeshHelper*>& vpMP = mProcessors;
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
@@ -281,7 +270,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 		if ( obj_index >= 0 && vpMP[obj_index]->getActiveHandle() != -1 
 			 && vpMP[obj_index]->getHandles().find(vpMP[obj_index]->getActiveHandle()) != vpMP[obj_index]->getHandles().end() )
 		{
-			DifferentialMeshProcessor* pMP = vpMP[obj_index];
+			MeshHelper* pMP = vpMP[obj_index];
 
 			GLdouble  modelview[16], projection[16];
 			GLint     viewport[4];
@@ -428,8 +417,8 @@ void GLMeshWidget::drawGL()
 	}
 	else if (g_task == TASK_REGISTRATION) {
 		assert(mMeshes.size() == 2);
-        drawMeshExt(mMatcher->getMeshProcessor(0, m_nMeshLevel), mRenderSettings[0]);
-        drawMeshExt(mMatcher->getMeshProcessor(1, m_nMeshLevel), mRenderSettings[1]);
+        drawMeshExt(mMatcher->getMeshHelper(0, m_nMeshLevel), mRenderSettings[0]);
+        drawMeshExt(mMatcher->getMeshHelper(1, m_nMeshLevel), mRenderSettings[1]);
 
 		if (m_bDrawMatching || m_bDrawRegistration) {
 			drawCorrespondences(mMatcher, mRenderSettings[0], mRenderSettings[1]);
@@ -445,7 +434,7 @@ void GLMeshWidget::drawGL()
 	glPopAttrib();
 }
 
-void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const RenderSettings* pRS ) const
+void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS ) const
 {
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
@@ -467,8 +456,6 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
         holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
     }
     
-
-
     if (m_bShowHoles && !holeFaceIdx.empty()) 
     {
         glEnable(GL_POLYGON_OFFSET_FILL);

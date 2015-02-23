@@ -135,7 +135,7 @@ void printEndSeparator(char c, int num) {
 }
 
 
-void ShapeEditor::init(DifferentialMeshProcessor* processor)
+void ShapeEditor::init(MeshHelper* processor)
 {
     mProcessor = processor;
     mMesh = processor->getMesh();

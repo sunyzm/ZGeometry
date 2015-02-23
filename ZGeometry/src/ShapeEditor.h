@@ -3,7 +3,7 @@
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/Mesh.h>
-#include "DifferentialMeshProcessor.h"
+#include "MeshHelper.h"
 #include "GeometryApproximation.h"
 #include "Palette.h"
 #include "global.h"
@@ -17,7 +17,7 @@ public:
     static std::string strOriginalCoord;
 
 	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
-	void init(DifferentialMeshProcessor* processor);
+	void init(MeshHelper* processor);
 	void runTests();
     void resetStoredCoordinates();
 	void revertCoordinates();
@@ -94,7 +94,7 @@ private:
 
     /* private fields */
 	CMesh* mMesh;	
-	DifferentialMeshProcessor* mProcessor;
+	MeshHelper* mProcessor;
 	ShapeApprox mShapeApprox;
 	Palette mSegmentPalette;
 

@@ -11,10 +11,11 @@
 #include "SparseMatrix.h"
 #include "EigenSystem.h"
 #include "PointCloud.h"
+#include "MeshCoordinates.h"
 #include "Mesh.h"
 #include "MeshProcessing.h"
+#include "MeshHole.h"
 #include "SparseRepresentation.h"
 #include "Geodesic.h"
-#include "MeshHole.h"
 
 #endif

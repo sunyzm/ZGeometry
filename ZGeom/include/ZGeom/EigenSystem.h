@@ -4,7 +4,7 @@
 #include <functional>
 #include "VecN.h"
 #include "DenseMatrix.h"
-#include "MatVecFunctor.h"
+
 
 namespace ZGeom {
 

@@ -128,7 +128,7 @@ void ParamManager::para_computeHKS( const std::vector<double>& times )
 	});
 }
 
-double distHKS2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, double tl, int tn)
+double distHKS2(const MeshHelper* pmp1, const MeshHelper* pmp2, int i1, int i2, double tl, int tn)
 {
 // 	if (tu < tl) return 1.0;
 // 	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
@@ -145,7 +145,7 @@ double distHKS2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshPro
 	return std::pow((v1 - v2).norm2(), 2) / tn;
 }
 
-double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const MatchPair& mp1, const MatchPair& mp2, double tl, double tu)
+double distHKPair2(const MeshHelper* pmp1, const MeshHelper* pmp2, const MatchPair& mp1, const MatchPair& mp2, double tl, double tu)
 {
     const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 
@@ -169,7 +169,7 @@ double distHKPair2(const DifferentialMeshProcessor* pmp1, const DifferentialMesh
 	return dist*dist / tn;
 }
 
-double distHksFeature2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const HKSFeature& hf1, const HKSFeature& hf2, double& tl, int& tn)
+double distHksFeature2(const MeshHelper* pmp1, const MeshHelper* pmp2, const HKSFeature& hf1, const HKSFeature& hf2, double& tl, int& tn)
 {
     const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 
@@ -190,7 +190,7 @@ double distHksFeature2(const DifferentialMeshProcessor* pmp1, const Differential
 	return dist*dist / tn;
 }
 
-double distHksFeaturePair2(const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const MatchPair& mp1, const MatchPair& mp2)
+double distHksFeaturePair2(const MeshHelper* pmp1, const MeshHelper* pmp2, const MatchPair& mp1, const MatchPair& mp2)
 {
     const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 
@@ -241,7 +241,7 @@ ShapeMatcher::~ShapeMatcher()
 	std::cout << "DiffusionShapeMatcher destroyed!" << std::endl;
 }
 
-void ShapeMatcher::initialize( DifferentialMeshProcessor* pMP1, DifferentialMeshProcessor* pMP2, Engine *ep )
+void ShapeMatcher::initialize( MeshHelper* pMP1, MeshHelper* pMP2, Engine *ep )
 {
 	m_ep = ep;
 	pOriginalProcessor[0] = pMP1;
@@ -279,8 +279,8 @@ void ShapeMatcher::constructPyramid( int n, double ratio, std::ostream& ostr )
 	meshPyramids[0].construct(ostr);
 	meshPyramids[1].construct(ostr);
 	for (int k = 1; k < n; ++k) {
-		liteMP[0].push_back(new DifferentialMeshProcessor(meshPyramids[0].getMesh(k), pOriginalMesh[0]));
-		liteMP[1].push_back(new DifferentialMeshProcessor(meshPyramids[1].getMesh(k), pOriginalMesh[1]));
+		liteMP[0].push_back(new MeshHelper(meshPyramids[0].getMesh(k), pOriginalMesh[0]));
+		liteMP[1].push_back(new MeshHelper(meshPyramids[1].getMesh(k), pOriginalMesh[1]));
 	}
 
 	m_bPyramidBuilt = true;
@@ -294,7 +294,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 	m_vFeatures[obj].clear();
 
 	CMesh* fineMesh = pOriginalMesh[obj];
-	DifferentialMeshProcessor* pMP = pOriginalProcessor[obj];
+	MeshHelper* pMP = pOriginalProcessor[obj];
 	const int fineSize = fineMesh->vertCount();
 	vector<HKSFeature>& vF = m_vFeatures[obj];
 	vF.clear();
@@ -809,7 +809,7 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 	forceInitialAnchors(matchedPairsFine);
 } // DiffusionShapmeMatcher::matchFeatures()
 
-void ShapeMatcher::calVertexSignature(const DifferentialMeshProcessor* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig)
+void ShapeMatcher::calVertexSignature(const MeshHelper* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig)
 {
 	double t = hf.m_tl;
 	sig.resize(hf.m_tn);
@@ -1188,7 +1188,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 	return vmatch;
 }
 
-void ShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang)
+void ShapeMatcher::ComputeTensorFeature3( const MeshHelper* pmp, int i, int j, int k, double t, double* sang)
 {
 
 	if(i==j || i==k || j==k)		//not a triangle
@@ -1225,7 +1225,7 @@ void ShapeMatcher::ComputeTensorFeature3( const DifferentialMeshProcessor* pmp, 
 
 }
 
-void ShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
+void ShapeMatcher::ComputeTensorFeature6( const MeshHelper* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
 {
 //  	if(i==j || i==k || j==k)		//not a triangle
 //  	{
@@ -1263,7 +1263,7 @@ void ShapeMatcher::ComputeTensorFeature6( const DifferentialMeshProcessor* pmp, 
 }
 
 
-void ShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose /*= false*/ )
+void ShapeMatcher::PairGraphMatching( Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose /*= false*/ )
 {
 	int size1 = (int) vFeatures1.size();
 	int size2 = (int) vFeatures2.size();
@@ -1364,7 +1364,7 @@ void ShapeMatcher::PairGraphMatching( Engine *ep, const DifferentialMeshProcesso
 }
 
 double ShapeMatcher::TensorGraphMatching6( Engine *ep, 
-	const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, 
+	const MeshHelper* pmp1, const MeshHelper* pmp2, 
 	const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, 
 	double para_t, double para_thresh, bool verbose/* = false */)
 {
@@ -1569,7 +1569,7 @@ double ShapeMatcher::TensorGraphMatching6( Engine *ep,
 	return result;
 }
 
-double ShapeMatcher::TensorGraphMatching6( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose /*= false*/ )
+double ShapeMatcher::TensorGraphMatching6( Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose /*= false*/ )
 {
 	vector<int> vFeatIdx1(vFeatures1.size()), vFeatIdx2(vFeatures2.size());
 	transform(vFeatures1.begin(), vFeatures1.end(), vFeatIdx1.begin(), [](const HKSFeature& feat){ return feat.m_index; });
@@ -1578,7 +1578,7 @@ double ShapeMatcher::TensorGraphMatching6( Engine *ep, const DifferentialMeshPro
 	return matchScore;
 }	
 
-double ShapeMatcher::TensorGraphMatching3( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
+double ShapeMatcher::TensorGraphMatching3( Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& ct1, const std::vector<int>& ct2, std::vector<MatchPair>& matched, double t, double thresh )
 {
 	// generate triangles
 	int vsize1 = (int)ct1.size();	// input feature size 1
@@ -2491,7 +2491,7 @@ void ShapeMatcher::dataTesting1()
 	cout << "Collected data saved to \"" << filename << "\"" << endl;
 }
 
-double ShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
+double ShapeMatcher::calPointHksDissimilarity( const MeshHelper* pmp1, const MeshHelper* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode/* = 0 */)
 {
 	double errorSum(0);
 	double maxError(0);
@@ -2509,7 +2509,7 @@ double ShapeMatcher::calPointHksDissimilarity( const DifferentialMeshProcessor* 
 
 
 
-void ShapeMatcher::SimplePointMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
+void ShapeMatcher::SimplePointMatching( const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
 {
     const EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
 	matchedResult.clear();
@@ -2591,7 +2591,7 @@ void ShapeMatcher::matchFeatureSimple()
 	forceInitialAnchors(vPairs);
 }
 
-double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+double ShapeMatcher::TensorMatchingExt( Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/******************************
 	* featureType = 0 ---- original angle based triangle construction
@@ -3001,7 +3001,7 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, const DifferentialMeshProces
 	return result;
 }
 
-void ShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshProcessor* pmp, int i, int j, int k, int origin, double t, double* sang )
+void ShapeMatcher::ComputeTensorFeatureAnchor( const MeshHelper* pmp, int i, int j, int k, int origin, double t, double* sang )
 {
 	double d1 = pmp->calHK(i, j, t);
 	double d2 = pmp->calHK(j, k, t);
@@ -3029,7 +3029,7 @@ void ShapeMatcher::ComputeTensorFeatureAnchor( const DifferentialMeshProcessor* 
 	sang[5] = s3;
 }
 
-void ShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProcessor* pmp, int i, int j, int k, double t1, double t2, double* sang )
+void ShapeMatcher::ComputeTensorFeature12( const MeshHelper* pmp, int i, int j, int k, double t1, double t2, double* sang )
 {
 	sang[0] = pmp->calHK(i, j, t1);
 	sang[1] = pmp->calHK(j, k, t1);
@@ -3045,7 +3045,7 @@ void ShapeMatcher::ComputeTensorFeature12( const DifferentialMeshProcessor* pmp,
 	sang[11] = pmp->calHK(k, k, t2);
 }
 
-double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+double ShapeMatcher::PairMatchingExt( Engine* ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/**** method = 0
 	 ** vPara[0] = thresh1
@@ -3202,7 +3202,7 @@ double ShapeMatcher::PairMatchingExt( Engine* ep, const DifferentialMeshProcesso
 	return totalMatchScore;
 }
 
-void ShapeMatcher::HKSMatchingExt( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
+void ShapeMatcher::HKSMatchingExt( const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
 {
 	/*********************************
 	1. method = 0 (HKS similarity)
@@ -3712,7 +3712,7 @@ void ShapeMatcher::localCorrespondenceTesting()
 	
 }
 
-void ShapeMatcher::HKCMatching( const DifferentialMeshProcessor* pmp1, const DifferentialMeshProcessor* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh )
+void ShapeMatcher::HKCMatching( const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh )
 {
 	vMatchedPair.clear();
 

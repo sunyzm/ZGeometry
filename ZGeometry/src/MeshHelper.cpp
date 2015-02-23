@@ -1,4 +1,4 @@
-#include "DifferentialMeshProcessor.h"
+#include "MeshHelper.h"
 #include <fstream>
 #include <stdexcept>
 #include <set>
@@ -14,16 +14,15 @@
 using namespace std;
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::VectorPointwiseProduct;
-using ZGeom::VectorDotProduct;
 
-DifferentialMeshProcessor::DifferentialMeshProcessor()
+MeshHelper::MeshHelper()
 {
 	mMesh = nullptr;
 	mRefVert = 0;
 	mActiveHandle = -1;	
 }
 
-DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh)
+MeshHelper::MeshHelper(CMesh* tm, CMesh* originalMesh)
 {
 	mMesh = nullptr;
 	mRefVert = 0;
@@ -32,12 +31,7 @@ DifferentialMeshProcessor::DifferentialMeshProcessor(CMesh* tm, CMesh* originalM
 	init_lite(tm, originalMesh);
 }
 
-DifferentialMeshProcessor::~DifferentialMeshProcessor()
-{
-	std::cout << "DifferentialMeshProcessor destroyed!" << std::endl;
-}
-
-void DifferentialMeshProcessor::init(CMesh* tm)
+void MeshHelper::init(CMesh* tm)
 {
 	mMesh = tm;
 	mOriMesh = tm;
@@ -45,7 +39,7 @@ void DifferentialMeshProcessor::init(CMesh* tm)
 	mRefPos = mMesh->getVertex(mRefVert)->pos();
 }
 
-void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
+void MeshHelper::init_lite( CMesh* tm, CMesh* originalMesh )
 {
 	mMesh = tm;
 	mOriMesh = originalMesh;
@@ -53,7 +47,7 @@ void DifferentialMeshProcessor::init_lite( CMesh* tm, CMesh* originalMesh )
     mRefPos = mMesh->getVertex(mRefVert)->pos();
 }
 
-void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
+void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
 {
 	if (hasLaplacian(laplacianType)) return;
 	
@@ -79,23 +73,23 @@ void DifferentialMeshProcessor::constructLaplacian( LaplacianType laplacianType 
 }
 
 
-void DifferentialMeshProcessor::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
+void MeshHelper::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");	
 	mMeshLaplacians[laplacianType].meshEigenDecompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType]);
 }
 
-void DifferentialMeshProcessor::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
+void MeshHelper::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	mMHBs[laplacianType].load(path);
 }
 
-void DifferentialMeshProcessor::saveMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
+void MeshHelper::saveMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	mMHBs[laplacianType].save(path);	
 }
 
-std::string DifferentialMeshProcessor::generateMHBPath( const std::string& prefix, LaplacianType laplacianType )
+std::string MeshHelper::generateMHBPath( const std::string& prefix, LaplacianType laplacianType )
 {
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
@@ -103,7 +97,7 @@ std::string DifferentialMeshProcessor::generateMHBPath( const std::string& prefi
 	return pathMHB;
 }
 
-bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
+bool MeshHelper::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
 {
 	if (!fileExist(pathMHB)) return false;
 
@@ -118,14 +112,14 @@ bool DifferentialMeshProcessor::isMHBCacheValid( const std::string& pathMHB, int
 	return true;
 }
 
-void DifferentialMeshProcessor::addNewHandle( int hIdx )
+void MeshHelper::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
 	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->pos()));	 
 }
 
-double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
+double MeshHelper::calHK( int v1, int v2, double timescale ) const
 {
 	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
@@ -137,7 +131,7 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 	return sum;
 }
 
-void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
+void MeshHelper::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
 {
 	const int vertCount = mMesh->vertCount();
 	vHeat.resize(vertCount);
@@ -151,7 +145,7 @@ void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vect
 	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
 }
 
-void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
+void MeshHelper::computeHeatDiffuseMat( double tMultiplier )
 {
 	const int vertCount = mMesh->vertCount();
 	const double t = std::pow(mMesh->getAvgEdgeLength(), 2) * tMultiplier;
@@ -164,7 +158,7 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 	mHeatDiffuseSolver.initialize(mHeatDiffuseMat, true, true);
 }
 
-const ZGeom::EigenSystem& DifferentialMeshProcessor::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
+const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
 {
 	LaplacianType laplaceType = laplaceMat.laplacianType();
     if (!mMHBs[laplaceType].empty()) return mMHBs[laplaceType];

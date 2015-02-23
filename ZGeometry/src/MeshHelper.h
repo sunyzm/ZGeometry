@@ -8,12 +8,11 @@
 #include "MeshLaplacian.h"
 #include "global.h"
 
-class DifferentialMeshProcessor
+class MeshHelper
 {
 public:
-	DifferentialMeshProcessor();
-	DifferentialMeshProcessor(CMesh* tm, CMesh* originalMesh);
-	~DifferentialMeshProcessor();
+	MeshHelper();
+	MeshHelper(CMesh* tm, CMesh* originalMesh);
 	void init(CMesh* tm);
 	void init_lite(CMesh* tm, CMesh* originalMesh);	
 	const CMesh* getMesh_const() const { return mMesh; }

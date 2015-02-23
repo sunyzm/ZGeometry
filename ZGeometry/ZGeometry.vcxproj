@@ -231,7 +231,7 @@
     <ClCompile Include="src\global.cpp" />
     <ClCompile Include="src\MeshLaplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
-    <ClCompile Include="src\DifferentialMeshProcessor.cpp" />
+    <ClCompile Include="src\MeshHelper.cpp" />
     <ClCompile Include="src\matching.cpp" />
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\qsingleinputdialog.cpp" />
@@ -323,7 +323,7 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="src\DifferentialMeshProcessor.h">
+    <CustomBuild Include="src\MeshHelper.h">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </Command>
       <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Performing Custom Build Tools</Message>

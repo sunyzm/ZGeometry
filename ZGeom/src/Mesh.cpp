@@ -1257,7 +1257,7 @@ MeshCoordinates CMesh::getVertCoordinates() const
 
 ZGeom::PointCloud3d CMesh::toPointCloud() const
 {
-    std::vector<ZGeom::Vec3d> vPoints;
+    vector<Vec3d> vPoints;
     for (int i = 0; i < vertCount(); ++i) 
         vPoints.push_back(m_vVertices[i]->pos());    
     return ZGeom::PointCloud3d(vPoints);

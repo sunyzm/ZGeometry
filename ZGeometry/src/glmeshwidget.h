@@ -4,7 +4,7 @@
 #include <QImage>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/arcball.h>
-#include "DifferentialMeshProcessor.h"
+#include "MeshHelper.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"
 #include "ShapeEditor.h"
@@ -36,14 +36,14 @@ public:
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 
-    void setup(int obj, DifferentialMeshProcessor* processor, RenderSettings* rs)
+    void setup(int obj, MeshHelper* processor, RenderSettings* rs)
     {
         mProcessors[obj] = processor;
         mRenderSettings[obj] = rs;
         mMeshes[obj] = processor->getMesh();
     }
 
-    void setup(std::vector<DifferentialMeshProcessor*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
+    void setup(std::vector<MeshHelper*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
 	{
 		mProcessors = processors;
 		mRenderSettings = rs;
@@ -68,7 +68,7 @@ protected:
 	void mouseReleaseEvent(QMouseEvent *event);
 	void wheelEvent(QWheelEvent *event);
 	void setupObject(const CQrot& qrot, const ZGeom::Vec3d& trans) const;
-	void drawMeshExt(const DifferentialMeshProcessor* pPM, const RenderSettings* renderSettings) const;
+	void drawMeshExt(const MeshHelper* pPM, const RenderSettings* renderSettings) const;
 	void drawLegend(QPainter* painter);
 	void drawCorrespondences(const ShapeMatcher* shapeMatcher, const RenderSettings* rs1, const RenderSettings* rs2) const;
 
@@ -84,7 +84,7 @@ private:
 	void setupViewport(int width, int height);
     bool glPick(int x, int y, ZGeom::Vec3d& _p, int obj = 0);
 
-	std::vector<DifferentialMeshProcessor*> mProcessors;
+	std::vector<MeshHelper*> mProcessors;
     std::vector<CMesh*> mMeshes;
 	std::vector<RenderSettings*> mRenderSettings;
 	ShapeMatcher* mMatcher;

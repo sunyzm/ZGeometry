@@ -6,7 +6,7 @@
 #include <QSignalMapper>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/Color.h>
-#include "DifferentialMeshProcessor.h"
+#include "MeshHelper.h"
 #include "RenderSettings.h"
 #include "ShapeMatcher.h"
 #include "ShapeEditor.h"
@@ -180,7 +180,7 @@ private:
 	QLabel				  mStatusLabel;
 
 	std::vector<CMesh*>	                    mMeshes;
-	std::vector<DifferentialMeshProcessor*>	mProcessors;
+	std::vector<MeshHelper*>	mProcessors;
 	std::vector<RenderSettings*>			mRenderManagers;
 	ShapeMatcher                            mShapeMatcher;
 	ShapeEditor	                            mShapeEditor;
