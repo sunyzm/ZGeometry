@@ -644,8 +644,10 @@
     <addaction name="actionAutoGenHoles"/>
     <addaction name="actionDegradeHoles"/>
     <addaction name="actionInpaintHoles1"/>
+    <addaction name="actionInpaintHoles2"/>
     <addaction name="actionCutHoles"/>
     <addaction name="actionSwitchMesh"/>
+    <addaction name="actionCutToSelected"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -1481,6 +1483,16 @@
   <action name="actionSwitchMesh">
    <property name="text">
     <string>Switch Mesh</string>
+   </property>
+  </action>
+  <action name="actionCutToSelected">
+   <property name="text">
+    <string>Cut to Selected</string>
+   </property>
+  </action>
+  <action name="actionInpaintHoles2">
+   <property name="text">
+    <string>Inpaint Holes 2</string>
    </property>
   </action>
  </widget>

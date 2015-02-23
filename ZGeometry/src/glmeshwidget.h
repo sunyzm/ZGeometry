@@ -50,6 +50,7 @@ public:
 		mMatcher = matcher;
         mMeshes.clear();
         for (auto p : mProcessors) mMeshes.push_back(p->getMesh());
+        setBasePointSize(mMeshes[0]->getAvgEdgeLength() / 4.);
 	}
 
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }

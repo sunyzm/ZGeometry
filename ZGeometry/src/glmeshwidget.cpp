@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <vector>
+#include <unordered_set>
 #include <QFile>
 #include <QPainter>
 #include <ZGeom/util.h>
@@ -64,7 +65,7 @@ void GLMeshWidget::reset()
 	g_myFar = 100.0;
 	g_myAngle = 40.0;
 
-	mBaseFeatureRadius = 0.03;
+	mBaseFeatureRadius = 0.02;
 	mFeatureSphereRadius = mBaseFeatureRadius;
 	mMeshPointSize = 1;
 	m_nMeshLevel = 0;
@@ -466,28 +467,14 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
         holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
     }
     
-    glEnable(GL_POLYGON_OFFSET_FILL);
-    glPolygonOffset(1.0, 1.0);
-	glBegin(GL_TRIANGLES);
-    for (CFace* face : tmesh->m_vFaces) 
+
+
+    if (m_bShowHoles && !holeFaceIdx.empty()) 
     {
-        const float *holeColor = ZGeom::ColorPaleVioletRed2;
-        //const float *holeColor = ZGeom::ColorYellow;
-        if (m_bShowHoles && !holeFaceIdx.empty() && holeFaceIdx.find(face->getFaceIndex()) != holeFaceIdx.end()) {
-            for (int fi : holeFaceIdx) {
-                CFace *face = tmesh->getFace(fi);
-                for (int j = 0; j < 3; j++) {
-                    int pi = face->getVertexIndex(j);
-                    const Vector3D& norm = vVertNormals[pi];
-                    const Vec3d& vt = vVertPos[pi];
-                    const Colorf& vc = vVertColors[pi];
-                    glNormal3f(norm.x, norm.y, norm.z);
-                    glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
-                    glVertex3f(vt.x, vt.y, vt.z);
-                }
-            }
-        }
-        else {
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.0, 1.0);
+        glBegin(GL_TRIANGLES);
+        for (CFace* face : tmesh->m_vFaces) {
             for (int j = 0; j < 3; j++) {
                 int pi = face->getVertexIndex(j);
                 const Vector3D& norm = vVertNormals[pi];
@@ -498,9 +485,50 @@ void GLMeshWidget::drawMeshExt( const DifferentialMeshProcessor* pMP, const Rend
                 glVertex3f(vt.x, vt.y, vt.z);
             }
         }
-    }    
-	glEnd();
-	glDisable(GL_POLYGON_OFFSET_FILL);
+        glEnd();
+        glDisable(GL_POLYGON_OFFSET_FILL);
+
+        //glEnable(GL_POLYGON_OFFSET_FILL);
+        //glPolygonOffset(1.0, 1.0);
+        glBegin(GL_TRIANGLES);
+        //const float *holeColor = ZGeom::ColorPaleVioletRed2;
+        const float *holeColor = ZGeom::ColorYellow;
+        for (int fIdx : holeFaceIdx) {
+            CFace* face = tmesh->m_vFaces[fIdx];
+            for (int j = 0; j < 3; j++) {
+                int pi = face->getVertexIndex(j);
+                const Vector3D& norm = vVertNormals[pi];
+                const Vec3d& vt = vVertPos[pi];
+                const Colorf& vc = vVertColors[pi];
+                glNormal3f(norm.x, norm.y, norm.z);
+                glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
+                glVertex3f(vt.x, vt.y, vt.z);
+            }
+        }
+        glEnd();
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+    else 
+    {
+        glEnable(GL_POLYGON_OFFSET_FILL);
+        glPolygonOffset(1.0, 1.0);
+        glBegin(GL_TRIANGLES);
+        for (CFace* face : tmesh->m_vFaces) {
+            for (int j = 0; j < 3; j++) {
+                int pi = face->getVertexIndex(j);
+                const Vector3D& norm = vVertNormals[pi];
+                const Vec3d& vt = vVertPos[pi];
+                const Colorf& vc = vVertColors[pi];
+                glNormal3f(norm.x, norm.y, norm.z);
+                glColor4f(vc[0], vc[1], vc[2], 1.0);
+                glVertex3f(vt.x, vt.y, vt.z);
+            }
+        }
+        glEnd();
+        glDisable(GL_POLYGON_OFFSET_FILL);
+    }
+        
+
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////

@@ -49,7 +49,7 @@ CVertex::CVertex( double x, double y, double z )
 	m_vPosition = Vector3D(x,y,z);
 }
 
-CVertex::CVertex( const Vector3D& v )
+CVertex::CVertex( const ZGeom::Vec3d& v )
 {
 	init();
 	m_vPosition = v;
@@ -58,10 +58,6 @@ CVertex::CVertex( const Vector3D& v )
 CVertex::CVertex( const CVertex& v )
 {	
 	clone(v);
-}
-
-CVertex::~CVertex()
-{
 }
 
 CVertex& CVertex::operator = ( const CVertex& v )
@@ -89,10 +85,8 @@ void CVertex::clone(const CVertex& v)
 std::vector<const CFace*> CVertex::getAdjacentFaces() const
 {
 	vector<const CFace*> pFaces;
-	for (CHalfEdge* he : m_HalfEdges) {
-		pFaces.push_back(he->getAttachedFace());
-	}
-
+	for (CHalfEdge* he : m_HalfEdges) pFaces.push_back(he->getAttachedFace());
+	
 	return pFaces;
 }
 
@@ -424,10 +418,9 @@ double CFace::calArea() const
 ZGeom::Vec3d CFace::calcNormal() const
 {
     using ZGeom::Vec3d;
-	Vec3d v[2];
-	v[0] = m_Vertices[2]->pos() - m_Vertices[0]->pos();
-	v[1] = m_Vertices[2]->pos() - m_Vertices[1]->pos();
-    return (v[0] ^ v[1]).normalize();
+    Vec3d v0 = m_Vertices[2]->pos() - m_Vertices[0]->pos();
+    Vec3d v1 = m_Vertices[2]->pos() - m_Vertices[1]->pos();
+    return (v0 ^ v1).normalize();
 }
 
 ZGeom::Vec3d CFace::calBarycenter() const

@@ -37,10 +37,9 @@ class CVertex
 public:
 	CVertex();
 	CVertex(double x, double y, double z);
-	CVertex(const Vector3D& v);
+	CVertex(const ZGeom::Vec3d& v);
 	CVertex(const CVertex& v);
 	CVertex& operator = (const CVertex& v);	
-	virtual ~CVertex();
 
 	int					    getIndex() const            { return m_vIndex; }
 	int					    getVID() const              { return m_vid; }
@@ -58,7 +57,7 @@ public:
     void                    clone(const CVertex& v); 
     void                    translateAndScale(const Vector3D& translation, double s);
     std::vector<const CFace*>   getAdjacentFaces() const;
-    CHalfEdge *adjacentTo(CVertex* v2) const;
+    CHalfEdge*              adjacentTo(CVertex* v2) const;
 
 public:
 	int						m_vIndex;           // index of the vertex 0-based

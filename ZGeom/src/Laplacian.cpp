@@ -1,15 +1,22 @@
 #include "Laplacian.h"
+#include <map>
 #include "EigenCompute.h"
 #include "MeshProcessing.h"
 #include "arithmetic.h"
+#include "timer.h"
 #include "zassert.h"
 
 namespace ZGeom {
+
 using namespace std;
+using ZGeom::Vec3d;
 
 void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ ) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
+    CStopWatch timer;
+    timer.startTimer();
+
 	EigenCompute eigenCompute(ep);
 	if (generalized) {
 		std::cout << "Do generalized eigendecomposition!\n";
@@ -18,14 +25,21 @@ void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSy
 		std::cout << "Do standard eigendecomposition!\n";
 		eigenCompute.solveStdSym(mLS, nEig, eigSys);
 	}
+
+    timer.stopTimer("Decomposition time: ", "s", std::cout);
 }
 
 void Laplacian::decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
+    CStopWatch timer;
+    timer.startTimer();
+
 	EigenCompute eigenCompute(ep);
 	std::cout << "Do generalized eigendecomposition!\n";
 	eigenCompute.solveGenSym(mLS, matB, nEig, eigSys);
+
+    timer.stopTimer("Decomposition time: ", "s", std::cout);
 }
 
 void Laplacian::computeSubLaplacian( const std::vector<int>& vSelected, Laplacian& subLaplacian ) const
@@ -54,9 +68,9 @@ void Laplacian::constructTutte(const CMesh* tmesh)
 {
     // L = D^-1 * (A - D)
     mOrder = tmesh->vertCount();
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
+    mLS = constructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE);
     mLS.scale(-1.0);
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_DEGREE, mW);
+    mW = constructMeshMatrix(*tmesh, ZGeom::MM_DEGREE);
     mSymmetric = false;
 }
 
@@ -64,7 +78,7 @@ void Laplacian::constructUmbrella(const CMesh* tmesh)
 {
     // L = A - D
     mOrder = tmesh->vertCount();
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE, mLS);
+    mLS = constructMeshMatrix(*tmesh, ZGeom::MM_GRAPH_LAPLACE);
     mLS.scale(-1);
     mW.setToIdentity(mOrder);	// set vertex weight matrix to identity; the attained Laplacian becomes symmetric
     mSymmetric = true;
@@ -81,7 +95,7 @@ void Laplacian::constructNormalizedUmbrella(const CMesh* tmesh)
 {
     /* L = D^(-1/2) * (D-A) * D^(-1/2) */
     mOrder = tmesh->vertCount();
-    ConstructMeshMatrix(*tmesh, ZGeom::MM_NORMALIZED_GRAPH_LAPLACE, mLS);
+    mLS = constructMeshMatrix(*tmesh, ZGeom::MM_NORMALIZED_GRAPH_LAPLACE);
     mLS.scale(-1);
     mW.setToIdentity(mOrder);
     mSymmetric = true;
@@ -170,6 +184,48 @@ void Laplacian::constructSymCot(const CMesh* tmesh)
     constructCotFormula(tmesh);
     mW.setToIdentity(vertCount);
     mSymmetric = true;
+}
+
+void Laplacian::constructAniso(const CMesh *tmesh)
+{
+    vector<double> vMeanCurv = tmesh->getMeanCurvature();
+    vector<double> vVertAreas = tmesh->getVertMixedAreas();
+    auto vNormals = tmesh->getVertNormals();
+    const int vertCount = tmesh->vertCount();
+    mOrder = vertCount;
+    std::vector<int> vII, vJJ;
+    std::vector<double> vSS;
+
+    mW.convertFromDiagonal(vVertAreas);
+
+    for (int vIdx = 0; vIdx < vertCount; ++vIdx)  //for every vertex
+    {
+        const CVertex *vi = tmesh->getVertex(vIdx);
+        vector<int> vNeighbor = tmesh->getVertNeighborVerts(vIdx, 1, false);
+        vector<double> edgeWeights(vNeighbor.size());
+        for (size_t k = 0; k < vNeighbor.size(); ++k) {
+            const CVertex *vj = tmesh->getVertex(vNeighbor[k]);
+            Vec3d pij = vi->pos() - vj->pos();
+            pij.normalize();
+            Vec3d nij = vNormals[vIdx] + vNormals[vNeighbor[k]];
+            nij.normalize();
+            double cij = pow(fabs(pij.dot(nij)), 0.25);
+            edgeWeights[k] = exp(-cij) - exp(-1);
+        }
+
+        double totalWeight = std::accumulate(edgeWeights.begin(), edgeWeights.end(), 0.);
+        for (size_t k = 0; k < vNeighbor.size(); ++k) {
+            vII.push_back(vIdx + 1);
+            vJJ.push_back(vNeighbor[k] + 1);
+            vSS.push_back(edgeWeights[k]);
+        }
+        vII.push_back(vIdx + 1);
+        vJJ.push_back(vIdx + 1);
+        vSS.push_back(-totalWeight);
+    }
+
+    mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
+    mSymmetric = false;
 }
 
 }   // end of namespace

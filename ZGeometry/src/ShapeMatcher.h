@@ -81,7 +81,6 @@ public:
 	DifferentialMeshProcessor* pMP;
 
 	void computeHKParam(const std::vector<int>& anchors, double t = 30.0);
-	void computeBHParam(const std::vector<int>& anchors);
 	void para_computeHKC(const std::vector<int>& anchors, double t = 30.0);
 	void para_computeHKS(const std::vector<double>& times);
 };
@@ -143,7 +142,6 @@ public:
 	void evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const;
 	void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair);
 	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
-	static double evaluateDistance(const DifferentialMeshProcessor& mp1, const DifferentialMeshProcessor& mp2, DistanceType distType, const std::vector<double>& vParam, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 
 	std::vector<std::pair<double, double> > m_randPairs;
 

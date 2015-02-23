@@ -54,7 +54,6 @@ private slots:
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
-	void computeMHW();
 	void computeMHWS();
 	void computeBiharmonic();
 	void computeGeodesics();
@@ -128,7 +127,9 @@ private slots:
     void autoGenerateHoles();
     void degradeHoles();
     void inpaintHoles1();
+    void inpaintHoles2();
     void cutHoles();
+    void cutToSelected();
     void switchMesh();
 
 	void registerAutomatic();
@@ -161,7 +162,6 @@ private:
 
 	/* helper functions */
 	bool isMeshSelected(int obj);
-	void evalDistance();
 	void computeFunctionMaps(int num);
 	void verifyAreas() const;
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);

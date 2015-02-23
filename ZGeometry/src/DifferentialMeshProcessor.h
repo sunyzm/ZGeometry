@@ -3,28 +3,10 @@
 #include <vector>
 #include <map>
 #include <cmath>
-#include <engine.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
-#include <ZGeom/Mesh.h>
 #include "MeshLaplacian.h"
 #include "global.h"
-
-enum KernelType { HEAT_KERNEL, MHW_KERNEL, SGW_KERNEL, BIHARMONIC_KERNEL };
-enum DistanceType { DISTANCE_GEODESIC, DISTANCE_BIHARMONIC, DISTANCE_HK, DISTANCE_MHW };
-enum PointSimilarityType {SIM_TYPE_1, SIM_TYPE_2, SIM_TYPE_3, SIM_TYPE_COUNT};
-
-enum FeatureID { FEATURE_ID	= 0x0200, FEATURE_NEIGHBORS, FEATURE_HKS,
-				 FEATURE_MHWS, FEATURE_MULTI_HKS, FEATURE_DEMO, FEATURE_DEMO2,
-				 FEATURE_SGW_SOMP,
-				 FEATURE_ID_COUNT};
-
-double transferFunc2(double lambda, double t);	// Mexican-hat wavelet
-double heatKernelTransferFunc(double lambda, double t);  // heat kernel
-double mhwTransferFunc1(double lambda, double t);	// Mexican-hat wavelet (Tingbo's)
-
-typedef double (*TransferFunc)(double, double);
-typedef double (*ScalelessTransferFunc)(double);
 
 class DifferentialMeshProcessor
 {
@@ -54,11 +36,7 @@ public:
 	double	calHK(int v1, int v2, double timescale) const;
 	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
 	double	calHeatTrace(double timescale) const;
-	double	calBiharmonic(int v1, int v2) const;
-	double	calMHW(int v1, int v2, double timescale) const;
 	void	computeHeatDiffuseMat(double tMultiplier);
-	void	calKernelSignature(double scale, KernelType kernelType, std::vector<double>& values) const;
-	void	computeKernelSignatureFeatures(const std::vector<double>& timescales, KernelType kernelType);
 	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
 
 	/* editing */

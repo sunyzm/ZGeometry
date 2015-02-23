@@ -227,7 +227,6 @@
     <ClInclude Include="include\ZGeom\dataio.h" />
     <ClInclude Include="include\ZGeom\DenseMatrix.h" />
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
-    <ClInclude Include="include\ZGeom\Differential.h" />
     <ClInclude Include="include\ZGeom\Geodesic.h" />
     <ClInclude Include="include\ZGeom\MeshCoordinates.h" />
     <ClInclude Include="include\ZGeom\MeshHole.h" />
@@ -243,7 +242,6 @@
     <ClInclude Include="include\ZGeom\MatVecFunctor.h" />
     <ClInclude Include="include\ZGeom\MCA.h" />
     <ClInclude Include="include\ZGeom\Mesh.h" />
-    <ClInclude Include="include\ZGeom\Mesh2.h" />
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
     <ClInclude Include="include\ZGeom\MeshProcessing.h" />
     <ClInclude Include="include\ZGeom\MeshPyramid.h" />
@@ -275,7 +273,6 @@
     <ClCompile Include="src\ColorSignature.cpp" />
     <ClCompile Include="src\dataio.cpp" />
     <ClCompile Include="src\DenseMatVecMultiplier.cpp" />
-    <ClCompile Include="src\Differential.cpp" />
     <ClCompile Include="src\EigenCompute.cpp" />
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\fibheap.cpp" />
@@ -290,7 +287,6 @@
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\MCA.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
-    <ClCompile Include="src\Mesh2.cpp" />
     <ClCompile Include="src\MeshProcessing.cpp" />
     <ClCompile Include="src\MeshPyramid.cpp" />
     <ClCompile Include="src\Quadric.cpp" />

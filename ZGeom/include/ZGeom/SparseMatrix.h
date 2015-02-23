@@ -28,33 +28,20 @@ public:
 
 	MatElem() : mRow(0), mCol(0), mVal(0.) {}
 	MatElem(uint ii, uint jj, T vv) : mRow(ii), mCol(jj), mVal(vv) {}
-	MatElem(const MatElem<T>& elem) : mRow(elem.mRow), mCol(elem.mCol), mVal(elem.mVal) {}
-    MatElem<T>& operator = (const MatElem<T>& elem);
 
 	uint row() const { return mRow; }
 	uint col() const { return mCol; }
 	T    val() const { return mVal; }
 	T&   val() { return mVal; }
-    bool operator< (const MatElem<T>& t2) const;
+    bool operator< (const MatElem<T>& t2) const
+    {
+        return this->mRow < t2.mRow || (this->mRow == t2.mRow && this->mCol < t2.mCol);
+    }
 
 public:   
 	uint mRow, mCol;
 	T mVal;
 };
-
-template<typename T>
-MatElem<T>& MatElem<T>::operator = (const MatElem<T>& elem) {
-    mRow = elem.mRow;
-    mCol = elem.mCol;
-    mVal = elem.mVal;
-    return *this;
-}
-
-template<typename T>
-bool MatElem<T>::operator< (const MatElem<T>& t2) const {
-    return this->mRow < t2.mRow || (this->mRow == t2.mRow && this->mCol < t2.mCol);
-}
-
 
 
 template<typename T>
@@ -63,6 +50,17 @@ class SparseMatrix
 public:
 	SparseMatrix() : mRowCount(0), mColCount(0), mNonzeroCount(0) {}
 	SparseMatrix(int row, int col) : mRowCount(row), mColCount(col), mNonzeroCount(0) {}
+    SparseMatrix<T>& operator=(const SparseMatrix<T>& mat2) = default;
+    SparseMatrix(const SparseMatrix<T>& mat2) = default;
+    SparseMatrix<T>& operator=(SparseMatrix<T>&& mat2)
+    {
+        this->mColCount = mat2.mColCount;
+        this->mRowCount = mat2.mRowCount;
+        this->mNonzeroCount = mat2.mNonzeroCount;
+        this->mElements = std::move(mat2.mElements);
+        return *this;
+    }
+    SparseMatrix(SparseMatrix<T>&& mat2) { *this = std::move(mat2); }
 
     /* basic attributes and elements access */
 	uint rowCount() const { return mRowCount; }
@@ -146,6 +144,8 @@ private:
 	uint mColCount;
 	uint mNonzeroCount;
 };
+
+typedef SparseMatrix<double> SparseMatrixd;
 
 template<typename T>
 inline void SparseMatrix<T>::read(std::istream& in)
@@ -589,7 +589,5 @@ inline void SparseMatrix<T>::convertFromCSR(uint rowCount, uint colCount, F nzVa
 }
 
 }   // end of namespace ZGeom
-
-//#include "SparseMatrix.inl"
 
 #endif

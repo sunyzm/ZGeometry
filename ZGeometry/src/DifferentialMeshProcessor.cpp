@@ -5,41 +5,16 @@
 #include <algorithm>
 #include <functional>
 #include <ppl.h>
-#include <amp.h>
-#include <amp_math.h>
 #include <mkl.h>
 #include <ZGeom/util.h>
-#include <ZGeom/ZGeom.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
-#include "global.h"
-#include "SpectralGeometry.h"
+#include "differential_geometry.h"
 
 using namespace std;
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::VectorPointwiseProduct;
 using ZGeom::VectorDotProduct;
-
-std::function<double(double)> transferScaling1 = [](double lambda) { return std::exp(-std::pow(lambda, 2)); };
-std::function<double(double, double)> transferHeatKernel = [](double lambda, double t) { return std::exp(-lambda*t); };
-std::function<double(double, double)> transferMHW = [](double lambda, double t) { return lambda * std::exp(-lambda*t); };
-
-
-double transferFunc2(double lambda, double t)
-{
-	double coeff = lambda * t;
-	return coeff * std::exp(-coeff);
-}
-
-double heatKernelTransferFunc( double lambda, double t )
-{
-	return std::exp(-lambda * t);
-}
-
-double mhwTransferFunc1( double lambda, double t )
-{
-	return lambda * std::exp(-lambda * t);
-}
 
 DifferentialMeshProcessor::DifferentialMeshProcessor()
 {
@@ -150,68 +125,6 @@ void DifferentialMeshProcessor::addNewHandle( int hIdx )
 	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->pos()));	 
 }
 
-void DifferentialMeshProcessor::calKernelSignature( double scale, KernelType kernelType, std::vector<double>& values ) const
-{
-	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
-	const int vertCount = mMesh->vertCount();
-	values.resize(vertCount);
-
-	TransferFunc pTF = &heatKernelTransferFunc;	// default as heat kernel
-
-	switch(kernelType)
-	{
-	case HEAT_KERNEL:
-		pTF = &heatKernelTransferFunc;
-		break;
-	case MHW_KERNEL:
-		pTF = &mhwTransferFunc1;
-		break;
-	case SGW_KERNEL:
-		pTF = &transferFunc2;
-		break;
-	}
-
-	Concurrency::parallel_for(0, vertCount, [&](int i)	{
-		double sum = 0;
-		for (int k = 0; k < mhb.eigVecCount(); ++k)
-		{
-			sum += (*pTF)(mhb.getEigVal(k), scale) * mhb.getEigVec(k)[i] * mhb.getEigVec(k)[i];
-		}
-		values[i] = sum;
-	});
-}
-
-void DifferentialMeshProcessor::computeKernelSignatureFeatures( const std::vector<double>& timescales, KernelType kernelType )
-{
-	MeshFeatureList mfl;
-	int nScales = timescales.size();
-
-	for (int s = 0; s < nScales; ++s) {
-		vector<double> vSig;
-		vector<int> vFeatures;
-		calKernelSignature(timescales[s], kernelType, vSig);
-		mMesh->extractExtrema(vSig, 2, 1e-5, vFeatures);
-
-		for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) {
-			mfl.addFeature(new MeshFeature(*iter, s));			
-		}
-	}
-
-	std::string featureStr = StrAttrFeatureUnnamed;
-
-	switch(kernelType)
-	{
-	case HEAT_KERNEL:
-		featureStr = StrAttrFeatureHKS;
-		break;
-	case MHW_KERNEL:
-		featureStr = StrAttrFeatureMHWS;
-		break;
-	}
-
-	mMesh->addAttrMeshFeatures(mfl, featureStr);
-}
-
 double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) const
 {
 	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
@@ -220,18 +133,6 @@ double DifferentialMeshProcessor::calHK( int v1, int v2, double timescale ) cons
 		double lambda = mhb.getEigVal(k);
 		const ZGeom::VecNd& phi = mhb.getEigVec(k);
 		sum += std::exp(-lambda * timescale) * phi[v1] * phi[v2];
-	}
-	return sum;
-}
-
-double DifferentialMeshProcessor::calMHW( int v1, int v2, double timescale ) const
-{
-	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
-	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
-		double lambda = mhb.getEigVal(k);
-		const ZGeom::VecNd& phi = mhb.getEigVec(k);
-		sum += lambda * std::exp(-lambda * timescale) * phi[v1] * phi[v2];
 	}
 	return sum;
 }
@@ -246,16 +147,6 @@ double DifferentialMeshProcessor::calHeatTrace(double timescale) const
 	return sum;
 }
 
-double DifferentialMeshProcessor::calBiharmonic(int v1, int v2) const
-{
-	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
-	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k) {
-		sum += pow( (mhb.getEigVec(k)[v1] - mhb.getEigVec(k)[v2]) / mhb.getEigVal(k), 2 );
-	}
-	return std::sqrt(sum);
-}
-
 void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
 {
 	const int vertCount = mMesh->vertCount();
@@ -264,9 +155,7 @@ void DifferentialMeshProcessor::calHeat( int vSrc, double tMultiplier, std::vect
 	vInitHeat[vSrc] = 1.0;
 	ZGeom::VecNd vSolvedHeat(vertCount, 0);
 
-	if (mHeatDiffuseMat.empty()) {
-		computeHeatDiffuseMat(tMultiplier);
-	}
+	if (mHeatDiffuseMat.empty()) computeHeatDiffuseMat(tMultiplier);
 	
 	mHeatDiffuseSolver.solve(1, vInitHeat.c_ptr(), vSolvedHeat.c_ptr());
 	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
@@ -288,6 +177,8 @@ void DifferentialMeshProcessor::computeHeatDiffuseMat( double tMultiplier )
 const ZGeom::EigenSystem& DifferentialMeshProcessor::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
 {
 	LaplacianType laplaceType = laplaceMat.laplacianType();
+    if (!mMHBs[laplaceType].empty()) return mMHBs[laplaceType];
+
 	std::string pathMHB = generateMHBPath("cache/", laplaceType);
 	if (eigenCount == -1) eigenCount = mMesh->vertCount() - 1;
 
@@ -296,6 +187,8 @@ const ZGeom::EigenSystem& DifferentialMeshProcessor::prepareEigenSystem(const Me
 		mMHBs[laplaceType].load(pathMHB);
 	}
 	else {
+        std::cout << "==== Do Eigendecomposition ====\n";
+
 		laplaceMat.meshEigenDecompose(eigenCount, &g_engineWrapper, mMHBs[laplaceType]);
 		mMHBs[laplaceType].save(pathMHB);
 	}

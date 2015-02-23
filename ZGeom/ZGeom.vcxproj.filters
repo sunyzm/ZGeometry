@@ -80,9 +80,6 @@
     <ClInclude Include="include\ZGeom\Approximation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\Mesh2.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\arcball.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -143,9 +140,6 @@
     <ClInclude Include="include\ZGeom\Geodesic.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\Differential.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\ColorMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -185,9 +179,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Color.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Mesh2.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Mesh.cpp">
@@ -242,9 +233,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Geodesic.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Differential.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\ColorMap.cpp">

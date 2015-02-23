@@ -8,6 +8,7 @@
 #include <vector>
 #include <deque>
 #include <set>
+#include <unordered_set>
 #include <random>
 #include <stdexcept>
 #include <ppl.h>
@@ -177,8 +178,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
-	QObject::connect(ui.actionComputeMHW, SIGNAL(triggered()), this, SLOT(computeMHW()));
-	QObject::connect(ui.actionComputeMHWS, SIGNAL(triggered()), this, SLOT(computeMHWS()));
 	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
@@ -210,7 +209,9 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
     QObject::connect(ui.actionInpaintHoles1, SIGNAL(triggered()), this, SLOT(inpaintHoles1()));
+    QObject::connect(ui.actionInpaintHoles2, SIGNAL(triggered()), this, SLOT(inpaintHoles2()));
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
+    QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
 
 	////  Display  ////
@@ -437,7 +438,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
     ui.glMeshWidget->setup(mProcessors, mRenderManagers, &mShapeMatcher);
     
-	/* compute and decompose mesh Laplacians */
+    /* compute and decompose mesh Laplacians */
 	//computeLaplacian(Umbrella);
 	//computeLaplacian(NormalizedUmbrella);	
 	//computeLaplacian(CotFormula);
@@ -975,7 +976,7 @@ void QZGeometryWindow::computeHK()
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-            values[vIdx] = ZGeom::calHeatKernel(mhb, refPoint, vIdx, time_scale);
+            values[vIdx] = ZGeom::calHK(mhb, refPoint, vIdx, time_scale);
 		});
 
 		addColorSignature(obj, values, StrAttrColorHK);
@@ -998,7 +999,7 @@ void QZGeometryWindow::computeHKS()
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
-            values[k] = ZGeom::calHeatKernel(mhb, k, k, time_scale);
+            values[k] = ZGeom::calHK(mhb, k, k, time_scale);
 		});
 
 		addColorSignature(i, values, StrAttrColorHKS);
@@ -1017,10 +1018,11 @@ void QZGeometryWindow::computeBiharmonic()
 		DifferentialMeshProcessor& mp = *mProcessors[obj];
 		const int vertCount = mMeshes[obj]->vertCount();
 		const int refPoint = mp.getRefPointIndex();
+        const ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
 
 		std::vector<double> vVals(vertCount);
 		for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
-			vVals[vIdx] = mp.calBiharmonic(refPoint, vIdx);
+			vVals[vIdx] = ZGeom::calBiharmonicDist(es, refPoint, vIdx);
 		}
 
 		addColorSignature(obj, vVals, StrAttrColorBiharmonic);
@@ -1033,64 +1035,13 @@ void QZGeometryWindow::computeBiharmonic()
 
 void QZGeometryWindow::computeHKSFeatures()
 {
-	std::vector<double> vTimes;
-	vTimes.push_back(10);
-	vTimes.push_back(30);
-	vTimes.push_back(90);
-	vTimes.push_back(270);
+    std::vector<double> vTimes{ 10, 30, 90, 270 };
 
 	for (int i = 0; i < mMeshCount; ++i) {
-		mProcessors[i]->computeKernelSignatureFeatures(vTimes, HEAT_KERNEL);
+
 	}
 	
 	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
-}
-
-void QZGeometryWindow::computeMHW()
-{
-	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
-		const int meshSize = mp.getMesh()->vertCount();
-		const int refPoint = mp.getRefPointIndex();
-		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
-
-		std::vector<double> values(meshSize);
-		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-			values[vIdx] = mp.calMHW(refPoint, vIdx, time_scale);
-		});
-
-		addColorSignature(obj, values, StrAttrColorMHW);
-	}
-
-	displaySignature(StrAttrColorMHW.c_str());
-	qout.output(QString().sprintf("MHW timescale: %f", time_scale));
-	updateDisplaySignatureMenu();
-	mLastOperation = Compute_MHW;
-}
-
-void QZGeometryWindow::computeMHWS()
-{
-	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
-
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		DifferentialMeshProcessor& mp = *mProcessors[obj];
-		const int meshSize = mp.getMesh()->vertCount();
-		const ZGeom::EigenSystem& mhb = mp.getMHB(CotFormula);
-
-		std::vector<double> values(meshSize);
-		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-			values[vIdx] = mp.calMHW(vIdx, vIdx, time_scale);
-		});
-
-		addColorSignature(obj, values, StrAttrColorMHWS);
-	}
-
-	displaySignature(StrAttrColorMHWS.c_str());
-	qout.output(QString().sprintf("MHWS timescale: %f", time_scale));
-	updateDisplaySignatureMenu();
-	mLastOperation = Compute_MHWS;
 }
 
 void QZGeometryWindow::repeatOperation()
@@ -1111,12 +1062,6 @@ void QZGeometryWindow::repeatOperation()
 
 	case Compute_Biharmonic:
 		computeBiharmonic(); break;
-
-	case Compute_MHWS:
-		computeMHWS(); break;
-
-	case Compute_MHW:
-		computeMHW(); break;
 
 	case Compute_Heat:
 		computeHeatTransfer(); break;
@@ -1613,28 +1558,6 @@ void QZGeometryWindow::showCoarser()
 
 	qout.output("Display mesh level " + QString::number(ui.glMeshWidget->m_nMeshLevel));
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::evalDistance()
-{
-	using namespace std;
-
-	if (mMeshCount < 2) return;
-
-	CStopWatch timer;
-	timer.startTimer();
-	Concurrency::parallel_invoke(
-		[&](){ std::cout << "Error geodesic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_GEODESIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
-		[&](){ std::cout << "Error biharmonic1: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 0) << endl; },
-		[&](){ std::cout << "Error biharmonic2: " << ShapeMatcher::evaluateDistance(*mProcessors[0], *mProcessors[1], DISTANCE_BIHARMONIC, std::vector<double>(), mShapeMatcher.m_randPairs, 500) << endl; }
-//		[&](){cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 30.), shapeMatcher.m_randPairs, 0) << endl;},
-//		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 90.), shapeMatcher.m_randPairs, 0) << endl;
-//		cout << "Error geodesic: " << DiffusionShapeMatcher::evaluateDistance(&vMP[0], &vMP[1], DISTANCE_HK, std::vector<double>(1, 270.), shapeMatcher.m_randPairs, 0) << endl;
-	);
-//	cout << "Error geodesic1: " << DiffusionShapeMatcher::evaluateDistance(vMP[0], vMP[1], DISTANCE_GEODESIC, std::vector<double>(), shapeMatcher.m_randPairs, 500) << endl;
-	timer.stopTimer();
-	std::cout << "Evaluate Dist time (ppl): " << timer.getElapsedTime() << endl;
-
 }
 
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, LaplacianType laplacianType /*= CotFormula*/ )
@@ -2227,6 +2150,33 @@ void QZGeometryWindow::fillHoles()
 {
     bool skipExternal = false;
     mShapeEditor.fillHoles(skipExternal);
+
+    MeshHole hole;
+    std::set<int> vIn, vBoundary;
+    for (ShapeEditor::BoundaryVerts bv : mShapeEditor.filled_boundaries) {
+        for (int vi : bv.vert_inside) vIn.insert(vi);
+        for (int vi : bv.vert_on_boundary) vBoundary.insert(vi);
+    }
+    hole.mHoleBoundaryVerts = std::vector < int > {vBoundary.begin(), vBoundary.end()};
+    hole.mHoleVerts = std::vector < int > {vIn.begin(), vIn.end()};
+    std::set<int> fHole;
+    for (int vi : hole.mHoleVerts) {
+        auto nf = mMeshes[0]->getVertex(vi)->getAdjacentFaces();
+        for (const CFace* f : nf) fHole.insert(f->getFaceIndex());
+    }
+    hole.mHoleFaces = std::vector < int > {fHole.begin(), fHole.end()};
+
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    updateDisplayFeatureMenu();
+    displayFeature("hole_vertex");
+    displayFeature("hole_boundary_verts");
+
+    vHoleVerts = hole.mHoleVerts;
+    vHoleFaces = hole.mHoleFaces;
+    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
+
+
     ui.glMeshWidget->update();
 }
 
@@ -2277,13 +2227,12 @@ void QZGeometryWindow::generateHoles()
         tr("Hole size:"), 25, 1, 10000, 1, &ok);
     if (ok) holeVertCount = i;        
 
-    vector<int> holeVertIdx = ZGeom::randomHoleVertex(*mMeshes[0], holeVertCount, refIdx);
-    MeshHole hole = autoGenerateHole(*mMeshes[0], refIdx, holeVertCount);
+    MeshHole hole = autoGenerateHole(*mMeshes[0], vector < int > {refIdx}, holeVertCount);
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
-    displayFeature("hole_vertex");
-    displayFeature("hole_boundary_verts");
+    //displayFeature("hole_vertex");
+    //displayFeature("hole_boundary_verts");
 
     vHoleVerts = hole.mHoleVerts;
     vHoleFaces = hole.mHoleFaces;
@@ -2292,28 +2241,37 @@ void QZGeometryWindow::generateHoles()
 
 void QZGeometryWindow::autoGenerateHoles()
 {
+    bool ok;
     int N = mMeshes[0]->vertCount();
-    int nHoles = 5;
-    vector<vector<int>> allHoles(nHoles);
 
-    std::default_random_engine generator(std::time(NULL));
-    std::uniform_int_distribution<int> distribution1(0, N - 1);
-    std::normal_distribution<double> distribution2(N * 0.02, 4);
-    for (int i = 0; i < nHoles; ++i) {
-        int origin = distribution1(generator);
-        int hole_size = std::max<int>(1, (int)distribution2(generator));
-        allHoles[i] = ZGeom::randomHoleVertex(*mMeshes[0], hole_size, origin);
-    }
-    std::set<int> setHoleVerts;
-    for (vector<int> &vVerts : allHoles) {
-        for (int vi : vVerts) setHoleVerts.insert(vi);
-    }
+    double missing_ratio = 0.2;
+    double s = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
+        tr("missing_ratio:"), 0.2, 0.01, 0.75, 2, &ok);
+    if (ok) missing_ratio = s;
+    int holeVertCount = std::round(missing_ratio * (double)mMeshes[0]->vertCount());
 
-    vHoleVerts = vector < int > {setHoleVerts.begin(), setHoleVerts.end()};
-    mMeshes[0]->addAttrMeshFeatures(vHoleVerts, "hole_vertex");    
+    int hole_count = 1;
+    int i = QInputDialog::getInt(this, tr("Input number of holes"),
+        tr("Hole size:"), 1, 0, 100, 1, &ok);
+    if (ok) hole_count = i;
+    if (hole_count == 0) hole_count = holeVertCount;
 
+
+    std::vector<int> seedVerts(N);
+    for (int i = 0; i < N; ++i) seedVerts[i] = i;
+    std::random_shuffle(seedVerts.begin(), seedVerts.end());
+    seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + hole_count};
+
+    MeshHole hole = autoGenerateHole(*mMeshes[0], seedVerts, holeVertCount);
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
-    displayFeature("hole_vertex");
+    //displayFeature("hole_vertex");
+    //displayFeature("hole_boundary_verts");
+
+    vHoleVerts = hole.mHoleVerts;
+    vHoleFaces = hole.mHoleFaces;
+    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
 }
 
 void QZGeometryWindow::degradeHoles()
@@ -2329,23 +2287,54 @@ void QZGeometryWindow::degradeHoles()
 
 void QZGeometryWindow::inpaintHoles1()
 {
-    mShapeEditor.inpaintHoles(vHoleVerts, 1);
+    double eps = 1e-4;
+    mShapeEditor.inpaintHolesLARS(vHoleVerts, eps);
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::inpaintHoles2()
+{
+    double lambda = 1e-3;
+    double tol = 1e-3;
+    bool ok;
+    double s = QInputDialog::getDouble(this, tr("Input lambda"),
+        tr("lambda:"), 1e-3, 0, 0.5, 4, &ok);
+    if (ok) lambda = s;
+
+    mShapeEditor.inpaintHolesL1LS(vHoleVerts, lambda, tol);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::cutHoles()
 {
-     if (backupMesh != nullptr) return;
-     if (vHoleVerts.empty()) return;
+    if (backupMesh != nullptr) return;
+    if (vHoleVerts.empty()) return;
 
-     backupMesh = new CMesh(*mMeshes[0]);
-     mMeshes[0]->getSubMeshFromFaces(vHoleFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
-     
-     std::swap(mMeshes[0], backupMesh); 
-     mProcessors[0]->init(mMeshes[0]);
-     mShapeEditor.init(mProcessors[0]);
-     ui.glMeshWidget->setup(0, mProcessors[0], mRenderManagers[0]);
-     ui.glMeshWidget->update();
+    vector<int> vRemainingFaces;
+    vRemainingFaces.reserve(mMeshes[0]->faceCount() - vHoleFaces.size());
+    std::unordered_set<int> holeFaces{ vHoleFaces.begin(), vHoleFaces.end() };
+    for (int i = 0; i < (int)mMeshes[0]->faceCount(); ++i) {
+        if (holeFaces.find(i) == holeFaces.end())
+            vRemainingFaces.push_back(i);
+    }
+
+    backupMesh = new CMesh(*mMeshes[0]);
+    mMeshes[0]->getSubMeshFromFaces(vRemainingFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
+    backupMesh->gatherStatistics();
+
+    switchMesh();
+}
+
+void QZGeometryWindow::cutToSelected()
+{
+    if (backupMesh != nullptr) return;
+    if (vHoleVerts.empty()) return;
+
+    backupMesh = new CMesh(*mMeshes[0]);
+    mMeshes[0]->getSubMeshFromFaces(vHoleFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
+    backupMesh->gatherStatistics();
+
+    switchMesh();
 }
 
 void QZGeometryWindow::switchMesh()
@@ -2355,4 +2344,9 @@ void QZGeometryWindow::switchMesh()
     mShapeEditor.init(mProcessors[0]);
     ui.glMeshWidget->setup(0, mProcessors[0], mRenderManagers[0]);
     ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::computeMHWS()
+{
+    //TODO
 }

@@ -29,7 +29,9 @@ public:
     void constructCotFormula(const CMesh* tmesh);			// negative cotangent formula
     void constructSymCot(const CMesh* tmesh);				// negative symmetric cotangent formula
 
-protected:
+    void constructAniso(const CMesh *tmesh);
+
+public:
 	int mOrder;
 	SparseMatrix<double> mLS, mW;
     bool mSymmetric;

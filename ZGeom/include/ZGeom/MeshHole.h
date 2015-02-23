@@ -14,4 +14,6 @@ public:
 
 MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize);
 
+MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
+
 #endif

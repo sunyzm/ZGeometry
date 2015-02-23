@@ -39,31 +39,37 @@ int main(int argc, char *argv[])
     Laplacian umbrella, goemUmbrella, cotformula;
     umbrella.constructUmbrella(&mesh);
     cotformula.constructCotFormula(&mesh);
+
+    auto coord = mesh.getVertCoordinates();
+    DenseMatrixd matCoord = coord.toDenseMatrix();
+
+    mesh.calVertNormals();
+    auto normals = mesh.getVertNormals();
+    DenseMatrixd matNormal(N, 3);
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < 3; ++j)
+            matNormal(i, j) = normals[i][j];
+    }
+
+    mesh.calCurvatures();
+    mesh.calVertMixedAreas();
+    Laplacian anisoLap;
+    anisoLap.constructAniso(&mesh);
+
     MatlabEngineWrapper eng;
     eng.open();
     auto pwd = initial_path<path>();
     eng.eval("cd " + pwd.string()); 
 
+    eng.addDenseMat(matCoord, "mat_coord");
+    eng.addDenseMat(matNormal, "mat_normal");
     eng.addSparseMat(umbrella.getLS(), "mat_umbrella");
     eng.addSparseMat(cotformula.getW(), "mat_weight");
     eng.addSparseMat(cotformula.getLS(), "mat_cot");
+    eng.addSparseMat(anisoLap.getLS(), "mat_aniso");
 
-    auto coord = mesh.getVertCoordinates();
-    DenseMatrixd matCoord(N, 3);
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < 3; ++j)
-            matCoord(i, j) = coord[i][j];    
-    mesh.calVertNormals();
-    auto normals = mesh.getVertNormals();
-    DenseMatrixd matNormal(N, 3);
-    for (int i = 0; i < N; ++i)
-        for (int j = 0; j < 3; ++j)
-            matNormal(i, j) = normals[i][j];
-    eng.addDenseMat(matCoord, "mat_coord");   
-    eng.addDenseMat(matNormal, "mat_normal");
-
-    eng.eval("save laplace.mat mat_umbrella mat_weight mat_cot mat_coord mat_normal");
+    eng.eval("save meshlaplace.mat mat_coord mat_normal mat_umbrella mat_weight mat_cot mat_aniso");
     eng.close();
-    cout << "Laplace mat file saved!" << endl;
+    cout << "Mesh and Laplace .mat file saved!" << endl;
     exit(0);
 }

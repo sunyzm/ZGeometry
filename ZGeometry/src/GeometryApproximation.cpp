@@ -5,7 +5,7 @@
 #undef INT64_MIN
 #undef INT64_MAX
 #include <metis.h>
-#include "SpectralGeometry.h"
+#include "differential_geometry.h"
 #include "global.h"
 #define USE_SPAMS
 
@@ -56,8 +56,7 @@ void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dicti
 
 void calHKDict(const ZGeom::EigenSystem& es, double timescale, ZGeom::Dictionary& dict)
 {
-	ZGeom::DenseMatrixd matHK;
-	computeHKMat(es, timescale, matHK);
+    ZGeom::DenseMatrixd matHK = ZGeom::calHeatKernelMatrix(es, timescale);
 	int vertCount = matHK.colCount(), atomCount = matHK.rowCount();
 
 	dict.resize(atomCount, vertCount);

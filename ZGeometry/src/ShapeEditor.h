@@ -53,7 +53,8 @@ public:
     void holeEstimateNormals();
 
     void generateNoise(const std::vector<int>& selectedVerts, double sigma = 0.02);
-    void inpaintHoles(const std::vector<int>& selectedVerts, int method = 1);
+    void inpaintHolesLARS(const std::vector<int>& selectedVerts, double eps = 1e-4);
+    void inpaintHolesL1LS(const std::vector<int>& selctedVerts, double lambda = 1e-3, double tol = 1e-3);
 
 signals:
 	void approxStepsChanged(int index, int newSize);
@@ -80,6 +81,7 @@ private:
     void testWaveletAnalysis();
     void testWaveletComputation();
     void testSurfaceArea();
+    void testSurfaceInpainting();
 
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);
 	void updateEditBasis(const std::vector<ZGeom::VecNd>& vAtoms, const std::vector<int>& vSelectedIdx);
@@ -109,6 +111,7 @@ private:
         std::vector<int> vert_inside;
     };
 
+public:
     std::vector<BoundaryVerts> filled_boundaries;
 
 };

@@ -12,14 +12,12 @@ class EigenSystem
 {
 public:
 	friend class EigenCompute;
-	EigenSystem() : mOrder(0), mEvCount(0) {}
 
 	void setSize(int order, int nev);
 	bool empty() const { return mEigVecs.empty(); }
-	int eigVecSize() const { return mOrder; }
-	int eigVecCount() const { return (int) mEigVecs.size(); }
-	void setValues(int index, double eigVal, double eigVec[]);
-	void setValues(int index, double eigVal, const std::vector<double>& eigVec);
+    int eigVecCount() const { return (int)mEigVecs.size(); }
+    int eigVecSize() const { return empty() ? 0 : (int)mEigVecs[0].size(); }
+
 	const std::vector<double>& getAllEigVals() const { return mEigVals; }
     const std::vector<VecNd>& getAllEigVecs() const { return mEigVecs; }
 	double getEigVal(int index) const { return mEigVals[index]; }
@@ -33,8 +31,6 @@ public:
 	void load(const std::string& file);
 
 public:
-	int mOrder;
-	int mEvCount;
 	std::vector<double> mEigVals;
 	std::vector<VecNd> mEigVecs;
 };

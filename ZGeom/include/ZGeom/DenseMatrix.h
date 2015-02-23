@@ -18,15 +18,15 @@ public:
 		mData = new T[row*col]; 
 		for (uint i = 0; i < row*col; ++i) mData[i] = 0;
 	}
-	DenseMatrix(const DenseMatrix<T>& m2);
-	DenseMatrix(DenseMatrix<T>&& m2);
-	DenseMatrix(const std::vector<VecN<T> >& vRowVecs);
-	const DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
-    const DenseMatrix<T>& operator = (DenseMatrix<T>&& m2);
-	~DenseMatrix() { delete []mData; }
+    DenseMatrix(const DenseMatrix<T>& m2);
+    DenseMatrix(DenseMatrix<T>&& m2);	
+	DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
+    DenseMatrix<T>& operator = (DenseMatrix<T>&& m2);
+    DenseMatrix(const std::vector<VecN<T> >& vRowVecs);
+    ~DenseMatrix() { delete []mData; }
 
-	T& operator () (uint idx, uint j) { return mData[idx*mCol + j]; }	// 0-based subscript access to matrix elements
-	T operator () (uint i, uint j) const { return mData[i*mCol + j]; } // 0-based subscript access to matrix elements
+	T& operator () (uint i, uint j) { return mData[i * mCol + j]; }	     // 0-based subscript access to matrix elements
+	T operator () (uint i, uint j) const { return mData[i * mCol + j]; } // 0-based subscript access to matrix elements
 		
 	bool empty() const { return mData == NULL; }
 	uint rowCount() const { return mRow; }
@@ -51,7 +51,6 @@ public:
 	void read(const std::string& filename);
 
 private:
-	T elem(uint i, uint j) const { return mData[i * mCol + j]; }
 	T* mData;
 	uint mRow, mCol;
 };
@@ -73,35 +72,7 @@ inline void DenseMatrix<T>::print( const std::string& filepath ) const
 }
 
 template<typename T>
-inline DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& m2) : mRow(m2.mRow), mCol(m2.mCol)
-{
-	mData = new T[mRow*mCol];
-	std::copy_n(m2.mData, mRow*mCol, mData);
-}
-
-template<typename T>
-inline DenseMatrix<T>::DenseMatrix(const std::vector<VecN<T> >& vRowVecs)
-{
-	mRow = vRowVecs.size();
-	mCol = vRowVecs[0].size();
-	mData = new T[mRow*mCol];
-	for (int i = 0; i < mRow; ++i) {
-		std::copy_n(vRowVecs[i].c_ptr(), mCol, mData + mCol*i);
-	}
-}
-
-template<typename T>
-inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2)
-{
-    mRow = m2.mRow;
-    mCol = m2.mCol;
-	mData = m2.mData;
-	m2.mRow = m2.mCol = 0;
-    m2.mData = nullptr;
-}
-
-template<typename T>
-inline const DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2 )
+inline DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2 )
 {
 	delete []mData;
 	mRow = m2.mRow;
@@ -112,7 +83,7 @@ inline const DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2
 }
 
 template<typename T>
-inline const DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& m2)
+inline DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& m2)
 {
     delete []mData;
     mRow = m2.mRow;
@@ -121,6 +92,29 @@ inline const DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& m2)
     m2.mRow = m2.mCol = 0;
     m2.mData = nullptr;
     return *this;
+}
+
+template<typename T>
+inline DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& m2) 
+{
+    *this = m2;
+}
+
+template<typename T>
+inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2)
+{
+    *this = std::move(m2);
+}
+
+template<typename T>
+inline DenseMatrix<T>::DenseMatrix(const std::vector<VecN<T> >& vRowVecs)
+{
+    mRow = vRowVecs.size();
+    mCol = vRowVecs[0].size();
+    mData = new T[mRow*mCol];
+    for (int i = 0; i < mRow; ++i) {
+        std::copy_n(vRowVecs[i].c_ptr(), mCol, mData + mCol*i);
+    }
 }
 
 template<typename T>

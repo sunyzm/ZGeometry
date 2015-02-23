@@ -18,8 +18,8 @@ public:
     const Vec3<T>& operator = (const Vec3<T>& v2) { x = v2.x; y = v2.y; z = v2.z; return *this; }
 	Vec3<T> operator + (const Vec3<T>& v2) const;
 	Vec3<T> operator - (const Vec3<T>& v2) const;
-	Vec3<T> operator * (T lambda) const;
-	Vec3<T> operator / (T lambda) const;
+	Vec3<T> operator * (T coeff) const;
+	Vec3<T> operator / (T coeff) const;
     Vec3<T> operator ^ (const Vec3<T>& v2) const;
 	const Vec3<T>& operator += (const Vec3<T>& v2);
 	const Vec3<T>& operator -= (const Vec3<T>& v2);
@@ -85,30 +85,9 @@ inline const Vec3<T>& Vec3<T>::normalize() {
 }
 
 template<typename T>
-inline const Vec3<T>& Vec3<T>::operator /= ( T coeff )
+inline Vec3<T> operator -(const Vec3<T>& v)
 {
-	this->x /= coeff;
-	this->y /= coeff;
-	this->z /= coeff;
-	return *this;
-}
-
-template<typename T>
-inline const Vec3<T>& Vec3<T>::operator *= ( T coeff )
-{
-	this->x *= coeff;
-	this->y *= coeff;
-	this->z *= coeff;
-	return *this;
-}
-
-template<typename T>
-inline const Vec3<T>& Vec3<T>::operator -= ( const Vec3<T>& v2 )
-{
-	this->x -= v2.x;
-	this->y -= v2.y;
-	this->z -= v2.z;
-	return *this;
+    return Vec3<T>(-v.x, -v.y, -v.z);
 }
 
 template<typename T>
@@ -121,9 +100,26 @@ inline const Vec3<T>& Vec3<T>::operator += ( const Vec3<T>& v2 )
 }
 
 template<typename T>
-inline Vec3<T> operator -(const Vec3<T>& v)
+inline const Vec3<T>& Vec3<T>::operator -= (const Vec3<T>& v2)
 {
-	return Vec3<T>(-v.x, -v.y, -v.z);
+    *this += -v2;
+    return *this;
+}
+
+template<typename T>
+inline const Vec3<T>& Vec3<T>::operator *= (T coeff)
+{
+    this->x *= coeff;
+    this->y *= coeff;
+    this->z *= coeff;
+    return *this;
+}
+
+template<typename T>
+inline const Vec3<T>& Vec3<T>::operator /= (T coeff)
+{
+    *this *= T(1.0) / coeff;
+    return *this;
 }
 
 template<typename T>
@@ -142,6 +138,12 @@ template<typename T>
 inline Vec3<T> Vec3<T>::operator *(T coeff) const
 {
 	return Vec3<T>(x * coeff, y * coeff, z * coeff);
+}
+
+template<typename T>
+inline Vec3<T> operator *(T coeff, const Vec3<T>& v1)
+{
+    return v1 * coeff;
 }
 
 template<typename T>

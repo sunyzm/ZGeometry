@@ -14,7 +14,8 @@
 #include <ZGeom/SparseSolver.h>
 #include <ZGeom/MCA.h>
 #include <ZGeom/Geodesic.h>
-#include "SpectralGeometry.h"
+#include <ZGeom/MeshHole.h>
+#include "differential_geometry.h"
 #include "global.h"
 
 using std::vector;
@@ -694,6 +695,10 @@ void ShapeEditor::runTests()
     
     //bool skipExternalBoundary = false;
     //fillHoles(skipExternalBoundary);
+
+//     mMesh = new CMesh;
+//     mMesh->load("../../Data/favorite/eight_800.obj");
+//    testSurfaceInpainting();    
 }
 
 //// Test partitioned approximation with graph Laplacian ////
@@ -2467,7 +2472,7 @@ void ShapeEditor::fillHole()
     }
 
     /* inpaint affected normals */
-    int eigenCount = 500;					// -1 means full decomposition
+    int eigenCount = -1;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     std::cout << "==== Do Eigendecomposition ====\n";
@@ -2643,12 +2648,41 @@ ZGeom::DenseMatrixd inpaintLARS(const DenseMatrixd& matCoord, const DenseMatrixd
     g_engineWrapper.addColVec(vecMissing, "missing_idx");
     g_engineWrapper.addDoubleScalar(eps, "lambda");
 
-    g_engineWrapper.eval("coord_est =  zmesh_inpaint_lars(dict, coord, missing_idx, lambda);");
-
+    CStopWatch timer;
+    timer.startTimer();
+    g_engineWrapper.eval("[coord_est,~,err] =  zmesh_inpaint_lars(dict, coord, missing_idx, lambda);");
+    timer.stopTimer("LARS time: ");
     ZGeom::DenseMatrixd result = g_engineWrapper.getDenseMat("coord_est");
+
     return result;
 }
 
+double inpaintError(const MeshCoordinates& coord1, const MeshCoordinates& coord2, const std::vector<int>& selctedVerts)
+{
+    double errorSum = 0;
+    for (int vIdx : selctedVerts) {
+        errorSum += (coord1.getVertCoordinate(vIdx) - coord2.getVertCoordinate(vIdx)).length2();
+    }
+    return errorSum / selctedVerts.size();
+}
+
+
+ZGeom::DenseMatrixd inpaintL1LS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, double lambda, double tol)
+{
+    g_engineWrapper.addDenseMat(matCoord, "coord");
+    g_engineWrapper.addDenseMat(matDict, "dict");
+
+    ZGeom::VecNd vecMissing(vMissingIdx.size());
+    for (int i = 0; i < vecMissing.size(); ++i) vecMissing[i] = double(vMissingIdx[i] + 1);
+    g_engineWrapper.addColVec(vecMissing, "missing_idx");
+    g_engineWrapper.addDoubleScalar(lambda, "lambda");
+    g_engineWrapper.addDoubleScalar(tol, "tol");
+
+    g_engineWrapper.eval("[coord_est,~,err] =  zmesh_inpaint_l1ls(dict, coord, missing_idx, lambda, tol);");
+    ZGeom::DenseMatrixd result = g_engineWrapper.getDenseMat("coord_est");
+
+    return result;
+}
 
 void ShapeEditor::holeFairingFourierLARS()
 {
@@ -2838,12 +2872,11 @@ void ShapeEditor::generateNoise(const std::vector<int>& selectedVerts, double si
     changeCoordinates("coord_hole_noisy");
 }
 
-void ShapeEditor::inpaintHoles(const std::vector<int>& inpaintVert, int method /*= 1*/)
+void ShapeEditor::inpaintHolesLARS(const std::vector<int>& inpaintVert, double eps)
 {
     const int totalVertCount = mMesh->vertCount();
     const MeshCoordinates& coordOld = getOldMeshCoord();
 
-    std::cout << "==== Do Eigendecomposition ====\n";
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     int eigenCount = -1;    // -1 means full decomposition
@@ -2853,7 +2886,6 @@ void ShapeEditor::inpaintHoles(const std::vector<int>& inpaintVert, int method /
 
     ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
     ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
-    double eps = 1e-4;
 
     ZGeom::DenseMatrixd matCoordInpainted = inpaintLARS(matCoordOld, matDict, inpaintVert, eps);
 
@@ -2862,5 +2894,111 @@ void ShapeEditor::inpaintHoles(const std::vector<int>& inpaintVert, int method /
 
     addCoordinate(coordInpainted, "hole_inpainted_LARS");
     std::cout << "LARS hole inpainting finished!" << std::endl;
+    std::cout << "LARS inpainting error: " << inpaintError(coordOld, coordInpainted, inpaintVert) << std::endl;
+
     changeCoordinates("hole_inpainted_LARS");
+}
+
+void ShapeEditor::inpaintHolesL1LS(const std::vector<int>& selctedVerts, double lambda /*= 1e-3*/, double tol /*= 1e-3*/)
+{
+    const int totalVertCount = mMesh->vertCount();
+    MeshCoordinates coordOld = getOldMeshCoord();
+
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);
+    int eigenCount = -1;    // -1 means full decomposition
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
+    ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
+
+    ZGeom::DenseMatrixd matCoordInpainted = inpaintL1LS(matCoordOld, matDict, selctedVerts, lambda, tol);
+
+    MeshCoordinates coordInpainted(totalVertCount);
+    coordInpainted.fromDenseMatrix(matCoordInpainted);
+
+    addCoordinate(coordInpainted, "hole_inpainted_L1LS");
+    std::cout << "L1LS hole inpainting finished!" << std::endl;
+    std::cout << "L1LS inpainting error: " << inpaintError(coordOld, coordInpainted, selctedVerts) << std::endl;
+
+    changeCoordinates("hole_inpainted_L1LS");
+}
+
+void ShapeEditor::testSurfaceInpainting()
+{
+    using namespace std;
+
+    ofstream ofs(string("output/inpainting_output_") + mMesh->getMeshName() + ".txt");
+    CStopWatch timer;
+
+    int N = mMesh->vertCount();
+    ofs << "Mesh size: " << N << endl;
+    
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(mMesh);    
+    int eigenCount = -1;    // -1 means full decomposition
+    if (N > 1000) eigenCount = 1000;
+    timer.startTimer();
+    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    timer.stopTimer("Decomposition time: ");
+    ofs << "Decomposition time: " << timer.getElapsedTime() << endl;
+    Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    MeshCoordinates coordOld = getOldMeshCoord();
+    ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
+    ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
+
+    default_random_engine generator((unsigned int)time(NULL));
+    std::random_device rd;
+    std::mt19937 g(rd());
+    vector<double> missing_ratios{ 0.05, 0.2, 0.5 };
+    
+    int count(0);    
+    for (double missing_ratio : missing_ratios) {
+    // for each missing_ratio
+        int nHoleVerts = std::round(N * missing_ratio);
+        ofs << "missing ratio: " << missing_ratio << endl;
+        vector<int> seed_counts{ nHoleVerts, 5, 1 };
+        for (int nSeed : seed_counts) {
+        // for different number of hole seeds
+            ofs << "Hole seed count: " << nSeed << endl;
+            
+            // do three tests and use best
+            vector<pair<double, double>> testResults;
+            for (int k = 0; k < 1; ++k) {
+                std::vector<int> seedVerts(N);
+                for (int i = 0; i < N; ++i) seedVerts[i] = i;
+                std::shuffle(seedVerts.begin(), seedVerts.end(), g);
+                seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + nSeed};
+                MeshHole hole = autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
+
+                double lambda = 1e-2;
+                double tol = 1e-3;
+
+
+                timer.startTimer();
+                ZGeom::DenseMatrixd matCoordInpainted = inpaintL1LS(matCoordOld, matDict, hole.mHoleVerts, lambda, tol);
+                timer.stopTimer();
+                double inpaintTime = timer.getElapsedTime();
+
+                MeshCoordinates coordInpainted(N);
+                coordInpainted.fromDenseMatrix(matCoordInpainted);
+                double mse = inpaintError(coordOld, coordInpainted, hole.mHoleVerts);
+
+                testResults.push_back(make_pair(mse, inpaintTime));
+
+                if (++count % 5 == 0) cout << "test " << count << " finished!" << endl;
+            }
+
+            sort(testResults.begin(), testResults.end(), 
+                [](const pair<double, double>& t1, const pair<double, double>& t2) { return t1.first < t2.first; });
+            ofs << "Error: " << testResults.front().first << "; Time: " << testResults.front().second << endl;
+            ofs << endl;
+        } 
+        ofs << endl;
+    }
+    cout << "Finished!" << endl;
 }
