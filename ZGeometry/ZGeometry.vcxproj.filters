@@ -107,6 +107,9 @@
     <ClCompile Include="src\MeshHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\RenderSettings.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="ZGeometry.ui">
@@ -129,9 +132,6 @@
     </CustomBuild>
     <CustomBuild Include="src\RenderSettings.h">
       <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="doc\code_recylce.txt">
-      <Filter>Resource Files</Filter>
     </CustomBuild>
     <CustomBuild Include="meshfiles.cfg">
       <Filter>Resource Files</Filter>
@@ -187,9 +187,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\GeometryApproximation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\GeometryProcesser.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SurfaceInpainter.h">

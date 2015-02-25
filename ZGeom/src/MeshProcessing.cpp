@@ -258,4 +258,26 @@ double calBiharmonicDist(const EigenSystem& es, int v1, int v2)
     return std::sqrt(sum);
 }
 
+void getMeshGraphCSR(const CMesh& mesh, std::vector<int>& xadj, std::vector<int>& adjncy)
+{
+    int vertNum = mesh.vertCount();
+    xadj.resize(vertNum + 1);
+    adjncy.clear();
+    xadj[0] = 0;
+    for (int i = 0; i < vertNum; ++i) {
+        std::vector<int> vNbr = mesh.getVertNeighborVerts(i, 1, false);
+        for (int j : vNbr) adjncy.push_back(j);
+        xadj[i + 1] = (int)adjncy.size();
+    }
+}
+
+/* conf. "MESH - MEASURING ERRORS BETWEEN SURFACES USING THE HAUSDORFF (2002)" */
+double computeMeanHausdorffDistance(const CMesh& mesh1, const CMesh& mesh2)
+{
+    double result{ 0 };
+
+
+    return result;
+}
+
 }   // end of namespace

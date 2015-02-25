@@ -8,6 +8,10 @@
 
 namespace ZGeom {
 
+double distPointTriangle(Vec3d p, const std::vector<ZGeom::Vec3d>& T);
+double distPoint2Mesh(Vec3d p, CMesh& mesh);
+double computeMeanHausdorffDistance(const CMesh& mesh1, const CMesh& mesh2);
+
 enum MeshMatrixType 
 { 
 	MM_ADJACENCY, MM_DEGREE, MM_INV_DEGREE, MM_WALK, 
@@ -15,6 +19,8 @@ enum MeshMatrixType
     MM_INV_LENGTH
 };
 SparseMatrix<double> constructMeshMatrix(const CMesh& mesh, MeshMatrixType mmt);
+
+void getMeshGraphCSR(const CMesh& mesh, std::vector<int>& xadj, std::vector<int>& adjncy);
 
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen);
@@ -59,8 +65,6 @@ std::vector<VertPrincipalCurvatures> estimateMeshPrincipalCurvatures(const CMesh
 
 std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed = -1);
 std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::vector<int>& seeds);
-
-
 
 }   // end of namespace
 

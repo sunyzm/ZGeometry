@@ -25,9 +25,9 @@ struct VertHelper{
 double calLocalGeodesic(const CMesh& mesh, const vector<VertHelper>& vVertNotes, int ia, int ib, int ic)
 {   
     // ia - vertex with smaller geodesic; ib - with greater geodesic; ic - update
-    double la = (mesh.getVertexPosition(ib) - mesh.getVertexPosition(ic)).length();
-    double lb = (mesh.getVertexPosition(ia) - mesh.getVertexPosition(ic)).length();
-    double lc = (mesh.getVertexPosition(ib) - mesh.getVertexPosition(ia)).length();
+    double la = (mesh.vertPos(ib) - mesh.vertPos(ic)).length();
+    double lb = (mesh.vertPos(ia) - mesh.vertPos(ic)).length();
+    double lc = (mesh.vertPos(ib) - mesh.vertPos(ia)).length();
     double ctheta = (la*la + lb*lb - lc*lc) / (2 * la*lb);
     double stheta = sqrt(1 - ctheta*ctheta);
     double u = vVertNotes[ib].m_LocalGeodesic - vVertNotes[ia].m_LocalGeodesic;
@@ -62,7 +62,7 @@ double ZGeom::calGeodesic(const CMesh& mesh, int s, int t)
 {
     assert(s >= 0 && t >= 0 && s < mesh.vertCount() && t < mesh.vertCount());
     if (s == t) return 0.0;
-    const CVertex& notei = *mesh.getVertex(s);
+    const CVertex& notei = *mesh.vert(s);
     GeoQueue heapqueue; 
     vector<VertHelper> vVertNotes(mesh.vertCount());    
     vVertNotes[s].m_mark = s;
@@ -74,7 +74,7 @@ double ZGeom::calGeodesic(const CMesh& mesh, int s, int t)
     for (j = 0; j < notei.outValence(); ++j) {
         auto ee = notei.getHalfEdge(j);
         int endv = ee->getVertIndex(1);
-        ZGeom::Vec3d vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
+        ZGeom::Vec3d vt = mesh.vertPos(endv) - mesh.vertPos(s);
         double mgeo = vt.length();
         if (endv == t) return mgeo; // destination reached
         vVertNotes[endv].m_LocalGeodesic = mgeo;
@@ -111,7 +111,7 @@ double ZGeom::calGeodesic(const CMesh& mesh, int s, int t)
         vVertNotes[sg].m_mark = s;
 
         // update adjacent vertices of sg
-        const CVertex *vsg = mesh.getVertex(sg);
+        const CVertex *vsg = mesh.vert(sg);
         for (k = 0; k < vsg->outValence(); ++k) {
             ia = sg;
             auto e1 = vsg->getHalfEdge(k);
@@ -151,7 +151,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
 {
     assert(s >= 0 && s < mesh.vertCount());
     int vertCount = mesh.vertCount();
-    const CVertex& notei = *mesh.getVertex(s);
+    const CVertex& notei = *mesh.vert(s);
     GeoQueue heapqueue;
     vector<VertHelper> vVertNotes(mesh.vertCount());
     vVertNotes[s].m_mark = s;
@@ -174,7 +174,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
     for (j = 0; j < notei.outValence(); ++j) {
         auto ee = notei.getHalfEdge(j);
         int endv = ee->getVertIndex(1);
-        ZGeom::Vec3d vt = mesh.getVertexPosition(endv) - mesh.getVertexPosition(s);
+        ZGeom::Vec3d vt = mesh.vertPos(endv) - mesh.vertPos(s);
         double mgeo = vt.length();
         if (vNonHoleBoundaryVert[endv]) return mgeo;
         vVertNotes[endv].m_LocalGeodesic = mgeo;
@@ -211,7 +211,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
         if (vVertNotes[sg].m_mark == s) continue;
         vVertNotes[sg].m_mark = s;
         if (vVertIsHole[sg]) continue;
-        CVertex* vsg = mesh.getVertex(sg);
+        CVertex* vsg = mesh.vert(sg);
         for (k = 0; k < vsg->outValence(); ++k) {
             ia = sg;
             const CHalfEdge* e1 = vsg->getHalfEdge(k);

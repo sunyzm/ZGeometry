@@ -44,6 +44,7 @@ ZGeometry/GeneratedFiles/
 ZGeometry/models/
 ZGeometry/output/
 ZGeometry/cache/
+ZGeometry/doc/recycle/
 ZGeometry/meshfiles.cfg
 ZGeometry/meshfiles_debug.cfg
 TestZGeom/bin/

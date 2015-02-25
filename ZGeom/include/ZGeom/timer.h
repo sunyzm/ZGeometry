@@ -1,8 +1,8 @@
 #ifndef ZGEOM_TIMER_H
 #define ZGEOM_TIMER_H
 #include <string>
-#include <windows.h>
 #include <iostream>
+#include <chrono>
 
 class CStopWatch 
 {
@@ -15,31 +15,24 @@ public:
 	double getElapsedTime() const;
 
 private:
-	LARGE_INTEGER mStart;
-	LARGE_INTEGER mStop;
-	LARGE_INTEGER mBegin;
-	LARGE_INTEGER mEnd;
-	LARGE_INTEGER frequency;
-	double LIToSecs(LARGE_INTEGER L) const;
+    std::chrono::time_point<std::chrono::system_clock> t_start;
+    std::chrono::time_point<std::chrono::system_clock> t_stop;
+    std::chrono::time_point<std::chrono::system_clock> t_begin;
+    std::chrono::time_point<std::chrono::system_clock> t_end;
 };
 
 
-// Calls the provided work function and returns the number of milliseconds  
+// Calls the provided work function and returns the number of seconds  
 // that it takes to call that function. 
-template <class Function> 
-inline __int64 time_call(Function&& f)
-{
-	__int64 begin = GetTickCount64();
-	f();
-	return GetTickCount64() - begin;
-}
-
 template <class Function>
 inline double time_call_sec(Function&& f)
 {
-	__int64 begin = GetTickCount64();
-	f();
-	return double(GetTickCount64() - begin) / 1e3;
+    std::chrono::time_point<std::chrono::system_clock> start, end;
+    start = std::chrono::system_clock::now();
+    f();
+    end = std::chrono::system_clock::now();
+    std::chrono::duration<double> elapsed_seconds = end - start;
+    return elapsed_seconds.count();
 }
 
 #endif

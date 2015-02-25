@@ -14,7 +14,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
     default_random_engine generator((unsigned int)time(NULL));
 
     vertInHole.insert(seedVert);
-    for (auto f : mesh.getVertex(seedVert)->getAdjacentFaces()) {
+    for (auto f : mesh.vert(seedVert)->getAdjacentFaces()) {
         faceInHole.insert(f->getFaceIndex());    
         for (int k = 0; k < 3; ++k) {
             int faceVertIdx = f->getVertexIndex(k);
@@ -28,7 +28,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
         uniform_int_distribution<int> distr1(0, (int)vecBoundaryVerts.size() - 1);
         int newHoleVert = vecBoundaryVerts[distr1(generator)];
         vertInHole.insert(newHoleVert);
-        for (auto f : mesh.getVertex(newHoleVert)->getAdjacentFaces()) {
+        for (auto f : mesh.vert(newHoleVert)->getAdjacentFaces()) {
             if (faceInHole.find(f->getFaceIndex()) != faceInHole.end())
                 continue;       // face already considered     
             faceInHole.insert(f->getFaceIndex());
@@ -42,7 +42,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
         for (auto iter = boundaryVerts.begin(); iter != boundaryVerts.end();) {
             int vIdx = *iter;
             bool encompassed = true;
-            for (auto f : mesh.getVertex(vIdx)->getAdjacentFaces()) {
+            for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
                 if (faceInHole.find(f->getFaceIndex()) == faceInHole.end()) {
                     // found a face not in hole, so vIdx is not in hole yet
                     encompassed = false;
@@ -75,7 +75,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
 
     vertInHole = set < int > {seedVerts.begin(), seedVerts.end()};
     for (int vIdx : vertInHole) {
-        for (auto f : mesh.getVertex(vIdx)->getAdjacentFaces()) {
+        for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
             faceInHole.insert(f->getFaceIndex());
             for (int k = 0; k < 3; ++k) {
                 int faceVertIdx = f->getVertexIndex(k);
@@ -92,7 +92,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
         std::advance(it, distr1(generator));
         int newHoleVert = *it;
         vertInHole.insert(newHoleVert);
-        for (auto f : mesh.getVertex(newHoleVert)->getAdjacentFaces()) {
+        for (auto f : mesh.vert(newHoleVert)->getAdjacentFaces()) {
             if (faceInHole.find(f->getFaceIndex()) != faceInHole.end())
                 continue;       // face already considered     
             faceInHole.insert(f->getFaceIndex());
@@ -107,7 +107,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
         for (auto iter = boundaryVerts.begin(); iter != boundaryVerts.end();) {
             int vIdx = *iter;
             bool encompassed = true;
-            for (auto f : mesh.getVertex(vIdx)->getAdjacentFaces()) {
+            for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
                 if (faceInHole.find(f->getFaceIndex()) == faceInHole.end()) {
                     // found a face not in hole, so vIdx is not in hole yet
                     encompassed = false;

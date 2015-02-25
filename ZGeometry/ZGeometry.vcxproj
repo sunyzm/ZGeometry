@@ -236,6 +236,7 @@
     <ClCompile Include="src\OutputHelper.cpp" />
     <ClCompile Include="src\qsingleinputdialog.cpp" />
     <ClCompile Include="src\QZGeometry.cpp" />
+    <ClCompile Include="src\RenderSettings.cpp" />
     <ClCompile Include="src\ShapeEditor.cpp" />
     <ClCompile Include="src\ShapeMatcher.cpp" />
     <ClCompile Include="src\SurfaceInpainter.cpp" />
@@ -541,36 +542,6 @@
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
       </AdditionalInputs>
     </CustomBuild>
-    <CustomBuild Include="doc\code_recylce.txt">
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Performing Custom Build Tools</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-      </AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Performing Custom Build Tools</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-      </AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Performing Custom Build Tools</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-      </AdditionalInputs>
-      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Command>
-      <Message Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Performing Custom Build Tools</Message>
-      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </Outputs>
-      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-      </AdditionalInputs>
-    </CustomBuild>
     <CustomBuild Include="doc\installation_guide.txt">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
       </Command>
@@ -775,7 +746,6 @@
     <ClInclude Include="differential_geometry.h" />
     <ClInclude Include="GeneratedFiles\ui_qsingleinputdialog.h" />
     <ClInclude Include="src\GeometryApproximation.h" />
-    <ClInclude Include="src\GeometryProcesser.h" />
     <ClInclude Include="src\matching.h" />
     <ClInclude Include="src\MatchTestCase.h" />
     <ClInclude Include="src\Palette.h" />

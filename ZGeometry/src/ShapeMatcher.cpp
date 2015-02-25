@@ -948,14 +948,14 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 
 		if (vMatch2[vj] != vi) continue;
 
-		int vid_i = tmesh1->getVertex(vi)->getVID(),
-			vid_j = tmesh2->getVertex(vj)->getVID();
+		int vid_i = tmesh1->vert(vi)->getVID(),
+			vid_j = tmesh2->vert(vj)->getVID();
 
-		for (int ei = 0; ei < tmesh1->getVertex(vi)->outValence(); ei++)
+		for (int ei = 0; ei < tmesh1->vert(vi)->outValence(); ei++)
 		{
-			const CHalfEdge* he = tmesh1->getVertex(vi)->getHalfEdge(ei);
+			const CHalfEdge* he = tmesh1->vert(vi)->getHalfEdge(ei);
 			const int vt = he->getVertIndex(1);
-			const int vid_t = tmesh1->getVertex(vt)->getVID();
+			const int vid_t = tmesh1->vert(vt)->getVID();
 
 			if( vMatch1[vt] >= 0 && vMatch1[vt] < coarseSize2 ) 
 				continue;  // already registered
@@ -968,7 +968,7 @@ void ShapeMatcher::refineRegister( std::ostream& flog )
 			int vm = searchVertexMatch(vt, vj, current_level, 2, score);
 			if(vm >= 0) 
 			{
-				int vid_m = tmesh2->getVertex(vm)->getVID();
+				int vid_m = tmesh2->vert(vm)->getVID();
 				vMatch1[vt] = vm;
 				vMatchScore1[vt] = score;
 				tmpReg1.push_back(MatchPair(vid_t, vid_m, score));
@@ -1099,8 +1099,8 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 	// search vi's match in vj's neighborhood
 	CMesh* tmesh1 = getMesh(0, level);
 	CMesh* tmesh2 = getMesh(1, level);
-	int vid_i = tmesh1->getVertex(vt)->getVID();
-	int vid_j = tmesh2->getVertex(vj)->getVID();
+	int vid_i = tmesh1->vert(vt)->getVID();
+	int vid_j = tmesh2->vert(vj)->getVID();
     auto vertOnBoundary1 = tmesh1->getVertsOnBoundary(),
          vertOnBoundary2 = tmesh2->getVertsOnBoundary();
 
@@ -1124,7 +1124,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 				list<int> idxCovered = getMeshPyramid(1).getCoveredVertexList(l, idxL);
 				for (list<int>::iterator citer = idxCovered.begin(); citer != idxCovered.end(); ++citer)
 				{
-					int newId = getMesh(1, l)->getVertex(*citer)->getVID();
+					int newId = getMesh(1, l)->vert(*citer)->getVID();
 					vCoverTmp.push_back(newId);
 				}
 			}
@@ -1149,9 +1149,9 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh2->getVertex(idx)->outValence(); ++l)
+			for (int l = 0; l < tmesh2->vert(idx)->outValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh2->getVertex(idx)->getHalfEdge(l);
+				const CHalfEdge* he = tmesh2->vert(idx)->getHalfEdge(l);
 				int vt = he->getVertIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -1173,7 +1173,7 @@ int ShapeMatcher::searchVertexMatch( const int vt, const int vj, const int level
 		int vt = *iter;
 // 		if (tmesh2->m_pVertex[vt].m_vMatched >= 0 && tmesh2->m_pVertex[vt].m_vMatched < tmesh1->m_nVertex)
 // 			continue;	//injection, not a good idea
-		int vid_t = tmesh2->getVertex(vt)->getVID();
+		int vid_t = tmesh2->vert(vt)->getVID();
 		if (vertOnBoundary2[vt])
 			continue;
 		double dt = computeMatchScore(vid_i, vid_t, 12);
@@ -1785,7 +1785,7 @@ void ShapeMatcher::matchFeaturesTensor_deprecate( std::ostream& flog, double tim
 void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level, int ring, std::vector<int>& vCoveredIdx ) const
 {
 	const CMesh* tmesh = getMesh(obj, level);
-	int vid = tmesh->getVertex(vidx)->getVID();
+	int vid = tmesh->vert(vidx)->getVID();
 
 	list<int> vNeighbor;
 	set<int> marked_set;
@@ -1806,7 +1806,7 @@ void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level
 				list<int> idxCovered = getMeshPyramid(obj).getCoveredVertexList(l, idxL);
 				for (list<int>::iterator citer = idxCovered.begin(); citer != idxCovered.end(); ++citer)
 				{
-					int newId = getMesh(obj, l)->getVertex(*citer)->getVID();
+					int newId = getMesh(obj, l)->vert(*citer)->getVID();
 					vCoverTmp.push_back(newId);
 				}
 			}
@@ -1831,9 +1831,9 @@ void ShapeMatcher::getVertexCover( int obj, int vidx, int level, int upper_level
 		for (list<int>::iterator iter = nb1.begin(); iter != nb1.end(); ++iter)
 		{
 			int idx = *iter;
-			for (int l = 0; l < tmesh->getVertex(idx)->outValence(); ++l)
+			for (int l = 0; l < tmesh->vert(idx)->outValence(); ++l)
 			{
-				const CHalfEdge* he = tmesh->getVertex(idx)->getHalfEdge(l);
+				const CHalfEdge* he = tmesh->vert(idx)->getHalfEdge(l);
 				int vt = he->getVertIndex(1);
 				if (marked_set.find(vt) == marked_set.end())
 				{
@@ -2034,8 +2034,8 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 		qscan1.pop();
 
 		const int vi = qt.m_idx1, vj = qt.m_idx2;		//index on this level
-		int vid_i = tmesh1->getVertex(vi)->getVID(),
-			vid_j = tmesh2->getVertex(vj)->getVID();
+		int vid_i = tmesh1->vert(vi)->getVID(),
+			vid_j = tmesh2->vert(vj)->getVID();
 		//if (vMatch2[vj] != vi) continue;
 
 		flog << "\n---- Search pair #" << regCount++ << ":(" << vid_i << ',' << vid_j << ") ----" << endl;
@@ -2063,8 +2063,8 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 				)
 			{
 				vector<int> viNeighborId(viNeighbors.size()), vjNeighborId(vjNeighbors.size());
-				transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->getVertex(idx1)->getVID();});
-				transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->getVertex(idx2)->getVID();});
+				transform(viNeighbors.begin(), viNeighbors.end(), viNeighborId.begin(), [&](int idx1) {return tmesh1->vert(idx1)->getVID();});
+				transform(vjNeighbors.begin(), vjNeighbors.end(), vjNeighborId.begin(), [&](int idx2) {return tmesh2->vert(idx2)->getVID();});
 				vector<MatchPair> vPairs;	//absolute id, not index in current level
 				double tensorScore;
 				double vPara[] = {5., 0.6, vid_i, vid_j};
@@ -2114,7 +2114,7 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 		for (auto iterNeighbor = viNeighborIndex.begin(); iterNeighbor != viNeighborIndex.end(); ++iterNeighbor)
 		{
 			const int vt = *iterNeighbor;
-			const int vid_t = tmesh1->getVertex(vt)->getVID();
+			const int vid_t = tmesh1->vert(vt)->getVID();
 
 			if( vMatch1[vt] >= 0 ) 
 				continue;  // already registered
@@ -2129,7 +2129,7 @@ void ShapeMatcher::refineRegister2( std::ostream& flog )
 			int vm = searchVertexMatch(vt, vj, current_level, /*ring=*/1, score);
 			if(vm >= 0) 
 			{
-				int vid_m = tmesh2->getVertex(vm)->getVID();
+				int vid_m = tmesh2->vert(vm)->getVID();
 				vMatch1[vt] = vm;
 				vMatchScore1[vt] = score;
 				tmpReg1.push_back(MatchPair(vid_t, vid_m, score));

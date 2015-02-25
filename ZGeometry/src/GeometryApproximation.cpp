@@ -24,7 +24,7 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 	std::vector<int> vPart(vertCount);
 	int ncon = 1;
 	std::vector<int> xadj, adjncy;
-	mesh->getGraphCSR(xadj, adjncy);
+    ZGeom::getMeshGraphCSR(*mesh, xadj, adjncy);
 	int objval;
 	int options[METIS_NOPTIONS];
 	METIS_SetDefaultOptions(options);
@@ -72,7 +72,7 @@ int computePursuitCompressionBasisNum(int n, int m, int k1, int k2, double ratio
 	int nBasis1, nBasis2;
 	nBasis1 = (3*n*k1*ratio) / (3*k2 + std::ceil(std::log(m)/std::log(2)));
 	nBasis2 = (3*n*k1*ratio - m) / (3*k2);
-	int nBasis = max(nBasis1, nBasis2);
+	int nBasis = std::max(nBasis1, nBasis2);
 	return nBasis;
 }
 

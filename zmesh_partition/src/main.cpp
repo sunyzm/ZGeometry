@@ -13,7 +13,7 @@ std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
 	std::vector<int> vPart(vertCount);
 	int ncon = 1;
 	std::vector<int> xadj, adjncy;
-	mesh->getGraphCSR(xadj, adjncy);
+    ZGeom::getMeshGraphCSR(*mesh, xadj, adjncy);
 	int objval;
 	int options[METIS_NOPTIONS];
 	METIS_SetDefaultOptions(options);

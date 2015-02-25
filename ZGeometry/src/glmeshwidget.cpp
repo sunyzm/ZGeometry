@@ -159,7 +159,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int hIdx = -1;
 				int vertCount = vpMP[obj_index]->getMesh()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi) {
-					double d = (p - vpMP[obj_index]->getMesh_const()->getVertex(vi)->pos()).length();
+					double d = (p - vpMP[obj_index]->getMesh_const()->vert(vi)->pos()).length();
 					if (d < dmin) {
 						dmin = d;
 						hIdx = vi;
@@ -439,7 +439,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
     const vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
-    const vector<Vec3d> vVertPos = tmesh->getAllVertPositions();
+    const vector<Vec3d> vVertPos = tmesh->allVertPos();
     const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
 
 	glMatrixMode(GL_MODELVIEW);
@@ -773,8 +773,8 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 			int loc1 = vmp[i].m_idx1;
 			int loc2 = vmp[i].m_idx2;
 
-			const ZGeom::Vec3d& pos1 = tmesh1->getVertexPosition(loc1);
-			const ZGeom::Vec3d& pos2 = tmesh2->getVertexPosition(loc2);
+			const ZGeom::Vec3d& pos1 = tmesh1->vertPos(loc1);
+			const ZGeom::Vec3d& pos2 = tmesh2->vertPos(loc2);
 
 			double x1 = rot1[0]*pos1.x + rot1[4]*pos1.y + rot1[8]*pos1.z + trans1.x;
 			double y1 = rot1[1]*pos1.x + rot1[5]*pos1.y + rot1[9]*pos1.z + trans1.y;
@@ -827,7 +827,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 		for (int i = 0; i < size; i++)
 		{
 			const int loc1 = vdr[i].m_idx1;
-			const ZGeom::Vec3d& pos1 = tmesh1->getVertexPosition(loc1);
+			const ZGeom::Vec3d& pos1 = tmesh1->vertPos(loc1);
 			int color = i;
 			float cc = (color*1.0f) / ((float)size-1.0f);
 
@@ -844,7 +844,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 		for (int i = 0; i < size; i++)
 		{
 			const int loc2 = vdr[i].m_idx2;
-			const ZGeom::Vec3d& pos2 = tmesh2->getVertexPosition(loc2);
+			const ZGeom::Vec3d& pos2 = tmesh2->vertPos(loc2);
 			int color = i;
 			float cc = (color*1.0f) / ((float)size-1.0f);
 

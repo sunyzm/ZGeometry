@@ -31,7 +31,7 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 	std::vector<double> vDiag(vertCount, 0);
 	
 	for (int vi = 0; vi < vertCount; ++vi) {
-		const CVertex* pvi = tmesh->getVertex(vi); 
+		const CVertex* pvi = tmesh->vert(vi); 
 		int outValence = pvi->outValence();
 		for (int j = 0; j < outValence; ++j) {
 			const CHalfEdge* phe = pvi->getHalfEdge(j);
@@ -98,7 +98,7 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 
 	std::vector<double> vDiag(vertCount, 0);
 	for (int vi = 0; vi < vertCount; ++vi) {
-		const CVertex* pvi = tmesh->getVertex(vi); 
+		const CVertex* pvi = tmesh->vert(vi); 
 		int outValence = pvi->outValence();
 		for (int j = 0; j < outValence; ++j) {
 			const CHalfEdge* phe = pvi->getHalfEdge(j);
@@ -158,7 +158,7 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 	vector<std::tuple<int,int,double> > vSparseElements;
 
 	for (int vi = 0; vi < vertCount; ++vi) {
-		const CVertex* pvi = tmesh->getVertex(vi); 
+		const CVertex* pvi = tmesh->vert(vi); 
 		vector<int> vAdjFaces = tmesh->getVertexAdjacentFaceIdx(vi, nRing);
 		for (int fi : vAdjFaces) {
 			const CFace* pfi = tmesh->getFace(fi);
@@ -240,7 +240,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
 
 	for (int vi = 0; vi < mOrder; ++vi)	{
-		const CVertex* pvi = tmesh->getVertex(vi); 
+		const CVertex* pvi = tmesh->vert(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi) {
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
@@ -307,7 +307,7 @@ void MeshLaplacian::constructIsoApprox( const CMesh* tmesh )
 	
 	for (int vi = 0; vi < mOrder; ++vi)
 	{
-		const CVertex* pvi = tmesh->getVertex(vi); 
+		const CVertex* pvi = tmesh->vert(vi); 
 		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
 		for (int fi = 0; fi < vFaces.size(); ++fi)
 		{

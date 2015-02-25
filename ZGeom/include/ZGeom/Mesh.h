@@ -128,6 +128,7 @@ public:
     ZGeom::Vec3d            calBarycenter() const;
     ZGeom::Vec3d            calcNormal() const;
 	std::vector<double>		getPlaneFunction();	
+    std::vector<ZGeom::Vec3d> getVertCoords() const;
 
 public:	
 	int						m_fIndex;
@@ -205,8 +206,8 @@ public:
 	int					vertCount() const { return (int)m_vVertices.size(); }
 	int					faceCount() const { return (int)m_vFaces.size(); }
 	int					halfEdgeCount() const { return (int)m_vHalfEdges.size(); }
-	CVertex*			getVertex(int i) { return m_vVertices[i]; }
-	const CVertex*		getVertex(int i) const { return m_vVertices[i]; }
+	CVertex*			vert(int i) { return m_vVertices[i]; }
+	const CVertex*		vert(int i) const { return m_vVertices[i]; }
 	CFace*				getFace(int i) { return m_vFaces[i]; }
 	const CFace*		getFace(int i) const { return m_vFaces[i]; }
 	CHalfEdge*			getHalfEdge(int i) { return m_vHalfEdges[i]; }
@@ -214,13 +215,10 @@ public:
     void	            assignElementsIndex();
 
     /* basic geometry query, analysis and processing */
-	const ZGeom::Vec3d&		         getVertexPosition(int iVert) const { return m_vVertices[iVert]->m_vPosition; }
-    ZGeom::Vec3d                 getVertPos(int iv) const { return (ZGeom::Vec3d)m_vVertices[iv]->pos(); }
-    std::vector<ZGeom::Vec3d>    getAllVertPositions() const;
-    std::vector<ZGeom::Vec3d>        allVertPos() const;
-	double		     			 getHalfEdgeLen(int iEdge) const;				// get the Euclidean length of the iEdge-th half-edge
-	const ZGeom::Vec3d&			     getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
-	const ZGeom::Vec3d&		         getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
+	const ZGeom::Vec3d&		     vertPos(int iVert) const { return m_vVertices[iVert]->pos(); }
+    std::vector<ZGeom::Vec3d>    allVertPos() const;
+	const ZGeom::Vec3d&			 getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
+	const ZGeom::Vec3d&		     getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
 	const std::vector<double>&   getMeanCurvature();
 	const std::vector<double>&   getMeanCurvature() const;
@@ -249,13 +247,15 @@ public:
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
-    void                move(const ZGeom::Vec3d& translation);		// translate mesh
-    void		        scaleAndTranslate(const ZGeom::Vec3d& center, double scale);
+    static void         makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
+    static void         assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
+
+    void		        scaleAndTranslate(ZGeom::Vec3d translation, double scale);
+    void                move(ZGeom::Vec3d translation) { scaleAndTranslate(translation, 1.0); }
     void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
     void                scaleToUnitBox();                       // move to origin and scale the mesh to inside the unit box
     void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
     void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
-    void		        getGraphCSR(std::vector<int>& xadj, std::vector<int>& adjncy) const;
     
 	bool				isInNeighborRing(int ref, int query, int ring) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
@@ -287,9 +287,6 @@ public:
     bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
-
-    static void         makeFace(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f);
-    static void         assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
 
     /*************************************************************************/
 

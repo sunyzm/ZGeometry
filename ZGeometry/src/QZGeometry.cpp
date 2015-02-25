@@ -366,7 +366,8 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 			setDisplayWireframe();
 		else if (mRenderManagers[0]->displayType == RenderSettings::Wireframe)
 			setDisplayPointCloud();
-		else setDisplayMesh();
+		else 
+            setDisplayMesh();
 		break;
 	}	
 	
@@ -519,7 +520,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);
 
     mProcessors[obj]->init(&mesh);
-    Colorf meshColor = preset_mesh_colors[obj % 2];
+    Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
     mesh.setDefaultColor(meshColor);
     mRenderManagers[obj]->mActiveColorSignatureName = CMesh::StrAttrColorDefault;
 }
@@ -734,9 +735,9 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(true);
 
-	for ( auto iter = begin(mRenderManagers); iter != end(mRenderManagers); ++iter) {
-		(*iter)->displayType = RenderSettings::Mesh;
-		(*iter)->glPolygonMode = GL_FILL;
+	for ( auto rs : mRenderManagers) {
+		rs->displayType = RenderSettings::Mesh;
+		rs->glPolygonMode = GL_FILL;
 	}
 
 	ui.glMeshWidget->update();
@@ -878,7 +879,7 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 	MeshHelper& mp = *mProcessors[obj]; 
 
 	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
-	ZGeom::Vec3d originalPos = mp.getMesh_const()->getVertex(mp.getRefPointIndex())->pos();
+	ZGeom::Vec3d originalPos = mp.getMesh_const()->vert(mp.getRefPointIndex())->pos();
 	
 	mp.setRefPointPosition(originalPos.x, originalPos.y, originalPos.z);
 
@@ -1076,7 +1077,7 @@ void QZGeometryWindow::displayDiffPosition()
 	vDiff.resize(size);
 
 	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
-		vDiff[i] = (mMeshes[0]->getVertex(i)->pos() - mMeshes[1]->getVertex(i)->pos()).length() / mMeshes[0]->getAvgEdgeLength();
+		vDiff[i] = (mMeshes[0]->vert(i)->pos() - mMeshes[1]->vert(i)->pos()).length() / mMeshes[0]->getAvgEdgeLength();
 	}
 
 	addColorSignature(0, vDiff, StrAttrColorPosDiff);
@@ -1500,10 +1501,10 @@ void QZGeometryWindow::registerStep()
 
 	int regMethod = g_configMgr.getConfigValueInt("REGISTRATION_METHOD");
 
-	double time_elapsed = time_call([&]{
+	double time_elapsed = time_call_sec([&]{
 		if (regMethod == 1) mShapeMatcher.refineRegister(ofstr);
 		else if (regMethod == 2) mShapeMatcher.refineRegister2(ofstr);
-	}) / 1000.0;
+	});
 
 	int level = mShapeMatcher.getAlreadyRegisteredLevel();
 	const vector<MatchPair>& vf = mShapeMatcher.getMatchedFeaturesResults(mShapeMatcher.getAlreadyMatchedLevel());
@@ -2115,7 +2116,7 @@ void QZGeometryWindow::computeVertNormals()
 		auto vNormals = mesh->getVertNormals();
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
-			const ZGeom::Vec3d& vi = mesh->getVertexPosition(i);            
+			const ZGeom::Vec3d& vi = mesh->vertPos(i);            
 			mvl.push_back(LineSegment(vi, vNormals[i], true));
 		}
 		
@@ -2161,7 +2162,7 @@ void QZGeometryWindow::fillHoles()
     hole.mHoleVerts = std::vector < int > {vIn.begin(), vIn.end()};
     std::set<int> fHole;
     for (int vi : hole.mHoleVerts) {
-        auto nf = mMeshes[0]->getVertex(vi)->getAdjacentFaces();
+        auto nf = mMeshes[0]->vert(vi)->getAdjacentFaces();
         for (const CFace* f : nf) fHole.insert(f->getFaceIndex());
     }
     hole.mHoleFaces = std::vector < int > {fHole.begin(), fHole.end()};

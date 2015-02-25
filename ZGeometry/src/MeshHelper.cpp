@@ -36,7 +36,7 @@ void MeshHelper::init(CMesh* tm)
 	mMesh = tm;
 	mOriMesh = tm;
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	mRefPos = mMesh->getVertex(mRefVert)->pos();
+	mRefPos = mMesh->vert(mRefVert)->pos();
 }
 
 void MeshHelper::init_lite( CMesh* tm, CMesh* originalMesh )
@@ -44,7 +44,7 @@ void MeshHelper::init_lite( CMesh* tm, CMesh* originalMesh )
 	mMesh = tm;
 	mOriMesh = originalMesh;
 	mRefVert = 0;
-    mRefPos = mMesh->getVertex(mRefVert)->pos();
+    mRefPos = mMesh->vert(mRefVert)->pos();
 }
 
 void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
@@ -116,7 +116,7 @@ void MeshHelper::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
-	else mHandles.insert(std::make_pair(hIdx, mMesh->getVertex(hIdx)->pos()));	 
+	else mHandles.insert(std::make_pair(hIdx, mMesh->vert(hIdx)->pos()));	 
 }
 
 double MeshHelper::calHK( int v1, int v2, double timescale ) const

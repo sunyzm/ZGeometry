@@ -610,7 +610,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			int matchedIdx = -1;
 			for (int j = 0; j < mesh_l->vertCount(); ++j)
 			{
-				if (mesh_l->getVertex(j)->m_vid == cvid)
+				if (mesh_l->vert(j)->m_vid == cvid)
 				{
 					matchedIdx = j;
 					break;
@@ -709,7 +709,7 @@ void MeshPyramid::dumpVertexValence( int level, std::string filename )
 
 	for (int i = 0; i < tmesh->vertCount(); ++i)
 	{
-		valOut << i << '\t' << tmesh->m_vVertices[i]->outValence() << '\t' << tmesh->getVertex(i)->outValence() << endl;
+		valOut << i << '\t' << tmesh->m_vVertices[i]->outValence() << '\t' << tmesh->vert(i)->outValence() << endl;
 	}
 
 	valOut.close();
@@ -721,7 +721,7 @@ std::list<int> MeshPyramid::getCoveredVertexList( int level, int idx ) const
 
 	const VerticesCover& coverMap = m_vMeshes[level+1].verticesCover;
 	const CMesh* tmesh = getMesh(level);
-	int v_id = tmesh->getVertex(idx)->m_vid;
+	int v_id = tmesh->vert(idx)->m_vid;
 	map<int, list<int> >::const_iterator viter = coverMap.find(v_id);
 	
 	list<int> retlist;

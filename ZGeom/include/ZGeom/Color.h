@@ -21,9 +21,10 @@ const float ColorAzure[4]		= {0, 0.5f, 1.f, 1.f};
 const float ColorPaleVioletRed2[4] = { 238.f / 255.f, 121.f / 255.f, 159.f / 255.f, 1.f };
 const float* const RGBPresetColors[] = { ColorRed, ColorGreen, ColorBlue, ColorYellow, ColorPurple, ColorMagenta, ColorCyan };	
 
-const float ColorMesh1[4] = { 0.53f, 0.7f, 0.93f, 1.0 };
-const float ColorMesh2[4] = { 0.99f, 0.73f, 0.62f, 1.0 };
-const float ColorMesh3[4] = { 0.63f, 0.78f, 0.63f, 1.0 };
+const float ColorMesh1[4] = { 0.53f, 0.70f, 0.93f, 1.0f };
+const float ColorMesh2[4] = { 0.99f, 0.73f, 0.62f, 1.0f };
+const float ColorMesh3[4] = { 0.63f, 0.78f, 0.63f, 1.0f };
+const float* const MeshPresetColors[] = { ColorMesh1, ColorMesh2, ColorMesh3 };
 
 class Colorf
 {

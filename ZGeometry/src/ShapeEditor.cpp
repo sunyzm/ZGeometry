@@ -20,6 +20,8 @@
 
 using std::vector;
 using std::array;
+using std::min;
+using std::max;
 using ZGeom::Vec3d;
 using ZGeom::VecNd;
 using ZGeom::SparseMatrix;
@@ -310,7 +312,7 @@ void ShapeEditor::deformSimple()
 
 	const int vertCount = mMesh->vertCount();
 	int hIdx = anchorIndex[0];		// only use the first handle to deform
-	ZGeom::Vec3d handleTrans = anchorPos[0] - mMesh->getVertex(hIdx)->pos();
+	ZGeom::Vec3d handleTrans = anchorPos[0] - mMesh->vert(hIdx)->pos();
 
 	std::vector<int> vFreeIdx = mMesh->getVertNeighborVerts(hIdx, 5, true);
 //	vFreeIdx.resize(vertCount);
@@ -326,7 +328,7 @@ void ShapeEditor::deformSimple()
 
 	std::vector<ZGeom::Vec3d> vDeformedPos(freeVertCount);
 	for (int i = 0; i < freeVertCount; ++i) {
-		CVertex* pv = mMesh->getVertex(vFreeIdx[i]);
+		CVertex* pv = mMesh->vert(vFreeIdx[i]);
 		vDeformedPos[i] = (ZGeom::Vec3d)pv->pos() + handleTrans * (1.0 - vDist2Handle[i]/distMax);
 	}
 
@@ -573,7 +575,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	for (int i = 0; i < 3; ++i ) {
 		solveRHS[i].resize(vertCount + anchorCount + fixedCount, 0);
 		for (int l = 0; l < anchorCount; ++l) {
-			const ZGeom::Vec3d& oldPos = mMesh->getVertexPosition(anchorIndex[l]);
+			const ZGeom::Vec3d& oldPos = mMesh->vertPos(anchorIndex[l]);
 			solveRHS[i][vertCount + l] = anchorWeight * (anchorPos[l][i] - oldPos[i]);
 		}
 	}
@@ -1545,7 +1547,7 @@ void ShapeEditor::testSparseFeatureFinding()
 
 	/* Compute Laplacian and eigendecomposition */
 	std::cout << "==== Do Eigendecomposition ====\n";
-	int eigenCount = min(1500, totalVertCount - 1); // -1 means vertCount -1 
+	int eigenCount = std::min(1500, totalVertCount - 1); // -1 means vertCount -1 
 	eigenCount = -1;
 	MeshLaplacian graphLaplacian, cotLaplacian, aniso1Laplacian, aniso2Laplacian, symCotLaplacian;
 	graphLaplacian.constructUmbrella(mMesh);
@@ -2057,7 +2059,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     vector<Vec3d> boundaryVertPos(N);
     for (int i = 0; i < N; ++i) {
         boundaryVertIdx[i] = mMesh->getHalfEdge(boundaryEdgeIdx[i])->getVertIndex(0);
-        boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
+        boundaryVertPtr[i] = mMesh->vert(boundaryVertIdx[i]);
         boundaryVertPos[i] = boundaryVertPtr[i]->pos();
     }
 
@@ -2072,7 +2074,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     }
     for (int i = 0; i < N - 2; ++i) {
         int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
-        CVertex *v1 = mMesh->getVertex(vIdx1), *v2 = mMesh->getVertex(vIdx2), *v3 = mMesh->getVertex(vIdx3);
+        CVertex *v1 = mMesh->vert(vIdx1), *v2 = mMesh->vert(vIdx2), *v3 = mMesh->vert(vIdx3);
         CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
         Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
         Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
@@ -2151,9 +2153,9 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     vector<CHalfEdge*> patchEdges;
     vector<CFace*> patchFaces;
     for (vector<int> tri : patchTri) {
-        CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
-                *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
-                *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
+        CVertex *vi = mMesh->vert(boundaryVertIdx[tri[0]]),
+                *vj = mMesh->vert(boundaryVertIdx[tri[1]]),
+                *vk = mMesh->vert(boundaryVertIdx[tri[2]]);
         // construct new face (vi->vk->vj->vi)
         CFace *f = new CFace(3);
         CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
@@ -2264,7 +2266,7 @@ void ShapeEditor::fillHole()
     vector<CVertex*> boundaryVertPtr(N);
     vector<Vec3d> boundaryVertPos(N);
     for (int i = 0; i < N; ++i) {
-        boundaryVertPtr[i] = mMesh->getVertex(boundaryVertIdx[i]);
+        boundaryVertPtr[i] = mMesh->vert(boundaryVertIdx[i]);
         boundaryVertPos[i] = boundaryVertPtr[i]->pos();        
     }   
     int nOldVerts = mMesh->vertCount();
@@ -2282,7 +2284,7 @@ void ShapeEditor::fillHole()
     }
     for (int i = 0; i < N - 2; ++i) {
         int vIdx1 = boundaryVertIdx[i], vIdx2 = boundaryVertIdx[i + 1], vIdx3 = boundaryVertIdx[i + 2];
-        CVertex *v1 = mMesh->getVertex(vIdx1), *v2 = mMesh->getVertex(vIdx2), *v3 = mMesh->getVertex(vIdx3);
+        CVertex *v1 = mMesh->vert(vIdx1), *v2 = mMesh->vert(vIdx2), *v3 = mMesh->vert(vIdx3);
         CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
         Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
         Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
@@ -2361,9 +2363,9 @@ void ShapeEditor::fillHole()
     vector<CHalfEdge*> patchEdges;
     vector<CFace*> patchFaces;
     for (vector<int> tri : patchTri) {
-        CVertex *vi = mMesh->getVertex(boundaryVertIdx[tri[0]]),
-                *vj = mMesh->getVertex(boundaryVertIdx[tri[1]]),
-                *vk = mMesh->getVertex(boundaryVertIdx[tri[2]]);
+        CVertex *vi = mMesh->vert(boundaryVertIdx[tri[0]]),
+                *vj = mMesh->vert(boundaryVertIdx[tri[1]]),
+                *vk = mMesh->vert(boundaryVertIdx[tri[2]]);
         // construct new face (vi->vk->vj->vi)
         CFace *f = new CFace(3);
         CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
@@ -2466,7 +2468,7 @@ void ShapeEditor::fillHole()
     /* normals calculated from filled model */
     vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
     for (int vi : affectedVert) {
-        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
+        LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
         vNormalLines.push_back(ls);
     }
@@ -2503,7 +2505,7 @@ void ShapeEditor::fillHole()
         }        
     }
     for (int vi : affectedVert) {
-        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals2[vi], true);
+        LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals2[vi], true);
         ls.color1 = ZGeom::ColorRed; ls.color2 = ZGeom::ColorRed;
         vNormalLines.push_back(ls);
     }
@@ -2590,7 +2592,7 @@ void ShapeEditor::visualizeBoundaries()
         int nVert = fhv.vert_on_boundary.size();
         for (int i = 0; i < nVert; ++i) {
             int v1 = fhv.vert_on_boundary[i], v2 = fhv.vert_on_boundary[(i + 1) % nVert];
-            LineSegment ls(mMesh->getVertPos(v1), mMesh->getVertPos(v2), false);
+            LineSegment ls(mMesh->vertPos(v1), mMesh->vertPos(v2), false);
             ls.color1 = ZGeom::ColorAzure;
             boundaryLines.push_back(ls);
         }
@@ -2799,7 +2801,7 @@ void ShapeEditor::holeEstimateCurvature()
     mMesh->calVertNormals();
     vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
     for (int vi : affectedVert) {
-        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals1[vi], true);
+        LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
         vNormalLines.push_back(ls);
     }
@@ -2825,7 +2827,7 @@ void ShapeEditor::holeEstimateCurvature()
         }
     }
     for (int vi : affectedVert) {
-        LineSegment ls(mMesh->getVertPos(vi), (Vec3d)vNormals2[vi], true);
+        LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals2[vi], true);
         ls.color1 = ZGeom::ColorRed; ls.color2 = ZGeom::ColorRed;
         vNormalLines.push_back(ls);
     }

@@ -114,7 +114,7 @@ void Laplacian::constructCotFormula(const CMesh* tmesh)
     for (int vIdx = 0; vIdx < vertCount; ++vIdx)  //for every vertex
     {
         double amix = 0; //mixed area
-        const CVertex* vi = tmesh->getVertex(vIdx);
+        const CVertex* vi = tmesh->vert(vIdx);
         for (int j = 0; j < vi->outValence(); ++j) {
             const CHalfEdge* e0 = vi->getHalfEdge(j);
             const CHalfEdge* e1 = e0->nextHalfEdge();
@@ -200,11 +200,11 @@ void Laplacian::constructAniso(const CMesh *tmesh)
 
     for (int vIdx = 0; vIdx < vertCount; ++vIdx)  //for every vertex
     {
-        const CVertex *vi = tmesh->getVertex(vIdx);
+        const CVertex *vi = tmesh->vert(vIdx);
         vector<int> vNeighbor = tmesh->getVertNeighborVerts(vIdx, 1, false);
         vector<double> edgeWeights(vNeighbor.size());
         for (size_t k = 0; k < vNeighbor.size(); ++k) {
-            const CVertex *vj = tmesh->getVertex(vNeighbor[k]);
+            const CVertex *vj = tmesh->vert(vNeighbor[k]);
             Vec3d pij = vi->pos() - vj->pos();
             pij.normalize();
             Vec3d nij = vNormals[vIdx] + vNormals[vNeighbor[k]];

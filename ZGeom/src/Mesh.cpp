@@ -442,6 +442,13 @@ std::vector<double> CFace::getPlaneFunction()
 	return para;
 }
 
+std::vector<ZGeom::Vec3d> CFace::getVertCoords() const
+{
+    vector<Vec3d> vCoord;
+    for (CVertex *v : m_Vertices) vCoord.push_back(v->pos());
+    return vCoord;
+}
+
 //////////////////////////////////////////////////////
 //						CMesh						//
 //////////////////////////////////////////////////////
@@ -731,14 +738,6 @@ void CMesh::calVertNormals()
 	addAttr<std::vector<ZGeom::Vec3d>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
 }
 
-double CMesh::getHalfEdgeLen( int iEdge ) const
-{
-	CHalfEdge* he = m_vHalfEdges[iEdge];
-	CVertex* verts[2] = {he->m_Vertices[0], he->m_Vertices[1]};
-	ZGeom::Vec3d v01 = verts[0]->m_vPosition - verts[1]->m_vPosition;
-	return v01.length();
-}
-
 int CMesh::calEdgeCount()
 {
     int halfedgeCount = this->halfEdgeCount();
@@ -901,7 +900,7 @@ std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) c
 	
 	set<int> markedFaces;
 	for (auto iter = begin(vNeighbors); iter != end(vNeighbors); ++iter) {
-		const CVertex* pv = getVertex(*iter);
+		const CVertex* pv = vert(*iter);
 		for (CHalfEdge* he : pv->m_HalfEdges) {
 			const CFace* pf = he->getAttachedFace();
 			markedFaces.insert(pf->getFaceIndex());
@@ -978,7 +977,7 @@ void CMesh::scaleToUnitBox()
     double maxCoord = 0;
     for (int i = 0; i < vertCount(); ++i) {
         for (int j = 0; j < 3; ++j)
-            maxCoord = max(maxCoord, fabs(getVertPos(i)[j]));
+            maxCoord = max(maxCoord, fabs(vertPos(i)[j]));
     }
     scaleAndTranslate(ZGeom::Vec3d(0, 0, 0), 1. / maxCoord);
 }
@@ -1035,16 +1034,9 @@ void CMesh::gatherStatistics()
 	calVertMixedAreas();
 }
 
-void CMesh::move( const ZGeom::Vec3d& translation )
+void CMesh::scaleAndTranslate( ZGeom::Vec3d center, double scale )
 {
-    scaleAndTranslate(translation, 1.0);
-}
-
-void CMesh::scaleAndTranslate( const ZGeom::Vec3d& center, double scale )
-{
-	for (int i = 0; i < vertCount(); ++i)	{
-		m_vVertices[i]->translateAndScale(center, scale);
-	}
+	for (CVertex* v : m_vVertices)	v->translateAndScale(center, scale);	
 }
 
 void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::vector<int>& nbr, bool inclusive /*= false*/ ) const
@@ -1399,19 +1391,6 @@ void CMesh::saveToMetis( const std::string& sFileName ) const
 	ofs.close();
 }
 
-void CMesh::getGraphCSR( std::vector<int>& xadj, std::vector<int>& adjncy ) const
-{
-	int vertNum = vertCount();
-	xadj.resize(vertNum + 1);
-	adjncy.clear();
-	xadj[0] = 0;
-	for (int i = 0; i < vertNum; ++i) {
-		std::vector<int> vNbr = getVertNeighborVerts(i, 1, false);
-		for (int j : vNbr) adjncy.push_back(j);
-		xadj[i+1] = (int)adjncy.size();
-	}
-}
-
 void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes ) const
 {
 	assert(vSubMappedIdx.size() == vSubMeshes.size());
@@ -1427,7 +1406,7 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 		std::list<int> FaceList;		//temporary face list
 
 		for (int i = 0; i < subVertCount; ++i) {
-			VertexList.push_back(this->getVertexPosition(subMappedIdx[i]));
+			VertexList.push_back(this->vertPos(subMappedIdx[i]));
 		}
 		for (CFace* f : m_vFaces) {
 			int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
@@ -1525,7 +1504,7 @@ void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMesh
     std::list<int> FaceList;		//temporary face list
 
     for (int i = 0; i < subVertCount; ++i) {
-        VertexList.push_back(this->getVertexPosition(subMappedIdx[i]));
+        VertexList.push_back(this->vertPos(subMappedIdx[i]));
     }
     for (CFace* f : m_vFaces) {
         int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
@@ -1606,18 +1585,9 @@ const std::vector<double>& CMesh::getVertMixedAreas() const
 	return getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
 }
 
-std::vector<ZGeom::Vec3d> CMesh::getAllVertPositions() const
-{
-    vector<Vec3d> results(vertCount());
-    for (int i = 0; i < vertCount(); ++i) {
-        results[i] = Vec3d(m_vVertices[i]->pos());
-    }
-    return results;
-}
-
 std::vector<ZGeom::Vec3d> CMesh::allVertPos() const
 {
-    vector<ZGeom::Vec3d> results(vertCount());
+    vector<Vec3d> results(vertCount());
     for (int i = 0; i < vertCount(); ++i) {
         results[i] = m_vVertices[i]->pos();
     }
