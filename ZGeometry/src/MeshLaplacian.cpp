@@ -6,22 +6,21 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
-#include <ZGeom/arithmetic.h>
+#include <ZGeom/ZGeom.h>
 #include <ZGeom/EigenCompute.h>
-#include <ZGeom/MeshProcessing.h>
 #include <ZGeom/zassert.h>
 
 using namespace std;
 using ZGeom::PI;
 using ZGeom::uint;
 
-void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
+void MeshLaplacian::constructAnisotropic1(CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
 	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
-	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
-	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
+    const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;
 
 	int nRing = 1;
@@ -81,13 +80,13 @@ void MeshLaplacian::constructAnisotropic1( const CMesh* tmesh )
 	mSymmetric = true;
 }
 
-void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
+void MeshLaplacian::constructAnisotropic2(CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
 	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
-	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
-	const std::vector<double>& vMixedAreas = tmesh->getVertMixedAreas();
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
+    const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;	
 	double avgMeanCurv(0);
 	for (double a : vMeanCurvatures) avgMeanCurv += fabs(a);
@@ -144,7 +143,7 @@ void MeshLaplacian::constructAnisotropic2(const CMesh* tmesh)
 	mSymmetric = true;
 }
 
-void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double hPara1, double hPara2 )
+void MeshLaplacian::constructAnisotropic3(CMesh* tmesh, int nRing, double hPara1, double hPara2)
 {
 	// based on curvature difference or bilateral filtering
 	const int vertCount = mOrder = tmesh->vertCount();
@@ -153,7 +152,7 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
 	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
-	const std::vector<double>& vMeanCurvatures = tmesh->getMeanCurvature();
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
 
 	vector<std::tuple<int,int,double> > vSparseElements;
 
@@ -222,7 +221,7 @@ void MeshLaplacian::constructAnisotropic3( const CMesh* tmesh, int nRing, double
 	mSymmetric = true;
 }
 
-void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double hPara1, double hPara2)
+void MeshLaplacian::constructAnisotropic4(CMesh* tmesh, int nRing, double hPara1, double hPara2)
 {
 	// similar to bilateral filtering
 	mOrder = tmesh->vertCount();
@@ -233,7 +232,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 
 	vector< std::tuple<int,int,double> > vSparseElements;
 
-	ringT = 1;
+	nRing = 1;
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
@@ -241,7 +240,7 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 
 	for (int vi = 0; vi < mOrder; ++vi)	{
 		const CVertex* pvi = tmesh->vert(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
+		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, nRing);
 		for (int fi = 0; fi < vFaces.size(); ++fi) {
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
 			double face_area = pfi->calArea();
@@ -293,71 +292,6 @@ void MeshLaplacian::constructAnisotropic4(const CMesh* tmesh, int ringT, double 
 
 }
 
-void MeshLaplacian::constructIsoApprox( const CMesh* tmesh )
-{
-	mOrder = tmesh->vertCount();
-
-	std::vector<int> vII, vJJ;
-	std::vector<double> vSS;
-	std::vector<double> vWeights;
-	vector<std::tuple<int,int,double> > vSparseElements;
-
-	int ringT = 5;
-	double hPara1 = std::pow(tmesh->getAvgEdgeLength()*2, 2);
-	
-	for (int vi = 0; vi < mOrder; ++vi)
-	{
-		const CVertex* pvi = tmesh->vert(vi); 
-		vector<int> vFaces = tmesh->getVertexAdjacentFaceIdx(vi, ringT);
-		for (int fi = 0; fi < vFaces.size(); ++fi)
-		{
-			const CFace* pfi = tmesh->getFace(vFaces[fi]);
-			double face_area = pfi->calArea();
-			for (int k = 0; k < 3; ++k)
-			{
-				int vki = pfi->getVertexIndex(k);
-				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex(k);
-
-				double svalue = std::exp(-(pvi->pos() - pvk->pos()).length2() / (4 * hPara1));
-				svalue = svalue * face_area / (3 * 4 * PI * hPara1 * hPara1);
-
-				vSparseElements.push_back(make_tuple(vi, vki, svalue));
-			}
-		}
-	}
-
-	vector<double> vDiag(mOrder, 0.);
-	for (auto iter = begin(vSparseElements); iter != end(vSparseElements); ++iter)
-	{
-		int ii, jj; double ss;
-		std::tie(ii, jj, ss) = *iter;
-
-		vII.push_back(ii+1);
-		vJJ.push_back(jj+1);
-		vSS.push_back(ss);
-
-		vDiag[ii] += -ss;
-	}
-
-	for (int i = 0; i < mOrder; ++i)
-	{
-		vII.push_back(i+1);
-		vJJ.push_back(i+1);
-		vSS.push_back(vDiag[i]);
-	}
-
-	for (int k = 0; k < vII.size(); ++k)
-	{
-		vSS[k] /= vDiag[vII[k]-1];
-	}
-
-	vWeights.resize(mOrder, 1.0);	
-
-	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
-	mW.convertFromDiagonal(vWeights);
-}
-
 void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es) const
 {
 	int nActualEigen = nEig;
@@ -366,37 +300,37 @@ void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng
 	else this->decompose(nActualEigen, eng, es, true);
 }
 
-void MeshLaplacian::constructUmbrella(const CMesh* tmesh)
+void MeshLaplacian::constructUmbrella(CMesh* tmesh)
 {
     Laplacian::constructUmbrella(tmesh);
     mLaplacianType = Umbrella;
 }
 
-void MeshLaplacian::constructGeometricUmbrella(const CMesh *tmesh)
+void MeshLaplacian::constructGeometricUmbrella(CMesh *tmesh)
 {
     Laplacian::constructGeometricUmbrella(tmesh);
     mLaplacianType = Geometric;
 }
 
-void MeshLaplacian::constructNormalizedUmbrella(const CMesh* tmesh)
+void MeshLaplacian::constructNormalizedUmbrella(CMesh* tmesh)
 {
     Laplacian::constructNormalizedUmbrella(tmesh);
     mLaplacianType = NormalizedUmbrella;
 }
 
-void MeshLaplacian::constructTutte(const CMesh* tmesh)
+void MeshLaplacian::constructTutte(CMesh* tmesh)
 {
     Laplacian::constructTutte(tmesh);
     mLaplacianType = Tutte;   
 }
 
-void MeshLaplacian::constructCotFormula(const CMesh* tmesh)
+void MeshLaplacian::constructCotFormula(CMesh* tmesh)
 {
     Laplacian::constructCotFormula(tmesh);
     mLaplacianType = CotFormula;
 }
 
-void MeshLaplacian::constructSymCot(const CMesh* tmesh)
+void MeshLaplacian::constructSymCot(CMesh* tmesh)
 {
     Laplacian::constructSymCot(tmesh);
     mLaplacianType = SymCot;

@@ -43,7 +43,7 @@ int main(int argc, char *argv[])
     auto coord = mesh.getVertCoordinates();
     DenseMatrixd matCoord = coord.toDenseMatrix();
 
-    mesh.calVertNormals();
+    ZGeom::calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
     auto normals = mesh.getVertNormals();
     DenseMatrixd matNormal(N, 3);
     for (int i = 0; i < N; ++i) {
@@ -51,8 +51,8 @@ int main(int argc, char *argv[])
             matNormal(i, j) = normals[i][j];
     }
 
-    mesh.calCurvatures();
-    mesh.calVertMixedAreas();
+    calMeshAttrMixedVertAreas(mesh);
+    ZGeom::calMeshAttrMeanGaussCurvatures(mesh);
     Laplacian anisoLap;
     anisoLap.constructAniso(&mesh);
 

@@ -513,7 +513,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     CMesh& mesh = *mMeshes[obj];
     mesh.load(mesh_filename);
     mesh.scaleToUnitBox();
-    mesh.gatherStatistics();
+    ZGeom::gatherMeshStatistics(mesh);
     auto center = mesh.getCenter();
     auto bbox = mesh.getBoundingBox();
     qout.output(QString().sprintf("Load mesh: %s; Size: %d", mesh.getMeshName().c_str(), mesh.vertCount()), OUT_TERMINAL);
@@ -537,7 +537,7 @@ void QZGeometryWindow::addMesh()
 	CMesh& mesh = *mMeshes[cur_obj];
 	mesh.load(filenames.begin()->toStdString());
     mesh.move(-mesh.calMeshCenter());
-	mesh.gatherStatistics();
+    ZGeom::gatherMeshStatistics(mesh);
 	timer.stopTimer();
 	std::cout << "Time to load meshes: " << timer.getElapsedTime() << "s" << std::endl;
 
@@ -569,7 +569,7 @@ void QZGeometryWindow::clone()
 
 	allocateStorage(2);
 	mMeshes[1]->cloneFrom(*mMeshes[0]);
-	mMeshes[1]->gatherStatistics();
+    ZGeom::gatherMeshStatistics(*mMeshes[1]);
 	mProcessors[1]->init(mMeshes[1]);
 
 	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));
@@ -846,27 +846,27 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 void QZGeometryWindow::computeCurvatures()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-        mMeshes[obj]->calCurvatures();
-        vector<double> vCM = mMeshes[obj]->getMeanCurvature();
-        vector<double> vCG = mMeshes[obj]->getGaussCurvature();
-        vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
-        vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
+        ZGeom::calMeshAttrMeanGaussCurvatures(*mMeshes[obj]);
+        vector<double> vCM = ZGeom::getMeshMeanCurvatures(*mMeshes[obj]);
+        vector<double> vCG = ZGeom::getMeshGaussCurvatures(*mMeshes[obj]);
+//         vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
+//         vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
 
         ColorSignature colorCM(vCM, mColorMapType);
         ColorSignature colorCG(vCG, mColorMapType);
-        ColorSignature colorCP1(vCP1, mColorMapType);
-        ColorSignature colorCP2(vCP2, mColorMapType);
+//         ColorSignature colorCP1(vCP1, mColorMapType);
+//         ColorSignature colorCP2(vCP2, mColorMapType);
 
         mMeshes[obj]->addColorAttr("color_mean_curvature", colorCM);
         mMeshes[obj]->addColorAttr("color_gauss_curvature", colorCG);
-        mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
-        mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
+//         mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
+//         mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
 
 
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
         auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
-        qout.output(QString("-mean curvature-  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
-        qout.output(QString("-gauss curvature-  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
+        qout.output(QString("- mean curvature -  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
+        qout.output(QString("- Gauss curvature -  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
 	}
 
 	updateDisplaySignatureMenu();
@@ -1753,25 +1753,6 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	mhb2.printEigVals("output/eigvals2.txt");
 }
 
-void QZGeometryWindow::verifyAreas() const
-{
-	for (int obj = 0; obj < mMeshCount; ++obj) {
-		double areaSum(0);
-		for (int i = 0; i < mMeshes[obj]->faceCount(); ++i) {
-			areaSum += mMeshes[obj]->calFaceArea(i);
-		}
-		double weightSum(0);
-		const MeshLaplacian& laplacian = mProcessors[obj]->getMeshLaplacian(CotFormula);
-		std::vector<double> vAreas = laplacian.getW().getDiagonal();
-		for (int i = 0; i < mMeshes[obj]->vertCount(); ++i) {
-			weightSum += vAreas[i];
-		}
-		std::cout << "Vertex count: " << mMeshes[obj]->vertCount() << std::endl;
-		std::cout << "Total surface area: " << areaSum << std::endl;
-		std::cout << "Total vert weight: " << weightSum << std::endl;
-	}
-}
-
 void QZGeometryWindow::revert()
 {
 	mShapeEditor.revertCoordinates();
@@ -2112,7 +2093,7 @@ void QZGeometryWindow::computeVertNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int vertCount = mesh->vertCount();
-        mesh->calVertNormals();
+        ZGeom::calMeshAttrVertNormals(*mesh);
 		auto vNormals = mesh->getVertNormals();
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
@@ -2132,7 +2113,7 @@ void QZGeometryWindow::computeFaceNormals()
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		CMesh* mesh = mMeshes[obj];
 		int faceCount = mesh->faceCount();
-        mesh->calFaceNormals();
+        mesh->calAttrFaceNormals();
 		auto fNormals = mesh->getFaceNormals();
 		MeshLineList mvl;
 		for (int fIdx = 0; fIdx < faceCount; ++fIdx)	{
@@ -2321,7 +2302,7 @@ void QZGeometryWindow::cutHoles()
 
     backupMesh = new CMesh(*mMeshes[0]);
     mMeshes[0]->getSubMeshFromFaces(vRemainingFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
-    backupMesh->gatherStatistics();
+    ZGeom::gatherMeshStatistics(*backupMesh);
 
     switchMesh();
 }
@@ -2333,7 +2314,7 @@ void QZGeometryWindow::cutToSelected()
 
     backupMesh = new CMesh(*mMeshes[0]);
     mMeshes[0]->getSubMeshFromFaces(vHoleFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
-    backupMesh->gatherStatistics();
+    ZGeom::gatherMeshStatistics(*backupMesh);
 
     switchMesh();
 }

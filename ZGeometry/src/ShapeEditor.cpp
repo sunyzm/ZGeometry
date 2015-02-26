@@ -10,7 +10,7 @@
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
 #include <ZGeom/MatVecArithmetic.h>
-#include <ZGeom/Approximation.h>
+#include <ZGeom/sparse_approximation.h>
 #include <ZGeom/SparseSolver.h>
 #include <ZGeom/MCA.h>
 #include <ZGeom/Geodesic.h>
@@ -2025,7 +2025,7 @@ void ShapeEditor::testWaveletComputation()
 
 void ShapeEditor::fillHoles(bool skipExternalBoundary)
 {
-    mMesh->calBoundaryLoops();
+    mMesh->calAttrBoundaryLoops();
     int numBoundaries = mMesh->getBoundaryLoopEdges().size();
     if (skipExternalBoundary) numBoundaries--;
     if (numBoundaries <= 0) {
@@ -2040,7 +2040,7 @@ void ShapeEditor::fillHoles(bool skipExternalBoundary)
     }
 
     mMesh->clearAttributes();
-    mMesh->gatherStatistics();
+    ZGeom::gatherMeshStatistics(*mMesh);
     this->resetStoredCoordinates();
     visualizeBoundaries();
 }
@@ -2459,7 +2459,7 @@ void ShapeEditor::fillHole()
 
     /* calculate and visualize normals */
     mMesh->clearAttributes();
-    mMesh->gatherStatistics();   
+    ZGeom::gatherMeshStatistics(*mMesh);
     const int newVertCount = mMesh->vertCount();
     vector<int> affectedVert = boundaryVertIdx;
     for (int vi = nOldVerts; vi < mMesh->vertCount(); ++vi) affectedVert.push_back(vi);
@@ -2511,7 +2511,7 @@ void ShapeEditor::fillHole()
     }
 
     /* inpaint mean curvature values */
-    VecNd oldCurvature = VecNd(mMesh->getMeanCurvature());
+    VecNd oldCurvature = VecNd(ZGeom::getMeshMeanCurvatures(*mMesh));
     VecNd newCurvature = singleChannelSparseInpaint(oldCurvature, vMask, dictMHB, vCodingInpaint[0]);
     for (int vi = 0; vi < newVertCount; ++vi) {
         if (vMask[vi]) newCurvature[vi] = oldCurvature[vi];
@@ -2565,7 +2565,7 @@ void ShapeEditor::fillHole()
 #endif
 
     mMesh->clearAttributes();
-    mMesh->gatherStatistics(); 
+    ZGeom::gatherMeshStatistics(*mMesh);
     mMesh->addAttrMeshFeatures(boundaryVertIdx, "boundary_vert_1");
     emit meshPointFeatureChanged();
     mMesh->addAttrLines(triangulationLines, "hole_triangulation_lines");
@@ -2573,16 +2573,6 @@ void ShapeEditor::fillHole()
     emit meshLineFeatureChanged();
     addColorSignature("color_old_curv", colorOldCurv);
     addColorSignature("color_approximate_curv", colorNewCurv);
-}
-
-void ShapeEditor::testSurfaceArea()
-{
-    double areaSum1(0), areaSum2(0);
-    for (CFace* face : mMesh->m_vFaces) areaSum1 += face->calArea();
-    mMesh->calVertMixedAreas();
-    vector<double> vertMixedAreas = mMesh->getAttrValue<vector<double>>(CMesh::StrAttrVertMixedArea);
-    for (double a : vertMixedAreas) areaSum2 += a;
-    std::cout << "Surface area1: " << areaSum1 << "\tSurface area2: " << areaSum2 << std::endl;
 }
 
 void ShapeEditor::visualizeBoundaries()
@@ -2798,8 +2788,8 @@ void ShapeEditor::holeEstimateCurvature()
     MeshLineList vNormalLines;
 
     /* normals calculated from filled model */
-    mMesh->calVertNormals();
-    vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
+    ZGeom::calMeshAttrVertNormals(*mMesh);
+    const vector<Vec3d>& vNormals1 = mMesh->getVertNormals();
     for (int vi : affectedVert) {
         LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
@@ -2833,8 +2823,8 @@ void ShapeEditor::holeEstimateCurvature()
     }
 
     /* inpaint mean curvature values */
-    mMesh->calCurvatures();
-    VecNd oldCurvature = VecNd(mMesh->getMeanCurvature());
+    ZGeom::calMeshAttrMeanGaussCurvatures(*mMesh);
+    VecNd oldCurvature = VecNd(ZGeom::getMeshMeanCurvatures(*mMesh));
     VecNd newCurvature = singleChannelSparseInpaint(oldCurvature, vMask, dictMHB, vCodingInpaint[0]);
     for (int vi = 0; vi < totalVertCount; ++vi) {
         if (vMask[vi]) newCurvature[vi] = oldCurvature[vi];

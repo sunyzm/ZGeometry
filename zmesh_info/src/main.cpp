@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
 	/// load mesh
 	CMesh oriMesh;
 	oriMesh.load(meshFilename);
-	oriMesh.gatherStatistics();
+    ZGeom::gatherMeshStatistics(oriMesh);
 
 	std::string meshName = oriMesh.getMeshName();
 	int totalVertCount = oriMesh.vertCount();

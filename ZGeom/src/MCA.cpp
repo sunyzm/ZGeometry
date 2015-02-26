@@ -1,10 +1,10 @@
 #include "MCA.h"
-#include "Approximation.h"
 #include <algorithm>
 #include <cmath>
 #include <numeric>
 #include <stdexcept>
 #include <iostream>
+#include "sparse_approximation.h"
 
 namespace ZGeom {
 

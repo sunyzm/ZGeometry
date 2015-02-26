@@ -6,6 +6,7 @@
 #include <exception>
 #include <fstream>
 #include <set>
+#include "mesh_processing.h"
 
 
 #define SILVER_TRIANGLE_TRHESH 0.05
@@ -578,7 +579,7 @@ void MeshPyramid::construct(std::ostream& m_ostr)
 			 //<< "  Edge Num: " << currentMesh->GetEdgeNum() << endl 
 		
 		currentMesh->assignElementsIndex();
-		currentMesh->gatherStatistics();
+        ZGeom::gatherMeshStatistics(*currentMesh);
 
 		//finally
 		m_vMeshes.push_back(meshLevel);

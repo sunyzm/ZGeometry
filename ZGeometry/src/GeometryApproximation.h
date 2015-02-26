@@ -1,8 +1,7 @@
 #pragma once
 #include <ZGeom/ZGeom.h>
-#include <ZGeom/Approximation.h>
+#include <ZGeom/sparse_approximation.h>
 #include <ZGeom/MatlabEngineWrapper.h>
-#include <ZGeom/Mesh.h>
 #include "MeshHelper.h"
 
 enum DictionaryType {

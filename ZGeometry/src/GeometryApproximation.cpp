@@ -1,9 +1,5 @@
 #include "GeometryApproximation.h"
 #include <ppl.h>
-#undef INT32_MIN
-#undef INT32_MAX
-#undef INT64_MIN
-#undef INT64_MAX
 #include <metis.h>
 #include "differential_geometry.h"
 #include "global.h"

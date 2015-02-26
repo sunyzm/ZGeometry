@@ -13,9 +13,9 @@
 #include <queue>
 #include <unordered_map>
 #include <vector>
-#include "VecN.h"
 #include "Vec3.h"
-#include "Quat.h"
+#include "VecN.h"
+#include "Plane.h"
 #include "PointCloud.h"
 #include "MeshAttr.h"
 #include "MeshCoordinates.h"
@@ -127,8 +127,11 @@ public:
 	double					calArea() const;
     ZGeom::Vec3d            calBarycenter() const;
     ZGeom::Vec3d            calcNormal() const;
-	std::vector<double>		getPlaneFunction();	
-    std::vector<ZGeom::Vec3d> getVertCoords() const;
+    std::vector<double>     getPlaneFunction() const;
+    ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calcNormal(), m_Vertices[0]->pos()); }
+    std::vector<CVertex*>   getAllVerts() const { return m_Vertices; }
+    std::vector<int>        getAllVertIdx() const;
+    std::vector<ZGeom::Vec3d> getAllVertCoords() const;
 
 public:	
 	int						m_fIndex;
@@ -153,8 +156,6 @@ public:
 	static const std::string StrAttrMeshBBox;
 	static const std::string StrAttrVertColors;
     static const std::string StrAttrColorDefault;
-	static const std::string StrAttrVertGaussCurvatures;
-	static const std::string StrAttrVertMeanCurvatures;
     static const std::string StrAttrVertPrincipalCurvatures1;
     static const std::string StrAttrVertPrincipalCurvatures2;
 	static const std::string StrAttrVertNormal;
@@ -220,24 +221,16 @@ public:
 	const ZGeom::Vec3d&			 getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
 	const ZGeom::Vec3d&		     getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
 	double						 getAvgEdgeLength() const;
-	const std::vector<double>&   getMeanCurvature();
-	const std::vector<double>&   getMeanCurvature() const;
-	const std::vector<double>&   getGaussCurvature();
 	const std::vector<ZGeom::Vec3d>& getFaceNormals();
-	const std::vector<ZGeom::Vec3d>& getVertNormals();
 	const std::vector<ZGeom::Vec3d>& getVertNormals() const;
 	const std::vector<bool>&	 getVertsOnBoundary();
     std::vector<bool>            getVertsOnHoles();
     bool                         isVertOnBoundary(int vi);
-    double						 calFaceArea(int i) const;
-	ZGeom::Vec3d			         calMeshCenter() const;
-	ZGeom::Vec3d			         calBoundingBox(const ZGeom::Vec3d& center) const;
+	ZGeom::Vec3d			     calMeshCenter() const;
+	ZGeom::Vec3d			     calBoundingBox(const ZGeom::Vec3d& center) const;
 	double				         calSurfaceArea() const;
 	double				         calVolume() const;
-	void                         calVertMixedAreas();
-	const std::vector<double>&   getVertMixedAreas();
-	const std::vector<double>&   getVertMixedAreas() const;
-    std::vector<double>          calPrincipalCurvature(int k);  // k = 0 or 1 or 2
+//    std::vector<double>          calPrincipalCurvature(int k);  // k = 0 or 1 or 2
 
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);
@@ -269,19 +262,15 @@ public:
     void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
     void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
-	void				gatherStatistics();
 	bool				hasBoundary();
-	int					calBoundaryLoops();     // compute number of (connective) boundaries
+	int					calAttrBoundaryLoops();     // compute number of (connective) boundaries
     std::vector<std::vector<int>> getBoundaryLoopVerts(); // get the vertex indices of each boundary loop
     std::vector<std::vector<int>> getBoundaryLoopEdges();   // get the halfedge indices of each boundary loop
-	int					calBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
+	int					calAttrBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
 	int					calMeshGenus();			// get mesh genus
-	double				calGaussianCurvatureIntegration();	// compute the integration of Gaussian curvature over all vertices
-    void	            calFaceNormals();			// compute face normals
-    void                calVertNormals();			// compute vertex normals
-    void	            calCurvatures();			// calculate Gaussian and mean curvatures
+    void	            calAttrFaceNormals();			// compute face normals
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
     bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);

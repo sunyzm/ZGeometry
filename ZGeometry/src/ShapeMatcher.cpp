@@ -11,8 +11,7 @@
 #include <ppl.h>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
-#include <ZGeom/arithmetic.h>
-#include <ZGeom/MeshProcessing.h>
+#include <ZGeom/ZGeom.h>
 #include "OutputHelper.h"
 #include "global.h"
 

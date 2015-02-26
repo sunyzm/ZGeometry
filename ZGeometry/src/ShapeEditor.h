@@ -80,7 +80,6 @@ private:
     void testDictionaryCoherence();
     void testWaveletAnalysis();
     void testWaveletComputation();
-    void testSurfaceArea();
     void testSurfaceInpainting();
 
 	void evaluateApproximation(const MeshCoordinates& newCoord, const std::string leadText);

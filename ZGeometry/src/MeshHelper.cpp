@@ -63,11 +63,6 @@ void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*
 	case Anisotropic2:
 		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mMesh);
 		break;
-
-	case IsoApproximate:
-		laplacian.constructIsoApprox(mMesh);                
-		break;
-
 	default: throw std::logic_error("Unrecognized Laplacian type");
 	}       
 }

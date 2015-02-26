@@ -218,7 +218,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="include\ZGeom\Approximation.h" />
+    <ClInclude Include="include\ZGeom\sparse_approximation.h" />
     <ClInclude Include="include\ZGeom\arcball.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />
     <ClInclude Include="include\ZGeom\Color.h" />
@@ -230,6 +230,7 @@
     <ClInclude Include="include\ZGeom\Geodesic.h" />
     <ClInclude Include="include\ZGeom\MeshCoordinates.h" />
     <ClInclude Include="include\ZGeom\MeshHole.h" />
+    <ClInclude Include="include\ZGeom\Plane.h" />
     <ClInclude Include="include\ZGeom\PointCloud.h" />
     <ClInclude Include="include\ZGeom\SparseRepresentation.h" />
     <ClInclude Include="include\ZGeom\EigenCompute.h" />
@@ -242,7 +243,7 @@
     <ClInclude Include="include\ZGeom\MCA.h" />
     <ClInclude Include="include\ZGeom\Mesh.h" />
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
-    <ClInclude Include="include\ZGeom\MeshProcessing.h" />
+    <ClInclude Include="include\ZGeom\mesh_processing.h" />
     <ClInclude Include="include\ZGeom\MeshPyramid.h" />
     <ClInclude Include="include\ZGeom\Quadric.h" />
     <ClInclude Include="include\ZGeom\Quat.h" />
@@ -281,12 +282,12 @@
     <ClCompile Include="src\Vec3.cpp" />
     <ClCompile Include="src\VecN.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />
-    <ClCompile Include="src\Approximation.cpp" />
+    <ClCompile Include="src\sparse_approximation.cpp" />
     <ClCompile Include="src\MatlabEngineWrapper.cpp" />
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\MCA.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
-    <ClCompile Include="src\MeshProcessing.cpp" />
+    <ClCompile Include="src\mesh_processing.cpp" />
     <ClCompile Include="src\MeshPyramid.cpp" />
     <ClCompile Include="src\Quadric.cpp" />
     <ClCompile Include="src\Quat.cpp" />

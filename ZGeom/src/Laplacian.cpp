@@ -1,7 +1,7 @@
 #include "Laplacian.h"
 #include <map>
 #include "EigenCompute.h"
-#include "MeshProcessing.h"
+#include "mesh_processing.h"
 #include "arithmetic.h"
 #include "timer.h"
 #include "zassert.h"
@@ -64,7 +64,7 @@ ZGeom::SparseMatrix<double> Laplacian::getSparseMatrix() const
     return result;
 }
 
-void Laplacian::constructTutte(const CMesh* tmesh)
+void Laplacian::constructTutte(CMesh* tmesh)
 {
     // L = D^-1 * (A - D)
     mOrder = tmesh->vertCount();
@@ -74,7 +74,7 @@ void Laplacian::constructTutte(const CMesh* tmesh)
     mSymmetric = false;
 }
 
-void Laplacian::constructUmbrella(const CMesh* tmesh)
+void Laplacian::constructUmbrella(CMesh* tmesh)
 {
     // L = A - D
     mOrder = tmesh->vertCount();
@@ -84,14 +84,14 @@ void Laplacian::constructUmbrella(const CMesh* tmesh)
     mSymmetric = true;
 }
 
-void Laplacian::constructGeometricUmbrella(const CMesh *tmesh)
+void Laplacian::constructGeometricUmbrella(CMesh *tmesh)
 {
     cerr << "constructGeometricUmbrella not defined yet! " << endl;
     exit(-1);
     mSymmetric = true;
 }
 
-void Laplacian::constructNormalizedUmbrella(const CMesh* tmesh)
+void Laplacian::constructNormalizedUmbrella(CMesh* tmesh)
 {
     /* L = D^(-1/2) * (D-A) * D^(-1/2) */
     mOrder = tmesh->vertCount();
@@ -102,7 +102,7 @@ void Laplacian::constructNormalizedUmbrella(const CMesh* tmesh)
 }
 
 /* Construct negative discrete Laplace operator */
-void Laplacian::constructCotFormula(const CMesh* tmesh)
+void Laplacian::constructCotFormula(CMesh* tmesh)
 {
     const int vertCount = tmesh->vertCount();
     mOrder = vertCount;
@@ -178,7 +178,7 @@ void Laplacian::constructCotFormula(const CMesh* tmesh)
     mSymmetric = false;
 }
 
-void Laplacian::constructSymCot(const CMesh* tmesh)
+void Laplacian::constructSymCot(CMesh* tmesh)
 {
     const int vertCount = tmesh->vertCount();
     constructCotFormula(tmesh);
@@ -186,10 +186,10 @@ void Laplacian::constructSymCot(const CMesh* tmesh)
     mSymmetric = true;
 }
 
-void Laplacian::constructAniso(const CMesh *tmesh)
+void Laplacian::constructAniso(CMesh *tmesh)
 {
-    vector<double> vMeanCurv = tmesh->getMeanCurvature();
-    vector<double> vVertAreas = tmesh->getVertMixedAreas();
+    vector<double> vMeanCurv = ZGeom::getMeshMeanCurvatures(*tmesh);
+    vector<double> vVertAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
     auto vNormals = tmesh->getVertNormals();
     const int vertCount = tmesh->vertCount();
     mOrder = vertCount;

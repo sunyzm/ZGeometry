@@ -1,4 +1,4 @@
-#include "Approximation.h"
+#include "sparse_approximation.h"
 #include <set>
 #include <unordered_set>
 #include <unordered_map>

@@ -163,7 +163,6 @@ private:
 	/* helper functions */
 	bool isMeshSelected(int obj);
 	void computeFunctionMaps(int num);
-	void verifyAreas() const;
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 

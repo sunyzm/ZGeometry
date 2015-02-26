@@ -22,13 +22,10 @@ const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
 const std::string CMesh::StrAttrVertColors				= "vert_color";
 const std::string CMesh::StrAttrColorDefault            = "vert_color_default";
-const std::string CMesh::StrAttrVertGaussCurvatures		= "vert_gauss_curvature";
-const std::string CMesh::StrAttrVertMeanCurvatures		= "vert_mean_curvature";
 const std::string CMesh::StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string CMesh::StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string CMesh::StrAttrVertNormal				= "vert_normal";
 const std::string CMesh::StrAttrFaceNormal				= "face_normal";
-const std::string CMesh::StrAttrVertMixedArea			= "vert_scalar_mixed_area";
 const std::string CMesh::StrAttrBoundaryVertCount       = "mesh_boundary_vert_count";
 const std::string CMesh::StrAttrBoundaryLoops           = "mesh_boundary_loops";
 const std::string CMesh::StrAttrVertOnHole              = "vert_on_hole";
@@ -430,7 +427,8 @@ ZGeom::Vec3d CFace::calBarycenter() const
     return center / (double)m_Vertices.size();
 }
 
-std::vector<double> CFace::getPlaneFunction()
+// output: parameters of plane function A*x + B*y + C*z + D = 0
+std::vector<double> CFace::getPlaneFunction() const
 {
 	vector<double> para(4);
 	ZGeom::Vec3d vNormal = calcNormal();
@@ -442,11 +440,18 @@ std::vector<double> CFace::getPlaneFunction()
 	return para;
 }
 
-std::vector<ZGeom::Vec3d> CFace::getVertCoords() const
+std::vector<ZGeom::Vec3d> CFace::getAllVertCoords() const
 {
     vector<Vec3d> vCoord;
     for (CVertex *v : m_Vertices) vCoord.push_back(v->pos());
     return vCoord;
+}
+
+std::vector<int> CFace::getAllVertIdx() const
+{
+    vector<int> result;
+    for (CVertex* v : m_Vertices) result.push_back(v->getIndex());
+    return result;
 }
 
 //////////////////////////////////////////////////////
@@ -685,7 +690,7 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 	assignElementsIndex();
 }
 
-void CMesh::calFaceNormals()
+void CMesh::calAttrFaceNormals()
 {
 	int faceNum = faceCount();
 	std::vector<ZGeom::Vec3d> vFaceNormals(faceNum);
@@ -706,38 +711,6 @@ void CMesh::calFaceNormals()
     addAttr<std::vector<ZGeom::Vec3d>>(vFaceNormals, StrAttrFaceNormal, AR_FACE, AT_VEC_VEC3);
 }
  
-void CMesh::calVertNormals()
-{
-	const int vertNum = vertCount();
-    calFaceNormals();
-	const vector<ZGeom::Vec3d>& vFaceNormals = getFaceNormals();
-	vector<ZGeom::Vec3d> vVertNormals(vertNum, ZGeom::Vec3d(0,0,0));
-    
-    for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
-    {
-		CVertex* vertex = m_vVertices[vIndex];
-        if (vertex->m_HalfEdges.empty()) continue;
-        ZGeom::Vec3d vNormal(0, 0, 0);
-        for (CHalfEdge *e0 : vertex->m_HalfEdges) {
-            CHalfEdge* e1 = e0->m_eNext;
-            CHalfEdge* e2 = e1->m_eNext;
-            double len0 = e0->length();
-            double len1 = e1->length();
-            double len2 = e2->length();
-            CFace *face = e0->getAttachedFace();
-
-            double wt = 1.0;
-            //wt = 1.0 / (face->calBarycenter() - vertex->pos()).length();
-            //wt = face->calArea();
-            wt = ZGeom::calMixedTriArea(len0, len1, len2);
-            vNormal += vFaceNormals[face->getFaceIndex()] * wt;            
-        }
-        vVertNormals[vIndex] = vNormal.normalize();
-	}
-
-	addAttr<std::vector<ZGeom::Vec3d>>(vVertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
-}
-
 int CMesh::calEdgeCount()
 {
     int halfedgeCount = this->halfEdgeCount();
@@ -753,7 +726,7 @@ int CMesh::calEdgeCount()
     return halfedgeCount - twinEdgeCount / 2;
 }
 
-int CMesh::calBoundaryLoops()
+int CMesh::calAttrBoundaryLoops()
 {
     typedef vector<vector<int>> VecVecInt;
     int boundaryNum = 0;
@@ -792,7 +765,7 @@ int CMesh::calBoundaryLoops()
     return boundaryNum;
 }
 
-int CMesh::calBoundaryVert()
+int CMesh::calAttrBoundaryVert()
 {
 	vector<bool> vVertOnBoundary(vertCount(), false);
 	int bNum = 0;
@@ -816,64 +789,9 @@ int CMesh::calEulerNum(  )
 
 int CMesh::calMeshGenus(  )
 {
-	int b = calBoundaryLoops();
+	int b = calAttrBoundaryLoops();
 	int euler_number = calEulerNum();
 	return ( 2 - euler_number - b ) / 2;
-}
-
-// Calculate mean and Gauss curvatures                                                                       */
-//
-void CMesh::calCurvatures()
-{
-	const double pi = ZGeom::PI;
-	const int vertNum = this->vertCount();
-	std::vector<double> vGaussCurvatures(vertNum, 0);
-	std::vector<double> vMeanCurvatures(vertNum, 0);
-    calBoundaryVert();
-    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
-
-	for (int vIndex = 0; vIndex < vertNum; ++vIndex) 
-	{
-		CVertex* vi = m_vVertices[vIndex];
-		double angleSum = 0.0;		// sum of attaching corner's angle
-		double amix = 0.0;
-		ZGeom::Vec3d kh;
-
-        // boundary vertex default to zero curvature     
-        if (vertOnBoundary[vIndex]) continue;		
-
-		for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
-			CHalfEdge* e0 = *he;
-			CHalfEdge* e1 = e0->m_eNext;
-			CHalfEdge* e2 = e1->m_eNext;
-			double len0 = e0->length();
-			double len1 = e1->length();
-			double len2 = e2->length();
-
-			// compute corner angle by cosine law 
-			double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
-			angleSum += corner;
-			double cota, cotc;
-			amix += ZGeom::calMixedTriArea(len0, len1, len2, cota, cotc);
-
-			const CVertex *pt1 = e1->vert(0), *pt2 = e1->vert(1);
-			kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
-		}
-
-        kh /= 2.0 * amix;
-        vMeanCurvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
-		vGaussCurvatures[vIndex] = (2.0 * pi - angleSum) / amix;		// >0: convex; <0: concave
-	}
-
-	addAttr<std::vector<double>>(vGaussCurvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
-	addAttr<std::vector<double>>(vMeanCurvatures, StrAttrVertMeanCurvatures, AR_VERTEX, AT_VEC_DBL);
-}
-
-double CMesh::calGaussianCurvatureIntegration()
-{
-	const std::vector<double>& vGaussCurv = getGaussCurvature();
-	double sum = std::accumulate(vGaussCurv.begin(), vGaussCurv.end(), 0.0);
-	return sum;
 }
 
 double CMesh::calVolume() const
@@ -999,39 +917,6 @@ void CMesh::scaleEdgeLenToUnit()
 	length /= edgeNum;
 	double scale = 1.0 / length;	
     scaleAndTranslate(-center, scale);
-}
-
-void CMesh::gatherStatistics()
-{
-	// collect/compute statistics
-	// 1. face normals
-	// 2. vertex normals
-	// 3. boundary vertex
-	// 4. mesh center
-	// 5. bounding box
-	// 6. average edge length
-	// 7. individual vertex curvature value
-	
-	calFaceNormals();
-	calVertNormals();
-	calBoundaryVert();
-    calBoundaryLoops();
-
-	ZGeom::Vec3d center = calMeshCenter();
-	ZGeom::Vec3d boundBox = calBoundingBox(center);
-
-	double edgeLength = 0;
-	for (int i = 0; i < halfEdgeCount(); ++i) {
-		edgeLength += m_vHalfEdges[i]->length();
-	}
-	edgeLength /= halfEdgeCount();
-
-	addAttr<double>(edgeLength, StrAttrAvgEdgeLength, AR_UNIFORM, AT_DBL);
-	addAttr<ZGeom::Vec3d>(center, StrAttrMeshCenter, AR_UNIFORM, AT_VEC3);
-	addAttr<ZGeom::Vec3d>(boundBox, StrAttrMeshBBox, AR_UNIFORM, AT_VEC3);
-
-	calCurvatures();
-	calVertMixedAreas();
 }
 
 void CMesh::scaleAndTranslate( ZGeom::Vec3d center, double scale )
@@ -1221,14 +1106,8 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
 
 bool CMesh::hasBoundary()
 {
-    if (!hasAttr(StrAttrBoundaryVertCount)) calBoundaryVert();        
+    if (!hasAttr(StrAttrBoundaryVertCount)) calAttrBoundaryVert();        
     return getAttrValue<int>(StrAttrBoundaryVertCount) > 0;
-}
-
-double CMesh::calFaceArea( int i ) const
-{
-	const CFace* f = m_vFaces[i];
-	return f->calArea();
 }
 
 MeshCoordinates CMesh::getVertCoordinates() const
@@ -1272,10 +1151,6 @@ void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std:
 	for (int i = 0; i < vertCount(); ++i)	{
 		m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
-
-    // after changing coordinates, vert and face normals need recalculation
-    calFaceNormals();
-    calVertNormals();
 }
 
 void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos)
@@ -1297,46 +1172,22 @@ double CMesh::getAvgEdgeLength() const
 	return attrAvgEdgeLen->attrValue();
 }
 
-const std::vector<double>& CMesh::getMeanCurvature()
-{
-	if (!hasAttr(StrAttrVertMeanCurvatures)) this->calCurvatures();		
-	return getAttrValue<std::vector<double>>(StrAttrVertMeanCurvatures);
-}
-
-const std::vector<double>& CMesh::getMeanCurvature() const
-{
-	assert(hasAttr(StrAttrVertMeanCurvatures));
-	return getAttrValue<std::vector<double>>(StrAttrVertMeanCurvatures);
-}
-
-const std::vector<double>& CMesh::getGaussCurvature()
-{
-	if (!hasAttr(StrAttrVertGaussCurvatures)) calCurvatures();		
-	return getAttrValue<std::vector<double>>(StrAttrVertGaussCurvatures);
-}
-
 const std::vector<ZGeom::Vec3d>& CMesh::getFaceNormals()
 {
-	if (!hasAttr(StrAttrFaceNormal)) calFaceNormals();
+	if (!hasAttr(StrAttrFaceNormal)) calAttrFaceNormals();
 	const std::vector<ZGeom::Vec3d>& vFaceNormals = getAttrValue<std::vector<ZGeom::Vec3d>>(StrAttrFaceNormal);
 	return vFaceNormals;
-}
-
-const std::vector<ZGeom::Vec3d>& CMesh::getVertNormals()
-{
-	if (!hasAttr(StrAttrVertNormal)) calVertNormals();
-	return getAttrValue<std::vector<ZGeom::Vec3d>>(StrAttrVertNormal);
 }
 
 const std::vector<ZGeom::Vec3d>& CMesh::getVertNormals() const
 {
 	assert(hasAttr(StrAttrVertNormal));
-	return getAttrValue< std::vector<ZGeom::Vec3d>>(StrAttrVertNormal);
+	return getAttrValue<std::vector<ZGeom::Vec3d>>(StrAttrVertNormal);
 }
 
 const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
-	if (!hasAttr(StrAttrVertOnBoundary)) calBoundaryVert();
+	if (!hasAttr(StrAttrVertOnBoundary)) calAttrBoundaryVert();
 	return getAttrValue<std::vector<bool>>(StrAttrVertOnBoundary);
 }
 
@@ -1348,8 +1199,7 @@ bool CMesh::isVertOnBoundary(int vi)
 double CMesh::calSurfaceArea() const
 {
 	double totalSufaceArea(0);
-    for (CFace* f : m_vFaces)
-        totalSufaceArea += f->calArea();
+    for (CFace* f : m_vFaces) totalSufaceArea += f->calArea();
 	return totalSufaceArea;
 }
 
@@ -1549,42 +1399,6 @@ void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMesh
     subMesh.addDefaultColorAttr();
 }
 
-void CMesh::calVertMixedAreas()
-{
-	const double pi = ZGeom::PI;
-	const int vertCount = this->vertCount();
-	vector<double> vMixedAreas(vertCount, 0); 
-
-	for (int vIndex = 0; vIndex < vertCount; ++vIndex) 
-	{
-		CVertex* vi = m_vVertices[vIndex];
-		double amix = 0.0;
-        for (CHalfEdge* e0 : vi->m_HalfEdges) {
-			CHalfEdge* e1 = e0->m_eNext;
-			CHalfEdge* e2 = e1->m_eNext;
-			double len0 = e0->length();
-			double len1 = e1->length();
-			double len2 = e2->length();
-			amix += ZGeom::calMixedTriArea(len0, len1, len2);
-		}
-		vMixedAreas[vIndex] = amix;
-	}
-
-	addAttr<vector<double>>(vMixedAreas, StrAttrVertMixedArea, AR_VERTEX, AT_VEC_DBL);
-}
-
-const std::vector<double>& CMesh::getVertMixedAreas()
-{
-	if (!hasAttr(StrAttrVertMixedArea)) calVertMixedAreas();
-	return getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
-}
-
-const std::vector<double>& CMesh::getVertMixedAreas() const
-{
-	assert(hasAttr(StrAttrVertMixedArea));
-	return getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
-}
-
 std::vector<ZGeom::Vec3d> CMesh::allVertPos() const
 {
     vector<Vec3d> results(vertCount());
@@ -1696,7 +1510,7 @@ void CMesh::saveToOBJ( std::string sFileName )
 
 std::vector<bool> CMesh::getVertsOnHoles()
 {
-    if (!hasAttr(StrAttrBoundaryLoops)) calBoundaryLoops();
+    if (!hasAttr(StrAttrBoundaryLoops)) calAttrBoundaryLoops();
     const vector<vector<int>>& boundaryEdges = getAttrValue<vector<vector<int>>>(StrAttrBoundaryLoops);
     vector<bool> result(vertCount(), false);
     for (int i = 0; i < boundaryEdges.size(); ++i) {
@@ -1724,7 +1538,7 @@ void CMesh::addDefaultColorAttr()
 
 std::vector<std::vector<int>> CMesh::getBoundaryLoopEdges()
 {
-    if (!hasAttr(StrAttrBoundaryLoops)) calBoundaryLoops();
+    if (!hasAttr(StrAttrBoundaryLoops)) calAttrBoundaryLoops();
     return getAttrValue<vector<vector<int>>>(StrAttrBoundaryLoops);
 }
 
@@ -1853,22 +1667,22 @@ bool CMesh::relaxEdge(CHalfEdge* e1)
     }    
 }
 
-std::vector<double> CMesh::calPrincipalCurvature( int k )
-{
-//    assert(k >= 0 && k < = 2); // k == 0 means total curvature; k_total = k1^2 + k2^2 = 4(kh^2 - kg)
-    int N = vertCount();
-    auto curvMean = getMeanCurvature(), curvGauss = getGaussCurvature();
-    std::vector<double> result(N);
-    for (int i = 0; i < N; ++i) {
-        double delta = std::max(0., curvMean[i]*curvMean[i] - curvGauss[i]);        
-        switch (k) {
-        case 0: result[i] = std::max(0., 4.*curvMean[i]*curvMean[i] - 2.*curvGauss[i]); break;
-        case 1: result[i] = curvMean[i] + sqrt(delta); break;
-        case 2: result[i] = curvMean[i] - sqrt(delta); break;
-        }        
-    }
-    return result;
-}
+// std::vector<double> CMesh::calPrincipalCurvature( int k )
+// {
+// //    assert(k >= 0 && k < = 2); // k == 0 means total curvature; k_total = k1^2 + k2^2 = 4(kh^2 - kg)
+//     int N = vertCount();
+//     auto curvMean = getMeanCurvature(), curvGauss = getGaussCurvature();
+//     std::vector<double> result(N);
+//     for (int i = 0; i < N; ++i) {
+//         double delta = std::max(0., curvMean[i]*curvMean[i] - curvGauss[i]);        
+//         switch (k) {
+//         case 0: result[i] = std::max(0., 4.*curvMean[i]*curvMean[i] - 2.*curvGauss[i]); break;
+//         case 1: result[i] = curvMean[i] + sqrt(delta); break;
+//         case 2: result[i] = curvMean[i] - sqrt(delta); break;
+//         }        
+//     }
+//     return result;
+// }
 
 #if 0
 void CMesh::loadFromPLY( std::string sFileName )
