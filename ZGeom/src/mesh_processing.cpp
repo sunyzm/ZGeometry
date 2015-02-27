@@ -348,6 +348,7 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2)
     return std::max(dist12, dist21);
 }
 
+
 /* see "Distance between point and triangle in 3D 
 /* adapted from GTEngine\Include\GteDistPointTriangleExact */
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle)
