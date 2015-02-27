@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <algorithm>
 #include "common.h"
-#include "SparseMatrixCOO.h"
 #include "SparseMatrixCSR.h"
 
 namespace ZGeom {

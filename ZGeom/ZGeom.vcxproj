@@ -154,8 +154,7 @@
       </Command>
     </PostBuildEvent>
     <Lib>
-      <IgnoreSpecificDefaultLibraries>
-      </IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>mkl_core_dll.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <Verbose>false</Verbose>
@@ -210,8 +209,7 @@
       </Command>
     </PostBuildEvent>
     <Lib>
-      <IgnoreSpecificDefaultLibraries>
-      </IgnoreSpecificDefaultLibraries>
+      <IgnoreSpecificDefaultLibraries>mkl_core_dll.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <Verbose>false</Verbose>
@@ -249,7 +247,6 @@
     <ClInclude Include="include\ZGeom\Quat.h" />
     <ClInclude Include="include\ZGeom\SimpleConfigLoader.h" />
     <ClInclude Include="include\ZGeom\SparseMatrix.h" />
-    <ClInclude Include="include\ZGeom\SparseMatrixCOO.h" />
     <ClInclude Include="include\ZGeom\SparseMatrixCSR.h" />
     <ClInclude Include="include\ZGeom\SparseMatVecMultiplier.h" />
     <ClInclude Include="include\ZGeom\SparseSolver.h" />
@@ -264,6 +261,7 @@
     <ClInclude Include="include\ZGeom\VecN.h" />
     <ClInclude Include="include\ZGeom\zassert.h" />
     <ClInclude Include="include\ZGeom\ZGeom.h" />
+    <ClInclude Include="src\triBoxOverlap.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arcball.cpp" />
@@ -279,6 +277,7 @@
     <ClCompile Include="src\Geodesic.cpp" />
     <ClCompile Include="src\MeshHole.cpp" />
     <ClCompile Include="src\PointCloud.cpp" />
+    <ClCompile Include="src\triBoxOverlap.cpp" />
     <ClCompile Include="src\Vec3.cpp" />
     <ClCompile Include="src\VecN.cpp" />
     <ClCompile Include="src\Laplacian.cpp" />

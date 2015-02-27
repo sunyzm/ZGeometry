@@ -438,7 +438,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 {
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
-    const vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const vector<Vec3d>& vVertNormals = tmesh->getVertNormals();
     const vector<Vec3d> vVertPos = tmesh->allVertPos();
     const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
 

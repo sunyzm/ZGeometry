@@ -1,6 +1,5 @@
 #ifndef ZGEOM_SPARSE_MAT_VEC_MULTIPLIER_H
 #define ZGEOM_SPARSE_MAT_VEC_MULTIPLIER_H
-#include <mkl.h>
 #include "MatVecFunctor.h"
 #include "SparseMatrix.h"
 #include "VecN.h"
@@ -21,10 +20,10 @@ public:
 
 private:
 	bool mIsSymmetric;
-	MKL_INT* mRowInd;
-	MKL_INT* mColInd;
+	int* mRowInd;
+	int* mColInd;
 	double* mVal;
-	MKL_INT mNonzeroCount;
+	int mNonzeroCount;
 };
 
 }   // end of namespace

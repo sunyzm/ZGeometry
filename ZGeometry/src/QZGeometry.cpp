@@ -438,15 +438,32 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	loadInitialMeshes(mesh_list_name); 
 
     ui.glMeshWidget->setup(mProcessors, mRenderManagers, &mShapeMatcher);
-    
+
     /* compute and decompose mesh Laplacians */
-	//computeLaplacian(Umbrella);
-	//computeLaplacian(NormalizedUmbrella);	
-	//computeLaplacian(CotFormula);
-	//computeLaplacian(SymCot);
-	//computeLaplacian(Anisotropic1); 	
-	//computeLaplacian(Anisotropic2);
-	//setLaplacianType("Anisotropic1");
+    //computeLaplacian(Umbrella);
+    //computeLaplacian(NormalizedUmbrella);	
+    //computeLaplacian(CotFormula);
+    //computeLaplacian(SymCot);
+    //computeLaplacian(Anisotropic1); 	
+    //computeLaplacian(Anisotropic2);
+    //setLaplacianType("Anisotropic1");
+
+    /* experiment on computeMeanHausdorffDistance */
+#if 0
+     {
+         CMesh mesh1, mesh2;
+         mesh1.load("../../Data/obj/wolf0.obj");
+         mesh2.load("../../Data/obj/wolf1.obj");
+         mesh1.scaleToUnitBox();
+         mesh2.scaleToUnitBox();
+         ZGeom::calMeshAttrMixedVertAreas(mesh1);
+         ZGeom::calMeshAttrMixedVertAreas(mesh2);
+         CStopWatch timer;
+         double meanDist = ZGeom::computeSymMeshMeanError(mesh1, mesh2);
+         timer.total("Mean Hausdorff time: ");
+         std::cout << "Mean Hausdorff distance: " << meanDist << std::endl;
+     }
+#endif
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();

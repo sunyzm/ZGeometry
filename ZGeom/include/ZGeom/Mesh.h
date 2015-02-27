@@ -149,20 +149,17 @@ class CMesh
 {
 public:
 	/* attribute strings */
+    static const std::string StrAttrAvgEdgeLength;
+    static const std::string StrAttrMeshCenter;
+    static const std::string StrAttrMeshBBox;
 	static const std::string StrAttrBoundaryVertCount;
     static const std::string StrAttrBoundaryLoops;
-	static const std::string StrAttrAvgEdgeLength;
-	static const std::string StrAttrMeshCenter;
-	static const std::string StrAttrMeshBBox;
 	static const std::string StrAttrVertColors;
     static const std::string StrAttrColorDefault;
-    static const std::string StrAttrVertPrincipalCurvatures1;
-    static const std::string StrAttrVertPrincipalCurvatures2;
 	static const std::string StrAttrVertNormal;
 	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
 	static const std::string StrAttrFaceNormal;
-	static const std::string StrAttrVertMixedArea;
 
 ////////////////   fields    ////////////////
 public:
