@@ -22,8 +22,6 @@ const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
 const std::string CMesh::StrAttrVertColors				= "vert_color";
 const std::string CMesh::StrAttrColorDefault            = "vert_color_default";
-const std::string CMesh::StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
-const std::string CMesh::StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string CMesh::StrAttrVertNormal				= "vert_normal";
 const std::string CMesh::StrAttrFaceNormal				= "face_normal";
 const std::string CMesh::StrAttrBoundaryVertCount       = "mesh_boundary_vert_count";
@@ -497,7 +495,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 
 	for (int i = 0; i < oldMesh.vertCount(); ++i) {
 		CVertex* curV = this->m_vVertices[i];
-		const CVertex* oldV = oldMesh.m_vVertices[i];
+        const CVertex* oldV = oldMesh.vert(i);
 		for (int j = 0; j < oldV->outValence(); ++j) {
 			int eidx = oldV->m_HalfEdges[j]->m_eIndex;
 			curV->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
@@ -535,7 +533,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	}
 
     copyAttributes(oldMesh.mAttributes);
-    setDefaultColor(m_defaultColor);
+//  setDefaultColor(m_defaultColor);
 }
 
 void CMesh::clearMesh()

@@ -12,15 +12,23 @@ namespace ZGeom {
 const std::string StrAttrVertMixedArea = "vert_scalar_mixed_area";
 const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
+const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
+const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
-ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<ZGeom::Vec3d>& triangle);
+ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle);
 
 struct ResultDistPointPlane { Vec3d closestPoint; double distance, signedDistance; };
 ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane);
 
-double distPoint2Mesh(Vec3d p, CMesh& mesh);
-double computeMeanHausdorffDistance(const CMesh& mesh1, const CMesh& mesh2);
+bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3d boxHalfsize);
+
+double distPointMesh(Vec3d p, CMesh& mesh);
+std::vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2);
+double computeMeshMeanError(CMesh &mesh1, CMesh &mesh2);
+double computeSymMeshMeanError(CMesh &mesh1, CMesh &mesh2);
+double computeMeshRMSE(CMesh &mesh1, CMesh &mesh2);
+double computeSymMeshRMSE(CMesh &mesh1, CMesh &mesh2);
 
 
 /* spectral geometry*/

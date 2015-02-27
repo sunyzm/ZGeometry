@@ -2,8 +2,10 @@
 #include <cstdlib>
 #include <random>
 #include <ppl.h>
+#include <concurrent_vector.h>
 #include "MatVecArithmetic.h"
 #include "arithmetic.h"
+#include "triBoxOverlap.h"
 
 using namespace std;
 
@@ -276,16 +278,49 @@ void getMeshGraphCSR(const CMesh& mesh, std::vector<int>& xadj, std::vector<int>
     }
 }
 
-/* conf. "MESH - MEASURING ERRORS BETWEEN SURFACES USING THE HAUSDORFF (2002)" */
-double computeMeanHausdorffDistance(const CMesh& mesh1, const CMesh& mesh2)
+
+vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2)
 {
-    double result{ 0 };
+    int nVerts1 = mesh1.vertCount();
+    int nFaces2 = mesh2.faceCount();
+    vector<vector<Vec3d>> mesh2Tri(nFaces2);
+    for (int fIdx = 0; fIdx < nFaces2; ++fIdx)
+        mesh2Tri[fIdx] = mesh2.getFace(fIdx)->getAllVertCoords();
 
+    vector<double> vVertMeshMinDist(nVerts1);
+    concurrency::parallel_for(0, nVerts1, [&](int vIdx)
+    {
+        const Vec3d &vPos = mesh1.vertPos(vIdx);
+        double minDistVi = 1e15;
+        for (const vector<Vec3d>& tri : mesh2Tri)
+            minDistVi = std::min(minDistVi, distPointTriangle(vPos, tri).distance);
+        vVertMeshMinDist[vIdx] = minDistVi;
+    });
 
+    return vVertMeshMinDist;
+}
+
+double computeMeshMeanError(CMesh& mesh1, CMesh& mesh2)
+{
+    /* see "MESH - MEASURING ERRORS BETWEEN SURFACES USING THE HAUSDORFF (2002)" */
+
+    int nVerts1 = mesh1.vertCount();
+    vector<double> vVertAreas = getMeshVertMixedAreas(mesh1);
+    vector<double> vVertMeshMinDist = computeVertMeshDist(mesh1, mesh2);
+
+    double result(0);
+    for (int vIdx = 0; vIdx < nVerts1; ++vIdx) result += vVertMeshMinDist[vIdx] * vVertAreas[vIdx];
+    result /= std::accumulate(vVertAreas.begin(), vVertAreas.end(), (double)0);
     return result;
 }
 
-/* conf. "Distance between point and triangle in 3D 
+double computeSymMeshMeanError(CMesh &mesh1, CMesh &mesh2)
+{
+    return 0.5 * (computeMeshMeanError(mesh1, mesh2) + computeMeshMeanError(mesh2, mesh1));
+}
+
+
+/* see "Distance between point and triangle in 3D 
 /* adapted from GTEngine\Include\GteDistPointTriangleExact */
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle)
 {
@@ -649,7 +684,19 @@ void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WE
     mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
 }
 
-
-
+/********************************************************************************/
+/* Adapted from AABB-triangle overlap test code                                 */
+/* by Tomas Akenine-Möller                                                      */
+/********************************************************************************/
+bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3d boxHalfsize)
+{
+    float boxcenter[3] = { (float)boxCenter[0], (float)boxCenter[1], (float)boxCenter[2] };
+    float boxhalfsize[3] = { (float)boxHalfsize[0], (float)boxHalfsize[1], (float)boxHalfsize[2] };
+    float triverts[3][3];
+    for (int i = 0; i < 3; ++i)
+        for (int j = 0; j < 3; ++j)
+            triverts[i][j] = (float)triangle[i][j];
+    return ((1 == triBoxOverlap(boxcenter, boxhalfsize, triverts)) ? true : false);
+}
 
 }   // end of namespace
