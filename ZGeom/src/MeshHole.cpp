@@ -17,7 +17,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
     for (auto f : mesh.vert(seedVert)->getAdjacentFaces()) {
         faceInHole.insert(f->getFaceIndex());    
         for (int k = 0; k < 3; ++k) {
-            int faceVertIdx = f->getVertexIndex(k);
+            int faceVertIdx = f->vertIdx(k);
             if (vertInHole.find(faceVertIdx) == vertInHole.end())
                 boundaryVerts.insert(faceVertIdx);
         }    
@@ -33,7 +33,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
                 continue;       // face already considered     
             faceInHole.insert(f->getFaceIndex());
             for (int k = 0; k < 3; ++k) {
-                int faceVertIdx = f->getVertexIndex(k);
+                int faceVertIdx = f->vertIdx(k);
                 if (vertInHole.find(faceVertIdx) == vertInHole.end())
                     boundaryVerts.insert(faceVertIdx);
             }
@@ -78,7 +78,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
         for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
             faceInHole.insert(f->getFaceIndex());
             for (int k = 0; k < 3; ++k) {
-                int faceVertIdx = f->getVertexIndex(k);
+                int faceVertIdx = f->vertIdx(k);
                 if (vertInHole.find(faceVertIdx) == vertInHole.end())
                     boundaryVerts.insert(faceVertIdx);
             }
@@ -97,7 +97,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
                 continue;       // face already considered     
             faceInHole.insert(f->getFaceIndex());
             for (int k = 0; k < 3; ++k) {
-                int faceVertIdx = f->getVertexIndex(k);
+                int faceVertIdx = f->vertIdx(k);
                 if (vertInHole.find(faceVertIdx) == vertInHole.end())
                     boundaryVerts.insert(faceVertIdx);
             }

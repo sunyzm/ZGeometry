@@ -241,7 +241,6 @@ void QZGeometryWindow::makeConnections()
 
 	////  Register  ////
 	QObject::connect(ui.actionRegisterAutomatic, SIGNAL(triggered()), this, SLOT(registerAutomatic()));
-	QObject::connect(ui.actionBuildHierarchy, SIGNAL(triggered()), this, SLOT(buildHierarchy()));
 	QObject::connect(ui.actionDetectFeatures, SIGNAL(triggered()), this, SLOT(detectFeatures()));
 	QObject::connect(ui.actionMatchFeatures, SIGNAL(triggered()), this, SLOT(matchFeatures()));
 	QObject::connect(ui.actionRegisterStep, SIGNAL(triggered()), this, SLOT(registerStep()));
@@ -1273,23 +1272,9 @@ void QZGeometryWindow::setTaskEditing()
 
 void QZGeometryWindow::registerAutomatic()
 {
-	this->buildHierarchy();
+    //this->buildHierarchy();
 	this->detectFeatures();
 	this->matchFeatures();
-}
-
-void QZGeometryWindow::buildHierarchy()
-{
-	int nLevel = g_configMgr.getConfigValueInt("HIERARCHY_LEVEL");
-	double ratio = g_configMgr.getConfigValueDouble("CONTRACTION_RATIO");
-	std::string log_filename = g_configMgr.getConfigValue("HIERARCHY_OUTPUT_FILE");
-	std::ofstream ostr(log_filename.c_str(), std::ios::trunc);
-
-	qout.output("-- Build hierarchy --");
-	mShapeMatcher.constructPyramid(nLevel, ratio, ostr);
-	qout.output("Mesh hierarchy constructed!");
-
-	ostr.close();
 }
 
 void QZGeometryWindow::detectFeatures()
@@ -1504,6 +1489,7 @@ void QZGeometryWindow::matchFeatures()
 
 void QZGeometryWindow::registerStep()
 {
+#if 0
 	using namespace std;
 
 	string log_filename = g_configMgr.getConfigValue("REGISTER_OUTPUT_FILE");
@@ -1541,17 +1527,10 @@ void QZGeometryWindow::registerStep()
 		mShapeMatcher.evaluateWithGroundTruth(vr);
 	}
 
-// 	double vError[3];
-// 	for(int k = 0; k < 2; ++k)
-// 	{ 
-// 		vError[k] = DiffusionShapeMatcher::evaluateDistortion(vr, &m_mesh[0], &m_mesh[1], shapeMatcher.m_randPairs, 200 * k);
-// 	}
-// 
-// 	qout.output(QString().sprintf("Registration error: %f, %f", vError[0], vError[1]));
-
 	if (!ui.glMeshWidget->m_bDrawRegistration)
 		toggleDrawRegistration();
 	ui.glMeshWidget->update();
+#endif
 }
 
 void QZGeometryWindow::registerFull()

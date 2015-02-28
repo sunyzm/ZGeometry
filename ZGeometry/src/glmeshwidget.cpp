@@ -463,7 +463,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
             for (int j = 0; j < 3; j++) {
-                int pi = face->getVertexIndex(j);
+                int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
@@ -483,7 +483,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         for (int fIdx : holeFaceIdx) {
             CFace* face = tmesh->m_vFaces[fIdx];
             for (int j = 0; j < 3; j++) {
-                int pi = face->getVertexIndex(j);
+                int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
@@ -502,7 +502,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
             for (int j = 0; j < 3; j++) {
-                int pi = face->getVertexIndex(j);
+                int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = vVertNormals[pi];
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];

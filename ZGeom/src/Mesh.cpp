@@ -63,6 +63,8 @@ CVertex& CVertex::operator = ( const CVertex& v )
 
 void CVertex::init()
 {
+    m_vPosition = ZGeom::Vec3d(0, 0, 0);
+    m_vIndex = -1;
 	m_bIsValid = true;
 }
 
@@ -70,18 +72,16 @@ void CVertex::clone(const CVertex& v)
 {
 	if (this == &v) return;
 	m_vIndex			= v.m_vIndex;
-	m_vid				= v.m_vid;
 	m_vPosition			= v.m_vPosition;
 	m_bIsValid			= v.m_bIsValid;
 
     m_HalfEdges.clear();
 }
 
-std::vector<const CFace*> CVertex::getAdjacentFaces() const
+std::vector<CFace*> CVertex::getAdjacentFaces() const
 {
-	vector<const CFace*> pFaces;
-	for (CHalfEdge* he : m_HalfEdges) pFaces.push_back(he->getAttachedFace());
-	
+	vector<CFace*> pFaces;
+	for (CHalfEdge* he : m_HalfEdges) pFaces.push_back(he->getAttachedFace());	
 	return pFaces;
 }
 
@@ -220,24 +220,24 @@ void CFace::create(int s)
 
 bool CFace::hasVertex( int vidx ) const
 {
-	for (CVertex* pv : m_Vertices) {
-		if (pv->getIndex() == vidx)	return true;
-	}
-
-	return false;
+    for (int i = 0; i < edgeCount(); ++i)
+        if (vertIdx(i) == vidx) return true;
+    return false;
 }
 
 bool CFace::hasVertex(CVertex* pv) const
 {
-    return std::find(m_Vertices.begin(), m_Vertices.end(), pv) != m_Vertices.end();
+    for (int i = 0; i < edgeCount(); ++i)
+        if (vert(i) == pv) return true;
+    return false;
 }
 
 double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoord )
 {	
-	//baryCoord.resize(3, 0);
+	baryCoord.resize(3, 0);
 	
-	/**** adapted from WildMagic ****/
-	ZGeom::Vec3d V[3] = {m_Vertices[0]->pos(), m_Vertices[1]->pos(), m_Vertices[2]->pos()};
+    /**** adapted from WildMagic ****/
+    ZGeom::Vec3d V[3] = { vert(0)->pos(), vert(1)->pos(), vert(2)->pos() };
 	ZGeom::Vec3d p = vp->pos();
 
 	ZGeom::Vec3d diff = V[0] - p;
@@ -407,22 +407,24 @@ double CFace::distanceToVertex( const CVertex* vp, std::vector<double>& baryCoor
 
 double CFace::calArea() const
 {
-	return ZGeom::triArea(m_Vertices[0]->pos(), m_Vertices[1]->pos(), m_Vertices[2]->pos());
+	return ZGeom::triArea(vert(0)->pos(), vert(1)->pos(), vert(2)->pos());
 }
 
 ZGeom::Vec3d CFace::calcNormal() const
 {
     using ZGeom::Vec3d;
-    Vec3d v0 = m_Vertices[2]->pos() - m_Vertices[0]->pos();
-    Vec3d v1 = m_Vertices[2]->pos() - m_Vertices[1]->pos();
-    return (v0 ^ v1).normalize();
+    Vec3d v0 = vert(2)->pos() - vert(0)->pos();
+    Vec3d v1 = vert(2)->pos() - vert(1)->pos();
+    return v0.cross(v1).normalize();
 }
 
 ZGeom::Vec3d CFace::calBarycenter() const
 {
     Vec3d center(0,0,0);
-    for (auto p : m_Vertices) center += p->pos();
-    return center / (double)m_Vertices.size();
+    for (int i = 0; i < edgeCount(); ++i)
+        center += vert(i)->pos();
+
+    return center / (double)edgeCount();
 }
 
 // output: parameters of plane function A*x + B*y + C*z + D = 0
@@ -433,24 +435,32 @@ std::vector<double> CFace::getPlaneFunction() const
 	para[0] = vNormal[0];
 	para[1] = vNormal[1];
 	para[2] = vNormal[2];
-	double d = vNormal.dot(m_Vertices[0]->pos());
+	double d = vNormal.dot(vert(0)->pos());
 	para[3] = -d;
 	return para;
 }
 
-std::vector<ZGeom::Vec3d> CFace::getAllVertCoords() const
+std::vector<CVertex*> CFace::getAllVerts() const
 {
-    vector<Vec3d> vCoord;
-    for (CVertex *v : m_Vertices) vCoord.push_back(v->pos());
-    return vCoord;
+    vector<CVertex*> result(edgeCount());
+    for (int i = 0; i < edgeCount(); ++i) result[i] = vert(i);
+    return result;
+}
+
+std::vector<ZGeom::Vec3d> CFace::getAllVertPos() const
+{
+    vector<Vec3d> result(edgeCount());
+    for (int i = 0; i < edgeCount(); ++i) result[i] = vertPos(i);
+    return result;
 }
 
 std::vector<int> CFace::getAllVertIdx() const
 {
-    vector<int> result;
-    for (CVertex* v : m_Vertices) result.push_back(v->getIndex());
+    vector<int> result(edgeCount());
+    for (int i = 0; i < edgeCount(); ++i) result[i] = vertIdx(i);
     return result;
 }
+
 
 //////////////////////////////////////////////////////
 //						CMesh						//
@@ -504,10 +514,9 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	for (int i = 0; i < oldMesh.faceCount(); ++i) {
 		CFace* curF = this->m_vFaces[i];
 		const CFace* oldF = oldMesh.m_vFaces[i];
-		for (int j = 0; j < oldF->m_nType; ++j) {
-			int vidx = oldF->m_Vertices[j]->m_vIndex;
+		for (int j = 0; j < oldF->edgeCount(); ++j) {
+			int vidx = oldF->vertIdx(j);
 			int eidx = oldF->m_HalfEdges[j]->m_eIndex;
-			curF->m_Vertices.push_back(this->m_vVertices[vidx]);
 			curF->m_HalfEdges.push_back(this->m_vHalfEdges[eidx]);
 		}
 	}
@@ -588,22 +597,23 @@ void CMesh::save(string sFileName)
 // 		saveToM(sFileName);
 }
 
-void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<std::vector<int>>& faceVerts, int nType /*= 3*/)
+void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::vector<std::vector<int>>& faceVertIdx, int nType /*= 3*/)
 {
     assert(nType == 3);
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////	code to construct primitives pointer vectors	///////////////
-	m_vVertices.reserve(m_pVertex.size());
-	m_vFaces.reserve(faceVerts.size());
-	m_vHalfEdges.reserve(faceVerts.size()*3);
-
-    int nVertex = (int)m_pVertex.size();
-    int nFace = (int)faceVerts.size();
+    int nVertex = (int)vertCoords.size();
+    int nFace = (int)faceVertIdx.size();
+    int nHalfEdges = 3 * nFace;
+    
+    m_vVertices.reserve(nVertex);
+    m_vFaces.reserve(nFace);
+    m_vHalfEdges.reserve(nHalfEdges);
 
     for (int i = 0; i < nVertex; ++i) {
-		CVertex* newVertex = new CVertex(m_pVertex[i]);
+        CVertex* newVertex = new CVertex(vertCoords[i]);
+        newVertex->m_vIndex = i;
 		newVertex->m_bIsValid = true;
-		newVertex->m_HalfEdges.clear();
 		m_vVertices.push_back(newVertex);
 	}
 
@@ -614,58 +624,60 @@ void CMesh::construct(const std::vector<CVertex>& m_pVertex, const std::vector<s
 		newFace->m_bIsValid = true;
         this->m_vFaces.push_back(newFace);
 
+        vector<CVertex*> newFaceVerts;
+
 		for (int j = 0; j < nType; ++j)
-			newFace->m_Vertices.push_back(m_vVertices[faceVerts[i][j]]);
+			newFaceVerts.push_back(m_vVertices[faceVertIdx[i][j]]);
 
 		CHalfEdge* he1 = new CHalfEdge();
 		CHalfEdge* he2 = new CHalfEdge();
 		CHalfEdge* he3 = new CHalfEdge();
 		he1->m_eNext = he2; he1->m_ePrev = he3;
 		he2->m_eNext = he3; he2->m_ePrev = he1;
-		he3->m_eNext = he1; he3->m_ePrev = he2;
-		
+		he3->m_eNext = he1; he3->m_ePrev = he2;		
 		CHalfEdge* heInFace[3] = {he1, he2, he3};
+
 		for (int j = 0; j < 3; ++j) {
 			heInFace[j]->m_eTwin = NULL;
 			heInFace[j]->m_Face = newFace;
 			heInFace[j]->m_bIsValid = true;
 
 			newFace->m_HalfEdges.push_back(heInFace[j]);
-			newFace->m_Vertices[j]->m_HalfEdges.push_back(heInFace[j]);
+            newFaceVerts[j]->m_HalfEdges.push_back(heInFace[j]);
 			this->m_vHalfEdges.push_back(heInFace[j]); 
 		}
 		
-		he1->m_Vertices[0] = newFace->m_Vertices[0];
-		he1->m_Vertices[1] = newFace->m_Vertices[1];
-		he2->m_Vertices[0] = newFace->m_Vertices[1];
-		he2->m_Vertices[1] = newFace->m_Vertices[2];
-		he3->m_Vertices[0] = newFace->m_Vertices[2];
-		he3->m_Vertices[1] = newFace->m_Vertices[0];
+        he1->m_Vertices[0] = newFaceVerts[0];
+        he1->m_Vertices[1] = newFaceVerts[1];
+        he2->m_Vertices[0] = newFaceVerts[1];
+        he2->m_Vertices[1] = newFaceVerts[2];
+        he3->m_Vertices[0] = newFaceVerts[2];
+        he3->m_Vertices[1] = newFaceVerts[0];
 
-		for (int j = 0; j < newFace->m_Vertices[1]->outValence(); ++j)
+        for (int j = 0; j < newFaceVerts[1]->outValence(); ++j)
 		{
-			if (newFace->m_Vertices[1]->m_HalfEdges[j]->m_Vertices[1] == he1->m_Vertices[0])
+            if (newFaceVerts[1]->m_HalfEdges[j]->m_Vertices[1] == he1->m_Vertices[0])
 			{
-				newFace->m_Vertices[1]->m_HalfEdges[j]->m_eTwin = he1;
-				he1->m_eTwin = newFace->m_Vertices[1]->m_HalfEdges[j];
+                newFaceVerts[1]->m_HalfEdges[j]->m_eTwin = he1;
+                he1->m_eTwin = newFaceVerts[1]->m_HalfEdges[j];
 				break;
 			}
 		}
-		for (int j = 0; j < newFace->m_Vertices[2]->outValence(); ++j)
+        for (int j = 0; j < newFaceVerts[2]->outValence(); ++j)
 		{
-			if (newFace->m_Vertices[2]->m_HalfEdges[j]->m_Vertices[1] == he2->m_Vertices[0])
+            if (newFaceVerts[2]->m_HalfEdges[j]->m_Vertices[1] == he2->m_Vertices[0])
 			{
-				newFace->m_Vertices[2]->m_HalfEdges[j]->m_eTwin = he2;
-				he2->m_eTwin = newFace->m_Vertices[2]->m_HalfEdges[j];
+                newFaceVerts[2]->m_HalfEdges[j]->m_eTwin = he2;
+                he2->m_eTwin = newFaceVerts[2]->m_HalfEdges[j];
 				break;
 			}
 		}
-		for (int j = 0; j < newFace->m_Vertices[0]->outValence(); ++j)
+        for (int j = 0; j < newFaceVerts[0]->outValence(); ++j)
 		{
-			if (newFace->m_Vertices[0]->m_HalfEdges[j]->m_Vertices[1] == he3->m_Vertices[0])
+            if (newFaceVerts[0]->m_HalfEdges[j]->m_Vertices[1] == he3->m_Vertices[0])
 			{
-				newFace->m_Vertices[0]->m_HalfEdges[j]->m_eTwin = he3;
-				he3->m_eTwin = newFace->m_Vertices[0]->m_HalfEdges[j];
+                newFaceVerts[0]->m_HalfEdges[j]->m_eTwin = he3;
+                he3->m_eTwin = newFaceVerts[0]->m_HalfEdges[j];
 				break;
 			}
 		}
@@ -695,11 +707,11 @@ void CMesh::calAttrFaceNormals()
 	ZGeom::Vec3d v[2];
 	for (int fIndex = 0; fIndex < faceNum; ++fIndex) {
 		CFace* face = m_vFaces[fIndex];
-		v[0] = face->getVertex(2)->pos() - face->getVertex(0)->pos();
+		v[0] = face->vert(2)->pos() - face->vert(0)->pos();
 		if (face->m_nType == 3) {
-			v[1] = face->getVertex(2)->pos() - face->getVertex(1)->pos();
+			v[1] = face->vert(2)->pos() - face->vert(1)->pos();
 		} else {
-			v[1] = face->getVertex(3)->pos() - face->getVertex(1)->pos();
+			v[1] = face->vert(3)->pos() - face->vert(1)->pos();
 		}
 
 		vFaceNormals[fIndex] = v[0] ^ v[1];
@@ -797,9 +809,9 @@ double CMesh::calVolume() const
 	double vol = 0.0;
 	for(int fi = 0; fi < faceCount(); fi++) {
 		CFace* face = m_vFaces[fi];
-		const ZGeom::Vec3d& v1 = face->getVertex(0)->pos();
-		const ZGeom::Vec3d& v2 = face->getVertex(1)->pos();
-		const ZGeom::Vec3d& v3 = face->getVertex(2)->pos();
+		const ZGeom::Vec3d& v1 = face->vert(0)->pos();
+		const ZGeom::Vec3d& v2 = face->vert(1)->pos();
+		const ZGeom::Vec3d& v3 = face->vert(2)->pos();
 
         ZGeom::Vec3d vn = v1 ^ v2;
 		vol += dot(vn, v3);
@@ -948,7 +960,7 @@ void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::set<int>& nbr, boo
 				}				
 				// to avoid boundary vertex being ignored
 				if (he->m_eNext) { 
-					int endv2 = he->m_eNext->m_Vertices[1]->m_vIndex;
+					int endv2 = he->m_eNext->vert(1)->m_vIndex;
 					if (nbr.find(endv2) == nbr.end()) {
 						nbr.insert(endv2);
 						nbn.insert(endv2);
@@ -1214,9 +1226,9 @@ ZGeom::Vec3d CMesh::calBoundingBox( const ZGeom::Vec3d& center ) const
 {
 	ZGeom::Vec3d boundBox(0.0, 0.0, 0.0);
 	for (int i = 0; i < vertCount(); ++i) {
-		boundBox.x = (abs(m_vVertices[i]->m_vPosition.x)>abs(boundBox.x)) ? m_vVertices[i]->m_vPosition.x : boundBox.x;
-		boundBox.y = (abs(m_vVertices[i]->m_vPosition.y)>abs(boundBox.y)) ? m_vVertices[i]->m_vPosition.y : boundBox.y;
-		boundBox.z = (abs(m_vVertices[i]->m_vPosition.z)>abs(boundBox.z)) ? m_vVertices[i]->m_vPosition.z : boundBox.z;
+        boundBox.x = (abs(m_vVertices[i]->pos().x)>abs(boundBox.x)) ? m_vVertices[i]->pos().x : boundBox.x;
+        boundBox.y = (abs(m_vVertices[i]->pos().y)>abs(boundBox.y)) ? m_vVertices[i]->pos().y : boundBox.y;
+        boundBox.z = (abs(m_vVertices[i]->pos().z)>abs(boundBox.z)) ? m_vVertices[i]->pos().z : boundBox.z;
 	}
 	boundBox.x = abs(boundBox.x - center.x);
 	boundBox.y = abs(boundBox.y - center.y);
@@ -1257,7 +1269,7 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 			VertexList.push_back(this->vertPos(subMappedIdx[i]));
 		}
 		for (CFace* f : m_vFaces) {
-			int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
+			int fv1 = f->vertIdx(0), fv2 = f->vertIdx(1), fv3 = f->vertIdx(2);
 			int sfv1 = -1, sfv2 = -1, sfv3 = -1;
 			for (int i = 0; i < subVertCount; ++i) {
 				if (subMappedIdx[i] == fv1) sfv1 = i;
@@ -1280,14 +1292,13 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 		int nFace = (int)FaceList.size() / 3;
 		int nHalfEdge = 3 * nFace;
 
-        vector<CVertex> m_pVertex(nVertex);
+        vector<ZGeom::Vec3d> m_pVertex(nVertex);
         vector<vector<int>> faceVerts(nFace);
 		list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
 		list<int>::iterator iFace = FaceList.begin();
 
         for (int i = 0; i < nVertex; i++) {
-            m_pVertex[i].m_vPosition = *iVertex++;
-            m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+            m_pVertex[i] = *iVertex++;
         }
         for (int i = 0; i < nFace; i++) {
             faceVerts[i].resize(3);
@@ -1309,7 +1320,7 @@ void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string 
     std::map<int, int> oldidx2newidx;
     for (int fIdx : vSubFaces) {
         CFace* f = m_vFaces[fIdx];
-        int fvOld[3] = { f->getVertexIndex(0), f->getVertexIndex(1), f->getVertexIndex(2) };
+        int fvOld[3] = { f->vertIdx(0), f->vertIdx(1), f->vertIdx(2) };
         for (int k = 0; k < 3; ++k) {
             int oldVIdx = fvOld[k];
             if (oldidx2newidx.find(oldVIdx) == oldidx2newidx.end()) {
@@ -1323,13 +1334,12 @@ void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string 
 
     int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
-    vector<CVertex> m_pVertex(nVertex);
+    vector<ZGeom::Vec3d> m_pVertex(nVertex);
     vector<vector<int>> faceVerts(nFace);
     list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
     list<int>::iterator iFace = FaceList.begin();
     for (int i = 0; i < nVertex; i++) {
-        m_pVertex[i].m_vPosition = *iVertex++;
-        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+        m_pVertex[i] = *iVertex++;
     }
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
@@ -1355,7 +1365,7 @@ void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMesh
         VertexList.push_back(this->vertPos(subMappedIdx[i]));
     }
     for (CFace* f : m_vFaces) {
-        int fv1 = f->getVertexIndex(0), fv2 = f->getVertexIndex(1), fv3 = f->getVertexIndex(2);
+        int fv1 = f->vertIdx(0), fv2 = f->vertIdx(1), fv3 = f->vertIdx(2);
         int sfv1 = -1, sfv2 = -1, sfv3 = -1;
         for (int i = 0; i < subVertCount; ++i) {
             if (subMappedIdx[i] == fv1) sfv1 = i;
@@ -1378,14 +1388,13 @@ void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMesh
     int nFace = (int)FaceList.size() / 3;
     int nHalfEdge = 3 * nFace;
 
-    vector<CVertex> m_pVertex(nVertex);
+    vector<ZGeom::Vec3d> m_pVertex(nVertex);
     vector<vector<int>> faceVerts(nFace);
     list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
     list<int>::iterator iFace = FaceList.begin();
 
     for (int i = 0; i < nVertex; i++) {
-        m_pVertex[i].m_vPosition = *iVertex++;
-        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+        m_pVertex[i] = *iVertex++;
     }
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
@@ -1459,13 +1468,12 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	
     int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
-    vector<CVertex> m_pVertex(nVertex);
+    vector<ZGeom::Vec3d> vertCoord(nVertex);
     vector<vector<int>> faceVerts(nFace);
 	list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
 	list<int>::iterator iFace = FaceList.begin();
     for (int i = 0; i < nVertex; i++) {
-		m_pVertex[i].m_vPosition = *iVertex++;  
-		m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
+		vertCoord[i] = *iVertex++;  
 	}    
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
@@ -1473,7 +1481,7 @@ void CMesh::loadFromOBJ(std::string sFileName)
             faceVerts[i][j] = *iFace++;
     }
 
-	construct(m_pVertex, faceVerts);
+	construct(vertCoord, faceVerts);
 }
 
 void CMesh::saveToOBJ( std::string sFileName )
@@ -1498,9 +1506,9 @@ void CMesh::saveToOBJ( std::string sFileName )
 	// faces
     for (int i = 0; i < faceCount(); i++) {
         fprintf(f, "f %ld %ld %ld\r\n",
-                m_vFaces[i]->getVertexIndex(0) + 1, 
-                m_vFaces[i]->getVertexIndex(1) + 1, 
-                m_vFaces[i]->getVertexIndex(2) + 1);            
+                m_vFaces[i]->vertIdx(0) + 1, 
+                m_vFaces[i]->vertIdx(1) + 1, 
+                m_vFaces[i]->vertIdx(2) + 1);            
     }
 
 	fclose(f);
@@ -1559,16 +1567,15 @@ void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::strin
     addAttrMeshFeatures(fl, name);
 }
 
-void CMesh::faceSplit( int fIdx )
+void CMesh::faceSplit3( int fIdx )
 {
-    faceSplit(m_vFaces[fIdx]);
+    faceSplit3(m_vFaces[fIdx]);
 }
 
-CVertex* CMesh::faceSplit( CFace* face )
+CVertex* CMesh::faceSplit3( CFace* face )
 {
-    auto center = face->calBarycenter();
     CVertex* vc = new CVertex();
-    vc->setPosition(center.x, center.y, center.z);
+    vc->setPosition(face->calBarycenter());
 
     CHalfEdge *e12 = face->m_HalfEdges[0], *e23 = face->m_HalfEdges[1], *e31 = face->m_HalfEdges[2];
     CVertex* v1 = e12->m_Vertices[0], *v2 = e23->m_Vertices[0], *v3 = e31->m_Vertices[0];
@@ -1598,7 +1605,6 @@ void CMesh::makeFace( CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f )
     e1->m_Face = e2->m_Face = e3->m_Face = f;
     f->create(3);
     f->m_HalfEdges = { e1, e2, e3 };
-    f->m_Vertices = { e1->vert(0), e2->vert(0), e3->vert(0) };
 }
 
 void CMesh::addVertex( CVertex *v )

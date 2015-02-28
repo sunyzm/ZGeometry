@@ -1,6 +1,7 @@
 #ifndef ZGEOM_MESH_PROCESSING_H
 #define ZGEOM_MESH_PROCESSING_H
 #include <functional>
+#include <array>
 #include "SparseMatrix.h"
 #include "DenseMatrix.h"
 #include "Plane.h"
@@ -22,6 +23,8 @@ struct ResultDistPointPlane { Vec3d closestPoint; double distance, signedDistanc
 ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane);
 
 bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3d boxHalfsize);
+
+int triObtuseEdge(const std::vector<Vec3d>& triVerts);
 
 double distPointMesh(Vec3d p, CMesh& mesh);
 std::vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2);

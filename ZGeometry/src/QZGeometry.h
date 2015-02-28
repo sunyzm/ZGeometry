@@ -133,7 +133,7 @@ private slots:
     void switchMesh();
 
 	void registerAutomatic();
-	void buildHierarchy();
+	//void buildHierarchy();
 	void detectFeatures();
 	void matchFeatures();
 	void registerStep();

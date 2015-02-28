@@ -163,9 +163,9 @@ void MeshLaplacian::constructAnisotropic3(CMesh* tmesh, int nRing, double hPara1
 			const CFace* pfi = tmesh->getFace(fi);
 			double face_area = pfi->calArea();
 			for (int k = 0; k < 3; ++k) {
-				int vki = pfi->getVertexIndex(k);
+				int vki = pfi->vertIdx(k);
 				if (vi == vki) continue;
-				const CVertex* pvk = pfi->getVertex(k);
+				const CVertex* pvk = pfi->vert(k);
 
 				ZGeom::Vec3d vpw = pvi->pos() - pvk->pos();
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);
@@ -245,9 +245,9 @@ void MeshLaplacian::constructAnisotropic4(CMesh* tmesh, int nRing, double hPara1
 			const CFace* pfi = tmesh->getFace(vFaces[fi]);
 			double face_area = pfi->calArea();
 			for (int k = 0; k < 3; ++k)	{
-				int vki = pfi->getVertexIndex(k);
+				int vki = pfi->vertIdx(k);
 				if (vki == vi) continue;
-				const CVertex* pvk = pfi->getVertex(k);
+				const CVertex* pvk = pfi->vert(k);
 
 				double w1 = 1., w2 = 1.;
 //				double w1 = std::exp(-std::pow(tmesh->getGeodesic(vi, vki), 2) / hPara1);

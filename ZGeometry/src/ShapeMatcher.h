@@ -5,7 +5,6 @@
 #include <fstream>
 #include <utility>
 #include <engine.h>
-#include <ZGeom/MeshPyramid.h>
 #include <ZGeom/VecN.h>
 #include "MeshHelper.h"
 #include "matching.h"
@@ -96,18 +95,13 @@ public:
 
 	/* core functions */
 	void    initialize(MeshHelper* pMP1, MeshHelper* pMP2, Engine *ep);
-	void	constructPyramid(int n, double ratio, std::ostream& ostr);
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
 	void    matchFeatureSimple();
 	void	matchFeaturesTensor_deprecate(std::ostream& flog, double timescale, double thresh);
-	void	refineRegister(std::ostream& flog);
-	void    refineRegister2(std::ostream& flog);	
 	void	evaluateRegistration();
 	
 	/* testing functions */
-	void    registerTesting1();
-	void    regsiterTesting2();
 	void    dataTesting1();
 	void    sparseMatchingTesting();
 	void    generateExampleMatching(int n); 
@@ -120,7 +114,6 @@ public:
 	int		getTotalRegistrationLevels() const { return m_nRegistrationLevels; }
 	void	setRegistrationLevels(int val);
 	void	setEngine(Engine* ep) { m_ep = ep; }
-	const MeshPyramid& getMeshPyramid(int obj) const { return meshPyramids[obj]; }
 	CMesh*  getMesh(int obj, int level = 0) const;
 	int     getAlreadyRegisteredLevel() const { return m_nAlreadyRegisteredLevel; }
 	int		getAlreadyMatchedLevel() const { return m_nAlreadyMatchedLevel; }
@@ -134,7 +127,6 @@ public:
 	void	loadGroundTruth(const std::string& filename);
 	bool	hasGroundTruth() const { return m_bHasGroundTruth; }
 
-	int		id2Index(int obj, int vid, int level) const { return meshPyramids[obj].m_Id2IndexMap[vid][level]; }
 	void    dumpIndexMap(const std::string& filename) const;
 	void	readInRandPair(const std::string& filename);
 	
@@ -163,7 +155,6 @@ private:
 	Engine* m_ep;
 	CMesh* pOriginalMesh[2];
 	MeshHelper* pOriginalProcessor[2];
-	MeshPyramid meshPyramids[2];
 	std::vector<MeshHelper*> liteMP[2];
 	std::vector<std::vector<HKSFeature> > m_vFeatures;	// original detected fine features
 
@@ -205,8 +196,6 @@ public:
 	static void ComputeTensorFeatureAnchor(const MeshHelper* pmp, int i, int j, int k, int origin, double t, double* sang);
 	void    prepareHeatRegistration( double regTime );
 	double computeMatchScore(int idx1, int idx2, double sigma = 0.02) const;
-	int		searchVertexMatch( const int vt, const int vj, const int level, const int ring, double& score, int uppper_level = -1 );
-	void    getVertexCover(int obj, int vidx, int level, int upper_level, int ring,  std::vector<int>& vCoveredIdx) const;
 	static double  calPointHksDissimilarity(const MeshHelper* pmp1, const MeshHelper* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode = 0);
 	void autoGroundTruth();
 };

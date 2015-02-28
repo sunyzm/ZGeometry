@@ -1929,75 +1929,27 @@ void ShapeEditor::testWaveletAnalysis()
         }
     }
     
-     vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 1.0, coordOld.to3Vec());
-     MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
-     MeshCoordinates coordResidual = coordDenoised.substract(coordOld);
-     setStoredCoordinates(coordDenoised, 2);
-     changeCoordinates(2);
-     auto vNormals = mMesh->getVertNormals();
-     VecNd vResB(totalVertCount);
-     for (int i = 0; i < totalVertCount; ++i)
-         vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
-     vector<Colorf> vColorRes(totalVertCount);
-     for (int i = 0; i < totalVertCount; ++i) vColorRes[i].falseColor(fabs(vResB[i] / (0.05*bbDiag)));
-     addColorSignature("color_residual_DLRS", vColorRes);
-
-     {
-         VecNd vResBLaplace = ZGeom::mulMatVec<double>(graphLaplacian.getLS(), vResB, true);
-         for (double &d : vResBLaplace) d = fabs(d);
-         double resLapMax = vResBLaplace.max_element();
-         vector<Colorf> vColorResLaplace(totalVertCount);
-         for (int i = 0; i < totalVertCount; ++i) vColorResLaplace[i].falseColor(vResBLaplace[i] / resLapMax);
-         addColorSignature("color_residual_DLRS_laplace", vColorResLaplace);
-     }
+    vector<VecNd> vDenoisedCoord = DLRS(g_engineWrapper, graphLaplacian.getLS(), 1.0, coordOld.to3Vec());
+    MeshCoordinates coordDenoised(totalVertCount, vDenoisedCoord);
+    MeshCoordinates coordResidual = coordDenoised.substract(coordOld);
+    setStoredCoordinates(coordDenoised, 2);
+    changeCoordinates(2);
+    auto vNormals = mMesh->getVertNormals();
+    VecNd vResB(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i)
+        vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
+    vector<Colorf> vColorRes(totalVertCount);
+    for (int i = 0; i < totalVertCount; ++i) vColorRes[i].falseColor(fabs(vResB[i] / (0.05*bbDiag)));
+    addColorSignature("color_residual_DLRS", vColorRes);
+    {
+        VecNd vResBLaplace = ZGeom::mulMatVec<double>(graphLaplacian.getLS(), vResB, true);
+        for (double &d : vResBLaplace) d = fabs(d);
+        double resLapMax = vResBLaplace.max_element();
+        vector<Colorf> vColorResLaplace(totalVertCount);
+        for (int i = 0; i < totalVertCount; ++i) vColorResLaplace[i].falseColor(vResBLaplace[i] / resLapMax);
+        addColorSignature("color_residual_DLRS_laplace", vColorResLaplace);
+    }
      
-//      vector<VecNd> vCoeffRes(sgwScales);
-//      parallel_for(0, sgwScales, [&](int s) {
-//          vCoeffRes[s].resize(totalVertCount);
-//          for (int i = 0; i < totalVertCount; ++i) {
-//              const VecNd& atom = dictSGW[s*totalVertCount + i];
-//              vCoeffRes[s][i] = fabs(vResB.dot(atom));
-//          }
-//      });
-//      for (int s = 0; s < sgwScales; ++s) {
-//          vector<Colorf> vColor(totalVertCount);
-//          const VecNd& vSignal = vCoeffRes[s];
-//          double coeffMax = vSignal.max_element() + 1e-3;
-//          for (int i = 0; i < totalVertCount; ++i) vColor[i].falseColor(vSignal[i] / coeffMax);
-//          addColorSignature("color_residual_sgw_l" + Int2String(s), vColor);
-//      }
-// 
-//     vector<std::pair<int, double> > vResIdx;
-//     for (int i = 0; i < totalVertCount; ++i) vResIdx.push_back(std::make_pair(i, fabs(vResB[i])));
-//     using std::pair;
-//     std::sort(vResIdx.begin(), vResIdx.end(), [](pair<int, double> p1, pair<int, double> p2){ return p1.second > p2.second; });
-//     MeshFeatureList vFeatureMaxRes;
-//     for (int i = 0; i < 30; ++i) vFeatureMaxRes.addFeature(new MeshFeature(vResIdx[i].first, vResIdx[i].second));
-//     mMesh->addAttrMeshFeatures(vFeatureMaxRes, "feature_res_max");
-// 
-//     const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
-//     Dictionary dictMHB, dictSGW, dictMixed;
-//     computeDictionary(DT_Fourier, es, dictMHB);
-//     computeDictionary(DT_SGW3, es, dictSGW);
-//     //combineDictionary(dictMHB, dictSGW, dictMixed);
-//     ZGeom::SparseApproximationOptions opts;
-//     opts.mCodingSize = 30;
-//     opts.mApproxMethod = ZGeom::SA_OMP;
-//     opts.mMatlabEngine = &g_engineWrapper;
-//     vector<VecNd> vApproximatedCoords;
-//     SparseCoding sc;
-//     ZGeom::singleChannelSparseApproximate(vResB, dictSGW, sc, opts);
-//     VecNd vResApprox = ZGeom::singleChannelSparseReconstruct(dictSGW, sc);
-//     sc.sortByCoeff();
-//     MeshFeatureList vFeatureOMP;
-//     for (auto f : sc.getApproxItems())
-//         vFeatureOMP.addFeature(new MeshFeature(f.index() % totalVertCount, f.coeff()));
-//     mMesh->addAttrMeshFeatures(vFeatureOMP, "feature_res_omp");
-// 
-//     vector<Colorf> vColorResApprox(totalVertCount);
-//     for (int i = 0; i < totalVertCount; ++i) vColorResApprox[i].falseColor(fabs(vResApprox[i] / (0.05*bbDiag)));
-//     addColorSignature("color_residual_approx", vColorResApprox);
-// 
     printEndSeparator('=', 40);
 }
 
@@ -2206,7 +2158,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
             CFace* face = mMesh->getFace(i);
             Vec3d vc = mMesh->getFace(i)->calBarycenter();
             CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-            CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+            CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
             double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
             bool splitTest = true;
             for (int m = 0; m < 3; ++m) {
@@ -2223,9 +2175,9 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
         else {
             for (CFace* face : splitCandidates) {
                 CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
                 double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                CVertex* centroid = mMesh->faceSplit(face);
+                CVertex* centroid = mMesh->faceSplit3(face);
                 lengthAttr[centroid->getIndex()] = vcLenAttr;
             }
         }
@@ -2417,7 +2369,7 @@ void ShapeEditor::fillHole()
             CFace* face = mMesh->getFace(i);
             Vec3d vc = mMesh->getFace(i)->calBarycenter();
             CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-            CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+            CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
             double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
             bool splitTest = true;
             for (int m = 0; m < 3; ++m) {
@@ -2434,9 +2386,9 @@ void ShapeEditor::fillHole()
        else {
            for (CFace* face : splitCandidates) {
                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-               CVertex *fv[3] = { face->getVertex(0), face->getVertex(1), face->getVertex(2) };
+               CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-               CVertex* centroid = mMesh->faceSplit(face);
+               CVertex* centroid = mMesh->faceSplit3(face);
                lengthAttr[centroid->getIndex()] = vcLenAttr;
            }
        }

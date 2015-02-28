@@ -285,7 +285,7 @@ vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2)
     int nFaces2 = mesh2.faceCount();
     vector<vector<Vec3d>> mesh2Tri(nFaces2);
     for (int fIdx = 0; fIdx < nFaces2; ++fIdx)
-        mesh2Tri[fIdx] = mesh2.getFace(fIdx)->getAllVertCoords();
+        mesh2Tri[fIdx] = mesh2.getFace(fIdx)->getAllVertPos();
 
     vector<double> vVertMeshMinDist(nVerts1);
     concurrency::parallel_for(0, nVerts1, [&](int vIdx)
@@ -726,6 +726,18 @@ bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3
         for (int j = 0; j < 3; ++j)
             triverts[i][j] = (float)triangle[i][j];
     return ((1 == triBoxOverlap(boxcenter, boxhalfsize, triverts)) ? true : false);
+}
+
+int triObtuseEdge(const std::vector<Vec3d>& triVerts)
+{
+    assert(triVerts.size() == 3);
+    double sqlen0 = (triVerts[1] - triVerts[2]).length2();
+    double sqlen1 = (triVerts[0] - triVerts[2]).length2();
+    double sqlen2 = (triVerts[0] - triVerts[1]).length2();
+    if (sqlen0 > sqlen1 + sqlen2) return 0;
+    else if (sqlen1 > sqlen0 + sqlen2) return 1;
+    else if (sqlen2 > sqlen0 + sqlen1) return 2;
+    else return -1; // non-obtuse triangle
 }
 
 }   // end of namespace

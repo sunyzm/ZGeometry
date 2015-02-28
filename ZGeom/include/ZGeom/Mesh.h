@@ -41,26 +41,25 @@ public:
 	CVertex& operator = (const CVertex& v);	
 
 	int					    getIndex() const            { return m_vIndex; }
-	int					    getVID() const              { return m_vid; }
 	CHalfEdge*			    getHalfEdge(int ei)         { return m_HalfEdges[ei]; }
 	const CHalfEdge*        getHalfEdge(int ei) const   { return m_HalfEdges[ei]; }    
-    const std::vector<CHalfEdge*> getHalfEdges() const  { return m_HalfEdges;  }
-	ZGeom::Vec3d		    pos() const                 { return (ZGeom::Vec3d)m_vPosition; } 
+    const std::vector<CHalfEdge*>& getHalfEdges() const  { return m_HalfEdges;  }
+	const ZGeom::Vec3d&	    pos() const                 { return m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
 	bool				    isValid() const             { return m_bIsValid; }
     void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); }
     void                    removeHalfEdge(CHalfEdge *he);
 	void                    init();
     bool				    judgeOnBoundary() const;
+    void                    setPosition(const ZGeom::Vec3d& inVec) { m_vPosition = inVec; }
     void                    setPosition(double x, double y, double z);
     void                    clone(const CVertex& v); 
     void                    translateAndScale(const ZGeom::Vec3d& translation, double s);
-    std::vector<const CFace*>   getAdjacentFaces() const;
+    std::vector<CFace*>     getAdjacentFaces() const;
     CHalfEdge*              adjacentTo(CVertex* v2) const;
 
 public:
 	int						m_vIndex;           // index of the vertex 0-based
-	int						m_vid;				// ID of the vertex from original mesh 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
 	ZGeom::Vec3d			m_vPosition;		// vertex coordinates
 	bool					m_bIsValid;
@@ -117,9 +116,13 @@ public:
     void                    clone(const CFace& f);
     void					create(int s);
     CHalfEdge*              getHalfEdge(int i) { return m_HalfEdges[i]; }
-	CVertex*				getVertex(int i) const { return m_Vertices[i]; }
-	int						getVertexIndex(int i) const { return m_Vertices[i]->getIndex(); }
-    int                     edgeCount() const { return m_nType; }
+    int                     edgeCount() const { return (int)m_HalfEdges.size(); }
+	CVertex*				vert(int i) const { return m_HalfEdges[i]->vert(0); }
+    int						vertIdx(int i) const { return vert(i)->getIndex(); }
+    ZGeom::Vec3d            vertPos(int i) const { return vert(i)->pos(); }
+    std::vector<CVertex*>   getAllVerts() const;
+    std::vector<ZGeom::Vec3d> getAllVertPos() const;
+    std::vector<int>        getAllVertIdx() const;
     bool                    hasVertex(CVertex* pv) const;
 	bool					hasVertex(int vidx) const;
 	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
@@ -128,16 +131,12 @@ public:
     ZGeom::Vec3d            calBarycenter() const;
     ZGeom::Vec3d            calcNormal() const;
     std::vector<double>     getPlaneFunction() const;
-    ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calcNormal(), m_Vertices[0]->pos()); }
-    std::vector<CVertex*>   getAllVerts() const { return m_Vertices; }
-    std::vector<int>        getAllVertIdx() const;
-    std::vector<ZGeom::Vec3d> getAllVertCoords() const;
+    ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calcNormal(), vertPos(0)); }
 
 public:	
 	int						m_fIndex;
 	bool					m_bIsValid;
 	int						m_nType;		// number of polygon face edges
-	std::vector<CVertex*>	m_Vertices;		//all vertices
 	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
 };
 
@@ -189,7 +188,7 @@ public:
 	/* Mesh IO and processing */
 	void		        load(const std::string& sFileName);		// load from file
 	void	            save(std::string sFileName);			// save to file
-    void                construct(const std::vector<CVertex>& pVertex, const std::vector<std::vector<int>>& faceVerts, int nType = 3);	// construct connectivity
+    void construct(const std::vector<ZGeom::Vec3d>& pVertex, const std::vector<std::vector<int>>& faceVertIdx, int nType = 3);	// construct connectivity
     void	            loadFromOBJ(std::string sFileName);	// load mesh from .obj file
     void	            loadFromM(std::string sFileName);	// load mesh from .m file
     void	            loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
@@ -232,8 +231,9 @@ public:
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);
     void                addFace(CFace *f);
-    void                faceSplit(int fIdx);
-    CVertex*            faceSplit(CFace* face);
+    void                faceSplit3(int fIdx);
+    CVertex*            faceSplit3(CFace* face);
+    CVertex*            faceSplit2(CFace* face);
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
