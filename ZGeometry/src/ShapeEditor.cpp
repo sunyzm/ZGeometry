@@ -2029,7 +2029,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
         CVertex *v1 = mMesh->vert(vIdx1), *v2 = mMesh->vert(vIdx2), *v3 = mMesh->vert(vIdx3);
         CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
         Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
-        Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
+        Vec3d vn12 = e12->getAttachedFace()->calNormal(), vn23 = e23->getAttachedFace()->calNormal();
         weights[i][i + 2].angle = max(vecAngle(vn, vn12), vecAngle(vn, vn23));
         weights[i][i + 2].area = triArea(boundaryVertPos[i], boundaryVertPos[i + 1], boundaryVertPos[i + 2]);
         midIdx[i][i + 2] = i + 1;
@@ -2050,20 +2050,20 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
                 Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
                 Vec3d vn_im, vn_mk;
                 if (m == i + 1)
-                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calcNormal();
+                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calNormal();
                 else {
                     int l1 = midIdx[i][m];
                     vn_im = triNormal(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[l1]);
                 }
                 if (k == m + 1)
-                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calcNormal();
+                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calNormal();
                 else {
                     int l2 = midIdx[m][k];
                     vn_mk = triNormal(boundaryVertPos[m], boundaryVertPos[k], boundaryVertPos[l2]);
                 }
                 triWeight.angle = max(vecAngle(vn_ikm, vn_im), vecAngle(vn_ikm, vn_mk));
                 if (k == i + N - 1) {
-                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calcNormal();
+                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calNormal();
                     triWeight.angle = max(triWeight.angle, vecAngle(vn_ikm, vn_ik));
                 }
 
@@ -2239,7 +2239,7 @@ void ShapeEditor::fillHole()
         CVertex *v1 = mMesh->vert(vIdx1), *v2 = mMesh->vert(vIdx2), *v3 = mMesh->vert(vIdx3);
         CHalfEdge *e12 = v1->adjacentTo(v2), *e23 = v2->adjacentTo(v3);
         Vec3d vn = triNormal(v1->pos(), v3->pos(), v2->pos());
-        Vec3d vn12 = e12->getAttachedFace()->calcNormal(), vn23 = e23->getAttachedFace()->calcNormal();
+        Vec3d vn12 = e12->getAttachedFace()->calNormal(), vn23 = e23->getAttachedFace()->calNormal();
         weights[i][i + 2].angle = max(vecAngle(vn, vn12), vecAngle(vn, vn23));
         weights[i][i + 2].area = triArea(boundaryVertPos[i], boundaryVertPos[i+1], boundaryVertPos[i+2]);            
         midIdx[i][i + 2] = i + 1;
@@ -2260,20 +2260,20 @@ void ShapeEditor::fillHole()
                 Vec3d vn_ikm = triNormal(boundaryVertPos[i], boundaryVertPos[k], boundaryVertPos[m]);
                 Vec3d vn_im, vn_mk;
                 if (m == i + 1) 
-                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calcNormal();
+                    vn_im = vi->adjacentTo(vm)->getAttachedFace()->calNormal();
                 else {
                     int l1 = midIdx[i][m];
                     vn_im = triNormal(boundaryVertPos[i], boundaryVertPos[m], boundaryVertPos[l1]);
                 }
                 if (k == m + 1) 
-                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calcNormal();
+                    vn_mk = vm->adjacentTo(vk)->getAttachedFace()->calNormal();
                 else {
                     int l2 = midIdx[m][k];
                     vn_mk = triNormal(boundaryVertPos[m], boundaryVertPos[k], boundaryVertPos[l2]);
                 }
                 triWeight.angle = max(vecAngle(vn_ikm, vn_im), vecAngle(vn_ikm, vn_mk));
                 if (k == i + N - 1) {
-                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calcNormal();
+                    Vec3d vn_ik = vk->adjacentTo(vi)->getAttachedFace()->calNormal();
                     triWeight.angle = max(triWeight.angle, vecAngle(vn_ikm, vn_ik));
                 }
                 

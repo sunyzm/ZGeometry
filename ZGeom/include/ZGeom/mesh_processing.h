@@ -18,6 +18,7 @@ const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2"
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle);
+ResultDistPointTriangle distPointTriangle2(Vec3d point, const std::vector<Vec3d>& triangle);
 
 struct ResultDistPointPlane { Vec3d closestPoint; double distance, signedDistance; };
 ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane);

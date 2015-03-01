@@ -249,7 +249,7 @@ std::vector<Vec3d> computeMeshFaceNormals(const CMesh& mesh)
     vector<Vec3d> vecNormals(faceCount);
 
     concurrency::parallel_for(0, faceCount, [&](int i) {
-        vecNormals[i] = mesh.getFace(i)->calcNormal();
+        vecNormals[i] = mesh.getFace(i)->calNormal();
     });
 
     return vecNormals;
@@ -348,6 +348,15 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2)
     return std::max(dist12, dist21);
 }
 
+
+ZGeom::ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane)
+{
+    ResultDistPointPlane result;
+    result.signedDistance = dot(plane.normal, point) - plane.constant;
+    result.distance = std::fabs(result.signedDistance);
+    result.closestPoint = point - result.signedDistance * plane.normal;
+    return result;
+}
 
 /* see "Distance between point and triangle in 3D 
 /* adapted from GTEngine\Include\GteDistPointTriangleExact */
@@ -550,12 +559,197 @@ ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>&
     return result;
 }
 
-ZGeom::ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane)
+/************************************************************************/
+/* adapted from WildMagic                                               */
+/* Much slower than distPointTriangle1                                  */
+/************************************************************************/
+ZGeom::ResultDistPointTriangle distPointTriangle2(Vec3d point, const std::vector<Vec3d>& triangle)
 {
-    ResultDistPointPlane result;
-    result.signedDistance = dot(plane.normal, point) - plane.constant;
-    result.distance = std::fabs(result.signedDistance);
-    result.closestPoint = point - result.signedDistance * plane.normal;
+    vector<double> baryCoord(3, 0);
+
+    /**** adapted from WildMagic ****/
+    ZGeom::Vec3d V[3] = { triangle[0], triangle[1], triangle[2] };
+    ZGeom::Vec3d p = point;
+
+    ZGeom::Vec3d diff = V[0] - p;
+    ZGeom::Vec3d edge0 = V[1] - V[0];
+    ZGeom::Vec3d edge1 = V[2] - V[0];
+    double   a = edge0.length2();
+    double   b = edge0.dot(edge1);
+    double   c = edge1.length2();
+    double   d = diff.dot(edge0);
+    double   e = diff.dot(edge1);
+    double   f = diff.length2();
+    double det = std::abs(a*c - b*b);
+    double   s = b*e - c*d;
+    double   t = b*d - a*e;
+    //double s_bar = s / det, t_bar = t / det;
+    double sqrDistance;
+
+    if (s + t <= det)
+    {
+        if (s < 0.) {
+            if (t < 0.) { // region 4
+                if (d < 0.) {
+                    if (-d >= a) {
+                        sqrDistance = a + 2.*d + f;	// on V1
+                        s = 1; t = 0;
+                    }
+                    else {
+                        sqrDistance = f - d*d / a; // on E0
+                        s = -d / a; t = 0;
+                    }
+                }
+                else {
+                    if (e >= 0.) {
+                        sqrDistance = f;   // on V0
+                        s = 0; t = 0;
+                    }
+                    else if (-e >= c) {
+                        sqrDistance = c + 2.*e + f;	// on V2
+                        s = 0; t = 1;
+                    }
+                    else {
+                        sqrDistance = f - e*e / c;	//on E1
+                        s = 0; t = -e / c;
+                    }
+                }
+            }
+            else {  // region 3
+                if (e >= 0.) {
+                    sqrDistance = f;	// on V0
+                    s = 0; t = 0;
+                }
+                else if (-e >= c) {
+                    sqrDistance = c + 2.*e + f;	// on V2
+                    s = 0; t = 1;
+                }
+                else {
+                    sqrDistance = f - e*e / c;	//on E1
+                    s = 0; t = -e / c;
+                }
+            }
+        }
+        else if (t < 0.)  { // region 5
+            if (d >= 0.) {
+                sqrDistance = f;	// on V0
+                s = 0; t = 0;
+            }
+            else if (-d >= a) {
+                sqrDistance = a + 2.*d + f;	// on V1
+                s = 1; t = 0;
+            }
+            else {
+                sqrDistance = d*s + f - d*d / a;	// on E0
+                s = -d / a; t = 0;
+            }
+        }
+        else  { // region 0
+            // The minimum is at an interior point of the triangle.
+            double invDet = 1. / det;
+            s *= invDet;
+            t *= invDet;
+            sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
+        }
+    } // if (s + t <= det)
+    else
+    {
+        double tmp0, tmp1, numer, denom;
+
+        if (s < 0.)  {// region 2
+            tmp0 = b + d;
+            tmp1 = c + e;
+            if (tmp1 > tmp0) {
+                numer = tmp1 - tmp0;
+                denom = a - 2.*b + c;
+                if (numer >= denom) {
+                    sqrDistance = a + 2.*d + f;	// on V1?
+                    s = 1; t = 0;
+                }
+                else {
+                    s = numer / denom;
+                    t = 1. - s;
+                    sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
+                }
+            }
+            else {
+                if (tmp1 <= 0.) {
+                    sqrDistance = c + 2.*e + f;	//on v2
+                    s = 0; t = 1;
+                }
+                else if (e >= 0.) {
+                    sqrDistance = f;	// on v0
+                    s = 0; t = 0;
+                }
+                else {
+                    sqrDistance = f - e*e / c;	// on E1?
+                    s = 0; t = -e / c;
+                }
+            }
+        }
+        else if (t < 0.) { // region 6
+            tmp0 = b + e;
+            tmp1 = a + d;
+            if (tmp1 > tmp0) {
+                numer = tmp1 - tmp0;
+                denom = a - 2.*b + c;
+                if (numer >= denom) {
+                    sqrDistance = c + 2.*e + f;	// on V2
+                    s = 0.; t = 1.;
+                }
+                else {
+                    t = numer / denom;
+                    s = 1. - t;
+                    sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
+                }
+            }
+            else {
+                if (tmp1 <= 0.) {
+                    sqrDistance = a + 2.*d + f;	// on V1
+                    s = 1.; t = 0.;
+                }
+                else if (d >= 0.) {
+                    sqrDistance = f;	// on V0
+                    s = 0.; t = 0.;
+                }
+                else {
+                    sqrDistance = f - d*d / a;	// on E0
+                    s = -d / a; t = 0;
+                }
+            }
+        }
+        else { // region 1
+            numer = c + e - b - d;
+            if (numer <= 0.) {
+                sqrDistance = c + 2.*e + f;		// on V2
+                s = 0.; t = 1.;
+            }
+            else {
+                denom = a - 2.*b + c;
+                if (numer >= denom) {
+                    sqrDistance = a + 2.*d + f;	// on V1
+                    s = 1.; t = 0.;
+                }
+                else {
+                    s = numer / denom;
+                    t = 1. - s;
+                    sqrDistance = s*(a*s + b*t + 2.*d) + t*(b*s + c*t + 2.*e) + f;
+                }
+            }
+        }
+    } // if (s+t > det)
+
+    baryCoord[0] = 1.0 - s - t;
+    baryCoord[1] = s;
+    baryCoord[2] = t;
+
+    if (baryCoord[0] < -1e-6 || baryCoord[1] < -1e-6 || baryCoord[2] < -1e-6) {
+        cout << "Illegal barycentric coordinate: (" << baryCoord[0] << ", " << baryCoord[1] << ", " << baryCoord[2] << ")" << endl;
+    }
+
+    ResultDistPointTriangle result;
+    result.distance = sqrt(fabs(sqrDistance));
+    result.closestPoint = triangle[0] + s * edge0 + t * edge1;
     return result;
 }
 

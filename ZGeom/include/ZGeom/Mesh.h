@@ -125,13 +125,12 @@ public:
     std::vector<int>        getAllVertIdx() const;
     bool                    hasVertex(CVertex* pv) const;
 	bool					hasVertex(int vidx) const;
-	double					distanceToVertex(const CVertex* vq, std::vector<double>& baryCoord);
 	int						getFaceIndex() const { return m_fIndex; }	
 	double					calArea() const;
     ZGeom::Vec3d            calBarycenter() const;
-    ZGeom::Vec3d            calcNormal() const;
+    ZGeom::Vec3d            calNormal() const;
     std::vector<double>     getPlaneFunction() const;
-    ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calcNormal(), vertPos(0)); }
+    ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calNormal(), vertPos(0)); }
 
 public:	
 	int						m_fIndex;
