@@ -32,6 +32,7 @@ using ZGeom::combineDictionary;
 using ZGeom::DenseMatrix;
 using ZGeom::DenseMatrixd;
 using ZGeom::Colorf;
+using ZGeom::HoleBoundary;
 
 std::string ShapeEditor::strOriginalCoord = "original";
 
@@ -139,7 +140,7 @@ void printEndSeparator(char c, int num) {
 
 void ShapeEditor::init(MeshHelper* processor)
 {
-    mProcessor = processor;
+    mMeshHelper = processor;
     mMesh = processor->getMesh();
     mTotalScales = 0;
     mCurCoordID = 0;
@@ -209,7 +210,7 @@ void ShapeEditor::addCoordinate(const MeshCoordinates &newCoord, std::string coo
 
 void ShapeEditor::prepareAnchors( int& anchorCount, std::vector<int>& anchorIndex, std::vector<ZGeom::Vec3d>& anchorPos ) const
 {
-	const auto& anchors = mProcessor->getHandles();
+	const auto& anchors = mMeshHelper->getHandles();
 	anchorCount = anchors.size();
 	anchorIndex.clear();
 	anchorPos.clear();
@@ -270,8 +271,8 @@ void ShapeEditor::fourierReconstruct( int nEig )
 	LaplacianType lapType = SymCot;
 		
 	ZGeom::SparseMatrixCSR<double, int> matW;
-	mProcessor->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
-	const ZGeom::EigenSystem &mhb = mProcessor->getMHB(lapType);
+	mMeshHelper->getMeshLaplacian(lapType).getW().convertToCSR(matW, ZGeom::MAT_UPPER);
+	const ZGeom::EigenSystem &mhb = mMeshHelper->getMHB(lapType);
 	ZGeom::logic_assert(nEig <= mhb.eigVecCount(), "Insufficient eigenvectors in mhb");
 
 	const ZGeom::VecNd &vx = oldCoord.getCoordFunc(0),
@@ -364,7 +365,7 @@ void ShapeEditor::deformLaplacian()
 	const int anchorWeight = 1.0;
 	const int vertCount = mMesh->vertCount();
     MeshCoordinates oldCoord = mMesh->getVertCoordinates();
-	const MeshLaplacian& ml = mProcessor->getMeshLaplacian(SymCot);
+	const MeshLaplacian& ml = mMeshHelper->getMeshLaplacian(SymCot);
 	const ZGeom::SparseMatrix<double>& matLs = ml.getLS();
 	ZGeom::SparseMatVecMultiplier mulLs(matLs, true);	
 	VecNd diffCoord[3];
@@ -415,7 +416,7 @@ void ShapeEditor::deformLaplacian_v2()
 
 	const MeshCoordinates& oldMeshCoord = this->getOldMeshCoord();
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mMeshHelper->getMeshLaplacian(SymCot).getLS();
 
 	/* | A    B | | d |    | O  |
 	   |        | |   | =  |    |
@@ -479,7 +480,7 @@ void ShapeEditor::deformBiLaplacian()
 	const int anchorWeight = 1.0;
 	const int vertCount = mMesh->vertCount();
     MeshCoordinates oldCoord = mMesh->getVertCoordinates();
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mMeshHelper->getMeshLaplacian(SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);	
 	ZGeom::SparseMatVecMultiplier mulBiLs(matBiL, true);	
@@ -559,7 +560,7 @@ void ShapeEditor::deformMixedLaplacian(double ks, double kb)
 	g_engineWrapper.addColVec(oldCoord.getYCoord(), "ecy");
 	g_engineWrapper.addColVec(oldCoord.getZCoord(), "ecz");
 
-	const ZGeom::SparseMatrix<double>& matLs = mProcessor->getMeshLaplacian(SymCot).getLS();
+	const ZGeom::SparseMatrix<double>& matLs = mMeshHelper->getMeshLaplacian(SymCot).getLS();
 	ZGeom::SparseMatrix<double> matBiL;
 	ZGeom::mulMatMat(matLs, matLs, matBiL);
 	g_engineWrapper.addSparseMat(matLs, "matL");
@@ -613,9 +614,9 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 	const int vertCount = mMesh->vertCount();
 	double oriVol = mMesh->calVolume();
 
-	mProcessor->computeHeatDiffuseMat(tMultiplier);
-	ZGeom::SparseSymMatVecSolver& solver = mProcessor->getHeatSolver();
-	const MeshLaplacian& laplacian = mProcessor->getMeshLaplacian(CotFormula);
+	mMeshHelper->computeHeatDiffuseMat(tMultiplier);
+	ZGeom::SparseSymMatVecSolver& solver = mMeshHelper->getHeatSolver();
+	const MeshLaplacian& laplacian = mMeshHelper->getMeshLaplacian(CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
 	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
 	ZGeom::SparseMatVecMultiplier mulW(matW, true);
@@ -967,7 +968,7 @@ void ShapeEditor::testSparseDecomposition2()
     int eigenCount = -1;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, -1);
 
     /* Computer Dictionary	*/
     std::cout << "\n==== Compute Dictionaries ====\n";
@@ -1555,9 +1556,9 @@ void ShapeEditor::testSparseFeatureFinding()
 	aniso1Laplacian.constructAnisotropic1(mMesh);
 	aniso2Laplacian.constructAnisotropic2(mMesh);
 	symCotLaplacian.constructSymCot(mMesh);
-	const ZGeom::EigenSystem& esGraph = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+	const ZGeom::EigenSystem& esGraph = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
 	//const ZGeom::EigenSystem& esCot = mProcessor->prepareEigenSystem(cotLaplacian, eigenCount);
-	const ZGeom::EigenSystem& esAniso = mProcessor->prepareEigenSystem(aniso1Laplacian, eigenCount);
+	const ZGeom::EigenSystem& esAniso = mMeshHelper->prepareEigenSystem(aniso1Laplacian, eigenCount);
 	
 	/* Computer Dictionary */
 	std::cout << "\n==== Compute Dictionaries ====\n";
@@ -1717,7 +1718,7 @@ void ShapeEditor::testSparseInpainting()
     int eigenCount = -1;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, -1);
 
     std::cout << "\n==== Compute Dictionaries ====\n";
     Dictionary dictMHB, dictSGW, dictMixed;
@@ -1783,7 +1784,7 @@ void ShapeEditor::testDenoisingDLRS()
     vector<ZGeom::Colorf> vColorDiff = colorCoordDiff(coordResidual, 0.05*bbDiag, ZGeom::CM_JET);
     addColorSignature("color_diff_DLRS", vColorDiff);
 
-    auto vNormals = mMesh->getVertNormals();
+    auto vNormals = ZGeom::getMeshVertNormals(*mMesh);
     VecNd vResB(totalVertCount);
     for (int i = 0; i < totalVertCount; ++i)
         vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
@@ -1799,7 +1800,7 @@ void ShapeEditor::testDenoisingDLRS()
     for (int i = 0; i < 30; ++i) vFeatureMaxRes.addFeature(new MeshFeature(vResIdx[i].first, vResIdx[i].second));
     mMesh->addAttrMeshFeatures(vFeatureMaxRes, "feature_res_max");
 
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, -1);
     Dictionary dictMHB, dictSGW, dictMixed;
     computeDictionary(DT_Fourier, es, dictMHB);
     computeDictionary(DT_SGW3, es, dictSGW);    
@@ -1832,7 +1833,7 @@ void ShapeEditor::testDictionaryCoherence()
     const int totalVertCount = mMesh->vertCount();
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, -1);
     Dictionary dictMHB, dictSGW3, dictMixed, dictSGW1, dictSGW2, dictSGW3MHB, dictSpikes;
     computeDictionary(DT_UNIT, es, dictSpikes);
     computeDictionary(DT_Fourier, es, dictMHB);
@@ -1870,7 +1871,7 @@ void ShapeEditor::testWaveletAnalysis()
 
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, -1);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, -1);
     Dictionary dictMHB, dictSGW;
     computeDictionary(DT_Fourier, es, dictMHB);
     computeDictionary(DT_SGW4, es, dictSGW);
@@ -1934,7 +1935,7 @@ void ShapeEditor::testWaveletAnalysis()
     MeshCoordinates coordResidual = coordDenoised.substract(coordOld);
     setStoredCoordinates(coordDenoised, 2);
     changeCoordinates(2);
-    auto vNormals = mMesh->getVertNormals();
+    auto vNormals = ZGeom::getMeshVertNormals(*mMesh);
     VecNd vResB(totalVertCount);
     for (int i = 0; i < totalVertCount; ++i)
         vResB[i] = coordResidual.getVertCoordinate(i).dot((ZGeom::Vec3d)vNormals[i]);
@@ -1966,7 +1967,7 @@ void ShapeEditor::testWaveletComputation()
 
     CStopWatch timer;
     timer.startTimer();
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, 500);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, 500);
     timer.stopTimer("Decomposition time: ");
 
     Dictionary dictMHB, dictSGW;    
@@ -1977,15 +1978,15 @@ void ShapeEditor::testWaveletComputation()
 
 void ShapeEditor::fillHoles(bool skipExternalBoundary)
 {
-    mMesh->calAttrBoundaryLoops();
-    int numBoundaries = mMesh->getBoundaryLoopEdges().size();
+    ZGeom::identifyMeshBoundaries(*mMesh);
+    int numBoundaries = ZGeom::getMeshBoundaryLoops(*mMesh).size();
     if (skipExternalBoundary) numBoundaries--;
     if (numBoundaries <= 0) {
         std::cout << "No hole detected!" << std::endl;
         return;
     }
 
-    auto boundaryLoopEdges = mMesh->getBoundaryLoopEdges();
+    auto boundaryLoopEdges = ZGeom::getMeshBoundaryLoopVerts(*mMesh);
     for (int i = 0; i < numBoundaries; ++i) {
         vector<int> boundaryEdges = boundaryLoopEdges[i];
         fillBoundedHole(boundaryEdges);
@@ -2197,7 +2198,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     }
     /*  end of Delaunay refinement  */
    
-    BoundaryVerts newHole;
+    HoleBoundary newHole;
     newHole.vert_on_boundary = boundaryVertIdx;
     for (int i = nOldVerts; i < mMesh->vertCount(); ++i)
         newHole.vert_inside.push_back(i);
@@ -2208,12 +2209,12 @@ void ShapeEditor::fillHole()
 {
     using namespace std;
     using namespace ZGeom;
-    int numBoundaries = mMesh->getBoundaryLoopEdges().size();
+    int numBoundaries = ZGeom::getMeshBoundaryLoops(*mMesh).size();
     if (numBoundaries == 0) return;
 
     double avgEdgeLen = mMesh->getAvgEdgeLength();
-    vector<int> boundaryEdgeIdx = mMesh->getBoundaryLoopEdges()[0];
-    vector<int> boundaryVertIdx = mMesh->getBoundaryLoopVerts()[0];
+    vector<int> boundaryEdgeIdx = ZGeom::getMeshBoundaryLoopHalfEdges(*mMesh)[0];
+    vector<int> boundaryVertIdx = ZGeom::getMeshBoundaryLoopVerts(*mMesh)[0];
     int N = (int)boundaryVertIdx.size();    // count of boundary vertices
     vector<CVertex*> boundaryVertPtr(N);
     vector<Vec3d> boundaryVertPos(N);
@@ -2418,7 +2419,7 @@ void ShapeEditor::fillHole()
     MeshLineList vNormalLines;
 
     /* normals calculated from filled model */
-    vector<ZGeom::Vec3d> vNormals1 = mMesh->getVertNormals();
+    vector<ZGeom::Vec3d> vNormals1 = ZGeom::getMeshVertNormals(*mMesh);
     for (int vi : affectedVert) {
         LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
@@ -2430,7 +2431,7 @@ void ShapeEditor::fillHole()
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     std::cout << "==== Do Eigendecomposition ====\n";
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     std::cout << "\n==== Compute Dictionaries ====\n";
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
@@ -2530,7 +2531,7 @@ void ShapeEditor::fillHole()
 void ShapeEditor::visualizeBoundaries()
 {
     MeshLineList boundaryLines;
-    for (BoundaryVerts &fhv : filled_boundaries) {
+    for (HoleBoundary &fhv : filled_boundaries) {
         int nVert = fhv.vert_on_boundary.size();
         for (int i = 0; i < nVert; ++i) {
             int v1 = fhv.vert_on_boundary[i], v2 = fhv.vert_on_boundary[(i + 1) % nVert];
@@ -2559,12 +2560,12 @@ void ShapeEditor::holeFairingFourierOMP()
     int eigenCount = 500;					// -1 means full decomposition
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> vMask(totalVertCount, 1);
-    for (BoundaryVerts &fhv : filled_boundaries) {
+    for (HoleBoundary &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) vMask[vi] = 0;
     }
 
@@ -2637,12 +2638,12 @@ void ShapeEditor::holeFairingFourierLARS()
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     int eigenCount = -1;    // -1 means full decomposition
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> inpaintVert;
-    for (BoundaryVerts &fhv : filled_boundaries) {
+    for (HoleBoundary &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) inpaintVert.push_back(vi);
     }
     ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
@@ -2674,7 +2675,7 @@ void ShapeEditor::holeFairingLeastSquare()
     matLaplacian.constructTutte(mMesh);
     set<int> controlVerts;
     for (int i = 0; i < totalVertCount; ++i) controlVerts.insert(i);
-    for (BoundaryVerts &fhv : filled_boundaries) {
+    for (HoleBoundary &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) controlVerts.erase(vi);
     }
     int controlVertCount = controlVerts.size();
@@ -2721,7 +2722,7 @@ void ShapeEditor::holeEstimateCurvature()
     revertCoordinates();
     int totalVertCount = mMesh->vertCount();
     vector<int> affectedVert;
-    for (BoundaryVerts &fhv : filled_boundaries) {
+    for (HoleBoundary &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) affectedVert.push_back(vi);
         for (int vi : fhv.vert_on_boundary) affectedVert.push_back(vi);
     }
@@ -2732,7 +2733,7 @@ void ShapeEditor::holeEstimateCurvature()
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     std::cout << "==== Do Eigendecomposition ====\n";
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     std::cout << "\n==== Compute Dictionaries ====\n";
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
@@ -2741,7 +2742,7 @@ void ShapeEditor::holeEstimateCurvature()
 
     /* normals calculated from filled model */
     ZGeom::calMeshAttrVertNormals(*mMesh);
-    const vector<Vec3d>& vNormals1 = mMesh->getVertNormals();
+    const vector<Vec3d>& vNormals1 = ZGeom::getMeshVertNormals(*mMesh);
     for (int vi : affectedVert) {
         LineSegment ls(mMesh->vertPos(vi), (Vec3d)vNormals1[vi], true);
         ls.color1 = ZGeom::ColorBlue; ls.color2 = ZGeom::ColorBlue;
@@ -2824,7 +2825,7 @@ void ShapeEditor::inpaintHolesLARS(const std::vector<int>& inpaintVert, double e
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     int eigenCount = -1;    // -1 means full decomposition
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
 
@@ -2851,7 +2852,7 @@ void ShapeEditor::inpaintHolesL1LS(const std::vector<int>& selctedVerts, double 
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(mMesh);
     int eigenCount = -1;    // -1 means full decomposition
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);
 
@@ -2885,7 +2886,7 @@ void ShapeEditor::testSurfaceInpainting()
     int eigenCount = -1;    // -1 means full decomposition
     if (N > 1000) eigenCount = 1000;
     timer.startTimer();
-    const ZGeom::EigenSystem& es = mProcessor->prepareEigenSystem(graphLaplacian, eigenCount);
+    const ZGeom::EigenSystem& es = mMeshHelper->prepareEigenSystem(graphLaplacian, eigenCount);
     timer.stopTimer("Decomposition time: ");
     ofs << "Decomposition time: " << timer.getElapsedTime() << endl;
     Dictionary dictMHB;

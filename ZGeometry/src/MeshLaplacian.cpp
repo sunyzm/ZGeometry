@@ -18,7 +18,7 @@ void MeshLaplacian::constructAnisotropic1(CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
-	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
     const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;
@@ -84,7 +84,7 @@ void MeshLaplacian::constructAnisotropic2(CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
-	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
     const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;	
@@ -151,7 +151,7 @@ void MeshLaplacian::constructAnisotropic3(CMesh* tmesh, int nRing, double hPara1
 	hPara1 = 2 * std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
-	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
 
 	vector<std::tuple<int,int,double> > vSparseElements;
@@ -236,7 +236,7 @@ void MeshLaplacian::constructAnisotropic4(CMesh* tmesh, int nRing, double hPara1
 	hPara1 = std::pow(tmesh->getAvgEdgeLength(), 2);
 //	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 	hPara2 = tmesh->getAvgEdgeLength();
-	const std::vector<ZGeom::Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
 
 	for (int vi = 0; vi < mOrder; ++vi)	{
 		const CVertex* pvi = tmesh->vert(vi); 

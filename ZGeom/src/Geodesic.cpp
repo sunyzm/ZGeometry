@@ -1,5 +1,6 @@
 #include "Geodesic.h"
 #include <vector>
+#include "mesh_processing.h"
 using namespace std;
 
 class GeoNote
@@ -159,7 +160,7 @@ double ZGeom::calGeodesicToBoundary(CMesh& mesh, int s)
 
     int j, k, ia, ib, ic;
     double geo = 0.0;
-    auto vVertIsHole = mesh.getVertsOnHoles();
+    auto vVertIsHole = ZGeom::getMeshVertsOnHoles(mesh);
     auto vVertOnBoundary = mesh.getVertsOnBoundary();
     vector<bool> vNonHoleBoundaryVert(vertCount, false);
     int nonHoleBoundary(0);

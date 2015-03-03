@@ -189,8 +189,8 @@ void Laplacian::constructSymCot(CMesh* tmesh)
 void Laplacian::constructAniso(CMesh *tmesh)
 {
     vector<double> vMeanCurv = ZGeom::getMeshMeanCurvatures(*tmesh);
-    vector<double> vVertAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
-    auto vNormals = tmesh->getVertNormals();
+    vector<double> vVertAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);    
+    vector<Vec3d> vNormals = ZGeom::getMeshVertNormals(*tmesh);
     const int vertCount = tmesh->vertCount();
     mOrder = vertCount;
     std::vector<int> vII, vJJ;

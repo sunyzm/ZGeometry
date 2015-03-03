@@ -133,7 +133,7 @@ public:
 	/* evaluations */
 	void evaluateWithGroundTruth(const MatchResult& result, const MatchResult& groundtruth, MatchEvaluation& eval) const;
 	void evaluateWithGroundTruth(const std::vector<MatchPair>& vIdMatchPair);
-	static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
+    static double evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, CMesh* mesh1, CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start = 0);
 
 	std::vector<std::pair<double, double> > m_randPairs;
 

@@ -470,7 +470,7 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mProcessors[0]);
 		mShapeEditor.runTests();
-        displayLine("hole_boundaries");
+//         displayLine("hole_boundaries");
 	}
 
 	return true;
@@ -894,8 +894,8 @@ void QZGeometryWindow::updateReferenceMove( int obj )
 {
 	MeshHelper& mp = *mProcessors[obj]; 
 
-	double unitMove = (mp.getMesh_const()->getBoundingBox().x + mp.getMesh_const()->getBoundingBox().y + mp.getMesh_const()->getBoundingBox().z)/300.0;
-	ZGeom::Vec3d originalPos = mp.getMesh_const()->vert(mp.getRefPointIndex())->pos();
+	double unitMove = (mp.getMesh()->getBoundingBox().x + mp.getMesh()->getBoundingBox().y + mp.getMesh()->getBoundingBox().z)/300.0;
+	ZGeom::Vec3d originalPos = mp.getMesh()->vert(mp.getRefPointIndex())->pos();
 	
 	mp.setRefPointPosition(originalPos.x, originalPos.y, originalPos.z);
 
@@ -951,7 +951,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	int ring = (mCommonParameter > sliderCenter) ? (mCommonParameter - sliderCenter) : 1;
 
 	int ref = mProcessors[0]->getRefPointIndex();
-	std::vector<int> vn = mProcessors[0]->getMesh_const()->getVertNeighborVerts(ref, ring, false);
+	std::vector<int> vn = mProcessors[0]->getMesh()->getVertNeighborVerts(ref, ring, false);
 	MeshFeatureList *mfl = new MeshFeatureList;
 
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
@@ -1567,7 +1567,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	if (!mp.getMHB(laplacianType).empty()) return;
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
+	std::string pathMHB = "cache/" + mp.getMesh()->getMeshName() + ".mhb." + s_idx;
 	
 	if (gSettings.LOAD_MHB_CACHE && fileExist(pathMHB))	// MHB cache available for the current mesh
 	{
@@ -1689,7 +1689,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = "cache/" + mp.getMesh_const()->getMeshName() + ".mhb." + s_idx;
+	std::string pathMHB = "cache/" + mp.getMesh()->getMeshName() + ".mhb." + s_idx;
 	if (!fileExist(pathMHB)) return true;
 
 	std::ifstream ifs(pathMHB.c_str(), std::ios::binary);
@@ -2090,7 +2090,7 @@ void QZGeometryWindow::computeVertNormals()
 		CMesh* mesh = mMeshes[obj];
 		int vertCount = mesh->vertCount();
         ZGeom::calMeshAttrVertNormals(*mesh);
-		auto vNormals = mesh->getVertNormals();
+        auto vNormals = ZGeom::getMeshVertNormals(*mesh);
 		MeshLineList mvl;
 		for (int i = 0; i < vertCount; ++i)	{
 			const ZGeom::Vec3d& vi = mesh->vertPos(i);            
@@ -2131,7 +2131,7 @@ void QZGeometryWindow::fillHoles()
 
     MeshHole hole;
     std::set<int> vIn, vBoundary;
-    for (ShapeEditor::BoundaryVerts bv : mShapeEditor.filled_boundaries) {
+    for (const ZGeom::HoleBoundary& bv : mShapeEditor.filled_boundaries) {
         for (int vi : bv.vert_inside) vIn.insert(vi);
         for (int vi : bv.vert_on_boundary) vBoundary.insert(vi);
     }

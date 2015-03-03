@@ -82,7 +82,7 @@ PointParam& PointParam::operator= ( const PointParam& hkp )
 
 void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*= 30.0*/ )
 {
-	const int fineSize = pMP->getMesh_const()->vertCount();
+	const int fineSize = pMP->getMesh()->vertCount();
 	const int pn = (int)anchors.size();
 	para_dim = pn;
 	vCoord.resize(fineSize);
@@ -99,7 +99,7 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 
 void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*= 30.0*/ )
 {
-	const int fineSize = pMP->getMesh_const()->vertCount();
+	const int fineSize = pMP->getMesh()->vertCount();
 	const int pn = (int)anchors.size();
 	para_dim = pn;
 	vCoord.resize(fineSize);
@@ -115,7 +115,7 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 
 void ParamManager::para_computeHKS( const std::vector<double>& times )
 {
-	const int fineSize = pMP->getMesh_const()->vertCount();
+	const int fineSize = pMP->getMesh()->vertCount();
 	const int sn = (int)times.size();
 	para_dim = sn;;
 	vSignature.resize(fineSize);
@@ -352,7 +352,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 
 void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEFAULT_MATCH_THRESH*/ )
 {
-	const CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
+	CMesh *mesh1 = pOriginalMesh[0], *mesh2 = pOriginalMesh[1];
 	const vector<HKSFeature>& vftFine1 = m_vFeatures[0];
 	const vector<HKSFeature>& vftFine2 = m_vFeatures[1];
 	
@@ -1446,7 +1446,7 @@ void ShapeMatcher::readInRandPair( const std::string& filename )
 	cout << "## rand pair size: " << m_randPairs.size() << endl;
 }
 
-double ShapeMatcher::evaluateDistortion( const std::vector<MatchPair>& vIdMatchPair, const CMesh* mesh1, const CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/ )
+double ShapeMatcher::evaluateDistortion(const std::vector<MatchPair>& vIdMatchPair, CMesh* mesh1, CMesh* mesh2, const std::vector<std::pair<double, double> >& vRandPair, int rand_start /*= 0*/)
 {
 	int matchSize = vIdMatchPair.size(), rand_size = vRandPair.size();
 	

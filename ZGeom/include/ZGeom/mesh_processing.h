@@ -10,11 +10,14 @@
 
 namespace ZGeom {
 
+const int MAX_HOLE_SIZE = 200;
+
 const std::string StrAttrVertMixedArea = "vert_scalar_mixed_area";
 const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
+const std::string StrAttrMeshHoleBoundaries = "mesh_hole_boundaries";
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle);
@@ -35,6 +38,35 @@ double computeMeshRMSE(CMesh &mesh1, CMesh &mesh2);
 double computeSymMeshRMSE(CMesh &mesh1, CMesh &mesh2);
 double computeHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
+
+struct HoleBoundary
+{
+    std::vector<int> vert_on_boundary;
+    std::vector<int> he_on_boundary;
+    std::vector<int> vert_inside;
+    std::vector<int> face_inside;
+
+    // constructors
+    HoleBoundary() = default;
+    HoleBoundary(const HoleBoundary&) = default;
+    HoleBoundary& operator = (HoleBoundary&& hb) {
+        vert_on_boundary = std::move(hb.vert_on_boundary);
+        he_on_boundary = std::move(hb.he_on_boundary);
+        vert_inside = std::move(hb.vert_inside);
+        face_inside = std::move(hb.face_inside);
+        return *this;
+    }
+    HoleBoundary(HoleBoundary&& hb) { *this = std::move(hb); }
+
+    // methods    
+};
+std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
+const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh);
+std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh);
+std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh);
+int calMeshGenus(CMesh &mesh);
+std::vector<bool> getMeshVertsOnHoles(CMesh &mesh);
+
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
@@ -61,6 +93,7 @@ std::vector<Vec3d> computeMeshFaceNormals(const CMesh& mesh);
 enum VertNormalCalcMethod {VN_UNIFORM_WEIGHT, VN_AREA_WEIGHT, VN_CENTER_DIST_WEIGHT};
 std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
 void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
+std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
 
 enum MeshVertAreaScheme {VA_UNIFORM, VA_MIXED_VORONOI};
 std::vector<double> computeMeshVertArea(const CMesh& mesh, MeshVertAreaScheme scheme = VA_MIXED_VORONOI);

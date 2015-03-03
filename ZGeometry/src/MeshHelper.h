@@ -15,9 +15,8 @@ public:
 	MeshHelper(CMesh* tm, CMesh* originalMesh);
 	void init(CMesh* tm);
 	void init_lite(CMesh* tm, CMesh* originalMesh);	
-	const CMesh* getMesh_const() const { return mMesh; }
-	const CMesh* getOriMesh_const() const { return mOriMesh; }
-	CMesh* getMesh() const { return mMesh; }
+    CMesh* getMesh() const { return mMesh; }
+	CMesh* getOriMesh() const { return mOriMesh; }
 
 	/* Laplacian and MHB related */
 	void	constructLaplacian(LaplacianType laplacianType = CotFormula);

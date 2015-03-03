@@ -8,6 +8,7 @@
 #include "Palette.h"
 #include "global.h"
 
+
 class ShapeEditor : public QObject
 {
 	Q_OBJECT
@@ -16,7 +17,7 @@ public:
 	friend class QZGeometryWindow;
     static std::string strOriginalCoord;
 
-	ShapeEditor() : mMesh(nullptr), mProcessor(nullptr) {}
+	ShapeEditor() : mMesh(nullptr), mMeshHelper(nullptr) {}
 	void init(MeshHelper* processor);
 	void runTests();
     void resetStoredCoordinates();
@@ -93,7 +94,7 @@ private:
 
     /* private fields */
 	CMesh* mMesh;	
-	MeshHelper* mProcessor;
+	MeshHelper* mMeshHelper;
 	ShapeApprox mShapeApprox;
 	Palette mSegmentPalette;
 
@@ -104,13 +105,7 @@ private:
 	std::vector<ZGeom::VecNd> mEditBasis;	
 	int mTotalScales;	
 
-    /* fields for boundaries */
-    struct BoundaryVerts {
-        std::vector<int> vert_on_boundary;
-        std::vector<int> vert_inside;
-    };
-
 public:
-    std::vector<BoundaryVerts> filled_boundaries;
+    std::vector<ZGeom::HoleBoundary> filled_boundaries;
 
 };

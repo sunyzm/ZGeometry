@@ -38,18 +38,18 @@ public:
 
     void setup(int obj, MeshHelper* processor, RenderSettings* rs)
     {
-        mProcessors[obj] = processor;
+        mMeshHelpers[obj] = processor;
         mRenderSettings[obj] = rs;
         mMeshes[obj] = processor->getMesh();
     }
 
     void setup(std::vector<MeshHelper*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
 	{
-		mProcessors = processors;
+		mMeshHelpers = processors;
 		mRenderSettings = rs;
 		mMatcher = matcher;
         mMeshes.clear();
-        for (auto p : mProcessors) mMeshes.push_back(p->getMesh());
+        for (auto p : mMeshHelpers) mMeshes.push_back(p->getMesh());
         setBasePointSize(mMeshes[0]->getAvgEdgeLength() / 4.);
 	}
 
@@ -84,7 +84,7 @@ private:
 	void setupViewport(int width, int height);
     bool glPick(int x, int y, ZGeom::Vec3d& _p, int obj = 0);
 
-	std::vector<MeshHelper*> mProcessors;
+	std::vector<MeshHelper*> mMeshHelpers;
     std::vector<CMesh*> mMeshes;
 	std::vector<RenderSettings*> mRenderSettings;
 	ShapeMatcher* mMatcher;

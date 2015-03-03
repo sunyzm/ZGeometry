@@ -137,33 +137,6 @@ double calHeatTrace(const EigenSystem& es, double t)
     return sum;
 }
 
-std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
-{
-    int vertCount = mesh.vertCount(), faceCount = mesh.faceCount();
-    const vector<Vec3d> faceNormals = computeMeshFaceNormals(mesh);
-    vector<double> faceAreas(faceCount);
-    for (int i = 0; i < faceCount; ++i) faceAreas[i] = mesh.getFace(i)->calArea();
-
-    vector<Vec3d> vertNormals(vertCount);
-    for (int vi = 0; vi < vertCount; ++vi) {
-        vector<int> neighborFaceIdx = mesh.getVertexAdjacentFaceIdx(vi, 1);
-        Vec3d normalSum(0, 0, 0);
-        for (int fj : neighborFaceIdx) {
-            double weight(1.0);
-            if (vnc == VN_AREA_WEIGHT)
-                weight = faceAreas[fj];
-            else if (vnc == VN_CENTER_DIST_WEIGHT)
-                weight = 1.0 / (mesh.getFace(fj)->calBarycenter() - mesh.vertPos(vi)).length();
-            normalSum += weight * faceNormals[fj];
-        }
-        vertNormals[vi] = normalSum.normalize();
-    }
-
-    return vertNormals;
-}
-
-
-
 std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed /*= -1*/)
 {
     using std::vector;
@@ -802,6 +775,46 @@ const std::vector<double>& getMeshVertMixedAreas(CMesh& mesh)
     return mesh.getAttrValue<std::vector<double>>(StrAttrVertMixedArea);
 }
 
+std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
+{
+    int vertCount = mesh.vertCount(), faceCount = mesh.faceCount();
+    const vector<Vec3d> faceNormals = computeMeshFaceNormals(mesh);
+    vector<double> faceAreas(faceCount);
+    for (int i = 0; i < faceCount; ++i) faceAreas[i] = mesh.getFace(i)->calArea();
+
+    vector<Vec3d> vertNormals(vertCount);
+    for (int vi = 0; vi < vertCount; ++vi) {
+        vector<int> neighborFaceIdx = mesh.getVertexAdjacentFaceIdx(vi, 1);
+        Vec3d normalSum(0, 0, 0);
+        for (int fj : neighborFaceIdx) {
+            double weight(1.0);
+            if (vnc == VN_AREA_WEIGHT)
+                weight = faceAreas[fj];
+            else if (vnc == VN_CENTER_DIST_WEIGHT)
+                weight = 1.0 / (mesh.getFace(fj)->calBarycenter() - mesh.vertPos(vi)).length();
+            normalSum += weight * faceNormals[fj];
+        }
+        vertNormals[vi] = normalSum.normalize();
+    }
+
+    return vertNormals;
+}
+
+
+
+void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
+{
+    vector<Vec3d> vertNormals = computeMeshVertNormals(mesh, vnc);
+    mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
+}
+
+std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
+{
+    if (!mesh.hasAttr(CMesh::StrAttrVertNormal)) calMeshAttrVertNormals(mesh, vnc);
+
+    return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormal);
+}
+
 ZGeom::ResultMeshMeanGaussCurvatures computeMeshMeanGaussCurvatures(CMesh &mesh)
 {
     const double pi = ZGeom::PI;
@@ -883,8 +896,8 @@ void gatherMeshStatistics(CMesh& mesh)
     mesh.calAttrFaceNormals();
     calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
     mesh.calAttrBoundaryVert();
-    mesh.calAttrBoundaryLoops();
-
+    identifyMeshBoundaries(mesh);
+    
     ZGeom::Vec3d center = mesh.calMeshCenter();
     ZGeom::Vec3d boundBox = mesh.calBoundingBox(center);
     double edgeLength = 0;
@@ -899,12 +912,6 @@ void gatherMeshStatistics(CMesh& mesh)
 
     calMeshAttrMeanGaussCurvatures(mesh);
     calMeshAttrMixedVertAreas(mesh);
-}
-
-void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
-{
-    vector<Vec3d> vertNormals = computeMeshVertNormals(mesh, vnc);
-    mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
 }
 
 /********************************************************************************/
@@ -932,6 +939,94 @@ int triObtuseEdge(const std::vector<Vec3d>& triVerts)
     else if (sqlen1 > sqlen0 + sqlen2) return 1;
     else if (sqlen2 > sqlen0 + sqlen1) return 2;
     else return -1; // non-obtuse triangle
+}
+
+std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh)
+{
+    typedef vector<vector<int>> VecVecInt;
+
+    int boundaryNum = 0;
+    int vertCount = mesh.vertCount();
+    const vector<bool>& vVertOnBoundary = mesh.getVertsOnBoundary();
+
+    VecVecInt boundaryEdges;
+    vector<bool> vertVisited(vertCount, false);
+    for (int i = 0; i < vertCount; i++) {
+        // find boundary loop from boundary vertex i if it is not in any loop 
+        if (!vVertOnBoundary[i] || vertVisited[i]) continue;
+        vector<int> edgeLoop;
+        int currentIndex = i;
+        do {
+            vertVisited[currentIndex] = true;
+            int edgeIndex = -1;
+            for (CHalfEdge* he : mesh.m_vVertices[currentIndex]->m_HalfEdges) {
+                if (he->isBoundaryEdge()) {
+                    edgeIndex = he->getIndex(); break;
+                }
+            }
+            currentIndex = mesh.m_vHalfEdges[edgeIndex]->getVertIndex(1);
+            edgeLoop.push_back(edgeIndex);
+        } while (currentIndex != i);
+
+        boundaryEdges.push_back(edgeLoop);
+    }
+
+    // sort by number of edges of boundaries
+    std::sort(boundaryEdges.begin(), boundaryEdges.end(),
+        [](const vector<int>& v1, const vector<int>& v2) { return v1.size() < v2.size(); });
+
+    vector<HoleBoundary> result(boundaryEdges.size());
+    for (int i = 0; i < (int)boundaryEdges.size(); ++i) {
+        result[i].he_on_boundary = boundaryEdges[i];
+        for (int heIdx : boundaryEdges[i])
+            result[i].vert_on_boundary.push_back(mesh.getHalfEdge(heIdx)->getVertIndex(0));
+    }
+
+    mesh.addAttr<vector<HoleBoundary>>(result, StrAttrMeshHoleBoundaries, AR_UNIFORM);
+    return result;
+}
+
+const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh)
+{
+    if (!mesh.hasAttr(StrAttrMeshHoleBoundaries)) identifyMeshBoundaries(mesh);
+    return mesh.getAttrValue<vector<HoleBoundary>>(StrAttrMeshHoleBoundaries);
+}
+
+std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh)
+{
+    const std::vector<HoleBoundary>& vBoundaries = getMeshBoundaryLoops(mesh);
+    vector<vector<int>> result;
+    for (const HoleBoundary& hb : vBoundaries)
+        result.push_back(hb.vert_on_boundary);
+    return result;
+}
+
+std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh)
+{
+    const std::vector<HoleBoundary>& vBoundaries = getMeshBoundaryLoops(mesh);
+    vector<vector<int>> result;
+    for (const HoleBoundary& hb : vBoundaries)
+        result.push_back(hb.he_on_boundary);
+    return result;
+}
+
+int calMeshGenus(CMesh &mesh)
+{
+    int b = (int)getMeshBoundaryLoops(mesh).size();
+    int euler_number = mesh.calEulerNum();
+    return (2 - euler_number - b) / 2;
+}
+
+std::vector<bool> getMeshVertsOnHoles(CMesh &mesh)
+{
+    const vector<vector<int>>& boundariesVert = getMeshBoundaryLoopVerts(mesh);
+    vector<bool> result(mesh.vertCount(), false);
+    for (int i = 0; i < boundariesVert.size(); ++i) {
+        const vector<int>& vVertIdx = boundariesVert[i];
+        if (vVertIdx.size() > MAX_HOLE_SIZE) continue;
+        for (int vIdx : vVertIdx) result[vIdx] = true;
+    }
+    return result;
 }
 
 }   // end of namespace

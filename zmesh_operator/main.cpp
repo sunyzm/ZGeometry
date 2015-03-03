@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     DenseMatrixd matCoord = coord.toDenseMatrix();
 
     ZGeom::calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
-    auto normals = mesh.getVertNormals();
+    auto normals = ZGeom::getMeshVertNormals(mesh);
     DenseMatrixd matNormal(N, 3);
     for (int i = 0; i < N; ++i) {
         for (int j = 0; j < 3; ++j)

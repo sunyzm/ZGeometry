@@ -122,7 +122,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
 
-	std::vector<MeshHelper*>& vpMP = mProcessors;
+	std::vector<MeshHelper*>& vpMP = mMeshHelpers;
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
@@ -159,7 +159,7 @@ void GLMeshWidget::mousePressEvent(QMouseEvent *event)
 				int hIdx = -1;
 				int vertCount = vpMP[obj_index]->getMesh()->vertCount();
 				for (int vi = 0; vi < vertCount; ++vi) {
-					double d = (p - vpMP[obj_index]->getMesh_const()->vert(vi)->pos()).length();
+					double d = (p - vpMP[obj_index]->getMesh()->vert(vi)->pos()).length();
 					if (d < dmin) {
 						dmin = d;
 						hIdx = vi;
@@ -217,7 +217,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 {
 	const int win_width = this->width(), win_height = this->height();
 	const int x = event->x(), y = event->y();
-	std::vector<MeshHelper*>& vpMP = mProcessors;
+	std::vector<MeshHelper*>& vpMP = mMeshHelpers;
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
 	int meshCount = vpMP.size();
 
@@ -234,7 +234,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 					vpRS[i]->obj_rot = rot * vpRS[i]->obj_rot;
 			}
 		} else if (gButton == Qt::MidButton) {
-			float scale = 3.0 * vpMP[0]->getMesh_const()->getBoundingBox().x / win_height;
+			float scale = 3.0 * vpMP[0]->getMesh()->getBoundingBox().x / win_height;
 			trans = ZGeom::Vec3d(scale * (x - g_startx), scale * (g_starty - y), 0);
 			g_startx = x;
 			g_starty = y;
@@ -244,7 +244,7 @@ void GLMeshWidget::mouseMoveEvent(QMouseEvent *event)
 			}
 		}
 		else if (gButton == Qt::RightButton ) {
-			float scale = 5.0 * vpMP[0]->getMesh_const()->getBoundingBox().y / win_height;
+			float scale = 5.0 * vpMP[0]->getMesh()->getBoundingBox().y / win_height;
 			trans =  ZGeom::Vec3d(0, 0, scale * (g_starty - y));
 			g_startx = x;
 			g_starty = y;
@@ -412,7 +412,7 @@ void GLMeshWidget::drawGL()
 
 	if (g_task == TASK_EDITING || g_task == TASK_VIEWING) {
         for (unsigned obj = 0; obj < mMeshes.size(); ++obj) {
-            drawMeshExt(mProcessors[obj], mRenderSettings[obj]);
+            drawMeshExt(mMeshHelpers[obj], mRenderSettings[obj]);
         }
 	}
 	else if (g_task == TASK_REGISTRATION) {
@@ -438,7 +438,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 {
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
-    const vector<Vec3d>& vVertNormals = tmesh->getVertNormals();
+    const vector<Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const vector<Vec3d> vVertPos = tmesh->allVertPos();
     const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
 
@@ -523,14 +523,14 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
 
 	/* highlight boundary edges */
-    if (tmesh->hasAttr(CMesh::StrAttrBoundaryLoops)) 
+    if (tmesh->hasAttr(ZGeom::StrAttrMeshHoleBoundaries)) 
     {
-        const vector<vector<int>>& boundaryLoops = tmesh->getAttrValue <vector<vector<int>>>(CMesh::StrAttrBoundaryLoops);
+        const vector<vector<int>>& boundaryLoops = ZGeom::getMeshBoundaryLoopHalfEdges(*tmesh);
         for (int i = 0; i < boundaryLoops.size(); ++i)
         {
             glBegin(GL_LINES);
             glLineWidth(4.0);
-            if (boundaryLoops[i].size() <= MAX_HOLE_SIZE)
+            if (boundaryLoops[i].size() <= ZGeom::MAX_HOLE_SIZE)
                 glColor4f(0.0, 0, 1.0, 1.0);      // show edges on inner holes in blue
             else
                 glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
@@ -746,7 +746,7 @@ void GLMeshWidget::drawCorrespondences( const ShapeMatcher* shapeMatcher, const 
 {
 	if (shapeMatcher == NULL || g_task != TASK_REGISTRATION) return;
 
-	const CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
+	CMesh *tmesh1 = shapeMatcher->getMesh(0, 0), *tmesh2 = shapeMatcher->getMesh(1, 0);
 
 	float specReflection[] = { 0.8f, 0.8f, 0.8f, 1.0f };
 	glMaterialfv(GL_FRONT, GL_SPECULAR, specReflection);

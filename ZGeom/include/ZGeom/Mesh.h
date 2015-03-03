@@ -22,7 +22,7 @@
 
 const int MAX_VERTEX_PER_FACE = 20;
 const int MAX_RING_NUMBER = 15;
-const int MAX_HOLE_SIZE = 200;
+
 
 class CFace;
 class CHalfEdge;
@@ -147,27 +147,25 @@ class CMesh
 {
 public:
 	/* attribute strings */
-    static const std::string StrAttrAvgEdgeLength;
     static const std::string StrAttrMeshCenter;
     static const std::string StrAttrMeshBBox;
-	static const std::string StrAttrBoundaryVertCount;
-    static const std::string StrAttrBoundaryLoops;
+    static const std::string StrAttrAvgEdgeLength;
 	static const std::string StrAttrVertColors;
     static const std::string StrAttrColorDefault;
 	static const std::string StrAttrVertNormal;
+    static const std::string StrAttrFaceNormal;
 	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
-	static const std::string StrAttrFaceNormal;
+    static const std::string StrAttrBoundaryVertCount;	
 
 ////////////////   fields    ////////////////
 public:
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
-    std::string             m_meshName;				// name of the mesh
-    std::unordered_map<std::string, MeshAttrBase*> mAttributes;
-    bool                    m_verbose;
+    std::string             m_meshName;
     ZGeom::Colorf           m_defaultColor;
+    std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
 ////////////////    methods    ////////////////
 public:
@@ -180,7 +178,6 @@ public:
     void	            clearMesh();
     void                clearAttributes();
     void                cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
-    void                setVerbose(bool verbose) { m_verbose = verbose; }
     void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
     std::string	        getMeshName() const { return m_meshName; }
 
@@ -211,20 +208,21 @@ public:
     void	            assignElementsIndex();
 
     /* basic geometry query, analysis and processing */
-	const ZGeom::Vec3d&		     vertPos(int iVert) const { return m_vVertices[iVert]->pos(); }
-    std::vector<ZGeom::Vec3d>    allVertPos() const;
-	const ZGeom::Vec3d&			 getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
-	const ZGeom::Vec3d&		     getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
-	double						 getAvgEdgeLength() const;
+	const ZGeom::Vec3d&		        vertPos(int iVert) const { return m_vVertices[iVert]->pos(); }
+    std::vector<ZGeom::Vec3d>       allVertPos() const;
+	const ZGeom::Vec3d&			    getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
+	const ZGeom::Vec3d&		        getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
+    double                          getAvgEdgeLength();
 	const std::vector<ZGeom::Vec3d>& getFaceNormals();
-	const std::vector<ZGeom::Vec3d>& getVertNormals() const;
-	const std::vector<bool>&	 getVertsOnBoundary();
-    std::vector<bool>            getVertsOnHoles();
-    bool                         isVertOnBoundary(int vi);
-	ZGeom::Vec3d			     calMeshCenter() const;
-	ZGeom::Vec3d			     calBoundingBox(const ZGeom::Vec3d& center) const;
-	double				         calSurfaceArea() const;
-	double				         calVolume() const;
+    bool				            hasBoundary();
+    int					            calAttrBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
+	const std::vector<bool>&	    getVertsOnBoundary();
+    bool                            isVertOnBoundary(int vi);
+	ZGeom::Vec3d			        calMeshCenter() const;
+	ZGeom::Vec3d			        calBoundingBox(const ZGeom::Vec3d& center) const;
+    double                          calAvgEdgeLength();
+	double				            calSurfaceArea() const;
+	double				            calVolume() const;
 //    std::vector<double>          calPrincipalCurvature(int k);  // k = 0 or 1 or 2
 
     void                addVertex(CVertex *v);
@@ -258,14 +256,8 @@ public:
     void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
     void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
-	bool				hasBoundary();
-	int					calAttrBoundaryLoops();     // compute number of (connective) boundaries
-    std::vector<std::vector<int>> getBoundaryLoopVerts(); // get the vertex indices of each boundary loop
-    std::vector<std::vector<int>> getBoundaryLoopEdges();   // get the halfedge indices of each boundary loop
-	int					calAttrBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
-	int					calMeshGenus();			// get mesh genus
     void	            calAttrFaceNormals();			// compute face normals
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
