@@ -495,7 +495,8 @@ void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integratedAppro
 
 void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCount )
 {
-	mMeshProcessor.constructLaplacian(laplacianType);
+    MeshHelper& mMeshProcessor = *mMeshHelper;
+    mMeshProcessor.constructLaplacian(laplacianType);
 	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
 	if (eigenCount == -1 || eigenCount >= mSubMesh.vertCount()) 
 		eigenCount = mSubMesh.vertCount() - 1;

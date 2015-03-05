@@ -171,7 +171,9 @@ public:
 public:
 	/* constructors */
 	CMesh();
-	CMesh(const CMesh& oldMesh);
+	CMesh(const CMesh & oldMesh);
+    CMesh& operator = (CMesh && oldMesh);
+    CMesh(CMesh && oldMesh) { *this = std::move(oldMesh); }
 	~CMesh();	
 
     /* mesh basics */

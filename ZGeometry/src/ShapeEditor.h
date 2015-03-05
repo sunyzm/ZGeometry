@@ -18,7 +18,7 @@ public:
     static std::string strOriginalCoord;
 
 	ShapeEditor() : mMesh(nullptr), mMeshHelper(nullptr) {}
-	void init(MeshHelper* processor);
+	void init(MeshHelper& processor);
 	void runTests();
     void resetStoredCoordinates();
 	void revertCoordinates();

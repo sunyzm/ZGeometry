@@ -138,10 +138,10 @@ void printEndSeparator(char c, int num) {
 }
 
 
-void ShapeEditor::init(MeshHelper* processor)
+void ShapeEditor::init(MeshHelper& processor)
 {
-    mMeshHelper = processor;
-    mMesh = processor->getMesh();
+    mMeshHelper = &processor;
+    mMesh = mMeshHelper->getMesh();
     mTotalScales = 0;
     mCurCoordID = 0;
     resetStoredCoordinates();

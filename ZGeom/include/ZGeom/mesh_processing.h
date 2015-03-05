@@ -44,7 +44,7 @@ struct HoleBoundary
     std::vector<int> vert_on_boundary;
     std::vector<int> he_on_boundary;
     std::vector<int> vert_inside;
-    std::vector<int> face_inside;
+    std::vector<int> face_inside;    
 
     // constructors
     HoleBoundary() = default;

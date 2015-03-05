@@ -126,6 +126,7 @@ private slots:
     void generateHoles();
     void autoGenerateHoles();
     void degradeHoles();
+    void detectHoles();
     void inpaintHoles1();
     void inpaintHoles2();
     void cutHoles();
@@ -178,11 +179,11 @@ private:
     std::vector<QAction*> m_actionDisplayLines;
 	QLabel				  mStatusLabel;
 
-	std::vector<CMesh*>	                    mMeshes;
-	std::vector<MeshHelper*>	mProcessors;
-	std::vector<RenderSettings*>			mRenderManagers;
-	ShapeMatcher                            mShapeMatcher;
-	ShapeEditor	                            mShapeEditor;
+	std::vector<CMesh*>	                mMeshes;
+	std::vector<MeshHelper>	            mMeshHelper;
+	std::vector<RenderSettings>			mRenderManagers;
+	ShapeMatcher                        mShapeMatcher;
+	ShapeEditor	                        mShapeEditor;
     
     CMesh*  backupMesh;
     std::vector<int> vHoleVerts;

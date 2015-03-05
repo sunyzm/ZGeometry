@@ -22,29 +22,24 @@ MeshHelper::MeshHelper()
 	mActiveHandle = -1;	
 }
 
-MeshHelper::MeshHelper(CMesh* tm, CMesh* originalMesh)
+MeshHelper::MeshHelper(MeshHelper && mh)
 {
-	mMesh = nullptr;
-	mRefVert = 0;
-	mActiveHandle = -1;
-
-	init_lite(tm, originalMesh);
+    mMeshHistory = std::move(mMeshHistory);
+    mMesh = mh.mMesh;
+    mRefVert = mh.mRefVert;
+    mRefPos = mh.mRefPos;
+    mHandles = std::move(mh.mHandles);
+    mActiveHandle = std::move(mh.mActiveHandle);
 }
 
 void MeshHelper::init(CMesh* tm)
 {
+    assert(tm != nullptr);
 	mMesh = tm;
-	mOriMesh = tm;
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	mRefPos = mMesh->vert(mRefVert)->pos();
-}
-
-void MeshHelper::init_lite( CMesh* tm, CMesh* originalMesh )
-{
-	mMesh = tm;
-	mOriMesh = originalMesh;
-	mRefVert = 0;
-    mRefPos = mMesh->vert(mRefVert)->pos();
+    mMeshHistory.resize(1);
+    mMeshHistory[0].reset(tm);
 }
 
 void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
@@ -174,3 +169,11 @@ const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& la
 	
 	return mMHBs[laplaceType];
 }
+
+void MeshHelper::revertOriginal()
+{
+    mMesh = mMeshHistory[0].get();
+    mRefVert = 0;
+    mRefPos = mMesh->vertPos(mRefVert);
+}
+

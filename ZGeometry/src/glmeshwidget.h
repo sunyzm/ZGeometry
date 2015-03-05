@@ -43,10 +43,12 @@ public:
         mMeshes[obj] = processor->getMesh();
     }
 
-    void setup(std::vector<MeshHelper*> processors, const std::vector<RenderSettings*> rs, ShapeMatcher* matcher) 
+    void setup(std::vector<MeshHelper>* processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher) 
 	{
-		mMeshHelpers = processors;
-		mRenderSettings = rs;
+        mMeshHelpers.clear();
+        for (MeshHelper& mh : *processors) mMeshHelpers.push_back(&mh);
+        mRenderSettings.clear();
+        for (RenderSettings& rs : vrs) mRenderSettings.push_back(&rs);
 		mMatcher = matcher;
         mMeshes.clear();
         for (auto p : mMeshHelpers) mMeshes.push_back(p->getMesh());

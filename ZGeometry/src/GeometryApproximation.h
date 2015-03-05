@@ -33,8 +33,10 @@ class SubMeshApprox
 {
 public:
 	friend class ShapeApprox;
+    SubMeshApprox() : mMeshHelper(nullptr) {}
+    ~SubMeshApprox() { if (mMeshHelper) delete mMeshHelper; }
 
-	void init() { mMeshProcessor.init(&mSubMesh); }
+    void init() { mMeshHelper = new MeshHelper; mMeshHelper->init(&mSubMesh); }
 	int subMeshSize() const { return mSubMesh.vertCount(); }
 	const std::vector<int>& mappedIdx() const { return mMappedIdx; }
 	void prepareEigenSystem(LaplacianType laplacianType, int mEigenCount);
@@ -51,7 +53,7 @@ public:
 
 private:
 	CMesh mSubMesh;
-	MeshHelper mMeshProcessor;
+	MeshHelper *mMeshHelper;
 	std::vector<int> mMappedIdx;
 	ZGeom::EigenSystem mEigenSystem;
 	ZGeom::Dictionary mDict;
@@ -81,6 +83,9 @@ public:
 	int  partitionCount() const { return mSubMeshApprox.size(); }
 	ZGeom::Dictionary getSubDictionary(int idx) { return mSubMeshApprox[idx].mDict; }
 	const ZGeom::EigenSystem& getSubEigenSystem(int idx) { return mSubMeshApprox[idx].mEigenSystem; }
+
+private:
+    ShapeApprox(const ShapeApprox &) = delete;
 
 private:
 	CMesh* mOriginalMesh;	

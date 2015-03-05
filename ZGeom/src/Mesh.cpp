@@ -293,8 +293,7 @@ std::vector<int> CFace::getAllVertIdx() const
 //						CMesh						//
 //////////////////////////////////////////////////////
 
-CMesh::CMesh() : m_meshName(""), 
-				 m_defaultColor(Colorf(0.53f, 0.70f, 0.93f, 1.0f))
+CMesh::CMesh() : m_meshName(""), m_defaultColor(Colorf(ZGeom::MeshPresetColors[0]))
 {
 }
 
@@ -302,6 +301,16 @@ CMesh::CMesh( const CMesh& oldMesh )
 {
 	cloneFrom(oldMesh);
 	m_meshName = oldMesh.m_meshName;
+}
+
+CMesh& CMesh::operator = (CMesh&& oldMesh)
+{
+    m_vVertices = std::move(oldMesh.m_vVertices);
+    m_vHalfEdges = std::move(oldMesh.m_vHalfEdges);
+    m_vFaces = std::move(oldMesh.m_vFaces);
+    m_meshName = std::move(oldMesh.m_meshName);
+    mAttributes = std::move(oldMesh.mAttributes);
+    return *this;
 }
 
 CMesh::~CMesh()

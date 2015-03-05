@@ -3,6 +3,7 @@
 #include <vector>
 #include <map>
 #include <cmath>
+#include <memory>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include "MeshLaplacian.h"
@@ -12,15 +13,15 @@ class MeshHelper
 {
 public:
 	MeshHelper();
-	MeshHelper(CMesh* tm, CMesh* originalMesh);
+    MeshHelper(MeshHelper && mh);
+
 	void init(CMesh* tm);
-	void init_lite(CMesh* tm, CMesh* originalMesh);	
+    void revertOriginal();
     CMesh* getMesh() const { return mMesh; }
-	CMesh* getOriMesh() const { return mOriMesh; }
 
 	/* Laplacian and MHB related */
-	void	constructLaplacian(LaplacianType laplacianType = CotFormula);
-	void	decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
+	void constructLaplacian(LaplacianType laplacianType = CotFormula);
+	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
 	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
 	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
 	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
@@ -48,8 +49,12 @@ public:
 	void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
 
 private:
+    MeshHelper(const MeshHelper&) {};
+//     MeshHelper& operator = (const MeshHelper&) = delete;
+
+private:
 	CMesh* mMesh;
-	CMesh* mOriMesh;
+    std::vector<std::unique_ptr<CMesh>> mMeshHistory;
 
 	int mRefVert;
 	ZGeom::Vec3d mRefPos;
