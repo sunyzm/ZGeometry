@@ -24,7 +24,6 @@ public:
 	void revertCoordinates();
 	void changeCoordinates(int coordID);
     void changeCoordinates(std::string coordName);
-	void nextCoordinates();
     void setStoredCoordinates(const MeshCoordinates& newCoord, int storeIdx, std::string coordName = "");
     void addCoordinate(const MeshCoordinates &newCoord, std::string coordName);
     MeshCoordinates getStoredCoordinate(int idx);
@@ -43,7 +42,6 @@ public:
     
     void fillHoles(bool skipExternalBoundary);
     void fillBoundedHole(const std::vector<int>& boundaryLoopEdges);
-    void fillHole();
     void visualizeBoundaries();
     void holeFairing();
     void holeFairingFourierOMP();

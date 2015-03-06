@@ -27,6 +27,9 @@ const std::string CMesh::StrAttrFaceNormal				= "face_normal";
 const std::string CMesh::StrAttrBoundaryVertCount       = "mesh_boundary_vert_count";
 const std::string CMesh::StrAttrVertOnHole              = "vert_on_hole";
 const std::string CMesh::StrAttrVertOnBoundary          = "vert_on_boundary";
+const std::string CMesh::StrAttrNamedCoordinates        = "mesh_named_coordinates";
+const std::string CMesh::StrAttrCurrentCoordIdx         = "current_coord_idx";
+
 
 //////////////////////////////////////////////////////
 //						CVertex						//
@@ -536,6 +539,39 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
 	assignElementsIndex();
 }
 
+void CMesh::assignElementsIndex()
+{
+	for (int i = 0; i < (int)m_vVertices.size(); ++i)
+		m_vVertices[i]->m_vIndex = i;
+	
+	for (int i = 0; i < (int)m_vHalfEdges.size(); ++i)
+		m_vHalfEdges[i]->m_eIndex = i;
+	
+	for (int i = 0; i < (int)m_vFaces.size(); ++i)
+		m_vFaces[i]->m_fIndex = i;
+}
+
+int CMesh::calEdgeCount()
+{
+    int halfedgeCount = this->halfEdgeCount();
+	int twinEdgeCount = 0;
+	for (CHalfEdge* he : m_vHalfEdges) {
+		if (he->m_eTwin && he->m_eTwin->m_bIsValid)
+            twinEdgeCount++;
+	}
+
+	if(twinEdgeCount % 2 != 0)
+		throw logic_error("Error: CMesh::getEdgeNum; twinEdgeNum should be even number");
+
+    return halfedgeCount - twinEdgeCount / 2;
+}
+
+int CMesh::calEulerNum(  )
+{
+	int edgeCount = calEdgeCount();
+	return vertCount() - edgeCount + faceCount();
+}
+
 void CMesh::calAttrFaceNormals()
 {
 	int faceNum = faceCount();
@@ -557,19 +593,25 @@ void CMesh::calAttrFaceNormals()
     addAttr<std::vector<ZGeom::Vec3d>>(vFaceNormals, StrAttrFaceNormal, AR_FACE, AT_VEC_VEC3);
 }
  
-int CMesh::calEdgeCount()
+void CMesh::calAttrVertNormals()
 {
-    int halfedgeCount = this->halfEdgeCount();
-	int twinEdgeCount = 0;
-	for (CHalfEdge* he : m_vHalfEdges) {
-		if (he->m_eTwin && he->m_eTwin->m_bIsValid)
-            twinEdgeCount++;
-	}
+    int vertCount = this->vertCount(), faceCount = this->faceCount();
+    const vector<Vec3d>& faceNormals = getFaceNormals();
+    vector<double> faceAreas(faceCount);
+    for (int i = 0; i < faceCount; ++i) faceAreas[i] = getFace(i)->calArea();
 
-	if(twinEdgeCount % 2 != 0)
-		throw logic_error("Error: CMesh::getEdgeNum; twinEdgeNum should be even number");
+    vector<Vec3d> vertNormals(vertCount);
+    for (int vi = 0; vi < vertCount; ++vi) {
+        vector<int> neighborFaceIdx = getVertexAdjacentFaceIdx(vi, 1);
+        Vec3d normalSum(0, 0, 0);
+        for (int fj : neighborFaceIdx) {
+            double weight = faceAreas[fj];
+            normalSum += weight * faceNormals[fj];
+        }
+        vertNormals[vi] = normalSum.normalize();
+    }
 
-    return halfedgeCount - twinEdgeCount / 2;
+    addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
 }
 
 int CMesh::calAttrBoundaryVert()
@@ -586,12 +628,6 @@ int CMesh::calAttrBoundaryVert()
     addAttr<std::vector<bool>>(vVertOnBoundary, StrAttrVertOnBoundary, AR_VERTEX, AT_VEC_BOOL);
 	addAttr<int>(bNum, StrAttrBoundaryVertCount, AR_UNIFORM, AT_INT);
 	return bNum;
-}
-
-int CMesh::calEulerNum(  )
-{
-	int edgeCount = calEdgeCount();
-	return vertCount() - edgeCount + faceCount();
 }
 
 double CMesh::calVolume() const
@@ -630,18 +666,6 @@ std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) c
 		vFaces.push_back(f);
 
 	return vFaces;
-}
-
-void CMesh::assignElementsIndex()
-{
-	for (int i = 0; i < (int)m_vVertices.size(); ++i)
-		m_vVertices[i]->m_vIndex = i;
-	
-	for (int i = 0; i < (int)m_vHalfEdges.size(); ++i)
-		m_vHalfEdges[i]->m_eIndex = i;
-	
-	for (int i = 0; i < (int)m_vFaces.size(); ++i)
-		m_vFaces[i]->m_fIndex = i;
 }
 
 bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
@@ -940,19 +964,21 @@ void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 	                    vy = coords.getCoordFunc(1).toStdVector(),
 	                    vz = coords.getCoordFunc(2).toStdVector();
 	
-	setVertexCoordinates(vx, vy, vz);
+	setVertCoordinates(vx, vy, vz);
 }
 
-void CMesh::setVertexCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
+void CMesh::setVertCoordinates( const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord )
 {
 	assert(vxCoord.size() == vyCoord.size() && vxCoord.size() == vzCoord.size() && vxCoord.size() == vertCount());
 
 	for (int i = 0; i < vertCount(); ++i)	{
 		m_vVertices[i]->setPosition(vxCoord[i], vyCoord[i], vzCoord[i]);
 	}
+    
+    calAttrVertNormals();
 }
 
-void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos)
+void CMesh::setPartialVertCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos)
 {
 	if(vDeformedIdx.size() != vNewPos.size())
 		throw std::logic_error("Error: CMesh::setVertexCoordinates; incompatible parameters");
@@ -962,6 +988,8 @@ void CMesh::setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std
 	{
 		m_vVertices[vDeformedIdx[i]]->setPosition(vNewPos[i].x, vNewPos[i].y, vNewPos[i].z);
 	}
+
+    calAttrVertNormals();
 }
 
 double CMesh::getAvgEdgeLength()
@@ -1435,6 +1463,51 @@ double CMesh::calAvgEdgeLength()
     edgeLengthSum /= (double)edgeCount;
     addAttr<double>(edgeLengthSum, StrAttrAvgEdgeLength, AR_UNIFORM, AT_DBL);
     return edgeLengthSum;    
+}
+
+typedef vector<pair<string, MeshCoordinates>> VecMeshCoords;
+
+void CMesh::initNamedCoordinates()
+{
+    using namespace std;
+    VecMeshCoords mesh_coords;
+    mesh_coords.push_back(make_pair<string, MeshCoordinates>(string("original"), getVertCoordinates()));
+    addAttr<VecMeshCoords>(mesh_coords, StrAttrNamedCoordinates, AR_UNIFORM, AT_UNKNOWN);
+    addAttr<int>(0, StrAttrCurrentCoordIdx, AR_UNIFORM, AT_INT);
+}
+
+void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name /*= "unnamed"*/)
+{
+    using namespace std;
+    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+    mesh_coords.push_back(make_pair(coordinate_name, newCoord));
+    setVertCoordinates(newCoord);
+    cur++;
+}
+
+const std::string& CMesh::switchCoordinate()
+{
+    using namespace std;
+    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+    cur = (cur + 1) % (int)mesh_coords.size();
+    setVertCoordinates(mesh_coords[cur].second);
+    return mesh_coords[cur].first;
+}
+
+void CMesh::revertCoordinate()
+{
+    using namespace std;
+    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+    cur = 0;
+    setVertCoordinates(mesh_coords[0].second);
+}
+
+bool CMesh::hasNamedCoordinates()
+{
+    return hasAttr(StrAttrNamedCoordinates);
 }
 
 // std::vector<double> CMesh::calPrincipalCurvature( int k )

@@ -156,7 +156,9 @@ public:
     static const std::string StrAttrFaceNormal;
 	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
-    static const std::string StrAttrBoundaryVertCount;	
+    static const std::string StrAttrBoundaryVertCount;
+    static const std::string StrAttrNamedCoordinates;
+    static const std::string StrAttrCurrentCoordIdx;
 
 ////////////////   fields    ////////////////
 public:
@@ -253,14 +255,15 @@ public:
 
 	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
-	void                setVertexCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
-	void		        setVertexCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
+	void                setVertCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+	void		        setPartialVertCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
     void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
     void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
-    void	            calAttrFaceNormals();			// compute face normals
+    void	            calAttrFaceNormals();	// compute face normals
+    void                calAttrVertNormals();   // compute vert normals
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
 	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
     bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);
@@ -445,6 +448,16 @@ public:
 		return getAttrValue<std::vector<double>>(name);
 	}		
 	//////////////////////////////////////////////////////////////////////////	
+
+    /************************************************************************/
+    /* mesh coordinates attributes methods                                     */
+    /************************************************************************/
+    void initNamedCoordinates();
+    bool hasNamedCoordinates();
+    void addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name = "unnamed");
+    const std::string& switchCoordinate();
+    void revertCoordinate();
+    //////////////////////////////////////////////////////////////////////////
 
 };  // CMesh
 

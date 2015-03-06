@@ -17,12 +17,12 @@ public:
 	void setLabel(QLabel* l) { statusLabel = l; } 
 
 	void output(const QString& msg) { output(msg, mDefaultVenue); }
-	void outputConsole(QString& msg) { output(msg, OUT_CONSOLE); }
-	void outputStatus(QString& msg) { output(msg, OUT_STATUS); }
 	void output(const char* msg, int venue, double timeout = 0.0); 	
 	void output(const std::string& msg, int venue, double timeout = 0.0); 
     void output(const QString& msg, int venue, double timeout = 0.0);
 	void output(char c, int repeat, int venue);
+    void outputConsole(const QString& msg) { output(msg, OUT_CONSOLE); }
+    void outputStatus(const QString& msg) { output(msg, OUT_STATUS); }
 	void clearOutput(int venue);
 	void outputDateTime(int venue);
 	void setDefaultVenue(int venue) { mDefaultVenue = venue; }

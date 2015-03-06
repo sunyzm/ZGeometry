@@ -204,6 +204,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionInpaintHoles2, SIGNAL(triggered()), this, SLOT(inpaintHoles2()));
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
+    QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
     QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
 
 	////  Display  ////
@@ -513,6 +514,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);
     Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
     newMesh->setDefaultColor(meshColor);
+    newMesh->initNamedCoordinates();
 
     mMeshHelper[obj].init(newMesh);
     mMeshes[0] = mMeshHelper[obj].getMesh();
@@ -536,6 +538,7 @@ void QZGeometryWindow::addMesh()
     qout.output(QString().sprintf("Center: (%f, %f, %f)\nDimension: (%f, %f, %f)", center.x, center.y, center.z, bbox.x, bbox.y, bbox.z), OUT_TERMINAL);
     Colorf meshColor(ZGeom::MeshPresetColors[cur_obj % 3]);
     newMesh->setDefaultColor(meshColor);
+    newMesh->initNamedCoordinates();
 
 	mMeshHelper[cur_obj].init(newMesh);
     mMeshes[cur_obj] = mMeshHelper[cur_obj].getMesh();
@@ -1729,7 +1732,7 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 
 void QZGeometryWindow::revert()
 {
-	mShapeEditor.revertCoordinates();
+    mMeshHelper[0].getMesh()->revertCoordinate();
 	ui.glMeshWidget->update();
 }
 
@@ -1808,9 +1811,9 @@ void QZGeometryWindow::diffusionFlow()
 
 void QZGeometryWindow::addNoise()
 {
-	double phi = 0.1;
+	double phi = 0.01;
     MeshCoordinates noisyCoord = mShapeEditor.getNoisyCoord(phi);
-    mMeshes[0]->setVertCoordinates(noisyCoord);
+    mMeshHelper[0].getMesh()->addNamedCoordinate(noisyCoord, "noisy");
 	std::cout << "Add Gauss noise with phi=" << phi << std::endl;
 	ui.glMeshWidget->update();
 }
@@ -1849,7 +1852,8 @@ void QZGeometryWindow::clearHandles()
 
 void QZGeometryWindow::nextCoordinate()
 {
-	mShapeEditor.nextCoordinates();
+    QString coord_name = QString(mMeshHelper[0].getMesh()->switchCoordinate().c_str());
+    qout.outputStatus("coord: " + coord_name);
 	ui.glMeshWidget->update();
 }
 
@@ -2128,11 +2132,8 @@ void QZGeometryWindow::fillHoles()
     displayFeature("hole_vertex");
     displayFeature("hole_boundary_verts");
 
-    vHoleVerts = hole.mHoleVerts;
-    vHoleFaces = hole.mHoleFaces;
+
     mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
-
-
     ui.glMeshWidget->update();
 }
 
@@ -2229,14 +2230,14 @@ void QZGeometryWindow::degradeHoles()
     double s = QInputDialog::getDouble(this, tr("Input noise sigma"),
         tr("Noise Signal:"), 0.02, 0, 0.1, 3, &ok);
     if (ok) sigma = s;
-    mShapeEditor.generateNoise(vHoleVerts, sigma);
+    mShapeEditor.generateNoise(mMeshHelper[0].generated_holes.mHoleVerts, sigma);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::inpaintHoles1()
 {
     double eps = 1e-4;
-    mShapeEditor.inpaintHolesLARS(vHoleVerts, eps);
+    mShapeEditor.inpaintHolesLARS(mMeshHelper[0].generated_holes.mHoleVerts, eps);
     ui.glMeshWidget->update();
 }
 
@@ -2249,13 +2250,14 @@ void QZGeometryWindow::inpaintHoles2()
         tr("lambda:"), 1e-3, 0, 0.5, 4, &ok);
     if (ok) lambda = s;
 
-    mShapeEditor.inpaintHolesL1LS(vHoleVerts, lambda, tol);
+    mShapeEditor.inpaintHolesL1LS(mMeshHelper[0].generated_holes.mHoleVerts, lambda, tol);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::cutHoles()
 {
     std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
+    newMesh->initNamedCoordinates();
     mMeshHelper[0].addMesh(std::move(newMesh));
 
     mShapeEditor.init(mMeshHelper[0]);
@@ -2268,6 +2270,7 @@ void QZGeometryWindow::cutToSelected()
     CMesh *originalMesh = mMeshHelper[0].getOriginalMesh();
     originalMesh->getSubMeshFromFaces(mMeshHelper[0].generated_holes.mHoleFaces, originalMesh->getMeshName() + "_cut", *newMesh);
     ZGeom::gatherMeshStatistics(*newMesh);
+    newMesh->initNamedCoordinates();
     mMeshHelper[0].addMesh(std::move(newMesh));
 
     mShapeEditor.init(mMeshHelper[0]);
@@ -2288,5 +2291,16 @@ void QZGeometryWindow::computeMHWS()
 
 void QZGeometryWindow::detectHoles()
 {
-    CMesh& mesh = *mMeshHelper[0].getMesh();
+   mMeshHelper[0].original_holes = ZGeom::identifyMeshBoundaries(*mMeshHelper[0].getMesh());
+}
+
+
+void QZGeometryWindow::triangulateHoles()
+{
+    CMesh* old_mesh = mMeshHelper[0].getMesh();
+    std::unique_ptr<CMesh> new_mesh(new CMesh(*old_mesh));
+    ZGeom::triangulateMeshHole(*new_mesh);
+
+    mMeshHelper[0].addMesh(std::move(new_mesh));
+    ui.glMeshWidget->update();
 }

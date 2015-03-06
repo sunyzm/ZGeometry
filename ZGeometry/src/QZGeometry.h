@@ -126,11 +126,13 @@ private slots:
     void generateHoles();
     void autoGenerateHoles();
     void degradeHoles();
-    void detectHoles();
-    void inpaintHoles1();
-    void inpaintHoles2();
     void cutHoles();
     void cutToSelected();
+    void detectHoles();
+    void triangulateHoles();
+
+    void inpaintHoles1();
+    void inpaintHoles2();
     void switchMesh();
 
 	void registerAutomatic();
@@ -184,9 +186,6 @@ private:
 	std::vector<RenderSettings>			mRenderManagers;
 	ShapeMatcher                        mShapeMatcher;
 	ShapeEditor	                        mShapeEditor;
-    
-    std::vector<int> vHoleVerts;
-    std::vector<int> vHoleFaces;
 
 	DeformType			    mDeformType;
 	LaplacianType           mActiveLalacian;

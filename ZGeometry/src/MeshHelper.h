@@ -19,7 +19,7 @@ public:
     void addMesh(std::unique_ptr<CMesh> && newMesh);
     void switchMesh();
     void revertOriginal();
-    CMesh* getMesh() const { return mMesh; }
+    CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
     CMesh* getOriginalMesh() const { return mMeshHistory[0].get(); }
     
     void clearMeshRelated();

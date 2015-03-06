@@ -83,8 +83,7 @@ MeshHole autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, 
                     boundaryVerts.insert(faceVertIdx);
             }
         }
-    }
-    
+    }    
 
     while (vertInHole.size() < totalSize) {
         uniform_int_distribution<int> distr1(0, (int)boundaryVerts.size() - 1);

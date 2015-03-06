@@ -640,14 +640,15 @@
     <addaction name="separator"/>
     <addaction name="actionRunTests"/>
     <addaction name="separator"/>
+    <addaction name="actionSwitchMesh"/>
     <addaction name="actionGenerateHoles"/>
     <addaction name="actionAutoGenHoles"/>
     <addaction name="actionDegradeHoles"/>
+    <addaction name="actionCutHoles"/>
+    <addaction name="actionCutToSelected"/>
+    <addaction name="actionTriangulateHoles"/>
     <addaction name="actionInpaintHoles1"/>
     <addaction name="actionInpaintHoles2"/>
-    <addaction name="actionCutHoles"/>
-    <addaction name="actionSwitchMesh"/>
-    <addaction name="actionCutToSelected"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -1493,6 +1494,11 @@
   <action name="actionInpaintHoles2">
    <property name="text">
     <string>Inpaint Holes 2</string>
+   </property>
+  </action>
+  <action name="actionTriangulateHoles">
+   <property name="text">
+    <string>Trianulate Holes</string>
    </property>
   </action>
  </widget>

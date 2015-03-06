@@ -89,9 +89,6 @@
     <ClCompile Include="src\GeometryApproximation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\SurfaceInpainter.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\qsingleinputdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -187,9 +184,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\GeometryApproximation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\SurfaceInpainter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_qsingleinputdialog.h">

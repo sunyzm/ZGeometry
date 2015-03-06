@@ -3,6 +3,7 @@
 #include <functional>
 #include <array>
 #include <memory>
+#include <algorithm>
 #include "SparseMatrix.h"
 #include "DenseMatrix.h"
 #include "Plane.h"
@@ -45,16 +46,18 @@ struct HoleBoundary
     std::vector<int> vert_on_boundary;
     std::vector<int> he_on_boundary;
     std::vector<int> vert_inside;
-    std::vector<int> face_inside;    
+    std::vector<int> face_inside;  
+    bool is_outer_boundary;
 
     // constructors
-    HoleBoundary() = default;
+    HoleBoundary() : is_outer_boundary(false) { }
     HoleBoundary(const HoleBoundary&) = default;
     HoleBoundary& operator = (HoleBoundary&& hb) {
         vert_on_boundary = std::move(hb.vert_on_boundary);
         he_on_boundary = std::move(hb.he_on_boundary);
         vert_inside = std::move(hb.vert_inside);
         face_inside = std::move(hb.face_inside);
+        is_outer_boundary = hb.is_outer_boundary;
         return *this;
     }
     HoleBoundary(HoleBoundary&& hb) { *this = std::move(hb); }
@@ -69,6 +72,24 @@ int calMeshGenus(CMesh &mesh);
 std::vector<bool> getMeshVertsOnHoles(CMesh &mesh);
 
 std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx);
+
+struct WeightSet
+{
+    double angle, area;
+
+    WeightSet() : angle(0), area(0) {}
+    WeightSet(double a, double s) : angle(a), area(s) {}
+    bool operator < (const WeightSet &w2) const {
+        return angle < w2.angle || (angle == w2.angle && area < w2.area);
+    }
+    WeightSet operator+ (const WeightSet &w2) const {
+        WeightSet result;
+        result.angle = std::max(this->angle, w2.angle);
+        result.area = this->area + w2.area;
+        return result;
+    }
+};
+void triangulateMeshHole(CMesh &oldMesh);
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
