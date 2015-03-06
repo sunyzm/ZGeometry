@@ -647,6 +647,7 @@
     <addaction name="actionCutHoles"/>
     <addaction name="actionCutToSelected"/>
     <addaction name="actionTriangulateHoles"/>
+    <addaction name="actionRefineHoles"/>
     <addaction name="actionInpaintHoles1"/>
     <addaction name="actionInpaintHoles2"/>
    </widget>
@@ -1499,6 +1500,11 @@
   <action name="actionTriangulateHoles">
    <property name="text">
     <string>Trianulate Holes</string>
+   </property>
+  </action>
+  <action name="actionRefineHoles">
+   <property name="text">
+    <string>Refine Holes</string>
    </property>
   </action>
  </widget>

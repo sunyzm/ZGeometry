@@ -89,7 +89,8 @@ struct WeightSet
         return result;
     }
 };
-void triangulateMeshHole(CMesh &oldMesh);
+void triangulateMeshHoles(CMesh &oldMesh);
+void refineMeshHoles(CMesh &oldMesh, double alpha = 2.0);
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);

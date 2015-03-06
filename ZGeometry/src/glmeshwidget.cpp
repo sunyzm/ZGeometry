@@ -470,33 +470,31 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     }
 
     /* draw selected hole region in yellow */
-    std::set<int> holeFaceIdx;
-    if (tmesh->hasAttr(StrAttrHoleFaces)) {
-        auto holevert = tmesh->getAttrValue<vector<int>>(StrAttrHoleFaces);
-        holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
-    }
-    if (m_bShowHoles && !holeFaceIdx.empty())
-    {        
-        //glEnable(GL_POLYGON_OFFSET_FILL);
-        //glPolygonOffset(1.0, 1.0);
-        glBegin(GL_TRIANGLES);
-        const float *holeColor = ZGeom::ColorYellow;
-        for (int fIdx : holeFaceIdx) {
-            CFace* face = tmesh->m_vFaces[fIdx];
-            for (int j = 0; j < 3; j++) {
-                int pi = face->vertIdx(j);
-                const ZGeom::Vec3d& norm = vVertNormals[pi];
-                const Vec3d& vt = vVertPos[pi];
-                const Colorf& vc = vVertColors[pi];
-                glNormal3f(norm.x, norm.y, norm.z);
-                glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
-                glVertex3f(vt.x, vt.y, vt.z);
+    if (tmesh->hasAttr(StrAttrHoleFaces)) 
+    {
+        auto& holeFaceIdx = tmesh->getAttrValue<vector<int>>(StrAttrHoleFaces);
+        if (m_bShowHoles && !holeFaceIdx.empty())
+        {
+            //glEnable(GL_POLYGON_OFFSET_FILL);
+            //glPolygonOffset(1.0, 1.0);
+            glBegin(GL_TRIANGLES);
+            const float *holeColor = ZGeom::ColorYellow;
+            for (int fIdx : holeFaceIdx) {
+                CFace* face = tmesh->m_vFaces[fIdx];
+                for (int j = 0; j < 3; j++) {
+                    int pi = face->vertIdx(j);
+                    const ZGeom::Vec3d& norm = vVertNormals[pi];
+                    const Vec3d& vt = vVertPos[pi];
+                    const Colorf& vc = vVertColors[pi];
+                    glNormal3f(norm.x, norm.y, norm.z);
+                    glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
+                    glVertex3f(vt.x, vt.y, vt.z);
+                }
             }
+            glEnd();
+            //glDisable(GL_POLYGON_OFFSET_FILL);
         }
-        glEnd();
-        //glDisable(GL_POLYGON_OFFSET_FILL);
     }
-
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////

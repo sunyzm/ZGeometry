@@ -1,6 +1,7 @@
 #include "mesh_processing.h"
 #include <cstdlib>
 #include <random>
+#include <map>
 #include <unordered_set>
 #include <ppl.h>
 #include <concurrent_vector.h>
@@ -1047,7 +1048,7 @@ std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceId
     return newMesh;
 }
 
-void triangulateMeshHole(CMesh &mesh)
+void triangulateMeshHoles(CMesh &mesh)
 { 
     vector<HoleBoundary> old_holes = getMeshBoundaryLoops(mesh);
 
@@ -1185,14 +1186,112 @@ void triangulateMeshHole(CMesh &mesh)
 
         for (CFace *f : patchFaces) 
             old_holes[holeIdx].face_inside.push_back(f->getFaceIndex());
-        for (int vIdx = nOldVerts; vIdx < mesh.vertCount(); ++vIdx)
-            old_holes[holeIdx].vert_inside.push_back(vIdx);
     }
 
     mesh.clearAttributes();
     gatherMeshStatistics(mesh);
     mesh.initNamedCoordinates();
     mesh.addAttr<vector<HoleBoundary>>(old_holes, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);    
+}
+
+void refineMeshHoles(CMesh &mesh, double alpha /*= 2.0*/)
+{
+    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
+    
+    /* Perform Delaunay-like refinement */
+    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
+    {
+        int nOldVerts = mesh.vertCount();
+        int nOldEdges = mesh.halfEdgeCount();
+        int nOldFaces = mesh.faceCount();
+        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
+        const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
+        vector<int> boundaryVertIdx(N);
+        vector<CVertex*> boundaryVertPtr(N);
+        vector<Vec3d> boundaryVertPos(N);
+        for (int i = 0; i < N; ++i) {
+            boundaryVertIdx[i] = mesh.getHalfEdge(boundaryEdgeIdx[i])->getVertIndex(0);
+            boundaryVertPtr[i] = mesh.vert(boundaryVertIdx[i]);
+            boundaryVertPos[i] = boundaryVertPtr[i]->pos();
+        }
+        set<CHalfEdge*> boundaryHalfEdges;
+        for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mesh.getHalfEdge(ei));
+
+        set<int> facesInHole = set<int>(oldHoles[holeIdx].face_inside.begin(), oldHoles[holeIdx].face_inside.end());
+        map<int, double> lengthAttr;
+        for (int i = 0; i < N; ++i) {
+            CVertex* pv = boundaryVertPtr[i];
+            double avgLen(0);
+            double valid_valence = 0;
+            for (CHalfEdge *he : pv->m_HalfEdges) {
+                if (facesInHole.find(he->getAttachedFace()->getFaceIndex()) != facesInHole.end()) {
+                    avgLen += he->length();
+                    valid_valence++;
+                }                
+            }
+            avgLen /= valid_valence;
+            lengthAttr[pv->getIndex()] = avgLen;
+        }
+
+        bool noFaceSplit(true), noEdgeSwap(true);
+        while (true)
+        {
+            vector<CFace*> splitCandidates;            
+            for (int faceIdx : facesInHole)
+            {
+                CFace* face = mesh.getFace(faceIdx);
+                Vec3d vc = mesh.getFace(faceIdx)->calBarycenter();
+                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
+                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+                bool splitTest = true;
+                for (int m = 0; m < 3; ++m) {
+                    double a = alpha * (fv[m]->pos() - vc).length();
+                    if (a <= max(lengthAttr[fv[m]->getIndex()], vcLenAttr)) {
+                        splitTest = false; break;
+                    }
+                }
+                if (splitTest) splitCandidates.push_back(face);
+            }
+
+            if (splitCandidates.empty()) break;
+            else {
+                for (CFace* face : splitCandidates) {
+                    facesInHole.erase(face->getFaceIndex());
+                    CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+                    CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
+                    double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
+                    CVertex* centroid = mesh.faceSplit3(face);
+                    lengthAttr[centroid->getIndex()] = vcLenAttr;
+                    for (CFace* newF : centroid->getAdjacentFaces()) 
+                        facesInHole.insert(newF->getFaceIndex());
+                }
+            }
+
+            // relaxing all interior half-edges
+            int swapCount = 0;
+            while (true && swapCount++ < 100) {
+                noEdgeSwap = true;
+                for (int i = nOldEdges; i < mesh.m_vHalfEdges.size(); ++i) {
+                    if (boundaryHalfEdges.find(mesh.getHalfEdge(i)->twinHalfEdge()) != boundaryHalfEdges.end()) continue;
+                    if (mesh.relaxEdge(mesh.getHalfEdge(i))) {
+                        noEdgeSwap = false; // break;
+                    }
+                }
+                if (noEdgeSwap) break;
+            }
+        }
+
+        oldHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
+        oldHoles[holeIdx].vert_inside.clear();
+        for (int vIdx = nOldVerts; vIdx < (int)mesh.vertCount(); ++vIdx)
+            oldHoles[holeIdx].vert_inside.push_back(vIdx);
+    }
+
+    mesh.clearAttributes();
+    gatherMeshStatistics(mesh);
+    mesh.initNamedCoordinates();
+    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);
 }
 
 }   // end of namespace

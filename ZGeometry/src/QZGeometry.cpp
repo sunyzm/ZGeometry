@@ -197,6 +197,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
    
+    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
@@ -205,7 +206,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
-    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
+    QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -483,19 +484,19 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	/* ---- update mesh-dependent ui ---- */
 	if (mMeshCount >= 1) {
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
+        ui.spinBox1->setMaximum(getMesh(0)->vertCount() - 1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.horizontalSlider1->setMaximum(getMesh(0)->vertCount() - 1);
 		ui.spinBox1->setValue(0);	
 	}
 	if (mMeshCount >= 2) {		
 		ui.spinBox2->setMinimum(0);
-		ui.spinBox2->setMaximum(mMeshes[1]->vertCount()-1);
+		ui.spinBox2->setMaximum(getMesh(1)->vertCount()-1);
 		ui.horizontalSlider2->setMinimum(0);
-		ui.horizontalSlider2->setMaximum(mMeshes[1]->vertCount()-1);
+		ui.horizontalSlider2->setMaximum(getMesh(1)->vertCount()-1);
 		ui.spinBox2->setValue(0);
 	}
-	ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
+	ui.glMeshWidget->fieldView(getMesh(0)->getCenter(), getMesh(0)->getBoundingBox());
 
 	mRenderManagers[0].selected = true;
 	mObjInFocus = 0;
@@ -517,7 +518,6 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     newMesh->initNamedCoordinates();
 
     mMeshHelper[obj].init(newMesh);
-    mMeshes[0] = mMeshHelper[obj].getMesh();
     mRenderManagers[obj].mActiveColorSignatureName = CMesh::StrAttrColorDefault;
 }
 
@@ -541,16 +541,15 @@ void QZGeometryWindow::addMesh()
     newMesh->initNamedCoordinates();
 
 	mMeshHelper[cur_obj].init(newMesh);
-    mMeshes[cur_obj] = mMeshHelper[cur_obj].getMesh();
     mRenderManagers[cur_obj].mActiveColorSignatureName = CMesh::StrAttrColorDefault;
 	mRenderManagers[cur_obj].selected = true;
 
 	if (cur_obj == 0) {
-		ui.glMeshWidget->fieldView(mMeshes[0]->getCenter(), mMeshes[0]->getBoundingBox());
+		ui.glMeshWidget->fieldView(getMesh(0)->getCenter(), getMesh(0)->getBoundingBox());
 		ui.spinBox1->setMinimum(0);
-		ui.spinBox1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.spinBox1->setMaximum(getMesh(0)->vertCount() - 1);
 		ui.horizontalSlider1->setMinimum(0);
-		ui.horizontalSlider1->setMaximum(mMeshes[0]->vertCount() - 1);
+		ui.horizontalSlider1->setMaximum(getMesh(0)->vertCount() - 1);
 	}
 
 	ui.glMeshWidget->update();
@@ -564,13 +563,10 @@ void QZGeometryWindow::clone()
 	}
 
 	allocateStorage(2);
-    CMesh *newMesh = new CMesh();
-    newMesh->cloneFrom(*mMeshes[0]);
-    ZGeom::gatherMeshStatistics(*mMeshes[1]);
+    CMesh *newMesh = new CMesh(*getMesh(0));
 	mMeshHelper[1].init(newMesh);
-    mMeshes[1] = mMeshHelper[1].getMesh();
 
-	qout.output(QString().sprintf("Mesh %s constructed! Size: %d", mMeshes[1]->getMeshName().c_str(), mMeshes[1]->vertCount()));	
+    qout.output(QString().sprintf("Mesh %s constructed! Size: %d", getMesh(1)->getMeshName().c_str(), getMesh(1)->vertCount()));
 	ui.glMeshWidget->update();
 }
 
@@ -704,7 +700,7 @@ void QZGeometryWindow::setDisplayPointCloud()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(false);
 
-	for ( auto rm : mRenderManagers ) {
+	for ( auto& rm : mRenderManagers ) {
 		rm.displayType = RenderSettings::PointCloud;
 		rm.glPolygonMode = GL_POINT;
 	}
@@ -718,7 +714,7 @@ void QZGeometryWindow::setDisplayWireframe()
 	ui.actionDisplayWireframe->setChecked(true);
 	ui.actionDisplayMesh->setChecked(false);
 	
-	for ( auto rm : mRenderManagers ) {
+	for ( auto& rm : mRenderManagers ) {
 		rm.displayType = RenderSettings::Wireframe;
 		rm.glPolygonMode = GL_LINE;
 	}
@@ -732,7 +728,7 @@ void QZGeometryWindow::setDisplayMesh()
 	ui.actionDisplayWireframe->setChecked(false);
 	ui.actionDisplayMesh->setChecked(true);
 
-	for ( auto rs : mRenderManagers) {
+	for ( auto& rs : mRenderManagers) {
 		rs.displayType = RenderSettings::Mesh;
 		rs.glPolygonMode = GL_FILL;
 	}
@@ -843,21 +839,21 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 void QZGeometryWindow::computeCurvatures()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-        ZGeom::calMeshAttrMeanGaussCurvatures(*mMeshes[obj]);
-        vector<double> vCM = ZGeom::getMeshMeanCurvatures(*mMeshes[obj]);
-        vector<double> vCG = ZGeom::getMeshGaussCurvatures(*mMeshes[obj]);
-//         vector<double> vCP1 = mMeshes[obj]->calPrincipalCurvature(1);
-//         vector<double> vCP2 = mMeshes[obj]->calPrincipalCurvature(2);
+        ZGeom::calMeshAttrMeanGaussCurvatures(*getMesh(obj));
+        vector<double> vCM = ZGeom::getMeshMeanCurvatures(*getMesh(obj));
+        vector<double> vCG = ZGeom::getMeshGaussCurvatures(*getMesh(obj));
+//         vector<double> vCP1 = getMesh(obj)->calPrincipalCurvature(1);
+//         vector<double> vCP2 = getMesh(obj)->calPrincipalCurvature(2);
 
         ColorSignature colorCM(vCM, mColorMapType);
         ColorSignature colorCG(vCG, mColorMapType);
 //         ColorSignature colorCP1(vCP1, mColorMapType);
 //         ColorSignature colorCP2(vCP2, mColorMapType);
 
-        mMeshes[obj]->addColorAttr("color_mean_curvature", colorCM);
-        mMeshes[obj]->addColorAttr("color_gauss_curvature", colorCG);
-//         mMeshes[obj]->addColorAttr("color_principal_curvature_1", colorCP1);
-//         mMeshes[obj]->addColorAttr("color_principal_curvature_2", colorCP2);
+        getMesh(obj)->addColorAttr("color_mean_curvature", colorCM);
+        getMesh(obj)->addColorAttr("color_gauss_curvature", colorCG);
+//         getMesh(obj)->addColorAttr("color_principal_curvature_1", colorCP1);
+//         getMesh(obj)->addColorAttr("color_principal_curvature_2", colorCP2);
 
 
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
@@ -892,16 +888,6 @@ void QZGeometryWindow::registerPreprocess()
 	std::string rand_data_file = g_configMgr.getConfigValue("RAND_DATA_FILE");
 	mShapeMatcher.readInRandPair(rand_data_file);
 
-	// ground truth 
-	if (mMeshes[0]->getMeshName() == "march1_1_partial") {
-		std::cout << "Ground truth available!" << std::endl;
-		std::string mapFile = "./models/map1.txt";
-		mShapeMatcher.loadGroundTruth(mapFile);
-	}
-	else if(mMeshes[0]->vertCount() == mMeshes[1]->vertCount()) {
-		mShapeMatcher.autoGroundTruth();
-	}
-
 	mShapeMatcher.setRegistrationLevels(1);
 	registerTest();
 //	evalDistance();
@@ -912,12 +898,12 @@ void QZGeometryWindow::reconstructMHB()
 	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
 	double ratio = std::min((double)mCommonParameter/sliderCenter, 1.0);
 	int nEig = mMeshHelper[0].getMHB(CotFormula).eigVecCount() * ratio;
-	double avgLen = mMeshes[0]->getAvgEdgeLength();
+	double avgLen = getMesh(0)->getAvgEdgeLength();
 
 	mShapeEditor.fourierReconstruct(nEig);
     std::cout << "Reconstruct with " << nEig << " eigenvectors" << std::endl;
 
-    ZGeom::VecNd vPosDiff = mShapeEditor.getOldMeshCoord().vertDifference(mMeshes[0]->getVertCoordinates());
+    ZGeom::VecNd vPosDiff = mShapeEditor.getOldMeshCoord().vertDifference(getMesh(0)->getVertCoordinates());
     for (double& v : vPosDiff) v /= avgLen;
     std::cout << "Avg Error as ratio of AEL: " << vPosDiff.mean() << std::endl;
 
@@ -938,7 +924,7 @@ void QZGeometryWindow::displayNeighborVertices()
 	for (auto iter = vn.begin(); iter != vn.end(); ++iter) {
 		mfl->addFeature(new MeshFeature(*iter));
 	}
-	mMeshes[0]->addAttrMeshFeatures(*mfl, StrAttrFeatureNeighbors);
+	getMesh(0)->addAttrMeshFeatures(*mfl, StrAttrFeatureNeighbors);
 
 	if (!ui.actionShowFeatures->isChecked()) toggleShowFeatures();
 	ui.glMeshWidget->update();
@@ -953,7 +939,7 @@ void QZGeometryWindow::computeEigenfunction()
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
 		vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
-        mMeshes[i]->addColorAttr(StrAttrColorEigenFunction, ColorSignature(eigVec, mColorMapType));
+        getMesh(i)->addColorAttr(StrAttrColorEigenFunction, ColorSignature(eigVec, mColorMapType));
 	}
 
 	displaySignature(StrAttrColorEigenFunction.c_str());
@@ -1014,7 +1000,7 @@ void QZGeometryWindow::computeBiharmonic()
 	for (int obj = 0; obj < mMeshCount; ++obj)
 	{
 		MeshHelper& mp = mMeshHelper[obj];
-		const int vertCount = mMeshes[obj]->vertCount();
+		const int vertCount = getMesh(obj)->vertCount();
 		const int refPoint = mp.getRefPointIndex();
         const ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
 
@@ -1068,13 +1054,13 @@ void QZGeometryWindow::repeatOperation()
 
 void QZGeometryWindow::displayDiffPosition()
 {
-	runtime_assert(mMeshCount >= 2 && mMeshes[0]->vertCount() == mMeshes[1]->vertCount());
-	int size = mMeshes[0]->vertCount();
+	runtime_assert(mMeshCount >= 2 && getMesh(0)->vertCount() == getMesh(1)->vertCount());
+	int size = getMesh(0)->vertCount();
 	std::vector<double> vDiff;
 	vDiff.resize(size);
 
-	for (int i = 0; i < mMeshes[0]->vertCount(); ++i) {
-		vDiff[i] = (mMeshes[0]->vert(i)->pos() - mMeshes[1]->vert(i)->pos()).length() / mMeshes[0]->getAvgEdgeLength();
+    for (int i = 0; i < getMesh(0)->vertCount(); ++i) {
+        vDiff[i] = (getMesh(0)->vert(i)->pos() - getMesh(1)->vert(i)->pos()).length() / getMesh(0)->getAvgEdgeLength();
 	}
 
 	addColorSignature(0, vDiff, StrAttrColorPosDiff);
@@ -1085,7 +1071,7 @@ void QZGeometryWindow::displayDiffPosition()
 void QZGeometryWindow::displaySignature(QString sigName )
 {
 	for (int i = 0; i < mMeshCount; ++i) {
-		if (mMeshes[i]->hasAttr(sigName.toStdString()))
+        if (getMesh(i)->hasAttr(sigName.toStdString()))
 			mRenderManagers[i].mActiveColorSignatureName = sigName.toStdString();
 	}
 
@@ -1151,7 +1137,7 @@ void QZGeometryWindow::displayLine(QString lineFeatureName)
 void QZGeometryWindow::updateDisplaySignatureMenu()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
-	std::vector<AttrVertColors*> vColorAttributes = mMeshes[obj]->getColorAttrList();
+    std::vector<AttrVertColors*> vColorAttributes = getMesh(obj)->getColorAttrList();
 	for (QAction* qa : m_actionDisplaySignatures) {
 		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
 			== vColorAttributes.end())
@@ -1176,7 +1162,7 @@ void QZGeometryWindow::updateDisplaySignatureMenu()
 void QZGeometryWindow::updateDisplayFeatureMenu()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
-	std::vector<AttrMeshFeatures*> vFeatureAttr = mMeshes[obj]->getMeshFeatureList();
+    std::vector<AttrMeshFeatures*> vFeatureAttr = getMesh(obj)->getMeshFeatureList();
 	for (QAction* qa : m_actionDisplayFeatures) {
 		if (find_if(vFeatureAttr.begin(), vFeatureAttr.end(), 
                     [&](AttrMeshFeatures* attr){ return attr->attrName() == qa->text().toStdString(); }) 
@@ -1204,7 +1190,7 @@ void QZGeometryWindow::updateDisplayFeatureMenu()
 void QZGeometryWindow::updateDisplayLineMenu()
 {
     int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
-    vector<AttrMeshLines*> vLineAttr = mMeshes[obj]->getMeshLineList();
+    vector<AttrMeshLines*> vLineAttr = getMesh(obj)->getMeshLineList();
     for (QAction *qa : m_actionDisplayLines) {
         bool found = false;
         for (AttrMeshLines* attr : vLineAttr) {
@@ -1293,7 +1279,7 @@ void QZGeometryWindow::detectFeatures()
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
 
-				if (mMeshes[1]->isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
+				if (getMesh(1)->isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1309,7 +1295,7 @@ void QZGeometryWindow::detectFeatures()
 			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 // 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
 // 				if (sim < 0.20) {candFound = true; break;}
-				if (mMeshes[0]->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (getMesh(0)->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					candFound = true; break;
 				}
 			}
@@ -1322,7 +1308,7 @@ void QZGeometryWindow::detectFeatures()
 
 		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
 			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
-				if (mMeshes[1]->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
+				if (getMesh(1)->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
 					count_one_neighbor++;
 					if (feature_count.find(iter1->m_index) == feature_count.end())
 						feature_count.insert(make_pair(iter1->m_index, 1));
@@ -1359,11 +1345,11 @@ void QZGeometryWindow::matchFeatures()
 #if 0	
 	if (force_matching == 1)
 	{
-		if (mMeshes[0]->getMeshName() == "horse0")
+		if (getMesh(0)->getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
 		}
-		else if (mMeshes[0]->getMeshName() == "eight")
+		else if (getMesh(0)->getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
 		}
@@ -1385,11 +1371,11 @@ void QZGeometryWindow::matchFeatures()
 	}
 	else if (force_matching == 2)
 	{
-		if (mMeshes[0]->getMeshName() == "horse0")
+		if (getMesh(0)->getMeshName() == "horse0")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_HORSE_FILE");
 		}
-		else if (mMeshes[0]->getMeshName() == "eight")
+		else if (getMesh(0)->getMeshName() == "eight")
 		{
 			string_override = g_configMgr.getConfigValue("MATCHING_EIGHT_FILE");
 		}
@@ -1430,7 +1416,7 @@ void QZGeometryWindow::matchFeatures()
 			vector<double> vTimes;
 			vTimes.push_back(20); vTimes.push_back(40); vTimes.push_back(80); vTimes.push_back(160); vTimes.push_back(320);
 			for (auto iter = vPairs.begin(); iter != vPairs.end(); ) {
-				if (!mMeshes[1]->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
+				if (!getMesh(1)->isInNeighborRing(iter->m_idx1, iter->m_idx2, 2))
 					iter->m_note = -1;
 
 				double dissim = mShapeMatcher.calPointHksDissimilarity(&mMeshHelper[0], &mMeshHelper[1], iter->m_idx1, iter->m_idx2, vTimes, 1);
@@ -1541,7 +1527,7 @@ void QZGeometryWindow::showCoarser()
 void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, LaplacianType laplacianType /*= CotFormula*/ )
 {
 	MeshHelper& mp = mMeshHelper[obj];
-	const CMesh& mesh = *mMeshes[obj];
+	const CMesh& mesh = *getMesh(obj);
 	const int vertCount = mesh.vertCount();
 	if (nEigVec >= vertCount) nEigVec = vertCount - 1;
 
@@ -1569,7 +1555,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 
 void QZGeometryWindow::saveSignature()
 {
-	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) {
+	if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) {
 		qout.output("No signature available", OUT_MSGBOX);
 		return;
 	}
@@ -1577,7 +1563,7 @@ void QZGeometryWindow::saveSignature()
 	QString fileName = QFileDialog::getSaveFileName(this, tr("Save Signature to File"),
 		"./output/signature.txt",
 		tr("Text Files (*.txt *.dat)"));
-	const std::vector<double>& vSig = mMeshes[0]->getAttrValue<vector<double>>(StrAttrOriginalSignature);
+    const std::vector<double>& vSig = getMesh(0)->getAttrValue<vector<double>>(StrAttrOriginalSignature);
 
 	vector2file<double>(fileName.toStdString(), vSig);
 }
@@ -1595,13 +1581,13 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		if (!mMeshHelper[obj].hasLaplacian(laplacianType))
 			throw std::logic_error("Laplacian type not valid!");
-		int nEigen = (nEigVec == -1) ? (mMeshes[obj]->vertCount() - 1) : nEigVec;
+        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 1) : nEigVec;
 		if (laplacianRequireDecompose(obj, nEigen, laplacianType)) ++totalToDecompose;
 	}
 	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 
 	for(int obj = 0; obj < mMeshCount; ++obj) {
-		int nEigen = (nEigVec == -1) ? (mMeshes[obj]->vertCount() - 1) : nEigVec;
+        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 1) : nEigVec;
 		decomposeSingleLaplacian(obj, nEigen, laplacianType);
 	}
 
@@ -1660,10 +1646,10 @@ void QZGeometryWindow::registerTest()
 	ui.glMeshWidget->update();
 }
 
-bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, LaplacianType laplacianType ) const
+bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, LaplacianType laplacianType )
 {
 	const MeshHelper& mp = mMeshHelper[obj];
-	const CMesh& mesh = *mMeshes[obj];
+    CMesh& mesh = *getMesh(obj);
 	
 	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
 	if (!gSettings.LOAD_MHB_CACHE) return true;    
@@ -1686,10 +1672,9 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 
 void QZGeometryWindow::allocateStorage( int newMeshCount )
 {
-	int existingMeshCount = mMeshes.size();
+	int existingMeshCount = (int)mMeshHelper.size();
 	assert(newMeshCount > existingMeshCount);
 	for (int k = 0; k < newMeshCount - existingMeshCount; ++k) {
-        mMeshes.emplace_back();
         mMeshHelper.emplace_back();
         mRenderManagers.emplace_back();
 	}
@@ -1743,10 +1728,10 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	double sMax = *(iResult.second);
 	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
 
-	std::vector<double>& vSig = mMeshes[obj]->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
+    std::vector<double>& vSig = getMesh(obj)->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
 	vSig = vVals;
 
-    mMeshes[obj]->addColorAttr(sigName, ColorSignature(vVals, mColorMapType));
+    getMesh(obj)->addColorAttr(sigName, ColorSignature(vVals, mColorMapType));
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -1771,7 +1756,7 @@ void QZGeometryWindow::computeGeodesics()
 
 		std::vector<double> values(meshSize);
 		for (int vIdx = 0; vIdx < meshSize; ++vIdx) {
-			values[vIdx] = ZGeom::calGeodesic(*mMeshes[obj], refPoint, vIdx);
+            values[vIdx] = ZGeom::calGeodesic(*getMesh(obj), refPoint, vIdx);
 		}
 
 		addColorSignature(obj, values, StrAttrColorGeodesics);
@@ -1787,7 +1772,7 @@ void QZGeometryWindow::computeHeatTransfer()
 	double tMultiplier = 1.0;
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		MeshHelper *mp = &mMeshHelper[obj];
-		const int vertCount = mMeshes[obj]->vertCount();
+        const int vertCount = getMesh(obj)->vertCount();
 		const int vSrc = mp->getRefPointIndex();
 		std::vector<double> vHeat;
 
@@ -1822,8 +1807,8 @@ void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		const std::string& currentSig = mRenderManagers[obj].mActiveColorSignatureName;
-		if (!mMeshes[obj]->hasAttr(currentSig)) continue;
-        ColorSignature colors = mMeshes[obj]->getColorSignature(currentSig);
+        if (!getMesh(obj)->hasAttr(currentSig)) continue;
+        ColorSignature colors = getMesh(obj)->getColorSignature(currentSig);
         colors.changeColorMap(mColorMapType);
         colors.changeSignatureMode(smode);
 	}
@@ -1949,10 +1934,10 @@ void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
 void QZGeometryWindow::updateSignatureMin( int sMin )
 {
     if (mSignatureMode != ZGeom::SM_BandCurved) return;
-	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
+    if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
+    std::vector<double>& vSig = getMesh(0)->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -1965,10 +1950,10 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 void QZGeometryWindow::updateSignatureMax( int sMax )
 {
     if (mSignatureMode != ZGeom::SM_BandCurved) return;
-	if (!mMeshes[0]->hasAttr(StrAttrOriginalSignature)) return;
+    if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
-	std::vector<double>& vSig = mMeshes[0]->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
+    std::vector<double>& vSig = getMesh(0)->getAttrValue<std::vector<double>>(StrAttrOriginalSignature);
 	auto mmp = std::minmax_element(vSig.begin(), vSig.end());
 	double vMin = *mmp.first, vMax = *mmp.second;
 
@@ -2033,7 +2018,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 	mSelectedApprox = selectedApprox;
 	mCoordIdx = coordIdx;
 
-	const int vertCount = mMeshes[0]->vertCount();
+    const int vertCount = getMesh(0)->vertCount();
 	std::vector<double> vDiff;
 	vDiff.resize(vertCount);
 
@@ -2044,7 +2029,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
 		vDiff[i] = (oldCoord[i] - newCoord[i]).length();
 	}
 
-    mMeshes[0]->addColorAttr(StrAttrColorPosDiff, ColorSignature(vDiff));
+    getMesh(0)->addColorAttr(StrAttrColorPosDiff, ColorSignature(vDiff));
 
 	displaySignature(StrAttrColorPosDiff.c_str());
 	updateDisplaySignatureMenu();
@@ -2058,7 +2043,7 @@ bool QZGeometryWindow::isMeshSelected( int obj )
 
 void QZGeometryWindow::listMeshAttributes()
 {
-	std::vector<std::string> attrList = mMeshes[0]->getAttrNamesList();
+    std::vector<std::string> attrList = getMesh(0)->getAttrNamesList();
 	std::ostringstream ostr;
 	ostr << "List all attributes:";
 	for (size_t i = 0; i < attrList.size(); ++i) 
@@ -2069,7 +2054,7 @@ void QZGeometryWindow::listMeshAttributes()
 void QZGeometryWindow::computeVertNormals()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		CMesh* mesh = mMeshes[obj];
+        CMesh* mesh = getMesh(obj);
 		int vertCount = mesh->vertCount();
         ZGeom::calMeshAttrVertNormals(*mesh);
         auto vNormals = ZGeom::getMeshVertNormals(*mesh);
@@ -2089,7 +2074,7 @@ void QZGeometryWindow::computeVertNormals()
 void QZGeometryWindow::computeFaceNormals()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		CMesh* mesh = mMeshes[obj];
+        CMesh* mesh = getMesh(obj);
 		int faceCount = mesh->faceCount();
         mesh->calAttrFaceNormals();
 		auto fNormals = mesh->getFaceNormals();
@@ -2121,19 +2106,19 @@ void QZGeometryWindow::fillHoles()
     hole.mHoleVerts = std::vector < int > {vIn.begin(), vIn.end()};
     std::set<int> fHole;
     for (int vi : hole.mHoleVerts) {
-        auto nf = mMeshes[0]->vert(vi)->getAdjacentFaces();
+        auto nf = getMesh(0)->vert(vi)->getAdjacentFaces();
         for (const CFace* f : nf) fHole.insert(f->getFaceIndex());
     }
     hole.mHoleFaces = std::vector < int > {fHole.begin(), fHole.end()};
 
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
     displayFeature("hole_vertex");
     displayFeature("hole_boundary_verts");
 
 
-    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
     ui.glMeshWidget->update();
 }
 
@@ -2184,24 +2169,24 @@ void QZGeometryWindow::generateHoles()
         tr("Hole size:"), 25, 1, 10000, 1, &ok);
     if (ok) holeVertCount = i;        
 
-    mMeshHelper[0].generated_holes = autoGenerateHole(*mMeshes[0], vector<int>{refIdx}, holeVertCount);
+    mMeshHelper[0].generated_holes = autoGenerateHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
     MeshHole &hole = mMeshHelper[0].generated_holes;
-    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
 }
 
 void QZGeometryWindow::autoGenerateHoles()
 {
     bool ok;
-    int N = mMeshes[0]->vertCount();
+    int N = getMesh(0)->vertCount();
 
     double missing_ratio = 0.2;
     double s = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
         tr("missing_ratio:"), 0.2, 0.01, 0.75, 2, &ok);
     if (ok) missing_ratio = s;
-    int holeVertCount = std::round(missing_ratio * (double)mMeshes[0]->vertCount());
+    int holeVertCount = std::round(missing_ratio * (double)getMesh(0)->vertCount());
 
     int hole_count = 1;
     int i = QInputDialog::getInt(this, tr("Input number of holes"),
@@ -2215,11 +2200,11 @@ void QZGeometryWindow::autoGenerateHoles()
     std::random_shuffle(seedVerts.begin(), seedVerts.end());
     seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
 
-    mMeshHelper[0].generated_holes = autoGenerateHole(*mMeshes[0], seedVerts, holeVertCount);
+    mMeshHelper[0].generated_holes = autoGenerateHole(*getMesh(0), seedVerts, holeVertCount);
     MeshHole &hole = mMeshHelper[0].generated_holes;
-    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
 }
 
@@ -2258,7 +2243,7 @@ void QZGeometryWindow::cutHoles()
 {
     std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
     newMesh->initNamedCoordinates();
-    mMeshHelper[0].addMesh(std::move(newMesh));
+    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with hole cut");
 
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
@@ -2271,7 +2256,7 @@ void QZGeometryWindow::cutToSelected()
     originalMesh->getSubMeshFromFaces(mMeshHelper[0].generated_holes.mHoleFaces, originalMesh->getMeshName() + "_cut", *newMesh);
     ZGeom::gatherMeshStatistics(*newMesh);
     newMesh->initNamedCoordinates();
-    mMeshHelper[0].addMesh(std::move(newMesh));
+    mMeshHelper[0].addMesh(std::move(newMesh), "original mesh cut to selected");
 
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
@@ -2297,10 +2282,30 @@ void QZGeometryWindow::detectHoles()
 
 void QZGeometryWindow::triangulateHoles()
 {
-    CMesh* old_mesh = mMeshHelper[0].getMesh();
-    std::unique_ptr<CMesh> new_mesh(new CMesh(*old_mesh));
-    ZGeom::triangulateMeshHole(*new_mesh);
+    CMesh* oldMesh = mMeshHelper[0].getMesh();
+    if (ZGeom::getMeshBoundaryLoops(*oldMesh).empty()) {
+        std::cout << "No holes found!" << std::endl;
+        return;
+    }
 
-    mMeshHelper[0].addMesh(std::move(new_mesh));
+    std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
+    ZGeom::triangulateMeshHoles(*newMesh);
+
+    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes triangulated");
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::refineHoles()
+{
+    CMesh* oldMesh = mMeshHelper[0].getMesh();
+    if (ZGeom::getMeshBoundaryLoops(*oldMesh).empty()) {
+        std::cout << "No holes found!" << std::endl;
+        return;
+    }
+
+    std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
+    ZGeom::refineMeshHoles(*newMesh);
+
+    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes refined");
     ui.glMeshWidget->update();
 }

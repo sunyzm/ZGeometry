@@ -17,7 +17,6 @@ using ZGeom::VectorPointwiseProduct;
 
 MeshHelper::MeshHelper()
 {
-	mMesh = nullptr;
 	mRefVert = 0;
 	mActiveHandle = -1;	
     currentMeshIdx = -1;
@@ -26,7 +25,7 @@ MeshHelper::MeshHelper()
  MeshHelper::MeshHelper(MeshHelper && mh)
  {
      mMeshHistory = std::move(mMeshHistory);
-     mMesh = mh.mMesh;
+     mMeshDescriptions = std::move(mMeshDescriptions);
      mRefVert = mh.mRefVert;
      mRefPos = mh.mRefPos;
      mHandles = std::move(mh.mHandles);
@@ -36,12 +35,12 @@ MeshHelper::MeshHelper()
 void MeshHelper::init(CMesh* tm)
 {
     assert(tm != nullptr);
-	mMesh = tm;
-	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	mRefPos = mMesh->vert(mRefVert)->pos();
     mMeshHistory.resize(1);
     mMeshHistory[0].reset(tm);
+    mMeshDescriptions = { "original mesh" };
     currentMeshIdx = 0;
+	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
+	mRefPos = getMesh()->vert(mRefVert)->pos();
 }
 
 void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
@@ -58,7 +57,7 @@ void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*
 	case SymCot:
 	case Anisotropic1:
 	case Anisotropic2:
-		(laplacian.*(laplacian.getConstructFunc(laplacianType)))(mMesh);
+        (laplacian.*(laplacian.getConstructFunc(laplacianType)))(getMesh());
 		break;
 	default: throw std::logic_error("Unrecognized Laplacian type");
 	}       
@@ -85,7 +84,7 @@ std::string MeshHelper::generateMHBPath( const std::string& prefix, LaplacianTyp
 {
 	std::string s_idx = "0";
 	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = prefix + mMesh->getMeshName() + ".mhb." + s_idx;
+    std::string pathMHB = prefix + getMesh()->getMeshName() + ".mhb." + s_idx;
 	return pathMHB;
 }
 
@@ -99,7 +98,7 @@ bool MeshHelper::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
 	ifs.read((char*)&nSize, sizeof(int));
 	ifs.close();
 
-	if (nEig != eigenCount || nSize != mMesh->vertCount()) return false;
+    if (nEig != eigenCount || nSize != getMesh()->vertCount()) return false;
 
 	return true;
 }
@@ -108,7 +107,7 @@ void MeshHelper::addNewHandle( int hIdx )
 {
 	auto iter = mHandles.find(hIdx);
 	if (iter != mHandles.end()) mHandles.erase(iter);
-	else mHandles.insert(std::make_pair(hIdx, mMesh->vert(hIdx)->pos()));	 
+    else mHandles.insert(std::make_pair(hIdx, getMesh()->vert(hIdx)->pos()));
 }
 
 double MeshHelper::calHK( int v1, int v2, double timescale ) const
@@ -125,7 +124,7 @@ double MeshHelper::calHK( int v1, int v2, double timescale ) const
 
 void MeshHelper::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
 {
-	const int vertCount = mMesh->vertCount();
+    const int vertCount = getMesh()->vertCount();
 	vHeat.resize(vertCount);
 	ZGeom::VecNd vInitHeat(vertCount, 0);
 	vInitHeat[vSrc] = 1.0;
@@ -139,8 +138,8 @@ void MeshHelper::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHe
 
 void MeshHelper::computeHeatDiffuseMat( double tMultiplier )
 {
-	const int vertCount = mMesh->vertCount();
-	const double t = std::pow(mMesh->getAvgEdgeLength(), 2) * tMultiplier;
+    const int vertCount = getMesh()->vertCount();
+    const double t = std::pow(getMesh()->getAvgEdgeLength(), 2) * tMultiplier;
 
 	const MeshLaplacian& laplacian = getMeshLaplacian(CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
@@ -156,7 +155,7 @@ const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& la
     if (!mMHBs[laplaceType].empty()) return mMHBs[laplaceType];
 
 	std::string pathMHB = generateMHBPath("cache/", laplaceType);
-	if (eigenCount == -1) eigenCount = mMesh->vertCount() - 1;
+    if (eigenCount == -1) eigenCount = getMesh()->vertCount() - 1;
 
 	int useCache = gSettings.LOAD_MHB_CACHE;
 	if (useCache != 0 && isMHBCacheValid(pathMHB, eigenCount)) {
@@ -175,15 +174,14 @@ const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& la
 void MeshHelper::revertOriginal()
 {
     currentMeshIdx = 0;
-    mMesh = mMeshHistory[0].get();
     clearMeshRelated();
 }
 
-void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh)
+void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description)
 {
     mMeshHistory.push_back(std::move(newMesh));
+    mMeshDescriptions.push_back(description);
     currentMeshIdx = (int)mMeshHistory.size() - 1;
-    mMesh = mMeshHistory.back().get();
     clearMeshRelated();
 }
 
@@ -191,7 +189,7 @@ void MeshHelper::switchMesh()
 {
     if (mMeshHistory.size() <= 1) return;
     currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();
-    mMesh = mMeshHistory[currentMeshIdx].get();
+    std::cout << "Switch to: " << mMeshDescriptions[currentMeshIdx] << std::endl;
     clearMeshRelated();
 }
 

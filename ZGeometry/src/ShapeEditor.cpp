@@ -2189,10 +2189,10 @@ void ShapeEditor::visualizeBoundaries()
 {
     MeshLineList boundaryLines;
     for (HoleBoundary &fhv : filled_boundaries) {
-        int nVert = fhv.vert_on_boundary.size();
-        for (int i = 0; i < nVert; ++i) {
-            int v1 = fhv.vert_on_boundary[i], v2 = fhv.vert_on_boundary[(i + 1) % nVert];
-            LineSegment ls(mMesh->vertPos(v1), mMesh->vertPos(v2), false);
+        int nEdges = fhv.he_on_boundary.size();
+        for (int i = 0; i < nEdges; ++i) {
+            CHalfEdge* he = mMesh->getHalfEdge(fhv.he_on_boundary[i]);
+            LineSegment ls(he->vert(0)->pos(), he->vert(1)->pos(), false);
             ls.color1 = ZGeom::ColorAzure;
             boundaryLines.push_back(ls);
         }

@@ -16,7 +16,7 @@ public:
     MeshHelper(MeshHelper && mh);
 
 	void init(CMesh* tm);
-    void addMesh(std::unique_ptr<CMesh> && newMesh);
+    void addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description = "");
     void switchMesh();
     void revertOriginal();
     CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
@@ -58,8 +58,8 @@ private:
     MeshHelper& operator = (const MeshHelper&);
 
 public:
-	CMesh* mMesh;
     std::vector<std::unique_ptr<CMesh>> mMeshHistory;
+    std::vector<std::string> mMeshDescriptions;
     int currentMeshIdx;
 
 	int mRefVert;

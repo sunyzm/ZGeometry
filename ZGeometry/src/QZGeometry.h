@@ -130,6 +130,7 @@ private slots:
     void cutToSelected();
     void detectHoles();
     void triangulateHoles();
+    void refineHoles();
 
     void inpaintHoles1();
     void inpaintHoles2();
@@ -158,12 +159,13 @@ private:
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
 	void updateReferenceMove(int obj);
-	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType) const;
+	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType);
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
 	void updateSignature(ZGeom::SignatureMode smode);
 
 	/* helper functions */
+    CMesh* getMesh(int i) { return mMeshHelper[i].getMesh(); }
 	bool isMeshSelected(int obj);
 	void computeFunctionMaps(int num);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
@@ -181,7 +183,6 @@ private:
     std::vector<QAction*> m_actionDisplayLines;
 	QLabel				  mStatusLabel;
 
-	std::vector<CMesh*>	                mMeshes;
 	std::vector<MeshHelper>	            mMeshHelper;
 	std::vector<RenderSettings>			mRenderManagers;
 	ShapeMatcher                        mShapeMatcher;
