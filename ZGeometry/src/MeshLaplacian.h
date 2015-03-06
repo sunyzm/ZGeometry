@@ -25,6 +25,7 @@ public:
 		mConstructFunc[Anisotropic2] = &MeshLaplacian::constructAnisotropic2;
 	}
 	virtual ~MeshLaplacian() {}
+    void clear() { mLS.clear(); mW.clear(); mOrder = 0; mSymmetric = true; }
 
     void constructUmbrella(CMesh* tmesh);				// negative symmetric graph Laplacian. L = A - D
     void constructGeometricUmbrella(CMesh *tmesh);    // negative symmetric graph Laplacian. w_ij is weighted by the inverse of length between i and j

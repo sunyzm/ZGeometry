@@ -13,6 +13,8 @@ class EigenSystem
 public:
 	friend class EigenCompute;
 
+    void clear() { mEigVals.clear(); mEigVecs.clear(); }
+
 	void setSize(int order, int nev);
 	bool empty() const { return mEigVecs.empty(); }
     int eigVecCount() const { return (int)mEigVecs.size(); }

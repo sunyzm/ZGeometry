@@ -45,8 +45,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
-    backupMesh = nullptr;
-
 	/* setup ui and connections */
 	ui.setupUi(this);
 	this->makeConnections();
@@ -92,8 +90,6 @@ QZGeometryWindow::~QZGeometryWindow()
 	delete m_signatureSignalMapper;
 	delete m_featureSignalMapper;
     delete m_linesSignalMapper;
-
-    delete backupMesh;
 }
 
 void QZGeometryWindow::makeConnections()
@@ -432,7 +428,9 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 	loadInitialMeshes(mesh_list_name); 
 
-    ui.glMeshWidget->setup(&mMeshHelper, mRenderManagers, &mShapeMatcher);
+    std::vector<MeshHelper*> vpHelper;
+    for (MeshHelper& mh : mMeshHelper) vpHelper.push_back(&mh);
+    ui.glMeshWidget->setup(vpHelper, mRenderManagers, &mShapeMatcher);
 
     /* compute and decompose mesh Laplacians */
     //computeLaplacian(Umbrella);
@@ -2185,16 +2183,12 @@ void QZGeometryWindow::generateHoles()
         tr("Hole size:"), 25, 1, 10000, 1, &ok);
     if (ok) holeVertCount = i;        
 
-    MeshHole hole = autoGenerateHole(*mMeshes[0], vector < int > {refIdx}, holeVertCount);
+    mMeshHelper[0].generated_holes = autoGenerateHole(*mMeshes[0], vector<int>{refIdx}, holeVertCount);
+    MeshHole &hole = mMeshHelper[0].generated_holes;
+    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
-    //displayFeature("hole_vertex");
-    //displayFeature("hole_boundary_verts");
-
-    vHoleVerts = hole.mHoleVerts;
-    vHoleFaces = hole.mHoleFaces;
-    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
 }
 
 void QZGeometryWindow::autoGenerateHoles()
@@ -2218,18 +2212,14 @@ void QZGeometryWindow::autoGenerateHoles()
     std::vector<int> seedVerts(N);
     for (int i = 0; i < N; ++i) seedVerts[i] = i;
     std::random_shuffle(seedVerts.begin(), seedVerts.end());
-    seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + hole_count};
+    seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
 
-    MeshHole hole = autoGenerateHole(*mMeshes[0], seedVerts, holeVertCount);
+    mMeshHelper[0].generated_holes = autoGenerateHole(*mMeshes[0], seedVerts, holeVertCount);
+    MeshHole &hole = mMeshHelper[0].generated_holes;
+    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
     mMeshes[0]->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
-    //displayFeature("hole_vertex");
-    //displayFeature("hole_boundary_verts");
-
-    vHoleVerts = hole.mHoleVerts;
-    vHoleFaces = hole.mHoleFaces;
-    mMeshes[0]->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
 }
 
 void QZGeometryWindow::degradeHoles()
@@ -2265,41 +2255,29 @@ void QZGeometryWindow::inpaintHoles2()
 
 void QZGeometryWindow::cutHoles()
 {
-    if (backupMesh != nullptr) return;
-    if (vHoleVerts.empty()) return;
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
+    mMeshHelper[0].addMesh(std::move(newMesh));
 
-    vector<int> vRemainingFaces;
-    vRemainingFaces.reserve(mMeshes[0]->faceCount() - vHoleFaces.size());
-    std::unordered_set<int> holeFaces{ vHoleFaces.begin(), vHoleFaces.end() };
-    for (int i = 0; i < (int)mMeshes[0]->faceCount(); ++i) {
-        if (holeFaces.find(i) == holeFaces.end())
-            vRemainingFaces.push_back(i);
-    }
-
-    backupMesh = new CMesh(*mMeshes[0]);
-    mMeshes[0]->getSubMeshFromFaces(vRemainingFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
-    ZGeom::gatherMeshStatistics(*backupMesh);
-
-    switchMesh();
+    mShapeEditor.init(mMeshHelper[0]);
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::cutToSelected()
 {
-    if (backupMesh != nullptr) return;
-    if (vHoleVerts.empty()) return;
+    std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
+    CMesh *originalMesh = mMeshHelper[0].getOriginalMesh();
+    originalMesh->getSubMeshFromFaces(mMeshHelper[0].generated_holes.mHoleFaces, originalMesh->getMeshName() + "_cut", *newMesh);
+    ZGeom::gatherMeshStatistics(*newMesh);
+    mMeshHelper[0].addMesh(std::move(newMesh));
 
-    backupMesh = new CMesh(*mMeshes[0]);
-    mMeshes[0]->getSubMeshFromFaces(vHoleFaces, mMeshes[0]->getMeshName() + "_cut", *backupMesh);
-    ZGeom::gatherMeshStatistics(*backupMesh);
-
-    switchMesh();
+    mShapeEditor.init(mMeshHelper[0]);
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::switchMesh()
 {
-    mMeshHelper[0].revertOriginal();
+    mMeshHelper[0].switchMesh();
     mShapeEditor.init(mMeshHelper[0]);
-    ui.glMeshWidget->setup(0, &mMeshHelper[0], &mRenderManagers[0]);
     ui.glMeshWidget->update();
 }
 

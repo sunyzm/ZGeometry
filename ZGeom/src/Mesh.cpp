@@ -309,6 +309,7 @@ CMesh& CMesh::operator = (CMesh&& oldMesh)
     m_vHalfEdges = std::move(oldMesh.m_vHalfEdges);
     m_vFaces = std::move(oldMesh.m_vFaces);
     m_meshName = std::move(oldMesh.m_meshName);
+    m_defaultColor = oldMesh.m_defaultColor;
     mAttributes = std::move(oldMesh.mAttributes);
     return *this;
 }
@@ -1095,7 +1096,6 @@ void CMesh::partitionToSubMeshes( const std::vector<std::vector<int>*>& vSubMapp
 void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string subMeshName, CMesh& submesh )
 {
     submesh.clearMesh();
-    submesh.setMeshName(subMeshName);
 
     std::list<ZGeom::Vec3d> VertexList;
     std::list<int> FaceList;
@@ -1116,13 +1116,9 @@ void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string 
 
     int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
-    vector<ZGeom::Vec3d> m_pVertex(nVertex);
+    vector<ZGeom::Vec3d> m_pVertex(VertexList.begin(), VertexList.end());
     vector<vector<int>> faceVerts(nFace);
-    list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
     list<int>::iterator iFace = FaceList.begin();
-    for (int i = 0; i < nVertex; i++) {
-        m_pVertex[i] = *iVertex++;
-    }
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
         for (int j = 0; j < 3; ++j)
@@ -1130,6 +1126,7 @@ void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string 
     }
 
     submesh.construct(m_pVertex, faceVerts);
+    submesh.setMeshName(subMeshName);
     submesh.addDefaultColorAttr();
 }
 

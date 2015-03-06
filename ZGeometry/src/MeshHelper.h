@@ -16,8 +16,13 @@ public:
     MeshHelper(MeshHelper && mh);
 
 	void init(CMesh* tm);
+    void addMesh(std::unique_ptr<CMesh> && newMesh);
+    void switchMesh();
     void revertOriginal();
     CMesh* getMesh() const { return mMesh; }
+    CMesh* getOriginalMesh() const { return mMeshHistory[0].get(); }
+    
+    void clearMeshRelated();
 
 	/* Laplacian and MHB related */
 	void constructLaplacian(LaplacianType laplacianType = CotFormula);
@@ -49,12 +54,13 @@ public:
 	void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
 
 private:
-    MeshHelper(const MeshHelper&) {};
-//     MeshHelper& operator = (const MeshHelper&) = delete;
+    MeshHelper(const MeshHelper&);
+    MeshHelper& operator = (const MeshHelper&);
 
-private:
+public:
 	CMesh* mMesh;
     std::vector<std::unique_ptr<CMesh>> mMeshHistory;
+    int currentMeshIdx;
 
 	int mRefVert;
 	ZGeom::Vec3d mRefPos;
@@ -65,5 +71,9 @@ private:
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
+
+    MeshHole generated_holes;
+    std::vector<ZGeom::HoleBoundary> original_holes;
+    std::vector<ZGeom::HoleBoundary> inpainted_holes;
 };
 

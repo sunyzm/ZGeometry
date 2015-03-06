@@ -185,7 +185,6 @@ private:
 	ShapeMatcher                        mShapeMatcher;
 	ShapeEditor	                        mShapeEditor;
     
-    CMesh*  backupMesh;
     std::vector<int> vHoleVerts;
     std::vector<int> vHoleFaces;
 

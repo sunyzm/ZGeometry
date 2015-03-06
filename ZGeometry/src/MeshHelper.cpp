@@ -20,17 +20,18 @@ MeshHelper::MeshHelper()
 	mMesh = nullptr;
 	mRefVert = 0;
 	mActiveHandle = -1;	
+    currentMeshIdx = -1;
 }
 
-MeshHelper::MeshHelper(MeshHelper && mh)
-{
-    mMeshHistory = std::move(mMeshHistory);
-    mMesh = mh.mMesh;
-    mRefVert = mh.mRefVert;
-    mRefPos = mh.mRefPos;
-    mHandles = std::move(mh.mHandles);
-    mActiveHandle = std::move(mh.mActiveHandle);
-}
+ MeshHelper::MeshHelper(MeshHelper && mh)
+ {
+     mMeshHistory = std::move(mMeshHistory);
+     mMesh = mh.mMesh;
+     mRefVert = mh.mRefVert;
+     mRefPos = mh.mRefPos;
+     mHandles = std::move(mh.mHandles);
+     mActiveHandle = std::move(mh.mActiveHandle);
+ }
 
 void MeshHelper::init(CMesh* tm)
 {
@@ -40,6 +41,7 @@ void MeshHelper::init(CMesh* tm)
 	mRefPos = mMesh->vert(mRefVert)->pos();
     mMeshHistory.resize(1);
     mMeshHistory[0].reset(tm);
+    currentMeshIdx = 0;
 }
 
 void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
@@ -172,8 +174,34 @@ const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& la
 
 void MeshHelper::revertOriginal()
 {
+    currentMeshIdx = 0;
     mMesh = mMeshHistory[0].get();
+    clearMeshRelated();
+}
+
+void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh)
+{
+    mMeshHistory.push_back(std::move(newMesh));
+    currentMeshIdx = (int)mMeshHistory.size() - 1;
+    mMesh = mMeshHistory.back().get();
+    clearMeshRelated();
+}
+
+void MeshHelper::switchMesh()
+{
+    if (mMeshHistory.size() <= 1) return;
+    currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();
+    mMesh = mMeshHistory[currentMeshIdx].get();
+    clearMeshRelated();
+}
+
+void MeshHelper::clearMeshRelated()
+{
     mRefVert = 0;
-    mRefPos = mMesh->vertPos(mRefVert);
+    mRefPos = getMesh()->vertPos(mRefVert);
+    mHandles.clear();
+    mActiveHandle = -1;
+    for (MeshLaplacian& lm : mMeshLaplacians) lm.clear();
+    for (ZGeom::EigenSystem & es : mMHBs) es.clear();
 }
 

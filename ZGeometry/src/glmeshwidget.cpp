@@ -308,11 +308,11 @@ void GLMeshWidget::mouseReleaseEvent( QMouseEvent *event )
 void GLMeshWidget::wheelEvent(QWheelEvent *event)
 {
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
-	int meshCount = mMeshes.size();
+	int meshCount = mMeshHelpers.size();
 
 	if (event->modifiers() & Qt::ControlModifier) {
 		int numSteps = event->delta();
-		float scale = 5.0 * mMeshes[0]->getBoundingBox().x / this->height();
+		float scale = 5.0 * mMeshHelpers[0]->getMesh()->getBoundingBox().x / this->height();
 		ZGeom::Vec3d trans =  ZGeom::Vec3d(0, 0, scale * numSteps);
 		
 		for (int i = 0; i < meshCount; ++i) {
@@ -411,12 +411,12 @@ void GLMeshWidget::drawGL()
 	gluLookAt(0, 0, g_EyeZ, 0, 0, 0, 0, 1, 0);
 
 	if (g_task == TASK_EDITING || g_task == TASK_VIEWING) {
-        for (unsigned obj = 0; obj < mMeshes.size(); ++obj) {
+        for (unsigned obj = 0; obj < mMeshHelpers.size(); ++obj) {
             drawMeshExt(mMeshHelpers[obj], mRenderSettings[obj]);
         }
 	}
 	else if (g_task == TASK_REGISTRATION) {
-		assert(mMeshes.size() == 2);
+		assert(mMeshHelpers.size() == 2);
         drawMeshExt(mMatcher->getMeshHelper(0, m_nMeshLevel), mRenderSettings[0]);
         drawMeshExt(mMatcher->getMeshHelper(1, m_nMeshLevel), mRenderSettings[1]);
 
@@ -449,14 +449,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glPointSize(mMeshPointSize);
     
     //////////////////////////////////////////////////////////////////////////
-	// draw mesh with color signature
-    std::set<int> holeFaceIdx;
-    if (tmesh->hasAttr("hole_faces")) {
-        auto holevert = tmesh->getAttrValue<vector<int>>("hole_faces");
-        holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
-    }
-    
-    if (m_bShowHoles && !holeFaceIdx.empty()) 
+	/* draw mesh with color signature */
     {
         glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.0, 1.0);
@@ -474,11 +467,19 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         }
         glEnd();
         glDisable(GL_POLYGON_OFFSET_FILL);
+    }
 
+    /* draw selected hole region in yellow */
+    std::set<int> holeFaceIdx;
+    if (tmesh->hasAttr(StrAttrHoleFaces)) {
+        auto holevert = tmesh->getAttrValue<vector<int>>(StrAttrHoleFaces);
+        holeFaceIdx = std::set < int > {holevert.begin(), holevert.end()};
+    }
+    if (m_bShowHoles && !holeFaceIdx.empty())
+    {        
         //glEnable(GL_POLYGON_OFFSET_FILL);
         //glPolygonOffset(1.0, 1.0);
         glBegin(GL_TRIANGLES);
-        //const float *holeColor = ZGeom::ColorPaleVioletRed2;
         const float *holeColor = ZGeom::ColorYellow;
         for (int fIdx : holeFaceIdx) {
             CFace* face = tmesh->m_vFaces[fIdx];
@@ -493,28 +494,8 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             }
         }
         glEnd();
-        glDisable(GL_POLYGON_OFFSET_FILL);
+        //glDisable(GL_POLYGON_OFFSET_FILL);
     }
-    else 
-    {
-        glEnable(GL_POLYGON_OFFSET_FILL);
-        glPolygonOffset(1.0, 1.0);
-        glBegin(GL_TRIANGLES);
-        for (CFace* face : tmesh->m_vFaces) {
-            for (int j = 0; j < 3; j++) {
-                int pi = face->vertIdx(j);
-                const ZGeom::Vec3d& norm = vVertNormals[pi];
-                const Vec3d& vt = vVertPos[pi];
-                const Colorf& vc = vVertColors[pi];
-                glNormal3f(norm.x, norm.y, norm.z);
-                glColor4f(vc[0], vc[1], vc[2], 1.0);
-                glVertex3f(vt.x, vt.y, vt.z);
-            }
-        }
-        glEnd();
-        glDisable(GL_POLYGON_OFFSET_FILL);
-    }
-        
 
     //////////////////////////////////////////////////////////////////////////
 
@@ -704,7 +685,7 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)
 {
 	std::vector<RenderSettings*>& vpRS = mRenderSettings;
-	int meshCount = mMeshes.size();
+	int meshCount = mMeshHelpers.size();
 	if (obj >= meshCount || vpRS[obj]->selected == false) return false;
 
 	GLdouble  modelview[16], projection[16];

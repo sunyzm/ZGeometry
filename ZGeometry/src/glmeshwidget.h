@@ -40,19 +40,16 @@ public:
     {
         mMeshHelpers[obj] = processor;
         mRenderSettings[obj] = rs;
-        mMeshes[obj] = processor->getMesh();
     }
 
-    void setup(std::vector<MeshHelper>* processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher) 
+    void setup(const std::vector<MeshHelper*>& processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher) 
 	{
         mMeshHelpers.clear();
-        for (MeshHelper& mh : *processors) mMeshHelpers.push_back(&mh);
+        for (MeshHelper* mh : processors) mMeshHelpers.push_back(mh);
         mRenderSettings.clear();
         for (RenderSettings& rs : vrs) mRenderSettings.push_back(&rs);
 		mMatcher = matcher;
-        mMeshes.clear();
-        for (auto p : mMeshHelpers) mMeshes.push_back(p->getMesh());
-        setBasePointSize(mMeshes[0]->getAvgEdgeLength() / 4.);
+        setBasePointSize(mMeshHelpers[0]->getMesh()->getAvgEdgeLength() / 4.);
 	}
 
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
@@ -82,15 +79,16 @@ public slots:
     void changeShadeMode();
 
 private:
+    GLMeshWidget(const GLMeshWidget &);
+
+private:
 	void drawGL();
 	void setupViewport(int width, int height);
     bool glPick(int x, int y, ZGeom::Vec3d& _p, int obj = 0);
 
 	std::vector<MeshHelper*> mMeshHelpers;
-    std::vector<CMesh*> mMeshes;
 	std::vector<RenderSettings*> mRenderSettings;
 	ShapeMatcher* mMatcher;
-	ShapeEditor* mEditor;
 
 	CArcball		g_arcball;
 	GLfloat			g_EyeZ;

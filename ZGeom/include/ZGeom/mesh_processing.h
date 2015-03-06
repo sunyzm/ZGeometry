@@ -2,6 +2,7 @@
 #define ZGEOM_MESH_PROCESSING_H
 #include <functional>
 #include <array>
+#include <memory>
 #include "SparseMatrix.h"
 #include "DenseMatrix.h"
 #include "Plane.h"
@@ -67,6 +68,7 @@ std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh);
 int calMeshGenus(CMesh &mesh);
 std::vector<bool> getMeshVertsOnHoles(CMesh &mesh);
 
+std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx);
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);

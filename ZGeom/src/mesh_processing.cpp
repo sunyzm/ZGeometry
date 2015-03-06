@@ -1,6 +1,7 @@
 #include "mesh_processing.h"
 #include <cstdlib>
 #include <random>
+#include <unordered_set>
 #include <ppl.h>
 #include <concurrent_vector.h>
 #include "MatVecArithmetic.h"
@@ -1027,6 +1028,22 @@ std::vector<bool> getMeshVertsOnHoles(CMesh &mesh)
         for (int vIdx : vVertIdx) result[vIdx] = true;
     }
     return result;
+}
+
+std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx)
+{
+    std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
+    
+    vector<int> vRemainingFaceIdx;
+    std::unordered_set<int> cutFaces(cutFaceIdx.begin(), cutFaceIdx.end());
+    for (int fIdx = 0; fIdx < oldMesh.faceCount(); ++fIdx) {
+        if (cutFaces.find(fIdx) == cutFaces.end())
+            vRemainingFaceIdx.push_back(fIdx);
+    }
+
+    oldMesh.getSubMeshFromFaces(vRemainingFaceIdx, oldMesh.getMeshName() + "_cut", *newMesh);
+    gatherMeshStatistics(*newMesh);
+    return newMesh;
 }
 
 }   // end of namespace
