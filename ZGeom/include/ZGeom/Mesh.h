@@ -59,10 +59,11 @@ public:
     CHalfEdge*              adjacentTo(CVertex* v2) const;
 
 public:
-	int						m_vIndex;           // index of the vertex 0-based
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
-	ZGeom::Vec3d			m_vPosition;		// vertex coordinates
-	bool					m_bIsValid;
+
+    int						m_vIndex;           // index of the vertex 0-based
+    ZGeom::Vec3d			m_vPosition;		// vertex coordinates
+    bool					m_bIsValid;
 };
 
 //////////////////////////////////////////////////////
@@ -80,24 +81,26 @@ public:
 	CFace*	            getAttachedFace() const     { return m_Face; }
 	CHalfEdge*          twinHalfEdge() const        { return m_eTwin; }
 	CHalfEdge*          nextHalfEdge() const        { return m_eNext; }
-	CHalfEdge*          prevHalfEdge() const        { return m_ePrev; }
-	CVertex*    	    vert(int i) const           { return m_Vertices[i]; }
+	CHalfEdge*          prevHalfEdge() const;
+    CVertex*    	    vert(int i) const           { return (i == 0) ? vert0() : vert1(); }
+    CVertex*            vert0() const               { return m_vert; }
+    CVertex*            vert1() const               { return nextHalfEdge()->vert0(); }
 	bool		        isBoundaryEdge() const      { return m_eTwin == NULL; }
     int			        getVertIndex(int i) const   { return vert(i)->getIndex(); }
 	double		        length() const;
 	int                 getIndex() const            { return m_eIndex; }	
-    void                setVerts(CVertex* v1, CVertex* v2) { m_Vertices[0] = v1; m_Vertices[1] = v2; }
+    void                setVertOrigin(CVertex *v1) { m_vert = v1; }
 
     static void         makeTwins(CHalfEdge* e1, CHalfEdge* e2);
     static void         makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3);
 
 public:
-	int			        m_eIndex;		// half-edge id
-	CVertex*	        m_Vertices[2];	// starting and ending vertices
-	CHalfEdge*	        m_eTwin;		// reverse half-edge; null if boundary half edge
-	CHalfEdge*	        m_eNext;		// next half-edge (counterclockwise)
-	CHalfEdge*	        m_ePrev;
+    CVertex*            m_vert;         // starting vert
+    CHalfEdge*	        m_eNext;		// next half-edge (counterclockwise)
+    CHalfEdge*	        m_eTwin;		// reverse half-edge; null if boundary half edge
 	CFace*		        m_Face;			// attached face
+
+    int			        m_eIndex;		// half-edge id
     bool		        m_bIsValid;
 };
 
@@ -116,13 +119,14 @@ public:
     void                    clone(const CFace& f);
     void					create(int s);
     CHalfEdge*              getHalfEdge(int i) { return m_HalfEdges[i]; }
+    std::vector<CHalfEdge*> getAllHalfEdges() const { return m_HalfEdges; }
     int                     edgeCount() const { return (int)m_HalfEdges.size(); }
 	CVertex*				vert(int i) const { return m_HalfEdges[i]->vert(0); }
-    int						vertIdx(int i) const { return vert(i)->getIndex(); }
-    ZGeom::Vec3d            vertPos(int i) const { return vert(i)->pos(); }
     std::vector<CVertex*>   getAllVerts() const;
-    std::vector<ZGeom::Vec3d> getAllVertPos() const;
+    int						vertIdx(int i) const { return vert(i)->getIndex(); }
     std::vector<int>        getAllVertIdx() const;
+    ZGeom::Vec3d            vertPos(int i) const { return vert(i)->pos(); }
+    std::vector<ZGeom::Vec3d> getAllVertPos() const;
     bool                    hasVertex(CVertex* pv) const;
 	bool					hasVertex(int vidx) const;
 	int						getFaceIndex() const { return m_fIndex; }	
@@ -133,10 +137,11 @@ public:
     ZGeom::Plane3           getPlane3() const { return ZGeom::Plane3(calNormal(), vertPos(0)); }
 
 public:	
-	int						m_fIndex;
+    std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
+
+    int						m_fIndex;
 	bool					m_bIsValid;
 	int						m_nType;		// number of polygon face edges
-	std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
 };
 
 
@@ -232,9 +237,8 @@ public:
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);
     void                addFace(CFace *f);
-    void                faceSplit3(int fIdx);
-    CVertex*            faceSplit3(CFace* face);
-    CVertex*            faceSplit2(CFace* face);
+    CVertex*            faceSplit3(int fIdx);
+    CVertex*            edgeSplit(int heIdx);
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);
@@ -249,16 +253,15 @@ public:
     void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
     
 	bool				isInNeighborRing(int ref, int query, int ring) const;
+    std::set<int>       getVertNeighborVertSet(int vIndex, int ring, bool inclusive = false) const;
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
 	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
-	std::vector<int>	getVertexAdjacentFaceIdx(int vIdx, int ring = 1) const;
+	std::vector<int>	getVertAdjacentFaceIdx(int vIdx, int ring = 1) const;
 
 	MeshCoordinates     getVertCoordinates() const;
 	void				setVertCoordinates(const MeshCoordinates& coords);
 	void                setVertCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
 	void		        setPartialVertCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
-    void				vertRingNeighborVerts(int vIndex, int ring, std::set<int>& nbr, bool inclusive = false) const;
-    void				vertRingNeighborVerts(int i, int ring, std::vector<int>& nbr, bool inclusive = false) const;
 
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )

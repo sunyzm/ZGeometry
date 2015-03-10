@@ -2304,7 +2304,7 @@ void QZGeometryWindow::refineHoles()
     }
 
     std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
-    ZGeom::refineMeshHoles(*newMesh);
+    ZGeom::refineMeshHoles(*newMesh, 0.5);
 
     mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes refined");
     ui.glMeshWidget->update();

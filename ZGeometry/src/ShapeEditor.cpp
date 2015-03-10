@@ -2092,8 +2092,9 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
         // construct new face (vi->vk->vj->vi)
         CFace *f = new CFace(3);
         CHalfEdge *eik = new CHalfEdge(), *ekj = new CHalfEdge(), *eji = new CHalfEdge();   // be careful with the clockwise
-        eik->setVerts(vi, vk); ekj->setVerts(vk, vj); eji->setVerts(vj, vi);
-        vi->addHalfEdge(eik); vj->addHalfEdge(eji); vk->addHalfEdge(ekj);
+        eik->setVertOrigin(vi);
+        ekj->setVertOrigin(vk);
+        eji->setVertOrigin(vj);         vi->addHalfEdge(eik); vj->addHalfEdge(eji); vk->addHalfEdge(ekj);
         CMesh::makeFace(eik, ekj, eji, f);
         patchEdges.push_back(eik); patchEdges.push_back(ekj); patchEdges.push_back(eji);
         patchFaces.push_back(f);
@@ -2158,7 +2159,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
                 CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
                 CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
                 double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                CVertex* centroid = mMesh->faceSplit3(face);
+                CVertex* centroid = mMesh->faceSplit3(face->getFaceIndex());
                 lengthAttr[centroid->getIndex()] = vcLenAttr;
             }
         }

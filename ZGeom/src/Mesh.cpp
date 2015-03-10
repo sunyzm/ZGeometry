@@ -90,7 +90,7 @@ std::vector<CFace*> CVertex::getAdjacentFaces() const
 bool CVertex::judgeOnBoundary() const
 {
 	for (auto he : m_HalfEdges) {
-		if (he->twinHalfEdge() == NULL) return true;
+		if (he->twinHalfEdge() == nullptr) return true;
 	}	
 	return false;
 }
@@ -113,7 +113,7 @@ CHalfEdge * CVertex::adjacentTo(CVertex* v2) const
     for (CHalfEdge* he : m_HalfEdges) {
         if (he->vert(1) == v2) return he;
     }
-    return NULL;
+    return nullptr;
 }
 
 void CVertex::removeHalfEdge(CHalfEdge *he)
@@ -127,9 +127,9 @@ void CVertex::removeHalfEdge(CHalfEdge *he)
 
 CHalfEdge::CHalfEdge()
 {
-	m_Vertices[0] = m_Vertices[1] = NULL;
-	m_eTwin= m_eNext = m_ePrev = NULL;
-	m_Face = NULL;
+    m_vert = nullptr;
+	m_eTwin= m_eNext = nullptr;
+	m_Face = nullptr;
 	m_bIsValid = true;
 }
 
@@ -153,29 +153,36 @@ void CHalfEdge::clone(const CHalfEdge& e)
 	if (this == &e) return;
 	m_eIndex = e.m_eIndex;
     m_bIsValid = e.m_bIsValid;
-
-	m_Vertices[0] = m_Vertices[1] = NULL;
-	m_eTwin = m_eNext = m_ePrev = NULL;
-	m_Face = NULL;	
+    	
+    m_vert = nullptr;
+	m_eTwin = m_eNext = nullptr;
+	m_Face = nullptr;	
 }
 
 double CHalfEdge::length() const
 {
-	return (m_Vertices[0]->pos() - m_Vertices[1]->pos()).length();
+	return (vert0()->pos() - vert1()->pos()).length();
 }
 
 void CHalfEdge::makeTwins(CHalfEdge* e1, CHalfEdge* e2)
 {
-    if (e1 == NULL || e2 == NULL) return;
+    if (e1 == nullptr || e2 == nullptr) return;
     e1->m_eTwin = e2;
     e2->m_eTwin = e1;
 }
 
 void CHalfEdge::makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3)
 {
-    e1->m_eNext = e3->m_ePrev = e2;
-    e2->m_eNext = e1->m_ePrev = e3;
-    e3->m_eNext = e2->m_ePrev = e1;
+    e1->m_eNext = e2;
+    e2->m_eNext = e3;
+    e3->m_eNext = e1;
+}
+
+CHalfEdge* CHalfEdge::prevHalfEdge() const
+{
+    CHalfEdge *dest = this->nextHalfEdge();
+    while (dest->nextHalfEdge() != this) dest = dest->nextHalfEdge();
+    return dest;
 }
 
 
@@ -218,6 +225,7 @@ void CFace::clone( const CFace& f )
 void CFace::create(int s)
 {
 	m_nType = s;
+    m_HalfEdges.clear();
 }
 
 bool CFace::hasVertex( int vidx ) const
@@ -362,18 +370,14 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 	for (int i = 0; i < oldMesh.halfEdgeCount(); ++i) {
 		CHalfEdge* curE = this->m_vHalfEdges[i];
 		const CHalfEdge* oldE = oldMesh.m_vHalfEdges[i];
-		int vidx0 = oldE->m_Vertices[0]->m_vIndex,
-			vidx1 = oldE->m_Vertices[1]->m_vIndex,
+		int vidx0 = oldE->vert0()->m_vIndex,
 			neidx = oldE->m_eNext->m_eIndex,
-			peidx = oldE->m_ePrev->m_eIndex,
 			fidx  = oldE->m_Face->m_fIndex;
 
-		curE->m_Vertices[0] = this->m_vVertices[vidx0];
-		curE->m_Vertices[1] = this->m_vVertices[vidx1];
+        curE->m_vert = this->m_vVertices[vidx0];
 		curE->m_eNext = this->m_vHalfEdges[neidx];
-		curE->m_ePrev = this->m_vHalfEdges[peidx];
 		curE->m_Face = this->m_vFaces[fidx];
-        if (oldE->m_eTwin == NULL) curE->m_eTwin = NULL;
+        if (oldE->m_eTwin == nullptr) curE->m_eTwin = nullptr;
         else {
 			int teidx = oldE->m_eTwin->m_eIndex;
 			curE->m_eTwin = this->m_vHalfEdges[teidx];
@@ -439,8 +443,7 @@ void CMesh::save(string sFileName)
 void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::vector<std::vector<int>>& faceVertIdx, int nType /*= 3*/)
 {
     assert(nType == 3);
-///////////////////////////////////////////////////////////////////////////////
-///////////////	code to construct primitives pointer vectors	///////////////
+
     int nVertex = (int)vertCoords.size();
     int nFace = (int)faceVertIdx.size();
     int nHalfEdges = 3 * nFace;
@@ -449,92 +452,62 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
     m_vFaces.reserve(nFace);
     m_vHalfEdges.reserve(nHalfEdges);
 
-    for (int i = 0; i < nVertex; ++i) {
+    for (int i = 0; i < nVertex; ++i) 
+    {
         CVertex* newVertex = new CVertex(vertCoords[i]);
-        newVertex->m_vIndex = i;
-		newVertex->m_bIsValid = true;
-		m_vVertices.push_back(newVertex);
-	}
+		this->m_vVertices.push_back(newVertex);
+	} // for each vert
 
+    int half_edge_idx = 0;
 	for (int i = 0; i < nFace; ++i)
 	{
-        CFace* newFace = new CFace();
-        newFace->create(nType);		
-		newFace->m_bIsValid = true;
+        CFace* newFace = new CFace(nType);
         this->m_vFaces.push_back(newFace);
 
         vector<CVertex*> newFaceVerts;
-
 		for (int j = 0; j < nType; ++j)
 			newFaceVerts.push_back(m_vVertices[faceVertIdx[i][j]]);
 
-		CHalfEdge* he1 = new CHalfEdge();
-		CHalfEdge* he2 = new CHalfEdge();
-		CHalfEdge* he3 = new CHalfEdge();
-		he1->m_eNext = he2; he1->m_ePrev = he3;
-		he2->m_eNext = he3; he2->m_ePrev = he1;
-		he3->m_eNext = he1; he3->m_ePrev = he2;		
-		CHalfEdge* heInFace[3] = {he1, he2, he3};
-
-		for (int j = 0; j < 3; ++j) {
-			heInFace[j]->m_eTwin = NULL;
-			heInFace[j]->m_Face = newFace;
-			heInFace[j]->m_bIsValid = true;
-
-			newFace->m_HalfEdges.push_back(heInFace[j]);
+		CHalfEdge* he01 = new CHalfEdge();
+		CHalfEdge* he12 = new CHalfEdge();
+		CHalfEdge* he20 = new CHalfEdge();
+        makeFace(he01, he12, he20, newFace);
+		
+        CHalfEdge* heInFace[3] = {he01, he12, he20};
+		for (int j = 0; j < 3; ++j) {            
+            heInFace[j]->setVertOrigin(newFaceVerts[j]);
             newFaceVerts[j]->m_HalfEdges.push_back(heInFace[j]);
+            heInFace[j]->m_eIndex = half_edge_idx++;
 			this->m_vHalfEdges.push_back(heInFace[j]); 
 		}
-		
-        he1->m_Vertices[0] = newFaceVerts[0];
-        he1->m_Vertices[1] = newFaceVerts[1];
-        he2->m_Vertices[0] = newFaceVerts[1];
-        he2->m_Vertices[1] = newFaceVerts[2];
-        he3->m_Vertices[0] = newFaceVerts[2];
-        he3->m_Vertices[1] = newFaceVerts[0];
-
-        for (int j = 0; j < newFaceVerts[1]->outValence(); ++j)
-		{
-            if (newFaceVerts[1]->m_HalfEdges[j]->m_Vertices[1] == he1->m_Vertices[0])
-			{
-                newFaceVerts[1]->m_HalfEdges[j]->m_eTwin = he1;
-                he1->m_eTwin = newFaceVerts[1]->m_HalfEdges[j];
-				break;
-			}
-		}
-        for (int j = 0; j < newFaceVerts[2]->outValence(); ++j)
-		{
-            if (newFaceVerts[2]->m_HalfEdges[j]->m_Vertices[1] == he2->m_Vertices[0])
-			{
-                newFaceVerts[2]->m_HalfEdges[j]->m_eTwin = he2;
-                he2->m_eTwin = newFaceVerts[2]->m_HalfEdges[j];
-				break;
-			}
-		}
-        for (int j = 0; j < newFaceVerts[0]->outValence(); ++j)
-		{
-            if (newFaceVerts[0]->m_HalfEdges[j]->m_Vertices[1] == he3->m_Vertices[0])
-			{
-                newFaceVerts[0]->m_HalfEdges[j]->m_eTwin = he3;
-                he3->m_eTwin = newFaceVerts[0]->m_HalfEdges[j];
-				break;
-			}
-		}
-
 	} // for each face
 
-    // re-arrange each vertex's half-edges clockwise
-	for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		
+    // associate twin half-edges
+    vector<bool> visited_he(halfEdgeCount(), false);
+    for (CHalfEdge *he : m_vHalfEdges)
+    {         
+        if (visited_he[he->getIndex()]) continue;
+        visited_he[he->getIndex()] = true;
+        for (CHalfEdge* he2 : he->vert1()->getHalfEdges()) {
+            if (he2->vert1() == he->vert0()) {
+                CHalfEdge::makeTwins(he, he2);
+                visited_he[he2->getIndex()] = true;
+                break;
+            }
+        }
+    }
+    
+    // check and erase isolated vertices
+    for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		
 	{
 		CVertex* pV = *iter;
-		if (pV == NULL) throw std::logic_error("Error: null CVertex pointer encountered!");
 		if (pV->outValence() == 0) {
 			delete pV;
 			iter = m_vVertices.erase(iter);
 			continue;
 		}		
-		++iter;
-	} // for each vertex
+        else ++iter;
+	}
 	
 	assignElementsIndex();
 }
@@ -602,7 +575,7 @@ void CMesh::calAttrVertNormals()
 
     vector<Vec3d> vertNormals(vertCount);
     for (int vi = 0; vi < vertCount; ++vi) {
-        vector<int> neighborFaceIdx = getVertexAdjacentFaceIdx(vi, 1);
+        vector<int> neighborFaceIdx = getVertAdjacentFaceIdx(vi, 1);
         Vec3d normalSum(0, 0, 0);
         for (int fj : neighborFaceIdx) {
             double weight = faceAreas[fj];
@@ -647,7 +620,7 @@ double CMesh::calVolume() const
 	return std::fabs(vol);
 }
 
-std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) const
+std::vector<int> CMesh::getVertAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) const
 {
 	assert(ring >= 1);
 	vector<int> vNeighbors = getVertNeighborVerts(vIdx, ring-1, true);
@@ -670,17 +643,17 @@ std::vector<int> CMesh::getVertexAdjacentFaceIdx( int vIdx, int ring /*= 1*/ ) c
 
 bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 {
-	const CVertex* v1 = halfEdge->m_Vertices[0], *v2 = halfEdge->m_Vertices[1];
+	const CVertex* v1 = halfEdge->vert0(), *v2 = halfEdge->vert1();
 	list<CHalfEdge*> v1HeList, v2HeList;
 	list<CVertex*> v1VList, v2VList;
 
 	for (vector<CHalfEdge*>::const_iterator iter = v1->m_HalfEdges.begin(); iter != v1->m_HalfEdges.end(); ++iter) {
 		v1HeList.push_back((*iter)->m_eNext);
-		v1VList.push_back((*iter)->m_Vertices[1]);
+		v1VList.push_back((*iter)->vert1());
 	}
 	for (vector<CHalfEdge*>::const_iterator iter = v2->m_HalfEdges.begin(); iter != v2->m_HalfEdges.end(); ++iter) {
 		v2HeList.push_back((*iter)->m_eNext);
-		v2VList.push_back((*iter)->m_Vertices[1]);
+		v2VList.push_back((*iter)->vert1());
 	}
 	for (list<CHalfEdge*>::iterator iter1 = v1HeList.begin(); iter1 != v1HeList.end(); ++iter1) {
 		for (list<CHalfEdge*>::iterator iter2 = v2HeList.begin(); iter2 != v2HeList.end(); ++iter2) {
@@ -689,10 +662,10 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 		}
 	}
 
-	CVertex* vOppo1 = halfEdge->m_eNext->m_Vertices[1];
-	CVertex* vOppo2(NULL);
+	CVertex* vOppo1 = halfEdge->m_eNext->vert1();
+	CVertex* vOppo2(nullptr);
 	if (halfEdge->m_eTwin && halfEdge->m_eTwin->m_bIsValid)	{
-		vOppo2 = halfEdge->m_eTwin->m_eNext->m_Vertices[1];
+		vOppo2 = halfEdge->m_eTwin->m_eNext->vert1();
 	}
 
 	for (list<CVertex*>::iterator iter1 = v1VList.begin(); iter1 != v1VList.end(); ++iter1) {
@@ -735,7 +708,7 @@ void CMesh::scaleEdgeLenToUnit()
 		edgeNum++;
 		length += m_vHalfEdges[i]->length();
 		const CHalfEdge* ptwin = m_vHalfEdges[i]->twinHalfEdge();
-		if (ptwin != NULL) heVisited[ptwin->getIndex()] = true;
+		if (ptwin != nullptr) heVisited[ptwin->getIndex()] = true;
 	}
 	
 	length /= edgeNum;
@@ -748,52 +721,47 @@ void CMesh::scaleAndTranslate( ZGeom::Vec3d center, double scale )
 	for (CVertex* v : m_vVertices)	v->translateAndScale(center, scale);	
 }
 
-void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::vector<int>& nbr, bool inclusive /*= false*/ ) const
-{	
-	std::set<int> snb;
-	vertRingNeighborVerts(vIndex, ring, snb, inclusive);	
-    nbr = std::vector<int>(snb.begin(), snb.end());
-}
-
-void CMesh::vertRingNeighborVerts( int vIndex, int ring, std::set<int>& nbr, bool inclusive /*= false*/ ) const
+std::set<int> CMesh::getVertNeighborVertSet(int vIndex, int ring, bool inclusive /* = false */) const
 {
-	const CVertex* notei = m_vVertices[vIndex];
-	nbr.clear();
-	nbr.insert(vIndex);
+    set<int> nbr;
+    const CVertex* notei = m_vVertices[vIndex];
+    nbr.clear();
+    nbr.insert(vIndex);
 
-	std::set<int> nbp = nbr;
-	for (int r = 1; r <= ring; ++r) {
-		std::set<int> nbn;
-		for (int vn : nbp) {
-			const CVertex* vStart = m_vVertices[vn];
-			for (auto he : vStart->m_HalfEdges) {
-				int endv = he->m_Vertices[1]->m_vIndex;
-				if (nbr.find(endv) == nbr.end()) {
-					nbr.insert(endv);
-					nbn.insert(endv);
-				}				
-				// to avoid boundary vertex being ignored
-				if (he->m_eNext) { 
-					int endv2 = he->m_eNext->vert(1)->m_vIndex;
-					if (nbr.find(endv2) == nbr.end()) {
-						nbr.insert(endv2);
-						nbn.insert(endv2);
-					}					
-				}
-			}
-		}
-		nbp = nbn;
-	}
-	
-	if (!inclusive) nbr.erase(vIndex);
+    std::set<int> nbp = nbr;
+    for (int r = 1; r <= ring; ++r) {
+        std::set<int> nbn;
+        for (int vn : nbp) {
+            const CVertex* vStart = m_vVertices[vn];
+            for (auto he : vStart->m_HalfEdges) {
+                int endv = he->vert1()->m_vIndex;
+                if (nbr.find(endv) == nbr.end()) {
+                    nbr.insert(endv);
+                    nbn.insert(endv);
+                }
+                // to avoid boundary vertex being ignored
+                if (he->m_eNext) {
+                    int endv2 = he->m_eNext->vert(1)->m_vIndex;
+                    if (nbr.find(endv2) == nbr.end()) {
+                        nbr.insert(endv2);
+                        nbn.insert(endv2);
+                    }
+                }
+            }
+        }
+        nbp = nbn;
+    }
+
+    if (!inclusive) nbr.erase(vIndex);
+
+    return nbr;
 }
 
 bool CMesh::isInNeighborRing( int ref, int query, int ring ) const
 {
 	assert(ring >= 0);
 	if (ref == query) return true;
-	std::set<int> iNeighbor;
-	vertRingNeighborVerts(ref, ring, iNeighbor, true);
+    std::set<int> iNeighbor = getVertNeighborVertSet(ref, ring, true);
 	return (iNeighbor.find(ref) != iNeighbor.end());
 }
 
@@ -801,9 +769,8 @@ std::vector<int> CMesh::getVertNeighborVerts( int v, int ring, bool inclusive ) 
 {
 	if (ring < 0) throw runtime_error("Error: getNeighboringVertex with ring < 0");
 
-	std::vector<int> vn;
-	vertRingNeighborVerts(v, ring, vn, inclusive);
-	return vn;
+	std::set<int> vn = getVertNeighborVertSet(v, ring, inclusive);
+	return std::vector<int>(vn.begin(), vn.end());
 }
 
 std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
@@ -811,17 +778,12 @@ std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
 	if (ring < 1) 
 		throw std::logic_error("Error: CMesh::getRingVertex with ring < 1");
 
-	std::set<int> v1, v2;
-	vertRingNeighborVerts(v, ring-1, v1, true);
-	vertRingNeighborVerts(v, ring, v2, true);
+    std::set<int> v1 = getVertNeighborVertSet(v, ring - 1, true);
+    std::set<int> v2 = getVertNeighborVertSet(v, ring, true);
+    std::set<int> v3;
+    std::set_difference(v2.begin(), v2.end(), v1.begin(), v1.end(), std::inserter(v3, v3.end()));
 
-	std::vector<int> v3;
-	for (int vIdx : v2) {
-		if (v1.find(vIdx) == v1.end())
-			v3.push_back(vIdx);
-	}
-
-	return v3;
+    return std::vector<int>(v3.begin(), v3.end());
 }
 
 void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures )
@@ -851,7 +813,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double
 		if (vSigVal[j] < lowThresh)				//too small signature discarded
 			continue;
 
-		vertRingNeighborVerts(j, ring, nb, false);	//ring == 2
+        nb = getVertNeighborVerts(j, ring, false);
 		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
 		
 			int ev = nb[k];
@@ -898,7 +860,7 @@ void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::v
         if (vertOnBoundary[j]) continue;  // ignore boundary vertex
 		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
 			continue;
-		vertRingNeighborVerts(j, ring, nb, false);	
+        nb = std::move(getVertNeighborVerts(j, ring, false));
 		
 		state = STATE_IDLE;
 		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
@@ -1233,7 +1195,7 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	//open the file
 	FILE *f;
 	fopen_s(&f, sFileName.c_str(), "r");
-	assert(f != NULL);
+	assert(f != nullptr);
 
 	std::list<ZGeom::Vec3d> VertexList;	//temporary vertex list
 	std::list<int> FaceList;			//temporary face list
@@ -1341,34 +1303,30 @@ void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::strin
     addAttrMeshFeatures(fl, name);
 }
 
-void CMesh::faceSplit3( int fIdx )
+CVertex* CMesh::faceSplit3( int fIdx )
 {
-    faceSplit3(m_vFaces[fIdx]);
-}
-
-CVertex* CMesh::faceSplit3( CFace* face )
-{
+    CFace* face = getFace(fIdx);
     CVertex* vc = new CVertex();
     vc->setPosition(face->calBarycenter());
 
     CHalfEdge *e12 = face->m_HalfEdges[0], *e23 = face->m_HalfEdges[1], *e31 = face->m_HalfEdges[2];
-    CVertex* v1 = e12->m_Vertices[0], *v2 = e23->m_Vertices[0], *v3 = e31->m_Vertices[0];
+    CVertex* v1 = e12->vert0(), *v2 = e23->vert0(), *v3 = e31->vert0();
     CFace *f12c = face, *f23c = new CFace(3), *f31c = new CFace(3);
     CHalfEdge *e1c = new CHalfEdge(), *ec1 = new CHalfEdge(),
-              *e2c = new CHalfEdge(), *ec2 = new CHalfEdge(),
-              *e3c = new CHalfEdge(), *ec3 = new CHalfEdge();
+        *e2c = new CHalfEdge(), *ec2 = new CHalfEdge(),
+        *e3c = new CHalfEdge(), *ec3 = new CHalfEdge();
     assoicateVertEdges(v1, vc, e1c, ec1);
     assoicateVertEdges(v2, vc, e2c, ec2);
     assoicateVertEdges(v3, vc, e3c, ec3);
-    makeFace(e12, e2c, ec1, f12c);    
+    makeFace(e12, e2c, ec1, f12c);
     makeFace(e23, e3c, ec2, f23c);
     makeFace(e31, e1c, ec3, f31c);
 
     addVertex(vc);
     CHalfEdge *arrEdge[6] = { e1c, ec1, e2c, ec2, e3c, ec3 };
-    for (int i = 0; i < 6; ++i) addHalfEdge(arrEdge[i]);    
-    addFace(f23c); 
-    addFace(f31c);    
+    for (int i = 0; i < 6; ++i) addHalfEdge(arrEdge[i]);
+    addFace(f23c);
+    addFace(f31c);
 
     return vc;
 }
@@ -1404,15 +1362,15 @@ void CMesh::assoicateVertEdges( CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfE
 {
     v1->addHalfEdge(e12);
     v2->addHalfEdge(e21);
-    e12->setVerts(v1, v2);
-    e21->setVerts(v2, v1);
+    e12->setVertOrigin(v1);
+    e21->setVertOrigin(v2);
     CHalfEdge::makeTwins(e12, e21);
 }
 
 void CMesh::edgeSwap( CHalfEdge* e1 )
 {
     CHalfEdge *te1 = e1->m_eTwin;
-    if (te1 == NULL) return;
+    if (te1 == nullptr) return;
     CHalfEdge *e2 = e1->nextHalfEdge(), *e3 = e1->prevHalfEdge();
     CHalfEdge *te2 = te1->nextHalfEdge(), *te3 = te1->prevHalfEdge();
     CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
@@ -1427,7 +1385,7 @@ void CMesh::edgeSwap( CHalfEdge* e1 )
 bool CMesh::relaxEdge(CHalfEdge* e1)
 {
     CHalfEdge *te1 = e1->m_eTwin;
-    if (te1 == NULL) return false;
+    if (te1 == nullptr) return false;
     CHalfEdge *e2 = e1->nextHalfEdge(), *e3 = e1->prevHalfEdge();
     CHalfEdge *te2 = te1->nextHalfEdge(), *te3 = te1->prevHalfEdge();
     CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
@@ -1508,6 +1466,46 @@ void CMesh::revertCoordinate()
 bool CMesh::hasNamedCoordinates()
 {
     return hasAttr(StrAttrNamedCoordinates);
+}
+
+CVertex* CMesh::edgeSplit(int heIdx)
+{
+    assert(heIdx >= 0 && heIdx < halfEdgeCount());
+    CHalfEdge *he_1 = getHalfEdge(heIdx);
+    CHalfEdge *he_2 = he_1->nextHalfEdge();
+    CHalfEdge *he_3 = he_2->nextHalfEdge();
+    CHalfEdge *he_4 = he_1->twinHalfEdge();
+    CVertex *v1 = he_1->vert(0), *v2 = he_2->vert(0), *v3 = he_3->vert(0);
+    CFace* face_a = he_1->getAttachedFace();
+    
+    CVertex *v5 = new CVertex(0.5 * (v1->pos() + v2->pos()));
+    CHalfEdge *he_53 = new CHalfEdge(), *he_52 = new CHalfEdge(), *he_35 = new CHalfEdge();
+    CFace* face_b = new CFace(3);
+    he_1->setVertOrigin(v1); 
+    he_52->setVertOrigin(v5);
+    assoicateVertEdges(v3, v5, he_35, he_53);
+    v5->addHalfEdge(he_52);
+    makeFace(he_3, he_1, he_53, face_a);
+    makeFace(he_35, he_52, he_2, face_b);
+
+    if (he_4 != nullptr) {
+        CHalfEdge *he_5 = he_4->nextHalfEdge();
+        CHalfEdge *he_6 = he_5->nextHalfEdge();
+        CFace *face_c = he_4->getAttachedFace();
+        CVertex *v4 = he_6->vert(0);
+        CHalfEdge *he_45 = new CHalfEdge(), *he_54 = new CHalfEdge(), *he_51 = new CHalfEdge();
+        CFace *face_d = new CFace(3);
+        he_4->setVertOrigin(v2);
+        he_51->setVertOrigin(v5);        
+        assoicateVertEdges(v4, v5, he_45, he_54);
+        v5->addHalfEdge(he_51);
+        makeFace(he_5, he_45, he_51, face_c);
+        makeFace(he_54, he_6, he_4, face_d);
+        he_1->m_eTwin = he_51; he_51->m_eTwin = he_1;
+        he_52->m_eTwin = he_4; he_4->m_eTwin = he_52;
+    }
+    
+    return v5;
 }
 
 // std::vector<double> CMesh::calPrincipalCurvature( int k )

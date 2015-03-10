@@ -21,6 +21,7 @@ const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1"
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string StrAttrMeshHoleBoundaries = "mesh_hole_boundaries";
 
+
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle);
 ResultDistPointTriangle distPointTriangle2(Vec3d point, const std::vector<Vec3d>& triangle);
@@ -31,6 +32,8 @@ ResultDistPointPlane distPointPlane(Vec3d point, const Plane3& plane);
 bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3d boxHalfsize);
 
 int triObtuseEdge(const std::vector<Vec3d>& triVerts);
+
+std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<int>& vert, int ring, bool inclusive = true);
 
 double distPointMesh(Vec3d p, CMesh& mesh);
 std::vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2);
@@ -47,10 +50,12 @@ struct HoleBoundary
     std::vector<int> he_on_boundary;
     std::vector<int> vert_inside;
     std::vector<int> face_inside;  
+
     bool is_outer_boundary;
+    double adjacent_edge_length;
 
     // constructors
-    HoleBoundary() : is_outer_boundary(false) { }
+    HoleBoundary() : is_outer_boundary(false), adjacent_edge_length(-1) { }
     HoleBoundary(const HoleBoundary&) = default;
     HoleBoundary& operator = (HoleBoundary&& hb) {
         vert_on_boundary = std::move(hb.vert_on_boundary);
@@ -62,9 +67,11 @@ struct HoleBoundary
     }
     HoleBoundary(HoleBoundary&& hb) { *this = std::move(hb); }
 
-    // methods    
+    // methods
 };
 std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
+void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring = 1);
+
 const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh);
@@ -90,7 +97,9 @@ struct WeightSet
     }
 };
 void triangulateMeshHoles(CMesh &oldMesh);
-void refineMeshHoles(CMesh &oldMesh, double alpha = 2.0);
+void refineMeshHoles(CMesh &oldMesh, double lambda = 2.0);  // lambda: density control factor
+void refineMeshHoles2(CMesh &oldMesh, double lambda = 2.0);
+void refineMeshHoles3(CMesh &oldMesh, double lamdba = 2.0);
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
