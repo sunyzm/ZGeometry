@@ -119,9 +119,11 @@ public:
     void                    clone(const CFace& f);
     void					create(int s);
     CHalfEdge*              getHalfEdge(int i) { return m_HalfEdges[i]; }
-    std::vector<CHalfEdge*> getAllHalfEdges() const { return m_HalfEdges; }
+    CHalfEdge*              getHalfEdge(int i) const { return m_HalfEdges[i]; }
+    const std::vector<CHalfEdge*>& getAllHalfEdges() const { return m_HalfEdges; }
+    std::vector<double>     getAllEdgeLengths() const;
     int                     edgeCount() const { return (int)m_HalfEdges.size(); }
-	CVertex*				vert(int i) const { return m_HalfEdges[i]->vert(0); }
+    CVertex*				vert(int i) const { return getHalfEdge(i)->vert(0); }
     std::vector<CVertex*>   getAllVerts() const;
     int						vertIdx(int i) const { return vert(i)->getIndex(); }
     std::vector<int>        getAllVertIdx() const;

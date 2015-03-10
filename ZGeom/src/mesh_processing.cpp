@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <ppl.h>
 #include <concurrent_vector.h>
+#include "util.h"
 #include "MatVecArithmetic.h"
 #include "arithmetic.h"
 #include "triBoxOverlap.h"
@@ -944,6 +945,14 @@ int triObtuseEdge(const std::vector<Vec3d>& triVerts)
     else return -1; // non-obtuse triangle
 }
 
+int triObtuseEdge(const std::vector<double>& triLengths)
+{
+    if (triLengths[0] > triLengths[1] + triLengths[2]) return 0;
+    else if (triLengths[1] > triLengths[0] + triLengths[2]) return 1;
+    else if (triLengths[2] > triLengths[0] + triLengths[1]) return 2;
+    else return -1; // non-obtuse triangle
+}
+
 std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh)
 {
     typedef vector<vector<int>> VecVecInt;
@@ -1032,7 +1041,7 @@ std::vector<bool> getMeshVertsOnHoles(CMesh &mesh)
     return result;
 }
 
-std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx)
+std::unique_ptr<CMesh> cutFromMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx)
 {
     std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
     
@@ -1048,16 +1057,28 @@ std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceId
     return newMesh;
 }
 
+
+std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFaceIdx)
+{
+    unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
+    oldMesh.getSubMeshFromFaces(cutFaceIdx, oldMesh.getMeshName() + "_fragment", *newMesh);
+    return newMesh;
+}
+
+
 void triangulateMeshHoles(CMesh &mesh)
 { 
-    vector<HoleBoundary> old_holes = getMeshBoundaryLoops(mesh);
+    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
 
-    for (int holeIdx = 0; holeIdx < (int)old_holes.size(); ++holeIdx)
+    /* estimate edge length from hold surroundings */
+    for (HoleBoundary& hb : oldHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 3);
+
+    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
     {
         int nOldVerts = mesh.vertCount();
         int nOldEdges = mesh.halfEdgeCount();
         int nOldFaces = mesh.faceCount();
-        const vector<int>& boundaryEdgeIdx = old_holes[holeIdx].he_on_boundary;
+        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
 
         const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
         vector<int> boundaryVertIdx(N);
@@ -1187,22 +1208,19 @@ void triangulateMeshHoles(CMesh &mesh)
         }
 
         for (CFace *f : patchFaces) 
-            old_holes[holeIdx].face_inside.push_back(f->getFaceIndex());
-    }
+            oldHoles[holeIdx].face_inside.push_back(f->getFaceIndex());
+    } // for each hole
 
     mesh.clearAttributes();
     gatherMeshStatistics(mesh);
     mesh.initNamedCoordinates();
-    mesh.addAttr<vector<HoleBoundary>>(old_holes, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);    
+    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);    
 }
 
 /* "A multistep approach to restoration of locally undersampled meshes" (GMP 2008) */
 void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 {
     vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
-
-    /* estimate edge length from hold surroundings */
-    for (HoleBoundary& hb : oldHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 1);
 
     /* Perform Delaunay-like refinement */
     for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
@@ -1225,46 +1243,77 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         set<int> vertsInHole;
         set<int> facesInHole = set<int>(oldHoles[holeIdx].face_inside.begin(), oldHoles[holeIdx].face_inside.end());
         const double preferred_edge_length = oldHoles[holeIdx].adjacent_edge_length;
-        assert(preferred_edge_length > 0);
+        logic_assert(preferred_edge_length > 0, "hole edge length need to be estimated first");
 
         while (true)
         {
             // 1. for each triangle inside hole, check if any face is splittable
             int selectedFIdx = -1;
-            for (int fIdx : facesInHole) {
+            for (int fIdx : facesInHole) 
+            {
                 CFace* face = mesh.getFace(fIdx);
-                Vec3d vc = face->calBarycenter();
                 CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
                 CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                bool splitTest = true;
-                for (int m = 0; m < 3; ++m) {
-                    if ((fv[m]->pos() - vc).length() <= lambda * preferred_edge_length) {
-                        splitTest = false; break;
+
+                int obtuse_edge = ZGeom::triObtuseEdge(face->getAllEdgeLengths());
+                if (obtuse_edge == -1)  // non-obtuse triangle, 3-split face
+                {
+                    Vec3d vc = face->calBarycenter();
+                    bool splitTest = true;
+                    for (int m = 0; m < 3; ++m) {
+                        if ((fv[m]->pos() - vc).length() <= lambda * preferred_edge_length) {
+                            splitTest = false; break;
+                        }
+                    }
+                    if (splitTest) {
+                        selectedFIdx = fIdx;
+                        CVertex* centroid = mesh.faceSplit3(face->getFaceIndex());
+                        vertsInHole.insert(centroid->getIndex());
+                        facesInHole.erase(selectedFIdx);
+                        for (CFace* newF : centroid->getAdjacentFaces())
+                            facesInHole.insert(newF->getFaceIndex());
+
+                        // relax edges opposite to the new added centroid
+                        for (int k = 0; k < 3; ++k) {
+                            if (boundaryHalfEdges.find(fe[k]) == boundaryHalfEdges.end()) { // not boundary half-edge
+                                mesh.relaxEdge(fe[k]);
+                            }
+                        }
+
+                        break;
                     }
                 }
-                if (splitTest) { selectedFIdx = fIdx; break; }
-            }
+                else // obtuse triangle
+                {
+                    CHalfEdge *obtuse_he = face->getHalfEdge(obtuse_edge);
+                    if (boundaryHalfEdges.find(obtuse_he) != boundaryHalfEdges.end()) continue; // don't split boundary edges
+                    if (obtuse_he->length() > lambda * preferred_edge_length) { 
+                        // split the obtuse edge
+                        selectedFIdx = fIdx;
+                        vector<CHalfEdge*> diamond_edges = { obtuse_he->nextHalfEdge(), obtuse_he->prevHalfEdge() };
+                        if (obtuse_he->twinHalfEdge() != nullptr) { 
+                            CHalfEdge* obtuse_he2 = obtuse_he->twinHalfEdge();
+                            diamond_edges.push_back(obtuse_he2->nextHalfEdge());
+                            diamond_edges.push_back(obtuse_he2->prevHalfEdge());
+                        }
+                        CVertex* edge_center = mesh.edgeSplit(obtuse_he->getIndex());
+                        vertsInHole.insert(edge_center->getIndex());
+                        facesInHole.erase(selectedFIdx);
+                        for (CFace* newF : edge_center->getAdjacentFaces())
+                            facesInHole.insert(newF->getFaceIndex());
 
-            if (selectedFIdx != -1) // split the selected face
-            {
-                CFace *face = mesh.getFace(selectedFIdx);
-                CHalfEdge *he[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                CVertex* centroid = mesh.faceSplit3(face->getFaceIndex());
+                        // relax edges opposite to the new added edge_center
+                        for (int k = 0; k < (int)diamond_edges.size(); ++k) {
+                            if (boundaryHalfEdges.find(diamond_edges[k]) == boundaryHalfEdges.end())
+                                mesh.relaxEdge(diamond_edges[k]);
+                        }
 
-                vertsInHole.insert(centroid->getIndex());
-                facesInHole.erase(selectedFIdx);
-                for (CFace* newF : centroid->getAdjacentFaces())
-                    facesInHole.insert(newF->getFaceIndex());
-
-                // relax edges opposite to the new added centroid
-                for (int k = 0; k < 3; ++k) {
-                    if (boundaryHalfEdges.find(he[k]) == boundaryHalfEdges.end()) { // not boundary half-edge
-                        mesh.relaxEdge(he[k]);
+                        break;
                     }
-                }
+                }                
             }
-            else break;  // 2. no new points were inserted in step 1, hole filling process completes
+
+            if (selectedFIdx == -1) break;  // 2. no new points were inserted in step 1, hole filling process completes
 
             // 3. relax all edges in patch mesh
             int swapIterCount = 0;
@@ -1284,7 +1333,12 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 
         oldHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
         oldHoles[holeIdx].vert_inside = vector<int>(vertsInHole.begin(), vertsInHole.end());
-    }
+
+        std::cout << "[Hole #" << holeIdx
+            << "] estimated edge length: " << oldHoles[holeIdx].adjacent_edge_length
+            << "; hole avg edge length: " << calAvgHoleEdgeLength(mesh, oldHoles[holeIdx]) << std::endl;
+
+    } // for each hole
 
     mesh.clearAttributes();
     gatherMeshStatistics(mesh);
@@ -1548,6 +1602,47 @@ void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring /* = 1 */)
         lengthSum += mesh.getHalfEdge(eIdx)->length();
  
     hole.adjacent_edge_length = lengthSum / (double)vNeighborHalfEdges.size();
+}
+
+double calAvgHoleEdgeLength(CMesh& mesh, HoleBoundary& hole)
+{
+    if (hole.face_inside.empty()) return 0;
+    double result(0);
+    for (int fi : hole.face_inside) {
+        for (CHalfEdge* he : mesh.getFace(fi)->getAllHalfEdges())
+            result += he->length();
+    }
+    return result / double(hole.face_inside.size() * 3);
+}
+
+double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure /*= RMSE*/)
+{
+    double result;
+    unique_ptr<CMesh> submesh1 = std::move(cutMeshTo(mesh1, faces1)), submesh2 = std::move(cutMeshTo(mesh2, faces2));
+    switch (measure)
+    {
+    case ZGeom::MEAN_ERROR: 
+        result = computeMeshMeanError(*submesh1, *submesh2);
+        break;
+    case ZGeom::SYM_MEAN_ERROR: 
+        result = computeSymMeshMeanError(*submesh1, *submesh2);
+        break;
+    case ZGeom::RMSE:
+        result = computeMeshRMSE(*submesh1, *submesh2);
+        break;
+    case ZGeom::SYM_RMSE:
+        result = computeSymMeshRMSE(*submesh1, *submesh2);
+        break;
+    case ZGeom::HAUSDORFF:
+        result = computeHausdorffDistance(*submesh1, *submesh2);
+        break;
+    case ZGeom::SYM_HAUSDORFF:
+        result = computeSymHausdorffDistance(*submesh1, *submesh2);
+        break;
+    default:
+        break;
+    }
+    return result;
 }
 
 }   // end of namespace

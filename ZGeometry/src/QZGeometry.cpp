@@ -2241,7 +2241,7 @@ void QZGeometryWindow::inpaintHoles2()
 
 void QZGeometryWindow::cutHoles()
 {
-    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutFromMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
     newMesh->initNamedCoordinates();
     mMeshHelper[0].addMesh(std::move(newMesh), "mesh with hole cut");
 
@@ -2304,7 +2304,7 @@ void QZGeometryWindow::refineHoles()
     }
 
     std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
-    ZGeom::refineMeshHoles(*newMesh, 0.5);
+    ZGeom::refineMeshHoles(*newMesh, 0.6);
 
     mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes refined");
     ui.glMeshWidget->update();

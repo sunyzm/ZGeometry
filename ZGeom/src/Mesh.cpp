@@ -299,6 +299,13 @@ std::vector<int> CFace::getAllVertIdx() const
     return result;
 }
 
+std::vector<double> CFace::getAllEdgeLengths() const
+{
+    vector<double> result;
+    for (int i = 0; i < (int)m_HalfEdges.size(); ++i) result.push_back(getHalfEdge(i)->length());
+    return result;
+}
+
 
 //////////////////////////////////////////////////////
 //						CMesh						//
@@ -1480,29 +1487,32 @@ CVertex* CMesh::edgeSplit(int heIdx)
     
     CVertex *v5 = new CVertex(0.5 * (v1->pos() + v2->pos()));
     CHalfEdge *he_53 = new CHalfEdge(), *he_52 = new CHalfEdge(), *he_35 = new CHalfEdge();
-    CFace* face_b = new CFace(3);
-    he_1->setVertOrigin(v1); 
+    CFace* face_b = new CFace(3);    
     he_52->setVertOrigin(v5);
-    assoicateVertEdges(v3, v5, he_35, he_53);
     v5->addHalfEdge(he_52);
+    assoicateVertEdges(v3, v5, he_35, he_53);    
     makeFace(he_3, he_1, he_53, face_a);
     makeFace(he_35, he_52, he_2, face_b);
+    addVertex(v5);
+    addFace(face_b);
+    addHalfEdge(he_53); addHalfEdge(he_52); addHalfEdge(he_35);
 
     if (he_4 != nullptr) {
         CHalfEdge *he_5 = he_4->nextHalfEdge();
         CHalfEdge *he_6 = he_5->nextHalfEdge();
         CFace *face_c = he_4->getAttachedFace();
         CVertex *v4 = he_6->vert(0);
-        CHalfEdge *he_45 = new CHalfEdge(), *he_54 = new CHalfEdge(), *he_51 = new CHalfEdge();
-        CFace *face_d = new CFace(3);
-        he_4->setVertOrigin(v2);
+        CHalfEdge *he_51 = new CHalfEdge(), *he_54 = new CHalfEdge(), *he_45 = new CHalfEdge();
+        CFace *face_d = new CFace(3);        
         he_51->setVertOrigin(v5);        
-        assoicateVertEdges(v4, v5, he_45, he_54);
         v5->addHalfEdge(he_51);
+        assoicateVertEdges(v4, v5, he_45, he_54);        
         makeFace(he_5, he_45, he_51, face_c);
         makeFace(he_54, he_6, he_4, face_d);
-        he_1->m_eTwin = he_51; he_51->m_eTwin = he_1;
-        he_52->m_eTwin = he_4; he_4->m_eTwin = he_52;
+        CHalfEdge::makeTwins(he_1, he_51);
+        CHalfEdge::makeTwins(he_52, he_4);
+        addFace(face_d);
+        addHalfEdge(he_51); addHalfEdge(he_54); addHalfEdge(he_45);
     }
     
     return v5;

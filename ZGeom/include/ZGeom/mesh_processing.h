@@ -44,6 +44,9 @@ double computeSymMeshRMSE(CMesh &mesh1, CMesh &mesh2);
 double computeHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 
+enum MeshDistMeasure {MEAN_ERROR, SYM_MEAN_ERROR, RMSE, SYM_RMSE, HAUSDORFF, SYM_HAUSDORFF};
+double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure = RMSE);
+
 struct HoleBoundary
 {
     std::vector<int> vert_on_boundary;
@@ -66,11 +69,10 @@ struct HoleBoundary
         return *this;
     }
     HoleBoundary(HoleBoundary&& hb) { *this = std::move(hb); }
-
-    // methods
 };
 std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
 void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring = 1);
+double calAvgHoleEdgeLength(CMesh& mesh, HoleBoundary& hole);
 
 const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh);
@@ -78,7 +80,8 @@ std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh);
 int calMeshGenus(CMesh &mesh);
 std::vector<bool> getMeshVertsOnHoles(CMesh &mesh);
 
-std::unique_ptr<CMesh> cutMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx);
+std::unique_ptr<CMesh> cutFromMesh(CMesh &oldMesh, const std::vector<int>& cutFaceIdx);
+std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFaceIdx);
 
 struct WeightSet
 {
