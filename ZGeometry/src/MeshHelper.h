@@ -20,6 +20,7 @@ public:
     void switchMesh();
     void revertOriginal();
     CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
+    CMesh* getMeshByName(const std::string mesh_descript);
     CMesh* getOriginalMesh() const { return mMeshHistory[0].get(); }
     
     void clearMeshRelated();
@@ -59,7 +60,7 @@ private:
 
 public:
     std::vector<std::unique_ptr<CMesh>> mMeshHistory;
-    std::vector<std::string> mMeshDescriptions;
+    std::map<std::string, CMesh*> mMeshDescriptMap;
     int currentMeshIdx;
 
 	int mRefVert;
@@ -72,7 +73,6 @@ public:
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 
-    MeshHole generated_holes;
     std::vector<ZGeom::HoleBoundary> original_holes;
     std::vector<ZGeom::HoleBoundary> inpainted_holes;
 };

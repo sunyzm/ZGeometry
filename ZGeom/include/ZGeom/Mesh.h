@@ -20,10 +20,6 @@
 #include "MeshAttr.h"
 #include "MeshCoordinates.h"
 
-const int MAX_VERTEX_PER_FACE = 20;
-const int MAX_RING_NUMBER = 15;
-
-
 class CFace;
 class CHalfEdge;
 class CMesh;
@@ -166,13 +162,14 @@ public:
     static const std::string StrAttrBoundaryVertCount;
     static const std::string StrAttrNamedCoordinates;
     static const std::string StrAttrCurrentCoordIdx;
+    static const std::string StrAttrMeshName;
+    static const std::string StrAttrMeshDescription;
 
 ////////////////   fields    ////////////////
 public:
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
-    std::string             m_meshName;
     ZGeom::Colorf           m_defaultColor;
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
@@ -189,13 +186,11 @@ public:
     void	            clearMesh();
     void                clearAttributes();
     void                cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
-    void				setMeshName(const std::string& meshName) { m_meshName = meshName; }
-    std::string	        getMeshName() const { return m_meshName; }
 
 	/* Mesh IO and processing */
 	void		        load(const std::string& sFileName);		// load from file
 	void	            save(std::string sFileName);			// save to file
-    void construct(const std::vector<ZGeom::Vec3d>& pVertex, const std::vector<std::vector<int>>& faceVertIdx, int nType = 3);	// construct connectivity
+    void                construct(const std::vector<ZGeom::Vec3d>& pVertex, const std::vector<std::vector<int>>& faceVertIdx, int nType = 3);	// construct connectivity
     void	            loadFromOBJ(std::string sFileName);	// load mesh from .obj file
     void	            loadFromM(std::string sFileName);	// load mesh from .m file
     void	            loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
@@ -275,15 +270,14 @@ public:
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 
-    /*************************************************************************/
 
 	/************************************************************************/
 	/* MeshAttr methods                                                     */
 	/************************************************************************/
-	bool hasAttr(const std::string& name) const {
-		auto iter = mAttributes.find(name);
-		return iter != mAttributes.end();
-	}
+	bool hasAttr(const std::string& name) const;
+    void removeAttr(const std::string& name);
+    void copyAttributes(const std::unordered_map<std::string, MeshAttrBase*>& attributeMaps);
+    std::vector<std::string> getAttrNamesList() const;
 
 	template<typename T> 
 	MeshAttr<T>& addAttr(const std::string& name, AttrRate attrRate, AttrType attrType = AttrType::AT_UNKNOWN) {
@@ -301,14 +295,6 @@ public:
         return *dynamic_cast<MeshAttr<T>*>(iter->second);
 	}
 
-	void removeAttr(const std::string& name) {
-		auto iter = mAttributes.find(name);
-		if (iter != mAttributes.end()) {
-			delete iter->second;
-			mAttributes.erase(iter);
-		}
-	}
-		
 	template<typename T>
 	MeshAttr<T>* getAttr(const std::string& name) {
 		auto iter = mAttributes.find(name);
@@ -338,132 +324,54 @@ public:
 			return dynamic_cast<MeshAttr<T>*>(iter->second)->attrValue();
 		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
 	}
-
-	void copyAttributes(const std::unordered_map<std::string, MeshAttrBase*>& attributeMaps) {
-		if (&mAttributes == &attributeMaps) return;
-
-		for (auto ma : attributeMaps) {
-			MeshAttrBase* a = ma.second->clone();
-			mAttributes.insert(std::make_pair(a->attrName(), a));
-		}
-	}
-
-	std::vector<std::string> getAttrNamesList() {
-		std::vector<std::string> vAttrNames;
-		for (auto ap : mAttributes) vAttrNames.push_back(ap.second->attrName());
-		std::sort(vAttrNames.begin(), vAttrNames.end());
-		return vAttrNames;
-	}
+    	
 
 	/************************************************************************/
 	/* Mesh color attributes methods                                        */
 	/************************************************************************/
-	AttrVertColors& getColorAttr(const std::string& colorAttrName) {
-		return *getAttr<ZGeom::ColorSignature>(colorAttrName);
-	}
-
-	AttrVertColors& addColorAttr(const std::string& colorAttrName) {
-		if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
-		else return addAttr<ZGeom::ColorSignature>(colorAttrName, AttrRate::AR_VERTEX, AttrType::AT_VEC_COLOR);
-	}
-
-	void addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors) {
-		if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
-		else {
-            ZGeom::ColorSignature& vNewColor = addColorAttr(colorAttrName).attrValue();
-			vNewColor = vColors;
-		}
-	}
-
-    void setDefaultColor(ZGeom::Colorf color);
+	AttrVertColors& getColorAttr(const std::string& colorAttrName);
+	AttrVertColors& addColorAttr(const std::string& colorAttrName);
+	void addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors);
     void addDefaultColorAttr();
-
-    ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName) {
-        return getAttrValue<ZGeom::ColorSignature>(colorAttrName);
-    }
-
-	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName) {
-        return getAttrValue<ZGeom::ColorSignature>(colorAttrName).getColors();
-	}
-
-	std::vector<AttrVertColors*> getColorAttrList() {
-		std::vector<AttrVertColors*> vColorAttr;
-		for (auto ap : mAttributes) {
-			if (ap.second->attrType() == AttrType::AT_VEC_COLOR && ap.second->attrRate() == AttrRate::AR_VERTEX) {
-				vColorAttr.push_back(dynamic_cast<AttrVertColors*>(ap.second));
-			}
-		}
-		return vColorAttr;
-	}
+    void setDefaultColor(ZGeom::Colorf color);
+    ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName);
+	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName);
+	std::vector<AttrVertColors*> getColorAttrList();
         
 
 	/************************************************************************/
 	/* Mesh feature attributes methods                                      */
 	/************************************************************************/
-	AttrMeshFeatures& addAttrMeshFeatures(const std::string& name) {
-		return addAttr<MeshFeatureList>(name, AR_UNIFORM, AT_FEATURES);
-	}
-
+	AttrMeshFeatures& addAttrMeshFeatures(const std::string& name);
     void addAttrMeshFeatures(const std::vector<int>& featureIdx, const std::string& name);
+	void addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name);
+	const MeshFeatureList& getMeshFeatures(const std::string& name) const;
+	std::vector<AttrMeshFeatures*> getMeshFeatureList();
+    void addAttrLines(const MeshLineList& vVecs, const std::string& name);
+    std::vector<AttrMeshLines*> getMeshLineList();
 
-	void addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name) {
-		addAttr<MeshFeatureList>(mfl, name, AR_UNIFORM, AT_FEATURES);
-	}
 
-	const MeshFeatureList& getMeshFeatures(const std::string& name) const {
-		return getAttrValue<MeshFeatureList>(name);
-	}
-
-	std::vector<AttrMeshFeatures*> getMeshFeatureList() {
-		std::vector<AttrMeshFeatures*> vMeshFeatures;
-		for (auto ap : mAttributes) {
-            if (ap.second->attrType() == AttrType::AT_FEATURES && ap.second->attrRate() == AttrRate::AR_UNIFORM) {
-				vMeshFeatures.push_back(dynamic_cast<AttrMeshFeatures*>(ap.second));
-			}
-		}
-		return vMeshFeatures;
-	}
-
-    void addAttrLines(const MeshLineList& vVecs, const std::string& name) {
-        addAttr<MeshLineList>(vVecs, name, AR_UNIFORM, AT_VEC_LINE);
-    }
-
-    std::vector<AttrMeshLines*> getMeshLineList() {
-        std::vector<AttrMeshLines*> vMeshLines;
-        for (auto ap : mAttributes) {
-            if (ap.second->attrType() == AttrType::AT_VEC_LINE)
-                vMeshLines.push_back(dynamic_cast<AttrMeshLines*>(ap.second));
-        }
-        return vMeshLines;
-    }
-
-	/************************************************************************/
 	/* Vertex scalar attributes methods                                     */
-	/************************************************************************/
-	AttrVertScalars& addAttrVertScalars(const std::string& name) {
-		return addAttr<std::vector<double>>(name, AR_VERTEX, AT_VEC_DBL);
-	}
-
-	void addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name) {
-		assert(vScalars.size() == vertCount());
-		addAttr<std::vector<double>>(vScalars, name, AR_VERTEX, AT_VEC_DBL);
-	}
-
-	std::vector<double>& getVertScalars(const std::string& name) {
-		return getAttrValue<std::vector<double>>(name);
-	}		
-	//////////////////////////////////////////////////////////////////////////	
+	AttrVertScalars& addAttrVertScalars(const std::string& name);
+	void addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name);
+	std::vector<double>& getVertScalars(const std::string& name);		
 
     /************************************************************************/
-    /* mesh coordinates attributes methods                                     */
+    /* mesh coordinates attributes methods                                  */
     /************************************************************************/
     void initNamedCoordinates();
     bool hasNamedCoordinates();
     void addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name = "unnamed");
     const std::string& switchCoordinate();
     void revertCoordinate();
-    //////////////////////////////////////////////////////////////////////////
 
+    /************************************************************************/
+    /* mesh string attributes methods */
+    /************************************************************************/
+    void setMeshName(std::string mesh_name);
+    std::string	getMeshName() const;
+    void setMeshDescription(std::string descript);
+    std::string getMeshDescription() const;
 };  // CMesh
 
 #endif

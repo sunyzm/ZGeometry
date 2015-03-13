@@ -29,6 +29,8 @@ const std::string CMesh::StrAttrVertOnHole              = "vert_on_hole";
 const std::string CMesh::StrAttrVertOnBoundary          = "vert_on_boundary";
 const std::string CMesh::StrAttrNamedCoordinates        = "mesh_named_coordinates";
 const std::string CMesh::StrAttrCurrentCoordIdx         = "current_coord_idx";
+const std::string CMesh::StrAttrMeshName                = "str_mesh_name";
+const std::string CMesh::StrAttrMeshDescription         = "str_mesh_description";
 
 
 //////////////////////////////////////////////////////
@@ -310,15 +312,15 @@ std::vector<double> CFace::getAllEdgeLengths() const
 //////////////////////////////////////////////////////
 //						CMesh						//
 //////////////////////////////////////////////////////
+typedef vector<pair<string, MeshCoordinates>> VecMeshCoords;
 
-CMesh::CMesh() : m_meshName(""), m_defaultColor(Colorf(ZGeom::MeshPresetColors[0]))
+CMesh::CMesh() : m_defaultColor(Colorf(ZGeom::MeshPresetColors[0]))
 {
 }
 
 CMesh::CMesh( const CMesh& oldMesh )
 {
 	cloneFrom(oldMesh);
-	m_meshName = oldMesh.m_meshName;
 }
 
 CMesh& CMesh::operator = (CMesh&& oldMesh)
@@ -326,7 +328,6 @@ CMesh& CMesh::operator = (CMesh&& oldMesh)
     m_vVertices = std::move(oldMesh.m_vVertices);
     m_vHalfEdges = std::move(oldMesh.m_vHalfEdges);
     m_vFaces = std::move(oldMesh.m_vFaces);
-    m_meshName = std::move(oldMesh.m_meshName);
     m_defaultColor = oldMesh.m_defaultColor;
     mAttributes = std::move(oldMesh.mAttributes);
     return *this;
@@ -334,7 +335,7 @@ CMesh& CMesh::operator = (CMesh&& oldMesh)
 
 CMesh::~CMesh()
 {
-	if (true) std::cout << "Destroying Mesh '" + m_meshName << "'... ";
+	if (true) std::cout << "Destroying Mesh '" + getMeshName() << "'... ";
 	clearMesh();	
 	if (true) std::cout << "Finished!" << std::endl;
 }
@@ -343,10 +344,7 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 {
 	if (this == &oldMesh) return;
 	clearMesh();
-
-	m_meshName      = oldMesh.m_meshName + nameSuffix;
-    m_defaultColor  = oldMesh.m_defaultColor;
-    
+  
 	for (int i = 0; i < oldMesh.vertCount(); ++i) {
 		this->m_vVertices.push_back(new CVertex(*oldMesh.m_vVertices[i]));
 	}
@@ -391,8 +389,8 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 		}
 	}
 
+    m_defaultColor = oldMesh.m_defaultColor;
     copyAttributes(oldMesh.mAttributes);
-//  setDefaultColor(m_defaultColor);
 }
 
 void CMesh::clearMesh()
@@ -405,16 +403,16 @@ void CMesh::clearMesh()
 	m_vVertices.clear();
 	m_vHalfEdges.clear();
 	m_vFaces.clear();
-
-	m_meshName = "";
 }
 
 void CMesh::clearAttributes()
 {
+    std::string mesh_name = getMeshName();
     for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
         delete iter->second;
     mAttributes.clear();
 
+    setMeshName(mesh_name);
     vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
     addColorAttr(StrAttrColorDefault, vDefaultColors);
 }
@@ -423,8 +421,9 @@ void CMesh::load( const std::string& sFileName )
 {
 	clearMesh();	
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
-	m_meshName = sFileName.substr(slashPos+1, dotPos-slashPos-1);
+	std::string mesh_name = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
+    setMeshName(mesh_name);
 
 	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") loadFromOBJ(sFileName);
 // 	else if (ext == ".m" || ext == ".M") 
@@ -1191,105 +1190,6 @@ std::vector<ZGeom::Vec3d> CMesh::allVertPos() const
     return results;
 }
 
-void CMesh::loadFromOBJ(std::string sFileName)
-{
-/* -----  format: smf, obj, dat -----
- * vertex:
- *      v x y z,
- * face(triangle):
- *      f v1 v2 v3  (the vertex index is 1-based)
- * ----------------------------------- */
-	//open the file
-	FILE *f;
-	fopen_s(&f, sFileName.c_str(), "r");
-	assert(f != nullptr);
-
-	std::list<ZGeom::Vec3d> VertexList;	//temporary vertex list
-	std::list<int> FaceList;			//temporary face list
-
-	ZGeom::Vec3d vec;
-    char ch = 0;
-	int l[3];
-	short j;
-
-	ch = fgetc(f);
-	while(ch > 0)	//save temporary information of vertex and face in list
-	{
-		switch(ch)
-		{
-		case 'v':	//vertex
-			ch = fgetc(f);
-			if((ch!=' ')&&(ch!='\t'))
-				break;
-			fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
-			VertexList.push_back(vec);
-
-		case 'f':	//face
-			ch = fgetc(f);
-			if((ch!=' ') && (ch!='\t'))
-				break;
-			fscanf_s(f, "%ld%ld%ld\n", &l[0], &l[1], &l[2]);
-			for(j = 0; j < 3; j++)
-				FaceList.push_back(l[j] - 1);		// 0-based, vid - 1
-			break;
-		
-		case '#':
-			while(ch != '\n' && ch > 0)
-				ch = fgetc(f);
-			break;
-		}
-		ch = fgetc(f);
-	}
-	fclose(f);
-	
-    int nVertex = (int)VertexList.size();
-    int nFace = (int)FaceList.size() / 3;
-    vector<ZGeom::Vec3d> vertCoord(nVertex);
-    vector<vector<int>> faceVerts(nFace);
-	list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
-	list<int>::iterator iFace = FaceList.begin();
-    for (int i = 0; i < nVertex; i++) {
-		vertCoord[i] = *iVertex++;  
-	}    
-    for (int i = 0; i < nFace; i++) {
-        faceVerts[i].resize(3);
-        for (j = 0; j < 3; ++j)
-            faceVerts[i][j] = *iFace++;
-    }
-
-	construct(vertCoord, faceVerts);
-}
-
-void CMesh::saveToOBJ( std::string sFileName )
-{
-	// open the file
-	FILE *f = NULL;
-	fopen_s(&f, sFileName.c_str(),"wb");
-	assert(f != NULL);
-
-	// file header
-	fprintf(f, "# vertices : %ld\r\n", vertCount());
-	fprintf(f, "# faces    : %ld\r\n", faceCount());
-	fprintf(f, "\r\n");
-	
-	// vertices
-	for (int i = 0; i < vertCount(); i++)
-	{
-        ZGeom::Vec3d vt = m_vVertices[i]->pos();
-		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
-	}
-
-	// faces
-    for (int i = 0; i < faceCount(); i++) {
-        fprintf(f, "f %ld %ld %ld\r\n",
-                m_vFaces[i]->vertIdx(0) + 1, 
-                m_vFaces[i]->vertIdx(1) + 1, 
-                m_vFaces[i]->vertIdx(2) + 1);            
-    }
-
-	fclose(f);
-}
-
 void CMesh::setDefaultColor( ZGeom::Colorf color )
 {
     m_defaultColor = color;
@@ -1308,6 +1208,16 @@ void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::strin
     MeshFeatureList fl;
     for (int vi : featureIdx) fl.addFeature(vi, 0);
     addAttrMeshFeatures(fl, name);
+}
+
+AttrMeshFeatures& CMesh::addAttrMeshFeatures(const std::string& name)
+{
+    return addAttr<MeshFeatureList>(name, AR_UNIFORM, AT_FEATURES);
+}
+
+void CMesh::addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& name)
+{
+    addAttr<MeshFeatureList>(mfl, name, AR_UNIFORM, AT_FEATURES);
 }
 
 CVertex* CMesh::faceSplit3( int fIdx )
@@ -1430,7 +1340,6 @@ double CMesh::calAvgEdgeLength()
     return edgeLengthSum;    
 }
 
-typedef vector<pair<string, MeshCoordinates>> VecMeshCoords;
 
 void CMesh::initNamedCoordinates()
 {
@@ -1516,6 +1425,247 @@ CVertex* CMesh::edgeSplit(int heIdx)
     }
     
     return v5;
+}
+
+void CMesh::setMeshName(std::string mesh_name)
+{
+    addAttr<std::string>(mesh_name, StrAttrMeshName, AR_UNIFORM, AT_STRING);
+}
+
+std::string CMesh::getMeshName() const
+{
+    if (!hasAttr(StrAttrMeshName)) return "unnamed_mesh";
+    else return getAttrValue<std::string>(StrAttrMeshName);
+}
+
+void CMesh::setMeshDescription(std::string descript)
+{
+    addAttr<std::string>(descript, StrAttrMeshDescription, AR_UNIFORM, AT_STRING);
+}
+
+std::string CMesh::getMeshDescription() const
+{
+    if (!hasAttr(StrAttrMeshDescription)) return "no mesh description";
+    else return getAttrValue<std::string>(StrAttrMeshDescription);
+}
+
+AttrVertScalars& CMesh::addAttrVertScalars(const std::string& name)
+{
+    return addAttr<std::vector<double>>(name, AR_VERTEX, AT_VEC_DBL);
+}
+
+void CMesh::addAttrVertScalars(const std::vector<double>& vScalars, const std::string& name)
+{
+    assert(vScalars.size() == vertCount());
+    addAttr<std::vector<double>>(vScalars, name, AR_VERTEX, AT_VEC_DBL);
+}
+
+std::vector<double>& CMesh::getVertScalars(const std::string& name)
+{
+    return getAttrValue<std::vector<double>>(name);
+}
+
+const MeshFeatureList& CMesh::getMeshFeatures(const std::string& name) const
+{
+    return getAttrValue<MeshFeatureList>(name);
+}
+
+std::vector<AttrMeshFeatures*> CMesh::getMeshFeatureList()
+{
+    std::vector<AttrMeshFeatures*> vMeshFeatures;
+    for (auto ap : mAttributes) {
+        if (ap.second->attrType() == AttrType::AT_FEATURES && ap.second->attrRate() == AttrRate::AR_UNIFORM) {
+            vMeshFeatures.push_back(dynamic_cast<AttrMeshFeatures*>(ap.second));
+        }
+    }
+    return vMeshFeatures;
+}
+
+void CMesh::addAttrLines(const MeshLineList& vVecs, const std::string& name)
+{
+    addAttr<MeshLineList>(vVecs, name, AR_UNIFORM, AT_VEC_LINE);
+}
+
+std::vector<AttrMeshLines*> CMesh::getMeshLineList()
+{
+    std::vector<AttrMeshLines*> vMeshLines;
+    for (auto ap : mAttributes) {
+        if (ap.second->attrType() == AttrType::AT_VEC_LINE)
+            vMeshLines.push_back(dynamic_cast<AttrMeshLines*>(ap.second));
+    }
+    return vMeshLines;
+}
+
+AttrVertColors& CMesh::getColorAttr(const std::string& colorAttrName)
+{
+    return *getAttr<ZGeom::ColorSignature>(colorAttrName);
+}
+
+AttrVertColors& CMesh::addColorAttr(const std::string& colorAttrName)
+{
+    if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
+    else return addAttr<ZGeom::ColorSignature>(colorAttrName, AttrRate::AR_VERTEX, AttrType::AT_VEC_COLOR);
+}
+
+void CMesh::addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors)
+{
+    if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
+    else {
+        ZGeom::ColorSignature& vNewColor = addColorAttr(colorAttrName).attrValue();
+        vNewColor = vColors;
+    }
+}
+
+ZGeom::ColorSignature& CMesh::getColorSignature(const std::string& colorAttrName)
+{
+    return getAttrValue<ZGeom::ColorSignature>(colorAttrName);
+}
+
+std::vector<ZGeom::Colorf>& CMesh::getVertColors(const std::string& colorAttrName)
+{
+    return getAttrValue<ZGeom::ColorSignature>(colorAttrName).getColors();
+}
+
+std::vector<AttrVertColors*> CMesh::getColorAttrList()
+{
+    std::vector<AttrVertColors*> vColorAttr;
+    for (auto ap : mAttributes) {
+        if (ap.second->attrType() == AttrType::AT_VEC_COLOR && ap.second->attrRate() == AttrRate::AR_VERTEX) {
+            vColorAttr.push_back(dynamic_cast<AttrVertColors*>(ap.second));
+        }
+    }
+    return vColorAttr;
+}
+
+bool CMesh::hasAttr(const std::string& name) const
+{
+    auto iter = mAttributes.find(name);
+    return iter != mAttributes.end();
+}
+
+void CMesh::removeAttr(const std::string& name)
+{
+    auto iter = mAttributes.find(name);
+    if (iter != mAttributes.end()) {
+        delete iter->second;
+        mAttributes.erase(iter);
+    }
+}
+
+void CMesh::copyAttributes(const std::unordered_map<std::string, MeshAttrBase*>& attributeMaps)
+{
+    if (&mAttributes == &attributeMaps) return;
+    for (auto ma : attributeMaps) {
+        MeshAttrBase* a = ma.second->clone();
+        mAttributes.insert(std::make_pair(a->attrName(), a));
+    }
+}
+
+std::vector<std::string> CMesh::getAttrNamesList() const
+{
+    std::vector<std::string> vAttrNames;
+    for (auto& ap : mAttributes) vAttrNames.push_back(ap.second->attrName());
+    std::sort(vAttrNames.begin(), vAttrNames.end());
+    return vAttrNames;
+}
+
+void CMesh::loadFromOBJ(std::string sFileName)
+{
+/* -----  format: smf, obj, dat -----
+ * vertex:
+ *      v x y z,
+ * face(triangle):
+ *      f v1 v2 v3  (the vertex index is 1-based)
+ * ----------------------------------- */
+	//open the file
+	FILE *f;
+	fopen_s(&f, sFileName.c_str(), "r");
+	assert(f != nullptr);
+
+	std::list<ZGeom::Vec3d> VertexList;	//temporary vertex list
+	std::list<int> FaceList;			//temporary face list
+
+	ZGeom::Vec3d vec;
+    char ch = 0;
+	int l[3];
+	short j;
+
+	ch = fgetc(f);
+	while(ch > 0)	//save temporary information of vertex and face in list
+	{
+		switch(ch)
+		{
+		case 'v':	//vertex
+			ch = fgetc(f);
+			if((ch!=' ')&&(ch!='\t'))
+				break;
+			fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
+			VertexList.push_back(vec);
+
+		case 'f':	//face
+			ch = fgetc(f);
+			if((ch!=' ') && (ch!='\t'))
+				break;
+			fscanf_s(f, "%ld%ld%ld\n", &l[0], &l[1], &l[2]);
+			for(j = 0; j < 3; j++)
+				FaceList.push_back(l[j] - 1);		// 0-based, vid - 1
+			break;
+		
+		case '#':
+			while(ch != '\n' && ch > 0)
+				ch = fgetc(f);
+			break;
+		}
+		ch = fgetc(f);
+	}
+	fclose(f);
+	
+    int nVertex = (int)VertexList.size();
+    int nFace = (int)FaceList.size() / 3;
+    vector<ZGeom::Vec3d> vertCoord(nVertex);
+    vector<vector<int>> faceVerts(nFace);
+	list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
+	list<int>::iterator iFace = FaceList.begin();
+    for (int i = 0; i < nVertex; i++) {
+		vertCoord[i] = *iVertex++;  
+	}    
+    for (int i = 0; i < nFace; i++) {
+        faceVerts[i].resize(3);
+        for (j = 0; j < 3; ++j)
+            faceVerts[i][j] = *iFace++;
+    }
+
+	construct(vertCoord, faceVerts);
+}
+
+void CMesh::saveToOBJ( std::string sFileName )
+{
+	// open the file
+	FILE *f = NULL;
+	fopen_s(&f, sFileName.c_str(),"wb");
+	assert(f != NULL);
+
+	// file header
+	fprintf(f, "# vertices : %ld\r\n", vertCount());
+	fprintf(f, "# faces    : %ld\r\n", faceCount());
+	fprintf(f, "\r\n");
+	
+	// vertices
+	for (int i = 0; i < vertCount(); i++)
+	{
+        ZGeom::Vec3d vt = m_vVertices[i]->pos();
+		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
+	}
+
+	// faces
+    for (int i = 0; i < faceCount(); i++) {
+        fprintf(f, "f %ld %ld %ld\r\n",
+                m_vFaces[i]->vertIdx(0) + 1, 
+                m_vFaces[i]->vertIdx(1) + 1, 
+                m_vFaces[i]->vertIdx(2) + 1);            
+    }
+
+	fclose(f);
 }
 
 // std::vector<double> CMesh::calPrincipalCurvature( int k )

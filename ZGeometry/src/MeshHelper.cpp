@@ -25,7 +25,7 @@ MeshHelper::MeshHelper()
  MeshHelper::MeshHelper(MeshHelper && mh)
  {
      mMeshHistory = std::move(mMeshHistory);
-     mMeshDescriptions = std::move(mMeshDescriptions);
+     mMeshDescriptMap = std::move(mMeshDescriptMap);
      mRefVert = mh.mRefVert;
      mRefPos = mh.mRefPos;
      mHandles = std::move(mh.mHandles);
@@ -37,7 +37,7 @@ void MeshHelper::init(CMesh* tm)
     assert(tm != nullptr);
     mMeshHistory.resize(1);
     mMeshHistory[0].reset(tm);
-    mMeshDescriptions = { "original mesh" };
+    tm->addAttr<std::string>("original_mesh", CMesh::StrAttrMeshDescription, AR_UNIFORM, AT_STRING);
     currentMeshIdx = 0;
 	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
 	mRefPos = getMesh()->vert(mRefVert)->pos();
@@ -180,7 +180,9 @@ void MeshHelper::revertOriginal()
 void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description)
 {
     mMeshHistory.push_back(std::move(newMesh));
-    mMeshDescriptions.push_back(description);
+    CMesh *mesh = mMeshHistory.back().get();
+    mMeshDescriptMap.insert(std::make_pair(description, mesh));
+    mesh->setMeshDescription(description);
     currentMeshIdx = (int)mMeshHistory.size() - 1;
     clearMeshRelated();
 }
@@ -188,8 +190,9 @@ void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string de
 void MeshHelper::switchMesh()
 {
     if (mMeshHistory.size() <= 1) return;
-    currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();
-    std::cout << "Switch to: " << mMeshDescriptions[currentMeshIdx] << std::endl;
+    currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();    
+
+    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
     clearMeshRelated();
 }
 
@@ -201,5 +204,11 @@ void MeshHelper::clearMeshRelated()
     mActiveHandle = -1;
     for (MeshLaplacian& lm : mMeshLaplacians) lm.clear();
     for (ZGeom::EigenSystem & es : mMHBs) es.clear();
+}
+
+CMesh* MeshHelper::getMeshByName(const std::string mesh_descript)
+{
+    if (mMeshDescriptMap.find(mesh_descript) == mMeshDescriptMap.end()) return nullptr;
+    else return mMeshDescriptMap[mesh_descript];
 }
 

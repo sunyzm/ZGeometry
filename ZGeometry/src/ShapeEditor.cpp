@@ -14,7 +14,6 @@
 #include <ZGeom/SparseSolver.h>
 #include <ZGeom/MCA.h>
 #include <ZGeom/Geodesic.h>
-#include <ZGeom/MeshHole.h>
 #include "differential_geometry.h"
 #include "global.h"
 
@@ -2576,20 +2575,20 @@ void ShapeEditor::testSurfaceInpainting()
                 for (int i = 0; i < N; ++i) seedVerts[i] = i;
                 std::shuffle(seedVerts.begin(), seedVerts.end(), g);
                 seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + nSeed};
-                MeshHole hole = autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
+                HoleBoundary hole = ZGeom::autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
 
                 double lambda = 1e-2;
                 double tol = 1e-3;
 
 
                 timer.startTimer();
-                ZGeom::DenseMatrixd matCoordInpainted = inpaintL1LS(matCoordOld, matDict, hole.mHoleVerts, lambda, tol);
+                ZGeom::DenseMatrixd matCoordInpainted = inpaintL1LS(matCoordOld, matDict, hole.vert_inside, lambda, tol);
                 timer.stopTimer();
                 double inpaintTime = timer.getElapsedTime();
 
                 MeshCoordinates coordInpainted(N);
                 coordInpainted.fromDenseMatrix(matCoordInpainted);
-                double mse = inpaintError(coordOld, coordInpainted, hole.mHoleVerts);
+                double mse = inpaintError(coordOld, coordInpainted, hole.vert_inside);
 
                 testResults.push_back(make_pair(mse, inpaintTime));
 

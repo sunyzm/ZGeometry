@@ -1062,6 +1062,7 @@ std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFace
 {
     unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
     oldMesh.getSubMeshFromFaces(cutFaceIdx, oldMesh.getMeshName() + "_fragment", *newMesh);
+    gatherMeshStatistics(*newMesh);
     return newMesh;
 }
 
@@ -1642,6 +1643,130 @@ double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, c
     default:
         break;
     }
+    return result;
+}
+
+HoleBoundary autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
+{
+    HoleBoundary result;
+
+    set<int> vertInHole;
+    set<int> faceInHole;
+    set<int> boundaryVerts;
+    default_random_engine generator((unsigned int)time(NULL));
+
+    vertInHole.insert(seedVert);
+    for (auto f : mesh.vert(seedVert)->getAdjacentFaces()) {
+        faceInHole.insert(f->getFaceIndex());
+        for (int k = 0; k < 3; ++k) {
+            int faceVertIdx = f->vertIdx(k);
+            if (vertInHole.find(faceVertIdx) == vertInHole.end())
+                boundaryVerts.insert(faceVertIdx);
+        }
+    }
+
+    while (vertInHole.size() < holeSize) {
+        uniform_int_distribution<int> distr1(0, (int)boundaryVerts.size() - 1);
+        auto iter_bv = boundaryVerts.begin();
+        std::advance(iter_bv, distr1(generator));             
+        int newHoleVert = *iter_bv;
+        vertInHole.insert(newHoleVert);
+        for (auto f : mesh.vert(newHoleVert)->getAdjacentFaces()) {
+            if (faceInHole.find(f->getFaceIndex()) != faceInHole.end())
+                continue;       // face already considered     
+            faceInHole.insert(f->getFaceIndex());
+            for (int k = 0; k < 3; ++k) {
+                int faceVertIdx = f->vertIdx(k);
+                if (vertInHole.find(faceVertIdx) == vertInHole.end())
+                    boundaryVerts.insert(faceVertIdx);
+            }
+        }
+        boundaryVerts.erase(newHoleVert);
+        for (auto iter = boundaryVerts.begin(); iter != boundaryVerts.end();) {
+            int vIdx = *iter;
+            bool encompassed = true;
+            for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
+                if (faceInHole.find(f->getFaceIndex()) == faceInHole.end()) {
+                    // found a face not in hole, so vIdx is not in hole yet
+                    encompassed = false;
+                    break;
+                }
+            }
+            if (encompassed) {
+                iter = boundaryVerts.erase(iter);
+                vertInHole.insert(vIdx);
+            }
+            else iter++;
+        }
+    }
+
+    result.face_inside = vector < int > {faceInHole.begin(), faceInHole.end()};
+    result.vert_inside = vector < int > {vertInHole.begin(), vertInHole.end()};
+    result.vert_on_boundary = vector < int > {boundaryVerts.begin(), boundaryVerts.end()};
+    return result;
+}
+
+HoleBoundary autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize)
+{
+    assert(totalSize >= seedVerts.size());
+    HoleBoundary result;
+
+    set<int> vertInHole;
+    set<int> faceInHole;
+    set<int> boundaryVerts;
+    default_random_engine generator((unsigned int)time(NULL));
+
+    vertInHole = set < int > {seedVerts.begin(), seedVerts.end()};
+    for (int vIdx : vertInHole) {
+        for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
+            faceInHole.insert(f->getFaceIndex());
+            for (int k = 0; k < 3; ++k) {
+                int faceVertIdx = f->vertIdx(k);
+                if (vertInHole.find(faceVertIdx) == vertInHole.end())
+                    boundaryVerts.insert(faceVertIdx);
+            }
+        }
+    }
+
+    while (vertInHole.size() < totalSize) {
+        uniform_int_distribution<int> distr1(0, (int)boundaryVerts.size() - 1);
+        std::set<int>::const_iterator it(boundaryVerts.begin());
+        std::advance(it, distr1(generator));
+        int newHoleVert = *it;
+        vertInHole.insert(newHoleVert);
+        for (auto f : mesh.vert(newHoleVert)->getAdjacentFaces()) {
+            if (faceInHole.find(f->getFaceIndex()) != faceInHole.end())
+                continue;       // face already considered     
+            faceInHole.insert(f->getFaceIndex());
+            for (int k = 0; k < 3; ++k) {
+                int faceVertIdx = f->vertIdx(k);
+                if (vertInHole.find(faceVertIdx) == vertInHole.end())
+                    boundaryVerts.insert(faceVertIdx);
+            }
+        }
+        boundaryVerts.erase(newHoleVert);
+
+        for (auto iter = boundaryVerts.begin(); iter != boundaryVerts.end();) {
+            int vIdx = *iter;
+            bool encompassed = true;
+            for (auto f : mesh.vert(vIdx)->getAdjacentFaces()) {
+                if (faceInHole.find(f->getFaceIndex()) == faceInHole.end()) {
+                    // found a face not in hole, so vIdx is not in hole yet
+                    encompassed = false;
+                    break;
+                }
+            }
+            if (encompassed) {
+                iter = boundaryVerts.erase(iter);
+                vertInHole.insert(vIdx);
+            }
+            else iter++;
+        }
+    }
+
+    result.face_inside = vector < int > {faceInHole.begin(), faceInHole.end()};
+    result.vert_inside = vector < int > {vertInHole.begin(), vertInHole.end()};
+    result.vert_on_boundary = vector < int > {boundaryVerts.begin(), boundaryVerts.end()};
     return result;
 }
 

@@ -15,7 +15,6 @@
 #include "MeshCoordinates.h"
 #include "Mesh.h"
 #include "mesh_processing.h"
-#include "MeshHole.h"
 #include "SparseRepresentation.h"
 #include "Geodesic.h"
 

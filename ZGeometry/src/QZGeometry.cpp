@@ -23,7 +23,7 @@
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
-#include <ZGeom/MeshHole.h>
+
 
 using std::vector;
 using ZGeom::Colorf;
@@ -31,6 +31,7 @@ using ZGeom::logic_assert;
 using ZGeom::runtime_assert;
 using ZGeom::MatlabEngineWrapper;
 using ZGeom::ColorSignature;
+using ZGeom::HoleBoundary;
 
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
@@ -325,7 +326,9 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_N:
-		nextCoordinate();
+        if (event->modifiers() & Qt::AltModifier)
+            switchMesh();
+		else nextCoordinate();
 		break;
 
 	case Qt::Key_P:
@@ -2096,29 +2099,29 @@ void QZGeometryWindow::fillHoles()
     bool skipExternal = false;
     mShapeEditor.fillHoles(skipExternal);
 
-    MeshHole hole;
+    HoleBoundary hole;
     std::set<int> vIn, vBoundary;
     for (const ZGeom::HoleBoundary& bv : mShapeEditor.filled_boundaries) {
         for (int vi : bv.vert_inside) vIn.insert(vi);
         for (int vi : bv.vert_on_boundary) vBoundary.insert(vi);
     }
-    hole.mHoleBoundaryVerts = std::vector < int > {vBoundary.begin(), vBoundary.end()};
-    hole.mHoleVerts = std::vector < int > {vIn.begin(), vIn.end()};
+    hole.vert_on_boundary = std::vector < int > {vBoundary.begin(), vBoundary.end()};
+    hole.vert_inside = std::vector < int > {vIn.begin(), vIn.end()};
     std::set<int> fHole;
-    for (int vi : hole.mHoleVerts) {
+    for (int vi : hole.vert_inside) {
         auto nf = getMesh(0)->vert(vi)->getAdjacentFaces();
         for (const CFace* f : nf) fHole.insert(f->getFaceIndex());
     }
-    hole.mHoleFaces = std::vector < int > {fHole.begin(), fHole.end()};
+    hole.face_inside = std::vector < int > {fHole.begin(), fHole.end()};
 
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
     displayFeature("hole_vertex");
     displayFeature("hole_boundary_verts");
 
 
-    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, "hole_faces", AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttr<vector<int>>(hole.face_inside, "hole_faces", AR_UNIFORM, AT_VEC_INT);
     ui.glMeshWidget->update();
 }
 
@@ -2167,14 +2170,19 @@ void QZGeometryWindow::generateHoles()
     bool ok;
     int i = QInputDialog::getInt(this, tr("Input hole size"),
         tr("Hole size:"), 25, 1, 10000, 1, &ok);
-    if (ok) holeVertCount = i;        
+    if (ok) holeVertCount = i; 
+    else return;
+    
+    HoleBoundary generated_holes = ZGeom::autoGenerateHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
+    getMesh(0)->addAttr<vector<HoleBoundary>>(vector < HoleBoundary > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
 
-    mMeshHelper[0].generated_holes = autoGenerateHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
-    MeshHole &hole = mMeshHelper[0].generated_holes;
-    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    HoleBoundary &hole = generated_holes;
+    getMesh(0)->addAttr<vector<int>>(hole.face_inside, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
+
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::autoGenerateHoles()
@@ -2200,12 +2208,16 @@ void QZGeometryWindow::autoGenerateHoles()
     std::random_shuffle(seedVerts.begin(), seedVerts.end());
     seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
 
-    mMeshHelper[0].generated_holes = autoGenerateHole(*getMesh(0), seedVerts, holeVertCount);
-    MeshHole &hole = mMeshHelper[0].generated_holes;
-    getMesh(0)->addAttr<vector<int>>(hole.mHoleFaces, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleVerts, ZGeom::ColorGreen), "hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.mHoleBoundaryVerts, ZGeom::ColorRed), "hole_boundary_verts");
+    HoleBoundary generated_holes = ZGeom::autoGenerateHole(*getMesh(0), seedVerts, holeVertCount);
+    getMesh(0)->addAttr<vector<HoleBoundary>>(vector<HoleBoundary>{generated_holes}, StrAttrManualHoles, AR_UNIFORM);
+    
+    HoleBoundary &hole = generated_holes;
+    getMesh(0)->addAttr<vector<int>>(hole.face_inside, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
+
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::degradeHoles()
@@ -2215,14 +2227,28 @@ void QZGeometryWindow::degradeHoles()
     double s = QInputDialog::getDouble(this, tr("Input noise sigma"),
         tr("Noise Signal:"), 0.02, 0, 0.1, 3, &ok);
     if (ok) sigma = s;
-    mShapeEditor.generateNoise(mMeshHelper[0].generated_holes.mHoleVerts, sigma);
+
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    auto attrHoles = original_mesh->getAttr<vector<HoleBoundary>>(StrAttrManualHoles);
+    if (attrHoles == nullptr) {
+        std::cout << "No holes selected to degrade" << std::endl;
+    }
+    vector<HoleBoundary>& generated_holes = attrHoles->attrValue();
+    mShapeEditor.generateNoise(generated_holes[0].vert_inside, sigma);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::inpaintHoles1()
 {
     double eps = 1e-4;
-    mShapeEditor.inpaintHolesLARS(mMeshHelper[0].generated_holes.mHoleVerts, eps);
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    auto attrHoles = original_mesh->getAttr<vector<HoleBoundary>>(StrAttrManualHoles);
+    if (attrHoles == nullptr) {
+        std::cout << "No holes selected to inpaint" << std::endl;
+    }
+    vector<HoleBoundary>& generated_holes = attrHoles->attrValue();
+
+    mShapeEditor.inpaintHolesLARS(generated_holes[0].vert_inside, eps);
     ui.glMeshWidget->update();
 }
 
@@ -2235,15 +2261,30 @@ void QZGeometryWindow::inpaintHoles2()
         tr("lambda:"), 1e-3, 0, 0.5, 4, &ok);
     if (ok) lambda = s;
 
-    mShapeEditor.inpaintHolesL1LS(mMeshHelper[0].generated_holes.mHoleVerts, lambda, tol);
+    double eps = 1e-4;
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    auto attrHoles = original_mesh->getAttr<vector<HoleBoundary>>(StrAttrManualHoles);
+    if (attrHoles == nullptr) {
+        std::cout << "No holes selected to inpaint" << std::endl;
+    }
+    vector<HoleBoundary>& generated_holes = attrHoles->attrValue();
+
+    mShapeEditor.inpaintHolesL1LS(generated_holes[0].vert_inside, lambda, tol);
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::cutHoles()
 {
-    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutFromMesh(*mMeshHelper[0].getMesh(), mMeshHelper[0].generated_holes.mHoleFaces));
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    if (!original_mesh->hasAttr(StrAttrManualHoles)) {
+        std::cout << "No faces selected to cut" << std::endl;
+        return;
+    }
+    vector<HoleBoundary>& generated_holes = original_mesh->getAttrValue<vector<HoleBoundary>>(StrAttrManualHoles);
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutFromMesh(*mMeshHelper[0].getMesh(), generated_holes[0].getInsideFaceIdx()));   
+        
     newMesh->initNamedCoordinates();
-    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with hole cut");
+    mMeshHelper[0].addMesh(std::move(newMesh), "selected_partial_mesh");
 
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
@@ -2251,12 +2292,16 @@ void QZGeometryWindow::cutHoles()
 
 void QZGeometryWindow::cutToSelected()
 {
-    std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>();
-    CMesh *originalMesh = mMeshHelper[0].getOriginalMesh();
-    originalMesh->getSubMeshFromFaces(mMeshHelper[0].generated_holes.mHoleFaces, originalMesh->getMeshName() + "_cut", *newMesh);
-    ZGeom::gatherMeshStatistics(*newMesh);
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    if (!original_mesh->hasAttr(StrAttrManualHoles)) {
+        std::cout << "No faces selected to cut" << std::endl;
+        return;
+    }
+    vector<HoleBoundary>& generated_holes = original_mesh->getAttrValue<vector<HoleBoundary>>(StrAttrManualHoles);
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMeshTo(*mMeshHelper[0].getMesh(), generated_holes[0].getInsideFaceIdx()));    
+    
     newMesh->initNamedCoordinates();
-    mMeshHelper[0].addMesh(std::move(newMesh), "original mesh cut to selected");
+    mMeshHelper[0].addMesh(std::move(newMesh), "hole_cut_mesh");
 
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
@@ -2276,7 +2321,6 @@ void QZGeometryWindow::computeMHWS()
 
 void QZGeometryWindow::detectHoles()
 {
-   mMeshHelper[0].original_holes = ZGeom::identifyMeshBoundaries(*mMeshHelper[0].getMesh());
 }
 
 
@@ -2290,8 +2334,8 @@ void QZGeometryWindow::triangulateHoles()
 
     std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
     ZGeom::triangulateMeshHoles(*newMesh);
+    mMeshHelper[0].addMesh(std::move(newMesh), "hole_triangulated_mesh");
 
-    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes triangulated");
     ui.glMeshWidget->update();
 }
 
@@ -2305,7 +2349,10 @@ void QZGeometryWindow::refineHoles()
 
     std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
     ZGeom::refineMeshHoles(*newMesh, 0.6);
+    mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
 
-    mMeshHelper[0].addMesh(std::move(newMesh), "mesh with holes refined");
+    /* compare inpainting result with the original generated mesh */
+
+
     ui.glMeshWidget->update();
 }

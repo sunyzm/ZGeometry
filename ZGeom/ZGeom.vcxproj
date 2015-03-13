@@ -227,7 +227,6 @@
     <ClInclude Include="include\ZGeom\DenseMatVecMultiplier.h" />
     <ClInclude Include="include\ZGeom\Geodesic.h" />
     <ClInclude Include="include\ZGeom\MeshCoordinates.h" />
-    <ClInclude Include="include\ZGeom\MeshHole.h" />
     <ClInclude Include="include\ZGeom\Plane.h" />
     <ClInclude Include="include\ZGeom\PointCloud.h" />
     <ClInclude Include="include\ZGeom\SparseRepresentation.h" />
@@ -274,7 +273,6 @@
     <ClCompile Include="src\EigenSystem.cpp" />
     <ClCompile Include="src\fibheap.cpp" />
     <ClCompile Include="src\Geodesic.cpp" />
-    <ClCompile Include="src\MeshHole.cpp" />
     <ClCompile Include="src\PointCloud.cpp" />
     <ClCompile Include="src\triBoxOverlap.cpp" />
     <ClCompile Include="src\Vec3.cpp" />
