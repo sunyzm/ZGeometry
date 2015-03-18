@@ -31,7 +31,7 @@ using ZGeom::combineDictionary;
 using ZGeom::DenseMatrix;
 using ZGeom::DenseMatrixd;
 using ZGeom::Colorf;
-using ZGeom::HoleBoundary;
+using ZGeom::MeshRegion;
 using ZGeom::WeightSet;
 
 std::string ShapeEditor::strOriginalCoord = "original";
@@ -222,7 +222,7 @@ MeshCoordinates ShapeEditor::getNoisyCoord(double phi)
 
 void ShapeEditor::addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors)
 {
-    mMesh->addColorAttr(colorSigName, ZGeom::ColorSignature(vColors));
+    mMesh->addColorSigAttr(colorSigName, ZGeom::ColorSignature(vColors));
     emit meshSignatureAdded();
 }
 
@@ -235,7 +235,7 @@ void ShapeEditor::continuousReconstruct( int selected, int contCoordIdx )
 	mMesh->setVertCoordinates(mContReconstructCoords[selected][contCoordIdx]);
 
 	/* visualize the coordinate difference against the original coordinate */
-	ZGeom::ColorSignature cs = mMesh->addColorAttr(StrAttrColorPosDiff).attrValue();
+	ZGeom::ColorSignature cs = mMesh->addColorSigAttr(StrAttrColorPosDiff).attrValue();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, cs.getColors());
     emit meshSignatureAdded();
 	emit coordinateSelected(selected, contCoordIdx);
@@ -703,7 +703,7 @@ void ShapeEditor::testSparseCompression()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue().getColors();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
     emit meshSignatureAdded();
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
@@ -855,7 +855,7 @@ void ShapeEditor::testSparseDecomposition()
 	mShapeApprox.init(mMesh);
 	mShapeApprox.doSegmentation(maxPatchSize);
 	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorAttr(StrAttrColorPartitions).attrValue().getColors();
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
 	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
     emit meshSignatureAdded();
 	
@@ -1971,7 +1971,7 @@ void ShapeEditor::fillHoles(bool skipExternalBoundary)
         fillBoundedHole(boundaryEdges);
     }
 
-    mMesh->clearAttributes();
+    mMesh->clearNonEssentialAttributes();
     ZGeom::gatherMeshStatistics(*mMesh);
     this->resetStoredCoordinates();
     visualizeBoundaries();
@@ -2178,7 +2178,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
     }
     /*  end of Delaunay refinement  */
    
-    HoleBoundary newHole;
+    MeshRegion newHole;
     newHole.vert_on_boundary = boundaryVertIdx;
     for (int i = nOldVerts; i < mMesh->vertCount(); ++i)
         newHole.vert_inside.push_back(i);
@@ -2188,7 +2188,7 @@ void ShapeEditor::fillBoundedHole(const std::vector<int>& boundaryEdgeIdx)
 void ShapeEditor::visualizeBoundaries()
 {
     MeshLineList boundaryLines;
-    for (HoleBoundary &fhv : filled_boundaries) {
+    for (MeshRegion &fhv : filled_boundaries) {
         int nEdges = fhv.he_on_boundary.size();
         for (int i = 0; i < nEdges; ++i) {
             CHalfEdge* he = mMesh->getHalfEdge(fhv.he_on_boundary[i]);
@@ -2222,7 +2222,7 @@ void ShapeEditor::holeFairingFourierOMP()
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> vMask(totalVertCount, 1);
-    for (HoleBoundary &fhv : filled_boundaries) {
+    for (MeshRegion &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) vMask[vi] = 0;
     }
 
@@ -2300,7 +2300,7 @@ void ShapeEditor::holeFairingFourierLARS()
     computeDictionary(DT_Fourier, es, dictMHB);
 
     vector<int> inpaintVert;
-    for (HoleBoundary &fhv : filled_boundaries) {
+    for (MeshRegion &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) inpaintVert.push_back(vi);
     }
     ZGeom::DenseMatrixd matCoordOld = coordOld.toDenseMatrix();
@@ -2332,7 +2332,7 @@ void ShapeEditor::holeFairingLeastSquare()
     matLaplacian.constructTutte(mMesh);
     set<int> controlVerts;
     for (int i = 0; i < totalVertCount; ++i) controlVerts.insert(i);
-    for (HoleBoundary &fhv : filled_boundaries) {
+    for (MeshRegion &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) controlVerts.erase(vi);
     }
     int controlVertCount = controlVerts.size();
@@ -2379,7 +2379,7 @@ void ShapeEditor::holeEstimateCurvature()
     revertCoordinates();
     int totalVertCount = mMesh->vertCount();
     vector<int> affectedVert;
-    for (HoleBoundary &fhv : filled_boundaries) {
+    for (MeshRegion &fhv : filled_boundaries) {
         for (int vi : fhv.vert_inside) affectedVert.push_back(vi);
         for (int vi : fhv.vert_on_boundary) affectedVert.push_back(vi);
     }
@@ -2575,7 +2575,7 @@ void ShapeEditor::testSurfaceInpainting()
                 for (int i = 0; i < N; ++i) seedVerts[i] = i;
                 std::shuffle(seedVerts.begin(), seedVerts.end(), g);
                 seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + nSeed};
-                HoleBoundary hole = ZGeom::autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
+                MeshRegion hole = ZGeom::autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
 
                 double lambda = 1e-2;
                 double tol = 1e-3;

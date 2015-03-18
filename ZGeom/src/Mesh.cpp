@@ -20,12 +20,10 @@ using ZGeom::Vec3d;
 const std::string CMesh::StrAttrAvgEdgeLength			= "mesh_average_edge_length";
 const std::string CMesh::StrAttrMeshBBox				= "mesh_bounding_box";
 const std::string CMesh::StrAttrMeshCenter				= "mesh_center";
-const std::string CMesh::StrAttrVertColors				= "vert_color";
-const std::string CMesh::StrAttrColorDefault            = "vert_color_default";
-const std::string CMesh::StrAttrVertNormal				= "vert_normal";
-const std::string CMesh::StrAttrFaceNormal				= "face_normal";
+const std::string CMesh::StrAttrColorSigDefault         = "vert_color_default";
+const std::string CMesh::StrAttrVertNormals				= "vert_normal";
+const std::string CMesh::StrAttrFaceNormals				= "face_normal";
 const std::string CMesh::StrAttrBoundaryVertCount       = "mesh_boundary_vert_count";
-const std::string CMesh::StrAttrVertOnHole              = "vert_on_hole";
 const std::string CMesh::StrAttrVertOnBoundary          = "vert_on_boundary";
 const std::string CMesh::StrAttrNamedCoordinates        = "mesh_named_coordinates";
 const std::string CMesh::StrAttrCurrentCoordIdx         = "current_coord_idx";
@@ -314,7 +312,7 @@ std::vector<double> CFace::getAllEdgeLengths() const
 //////////////////////////////////////////////////////
 typedef vector<pair<string, MeshCoordinates>> VecMeshCoords;
 
-CMesh::CMesh() : m_defaultColor(Colorf(ZGeom::MeshPresetColors[0]))
+CMesh::CMesh()
 {
 }
 
@@ -328,7 +326,6 @@ CMesh& CMesh::operator = (CMesh&& oldMesh)
     m_vVertices = std::move(oldMesh.m_vVertices);
     m_vHalfEdges = std::move(oldMesh.m_vHalfEdges);
     m_vFaces = std::move(oldMesh.m_vFaces);
-    m_defaultColor = oldMesh.m_defaultColor;
     mAttributes = std::move(oldMesh.mAttributes);
     return *this;
 }
@@ -389,7 +386,6 @@ void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".c
 		}
 	}
 
-    m_defaultColor = oldMesh.m_defaultColor;
     copyAttributes(oldMesh.mAttributes);
 }
 
@@ -407,14 +403,9 @@ void CMesh::clearMesh()
 
 void CMesh::clearAttributes()
 {
-    std::string mesh_name = getMeshName();
     for (auto iter = mAttributes.begin(); iter != mAttributes.end(); ++iter)
         delete iter->second;
     mAttributes.clear();
-
-    setMeshName(mesh_name);
-    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
-    addColorAttr(StrAttrColorDefault, vDefaultColors);
 }
 
 void CMesh::load( const std::string& sFileName )
@@ -423,7 +414,6 @@ void CMesh::load( const std::string& sFileName )
 	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
 	std::string mesh_name = sFileName.substr(slashPos+1, dotPos-slashPos-1);
 	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
-    setMeshName(mesh_name);
 
 	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") loadFromOBJ(sFileName);
 // 	else if (ext == ".m" || ext == ".M") 
@@ -435,6 +425,8 @@ void CMesh::load( const std::string& sFileName )
 //     else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
 //         loadFromOFF(sFileName);
 	else throw runtime_error("Unrecognizable file extension!");
+    
+    setMeshName(mesh_name);
 }
 
 void CMesh::save(string sFileName)
@@ -516,6 +508,8 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
 	}
 	
 	assignElementsIndex();
+    initNamedCoordinates();
+    setDefaultColor(ZGeom::ColorMesh1);
 }
 
 void CMesh::assignElementsIndex()
@@ -569,7 +563,7 @@ void CMesh::calAttrFaceNormals()
 		vFaceNormals[fIndex].normalize();
 	}
 	
-    addAttr<std::vector<ZGeom::Vec3d>>(vFaceNormals, StrAttrFaceNormal, AR_FACE, AT_VEC_VEC3);
+    addAttr<std::vector<ZGeom::Vec3d>>(vFaceNormals, StrAttrFaceNormals, AR_FACE, AT_VEC_VEC3);
 }
  
 void CMesh::calAttrVertNormals()
@@ -590,7 +584,7 @@ void CMesh::calAttrVertNormals()
         vertNormals[vi] = normalSum.normalize();
     }
 
-    addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
+    addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, StrAttrVertNormals, AR_VERTEX, AT_VEC_VEC3);
 }
 
 int CMesh::calAttrBoundaryVert()
@@ -968,8 +962,8 @@ double CMesh::getAvgEdgeLength()
 
 const std::vector<ZGeom::Vec3d>& CMesh::getFaceNormals()
 {
-	if (!hasAttr(StrAttrFaceNormal)) calAttrFaceNormals();
-	const std::vector<ZGeom::Vec3d>& vFaceNormals = getAttrValue<std::vector<ZGeom::Vec3d>>(StrAttrFaceNormal);
+	if (!hasAttr(StrAttrFaceNormals)) calAttrFaceNormals();
+	const std::vector<ZGeom::Vec3d>& vFaceNormals = getAttrValue<std::vector<ZGeom::Vec3d>>(StrAttrFaceNormals);
 	return vFaceNormals;
 }
 
@@ -1123,13 +1117,11 @@ void CMesh::getSubMeshFromFaces( const std::vector<int>& vSubFaces, std::string 
 
     submesh.construct(m_pVertex, faceVerts);
     submesh.setMeshName(subMeshName);
-    submesh.addDefaultColorAttr();
 }
 
 void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMeshName, CMesh& subMesh)
 {
     subMesh.clearMesh();
-    subMesh.setMeshName(subMeshName);
 
     const int subVertCount = (int)subMappedIdx.size();
 
@@ -1178,7 +1170,7 @@ void CMesh::getSubMesh(const std::vector<int>& subMappedIdx, std::string subMesh
     }
 
     subMesh.construct(m_pVertex, faceVerts);
-    subMesh.addDefaultColorAttr();
+    subMesh.setMeshName(subMeshName);
 }
 
 std::vector<ZGeom::Vec3d> CMesh::allVertPos() const
@@ -1192,15 +1184,8 @@ std::vector<ZGeom::Vec3d> CMesh::allVertPos() const
 
 void CMesh::setDefaultColor( ZGeom::Colorf color )
 {
-    m_defaultColor = color;
-    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
-    addColorAttr(StrAttrColorDefault, ZGeom::ColorSignature(vDefaultColors));
-}
-
-void CMesh::addDefaultColorAttr()
-{
-    vector<Colorf> vDefaultColors(vertCount(), m_defaultColor);
-    addColorAttr(StrAttrColorDefault, ZGeom::ColorSignature(vDefaultColors));
+    vector<Colorf> vDefaultColors(vertCount(), color);
+    addColorSigAttr(StrAttrColorSigDefault, ZGeom::ColorSignature(vDefaultColors));
 }
 
 void CMesh::addAttrMeshFeatures( const vector<int>& featureIdx, const std::string& name )
@@ -1345,7 +1330,7 @@ void CMesh::initNamedCoordinates()
 {
     using namespace std;
     VecMeshCoords mesh_coords;
-    mesh_coords.push_back(make_pair<string, MeshCoordinates>(string("original"), getVertCoordinates()));
+    mesh_coords.push_back(make_pair<string, MeshCoordinates>(string("original_coord"), getVertCoordinates()));
     addAttr<VecMeshCoords>(mesh_coords, StrAttrNamedCoordinates, AR_UNIFORM, AT_UNKNOWN);
     addAttr<int>(0, StrAttrCurrentCoordIdx, AR_UNIFORM, AT_INT);
 }
@@ -1501,17 +1486,17 @@ AttrVertColors& CMesh::getColorAttr(const std::string& colorAttrName)
     return *getAttr<ZGeom::ColorSignature>(colorAttrName);
 }
 
-AttrVertColors& CMesh::addColorAttr(const std::string& colorAttrName)
+AttrVertColors& CMesh::addColorSigAttr(const std::string& colorAttrName)
 {
     if (hasAttr(colorAttrName)) return getColorAttr(colorAttrName);
     else return addAttr<ZGeom::ColorSignature>(colorAttrName, AttrRate::AR_VERTEX, AttrType::AT_VEC_COLOR);
 }
 
-void CMesh::addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors)
+void CMesh::addColorSigAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors)
 {
     if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
     else {
-        ZGeom::ColorSignature& vNewColor = addColorAttr(colorAttrName).attrValue();
+        ZGeom::ColorSignature& vNewColor = addColorSigAttr(colorAttrName).attrValue();
         vNewColor = vColors;
     }
 }
@@ -1666,6 +1651,22 @@ void CMesh::saveToOBJ( std::string sFileName )
     }
 
 	fclose(f);
+}
+
+void CMesh::initAttributes(std::string mesh_name, ZGeom::Colorf default_color)
+{
+    setMeshName(mesh_name);
+    setDefaultColor(default_color);
+    initNamedCoordinates();
+}
+
+void CMesh::clearNonEssentialAttributes()
+{
+    std::string mesh_name = getMeshName();
+    ZGeom::Colorf default_color = getVertColors(StrAttrColorSigDefault)[0];
+    
+    clearAttributes();
+    initAttributes(mesh_name, default_color);
 }
 
 // std::vector<double> CMesh::calPrincipalCurvature( int k )

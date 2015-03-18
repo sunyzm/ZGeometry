@@ -808,14 +808,14 @@ std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMetho
 void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
 {
     vector<Vec3d> vertNormals = computeMeshVertNormals(mesh, vnc);
-    mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormal, AR_VERTEX, AT_VEC_VEC3);
+    mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormals, AR_VERTEX, AT_VEC_VEC3);
 }
 
 std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
 {
-    if (!mesh.hasAttr(CMesh::StrAttrVertNormal)) calMeshAttrVertNormals(mesh, vnc);
+    if (!mesh.hasAttr(CMesh::StrAttrVertNormals)) calMeshAttrVertNormals(mesh, vnc);
 
-    return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormal);
+    return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormals);
 }
 
 ZGeom::ResultMeshMeanGaussCurvatures computeMeshMeanGaussCurvatures(CMesh &mesh)
@@ -899,6 +899,7 @@ void gatherMeshStatistics(CMesh& mesh)
 
     mesh.calAttrFaceNormals();
     calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
+
     mesh.calAttrBoundaryVert();
     identifyMeshBoundaries(mesh);
     
@@ -953,7 +954,7 @@ int triObtuseEdge(const std::vector<double>& triLengths)
     else return -1; // non-obtuse triangle
 }
 
-std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh)
+std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh)
 {
     typedef vector<vector<int>> VecVecInt;
 
@@ -987,37 +988,37 @@ std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh)
     std::sort(boundaryEdges.begin(), boundaryEdges.end(),
         [](const vector<int>& v1, const vector<int>& v2) { return v1.size() < v2.size(); });
 
-    vector<HoleBoundary> result(boundaryEdges.size());
+    vector<MeshRegion> result(boundaryEdges.size());
     for (int i = 0; i < (int)boundaryEdges.size(); ++i) {
         result[i].he_on_boundary = boundaryEdges[i];
         for (int heIdx : boundaryEdges[i])
             result[i].vert_on_boundary.push_back(mesh.getHalfEdge(heIdx)->getVertIndex(0));
     }
 
-    mesh.addAttr<vector<HoleBoundary>>(result, StrAttrMeshHoleBoundaries, AR_UNIFORM);
+    mesh.addAttr<vector<MeshRegion>>(result, StrAttrMeshHoleRegions, AR_UNIFORM);
     return result;
 }
 
-const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh)
+const std::vector<MeshRegion>& getMeshBoundaryLoops(CMesh &mesh)
 {
-    if (!mesh.hasAttr(StrAttrMeshHoleBoundaries)) identifyMeshBoundaries(mesh);
-    return mesh.getAttrValue<vector<HoleBoundary>>(StrAttrMeshHoleBoundaries);
+    if (!mesh.hasAttr(StrAttrMeshHoleRegions)) identifyMeshBoundaries(mesh);
+    return mesh.getAttrValue<vector<MeshRegion>>(StrAttrMeshHoleRegions);
 }
 
 std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh)
 {
-    const std::vector<HoleBoundary>& vBoundaries = getMeshBoundaryLoops(mesh);
+    const std::vector<MeshRegion>& vBoundaries = getMeshBoundaryLoops(mesh);
     vector<vector<int>> result;
-    for (const HoleBoundary& hb : vBoundaries)
+    for (const MeshRegion& hb : vBoundaries)
         result.push_back(hb.vert_on_boundary);
     return result;
 }
 
 std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh)
 {
-    const std::vector<HoleBoundary>& vBoundaries = getMeshBoundaryLoops(mesh);
+    const std::vector<MeshRegion>& vBoundaries = getMeshBoundaryLoops(mesh);
     vector<vector<int>> result;
-    for (const HoleBoundary& hb : vBoundaries)
+    for (const MeshRegion& hb : vBoundaries)
         result.push_back(hb.he_on_boundary);
     return result;
 }
@@ -1069,10 +1070,10 @@ std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFace
 
 void triangulateMeshHoles(CMesh &mesh)
 { 
-    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
 
     /* estimate edge length from hold surroundings */
-    for (HoleBoundary& hb : oldHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 3);
+    for (MeshRegion& hb : oldHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 3);
 
     for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
     {
@@ -1212,16 +1213,15 @@ void triangulateMeshHoles(CMesh &mesh)
             oldHoles[holeIdx].face_inside.push_back(f->getFaceIndex());
     } // for each hole
 
-    mesh.clearAttributes();
+    mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
-    mesh.initNamedCoordinates();
-    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);    
+    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);    
 }
 
 /* "A multistep approach to restoration of locally undersampled meshes" (GMP 2008) */
 void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 {
-    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
 
     /* Perform Delaunay-like refinement */
     for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
@@ -1341,16 +1341,15 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 
     } // for each hole
 
-    mesh.clearAttributes();
+    mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
-    mesh.initNamedCoordinates();
-    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);
+    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
 }
 
 /* "Filling holes in meshes" (SGP 2003) */
 void refineMeshHoles2(CMesh &mesh, double lambda /*= 2.0*/)
 {
-    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
 
     /* Perform Delaunay-like refinement */
     for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
@@ -1449,15 +1448,15 @@ void refineMeshHoles2(CMesh &mesh, double lambda /*= 2.0*/)
         oldHoles[holeIdx].vert_inside = vector<int>(vertsInHole.begin(), vertsInHole.end());
     }
 
-    mesh.clearAttributes();
+    mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
     mesh.initNamedCoordinates();
-    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);
+    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
 }
 
 void refineMeshHoles3(CMesh &mesh, double lambda /*= 2.0*/)
 {
-    vector<HoleBoundary> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
 
     /* Perform Delaunay-like refinement */
     for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
@@ -1549,10 +1548,9 @@ void refineMeshHoles3(CMesh &mesh, double lambda /*= 2.0*/)
             oldHoles[holeIdx].vert_inside.push_back(vIdx);
     }
 
-    mesh.clearAttributes();
+    mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
-    mesh.initNamedCoordinates();
-    mesh.addAttr<vector<HoleBoundary>>(oldHoles, StrAttrMeshHoleBoundaries, AR_UNIFORM, AT_UNKNOWN);
+    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
 }
 
 std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<int>& vert, int ring, bool inclusive /*= true*/)
@@ -1590,7 +1588,7 @@ std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<i
     return nbr;
 }
 
-void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring /* = 1 */)
+void estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring /* = 1 */)
 {
     set<int> vNeighborVerts = meshMultiVertsAdjacentVerts(mesh, hole.vert_on_boundary, ring, true);
     set<int> vNeighborHalfEdges;
@@ -1605,7 +1603,7 @@ void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring /* = 1 */)
     hole.adjacent_edge_length = lengthSum / (double)vNeighborHalfEdges.size();
 }
 
-double calAvgHoleEdgeLength(CMesh& mesh, HoleBoundary& hole)
+double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole)
 {
     if (hole.face_inside.empty()) return 0;
     double result(0);
@@ -1646,9 +1644,9 @@ double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, c
     return result;
 }
 
-HoleBoundary autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
+MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
 {
-    HoleBoundary result;
+    MeshRegion result;
 
     set<int> vertInHole;
     set<int> faceInHole;
@@ -1706,10 +1704,10 @@ HoleBoundary autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
     return result;
 }
 
-HoleBoundary autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize)
+MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize)
 {
     assert(totalSize >= seedVerts.size());
-    HoleBoundary result;
+    MeshRegion result;
 
     set<int> vertInHole;
     set<int> faceInHole;

@@ -73,7 +73,5 @@ public:
 	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
 	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
 
-    std::vector<ZGeom::HoleBoundary> original_holes;
-    std::vector<ZGeom::HoleBoundary> inpainted_holes;
 };
 

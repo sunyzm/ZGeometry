@@ -150,27 +150,25 @@ class CMesh
 {
 public:
 	/* attribute strings */
+    static const std::string StrAttrMeshName;    
+    static const std::string StrAttrColorSigDefault;
+    static const std::string StrAttrNamedCoordinates;
+    static const std::string StrAttrCurrentCoordIdx;
+
+    static const std::string StrAttrMeshDescription;
+    static const std::string StrAttrVertNormals;
+    static const std::string StrAttrFaceNormals;
     static const std::string StrAttrMeshCenter;
     static const std::string StrAttrMeshBBox;
     static const std::string StrAttrAvgEdgeLength;
-	static const std::string StrAttrVertColors;
-    static const std::string StrAttrColorDefault;
-	static const std::string StrAttrVertNormal;
-    static const std::string StrAttrFaceNormal;
-	static const std::string StrAttrVertOnHole;
 	static const std::string StrAttrVertOnBoundary;
     static const std::string StrAttrBoundaryVertCount;
-    static const std::string StrAttrNamedCoordinates;
-    static const std::string StrAttrCurrentCoordIdx;
-    static const std::string StrAttrMeshName;
-    static const std::string StrAttrMeshDescription;
 
 ////////////////   fields    ////////////////
 public:
 	std::vector<CVertex*>	m_vVertices;
 	std::vector<CHalfEdge*> m_vHalfEdges;
 	std::vector<CFace*>		m_vFaces;
-    ZGeom::Colorf           m_defaultColor;
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
 ////////////////    methods    ////////////////
@@ -185,6 +183,8 @@ public:
     /* mesh basics */
     void	            clearMesh();
     void                clearAttributes();
+    void                clearNonEssentialAttributes();
+    void                initAttributes(std::string mesh_name, ZGeom::Colorf default_color);
     void                cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
 
 	/* Mesh IO and processing */
@@ -308,7 +308,7 @@ public:
 		if (iter != mAttributes.end()) return dynamic_cast<MeshAttr<T>*>(iter->second);
 		else return nullptr;
 	}
-
+    
 	template<typename T>
 	T& getAttrValue(const std::string& name) {
 		auto iter = mAttributes.find(name);
@@ -325,14 +325,18 @@ public:
 		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
 	}
     	
+    AttrType getAttrType(const std::string& name) const {
+        auto iter = mAttributes.find(name);
+        if (iter == mAttributes.end()) return AT_UNKNOWN;
+        else return iter->second->attrType();
+    }
 
 	/************************************************************************/
 	/* Mesh color attributes methods                                        */
 	/************************************************************************/
 	AttrVertColors& getColorAttr(const std::string& colorAttrName);
-	AttrVertColors& addColorAttr(const std::string& colorAttrName);
-	void addColorAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors);
-    void addDefaultColorAttr();
+	AttrVertColors& addColorSigAttr(const std::string& colorAttrName);
+	void addColorSigAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors);
     void setDefaultColor(ZGeom::Colorf color);
     ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName);
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName);

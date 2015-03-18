@@ -1,6 +1,7 @@
 #include <GL/glew.h>		// must include glew.h first
 #include "glmeshwidget.h"
 #include <cstdlib>
+#include <cstdio>
 #include <fstream>
 #include <vector>
 #include <unordered_set>
@@ -88,12 +89,14 @@ void GLMeshWidget::reset()
 
 void GLMeshWidget::initializeGL()
 {
-	glEnable(GL_MULTISAMPLE);
-
-	/* initialize GLEW */
 	qout.output("********************", OUT_TERMINAL);
-	if(glewInit() != GLEW_OK) qout.output("glewInit failed", OUT_TERMINAL);
-	else qout.output("glewInit succeeded", OUT_TERMINAL);
+    /* initialize GLEW */
+    GLenum err = glewInit();
+    if (GLEW_OK != err) {
+        /* Problem: glewInit failed, something is seriously wrong. */
+        fprintf(stderr, "Error: %s\n", glewGetErrorString(err));
+    }
+    fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
 	/* print out some info about the graphics drivers */
 	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
@@ -105,6 +108,8 @@ void GLMeshWidget::initializeGL()
 	if(!GLEW_VERSION_4_0)
 		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
 	qout.output("********************", OUT_TERMINAL);
+
+    glEnable(GL_MULTISAMPLE);
 }
 
 void GLMeshWidget::resizeGL( int width, int height )
@@ -440,7 +445,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	CMesh* tmesh = pMP->getMesh();
     const vector<Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const vector<Vec3d> vVertPos = tmesh->allVertPos();
-    const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorDefault);
+    const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorSigDefault);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -502,7 +507,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
 
 	/* highlight boundary edges */
-    if (tmesh->hasAttr(ZGeom::StrAttrMeshHoleBoundaries)) 
+    if (tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions)) 
     {
         const vector<vector<int>>& boundaryLoops = ZGeom::getMeshBoundaryLoopHalfEdges(*tmesh);
         for (int i = 0; i < boundaryLoops.size(); ++i)

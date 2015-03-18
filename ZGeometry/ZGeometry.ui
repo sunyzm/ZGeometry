@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1071</width>
+    <width>1100</width>
     <height>850</height>
    </rect>
   </property>
@@ -167,16 +167,37 @@
       </item>
       <item>
        <widget class="QTabWidget" name="controlTabs">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
         <property name="minimumSize">
          <size>
-          <width>224</width>
+          <width>256</width>
           <height>0</height>
          </size>
         </property>
+        <property name="maximumSize">
+         <size>
+          <width>256</width>
+          <height>16777215</height>
+         </size>
+        </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
+        </property>
+        <property name="movable">
+         <bool>true</bool>
         </property>
         <widget class="QWidget" name="tabConsole">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Console</string>
          </attribute>
@@ -185,7 +206,7 @@
            <rect>
             <x>0</x>
             <y>0</y>
-            <width>258</width>
+            <width>251</width>
             <height>721</height>
            </rect>
           </property>
@@ -202,6 +223,21 @@
               <font>
                <family>Consolas</family>
               </font>
+             </property>
+             <property name="verticalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOn</enum>
+             </property>
+             <property name="horizontalScrollBarPolicy">
+              <enum>Qt::ScrollBarAlwaysOn</enum>
+             </property>
+             <property name="sizeAdjustPolicy">
+              <enum>QAbstractScrollArea::AdjustIgnored</enum>
+             </property>
+             <property name="lineWrapMode">
+              <enum>QPlainTextEdit::NoWrap</enum>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
              </property>
             </widget>
            </item>
@@ -224,19 +260,34 @@
          </widget>
         </widget>
         <widget class="QWidget" name="tabEdit">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Edit</string>
          </attribute>
          <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
-            <x>0</x>
-            <y>0</y>
-            <width>211</width>
-            <height>171</height>
+            <x>10</x>
+            <y>10</y>
+            <width>231</width>
+            <height>161</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="layoutEditTab">
+           <property name="sizeConstraint">
+            <enum>QLayout::SetNoConstraint</enum>
+           </property>
+           <property name="leftMargin">
+            <number>0</number>
+           </property>
+           <property name="rightMargin">
+            <number>0</number>
+           </property>
            <item>
             <layout class="QVBoxLayout" name="verticalLayout_3">
              <item>
@@ -370,15 +421,21 @@
          </widget>
         </widget>
         <widget class="QWidget" name="tabDisplay">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <attribute name="title">
           <string>Display</string>
          </attribute>
          <widget class="QWidget" name="layoutWidgetDisplayTab">
           <property name="geometry">
            <rect>
-            <x>0</x>
-            <y>11</y>
-            <width>211</width>
+            <x>10</x>
+            <y>10</y>
+            <width>231</width>
             <height>161</height>
            </rect>
           </property>
@@ -563,7 +620,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1071</width>
+     <width>1100</width>
      <height>21</height>
     </rect>
    </property>
@@ -626,6 +683,7 @@
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
     <addaction name="actionClearHandles"/>
+    <addaction name="actionListAttributes"/>
     <addaction name="separator"/>
     <addaction name="actionClone"/>
     <addaction name="actionRevertCoordinate"/>
@@ -729,7 +787,6 @@
      <addaction name="actionComputeHK"/>
      <addaction name="actionComputeHKS"/>
      <addaction name="actionComputeMHW"/>
-     <addaction name="actionComputeMHWS"/>
      <addaction name="actionComputeSGW"/>
      <addaction name="actionComputeSGWS"/>
      <addaction name="actionComputeBiharmonic"/>
@@ -1505,6 +1562,11 @@
   <action name="actionRefineHoles">
    <property name="text">
     <string>Refine Holes</string>
+   </property>
+  </action>
+  <action name="actionListAttributes">
+   <property name="text">
+    <string>List Attributes</string>
    </property>
   </action>
  </widget>

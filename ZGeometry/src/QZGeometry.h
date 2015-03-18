@@ -54,7 +54,6 @@ private slots:
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
-	void computeMHWS();
 	void computeBiharmonic();
 	void computeGeodesics();
 	void computeHeatTransfer();
@@ -170,6 +169,7 @@ private:
 	void computeFunctionMaps(int num);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
+    void evaluateCurrentInpainting();
 
 	/* fields */
 	Ui::ZGeometryClass	  ui;

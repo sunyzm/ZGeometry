@@ -19,8 +19,7 @@ const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
-const std::string StrAttrMeshHoleBoundaries = "mesh_hole_boundaries";
-const std::string StrAttrMeshGeneratedHols = "mesh_generated_holes";
+const std::string StrAttrMeshHoleRegions = "mesh_hole_boundaries";
 
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
@@ -48,7 +47,7 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 enum MeshDistMeasure {MEAN_ERROR, SYM_MEAN_ERROR, RMSE, SYM_RMSE, HAUSDORFF, SYM_HAUSDORFF};
 double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure = RMSE);
 
-struct HoleBoundary
+struct MeshRegion
 {
     std::vector<int> vert_on_boundary;
     std::vector<int> he_on_boundary;
@@ -59,9 +58,9 @@ struct HoleBoundary
     double adjacent_edge_length;
 
     // constructors
-    HoleBoundary() : is_outer_boundary(false), adjacent_edge_length(-1) { }
-    HoleBoundary(const HoleBoundary&) = default;
-    HoleBoundary& operator = (HoleBoundary&& hb) {
+    MeshRegion() : is_outer_boundary(false), adjacent_edge_length(-1) { }
+    MeshRegion(const MeshRegion&) = default;
+    MeshRegion& operator = (MeshRegion&& hb) {
         vert_on_boundary = std::move(hb.vert_on_boundary);
         he_on_boundary = std::move(hb.he_on_boundary);
         vert_inside = std::move(hb.vert_inside);
@@ -70,19 +69,19 @@ struct HoleBoundary
         adjacent_edge_length = hb.is_outer_boundary;
         return *this;
     }
-    HoleBoundary(HoleBoundary&& hb) { *this = std::move(hb); }
+    MeshRegion(MeshRegion&& hb) { *this = std::move(hb); }
     const std::vector<int>& getInsideFaceIdx() const { return face_inside; }
 };
-ZGeom::HoleBoundary autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize);
-ZGeom::HoleBoundary autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
+ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize);
+ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
 
 
 
-std::vector<HoleBoundary> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
-void estimateHoleEdgeLength(CMesh& mesh, HoleBoundary& hole, int ring = 1);
-double calAvgHoleEdgeLength(CMesh& mesh, HoleBoundary& hole);
+std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
+void estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);
+double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole);
 
-const std::vector<HoleBoundary>& getMeshBoundaryLoops(CMesh &mesh);
+const std::vector<MeshRegion>& getMeshBoundaryLoops(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopHalfEdges(CMesh &mesh);
 int calMeshGenus(CMesh &mesh);

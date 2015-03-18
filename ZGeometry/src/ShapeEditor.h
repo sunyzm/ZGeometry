@@ -104,6 +104,6 @@ private:
 	int mTotalScales;	
 
 public:
-    std::vector<ZGeom::HoleBoundary> filled_boundaries;
+    std::vector<ZGeom::MeshRegion> filled_boundaries;
 
 };
