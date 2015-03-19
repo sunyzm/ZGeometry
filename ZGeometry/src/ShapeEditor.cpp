@@ -15,6 +15,7 @@
 #include <ZGeom/MCA.h>
 #include <ZGeom/Geodesic.h>
 #include "differential_geometry.h"
+#include "heat_diffusion.h"
 #include "global.h"
 
 using std::vector;
@@ -593,8 +594,8 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 	const int vertCount = mMesh->vertCount();
 	double oriVol = mMesh->calVolume();
 
-	mMeshHelper->computeHeatDiffuseMat(tMultiplier);
-	ZGeom::SparseSymMatVecSolver& solver = mMeshHelper->getHeatSolver();
+    ZGeom::SparseSymMatVecSolver heat_solver;
+    computeHeatDiffuseMatrix(*mMesh, tMultiplier, heat_solver);
 	const MeshLaplacian& laplacian = mMeshHelper->getMeshLaplacian(CotFormula);
 	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
 	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
@@ -606,7 +607,7 @@ void ShapeEditor::meanCurvatureFlow( double tMultiplier, int nRepeat /*= 1*/ )
 		for (int a = 0; a < 3; ++a) 
 			mulW.mul(newCoord.getCoordFunc(a), oldCoord.getCoordFunc(a));				
 		for (int a = 0; a < 3; ++a) 
-			solver.solve(oldCoord.getCoordFunc(a), newCoord.getCoordFunc(a));
+            heat_solver.solve(oldCoord.getCoordFunc(a), newCoord.getCoordFunc(a));
 	}
 
 	mMesh->setVertCoordinates(newCoord);	

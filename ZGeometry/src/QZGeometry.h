@@ -130,13 +130,13 @@ private slots:
     void detectHoles();
     void triangulateHoles();
     void refineHoles();
-
+    void holeFairing();
+    
     void inpaintHoles1();
     void inpaintHoles2();
     void switchMesh();
 
 	void registerAutomatic();
-	//void buildHierarchy();
 	void detectFeatures();
 	void matchFeatures();
 	void registerStep();

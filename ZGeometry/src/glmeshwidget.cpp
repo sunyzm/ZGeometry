@@ -441,6 +441,7 @@ void GLMeshWidget::drawGL()
 
 void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS ) const
 {
+    using ZGeom::MeshRegion;
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
     const vector<Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
@@ -475,11 +476,11 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     }
 
     /* draw selected hole region in yellow */
-    if (tmesh->hasAttr(StrAttrHoleFaces)) 
+    if (m_bShowHoles && tmesh->hasAttr(StrAttrManualHoles))
     {
-        auto& holeFaceIdx = tmesh->getAttrValue<vector<int>>(StrAttrHoleFaces);
-        if (m_bShowHoles && !holeFaceIdx.empty())
-        {
+        vector<MeshRegion>& vManualHoles = tmesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);        
+        for (MeshRegion& mr : vManualHoles) {
+            const vector<int> &holeFaceIdx = mr.face_inside;
             //glEnable(GL_POLYGON_OFFSET_FILL);
             //glPolygonOffset(1.0, 1.0);
             glBegin(GL_TRIANGLES);
@@ -497,8 +498,8 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
                 }
             }
             glEnd();
-            //glDisable(GL_POLYGON_OFFSET_FILL);
-        }
+            //glDisable(GL_POLYGON_OFFSET_FILL);       
+        }        
     }
     //////////////////////////////////////////////////////////////////////////
 

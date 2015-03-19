@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <random>
 #include <map>
+#include <set>
 #include <unordered_set>
 #include <ppl.h>
 #include <concurrent_vector.h>
@@ -1766,6 +1767,33 @@ MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts
     result.vert_inside = vector < int > {vertInHole.begin(), vertInHole.end()};
     result.vert_on_boundary = vector < int > {boundaryVerts.begin(), boundaryVerts.end()};
     return result;
+}
+
+std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const MeshRegion& mesh_region, int ring)
+{
+    set<int> result{ mesh_region.vert_on_boundary.begin(), mesh_region.vert_on_boundary.end() };
+    set<int> considered_vert(mesh_region.vert_inside.begin(), mesh_region.vert_inside.end());
+    for (int vi : mesh_region.vert_on_boundary) considered_vert.insert(vi);
+    set<int> cur_ring{ mesh_region.vert_on_boundary.begin(), mesh_region.vert_on_boundary.end() };
+
+    for (int level = 1; level < ring; ++level) {
+        set<int> new_ring;
+        for (int cur_vi : cur_ring) {
+            vector<int> cur_neighbor_vert = mesh.getVertNeighborVerts(cur_vi, 1, false);
+            for (int vj : cur_neighbor_vert) {
+                if (considered_vert.find(vj) == considered_vert.end()) {
+                    new_ring.insert(vj);
+                }
+            }
+        }
+        for (int new_vi : new_ring) {
+            result.insert(new_vi);
+            considered_vert.insert(new_vi);
+        }        
+        cur_ring = new_ring;
+    }
+
+    return vector<int>(result.begin(), result.end());
 }
 
 }   // end of namespace

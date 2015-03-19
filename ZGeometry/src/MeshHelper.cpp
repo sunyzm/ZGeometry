@@ -122,33 +122,6 @@ double MeshHelper::calHK( int v1, int v2, double timescale ) const
 	return sum;
 }
 
-void MeshHelper::calHeat( int vSrc, double tMultiplier, std::vector<double>& vHeat )
-{
-    const int vertCount = getMesh()->vertCount();
-	vHeat.resize(vertCount);
-	ZGeom::VecNd vInitHeat(vertCount, 0);
-	vInitHeat[vSrc] = 1.0;
-	ZGeom::VecNd vSolvedHeat(vertCount, 0);
-
-	if (mHeatDiffuseMat.empty()) computeHeatDiffuseMat(tMultiplier);
-	
-	mHeatDiffuseSolver.solve(1, vInitHeat.c_ptr(), vSolvedHeat.c_ptr());
-	std::copy_n(vSolvedHeat.c_ptr(), vertCount, vHeat.begin());
-}
-
-void MeshHelper::computeHeatDiffuseMat( double tMultiplier )
-{
-    const int vertCount = getMesh()->vertCount();
-    const double t = std::pow(getMesh()->getAvgEdgeLength(), 2) * tMultiplier;
-
-	const MeshLaplacian& laplacian = getMeshLaplacian(CotFormula);
-	const ZGeom::SparseMatrix<double>& matW = laplacian.getW();
-	const ZGeom::SparseMatrix<double>& matLc = laplacian.getLS();	// negative
-
-	ZGeom::addMatMat(matW, matLc, -t, mHeatDiffuseMat);	//A = W - t*Lc
-	mHeatDiffuseSolver.initialize(mHeatDiffuseMat, true, true);
-}
-
 const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
 {
 	LaplacianType laplaceType = laplaceMat.laplacianType();

@@ -147,6 +147,14 @@ public:
         return ZGeom::Vec3d(mCoordX[v], mCoordY[v], mCoordZ[v]);
     }
 
+    void setVertCoordinate(int vIdx, ZGeom::Vec3d vec)
+    {
+        assert(vIdx >= 0 && vIdx < mSize);
+        mCoordX[vIdx] = vec[0];
+        mCoordY[vIdx] = vec[1];
+        mCoordZ[vIdx] = vec[2];
+    }
+
     ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
     double& operator() (int idx, int c) {
         if (c == 0) return mCoordX[idx];

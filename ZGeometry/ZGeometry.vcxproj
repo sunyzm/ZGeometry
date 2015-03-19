@@ -229,6 +229,8 @@
     <ClCompile Include="src\GeometryApproximation.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\global.cpp" />
+    <ClCompile Include="src\heat_diffusion.cpp" />
+    <ClCompile Include="src\hole_fairing.cpp" />
     <ClCompile Include="src\MeshLaplacian.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\MeshHelper.cpp" />
@@ -745,6 +747,8 @@
     <ClInclude Include="differential_geometry.h" />
     <ClInclude Include="GeneratedFiles\ui_qsingleinputdialog.h" />
     <ClInclude Include="src\GeometryApproximation.h" />
+    <ClInclude Include="src\heat_diffusion.h" />
+    <ClInclude Include="src\hole_fairing.h" />
     <ClInclude Include="src\matching.h" />
     <ClInclude Include="src\MatchTestCase.h" />
     <ClInclude Include="src\Palette.h" />

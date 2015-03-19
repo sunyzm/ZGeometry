@@ -23,6 +23,8 @@
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
 #include <ZGeom/DenseMatrix.h>
+#include "heat_diffusion.h"
+#include "hole_fairing.h"
 
 
 using std::vector;
@@ -42,7 +44,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mDeformType				= DEFORM_Simple;
     mSignatureMode          = ZGeom::SM_Normalized;
 	mActiveLalacian			= Umbrella;
-	mColorMapType			= ZGeom::CM_PARULA;
+	mColorMapType			= ZGeom::CM_JET;
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
@@ -203,12 +205,11 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
-    QObject::connect(ui.actionInpaintHoles1, SIGNAL(triggered()), this, SLOT(inpaintHoles1()));
-    QObject::connect(ui.actionInpaintHoles2, SIGNAL(triggered()), this, SLOT(inpaintHoles2()));
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
     QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
+    QObject::connect(ui.actionHoleFairingLeastSquare, SIGNAL(triggered()), this, SLOT(holeFairing()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -1775,14 +1776,16 @@ void QZGeometryWindow::computeGeodesics()
 
 void QZGeometryWindow::computeHeatTransfer()
 {
-	double tMultiplier = 1.0;
+    double tMultiplier = 2.0;
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		MeshHelper *mp = &mMeshHelper[obj];
         const int vertCount = getMesh(obj)->vertCount();
-		const int vSrc = mp->getRefPointIndex();
-		std::vector<double> vHeat;
+		const int vSrc = mp->getRefPointIndex();		
 
-		mp->calHeat(vSrc, tMultiplier, vHeat);
+        ZGeom::SparseSymMatVecSolver heat_solver;
+        computeHeatDiffuseMatrix(*getMesh(0), tMultiplier, heat_solver);
+        std::vector<double> vHeat = calHeat(*getMesh(0), vSrc, heat_solver);
+
 		addColorSignature(obj, vHeat, StrAttrColorHeat);
 	}
 
@@ -2054,16 +2057,21 @@ void QZGeometryWindow::listMeshAttributes()
     CMesh* mesh = getMesh(0);
 	ostr << "\nList all attributes:";
     for (size_t i = 0; i < attrList.size(); ++i) {
-        ostr << "\n " << i << "." << attrList[i]; 
-        AttrType attr_type = mesh->getAttrType(attrList[i]);
+        std::string attr_name = attrList[i];
+        ostr << "\n " << i << "." << attr_name;        
+        AttrType attr_type = mesh->getAttrType(attr_name);
+        
         if (attr_type == AT_STRING) {
-            ostr << ": " << mesh->getAttrValue < std::string>(attrList[i]);
+            ostr << ": " << mesh->getAttrValue < std::string>(attr_name);
         }
         else if (attr_type == AT_INT) {
-            ostr << ": " << mesh->getAttrValue<int>(attrList[i]);
+            ostr << ": " << mesh->getAttrValue<int>(attr_name);
         }
         else if (attr_type == AT_DBL) {
-            ostr << ": " << mesh->getAttrValue<double>(attrList[i]);
+            ostr << ": " << mesh->getAttrValue<double>(attr_name);
+        }
+        else if (attr_type == AT_VEC3) {
+            ostr << ": " << mesh->getAttrValue<ZGeom::Vec3d>(attr_name);
         }
     }
     ostr << std::flush;
@@ -2193,7 +2201,6 @@ void QZGeometryWindow::generateHoles()
     getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
 
     MeshRegion &hole = generated_holes;
-    getMesh(0)->addAttr<vector<int>>(hole.face_inside, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
     updateDisplayFeatureMenu();
@@ -2228,7 +2235,6 @@ void QZGeometryWindow::autoGenerateHoles()
     getMesh(0)->addAttr<vector<MeshRegion>>(vector<MeshRegion>{generated_holes}, StrAttrManualHoles, AR_UNIFORM);
     
     MeshRegion &hole = generated_holes;
-    getMesh(0)->addAttr<vector<int>>(hole.face_inside, StrAttrHoleFaces, AR_UNIFORM, AT_VEC_INT);
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
     updateDisplayFeatureMenu();
@@ -2393,6 +2399,20 @@ void QZGeometryWindow::evaluateCurrentInpainting()
             std::cout << "Inpainting Error: " << rmse << std::endl;
         }
     }
+}
+
+void QZGeometryWindow::holeFairing()
+{
+    /* hole fairing LS */
+    CMesh& mesh = *mMeshHelper[0].getMesh();
+    const ZGeom::MeshRegion& hole_region = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions)[0];
+    int anchor_ring = 3;
+    double anchor_weight = 1.0;
+    MeshCoordinates coord_ls = least_square_fairing(mesh, hole_region, anchor_ring, anchor_weight);
+    mesh.addNamedCoordinate(coord_ls, "ls_hole_fairing");
+    
+    evaluateCurrentInpainting();
+    ui.glMeshWidget->update();
 }
 
 

@@ -25,6 +25,17 @@ public:
     
     void clearMeshRelated();
 
+    /* editing */
+    void addNewHandle(int hIdx);
+    int getActiveHandle() const { return mActiveHandle; }
+    void setActiveHandle(int h) { mActiveHandle = h; }
+    std::map<int, ZGeom::Vec3d>& getHandles() { return mHandles; }
+    const std::map<int, ZGeom::Vec3d>& getHandles() const { return mHandles; }
+    void clearAllHandles() { mHandles.clear(); }
+    int  getRefPointIndex() const { return mRefVert; }
+    void setRefPointIndex(int i) { mRefVert = i; }
+    void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
+
 	/* Laplacian and MHB related */
 	void constructLaplacian(LaplacianType laplacianType = CotFormula);
 	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
@@ -37,22 +48,7 @@ public:
 	bool isMHBCacheValid(const std::string& pathMHB, int eigenCount);
 	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
 	const ZGeom::EigenSystem& prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount);
-
 	double	calHK(int v1, int v2, double timescale) const;
-	void	calHeat(int vSrc, double tMultiplier, std::vector<double>& vHeat);
-	void	computeHeatDiffuseMat(double tMultiplier);
-	ZGeom::SparseSymMatVecSolver& getHeatSolver() { return mHeatDiffuseSolver; }
-
-	/* editing */
-	void addNewHandle(int hIdx);
-	int getActiveHandle() const { return mActiveHandle; }
-	void setActiveHandle(int h) { mActiveHandle = h; }
-	std::map<int, ZGeom::Vec3d>& getHandles() { return mHandles; }
-	const std::map<int, ZGeom::Vec3d>& getHandles() const { return mHandles; }
-	void clearAllHandles() { mHandles.clear(); }
-	int  getRefPointIndex() const { return mRefVert; }
-	void setRefPointIndex(int i) { mRefVert = i; }
-	void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
 
 private:
     MeshHelper(const MeshHelper&);
@@ -70,8 +66,5 @@ public:
 
 	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
 	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
-	ZGeom::SparseMatrix<double> mHeatDiffuseMat;
-	ZGeom::SparseSymMatVecSolver mHeatDiffuseSolver;
-
 };
 

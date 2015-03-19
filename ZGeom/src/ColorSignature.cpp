@@ -10,7 +10,7 @@ ColorSignature::ColorSignature(const std::vector<Colorf>& vCol)
     for (size_t i = 0; i < mColors.size(); ++i)
         mValues[i] = mColors[i].toGrayscale();
     
-    mCurrentColorMap = CM_PARULA;
+    mCurrentColorMap = CM_JET;
 }
 
 ColorSignature::ColorSignature(const std::vector<double>& vVals, ColorMapType cmt /*= CM_PARULA*/, bool requireNormalize /*= true*/)
@@ -77,4 +77,4 @@ void ColorSignature::changeSignatureMode(SignatureMode smode)
     mValues = tmpSig;
 }
 
-}
+}   // end of namespace

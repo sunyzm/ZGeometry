@@ -518,4 +518,4 @@ double ColorMap::jet[] = {
     0.51563, 0, 0,
     0.5, 0, 0 };
 
-} // end of namespace
+}   // end of namespace

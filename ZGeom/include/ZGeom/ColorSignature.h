@@ -15,9 +15,9 @@ enum SignatureMode {
 class ColorSignature
 {
 public:
-    ColorSignature() : mCurrentColorMap(CM_PARULA) {}
+    ColorSignature() : mCurrentColorMap(CM_JET) {}
     ColorSignature(const std::vector<Colorf>& vCol);
-    ColorSignature(const std::vector<double>& vVals, ColorMapType cmt = CM_PARULA, bool requireNormalize = true);
+    ColorSignature(const std::vector<double>& vVals, ColorMapType cmt = CM_JET, bool requireNormalize = true);
     
     const std::vector<Colorf>& getColorSig() const { return mColors; }
     std::vector<Colorf>& getColors() { return mColors; }

@@ -72,9 +72,10 @@ struct MeshRegion
     MeshRegion(MeshRegion&& hb) { *this = std::move(hb); }
     const std::vector<int>& getInsideFaceIdx() const { return face_inside; }
 };
+
 ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
-
+std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const ZGeom::MeshRegion& mesh_region, int ring);
 
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries

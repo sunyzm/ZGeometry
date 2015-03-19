@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cassert>
 #include <stdexcept>
+#include <iostream>
 #include "common.h"
 
 namespace ZGeom {
@@ -43,6 +44,8 @@ public:
 	T x, y, z;
 };
 
+typedef Vec3<float>  Vec3s;
+typedef Vec3<double> Vec3d;
 
 template<typename T>
 const Vec3<T>& Vec3<T>::operator = (const Vec3<T>& v2) 
@@ -180,8 +183,13 @@ inline T dot(const Vec3<T>& v1, const Vec3<T>& v2) { return v1.dot(v2); }
 template<typename T>
 inline Vec3<T> cross( const Vec3<T>& v1, const Vec3<T>& v2 ) { return v1.cross(v2); }
 
-typedef Vec3<float>  Vec3s;
-typedef Vec3<double> Vec3d;
+
+template<typename T>
+inline std::ostream& operator << (std::ostream& os, const Vec3<T>& vec)
+{
+    os << "(" << vec[0] << "," << vec[1] << "," << vec[2] << ")";
+    return os;
+}
 
 
 

@@ -101,7 +101,7 @@ inline DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& m2)
 }
 
 template<typename T>
-inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2)
+inline DenseMatrix<T>::DenseMatrix(DenseMatrix<T>&& m2) : mData(nullptr)
 {
     *this = std::move(m2);
 }
