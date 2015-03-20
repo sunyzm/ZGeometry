@@ -183,7 +183,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
     QObject::connect(ui.actionListAttributes, SIGNAL(triggered()), this, SLOT(listMeshAttributes()));
 	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revert()));
-	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(nextCoordinate()));
+	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(switchToNextCoordinate()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
@@ -201,7 +201,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
    
-    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchMesh()));
+    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
@@ -209,7 +209,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
     QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
-    QObject::connect(ui.actionHoleFairingLeastSquare, SIGNAL(triggered()), this, SLOT(holeFairing()));
+    QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -328,9 +328,18 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_N:
-        if (event->modifiers() & Qt::AltModifier)
-            switchMesh();
-		else nextCoordinate();
+        if (event->modifiers() & Qt::AltModifier) {            
+            if (event->modifiers() & Qt::ShiftModifier)
+                switchToPreviousMesh();
+            else 
+                switchToNextMesh();
+        }
+        else { 
+            if (event->modifiers() & Qt::ShiftModifier)
+                switchToPrevCoordinate();
+            else
+                switchToNextCoordinate(); 
+        }
 		break;
 
 	case Qt::Key_P:
@@ -1844,12 +1853,21 @@ void QZGeometryWindow::clearHandles()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::nextCoordinate()
+void QZGeometryWindow::switchToNextCoordinate()
 {
     QString coord_name = QString(mMeshHelper[0].getMesh()->switchCoordinate().c_str());
     qout.outputStatus("coord: " + coord_name);
 	ui.glMeshWidget->update();
 }
+
+void QZGeometryWindow::switchToPrevCoordinate()
+{
+    QString coord_name = QString(mMeshHelper[0].getMesh()->switchPrevCoordinate().c_str());
+    qout.outputStatus("coord: " + coord_name);
+    ui.glMeshWidget->update();
+}
+
+
 
 void QZGeometryWindow::deformLaplace2()
 {
@@ -2329,9 +2347,16 @@ void QZGeometryWindow::cutToSelected()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::switchMesh()
+void QZGeometryWindow::switchToNextMesh()
 {
-    mMeshHelper[0].switchMesh();
+    mMeshHelper[0].nextMesh();
+    mShapeEditor.init(mMeshHelper[0]);
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::switchToPreviousMesh()
+{
+    mMeshHelper[0].prevMesh();
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
 }
@@ -2401,18 +2426,28 @@ void QZGeometryWindow::evaluateCurrentInpainting()
     }
 }
 
-void QZGeometryWindow::holeFairing()
+void QZGeometryWindow::fairHoleLeastSquares()
 {
     /* hole fairing LS */
     CMesh& mesh = *mMeshHelper[0].getMesh();
     const ZGeom::MeshRegion& hole_region = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions)[0];
     int anchor_ring = 3;
     double anchor_weight = 1.0;
+
+    /* input parameters */
+    bool ok;
+    int r = QInputDialog::getInt(this, tr("Input surrounding ring"),
+        tr("Ring:"), anchor_ring, 1, 50, 1, &ok);
+    if (ok) anchor_ring = r;
+    else return;
+    double w = QInputDialog::getDouble(this, tr("Input anchor weight"),
+        tr("Weight:"), anchor_weight, 0.1, 10000, 2, &ok);
+    if (ok) anchor_weight = w;
+    else return;
+
     MeshCoordinates coord_ls = least_square_fairing(mesh, hole_region, anchor_ring, anchor_weight);
     mesh.addNamedCoordinate(coord_ls, "ls_hole_fairing");
     
     evaluateCurrentInpainting();
     ui.glMeshWidget->update();
 }
-
-

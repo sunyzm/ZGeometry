@@ -19,7 +19,7 @@ const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
-const std::string StrAttrMeshHoleRegions = "mesh_hole_boundaries";
+const std::string StrAttrMeshHoleRegions = "mesh_hole_regions";
 
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };

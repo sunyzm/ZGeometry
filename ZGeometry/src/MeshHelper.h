@@ -17,7 +17,8 @@ public:
 
 	void init(CMesh* tm);
     void addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description = "");
-    void switchMesh();
+    void nextMesh();
+    void prevMesh();
     void revertOriginal();
     CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
     CMesh* getMeshByName(const std::string mesh_descript);

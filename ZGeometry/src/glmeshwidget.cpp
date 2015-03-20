@@ -451,13 +451,15 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	setupObject(pRS->obj_rot, pRS->obj_trans + pRS->display_shift);
-	glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
 	glPointSize(mMeshPointSize);
     
     //////////////////////////////////////////////////////////////////////////
-	/* draw mesh with color signature */
+	/* Start of drawing mesh */
+    glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
+    glEnable(GL_POLYGON_OFFSET_FILL);
+
+    /* draw mesh with color signature */
     {
-        glEnable(GL_POLYGON_OFFSET_FILL);
         glPolygonOffset(1.0, 1.0);
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
@@ -472,42 +474,69 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             }
         }
         glEnd();
-        glDisable(GL_POLYGON_OFFSET_FILL);
     }
 
-    /* draw selected hole region in yellow */
-    if (m_bShowHoles && tmesh->hasAttr(StrAttrManualHoles))
+    /* draw hole regions in yellow */
+    if (m_bShowHoles)
     {
-        vector<MeshRegion>& vManualHoles = tmesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);        
-        for (MeshRegion& mr : vManualHoles) {
-            const vector<int> &holeFaceIdx = mr.face_inside;
-            //glEnable(GL_POLYGON_OFFSET_FILL);
-            //glPolygonOffset(1.0, 1.0);
-            glBegin(GL_TRIANGLES);
-            const float *holeColor = ZGeom::ColorYellow;
-            for (int fIdx : holeFaceIdx) {
-                CFace* face = tmesh->m_vFaces[fIdx];
-                for (int j = 0; j < 3; j++) {
-                    int pi = face->vertIdx(j);
-                    const ZGeom::Vec3d& norm = vVertNormals[pi];
-                    const Vec3d& vt = vVertPos[pi];
-                    const Colorf& vc = vVertColors[pi];
-                    glNormal3f(norm.x, norm.y, norm.z);
-                    glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
-                    glVertex3f(vt.x, vt.y, vt.z);
+        glPolygonOffset(0.5, 1.0);
+        if (tmesh->hasAttr(StrAttrManualHoles)) 
+        {
+            vector<MeshRegion>& vManualHoles = tmesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);
+            for (MeshRegion& mr : vManualHoles) {
+                const vector<int> &holeFaceIdx = mr.face_inside;
+                glBegin(GL_TRIANGLES);
+                const float *holeColor = ZGeom::ColorYellow;
+                for (int fIdx : holeFaceIdx) {
+                    CFace* face = tmesh->m_vFaces[fIdx];
+                    for (int j = 0; j < 3; j++) {
+                        int pi = face->vertIdx(j);
+                        const ZGeom::Vec3d& norm = vVertNormals[pi];
+                        const Vec3d& vt = vVertPos[pi];
+                        const Colorf& vc = vVertColors[pi];
+                        glNormal3f(norm.x, norm.y, norm.z);
+                        glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
+                        glVertex3f(vt.x, vt.y, vt.z);
+                    }
                 }
+                glEnd();
+            }   
+        }
+        else {
+            vector<MeshRegion>& vHoles = tmesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+            for (MeshRegion& mr : vHoles) {
+                const vector<int> &holeFaceIdx = mr.face_inside;
+                glBegin(GL_TRIANGLES);
+                const float *holeColor = ZGeom::ColorYellow;
+                for (int fIdx : holeFaceIdx) {
+                    CFace* face = tmesh->m_vFaces[fIdx];
+                    for (int j = 0; j < 3; j++) {
+                        int pi = face->vertIdx(j);
+                        const ZGeom::Vec3d& norm = vVertNormals[pi];
+                        const Vec3d& vt = vVertPos[pi];
+                        const Colorf& vc = vVertColors[pi];
+                        glNormal3f(norm.x, norm.y, norm.z);
+                        glColor4f(holeColor[0], holeColor[1], holeColor[2], 1.0f);
+                        glVertex3f(vt.x, vt.y, vt.z);
+                    }
+                }
+                glEnd();
             }
-            glEnd();
-            //glDisable(GL_POLYGON_OFFSET_FILL);       
         }        
     }
+
+    glDisable(GL_POLYGON_OFFSET_FILL);   
+    /* End of drawing mesh */
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    // starting to draw illustrative lines and features
+    /* Start of drawing illustrative lines */
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
+    glDisable(GL_LIGHT0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
 	/* highlight boundary edges */
+#if 0
     if (tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions)) 
     {
         const vector<vector<int>>& boundaryLoops = ZGeom::getMeshBoundaryLoopHalfEdges(*tmesh);
@@ -529,37 +558,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             glEnd();
         }
     }
-	
-	/* draw bounding box */
-	if (m_bShowBoundingBox) 
-    {
-		const ZGeom::Vec3d& bbox = tmesh->getBoundingBox();
-		Vec3d verts[8] = { Vec3d(-bbox.x, -bbox.y, -bbox.z),
-                           Vec3d(-bbox.x, -bbox.y, bbox.z),
-                           Vec3d(-bbox.x, bbox.y, -bbox.z),
-                           Vec3d(-bbox.x, bbox.y, bbox.z),
-                           Vec3d(bbox.x, -bbox.y, -bbox.z),
-                           Vec3d(bbox.x, -bbox.y, bbox.z),
-                           Vec3d(bbox.x, bbox.y, -bbox.z),
-                           Vec3d(bbox.x, bbox.y, bbox.z) };
-		auto drawQuad = [&verts](int i0, int i1, int i2, int i3) {
-			glBegin(GL_LINE_LOOP);
-			glVertex3d(verts[i0].x, verts[i0].y, verts[i0].z);
-			glVertex3d(verts[i1].x, verts[i1].y, verts[i1].z);
-			glVertex3d(verts[i2].x, verts[i2].y, verts[i2].z);
-			glVertex3d(verts[i3].x, verts[i3].y, verts[i3].z);
-			glEnd();
-		};
-				
-		glLineWidth(1.0);
-		glColor4f(0, 1.0, 1.0, 1.0);		
-		drawQuad(0, 2, 3, 1);
-		drawQuad(1, 3, 7, 5);
-		drawQuad(5, 7, 6, 4);
-		drawQuad(4, 6, 2, 0);
-		drawQuad(3, 2, 6, 7);
-		drawQuad(0, 1, 5, 4);		
-	}
+#endif
 
     /* draw wireframe overlay */
     if (m_bShowWireframeOverlay)
@@ -609,7 +608,47 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         }    
     }
 
-    glEnable(GL_LIGHTING);  // enable lighting for points
+    /* draw bounding box */
+    if (m_bShowBoundingBox)
+    {
+        const ZGeom::Vec3d& bbox = tmesh->getBoundingBox();
+        Vec3d verts[8] = { Vec3d(-bbox.x, -bbox.y, -bbox.z),
+            Vec3d(-bbox.x, -bbox.y, bbox.z),
+            Vec3d(-bbox.x, bbox.y, -bbox.z),
+            Vec3d(-bbox.x, bbox.y, bbox.z),
+            Vec3d(bbox.x, -bbox.y, -bbox.z),
+            Vec3d(bbox.x, -bbox.y, bbox.z),
+            Vec3d(bbox.x, bbox.y, -bbox.z),
+            Vec3d(bbox.x, bbox.y, bbox.z) };
+        auto drawQuad = [&verts](int i0, int i1, int i2, int i3) {
+            glBegin(GL_LINE_LOOP);
+            glVertex3d(verts[i0].x, verts[i0].y, verts[i0].z);
+            glVertex3d(verts[i1].x, verts[i1].y, verts[i1].z);
+            glVertex3d(verts[i2].x, verts[i2].y, verts[i2].z);
+            glVertex3d(verts[i3].x, verts[i3].y, verts[i3].z);
+            glEnd();
+        };
+
+        glLineWidth(1.0);
+        glColor4f(0, 1.0, 1.0, 1.0);
+        drawQuad(0, 2, 3, 1);
+        drawQuad(1, 3, 7, 5);
+        drawQuad(5, 7, 6, 4);
+        drawQuad(4, 6, 2, 0);
+        drawQuad(3, 2, 6, 7);
+        drawQuad(0, 1, 5, 4);
+    }
+
+    glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
+    /* End of drawing illustrative lines */
+    //////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////
+    /* Start of drawing illustrative points */
+    glEnable(GL_LIGHTING);  
+    glEnable(GL_LIGHT0);
+    glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
 	/* draw reference point */
 	if ( m_bShowRefPoint ) 
     {
@@ -660,6 +699,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 			glPopMatrix();
 		}
 	}
+
+    glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
+    /* End of drawing illustrative points */
     //////////////////////////////////////////////////////////////////////////
 
 	glMatrixMode(GL_MODELVIEW);

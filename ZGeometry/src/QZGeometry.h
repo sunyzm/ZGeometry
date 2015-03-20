@@ -110,8 +110,9 @@ private slots:
 	
 	void clone();
 	void revert();
-	void nextCoordinate();
-	void addNoise();
+	void switchToNextCoordinate();
+    void switchToPrevCoordinate();
+    void addNoise();
 	void reconstructMHB();
 	void deformSimple();
 	void deformLaplace();
@@ -130,11 +131,12 @@ private slots:
     void detectHoles();
     void triangulateHoles();
     void refineHoles();
-    void holeFairing();
+    void fairHoleLeastSquares();
     
     void inpaintHoles1();
     void inpaintHoles2();
-    void switchMesh();
+    void switchToNextMesh();
+    void switchToPreviousMesh();
 
 	void registerAutomatic();
 	void detectFeatures();

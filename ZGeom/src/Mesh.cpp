@@ -1355,6 +1355,16 @@ const std::string& CMesh::switchCoordinate()
     return mesh_coords[cur].first;
 }
 
+const std::string& CMesh::switchPrevCoordinate()
+{
+    using namespace std;
+    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+    cur = (cur + mesh_coords.size() - 1) % (int)mesh_coords.size();
+    setVertCoordinates(mesh_coords[cur].second);
+    return mesh_coords[cur].first;
+}
+
 void CMesh::revertCoordinate()
 {
     using namespace std;
@@ -1668,6 +1678,8 @@ void CMesh::clearNonEssentialAttributes()
     clearAttributes();
     initAttributes(mesh_name, default_color);
 }
+
+
 
 // std::vector<double> CMesh::calPrincipalCurvature( int k )
 // {

@@ -706,7 +706,7 @@
     <addaction name="actionCutToSelected"/>
     <addaction name="actionTriangulateHoles"/>
     <addaction name="actionRefineHoles"/>
-    <addaction name="actionHoleFairingLeastSquare"/>
+    <addaction name="actionHoleFairingLeastSquares"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -1568,7 +1568,7 @@
     <string>List Attributes</string>
    </property>
   </action>
-  <action name="actionHoleFairingLeastSquare">
+  <action name="actionHoleFairingLeastSquares">
    <property name="text">
     <string>Hole Fairing LS</string>
    </property>

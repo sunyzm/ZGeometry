@@ -160,10 +160,19 @@ void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string de
     clearMeshRelated();
 }
 
-void MeshHelper::switchMesh()
+void MeshHelper::nextMesh()
 {
     if (mMeshHistory.size() <= 1) return;
     currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();    
+
+    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
+    clearMeshRelated();
+}
+
+void MeshHelper::prevMesh()
+{
+    if (mMeshHistory.size() <= 1) return;
+    currentMeshIdx = (currentMeshIdx + mMeshHistory.size() - 1) % mMeshHistory.size();
 
     std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
     clearMeshRelated();
