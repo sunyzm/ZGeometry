@@ -3,6 +3,7 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <set>
 
 std::vector<int> splitStringToInt(const std::string& s);
 std::vector<double> splitStringToDouble(const std::string& s);
@@ -39,5 +40,20 @@ inline void vector2file(const std::string& filepath, const std::vector<T>& data,
 }
 
 bool fileExist(const std::string& filename);
+
+template<typename T>
+bool setHas(const std::set<T>& s, const T& query)
+{
+    return s.find(query) != s.end();
+}
+
+template<typename T>
+bool setHasAll(const std::set<T>& s, const std::vector<T>& vQuery)
+{
+    for (const T& elem : vQuery) {
+        if (s.find(elem) == s.end()) return false;
+    }
+    return true;
+}
 
 #endif
