@@ -1071,17 +1071,17 @@ std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFace
 
 void triangulateMeshHoles(CMesh &mesh)
 { 
-    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> vHoles = getMeshBoundaryLoops(mesh);
 
     /* estimate edge length from hold surroundings */
-    for (MeshRegion& hb : oldHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 3);
+    //for (MeshRegion& hb : vHoles) ZGeom::estimateHoleEdgeLength(mesh, hb, 3);
 
-    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
+    for (int holeIdx = 0; holeIdx < (int)vHoles.size(); ++holeIdx)
     {
         int nOldVerts = mesh.vertCount();
         int nOldEdges = mesh.halfEdgeCount();
         int nOldFaces = mesh.faceCount();
-        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
+        const vector<int>& boundaryEdgeIdx = vHoles[holeIdx].he_on_boundary;
 
         const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
         vector<int> boundaryVertIdx(N);
@@ -1211,26 +1211,26 @@ void triangulateMeshHoles(CMesh &mesh)
         }
 
         for (CFace *f : patchFaces) 
-            oldHoles[holeIdx].face_inside.push_back(f->getFaceIndex());
+            vHoles[holeIdx].face_inside.push_back(f->getFaceIndex());
     } // for each hole
 
     mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
-    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);    
+    mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);    
 }
 
 /* "A multistep approach to restoration of locally undersampled meshes" (GMP 2008) */
 void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 {
-    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
+    vector<MeshRegion> vHoles = getMeshBoundaryLoops(mesh);
 
     /* Perform Delaunay-like refinement */
-    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
+    for (int holeIdx = 0; holeIdx < (int)vHoles.size(); ++holeIdx)
     {
         int nOldVerts = mesh.vertCount();
         int nOldEdges = mesh.halfEdgeCount();
         int nOldFaces = mesh.faceCount();
-        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
+        const vector<int>& boundaryEdgeIdx = vHoles[holeIdx].he_on_boundary;
         const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
         vector<int> boundaryVertIdx(N);
         vector<CVertex*> boundaryVertPtr(N);
@@ -1243,9 +1243,8 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         set<CHalfEdge*> boundaryHalfEdges;
         for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mesh.getHalfEdge(ei));
         set<int> vertsInHole;
-        set<int> facesInHole = set<int>(oldHoles[holeIdx].face_inside.begin(), oldHoles[holeIdx].face_inside.end());
-        const double preferred_edge_length = oldHoles[holeIdx].adjacent_edge_length;
-        logic_assert(preferred_edge_length > 0, "hole edge length need to be estimated first");
+        set<int> facesInHole = set<int>(vHoles[holeIdx].face_inside.begin(), vHoles[holeIdx].face_inside.end());
+        const double preferred_edge_length = ZGeom::estimateHoleEdgeLength(mesh, vHoles[holeIdx], 3);
 
         while (true)
         {
@@ -1333,18 +1332,18 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
             // 4. go to step 1
         }
 
-        oldHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
-        oldHoles[holeIdx].vert_inside = vector<int>(vertsInHole.begin(), vertsInHole.end());
+        vHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
+        vHoles[holeIdx].vert_inside = vector<int>(vertsInHole.begin(), vertsInHole.end());
 
         std::cout << "[Hole #" << holeIdx
-            << "] estimated edge length: " << oldHoles[holeIdx].adjacent_edge_length
-            << "; hole avg edge length: " << calAvgHoleEdgeLength(mesh, oldHoles[holeIdx]) << std::endl;
+            << "] estimated edge length: " << vHoles[holeIdx].adjacent_edge_length
+            << "; hole avg edge length: " << calAvgHoleEdgeLength(mesh, vHoles[holeIdx]) << std::endl;
 
     } // for each hole
 
     mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
-    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
+    mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
 }
 
 /* "Filling holes in meshes" (SGP 2003) */
@@ -1589,19 +1588,31 @@ std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<i
     return nbr;
 }
 
-void estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring /* = 1 */)
+double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring /*= 1*/)
 {
-    set<int> vNeighborVerts = meshMultiVertsAdjacentVerts(mesh, hole.vert_on_boundary, ring, true);
+    vector<int> surroudning_verts = meshRegionSurroundingVerts(mesh, hole, ring);
     set<int> vNeighborHalfEdges;
-    for (int vi : vNeighborVerts) {
+    for (int vi : surroudning_verts) {
         for (CHalfEdge* he : mesh.vert(vi)->getHalfEdges())
             vNeighborHalfEdges.insert(he->getIndex());
     }
+
+    set<int> hole_verts(hole.vert_inside.begin(), hole.vert_inside.end());
+    for (int vi : hole.vert_on_boundary) hole_verts.insert(vi);
     double lengthSum(0);
-    for (int eIdx : vNeighborHalfEdges)
-        lengthSum += mesh.getHalfEdge(eIdx)->length();
+    int count(0);
+    for (int eIdx : vNeighborHalfEdges) {
+        CHalfEdge *he = mesh.getHalfEdge(eIdx);
+        if (hole_verts.find(he->getVertIndex(1)) == hole_verts.end()) 
+        {
+            lengthSum += he->length();
+            count++;
+        }        
+    }
  
-    hole.adjacent_edge_length = lengthSum / (double)vNeighborHalfEdges.size();
+    double estimated_avg_len = lengthSum / (double)count;
+    hole.adjacent_edge_length = estimated_avg_len;
+    return estimated_avg_len;
 }
 
 double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole)

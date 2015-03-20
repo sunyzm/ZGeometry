@@ -79,7 +79,7 @@ std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const ZGeom::Mesh
 
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
-void estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);
+double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);
 double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole);
 
 const std::vector<MeshRegion>& getMeshBoundaryLoops(CMesh &mesh);
