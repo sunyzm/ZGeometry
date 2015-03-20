@@ -124,6 +124,7 @@ private slots:
 
     /* hole filling related */
     void generateHoles();
+    void generateRingHoles();
     void autoGenerateHoles();
     void degradeHoles();
     void cutHoles();

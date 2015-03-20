@@ -75,6 +75,7 @@ struct MeshRegion
 
 ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
+ZGeom::MeshRegion generateRingHole(const CMesh& mesh, int seedVert, int ring);
 std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const ZGeom::MeshRegion& mesh_region, int ring);
 
 

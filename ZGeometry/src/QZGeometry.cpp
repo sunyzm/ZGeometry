@@ -203,6 +203,7 @@ void QZGeometryWindow::makeConnections()
    
     QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
+    QObject::connect(ui.actionGenerateRingHoles, SIGNAL(triggered()), this, SLOT(generateRingHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
@@ -2216,6 +2217,28 @@ void QZGeometryWindow::generateHoles()
     else return;
     
     MeshRegion generated_holes = ZGeom::autoGenerateHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
+    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
+
+    MeshRegion &hole = generated_holes;
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
+    updateDisplayFeatureMenu();
+
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::generateRingHoles()
+{
+    int refIdx = mMeshHelper[0].getRefPointIndex();
+    int ring = 5;
+
+    bool ok;
+    int i = QInputDialog::getInt(this, tr("Input hole rings"),
+        tr("ring:"), ring, 1, 100, 1, &ok);
+    if (ok) ring = i;
+    else return;
+
+    MeshRegion generated_holes = ZGeom::generateRingHole(*getMesh(0), refIdx, ring);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
 
     MeshRegion &hole = generated_holes;

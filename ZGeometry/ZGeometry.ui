@@ -700,6 +700,7 @@
     <addaction name="separator"/>
     <addaction name="actionSwitchMesh"/>
     <addaction name="actionGenerateHoles"/>
+    <addaction name="actionGenerateRingHoles"/>
     <addaction name="actionAutoGenHoles"/>
     <addaction name="actionDegradeHoles"/>
     <addaction name="actionCutHoles"/>
@@ -803,6 +804,7 @@
     <addaction name="menuKernel_Signature"/>
     <addaction name="menuComputeFeatures"/>
     <addaction name="actionDisplayNeighbors"/>
+    <addaction name="actionComputeHoleNeighbors"/>
     <addaction name="actionComputeHeatTransfer"/>
     <addaction name="actionComputeGeodesics"/>
     <addaction name="actionComputeBasis"/>
@@ -1571,6 +1573,16 @@
   <action name="actionHoleFairingLeastSquares">
    <property name="text">
     <string>Hole Fairing LS</string>
+   </property>
+  </action>
+  <action name="actionComputeHoleNeighbors">
+   <property name="text">
+    <string>Hole Neighbors</string>
+   </property>
+  </action>
+  <action name="actionGenerateRingHoles">
+   <property name="text">
+    <string>Generate Ring Holes</string>
    </property>
   </action>
  </widget>

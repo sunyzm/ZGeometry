@@ -1825,4 +1825,21 @@ std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const MeshRegion&
     return vector<int>(result.begin(), result.end());
 }
 
+ZGeom::MeshRegion generateRingHole(const CMesh& mesh, int seedVert, int ring)
+{
+    vector<int> vert_inside = mesh.getVertNeighborVerts(seedVert, ring - 1, true);
+    vector<int> vert_on_boundary = mesh.getVertIsoNeighborVerts(seedVert, ring);
+    set<int> face_inside;
+    for (int vi : vert_inside) {
+        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
+            face_inside.insert(f->getFaceIndex());
+    }
+
+    MeshRegion result;
+    result.face_inside = vector<int>(face_inside.begin(), face_inside.end());
+    result.vert_inside = vert_inside;
+    result.vert_on_boundary = vert_on_boundary;
+    return result;
+}
+
 }   // end of namespace
