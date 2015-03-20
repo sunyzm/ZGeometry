@@ -4,6 +4,7 @@
 #include <string>
 #include <sstream>
 #include <set>
+#include <algorithm>
 
 std::vector<int> splitStringToInt(const std::string& s);
 std::vector<double> splitStringToDouble(const std::string& s);
@@ -54,6 +55,24 @@ bool setHasAll(const std::set<T>& s, const std::vector<T>& vQuery)
         if (s.find(elem) == s.end()) return false;
     }
     return true;
+}
+
+template<typename T>
+std::set<T> setDiff(const std::set<T>& s1, const std::set<T>& s2)
+{
+    std::set<T> result;
+    for (T elem : s1) {
+        if (s2.find(elem) == s2.end()) result.insert(elem);
+    }
+    return result;
+}
+
+template<typename T>
+std::set<T> setCombine(const std::set<T>& s1, const std::set<T>& s2)
+{
+    std::set<T> result(s1);
+    for (T elem : s2) result.insert(elem);
+    return result;
 }
 
 #endif

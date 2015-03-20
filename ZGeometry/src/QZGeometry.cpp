@@ -2387,11 +2387,19 @@ void QZGeometryWindow::refineHoles()
     const auto& oldBoundaries = ZGeom::getMeshBoundaryLoops(*oldMesh);
     if (!oldBoundaries.empty()) {
         std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
-        ZGeom::refineMeshHoles(*newMesh, 0.6);
+
+        double lambda = 0.8;
+        bool ok;
+        double r = QInputDialog::getDouble(this, tr("Input refine coefficient"),
+            tr("lambda:"), lambda, 0.1, 2, 2, &ok);
+        if (ok) lambda = r;
+        else return;
+
+        ZGeom::refineMeshHoles(*newMesh, lambda);
         mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
         std::cout << "Mesh hole refined!" << std::endl;
 
-        evaluateCurrentInpainting();
+        //evaluateCurrentInpainting();
     }
     else if (oldMesh->hasAttr(StrAttrManualHoles)) {
         auto& manualHoles = oldMesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);

@@ -234,8 +234,10 @@ public:
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);
     void                addFace(CFace *f);
+    CVertex*            faceSplit3(CFace *f);
     CVertex*            faceSplit3(int fIdx);
     CVertex*            edgeSplit(int heIdx);
+    CVertex*            edgeSplit(CHalfEdge *he);
     void                edgeSwap(int v1, int v2);
     void                edgeSwap(CHalfEdge* he);
     bool                relaxEdge(CHalfEdge* he);

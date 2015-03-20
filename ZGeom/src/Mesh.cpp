@@ -11,6 +11,7 @@
 #include <numeric>
 #include "zassert.h"
 #include "arithmetic.h"
+#include "dataio.h"
 
 using namespace std;
 using ZGeom::Colorf;
@@ -780,8 +781,7 @@ std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
 
     std::set<int> v1 = getVertNeighborVertSet(v, ring - 1, true);
     std::set<int> v2 = getVertNeighborVertSet(v, ring, true);
-    std::set<int> v3;
-    std::set_difference(v2.begin(), v2.end(), v1.begin(), v1.end(), std::inserter(v3, v3.end()));
+    std::set<int> v3 = setDiff<int>(v2, v1);
 
     return std::vector<int>(v3.begin(), v3.end());
 }
@@ -1205,9 +1205,8 @@ void CMesh::addAttrMeshFeatures(const MeshFeatureList& mfl, const std::string& n
     addAttr<MeshFeatureList>(mfl, name, AR_UNIFORM, AT_FEATURES);
 }
 
-CVertex* CMesh::faceSplit3( int fIdx )
+CVertex* CMesh::faceSplit3(CFace *face)
 {
-    CFace* face = getFace(fIdx);
     CVertex* vc = new CVertex();
     vc->setPosition(face->calBarycenter());
 
@@ -1231,6 +1230,13 @@ CVertex* CMesh::faceSplit3( int fIdx )
     addFace(f31c);
 
     return vc;
+}
+
+CVertex* CMesh::faceSplit3( int fIdx )
+{
+    assert(fIdx >= 0 && fIdx < faceCount());
+    CFace* face = getFace(fIdx);
+    return faceSplit3(face);
 }
 
 void CMesh::makeFace( CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3, CFace *f )
@@ -1379,22 +1385,21 @@ bool CMesh::hasNamedCoordinates()
     return hasAttr(StrAttrNamedCoordinates);
 }
 
-CVertex* CMesh::edgeSplit(int heIdx)
+CVertex* CMesh::edgeSplit(CHalfEdge *he)
 {
-    assert(heIdx >= 0 && heIdx < halfEdgeCount());
-    CHalfEdge *he_1 = getHalfEdge(heIdx);
+    CHalfEdge *he_1 = he;
     CHalfEdge *he_2 = he_1->nextHalfEdge();
     CHalfEdge *he_3 = he_2->nextHalfEdge();
     CHalfEdge *he_4 = he_1->twinHalfEdge();
     CVertex *v1 = he_1->vert(0), *v2 = he_2->vert(0), *v3 = he_3->vert(0);
     CFace* face_a = he_1->getAttachedFace();
-    
+
     CVertex *v5 = new CVertex(0.5 * (v1->pos() + v2->pos()));
     CHalfEdge *he_53 = new CHalfEdge(), *he_52 = new CHalfEdge(), *he_35 = new CHalfEdge();
-    CFace* face_b = new CFace(3);    
+    CFace* face_b = new CFace(3);
     he_52->setVertOrigin(v5);
     v5->addHalfEdge(he_52);
-    assoicateVertEdges(v3, v5, he_35, he_53);    
+    assoicateVertEdges(v3, v5, he_35, he_53);
     makeFace(he_3, he_1, he_53, face_a);
     makeFace(he_35, he_52, he_2, face_b);
     addVertex(v5);
@@ -1407,10 +1412,10 @@ CVertex* CMesh::edgeSplit(int heIdx)
         CFace *face_c = he_4->getAttachedFace();
         CVertex *v4 = he_6->vert(0);
         CHalfEdge *he_51 = new CHalfEdge(), *he_54 = new CHalfEdge(), *he_45 = new CHalfEdge();
-        CFace *face_d = new CFace(3);        
-        he_51->setVertOrigin(v5);        
+        CFace *face_d = new CFace(3);
+        he_51->setVertOrigin(v5);
         v5->addHalfEdge(he_51);
-        assoicateVertEdges(v4, v5, he_45, he_54);        
+        assoicateVertEdges(v4, v5, he_45, he_54);
         makeFace(he_5, he_45, he_51, face_c);
         makeFace(he_54, he_6, he_4, face_d);
         CHalfEdge::makeTwins(he_1, he_51);
@@ -1418,8 +1423,15 @@ CVertex* CMesh::edgeSplit(int heIdx)
         addFace(face_d);
         addHalfEdge(he_51); addHalfEdge(he_54); addHalfEdge(he_45);
     }
-    
+
     return v5;
+
+}
+
+CVertex* CMesh::edgeSplit(int heIdx)
+{
+    assert(heIdx >= 0 && heIdx < halfEdgeCount());
+    return edgeSplit(m_vHalfEdges[heIdx]);
 }
 
 void CMesh::setMeshName(std::string mesh_name)
