@@ -73,11 +73,11 @@ struct MeshRegion
     const std::vector<int>& getInsideFaceIdx() const { return face_inside; }
 };
 
-ZGeom::MeshRegion generateRandomMeshHole(const CMesh& mesh, int seedVert, int holeSize);
-ZGeom::MeshRegion generateRandomMeshHole(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
-ZGeom::MeshRegion generateMeshRingHole(const CMesh& mesh, int seedVert, int ring);
+ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
+ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
+ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring);
 std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const ZGeom::MeshRegion& mesh_region, int ring);
-std::vector<int> getFaceIdxEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts);
+std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts);
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
 double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);

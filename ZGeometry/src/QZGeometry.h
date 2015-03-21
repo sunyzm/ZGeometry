@@ -141,6 +141,7 @@ private slots:
     void inpaintHoles2();
     void switchToNextMesh();
     void switchToPreviousMesh();
+    void removeCurrentMesh();
 
 	void registerAutomatic();
 	void detectFeatures();

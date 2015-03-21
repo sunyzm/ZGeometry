@@ -20,6 +20,7 @@ public:
     void nextMesh();
     void prevMesh();
     void revertOriginal();
+    void removeCurrentMesh();
     CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
     CMesh* getMeshByName(const std::string mesh_descript);
     CMesh* getOriginalMesh() const { return mMeshHistory[0].get(); }
@@ -57,7 +58,6 @@ private:
 
 public:
     std::vector<std::unique_ptr<CMesh>> mMeshHistory;
-    std::map<std::string, CMesh*> mMeshDescriptMap;
     int currentMeshIdx;
 
 	int mRefVert;

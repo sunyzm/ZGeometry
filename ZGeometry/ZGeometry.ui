@@ -699,6 +699,7 @@
     <addaction name="actionRunTests"/>
     <addaction name="separator"/>
     <addaction name="actionSwitchMesh"/>
+    <addaction name="actionRemoveCurrentMesh"/>
     <addaction name="actionGenerateHoles"/>
     <addaction name="actionGenerateRingHoles"/>
     <addaction name="actionAutoGenHoles"/>
@@ -1283,7 +1284,7 @@
   </action>
   <action name="actionRevertCoordinate">
    <property name="text">
-    <string>Revert</string>
+    <string>Revert Coordinate</string>
    </property>
   </action>
   <action name="actionDeformDifferential">
@@ -1543,7 +1544,7 @@
   </action>
   <action name="actionSwitchMesh">
    <property name="text">
-    <string>Switch Mesh</string>
+    <string>Next Mesh</string>
    </property>
   </action>
   <action name="actionCutToSelected">
@@ -1589,6 +1590,11 @@
   <action name="actionShowSurrounding">
    <property name="text">
     <string>Show Surrounding</string>
+   </property>
+  </action>
+  <action name="actionRemoveCurrentMesh">
+   <property name="text">
+    <string>Remove Mesh</string>
    </property>
   </action>
  </widget>

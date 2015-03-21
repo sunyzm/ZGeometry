@@ -1662,7 +1662,7 @@ double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, c
     return result;
 }
 
-ZGeom::MeshRegion generateMeshRingHole(const CMesh& mesh, int seedVert, int ring)
+ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring)
 {
     vector<int> vert_inside = mesh.getVertNeighborVerts(seedVert, ring - 1, true);
     vector<int> vert_on_boundary = mesh.getVertIsoNeighborVerts(seedVert, ring);
@@ -1680,7 +1680,7 @@ ZGeom::MeshRegion generateMeshRingHole(const CMesh& mesh, int seedVert, int ring
 }
 
 
-MeshRegion generateRandomMeshHole(const CMesh& mesh, int seedVert, int holeSize)
+MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize)
 {
     MeshRegion result;
 
@@ -1740,7 +1740,7 @@ MeshRegion generateRandomMeshHole(const CMesh& mesh, int seedVert, int holeSize)
     return result;
 }
 
-MeshRegion generateRandomMeshHole(const CMesh& mesh, const std::vector<int>& seedVerts, int targetSize)
+MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int targetSize)
 {
     set<int> inside_verts{ seedVerts.begin(), seedVerts.end() };
     set<int> inside_faces;
@@ -1843,7 +1843,7 @@ std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const MeshRegion&
     return vector<int>(result.begin(), result.end());
 }
 
-std::vector<int> getFaceIdxEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts)
+std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts)
 {
     set<int> face_idx;
     set<int> all_verts(verts.begin(), verts.end());

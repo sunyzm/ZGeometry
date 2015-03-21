@@ -203,6 +203,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
    
     QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
+    QObject::connect(ui.actionRemoveCurrentMesh, SIGNAL(triggered()), this, SLOT(removeCurrentMesh()));
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionGenerateRingHoles, SIGNAL(triggered()), this, SLOT(generateRingHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
@@ -987,7 +988,7 @@ void QZGeometryWindow::computeHoleNeighbors()
     mesh.addAttrMeshFeatures(MeshFeatureList(surrounding_verts, ZGeom::ColorMagenta), "hole_ring_neighbor_verts");
     updateMenuDisplayFeatures();
 
-    vector<int> surrounding_faces = ZGeom::getFaceIdxEncompassedByVerts(mesh, surrounding_verts);
+    vector<int> surrounding_faces = ZGeom::getFaceEncompassedByVerts(mesh, surrounding_verts);
     mesh.addAttr<vector<int>>(surrounding_faces, StrAttrHoleSurroundingFaces, AR_UNIFORM, AT_VEC_INT);
     
     ui.glMeshWidget->update();
@@ -2235,28 +2236,6 @@ void QZGeometryWindow::holeEstimateNormals()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::generateHoles()
-{
-    int refIdx = mMeshHelper[0].getRefPointIndex();
-    int holeVertCount = 30;
-
-    bool ok;
-    int i = QInputDialog::getInt(this, tr("Input hole size"),
-        tr("Hole size:"), 25, 1, 10000, 1, &ok);
-    if (ok) holeVertCount = i; 
-    else return;
-    
-    MeshRegion generated_holes = ZGeom::generateRandomMeshHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
-    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);    
-    
-    MeshRegion &hole = generated_holes;
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
-    updateMenuDisplayFeatures();
-
-    ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::generateRingHoles()
 {
     int refIdx = mMeshHelper[0].getRefPointIndex();
@@ -2268,9 +2247,31 @@ void QZGeometryWindow::generateRingHoles()
     if (ok) ring = i;
     else return;
 
-    MeshRegion generated_holes = ZGeom::generateMeshRingHole(*getMesh(0), refIdx, ring);
+    MeshRegion generated_holes = ZGeom::generateRingMeshRegion(*getMesh(0), refIdx, ring);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
 
+    MeshRegion &hole = generated_holes;
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
+    updateMenuDisplayFeatures();
+
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::generateHoles()
+{
+    int refIdx = mMeshHelper[0].getRefPointIndex();
+    int holeVertCount = 30;
+
+    bool ok;
+    int i = QInputDialog::getInt(this, tr("Input hole size"),
+        tr("Hole size:"), 25, 1, 10000, 1, &ok);
+    if (ok) holeVertCount = i; 
+    else return;
+    
+    MeshRegion generated_holes = ZGeom::generateRandomMeshRegion(*getMesh(0), vector<int>{refIdx}, holeVertCount);
+    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);    
+    
     MeshRegion &hole = generated_holes;
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
@@ -2285,11 +2286,11 @@ void QZGeometryWindow::autoGenerateHoles()
     int N = getMesh(0)->vertCount();
 
     double missing_ratio = 0.2;
-    double s = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
-        tr("missing_ratio:"), 0.2, 0.01, 0.75, 2, &ok);
-    if (ok) missing_ratio = s;
-    int holeVertCount = std::round(missing_ratio * (double)getMesh(0)->vertCount());
+    missing_ratio = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
+        tr("missing_ratio:"), missing_ratio, 0.01, 0.75, 2, &ok);
+    if (!ok) return;
 
+    int holeVertCount = std::round(missing_ratio * (double)getMesh(0)->vertCount());
     int hole_count = 1;
     int i = QInputDialog::getInt(this, tr("Input number of holes"),
         tr("Hole size:"), 1, 0, 100, 1, &ok);
@@ -2302,7 +2303,7 @@ void QZGeometryWindow::autoGenerateHoles()
     std::random_shuffle(seedVerts.begin(), seedVerts.end());
     seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
 
-    MeshRegion generated_holes = ZGeom::generateRandomMeshHole(*getMesh(0), seedVerts, holeVertCount);
+    MeshRegion generated_holes = ZGeom::generateRandomMeshRegion(*getMesh(0), seedVerts, holeVertCount);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector<MeshRegion>{generated_holes}, StrAttrManualHoles, AR_UNIFORM);
     
     MeshRegion &hole = generated_holes;
@@ -2495,7 +2496,12 @@ void QZGeometryWindow::fairHoleLeastSquares()
 {
     /* hole fairing LS */
     CMesh& mesh = *mMeshHelper[0].getMesh();
-    const ZGeom::MeshRegion& hole_region = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions)[0];
+    vector<MeshRegion> &vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    if (vHoles.empty()) {
+        std::cout << "No holes found!" << std::endl;
+        return;
+    }
+    const ZGeom::MeshRegion& hole_region = vHoles[0];
     int anchor_ring = 3;
     double anchor_weight = 1.0;
 
@@ -2523,4 +2529,12 @@ void QZGeometryWindow::updateUI()
     updateMenuDisplayFeatures();
     updateMenuDisplayLines();
     displaySignature(CMesh::StrAttrColorSigDefault.c_str());
+}
+
+void QZGeometryWindow::removeCurrentMesh()
+{
+    mMeshHelper[0].removeCurrentMesh();
+    mShapeEditor.init(mMeshHelper[0]);
+    updateUI();
+    ui.glMeshWidget->update();
 }

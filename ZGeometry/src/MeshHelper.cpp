@@ -25,7 +25,6 @@ MeshHelper::MeshHelper()
  MeshHelper::MeshHelper(MeshHelper && mh)
  {
      mMeshHistory = std::move(mMeshHistory);
-     mMeshDescriptMap = std::move(mMeshDescriptMap);
      mRefVert = mh.mRefVert;
      mRefPos = mh.mRefPos;
      mHandles = std::move(mh.mHandles);
@@ -154,7 +153,6 @@ void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string de
 {
     mMeshHistory.push_back(std::move(newMesh));
     CMesh *mesh = mMeshHistory.back().get();
-    mMeshDescriptMap.insert(std::make_pair(description, mesh));
     mesh->setMeshDescription(description);
     currentMeshIdx = (int)mMeshHistory.size() - 1;
     clearMeshRelated();
@@ -190,7 +188,25 @@ void MeshHelper::clearMeshRelated()
 
 CMesh* MeshHelper::getMeshByName(const std::string mesh_descript)
 {
-    if (mMeshDescriptMap.find(mesh_descript) == mMeshDescriptMap.end()) return nullptr;
-    else return mMeshDescriptMap[mesh_descript];
+    for (int k = 0; k < mMeshHistory.size(); ++k) {
+        if (mMeshHistory[k]->getMeshDescription() == mesh_descript)
+            return mMeshHistory[k].get();
+    }
+
+    return nullptr; 
+}
+
+void MeshHelper::removeCurrentMesh()
+{
+    if (currentMeshIdx == 0) {
+        cout << "Original mesh cannot be removed!" << std::endl;
+        return;
+    }
+
+    mMeshHistory.erase(mMeshHistory.begin() + currentMeshIdx);
+
+    currentMeshIdx = currentMeshIdx % mMeshHistory.size();
+    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
+    clearMeshRelated();
 }
 
