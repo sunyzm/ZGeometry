@@ -165,6 +165,11 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionAddMesh, SIGNAL(triggered()), this, SLOT(addMesh()));
 	QObject::connect(ui.actionSaveMatching, SIGNAL(triggered()), this, SLOT(saveMatchingResult()));
 	QObject::connect(ui.actionLoadMatching, SIGNAL(triggered()), this, SLOT(loadMatchingResult()));
+    QObject::connect(ui.actionListAttributes, SIGNAL(triggered()), this, SLOT(listMeshAttributes()));
+    QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revertCoord()));
+    QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(switchToNextCoordinate()));
+    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
+    QObject::connect(ui.actionRemoveCurrentMesh, SIGNAL(triggered()), this, SLOT(removeCurrentMesh()));
 
 	////  Compute  ////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
@@ -182,9 +187,6 @@ void QZGeometryWindow::makeConnections()
 
 	////  Edit  ////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
-    QObject::connect(ui.actionListAttributes, SIGNAL(triggered()), this, SLOT(listMeshAttributes()));
-	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revertCoord()));
-	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(switchToNextCoordinate()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
@@ -201,9 +203,8 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleFairingFourierOMP, SIGNAL(triggered()), this, SLOT(holeFairingFourierOMP()));
     QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
     QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
-   
-    QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
-    QObject::connect(ui.actionRemoveCurrentMesh, SIGNAL(triggered()), this, SLOT(removeCurrentMesh()));
+
+    /* inpainting related */
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionGenerateRingHoles, SIGNAL(triggered()), this, SLOT(generateRingHoles()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
@@ -212,6 +213,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
     QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
+    QObject::connect(ui.actionEvaluateInpainting, SIGNAL(triggered()), this, SLOT(evaluateCurrentInpainting()));
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
 
 	////  Display  ////
@@ -2457,7 +2459,7 @@ void QZGeometryWindow::refineHoles()
         mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
         std::cout << "Mesh hole refined!" << std::endl;
 
-        //evaluateCurrentInpainting();
+        evaluateCurrentInpainting();
     }
     else if (oldMesh->hasAttr(StrAttrManualHoles)) {
         auto& manualHoles = oldMesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);

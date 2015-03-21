@@ -71,6 +71,8 @@ private slots:
     void holeFairingFourierOMP();
     void holeEstimateCurvature();
     void holeEstimateNormals();
+    void inpaintHoles1();
+    void inpaintHoles2();
 
 	void displaySignature(QString sigName);
 	void displayFeature(QString featureName);
@@ -136,9 +138,8 @@ private slots:
     void triangulateHoles();
     void refineHoles();
     void fairHoleLeastSquares();
-    
-    void inpaintHoles1();
-    void inpaintHoles2();
+    void evaluateCurrentInpainting();    
+
     void switchToNextMesh();
     void switchToPreviousMesh();
     void removeCurrentMesh();
@@ -176,7 +177,6 @@ private:
 	void computeFunctionMaps(int num);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
-    void evaluateCurrentInpainting();
 
 	/* fields */
 	Ui::ZGeometryClass	  ui;

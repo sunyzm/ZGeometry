@@ -86,6 +86,7 @@ public:
 	double		        length() const;
 	int                 getIndex() const            { return m_eIndex; }	
     void                setVertOrigin(CVertex *v1) { m_vert = v1; }
+    ZGeom::Vec3d        midEdge() const { return 0.5 * (vert0()->pos() + vert1()->pos()); }
 
     static void         makeTwins(CHalfEdge* e1, CHalfEdge* e2);
     static void         makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3);

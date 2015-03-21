@@ -1217,10 +1217,12 @@ void triangulateMeshHoles(CMesh &mesh)
     mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);    
 }
 
+/* "Filling holes in meshes" (SGP 2003) */
 /* "A multistep approach to restoration of locally undersampled meshes" (GMP 2008) */
 void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
 {
     vector<MeshRegion> vHoles = getMeshBoundaryLoops(mesh);
+    if (vHoles.empty()) return;
 
     /* Perform Delaunay-like refinement */
     for (int holeIdx = 0; holeIdx < (int)vHoles.size(); ++holeIdx)
@@ -1242,77 +1244,98 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         while (true)
         {
             // 1. for each triangle inside hole, check if any face is splittable
-            CFace* selected_face = nullptr;
-            CVertex* new_vert = nullptr;
-            for (CFace* face : faces_in_hole)
+            bool new_vert_added(false);
+            while (true)
             {
-                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                int obtuse_edge = ZGeom::triObtuseEdge(face->getAllEdgeLengths());
-                if (obtuse_edge == -1)  // non-obtuse triangle, 3-split face
+                /* keep add new_vert until no new_vert can be selected */
+                CVertex* new_vert = nullptr;
+                for (CFace* face : faces_in_hole)
                 {
-                    Vec3d vc = face->calBarycenter();
-                    bool splitTest = true;
-                    for (int m = 0; m < 3; ++m) {
-                        if ((face->vert(m)->pos() - vc).length() <= lambda * preferred_edge_length) {
-                            splitTest = false; break;
+                    CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
+                    int obtuse_edge = ZGeom::triObtuseEdge(face->getAllEdgeLengths());
+                    if (obtuse_edge == -1)  // non-obtuse triangle: 3-split face
+                    {
+                        bool splitTest = true;
+#if 0
+                        for (int m = 0; m < 3; ++m) {
+                            if ((face->vert(m)->pos() - vc).length() <= lambda * preferred_edge_length) {
+                                splitTest = false; break;
+                            }
+                        }
+#else
+                        Vec3d vc = face->calBarycenter();
+                        double totalLength(0);
+                        for (int m = 0; m < 3; ++m)
+                            totalLength += (face->vert(m)->pos() - vc).length();
+                        splitTest = (totalLength >= 3 * lambda * preferred_edge_length);                            
+#endif
+                        if (splitTest) 
+                        {
+                            new_vert = mesh.faceSplit3(face);
+                            // relax edges opposite to the new added centroid
+                            for (int k = 0; k < 3; ++k) {
+                                if (!setHas(boundary_he, fe[k]))
+                                    mesh.relaxEdge(fe[k]);
+                            }
+
+                            break;
                         }
                     }
-                    if (splitTest) {
-                        selected_face = face;
-                        new_vert = mesh.faceSplit3(face);
-
-                        // relax edges opposite to the new added centroid
-                        for (int k = 0; k < 3; ++k) {
-                            if (!setHas(boundary_he, fe[k]))
-                                mesh.relaxEdge(fe[k]);
+                    else // obtuse triangle: 2-split obtuse edge
+                    {
+                        CHalfEdge *obtuse_he = face->getHalfEdge(obtuse_edge);
+                        if (setHas(boundary_he, obtuse_he))
+                            continue; // don't split boundary edges
+                        if (obtuse_he->twinHalfEdge() && !setHas(faces_in_hole, obtuse_he->twinHalfEdge()->getAttachedFace()))
+                        {
+                            std::cout << "Should not happen!" << std::endl;
+                            continue;
                         }
 
-                        break;
+                        bool splitTest = true;
+#if 0
+                        splitTest = (obtuse_he->length() >= 2 * lambda * preferred_edge_length);
+#else
+                        Vec3d vc = obtuse_he->midEdge();
+                        double totalLength(0);
+                        for (int m = 0; m < 3; ++m)
+                            totalLength += (face->vert(m)->pos() - vc).length();
+                        splitTest = (totalLength >= 3 * lambda * preferred_edge_length);
+#endif                        
+                        if (splitTest) 
+                        {
+                            vector<CHalfEdge*> diamond_edges = { obtuse_he->nextHalfEdge(), obtuse_he->prevHalfEdge() };
+                            if (obtuse_he->twinHalfEdge() != nullptr) {
+                                CHalfEdge* obtuse_he2 = obtuse_he->twinHalfEdge();
+                                diamond_edges.push_back(obtuse_he2->nextHalfEdge());
+                                diamond_edges.push_back(obtuse_he2->prevHalfEdge());
+                            }
+                            new_vert = mesh.edgeSplit(obtuse_he);
+
+                            // relax edges opposite to the new added edge_center
+                            for (int k = 0; k < (int)diamond_edges.size(); ++k) {
+                                if (!setHas(boundary_he, diamond_edges[k]))
+                                    mesh.relaxEdge(diamond_edges[k]);
+                            }
+
+                            break;
+                        }
                     }
                 }
-                else // obtuse triangle
-                {
-                    CHalfEdge *obtuse_he = face->getHalfEdge(obtuse_edge);
-                    if (setHas(boundary_he, obtuse_he))
-                        continue; // don't split boundary edges
-                    if (obtuse_he->twinHalfEdge() && !setHas(faces_in_hole, obtuse_he->twinHalfEdge()->getAttachedFace()))
-                    {
-                        std::cout << "Should not happen!" << std::endl;
-                        continue;
-                    }
 
-                    if (obtuse_he->length() > lambda * 2 * preferred_edge_length) 
-                    { 
-                        // split the obtuse edge
-                        selected_face = face;
-                        vector<CHalfEdge*> diamond_edges = { obtuse_he->nextHalfEdge(), obtuse_he->prevHalfEdge() };
-                        if (obtuse_he->twinHalfEdge() != nullptr) { 
-                            CHalfEdge* obtuse_he2 = obtuse_he->twinHalfEdge();
-                            diamond_edges.push_back(obtuse_he2->nextHalfEdge());
-                            diamond_edges.push_back(obtuse_he2->prevHalfEdge());
-                        }
-                        new_vert = mesh.edgeSplit(obtuse_he);
-
-                        // relax edges opposite to the new added edge_center
-                        for (int k = 0; k < (int)diamond_edges.size(); ++k) {
-                            if (!setHas(boundary_he, diamond_edges[k]))
-                                mesh.relaxEdge(diamond_edges[k]);
-                        }
-
-                        break;
-                    }
-                }                
+                if (new_vert != nullptr) {
+                    verts_in_hole.insert(new_vert);
+                    for (CFace* newF : new_vert->getAdjacentFaces())
+                        faces_in_hole.insert(newF);
+                    if(verts_in_hole.size() % 10 == 0) 
+                        std::cout << "#verts_in_hole: " << verts_in_hole.size() << '\n';
+                    new_vert_added = true;
+                }
+                else break;
             }
-
-            if (new_vert != nullptr) 
-            {
-                verts_in_hole.insert(new_vert);
-                faces_in_hole.erase(selected_face);
-                for (CFace* newF : new_vert->getAdjacentFaces())
-                    faces_in_hole.insert(newF);
-                cout << "#verts_in_hole: " << verts_in_hole.size() << '\n';
-            }                
-            else break;  // 2. no new points were inserted in step 1, hole filling process completes
+                            
+            // 2. If no new points were inserted in step 1, hole filling process completes
+            if (!new_vert_added) break;  
 
             // 3. relax all edges in patch mesh
             vector<CHalfEdge*> inside_he;
@@ -1322,7 +1345,7 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
             }               
 
             int swapIterCount = 0;
-            while (true && swapIterCount++ < 100) {
+            while (true) {
                 bool noEdgeSwap = true;
                 for (int i = 0; i < (int)inside_he.size(); ++i) {
                     if (mesh.relaxEdge(inside_he[i])) {
@@ -1330,6 +1353,7 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
                     }
                 }
                 if (noEdgeSwap) break;
+                if (swapIterCount++ >= 100) break;
             }
             if (swapIterCount >= 100) cout << "Maximum swap reached!\n";
 
@@ -1350,213 +1374,6 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
     mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
     mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
-}
-
-/* "Filling holes in meshes" (SGP 2003) */
-void refineMeshHoles2(CMesh &mesh, double lambda /*= 2.0*/)
-{
-    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
-
-    /* Perform Delaunay-like refinement */
-    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
-    {
-        int nOldVerts = mesh.vertCount();
-        int nOldEdges = mesh.halfEdgeCount();
-        int nOldFaces = mesh.faceCount();
-        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
-        const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
-        vector<int> boundaryVertIdx(N);
-        vector<CVertex*> boundaryVertPtr(N);
-        vector<Vec3d> boundaryVertPos(N);
-        for (int i = 0; i < N; ++i) {
-            boundaryVertIdx[i] = mesh.getHalfEdge(boundaryEdgeIdx[i])->getVertIndex(0);
-            boundaryVertPtr[i] = mesh.vert(boundaryVertIdx[i]);
-            boundaryVertPos[i] = boundaryVertPtr[i]->pos();
-        }
-        set<CHalfEdge*> boundaryHalfEdges;
-        for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mesh.getHalfEdge(ei));
-        set<int> vertsInHole;
-        set<int> facesInHole = set<int>(oldHoles[holeIdx].face_inside.begin(), oldHoles[holeIdx].face_inside.end());
-        map<int, double> lengthAttr;
-        for (int i = 0; i < N; ++i) {
-            CVertex* pv = boundaryVertPtr[i];
-            double length_sum(0);
-            double valid_valence = 0;
-            for (CHalfEdge *he : pv->m_HalfEdges) {
-                if (facesInHole.find(he->getAttachedFace()->getFaceIndex()) != facesInHole.end()) {
-                    length_sum += he->length();
-                    valid_valence++;
-                }
-            }            
-            lengthAttr[pv->getIndex()] = length_sum / valid_valence;
-        }
-
-        while (true)
-        {
-            // 1. for each triangle inside hole, check if any face is splittable
-            int selectedFIdx = -1;
-            for (int fIdx : facesInHole) {
-                CFace* face = mesh.getFace(fIdx);
-                Vec3d vc = face->calBarycenter();
-                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                bool splitTest = true;
-                for (int m = 0; m < 3; ++m) {
-                    if ((fv[m]->pos() - vc).length() <= lambda * vcLenAttr) {
-                        splitTest = false; break;
-                    }
-                }
-                if (splitTest) { selectedFIdx = fIdx; break; }
-            }
-
-            if (selectedFIdx != -1) // split the selected face
-            {
-                CFace *face = mesh.getFace(selectedFIdx);
-                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                CVertex* centroid = mesh.faceSplit3(face->getFaceIndex());
-                lengthAttr[centroid->getIndex()] = vcLenAttr;
-
-                vertsInHole.insert(centroid->getIndex());
-                facesInHole.erase(selectedFIdx);
-                for (CFace* newF : centroid->getAdjacentFaces())
-                    facesInHole.insert(newF->getFaceIndex());
-
-                // relax edges opposite to the new added centroid
-                for (int k = 0; k < 3; ++k) {
-                    if (boundaryHalfEdges.find(fe[k]) == boundaryHalfEdges.end()) {
-                        mesh.relaxEdge(fe[k]);
-                    }
-                }                
-            }             
-            else break;  // 2. no new points were inserted in step 1, hole filling process completes
-
-            // 3. relax all edges in patch mesh
-            int swapIterCount = 0;
-            while (true && swapIterCount++ < 100) {
-                bool noEdgeSwap = true;
-                for (int i = nOldEdges; i < mesh.m_vHalfEdges.size(); ++i) {
-                    if (mesh.relaxEdge(mesh.getHalfEdge(i))) {
-                        noEdgeSwap = false; 
-                        // break;
-                    }
-                }
-                if (noEdgeSwap) break;
-            }
-            std::cout << "Swap iterations count: " << swapIterCount << std::endl;
-
-            // 4. go to step 1
-        }
-
-        oldHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
-        oldHoles[holeIdx].vert_inside = vector<int>(vertsInHole.begin(), vertsInHole.end());
-    }
-
-    mesh.clearNonEssentialAttributes();
-    gatherMeshStatistics(mesh);
-    mesh.initNamedCoordinates();
-    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
-}
-
-void refineMeshHoles3(CMesh &mesh, double lambda /*= 2.0*/)
-{
-    vector<MeshRegion> oldHoles = getMeshBoundaryLoops(mesh);
-
-    /* Perform Delaunay-like refinement */
-    for (int holeIdx = 0; holeIdx < (int)oldHoles.size(); ++holeIdx)
-    {
-        int nOldVerts = mesh.vertCount();
-        int nOldEdges = mesh.halfEdgeCount();
-        int nOldFaces = mesh.faceCount();
-        const vector<int>& boundaryEdgeIdx = oldHoles[holeIdx].he_on_boundary;
-        const int N = (int)boundaryEdgeIdx.size();    // number of boundary vertices
-        vector<int> boundaryVertIdx(N);
-        vector<CVertex*> boundaryVertPtr(N);
-        vector<Vec3d> boundaryVertPos(N);
-        for (int i = 0; i < N; ++i) {
-            boundaryVertIdx[i] = mesh.getHalfEdge(boundaryEdgeIdx[i])->getVertIndex(0);
-            boundaryVertPtr[i] = mesh.vert(boundaryVertIdx[i]);
-            boundaryVertPos[i] = boundaryVertPtr[i]->pos();
-        }
-        set<CHalfEdge*> boundaryHalfEdges;
-        for (int ei : boundaryEdgeIdx) boundaryHalfEdges.insert(mesh.getHalfEdge(ei));
-
-        set<int> facesInHole = set<int>(oldHoles[holeIdx].face_inside.begin(), oldHoles[holeIdx].face_inside.end());
-        map<int, double> lengthAttr;
-        for (int i = 0; i < N; ++i) {
-            CVertex* pv = boundaryVertPtr[i];
-            double avgLen(0);
-            double valid_valence = 0;
-            for (CHalfEdge *he : pv->m_HalfEdges) {
-                if (facesInHole.find(he->getAttachedFace()->getFaceIndex()) != facesInHole.end()) {
-                    avgLen += he->length();
-                    valid_valence++;
-                }
-            }
-            avgLen /= valid_valence;
-            lengthAttr[pv->getIndex()] = avgLen;
-        }
-
-        bool noFaceSplit(true), noEdgeSwap(true);
-        while (true)
-        {
-            vector<CFace*> splitCandidates;
-            for (int faceIdx : facesInHole)
-            {
-                CFace* face = mesh.getFace(faceIdx);
-                Vec3d vc = mesh.getFace(faceIdx)->calBarycenter();
-                CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                bool splitTest = true;
-                for (int m = 0; m < 3; ++m) {
-                    double a = lambda * (fv[m]->pos() - vc).length();
-                    if (a <= max(lengthAttr[fv[m]->getIndex()], vcLenAttr)) {
-                        splitTest = false; break;
-                    }
-                }
-                if (splitTest) splitCandidates.push_back(face);
-            }
-
-            if (splitCandidates.empty()) break;
-            else {
-                for (CFace* face : splitCandidates) {
-                    facesInHole.erase(face->getFaceIndex());
-                    CHalfEdge *fe[3] = { face->getHalfEdge(0), face->getHalfEdge(1), face->getHalfEdge(2) };
-                    CVertex *fv[3] = { face->vert(0), face->vert(1), face->vert(2) };
-                    double vcLenAttr = (lengthAttr[fv[0]->getIndex()] + lengthAttr[fv[1]->getIndex()] + lengthAttr[fv[2]->getIndex()]) / 3.0;
-                    CVertex* centroid = mesh.faceSplit3(face->getFaceIndex());
-                    lengthAttr[centroid->getIndex()] = vcLenAttr;
-                    for (CFace* newF : centroid->getAdjacentFaces())
-                        facesInHole.insert(newF->getFaceIndex());
-                }
-            }
-
-            // relaxing all interior half-edges
-            int swapCount = 0;
-            while (true && swapCount++ < 100) {
-                noEdgeSwap = true;
-                for (int i = nOldEdges; i < mesh.m_vHalfEdges.size(); ++i) {
-                    if (boundaryHalfEdges.find(mesh.getHalfEdge(i)->twinHalfEdge()) != boundaryHalfEdges.end()) continue;
-                    if (mesh.relaxEdge(mesh.getHalfEdge(i))) {
-                        noEdgeSwap = false; // break;
-                    }
-                }
-                if (noEdgeSwap) break;
-            }
-        }
-
-        oldHoles[holeIdx].face_inside = vector<int>(facesInHole.begin(), facesInHole.end());
-        oldHoles[holeIdx].vert_inside.clear();
-        for (int vIdx = nOldVerts; vIdx < (int)mesh.vertCount(); ++vIdx)
-            oldHoles[holeIdx].vert_inside.push_back(vIdx);
-    }
-
-    mesh.clearNonEssentialAttributes();
-    gatherMeshStatistics(mesh);
-    mesh.addAttr<vector<MeshRegion>>(oldHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
 }
 
 std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<int>& vert, int ring, bool inclusive /*= true*/)

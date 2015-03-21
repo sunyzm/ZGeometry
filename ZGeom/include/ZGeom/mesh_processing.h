@@ -110,8 +110,6 @@ struct WeightSet
 };
 void triangulateMeshHoles(CMesh &oldMesh);
 void refineMeshHoles(CMesh &oldMesh, double lambda = 2.0);  // lambda: density control factor
-void refineMeshHoles2(CMesh &oldMesh, double lambda = 2.0);
-void refineMeshHoles3(CMesh &oldMesh, double lamdba = 2.0);
 
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);

@@ -634,6 +634,14 @@
     <addaction name="actionSaveMatching"/>
     <addaction name="separator"/>
     <addaction name="actionMeshProperties"/>
+    <addaction name="actionListMeshes"/>
+    <addaction name="actionListAttributes"/>
+    <addaction name="separator"/>
+    <addaction name="actionSwitchMesh"/>
+    <addaction name="actionRemoveCurrentMesh"/>
+    <addaction name="actionNextCoordinate"/>
+    <addaction name="actionRevertCoordinate"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
@@ -683,11 +691,8 @@
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
     <addaction name="actionClearHandles"/>
-    <addaction name="actionListAttributes"/>
     <addaction name="separator"/>
     <addaction name="actionClone"/>
-    <addaction name="actionRevertCoordinate"/>
-    <addaction name="actionNextCoordinate"/>
     <addaction name="actionAddNoise"/>
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
@@ -698,8 +703,6 @@
     <addaction name="separator"/>
     <addaction name="actionRunTests"/>
     <addaction name="separator"/>
-    <addaction name="actionSwitchMesh"/>
-    <addaction name="actionRemoveCurrentMesh"/>
     <addaction name="actionGenerateHoles"/>
     <addaction name="actionGenerateRingHoles"/>
     <addaction name="actionAutoGenHoles"/>
@@ -708,6 +711,7 @@
     <addaction name="actionCutToSelected"/>
     <addaction name="actionTriangulateHoles"/>
     <addaction name="actionRefineHoles"/>
+    <addaction name="actionEvaluateInpainting"/>
     <addaction name="actionHoleFairingLeastSquares"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
@@ -1569,7 +1573,7 @@
   </action>
   <action name="actionListAttributes">
    <property name="text">
-    <string>List Attributes</string>
+    <string>List Mesh Attributes</string>
    </property>
   </action>
   <action name="actionHoleFairingLeastSquares">
@@ -1595,6 +1599,16 @@
   <action name="actionRemoveCurrentMesh">
    <property name="text">
     <string>Remove Mesh</string>
+   </property>
+  </action>
+  <action name="actionEvaluateInpainting">
+   <property name="text">
+    <string>Evaluate Inpainting</string>
+   </property>
+  </action>
+  <action name="actionListMeshes">
+   <property name="text">
+    <string>List Meshes</string>
    </property>
   </action>
  </widget>
