@@ -224,14 +224,16 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
     QObject::connect(ui.actionShowHoles, SIGNAL(triggered(bool)), this, SLOT(toggleShowHoles(bool)));
-	QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
+    QObject::connect(ui.actionShowSurrounding, SIGNAL(triggered(bool)), this, SLOT(toggleShowSurrounding(bool)));
+    QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
 	QObject::connect(ui.actionShowColorLegend, SIGNAL(triggered(bool)), this, SLOT(toggleShowColorLegend(bool)));
 	QObject::connect(ui.actionShowVectors, SIGNAL(triggered(bool)), this, SLOT(toggleShowLines(bool)));
 	QObject::connect(ui.actionDrawMatching, SIGNAL(triggered(bool)), this, SLOT(toggleDrawMatching(bool)));
 	QObject::connect(ui.actionShowMatchingLines, SIGNAL(triggered(bool)), this, SLOT(toggleShowMatchingLines(bool)));
 	QObject::connect(ui.actionDrawRegistration, SIGNAL(triggered(bool)), this, SLOT(toggleDrawRegistration(bool)));	
 	QObject::connect(ui.actionDiffPosition, SIGNAL(triggered()), this, SLOT(displayDiffPosition()));
-	QObject::connect(ui.actionCapture, SIGNAL(triggered()), this, SLOT(captureGL()));
+	
+    QObject::connect(ui.actionCapture, SIGNAL(triggered()), this, SLOT(captureGL()));
 	QObject::connect(ui.actionCaptureAs, SIGNAL(triggered()), this, SLOT(captureGLAs()));
 
 	////  Task  ////
@@ -827,6 +829,15 @@ void QZGeometryWindow::toggleShowHoles(bool show /*= false*/)
     ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::toggleShowSurrounding(bool show /* = false */)
+{
+    bool bToShow = !ui.glMeshWidget->m_bShowSurrounding;
+    ui.glMeshWidget->m_bShowSurrounding = bToShow;
+    ui.actionShowSurrounding->setChecked(bToShow);
+
+    ui.glMeshWidget->update();
+
+}
 
 void QZGeometryWindow::toggleDrawMatching(bool show)
 {
@@ -975,6 +986,10 @@ void QZGeometryWindow::computeHoleNeighbors()
     vector<int> surrounding_verts = ZGeom::meshRegionSurroundingVerts(mesh, *hole, ring);
     mesh.addAttrMeshFeatures(MeshFeatureList(surrounding_verts, ZGeom::ColorMagenta), "hole_ring_neighbor_verts");
     updateMenuDisplayFeatures();
+
+    vector<int> surrounding_faces = ZGeom::getFaceIdxEncompassedByVerts(mesh, surrounding_verts);
+    mesh.addAttr<vector<int>>(surrounding_faces, StrAttrHoleSurroundingFaces, AR_UNIFORM, AT_VEC_INT);
+    
     ui.glMeshWidget->update();
 }
 
@@ -2125,11 +2140,11 @@ void QZGeometryWindow::computeVertNormals()
 			mvl.push_back(LineSegment(vi, vNormals[i], true));
 		}
 		
-        mesh->addAttrLines(mvl, StrAttrVecVertNormal);
+        mesh->addAttrLines(mvl, StrAttrLineVertNormal);
 	}
 
     updateMenuDisplayLines();
-    displayLine(StrAttrVecVertNormal.c_str());
+    displayLine(StrAttrLineVertNormal.c_str());
 }
 
 void QZGeometryWindow::computeFaceNormals()
@@ -2145,11 +2160,11 @@ void QZGeometryWindow::computeFaceNormals()
 			mvl.push_back(LineSegment(vc, fNormals[fIdx], true));
 		}
 
-        mesh->addAttrLines(mvl, StrAttrVecFaceNormal);
+        mesh->addAttrLines(mvl, StrAttrLineFaceNormal);
 	}
 
     updateMenuDisplayLines();
-    displayLine(StrAttrVecFaceNormal.c_str());
+    displayLine(StrAttrLineFaceNormal.c_str());
 }
 
 void QZGeometryWindow::fillHoles()

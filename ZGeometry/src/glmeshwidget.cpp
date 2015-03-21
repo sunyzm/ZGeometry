@@ -82,6 +82,7 @@ void GLMeshWidget::reset()
 	m_bShowWireframeOverlay = false;
 	m_bShowBoundingBox = false;
     m_bShowHoles = true;
+    m_bShowSurrounding = true;
 	
     m_nShadeMode = 1;
 //	setAutoFillBackground(false);
@@ -523,6 +524,28 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
                 glEnd();
             }
         }        
+    }
+
+    /* draw mesh surrounding faces */
+    if (m_bShowSurrounding && tmesh->hasAttr(StrAttrHoleSurroundingFaces))
+    {
+        glPolygonOffset(0.5, 1.0);
+        auto& surrounding_faces = tmesh->getAttrValue<vector<int>>(StrAttrHoleSurroundingFaces);
+        glBegin(GL_TRIANGLES);
+        const float *faceColor = ZGeom::ColorPink;
+        for (int fIdx : surrounding_faces) {
+            CFace* face = tmesh->m_vFaces[fIdx];
+            for (int j = 0; j < 3; j++) {
+                int pi = face->vertIdx(j);
+                const ZGeom::Vec3d& norm = vVertNormals[pi];
+                const Vec3d& vt = vVertPos[pi];
+                const Colorf& vc = vVertColors[pi];
+                glNormal3f(norm.x, norm.y, norm.z);
+                glColor4f(faceColor[0], faceColor[1], faceColor[2], 1.0f);
+                glVertex3f(vt.x, vt.y, vt.z);
+            }
+        }
+        glEnd();
     }
 
     glDisable(GL_POLYGON_OFFSET_FILL);   

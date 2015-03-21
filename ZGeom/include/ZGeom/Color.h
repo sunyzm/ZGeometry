@@ -19,6 +19,7 @@ const float ColorYellow[4]		= {1.f, 1.f, 0, 1.f};
 const float ColorOrange[4]		= {1.f, 0.5f, 0, 1.f};
 const float ColorAzure[4]		= {0, 0.5f, 1.f, 1.f};
 const float ColorPaleVioletRed2[4] = { 238.f / 255.f, 121.f / 255.f, 159.f / 255.f, 1.f };
+const float ColorPink[4]        = { 1.f, 192.f / 255.f, 203.f / 255.f };
 const float* const RGBPresetColors[] = { ColorRed, ColorGreen, ColorBlue, ColorYellow, ColorPurple, ColorMagenta, ColorCyan };	
 
 const float ColorMesh1[4] = { 0.53f, 0.70f, 0.93f, 1.0f };

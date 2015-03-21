@@ -757,6 +757,7 @@
     <addaction name="actionShowVectors"/>
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowHoles"/>
+    <addaction name="actionShowSurrounding"/>
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
     <addaction name="actionShowColorLegend"/>
@@ -1583,6 +1584,11 @@
   <action name="actionGenerateRingHoles">
    <property name="text">
     <string>Generate Ring Holes</string>
+   </property>
+  </action>
+  <action name="actionShowSurrounding">
+   <property name="text">
+    <string>Show Surrounding</string>
    </property>
   </action>
  </widget>

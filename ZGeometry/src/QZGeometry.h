@@ -109,6 +109,7 @@ private slots:
 	void toggleShowMatchingLines(bool show = false);
 	void toggleDrawRegistration(bool show = false);
     void toggleShowHoles(bool show = false);
+    void toggleShowSurrounding(bool show = false);
 	
 	void clone();
 	void revertCoord();
