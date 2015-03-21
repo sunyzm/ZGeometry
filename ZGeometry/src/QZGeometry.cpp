@@ -178,11 +178,12 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
 	QObject::connect(ui.actionComputeFaceNormals, SIGNAL(triggered()), this, SLOT(computeFaceNormals()));
+    QObject::connect(ui.actionComputeHoleNeighbors, SIGNAL(triggered()), this, SLOT(computeHoleNeighbors()));
 
 	////  Edit  ////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
     QObject::connect(ui.actionListAttributes, SIGNAL(triggered()), this, SLOT(listMeshAttributes()));
-	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revert()));
+	QObject::connect(ui.actionRevertCoordinate, SIGNAL(triggered()), this, SLOT(revertCoord()));
 	QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(switchToNextCoordinate()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
 	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
@@ -252,9 +253,9 @@ void QZGeometryWindow::makeConnections()
 
 	////////    mShapeEditor    ////////
 	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
-    QObject::connect(&mShapeEditor, SIGNAL(meshSignatureAdded()), this, SLOT(updateDisplaySignatureMenu()));
-    QObject::connect(&mShapeEditor, SIGNAL(meshPointFeatureChanged()), this, SLOT(updateDisplayFeatureMenu()));
-    QObject::connect(&mShapeEditor, SIGNAL(meshLineFeatureChanged()), this, SLOT(updateDisplayLineMenu()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshSignatureAdded()), this, SLOT(updateMenuDisplaySignature()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshPointFeatureChanged()), this, SLOT(updateMenuDisplayFeatures()));
+    QObject::connect(&mShapeEditor, SIGNAL(meshLineFeatureChanged()), this, SLOT(updateMenuDisplayLines()));
     QObject::connect(&mShapeEditor, SIGNAL(showSignature(QString)), this, SLOT(displaySignature(QString)));
 	QObject::connect(&mShapeEditor, SIGNAL(coordinateSelected(int, int)), this, SLOT(visualizeCompression(int, int)));
 }
@@ -464,9 +465,10 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	if (g_task == TASK_EDITING) {
 		mShapeEditor.init(mMeshHelper[0]);
 		mShapeEditor.runTests();
-//         displayLine("hole_boundaries");
 	}
 
+    updateMenuDisplaySignature();
+    displaySignature(CMesh::StrAttrColorSigDefault.c_str());
 	return true;
 }
 
@@ -879,7 +881,7 @@ void QZGeometryWindow::computeCurvatures()
         qout.output(QString("- Gauss curvature -  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
 	}
 
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
     displaySignature("color_mean_curvature");
 	qout.output("Visualize mean curvature");	
 }
@@ -947,6 +949,35 @@ void QZGeometryWindow::displayNeighborVertices()
 	ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::computeHoleNeighbors()
+{
+    CMesh& mesh = *getMesh(0);
+    MeshRegion* hole = nullptr;
+    if (mesh.hasAttr(ZGeom::StrAttrMeshHoleRegions)) {
+        auto &vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+        if (!vHoles.empty()) hole = &vHoles[0];
+    }    
+    if (hole == nullptr && mesh.hasAttr(StrAttrManualHoles)) {
+        auto &vHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);
+        if (!vHoles.empty()) hole = &vHoles[0];        
+    }
+    if (hole == nullptr) {
+        std::cout << "Mesh has no hole!" << std::endl;
+        return;
+    }
+
+    int ring = 3;
+    bool ok;
+    ring = QInputDialog::getInt(this, tr("Input surrounding ring"),
+        tr("Ring:"), ring, 1, 50, 1, &ok);
+    if (!ok) return;
+
+    vector<int> surrounding_verts = ZGeom::meshRegionSurroundingVerts(mesh, *hole, ring);
+    mesh.addAttrMeshFeatures(MeshFeatureList(surrounding_verts, ZGeom::ColorMagenta), "hole_ring_neighbor_verts");
+    updateMenuDisplayFeatures();
+    ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::computeEigenfunction()
 {
 	LaplacianType lapType = mActiveLalacian;
@@ -962,7 +993,7 @@ void QZGeometryWindow::computeEigenfunction()
 	displaySignature(StrAttrColorEigenFunction.c_str());
 	mLastOperation = Compute_Eig_Func;
 	qout.output("Show eigenfunction" + Int2String(select_eig), OUT_CONSOLE);
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 }
 
 void QZGeometryWindow::computeHK()
@@ -985,7 +1016,7 @@ void QZGeometryWindow::computeHK()
 
 	displaySignature(StrAttrColorHK.c_str());
 	qout.output(QString().sprintf("HK with timescale: %f", time_scale));
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 	mLastOperation = Compute_HK;
 }
 
@@ -1008,7 +1039,7 @@ void QZGeometryWindow::computeHKS()
 	
 	displaySignature(StrAttrColorHKS.c_str());
 	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 	mLastOperation = Compute_HKS;
 }
 
@@ -1030,7 +1061,7 @@ void QZGeometryWindow::computeBiharmonic()
 	}
 
 	displaySignature(StrAttrColorBiharmonic.c_str());
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 	mLastOperation = Compute_Biharmonic;
 }
 
@@ -1082,24 +1113,30 @@ void QZGeometryWindow::displayDiffPosition()
 
 	addColorSignature(0, vDiff, StrAttrColorPosDiff);
 	displaySignature(StrAttrColorPosDiff.c_str());
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 }
 
 void QZGeometryWindow::displaySignature(QString sigName )
 {
 	for (int i = 0; i < mMeshCount; ++i) {
-        if (getMesh(i)->hasAttr(sigName.toStdString()))
-			mRenderManagers[i].mActiveColorSignatureName = sigName.toStdString();
+        if (getMesh(i)->hasAttr(sigName.toStdString())) {
+            mRenderManagers[i].mActiveColorSignatureName = sigName.toStdString();            
+        }        
 	}
+    
+    for (QAction *qa : m_actionDisplaySignatures) {
+        if (qa->text() == sigName) qa->setChecked(true);
+        else qa->setChecked(false);        
+    }
 
-	if (!ui.glMeshWidget->m_bShowSignature && sigName.toStdString() != StrAttrColorPosDiff) 
-		toggleShowSignature();	
+	if (ui.glMeshWidget->m_bShowSignature == false) toggleShowSignature(true);	
 	ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::displayFeature( QString pointFeatureName )
 {
-	for (int obj = 0; obj < mMeshCount; ++obj) {
+	for (int obj = 0; obj < mMeshCount; ++obj) 
+    {
 		if (!isMeshSelected(obj)) continue;
         auto &activePointFeatures = mRenderManagers[obj].mActivePointFeatures;
         std::string newPointFeature = pointFeatureName.toStdString();
@@ -1110,14 +1147,16 @@ void QZGeometryWindow::displayFeature( QString pointFeatureName )
                 break;
             }
         }
-        if (activePointFeatures.find(newPointFeature) == activePointFeatures.end()) {            
+        logic_assert(activeAction != nullptr, "Should have an active action");
+
+        if (!setHas(activePointFeatures, newPointFeature)) {
             activePointFeatures.insert(newPointFeature);
-            if (activeAction) activeAction->setChecked(true);
+            activeAction->setChecked(true);
             if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures(true);
         }
         else {
             activePointFeatures.erase(newPointFeature);
-            if (activeAction) activeAction->setChecked(false);            
+            activeAction->setChecked(false);            
         }
 	}
 
@@ -1137,106 +1176,82 @@ void QZGeometryWindow::displayLine(QString lineFeatureName)
                 break;
             }
         }
-        if (activeLineFeatures.find(newLineFeature) == activeLineFeatures.end()) {
+        logic_assert(activeAction != nullptr, "Should have an active action");
+
+        if (!setHas(activeLineFeatures, newLineFeature)) {
             activeLineFeatures.insert(newLineFeature);
-            if (activeAction) activeAction->setChecked(true);
+            activeAction->setChecked(true);
             if (!ui.glMeshWidget->m_bShowLines) toggleShowLines(true);
         }
         else {
             activeLineFeatures.erase(newLineFeature);
-            if (activeAction) activeAction->setChecked(false);
+            activeAction->setChecked(false);
         }
     }
 
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::updateDisplaySignatureMenu()
+void QZGeometryWindow::updateMenuDisplaySignature()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
-    std::vector<AttrVertColors*> vColorAttributes = getMesh(obj)->getColorAttrList();
+    vector<AttrVertColors*> vColorAttributes = getMesh(obj)->getColorAttrList();
 	for (QAction* qa : m_actionDisplaySignatures) {
-		if (find_if(vColorAttributes.begin(), vColorAttributes.end(), [&](AttrVertColors* attr){ return attr->attrName() == qa->text().toStdString();}) 
-			== vColorAttributes.end())
-		{
-				ui.menuDisplaySignatures->removeAction(qa);
-				delete qa;	
-		}
+    	ui.menuDisplaySignatures->removeAction(qa);
+		delete qa;	
 	}
+    m_actionDisplaySignatures.clear();
+
 	for (AttrVertColors* attr : vColorAttributes) {
-		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), [&](QAction* pa){ return pa->text().toStdString() == attr->attrName();})
-			== m_actionDisplaySignatures.end())
-		{
-			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
-			m_actionDisplaySignatures.push_back(newDisplayAction);
-            ui.menuDisplaySignatures->addAction(newDisplayAction);
-			m_signatureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
-			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
-		}	
+        QString action_name = attr->attrName().c_str();
+        QAction* newDisplayAction = new QAction(action_name, this);
+        m_actionDisplaySignatures.push_back(newDisplayAction);
+        ui.menuDisplaySignatures->addAction(newDisplayAction);
+        newDisplayAction->setCheckable(true);
+        m_signatureSignalMapper->setMapping(newDisplayAction, action_name);
+        QObject::connect(newDisplayAction, SIGNAL(triggered()), m_signatureSignalMapper, SLOT(map()));
 	}
 }
 
-void QZGeometryWindow::updateDisplayFeatureMenu()
+void QZGeometryWindow::updateMenuDisplayFeatures()
 {
 	int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
     std::vector<AttrMeshFeatures*> vFeatureAttr = getMesh(obj)->getMeshFeatureList();
 	for (QAction* qa : m_actionDisplayFeatures) {
-		if (find_if(vFeatureAttr.begin(), vFeatureAttr.end(), 
-                    [&](AttrMeshFeatures* attr){ return attr->attrName() == qa->text().toStdString(); }) 
-			== vFeatureAttr.end())
-		{
-			ui.menuDisplayFeatures->removeAction(qa);
-			delete qa;	
-		}
+    	ui.menuDisplayFeatures->removeAction(qa);
+		delete qa;		
 	}
+    m_actionDisplayFeatures.clear();
+
 	for (AttrMeshFeatures* attr : vFeatureAttr) {
-		if (find_if(m_actionDisplaySignatures.begin(), m_actionDisplaySignatures.end(), 
-                    [&](QAction* pa){ return pa->text().toStdString() == attr->attrName(); })
-			== m_actionDisplaySignatures.end())
-		{
-			QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
-			m_actionDisplayFeatures.push_back(newDisplayAction);
-            ui.menuDisplayFeatures->addAction(newDisplayAction);
-            newDisplayAction->setCheckable(true);
-			m_featureSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
-			QObject::connect(newDisplayAction, SIGNAL(triggered()), m_featureSignalMapper, SLOT(map()));
-		}	
+        QString action_name = attr->attrName().c_str();
+        QAction* newDisplayAction = new QAction(action_name, this);
+		m_actionDisplayFeatures.push_back(newDisplayAction);
+        ui.menuDisplayFeatures->addAction(newDisplayAction);
+        newDisplayAction->setCheckable(true);
+        m_featureSignalMapper->setMapping(newDisplayAction, action_name);
+		QObject::connect(newDisplayAction, SIGNAL(triggered()), m_featureSignalMapper, SLOT(map()));		
 	}
 }
 
-void QZGeometryWindow::updateDisplayLineMenu()
+void QZGeometryWindow::updateMenuDisplayLines()
 {
     int obj = (mObjInFocus <= 0 ? 0 : mObjInFocus);
     vector<AttrMeshLines*> vLineAttr = getMesh(obj)->getMeshLineList();
     for (QAction *qa : m_actionDisplayLines) {
-        bool found = false;
-        for (AttrMeshLines* attr : vLineAttr) {
-            if (attr->attrName() == qa->text().toStdString()) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            ui.menuDisplayFeatures->removeAction(qa);
-            delete qa;
-        }
+        ui.menuDisplayFeatures->removeAction(qa);
+        delete qa;
     }
+    m_actionDisplayLines.clear();
+
     for (AttrMeshLines* attr : vLineAttr) {
-        bool found = false;
-        for (QAction *pa : m_actionDisplayLines) {
-            if (pa->text().toStdString() == attr->attrName()) {
-                found = true;
-                break;
-            }
-        }
-        if (!found) {
-            QAction* newDisplayAction = new QAction(attr->attrName().c_str(), this);
-            m_actionDisplayLines.push_back(newDisplayAction);
-            ui.menuDisplayLines->addAction(newDisplayAction);
-            newDisplayAction->setCheckable(true);
-            m_linesSignalMapper->setMapping(newDisplayAction, attr->attrName().c_str());
-            QObject::connect(newDisplayAction, SIGNAL(triggered()), m_linesSignalMapper, SLOT(map()));
-        }
+        QString action_name = attr->attrName().c_str();
+        QAction* newDisplayAction = new QAction(action_name, this);
+        m_actionDisplayLines.push_back(newDisplayAction);
+        ui.menuDisplayLines->addAction(newDisplayAction);
+        newDisplayAction->setCheckable(true);
+        m_linesSignalMapper->setMapping(newDisplayAction, action_name);
+        QObject::connect(newDisplayAction, SIGNAL(triggered()), m_linesSignalMapper, SLOT(map()));
     }
 }
 
@@ -1732,7 +1747,7 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	mhb2.printEigVals("output/eigvals2.txt");
 }
 
-void QZGeometryWindow::revert()
+void QZGeometryWindow::revertCoord()
 {
     mMeshHelper[0].getMesh()->revertCoordinate();
 	ui.glMeshWidget->update();
@@ -1780,7 +1795,7 @@ void QZGeometryWindow::computeGeodesics()
 	}
 
 	displaySignature(StrAttrColorGeodesics.c_str());
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 	mLastOperation = Compute_Geodesics;
 }
 
@@ -1800,7 +1815,7 @@ void QZGeometryWindow::computeHeatTransfer()
 	}
 
 	displaySignature(StrAttrColorHeat.c_str());
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 	mLastOperation = Compute_Heat;
 }
 
@@ -1930,7 +1945,7 @@ void QZGeometryWindow::displayBasis( int idx )
 	displaySignature(StrAttrColorWaveletBasis.c_str());
 	mLastOperation = Compute_Edit_Basis;
 	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 
 	if (mSignatureMode == ZGeom::SM_BandCurved) {
 		ui.sliderSigMin->triggerAction(QAbstractSlider::SliderToMinimum);
@@ -2060,7 +2075,7 @@ void QZGeometryWindow::visualizeCompression( int selectedApprox, int coordIdx )
     getMesh(0)->addColorSigAttr(StrAttrColorPosDiff, ColorSignature(vDiff));
 
 	displaySignature(StrAttrColorPosDiff.c_str());
-	updateDisplaySignatureMenu();
+	updateMenuDisplaySignature();
 }
 
 bool QZGeometryWindow::isMeshSelected( int obj )
@@ -2113,7 +2128,7 @@ void QZGeometryWindow::computeVertNormals()
         mesh->addAttrLines(mvl, StrAttrVecVertNormal);
 	}
 
-    updateDisplayLineMenu();
+    updateMenuDisplayLines();
     displayLine(StrAttrVecVertNormal.c_str());
 }
 
@@ -2133,7 +2148,7 @@ void QZGeometryWindow::computeFaceNormals()
         mesh->addAttrLines(mvl, StrAttrVecFaceNormal);
 	}
 
-    updateDisplayLineMenu();
+    updateMenuDisplayLines();
     displayLine(StrAttrVecFaceNormal.c_str());
 }
 
@@ -2159,7 +2174,7 @@ void QZGeometryWindow::fillHoles()
 
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
-    updateDisplayFeatureMenu();
+    updateMenuDisplayFeatures();
     displayFeature("hole_vertex");
     displayFeature("hole_boundary_verts");
 
@@ -2216,13 +2231,13 @@ void QZGeometryWindow::generateHoles()
     if (ok) holeVertCount = i; 
     else return;
     
-    MeshRegion generated_holes = ZGeom::autoGenerateHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
-    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
-
+    MeshRegion generated_holes = ZGeom::generateRandomMeshHole(*getMesh(0), vector<int>{refIdx}, holeVertCount);
+    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);    
+    
     MeshRegion &hole = generated_holes;
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
-    updateDisplayFeatureMenu();
+    updateMenuDisplayFeatures();
 
     ui.glMeshWidget->update();
 }
@@ -2238,13 +2253,13 @@ void QZGeometryWindow::generateRingHoles()
     if (ok) ring = i;
     else return;
 
-    MeshRegion generated_holes = ZGeom::generateRingHole(*getMesh(0), refIdx, ring);
+    MeshRegion generated_holes = ZGeom::generateMeshRingHole(*getMesh(0), refIdx, ring);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, StrAttrManualHoles, AR_UNIFORM);
 
     MeshRegion &hole = generated_holes;
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
-    updateDisplayFeatureMenu();
+    updateMenuDisplayFeatures();
 
     ui.glMeshWidget->update();
 }
@@ -2272,13 +2287,13 @@ void QZGeometryWindow::autoGenerateHoles()
     std::random_shuffle(seedVerts.begin(), seedVerts.end());
     seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
 
-    MeshRegion generated_holes = ZGeom::autoGenerateHole(*getMesh(0), seedVerts, holeVertCount);
+    MeshRegion generated_holes = ZGeom::generateRandomMeshHole(*getMesh(0), seedVerts, holeVertCount);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector<MeshRegion>{generated_holes}, StrAttrManualHoles, AR_UNIFORM);
     
     MeshRegion &hole = generated_holes;
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
-    updateDisplayFeatureMenu();
+    updateMenuDisplayFeatures();
 
     ui.glMeshWidget->update();
 }
@@ -2374,6 +2389,8 @@ void QZGeometryWindow::switchToNextMesh()
 {
     mMeshHelper[0].nextMesh();
     mShapeEditor.init(mMeshHelper[0]);
+    
+    updateUI();
     ui.glMeshWidget->update();
 }
 
@@ -2381,6 +2398,8 @@ void QZGeometryWindow::switchToPreviousMesh()
 {
     mMeshHelper[0].prevMesh();
     mShapeEditor.init(mMeshHelper[0]);
+
+    updateUI();
     ui.glMeshWidget->update();
 }
 
@@ -2481,4 +2500,12 @@ void QZGeometryWindow::fairHoleLeastSquares()
     
     evaluateCurrentInpainting();
     ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::updateUI()
+{
+    updateMenuDisplaySignature();
+    updateMenuDisplayFeatures();
+    updateMenuDisplayLines();
+    displaySignature(CMesh::StrAttrColorSigDefault.c_str());
 }

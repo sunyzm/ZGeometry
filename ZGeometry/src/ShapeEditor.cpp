@@ -2576,7 +2576,7 @@ void ShapeEditor::testSurfaceInpainting()
                 for (int i = 0; i < N; ++i) seedVerts[i] = i;
                 std::shuffle(seedVerts.begin(), seedVerts.end(), g);
                 seedVerts = std::vector < int > {seedVerts.begin(), seedVerts.begin() + nSeed};
-                MeshRegion hole = ZGeom::autoGenerateHole(*mMesh, seedVerts, nHoleVerts);
+                MeshRegion hole = ZGeom::generateRandomMeshHole(*mMesh, seedVerts, nHoleVerts);
 
                 double lambda = 1e-2;
                 double tol = 1e-3;

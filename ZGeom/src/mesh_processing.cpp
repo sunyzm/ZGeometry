@@ -1662,7 +1662,25 @@ double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, c
     return result;
 }
 
-MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
+ZGeom::MeshRegion generateMeshRingHole(const CMesh& mesh, int seedVert, int ring)
+{
+    vector<int> vert_inside = mesh.getVertNeighborVerts(seedVert, ring - 1, true);
+    vector<int> vert_on_boundary = mesh.getVertIsoNeighborVerts(seedVert, ring);
+    set<int> face_inside;
+    for (int vi : vert_inside) {
+        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
+            face_inside.insert(f->getFaceIndex());
+    }
+
+    MeshRegion result;
+    result.face_inside = vector<int>(face_inside.begin(), face_inside.end());
+    result.vert_inside = vert_inside;
+    result.vert_on_boundary = vert_on_boundary;
+    return result;
+}
+
+
+MeshRegion generateRandomMeshHole(const CMesh& mesh, int seedVert, int holeSize)
 {
     MeshRegion result;
 
@@ -1722,7 +1740,7 @@ MeshRegion autoGenerateHole(const CMesh& mesh, int seedVert, int holeSize)
     return result;
 }
 
-MeshRegion autoGenerateHole(const CMesh& mesh, const std::vector<int>& seedVerts, int targetSize)
+MeshRegion generateRandomMeshHole(const CMesh& mesh, const std::vector<int>& seedVerts, int targetSize)
 {
     set<int> inside_verts{ seedVerts.begin(), seedVerts.end() };
     set<int> inside_faces;
@@ -1825,21 +1843,18 @@ std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const MeshRegion&
     return vector<int>(result.begin(), result.end());
 }
 
-ZGeom::MeshRegion generateRingHole(const CMesh& mesh, int seedVert, int ring)
+std::vector<int> getFaceIdxEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts)
 {
-    vector<int> vert_inside = mesh.getVertNeighborVerts(seedVert, ring - 1, true);
-    vector<int> vert_on_boundary = mesh.getVertIsoNeighborVerts(seedVert, ring);
-    set<int> face_inside;
-    for (int vi : vert_inside) {
-        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
-            face_inside.insert(f->getFaceIndex());
+    set<int> face_idx;
+    set<int> all_verts(verts.begin(), verts.end());
+    for (int vi : verts) {
+        for (CFace* fi : mesh.vert(vi)->getAdjacentFaces()) {
+            if (setHas(face_idx, fi->getFaceIndex())) continue;
+            if (setHasAll(all_verts, fi->getAllVertIdx()))
+                face_idx.insert(fi->getFaceIndex());
+        }
     }
-
-    MeshRegion result;
-    result.face_inside = vector<int>(face_inside.begin(), face_inside.end());
-    result.vert_inside = vert_inside;
-    result.vert_on_boundary = vert_on_boundary;
-    return result;
+    return vector<int>(face_idx.begin(), face_idx.end());
 }
 
 }   // end of namespace

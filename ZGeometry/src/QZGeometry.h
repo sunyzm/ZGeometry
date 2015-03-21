@@ -75,13 +75,15 @@ private slots:
 	void displaySignature(QString sigName);
 	void displayFeature(QString featureName);
     void displayLine(QString lineName);
-	void updateDisplaySignatureMenu();
-	void updateDisplayFeatureMenu();
-    void updateDisplayLineMenu();
+	void updateMenuDisplaySignature();
+	void updateMenuDisplayFeatures();
+    void updateMenuDisplayLines();
+    void updateUI();
 	void setSignatureMode(const QString& sigModeName);
 	void updateSignatureMin(int sMin);
 	void updateSignatureMax(int sMax);
 	void displayNeighborVertices();
+    void computeHoleNeighbors();
 	void displayDiffPosition();
 	void displayBasis(int idx);
 	
@@ -109,7 +111,7 @@ private slots:
     void toggleShowHoles(bool show = false);
 	
 	void clone();
-	void revert();
+	void revertCoord();
 	void switchToNextCoordinate();
     void switchToPrevCoordinate();
     void addNoise();
