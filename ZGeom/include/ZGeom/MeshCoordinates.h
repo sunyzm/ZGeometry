@@ -2,6 +2,7 @@
 #define ZGEOM_MESH_COORDINATES_H
 #include <cassert>
 #include <vector>
+#include "util.h"
 #include "Vec3.h"
 #include "VecN.h"
 #include "DenseMatrix.h"
@@ -200,6 +201,8 @@ public:
 
     void fromDenseMatrix(const ZGeom::DenseMatrixd& mat)
     {
+        ZGeom::logic_assert(mat.colCount() == 3);
+        resize(mat.rowCount());
         for (int i = 0; i < mSize; ++i) {
             mCoordX[i] = mat(i, 0);
             mCoordY[i] = mat(i, 1);

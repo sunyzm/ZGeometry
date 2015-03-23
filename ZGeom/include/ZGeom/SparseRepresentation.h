@@ -14,12 +14,7 @@ public:
 	Dictionary(int m) : mDim(m) {}
     Dictionary(const Dictionary& dict) = default;
     Dictionary& operator=(const Dictionary& dict) = default;
-    Dictionary(Dictionary&& dict)
-    {
-        mAtoms = std::move(dict.mAtoms);
-        mDim = dict.mDim;
-        dict.mDim = 0;
-    }
+    Dictionary(Dictionary&& dict) : mDim(0) { *this = std::move(dict); }
     Dictionary& operator=(Dictionary&& dict)
     {
         mAtoms = std::move(dict.mAtoms);

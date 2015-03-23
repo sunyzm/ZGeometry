@@ -24,13 +24,18 @@ public:
     std::vector<double>& getVals() { return mValues; }
     int size() const { return (int)mColors.size(); }
 
-    void changeColorMap(ColorMapType cmt, bool requireNormalize = true);
+    void changeColorMap(ColorMapType cmt);
+    void curve(double sMin, double sMax);
     void changeSignatureMode(SignatureMode sigMode);
+    Colorf& operator [] (int i) { return mColors[i]; }
 
 private:
-    std::vector<Colorf> mColors;
+    std::vector<double> mOriginalValues;
     std::vector<double> mValues;
+    std::vector<Colorf> mColors;
     ColorMapType mCurrentColorMap;
+
+    std::vector<double> vec_normalize(const std::vector<double>& vec);
 };
 
 }

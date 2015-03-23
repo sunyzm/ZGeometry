@@ -369,7 +369,7 @@ public:
     void initNamedCoordinates();
     bool hasNamedCoordinates();
     void addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name = "unnamed");
-    const std::string& switchCoordinate();
+    const std::string& switchNextCoordinate();
     const std::string& switchPrevCoordinate();
     void revertCoordinate();
 

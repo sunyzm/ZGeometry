@@ -711,8 +711,10 @@
     <addaction name="actionCutToSelected"/>
     <addaction name="actionTriangulateHoles"/>
     <addaction name="actionRefineHoles"/>
+    <addaction name="actionCopyMeshWithHoles"/>
     <addaction name="actionEvaluateInpainting"/>
     <addaction name="actionHoleFairingLeastSquares"/>
+    <addaction name="actionHoleFairingL1LS"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -755,6 +757,8 @@
     </widget>
     <addaction name="menuDisplayMode"/>
     <addaction name="actionChangeShadeMode"/>
+    <addaction name="actionCurveSignature"/>
+    <addaction name="separator"/>
     <addaction name="actionDrawMatching"/>
     <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowRefPoint"/>
@@ -762,13 +766,13 @@
     <addaction name="actionShowVectors"/>
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowHoles"/>
+    <addaction name="actionShowHoleErrors"/>
     <addaction name="actionShowSurrounding"/>
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
     <addaction name="actionShowColorLegend"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
-    <addaction name="actionDiffPosition"/>
     <addaction name="menuDisplaySignatures"/>
     <addaction name="menuDisplayFeatures"/>
     <addaction name="menuDisplayLines"/>
@@ -1592,6 +1596,9 @@
    </property>
   </action>
   <action name="actionShowSurrounding">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Surrounding</string>
    </property>
@@ -1609,6 +1616,29 @@
   <action name="actionListMeshes">
    <property name="text">
     <string>List Meshes</string>
+   </property>
+  </action>
+  <action name="actionCopyMeshWithHoles">
+   <property name="text">
+    <string>Copy with Holes</string>
+   </property>
+  </action>
+  <action name="actionCurveSignature">
+   <property name="text">
+    <string>Curve Signature</string>
+   </property>
+  </action>
+  <action name="actionShowHoleErrors">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Hole Errors</string>
+   </property>
+  </action>
+  <action name="actionHoleFairingL1LS">
+   <property name="text">
+    <string>Hole Fairing L1LS</string>
    </property>
   </action>
  </widget>

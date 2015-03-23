@@ -1347,17 +1347,18 @@ void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::strin
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     mesh_coords.push_back(make_pair(coordinate_name, newCoord));
-    setVertCoordinates(newCoord);
-    cur++;
+    switchNextCoordinate();
 }
 
-const std::string& CMesh::switchCoordinate()
+const std::string& CMesh::switchNextCoordinate()
 {
     using namespace std;
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     cur = (cur + 1) % (int)mesh_coords.size();
     setVertCoordinates(mesh_coords[cur].second);
+    calAttrVertNormals();
+
     return mesh_coords[cur].first;
 }
 
@@ -1368,6 +1369,8 @@ const std::string& CMesh::switchPrevCoordinate()
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     cur = (cur + mesh_coords.size() - 1) % (int)mesh_coords.size();
     setVertCoordinates(mesh_coords[cur].second);
+    calAttrVertNormals();
+
     return mesh_coords[cur].first;
 }
 
@@ -1377,7 +1380,8 @@ void CMesh::revertCoordinate()
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     cur = 0;
-    setVertCoordinates(mesh_coords[0].second);
+    setVertCoordinates(mesh_coords[0].second); 
+    calAttrVertNormals();
 }
 
 bool CMesh::hasNamedCoordinates()

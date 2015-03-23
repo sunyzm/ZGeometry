@@ -26,6 +26,7 @@ public:
 	bool m_bShowWireframeOverlay;
 	bool m_bShowBoundingBox;
     bool m_bShowHoles;
+    bool m_bShowHoleError;
     bool m_bShowSurrounding;
 
     int  m_nShadeMode;

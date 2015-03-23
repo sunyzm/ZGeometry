@@ -1366,8 +1366,10 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         for (CVertex* pv : verts_in_hole) cur_hole.vert_inside.push_back(pv->getIndex());
 
         std::cout << "[Hole #" << holeIdx
-            << "] estimated edge length: " << cur_hole.adjacent_edge_length
-            << "; hole avg edge length: " << calAvgHoleEdgeLength(mesh, cur_hole) << std::endl;
+            << "] #vert: " << cur_hole.vert_inside.size() 
+            << "; Est. edge length: " << cur_hole.adjacent_edge_length
+            << "; Actual edge length: " << calAvgHoleEdgeLength(mesh, cur_hole) 
+            << std::endl;
 
     } // for each hole
 
@@ -1640,14 +1642,14 @@ std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const MeshRegion&
     for (int vi : mesh_region.vert_on_boundary) considered_vert.insert(vi);
     set<int> cur_ring{ mesh_region.vert_on_boundary.begin(), mesh_region.vert_on_boundary.end() };
 
-    for (int level = 1; level < ring; ++level) {
+    for (int level = 1; level < ring; ++level) 
+    {
         set<int> new_ring;
         for (int cur_vi : cur_ring) {
             vector<int> cur_neighbor_vert = mesh.getVertNeighborVerts(cur_vi, 1, false);
             for (int vj : cur_neighbor_vert) {
-                if (considered_vert.find(vj) == considered_vert.end()) {
+                if (!setHas(considered_vert, vj)) 
                     new_ring.insert(vj);
-                }
             }
         }
         for (int new_vi : new_ring) {

@@ -73,6 +73,7 @@ const std::string StrAttrColorSimilarity     = "vert_color_similarity";
 const std::string StrAttrColorPosDiff        = "vert_color_pos_diff";
 const std::string StrAttrColorPartitions     = "vert_color_partitions";
 const std::string StrAttrOriginalSignature   = "vert_original_signature";
+const std::string StrAttrColorInpaintError   = "vert_color_hole_vert_inpaint_error";
 
 const std::string StrAttrFeatureUnnamed      = "mesh_feature_unnamed";
 const std::string StrAttrFeatureHKS			 = "mesh_feature_hks";

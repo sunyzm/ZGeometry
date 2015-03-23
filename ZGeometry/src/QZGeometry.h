@@ -112,6 +112,7 @@ private slots:
 	void toggleDrawRegistration(bool show = false);
     void toggleShowHoles(bool show = false);
     void toggleShowSurrounding(bool show = false);
+    void toggleShowHoleErrors(bool show = false);
 	
 	void clone();
 	void revertCoord();
@@ -137,8 +138,12 @@ private slots:
     void detectHoles();
     void triangulateHoles();
     void refineHoles();
+    void copyMeshWithHoles();
+    void evaluateCurrentInpainting();
     void fairHoleLeastSquares();
-    void evaluateCurrentInpainting();    
+    void fairHoleL1LS();
+
+    void curveSignature();
 
     void switchToNextMesh();
     void switchToPreviousMesh();
@@ -216,4 +221,7 @@ private:
 		Compute_Geodesics, Compute_Heat,
 		None
 	} mLastOperation;
+
+
+    static double inpainting_error_curving_max;
 };

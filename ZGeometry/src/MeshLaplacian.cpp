@@ -289,7 +289,6 @@ void MeshLaplacian::constructAnisotropic4(CMesh* tmesh, int nRing, double hPara1
 	vWeights.resize(mOrder, 1.0);	
 	mLS.convertFromCOO(mOrder, mOrder, vII, vJJ, vSS);
 	mW.convertFromDiagonal(vWeights);
-
 }
 
 void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es) const
