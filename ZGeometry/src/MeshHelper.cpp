@@ -163,7 +163,6 @@ void MeshHelper::nextMesh()
     if (mMeshHistory.size() <= 1) return;
     currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();    
 
-    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
     clearMeshRelated();
 }
 
@@ -172,7 +171,6 @@ void MeshHelper::prevMesh()
     if (mMeshHistory.size() <= 1) return;
     currentMeshIdx = (currentMeshIdx + mMeshHistory.size() - 1) % mMeshHistory.size();
 
-    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
     clearMeshRelated();
 }
 

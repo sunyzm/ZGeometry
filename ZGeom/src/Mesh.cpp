@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <ppl.h>
 #include "zassert.h"
 #include "arithmetic.h"
 #include "dataio.h"
@@ -571,10 +572,11 @@ void CMesh::calAttrVertNormals()
 {
     int vertCount = this->vertCount(), faceCount = this->faceCount();
     const vector<Vec3d>& faceNormals = getFaceNormals();
+    vector<Vec3d> vertNormals(vertCount);
+
+#if 0
     vector<double> faceAreas(faceCount);
     for (int i = 0; i < faceCount; ++i) faceAreas[i] = getFace(i)->calArea();
-
-    vector<Vec3d> vertNormals(vertCount);
     for (int vi = 0; vi < vertCount; ++vi) {
         vector<int> neighborFaceIdx = getVertAdjacentFaceIdx(vi, 1);
         Vec3d normalSum(0, 0, 0);
@@ -584,6 +586,18 @@ void CMesh::calAttrVertNormals()
         }
         vertNormals[vi] = normalSum.normalize();
     }
+#else
+    concurrency::parallel_for(0, vertCount, [&](int vi) {
+        Vec3d normalSum(0, 0, 0);
+        for (const CHalfEdge* he : vert(vi)->getHalfEdges()) {
+            const CHalfEdge* he_prev = he->prevHalfEdge();
+            int fIdx = he->getAttachedFace()->getFaceIndex();
+            double weight = ZGeom::vecAngle(he->getVec(), he_prev->getVec());
+            normalSum += weight * faceNormals[fIdx];
+        }
+        vertNormals[vi] = normalSum.normalize();
+    });
+#endif
 
     addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, StrAttrVertNormals, AR_VERTEX, AT_VEC_VEC3);
 }
@@ -1347,6 +1361,7 @@ void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::strin
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     mesh_coords.push_back(make_pair(coordinate_name, newCoord));
+    cur = (int)mesh_coords.size() - 2;
     switchNextCoordinate();
 }
 
@@ -1356,6 +1371,7 @@ const std::string& CMesh::switchNextCoordinate()
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     cur = (cur + 1) % (int)mesh_coords.size();
+
     setVertCoordinates(mesh_coords[cur].second);
     calAttrVertNormals();
 
@@ -1367,6 +1383,7 @@ const std::string& CMesh::switchPrevCoordinate()
     using namespace std;
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+
     cur = (cur + mesh_coords.size() - 1) % (int)mesh_coords.size();
     setVertCoordinates(mesh_coords[cur].second);
     calAttrVertNormals();
@@ -1374,14 +1391,34 @@ const std::string& CMesh::switchPrevCoordinate()
     return mesh_coords[cur].first;
 }
 
-void CMesh::revertCoordinate()
+const std::string& CMesh::revertCoordinate()
 {
     using namespace std;
     VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+
     cur = 0;
     setVertCoordinates(mesh_coords[0].second); 
     calAttrVertNormals();
+
+    return mesh_coords[cur].first;
+}
+
+const std::string& CMesh::deleteCoordinate()
+{
+    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
+    if (cur == 0) {
+        std::cout << "Original coordinate cannot be deleted!" << std::endl;
+    }
+    else {
+        mesh_coords.erase(mesh_coords.begin() + cur);
+        cur = cur % mesh_coords.size();
+        setVertCoordinates(mesh_coords[cur].second);
+        calAttrVertNormals();
+    }
+
+    return mesh_coords[cur].first;
 }
 
 bool CMesh::hasNamedCoordinates()

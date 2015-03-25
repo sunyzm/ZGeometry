@@ -641,6 +641,7 @@
     <addaction name="actionRemoveCurrentMesh"/>
     <addaction name="actionNextCoordinate"/>
     <addaction name="actionRevertCoordinate"/>
+    <addaction name="actionDeleteCurrentCoordinate"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -759,8 +760,6 @@
     <addaction name="actionChangeShadeMode"/>
     <addaction name="actionCurveSignature"/>
     <addaction name="separator"/>
-    <addaction name="actionDrawMatching"/>
-    <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
     <addaction name="actionShowVectors"/>
@@ -771,6 +770,8 @@
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
     <addaction name="actionShowColorLegend"/>
+    <addaction name="actionDrawMatching"/>
+    <addaction name="actionDrawRegistration"/>
     <addaction name="actionShowMatchingLines"/>
     <addaction name="separator"/>
     <addaction name="menuDisplaySignatures"/>
@@ -1127,7 +1128,7 @@
     <bool>true</bool>
    </property>
    <property name="checked">
-    <bool>true</bool>
+    <bool>false</bool>
    </property>
    <property name="text">
     <string>Show matching lines</string>
@@ -1599,6 +1600,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Surrounding</string>
    </property>
@@ -1632,6 +1636,9 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
    <property name="text">
     <string>Show Hole Errors</string>
    </property>
@@ -1639,6 +1646,11 @@
   <action name="actionHoleFairingL1LS">
    <property name="text">
     <string>Hole Fairing L1LS</string>
+   </property>
+  </action>
+  <action name="actionDeleteCurrentCoordinate">
+   <property name="text">
+    <string>Delete Coordinate</string>
    </property>
   </action>
  </widget>

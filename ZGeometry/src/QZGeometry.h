@@ -118,6 +118,7 @@ private slots:
 	void revertCoord();
 	void switchToNextCoordinate();
     void switchToPrevCoordinate();
+    void deleteCurrentCoordinate();
     void addNoise();
 	void reconstructMHB();
 	void deformSimple();

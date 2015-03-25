@@ -85,8 +85,9 @@ void GLMeshWidget::reset()
     m_bShowSurrounding = true;
     m_bShowHoleError = true;
 	
-    m_nShadeMode = 1;
-//	setAutoFillBackground(false);
+    m_nShadeMode = 0;   // flat shading
+
+    setAutoFillBackground(false);
 }
 
 void GLMeshWidget::initializeGL()
@@ -376,9 +377,9 @@ void GLMeshWidget::setupViewport( int width, int height )
 void GLMeshWidget::drawGL()
 {
 	static GLfloat position[] = {.0, .0, 1, 0.0};
-	//static GLfloat diffuse[] = {1, 1, 1, 1};
-	//static GLfloat global_ambient[] = {.2, .2, .2, 1};
-	//static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
+	static GLfloat diffuse[] = {1, 1, 1, 1};
+	static GLfloat global_ambient[] = {.2, .2, .2, 1};
+	static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
 
 	makeCurrent();
     glClearColor(1., 1., 1., 0.);
@@ -392,7 +393,8 @@ void GLMeshWidget::drawGL()
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
-	glEnable(GL_CULL_FACE);
+    glEnable(GL_CULL_FACE);
+
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);		
 	//glEnable (GL_BLEND); 
@@ -407,10 +409,11 @@ void GLMeshWidget::drawGL()
 	glEnable(GL_NORMALIZE);
 	glEnable(GL_COLOR_MATERIAL);
 	glLightfv(GL_LIGHT0, GL_POSITION, position);
-	//glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
-	//glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
-	//glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
-	//glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+	glLightfv(GL_LIGHT1, GL_DIFFUSE, diffuse);
+	glLightfv(GL_LIGHT1, GL_SPECULAR, specular);
+    //glLightfv(GL_LIGHT0, GL_AMBIENT, global_ambient);
+	glLightModelfv(GL_LIGHT_MODEL_AMBIENT, global_ambient);
+	glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
 
     glMatrixMode(GL_MODELVIEW);
     glPushMatrix();
@@ -447,6 +450,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
     const vector<Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
+    const vector<Vec3d>& vFaceNormals = tmesh->getFaceNormals();
     const vector<Vec3d> vVertPos = tmesh->allVertPos();
     const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorSigDefault);
 
@@ -465,9 +469,10 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         glPolygonOffset(1.0, 1.0);
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
+            int fIdx = face->getFaceIndex();
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
-                const ZGeom::Vec3d& norm = vVertNormals[pi];
+                const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
                 glNormal3f(norm.x, norm.y, norm.z);
@@ -494,7 +499,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
                     CFace* face = tmesh->m_vFaces[fIdx];
                     for (int j = 0; j < 3; j++) {
                         int pi = face->vertIdx(j);
-                        const ZGeom::Vec3d& norm = vVertNormals[pi];                        
+                        const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
                         const Vec3d& vt = vVertPos[pi];
                         glNormal3f(norm.x, norm.y, norm.z);
                         glColor4f(vc[0], vc[1], vc[2], 1.0f);
@@ -518,7 +523,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
                     CFace* face = tmesh->m_vFaces[fIdx];
                     for (int j = 0; j < 3; j++) {
                         int pi = face->vertIdx(j);
-                        const ZGeom::Vec3d& norm = vVertNormals[pi];
+                        const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
                         Colorf vc = (inpaint_error_colors ? inpaint_error_colors->at(pi) : Colorf(ZGeom::ColorYellow));
                         const Vec3d& vt = vVertPos[pi];
                         glNormal3f(norm.x, norm.y, norm.z);                        

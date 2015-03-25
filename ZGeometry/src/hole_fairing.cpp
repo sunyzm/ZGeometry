@@ -12,7 +12,6 @@ using ZGeom::DenseMatrixd;
 using ZGeom::VecNd;
 
 
-
 MeshCoordinates least_square_inpainting(CMesh& mesh, const std::vector<int>& anchor_verts, double anchor_weight)
 {
     const int totalVertCount = mesh.vertCount();
@@ -46,16 +45,6 @@ MeshCoordinates least_square_inpainting(CMesh& mesh, const std::vector<int>& anc
     g_engineWrapper.addDenseMat(matB, "matB");
     g_engineWrapper.eval("matX=matA\\matB;");
     DenseMatrixd matX = g_engineWrapper.getDenseMat("matX");
-
-//    vector<VecNd> vCoordRecovered = vOriginalCoords;
-    // replace vertices inside holes with recovered coordinate
-//     for (int i = 0; i < totalVertCount; ++i) {
-//         if (setControlVerts.find(i) == setControlVerts.end()) {
-//             for (int j = 0; j < 3; ++j)  vCoordRecovered[j][i] = matX(i, j);
-//         }
-//     }
-
-//    return MeshCoordinates(totalVertCount, vCoordRecovered);
 
     MeshCoordinates result;
     result.fromDenseMatrix(matX);
@@ -112,14 +101,7 @@ ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const Dense
 
 MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, ParaL1LsInpainting& para)
 {
-    MeshCoordinates result;
-    return result;
-}
-
-MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, ParaL1LsInpainting& para)
-{
     const int totalVertCount = mesh.vertCount();
-
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(&mesh);
     int eigenCount = para.eigen_count;    // -1 means full decomposition
@@ -130,15 +112,40 @@ MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole
 
     ZGeom::DenseMatrixd matCoordOld = mesh.getVertCoordinates().toDenseMatrix();
     ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
-    vector<int> selected_verts = hole_region.vert_inside;
+    const vector<int>& selected_verts = anchors;
 
     ZGeom::DenseMatrixd matCoordInpainted = matlab_inpaintL1LS(matCoordOld, matDict, selected_verts, para.lambda, para.tol);
+    
     MeshCoordinates coordInpainted;
     coordInpainted.fromDenseMatrix(matCoordInpainted);
+    return coordInpainted;
+}
+
+MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, ParaL1LsInpainting& para)
+{
+    const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole_region, para.fitting_ring);
+    vector<int> submesh_verts;
+    int inside_vert_count = (int)hole_region.vert_inside.size();
+    int anchor_vert_count = (int)anchor_verts.size();
+    vector<int> newVert2oldVert(inside_vert_count);
+    int newVertIdx(0);
+    for (int vi : hole_region.vert_inside) {
+        submesh_verts.push_back(vi);
+        newVert2oldVert[newVertIdx++] = vi;
+    }
+    for (int vi : anchor_verts) submesh_verts.push_back(vi);
+
+    CMesh submesh;
+    mesh.getSubMesh(submesh_verts, "hole_mesh", submesh);
+    vector<int> control_verts;
+    for (int i = inside_vert_count; i < (int)submesh_verts.size(); ++i)
+        control_verts.push_back(i);
+
+    MeshCoordinates faired_sub_coord = l1_ls_inpainting(submesh, control_verts, para);
 
     MeshCoordinates result(mesh.getVertCoordinates());
-    for (int vi : hole_region.vert_inside)
-        result.setVertCoordinate(vi, coordInpainted[vi]);
-
+    for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
+        result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+    }
     return result;
 }

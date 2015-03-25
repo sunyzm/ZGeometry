@@ -172,6 +172,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionNextCoordinate, SIGNAL(triggered()), this, SLOT(switchToNextCoordinate()));
     QObject::connect(ui.actionSwitchMesh, SIGNAL(triggered()), this, SLOT(switchToNextMesh()));
     QObject::connect(ui.actionRemoveCurrentMesh, SIGNAL(triggered()), this, SLOT(removeCurrentMesh()));
+    QObject::connect(ui.actionDeleteCurrentCoordinate, SIGNAL(triggered()), this, SLOT(deleteCurrentCoordinate()));
 
 	////  Compute  ////
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
@@ -261,8 +262,7 @@ void QZGeometryWindow::makeConnections()
 	////  Tools  ////
 	QObject::connect(ui.actionExploreScreenshots, SIGNAL(triggered()), this, SLOT(openSreenshotLocation()));
 	QObject::connect(ui.actionExploreOutput, SIGNAL(triggered()), this, SLOT(openOutputLocation()));
-	
-
+    
 	////////    mShapeEditor    ////////
 	QObject::connect(&mShapeEditor, SIGNAL(approxStepsChanged(int, int)), this, SLOT(resizeApproxSlider(int, int)));
     QObject::connect(&mShapeEditor, SIGNAL(meshSignatureAdded()), this, SLOT(updateMenuDisplaySignature()));
@@ -613,6 +613,7 @@ void QZGeometryWindow::removeCurrentMesh()
 {
     mMeshHelper[0].removeCurrentMesh();
     mShapeEditor.init(mMeshHelper[0]);
+
     updateUI();
     ui.glMeshWidget->update();
 }
@@ -621,7 +622,8 @@ void QZGeometryWindow::switchToNextMesh()
 {
     mMeshHelper[0].nextMesh();
     mShapeEditor.init(mMeshHelper[0]);
-    
+    qout.outputStatus(QString("Switch to: ") + getMesh(0)->getMeshDescription().c_str());
+
     updateUI();
     ui.glMeshWidget->update();
 }
@@ -630,6 +632,7 @@ void QZGeometryWindow::switchToPreviousMesh()
 {
     mMeshHelper[0].prevMesh();
     mShapeEditor.init(mMeshHelper[0]);
+    qout.outputStatus(QString("Switch to: ") + getMesh(0)->getMeshDescription().c_str());
 
     updateUI();
     ui.glMeshWidget->update();
@@ -638,21 +641,33 @@ void QZGeometryWindow::switchToPreviousMesh()
 void QZGeometryWindow::switchToNextCoordinate()
 {
     QString coord_name = QString(mMeshHelper[0].getMesh()->switchNextCoordinate().c_str());
-    qout.outputStatus("coord: " + coord_name);
-	ui.glMeshWidget->update();
+    qout.outputStatus("Coord: " + coord_name);
+	
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::switchToPrevCoordinate()
 {
     QString coord_name = QString(mMeshHelper[0].getMesh()->switchPrevCoordinate().c_str());
-    qout.outputStatus("coord: " + coord_name);
+    qout.outputStatus("Coord: " + coord_name);
+    
     ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::revertCoord()
 {
-    mMeshHelper[0].getMesh()->revertCoordinate();
+    QString coord_name = QString(mMeshHelper[0].getMesh()->revertCoordinate().c_str());
+    qout.outputStatus("Coord: " + coord_name);
+
 	ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::deleteCurrentCoordinate()
+{
+    QString coord_name = QString(mMeshHelper[0].getMesh()->deleteCoordinate().c_str());
+    qout.outputStatus("Coord: " + coord_name);
+
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::deformSimple()
@@ -2641,8 +2656,14 @@ void QZGeometryWindow::fairHoleL1LS()
     }
     const ZGeom::MeshRegion& hole_region = vHoles[0];
 
-    double lambda = 1e-3;
-    bool ok(false);
+    int anchor_ring = 3;
+    double lambda = 1e-2;
+    /* input parameters */
+    bool ok;
+    int r = QInputDialog::getInt(this, tr("Input surrounding ring"),
+        tr("Ring:"), anchor_ring, 0, 50, 1, &ok);
+    if (ok) anchor_ring = r;
+    else return;
     lambda = QInputDialog::getDouble(this, tr("Input lambda"),
         tr("lambda:"), lambda, 0, 0.5, 4, &ok);
     if (!ok) return;
@@ -2650,7 +2671,8 @@ void QZGeometryWindow::fairHoleL1LS()
     ParaL1LsInpainting para;
     para.lambda = lambda;
     para.eigen_count = 500;
-    para.tol = 1e-3;
+    para.tol = 1e-4;
+    para.fitting_ring = anchor_ring;
 
     MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, hole_region, para);
     mesh.addNamedCoordinate(coord_ls, "l1ls_hole_inpainting");

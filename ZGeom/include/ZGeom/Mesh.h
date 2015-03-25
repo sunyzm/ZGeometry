@@ -87,6 +87,7 @@ public:
 	int                 getIndex() const            { return m_eIndex; }	
     void                setVertOrigin(CVertex *v1) { m_vert = v1; }
     ZGeom::Vec3d        midEdge() const { return 0.5 * (vert0()->pos() + vert1()->pos()); }
+    ZGeom::Vec3d        getVec() const { return vert1()->pos() - vert0()->pos(); }
 
     static void         makeTwins(CHalfEdge* e1, CHalfEdge* e2);
     static void         makeLoop(CHalfEdge* e1, CHalfEdge* e2, CHalfEdge* e3);
@@ -371,8 +372,8 @@ public:
     void addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name = "unnamed");
     const std::string& switchNextCoordinate();
     const std::string& switchPrevCoordinate();
-    void revertCoordinate();
-
+    const std::string& revertCoordinate();
+    const std::string& deleteCoordinate();
     /************************************************************************/
     /* mesh string attributes methods */
     /************************************************************************/
