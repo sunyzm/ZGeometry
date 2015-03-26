@@ -87,7 +87,7 @@ void GLMeshWidget::reset()
 	
     m_nShadeMode = 0;   // flat shading
 
-    setAutoFillBackground(false);
+/*    setAutoFillBackground(false);*/
 }
 
 void GLMeshWidget::initializeGL()
@@ -102,14 +102,13 @@ void GLMeshWidget::initializeGL()
     fprintf(stdout, "Status: Using GLEW %s\n", glewGetString(GLEW_VERSION));
 
 	/* print out some info about the graphics drivers */
-	qout.output("OpenGL version: " + std::string((char *)glGetString(GL_VERSION)), OUT_TERMINAL);
+	qout.output("OpenGL version: " + std::string((char*)glGetString(GL_VERSION)), OUT_TERMINAL);
 	qout.output("GLSL version: " + std::string((char*)glGetString(GL_SHADING_LANGUAGE_VERSION)), OUT_TERMINAL);
 	qout.output("Vendor: " + std::string((char*)glGetString(GL_VENDOR)), OUT_TERMINAL);
 	qout.output("Renderer: " + std::string((char*)glGetString(GL_RENDERER)), OUT_TERMINAL);
 
     /* make sure OpenGL version 4.0 API is available */
-	if(!GLEW_VERSION_4_0)
-		qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
+	if(!GLEW_VERSION_4_0) qout.output("OpenGL 4.0 API is not available.", OUT_TERMINAL);
 	qout.output("********************", OUT_TERMINAL);
 
     glEnable(GL_MULTISAMPLE);
@@ -123,6 +122,12 @@ void GLMeshWidget::resizeGL( int width, int height )
 void GLMeshWidget::paintGL()
 {
     drawGL();
+
+    if (m_bShowLegend) {
+        QPainter pntr(this);
+        //pntr.drawText(10, this->size().height() - 20, mMeshHelpers[0]->getMesh()->getMeshName().c_str());
+        drawLegend(&pntr);
+    }    
 }
 
 void GLMeshWidget::mousePressEvent(QMouseEvent *event)
@@ -381,15 +386,12 @@ void GLMeshWidget::drawGL()
 	static GLfloat global_ambient[] = {.2, .2, .2, 1};
 	static GLfloat specular[] = {1.0, 1.0, 1.0, 1.0};
 
-	makeCurrent();
+    makeCurrent();
     glClearColor(1., 1., 1., 0.);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushAttrib(GL_ALL_ATTRIB_BITS);
     	
-    if (m_nShadeMode == 0) glShadeModel(GL_FLAT);
-    else glShadeModel(GL_SMOOTH);
-
 	glEnable(GL_DEPTH_TEST);
 	glFrontFace(GL_CCW);
 	glCullFace(GL_BACK);
@@ -460,9 +462,12 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glPointSize(mMeshPointSize);
     
     //////////////////////////////////////////////////////////////////////////
-	/* Start of drawing mesh */
+	/* START of drawing mesh                                */
     glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
     glEnable(GL_POLYGON_OFFSET_FILL);
+
+    if (m_nShadeMode == 0) glShadeModel(GL_FLAT);
+    else glShadeModel(GL_SMOOTH);
 
     /* draw mesh with color signature */
     {
@@ -559,11 +564,11 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     }
 
     glDisable(GL_POLYGON_OFFSET_FILL);   
-    /* End of drawing mesh */
+    /* END of drawing mesh */
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    /* Start of drawing illustrative lines */
+    /* START of drawing illustrative lines */
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
     glDisable(GL_LIGHT0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
@@ -676,14 +681,15 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     }
 
     glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
-    /* End of drawing illustrative lines */
+    /* END of drawing illustrative lines */
     //////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////
-    /* Start of drawing illustrative points */
+    /* START of drawing illustrative points */
     glEnable(GL_LIGHTING);  
     glEnable(GL_LIGHT0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    glShadeModel(GL_SMOOTH);
 
 	/* draw reference point */
 	if ( m_bShowRefPoint ) 
@@ -737,8 +743,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	}
 
     glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
-    /* End of drawing illustrative points */
+    /* END of drawing illustrative points */
     //////////////////////////////////////////////////////////////////////////
+
 
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
@@ -748,18 +755,15 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 {
 	painter->setRenderHint(QPainter::Antialiasing);
 	int xBegin = width() / 2 - 128;
+    auto color_map = ZGeom::ColorMap::jet;
 
-	if (mLegendColors.empty()) return;
 	for (int i = 0; i <= 255; i++)
 	{
-		//float gray = float(i) / float(255);
-		//QColor col(255*FalseColorMap::red(gray), 255*FalseColorMap::green(gray), 255*FalseColorMap::blue(gray), 255);
-		QColor col(255*mLegendColors[i].r(), 255*mLegendColors[i].g(), 255*mLegendColors[i].b(), 255);
-
+        QColor col = QColor(255. * color_map[3 * i], 255. * color_map[3 * i + 1], 255. * color_map[3 * i + 2]);
 		painter->setPen(QPen(col, 1, Qt::SolidLine));
 		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
 	}
-	painter->setPen(QPen(Qt::black, Qt::SolidLine));
+//	painter->setPen(QPen(Qt::black, Qt::SolidLine));
 //	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
 //	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
 }

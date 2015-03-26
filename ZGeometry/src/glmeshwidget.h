@@ -1,6 +1,10 @@
 #pragma once
 #include <vector>
 #include <QOpenGLWidget>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
+#include <QOpenGLShader>
+#include <QOpenGLTexture>
 #include <QImage>
 #include <ZGeom/Mesh.h>
 #include <ZGeom/arcball.h>
@@ -101,5 +105,11 @@ private:
 	double			mBaseFeatureRadius;
 	double			mFeatureSphereRadius;
 	double			mMeshPointSize;
+
+    QOpenGLVertexArrayObject m_vao;
+    QOpenGLBuffer m_vbo;
+    QOpenGLShaderProgram *m_program;
+    QOpenGLShader *m_shader;
+    QOpenGLTexture *m_texture;
 };
 

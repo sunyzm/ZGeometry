@@ -18,16 +18,28 @@ int main(int argc, char *argv[])
 	g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", gSettings.DEFUALT_HK_TIMESCALE);
 	g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", gSettings.DEFAULT_EIGEN_SIZE);
 	
+//     QSurfaceFormat format;
+//     format.setSamples(4);
+//     format.setDepthBufferSize(24);
+//     format.setStencilBufferSize(8);
+//     format.setProfile(QSurfaceFormat::CompatibilityProfile);
+//     QOpenGLContext::setFormat(format);
+
     CStopWatch timer;
     timer.startTimer();
+
     g_engineWrapper.open();
+
+
     timer.stopTimer("-- Matlab engine opening time: ", " --");
+
+
 
 	QApplication a(argc, argv);
 	QZGeometryWindow w;
     QObject::connect(&w, SIGNAL(displayQtVersion()), &a, SLOT(aboutQt()));
 	if (!w.initialize(mesh_list_name)) std::exit(-1);
 
-	w.show();
+    w.show();
 	return a.exec();
 }
