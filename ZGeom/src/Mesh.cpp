@@ -511,7 +511,7 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
 	
 	assignElementsIndex();
     initNamedCoordinates();
-    setDefaultColor(ZGeom::ColorMesh1);
+    setDefaultColor(ZGeom::ColorSlateGray);
 }
 
 void CMesh::assignElementsIndex()
@@ -1298,8 +1298,8 @@ void CMesh::edgeSwap( CHalfEdge* e1 )
     CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
     CVertex *v3 = e2->vert(1), *v4 = te2->vert(1);
     CFace *f1 = e1->getAttachedFace(), *f2 = te1->getAttachedFace();
-    assoicateVertEdges(v4, v3, e1, te1);
     v1->removeHalfEdge(e1); v2->removeHalfEdge(te1);
+    assoicateVertEdges(v4, v3, e1, te1);
     makeFace(e1, e3, te2, f1);
     makeFace(te1, te3, e2, f2);
 }
@@ -1312,13 +1312,19 @@ bool CMesh::relaxEdge(CHalfEdge* e1)
     CHalfEdge *te2 = te1->nextHalfEdge(), *te3 = te1->prevHalfEdge();
     CVertex *v1 = e1->vert(0), *v2 = te1->vert(0);
     CVertex *v3 = e2->vert(1), *v4 = te2->vert(1);
-    pair<Vec3d, double> center1 = ZGeom::circumcenter(v1->pos(), v2->pos(), v3->pos()),
-                        center2 = ZGeom::circumcenter(v1->pos(), v2->pos(), v4->pos());
+//     pair<Vec3d, double> center1 = ZGeom::circumcenter(v1->pos(), v2->pos(), v3->pos()),
+//                         center2 = ZGeom::circumcenter(v1->pos(), v2->pos(), v4->pos());
+//     // test whether opposing vertices lie outside of circum-sphere of opposing triangle
+//     if ((center1.first - (Vec3d)v4->pos()).length() > center1.second &&
+//         (center2.first - (Vec3d)v3->pos()).length() > center2.second) {
+//         return false;
+//     }    
+    double angle_alpha = ZGeom::vecAngle(v1->pos() - v3->pos(), v2->pos() - v3->pos());
+    double angle_gamma = ZGeom::vecAngle(v1->pos() - v4->pos(), v2->pos() - v4->pos());            
 
-    // test whether non-mutual vertices lie outside of circum-sphere of opposing triangle
-    if ((center1.first - (Vec3d)v4->pos()).length() > center1.second &&
-        (center2.first - (Vec3d)v3->pos()).length() > center2.second)
+    if (angle_alpha + angle_gamma <= ZGeom::PI) {
         return false;
+    } 
     else {
         edgeSwap(e1);
         return true;

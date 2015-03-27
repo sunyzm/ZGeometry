@@ -32,32 +32,17 @@ public:
     bool m_bShowHoles;
     bool m_bShowHoleError;
     bool m_bShowSurrounding;
+    bool m_bShowHoleBoundary;
 
     int  m_nShadeMode;
 	int	 m_nMeshLevel;
-	std::vector<ZGeom::Colorf> mLegendColors;
-
 	enum { QZ_MOVE, QZ_PICK, QZ_DRAG } editMode;
 
 	GLMeshWidget(QWidget *parent = 0);
 	~GLMeshWidget();
 
-    void setup(int obj, MeshHelper* processor, RenderSettings* rs)
-    {
-        mMeshHelpers[obj] = processor;
-        mRenderSettings[obj] = rs;
-    }
-
-    void setup(const std::vector<MeshHelper*>& processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher) 
-	{
-        mMeshHelpers.clear();
-        for (MeshHelper* mh : processors) mMeshHelpers.push_back(mh);
-        mRenderSettings.clear();
-        for (RenderSettings& rs : vrs) mRenderSettings.push_back(&rs);
-		mMatcher = matcher;
-        setBasePointSize(mMeshHelpers[0]->getMesh()->getAvgEdgeLength() / 4.);
-	}
-
+    void setup(int obj, MeshHelper* processor, RenderSettings* rs);
+    void setup(const std::vector<MeshHelper*>& processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher);
 	void zoomPointSize(double s) { mFeatureSphereRadius = mBaseFeatureRadius * s; }
 	void setBasePointSize(double r) { mFeatureSphereRadius *= r / mBaseFeatureRadius; mBaseFeatureRadius = r; }
 	void fieldView(const ZGeom::Vec3d &center, const ZGeom::Vec3d &bbox);

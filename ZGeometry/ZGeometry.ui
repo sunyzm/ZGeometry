@@ -766,6 +766,7 @@
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowHoles"/>
     <addaction name="actionShowHoleErrors"/>
+    <addaction name="actionShowHoleBoundary"/>
     <addaction name="actionShowSurrounding"/>
     <addaction name="actionShowWireframeOverlay"/>
     <addaction name="actionShowBbox"/>
@@ -1651,6 +1652,14 @@
   <action name="actionDeleteCurrentCoordinate">
    <property name="text">
     <string>Delete Coordinate</string>
+   </property>
+  </action>
+  <action name="actionShowHoleBoundary">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Hole Boundary</string>
    </property>
   </action>
  </widget>

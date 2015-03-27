@@ -84,6 +84,7 @@ void GLMeshWidget::reset()
     m_bShowHoles = true;
     m_bShowSurrounding = true;
     m_bShowHoleError = true;
+    m_bShowHoleBoundary = false;
 	
     m_nShadeMode = 0;   // flat shading
 
@@ -553,9 +554,8 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             CFace* face = tmesh->m_vFaces[fIdx];
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
-                const ZGeom::Vec3d& norm = vVertNormals[pi];
-                const Vec3d& vt = vVertPos[pi];
-                const Colorf& vc = vVertColors[pi];
+                const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
+                const Vec3d& vt = vVertPos[pi];                
                 glNormal3f(norm.x, norm.y, norm.z);
                 glVertex3f(vt.x, vt.y, vt.z);
             }
@@ -572,31 +572,6 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
     glDisable(GL_LIGHT0);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-
-	/* highlight boundary edges */
-#if 0
-    if (tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions)) 
-    {
-        const vector<vector<int>>& boundaryLoops = ZGeom::getMeshBoundaryLoopHalfEdges(*tmesh);
-        for (int i = 0; i < boundaryLoops.size(); ++i)
-        {
-            glBegin(GL_LINES);
-            glLineWidth(4.0);
-            if (boundaryLoops[i].size() <= ZGeom::MAX_HOLE_SIZE)
-                glColor4f(0.0, 0, 1.0, 1.0);      // show edges on inner holes in blue
-            else
-                glColor4f(0.0, 0.0, 0.0, 1.0);	    // show edges on outer boundary in black
-            for (int edgeIdx : boundaryLoops[i]) {
-                const CHalfEdge* hf = tmesh->getHalfEdge(edgeIdx);
-                int p1 = hf->getVertIndex(0), p2 = hf->getVertIndex(1);
-                const Vec3d &v1 = vVertPos[p1], &v2 = vVertPos[p2];
-                glVertex3d(v1.x, v1.y, v1.z);
-                glVertex3d(v2.x, v2.y, v2.z);
-            }
-            glEnd();
-        }
-    }
-#endif
 
     /* draw wireframe overlay */
     if (m_bShowWireframeOverlay)
@@ -616,6 +591,26 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         }
         glEnd();
     }
+
+    /* highlight boundary edges */
+    if (m_bShowHoleBoundary && tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions))
+    {
+        vector<MeshRegion>& vHoles = tmesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+        for (MeshRegion &hole : vHoles)
+        {
+            glBegin(GL_LINES);
+            glColor4f(0, 0, 1, 1);
+            glLineWidth(2.0);
+            for (int he_idx : hole.he_on_boundary) {
+                const CHalfEdge* hf = tmesh->getHalfEdge(he_idx);                
+                const Vec3d &v1 = hf->vert0()->pos(), &v2 = hf->vert1()->pos();
+                glVertex3d(v1.x, v1.y, v1.z);
+                glVertex3d(v2.x, v2.y, v2.z);
+            }
+            glEnd();
+        }
+    }
+
 
 	/* draw vectors on mesh */
     if (m_bShowLines) 
@@ -936,4 +931,20 @@ void GLMeshWidget::changeShadeMode()
 QImage GLMeshWidget::getScreenShot()
 {
     return grabFramebuffer();
+}
+
+void GLMeshWidget::setup(int obj, MeshHelper* processor, RenderSettings* rs)
+{
+    mMeshHelpers[obj] = processor;
+    mRenderSettings[obj] = rs;
+}
+
+void GLMeshWidget::setup(const std::vector<MeshHelper*>& processors, std::vector<RenderSettings>& vrs, ShapeMatcher* matcher)
+{
+    mMeshHelpers.clear();
+    for (MeshHelper* mh : processors) mMeshHelpers.push_back(mh);
+    mRenderSettings.clear();
+    for (RenderSettings& rs : vrs) mRenderSettings.push_back(&rs);
+    mMatcher = matcher;
+    setBasePointSize(mMeshHelpers[0]->getMesh()->getAvgEdgeLength() / 4.);
 }

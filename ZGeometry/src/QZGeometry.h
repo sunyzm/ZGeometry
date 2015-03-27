@@ -111,8 +111,9 @@ private slots:
 	void toggleShowMatchingLines(bool show = false);
 	void toggleDrawRegistration(bool show = false);
     void toggleShowHoles(bool show = false);
-    void toggleShowSurrounding(bool show = false);
+    void toggleShowHoleBoundary(bool show = false);
     void toggleShowHoleErrors(bool show = false);
+    void toggleShowSurrounding(bool show = false);
 	
 	void clone();
 	void revertCoord();
@@ -140,7 +141,7 @@ private slots:
     void triangulateHoles();
     void refineHoles();
     void copyMeshWithHoles();
-    void evaluateCurrentInpainting();
+    void evaluateCurrentInpainting();    
     void fairHoleLeastSquares();
     void fairHoleL1LS();
 

@@ -60,7 +60,8 @@ struct MeshRegion
     // constructors
     MeshRegion() : is_outer_boundary(false), adjacent_edge_length(-1) { }
     MeshRegion(const MeshRegion&) = default;
-    MeshRegion& operator = (MeshRegion&& hb) {
+    MeshRegion& operator = (MeshRegion&& hb) 
+    {
         vert_on_boundary = std::move(hb.vert_on_boundary);
         he_on_boundary = std::move(hb.he_on_boundary);
         vert_inside = std::move(hb.vert_inside);
@@ -71,6 +72,24 @@ struct MeshRegion
     }
     MeshRegion(MeshRegion&& hb) { *this = std::move(hb); }
     const std::vector<int>& getInsideFaceIdx() const { return face_inside; }
+
+    void determineBoundaryHalfEdges(const CMesh& mesh)
+    {
+        std::set<int> faces_in_hole;
+        for (int fi : face_inside) 
+            faces_in_hole.insert(fi);
+
+        std::set<int> boundary_he;
+        for (int fi : faces_in_hole) {
+            const CFace* f = mesh.getFace(fi);
+            for (CHalfEdge* he : f->getAllHalfEdges()) {
+                if (he->twinHalfEdge() == nullptr || !setHas(faces_in_hole, he->twinHalfEdge()->getAttachedFace()->getFaceIndex()))
+                    boundary_he.insert(he->getIndex());
+            }
+        }
+
+        he_on_boundary = std::vector<int>(boundary_he.begin(), boundary_he.end());
+    }
 };
 
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
@@ -81,7 +100,7 @@ std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
 double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);
-double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole);
+double calMeshRegionAvgEdgeLen(CMesh& mesh, MeshRegion& hole);
 
 const std::vector<MeshRegion>& getMeshBoundaryLoops(CMesh &mesh);
 std::vector<std::vector<int>> getMeshBoundaryLoopVerts(CMesh &mesh);
@@ -109,8 +128,8 @@ struct WeightSet
     }
 };
 void triangulateMeshHoles(CMesh &oldMesh);
-void refineMeshHoles(CMesh &oldMesh, double lambda = 2.0);  // lambda: density control factor
-
+void refineMeshHoles(CMesh &oldMesh, double lambda = 0.8);  // lambda: density control factor
+void refineMeshHoles2(CMesh &oldMesh, double lambda = 0.7);
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen);

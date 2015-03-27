@@ -1213,6 +1213,7 @@ void triangulateMeshHoles(CMesh &mesh)
             vHoles[holeIdx].face_inside.push_back(f->getFaceIndex());
     } // for each hole
 
+    for (MeshRegion& hole : vHoles) hole.determineBoundaryHalfEdges(mesh);
     mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
     mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);    
@@ -1369,10 +1370,123 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         std::cout << "[Hole #" << holeIdx
             << "] #vert: " << cur_hole.vert_inside.size() 
             << "; Est. edge length: " << cur_hole.adjacent_edge_length
-            << "; Actual edge length: " << calAvgHoleEdgeLength(mesh, cur_hole) 
+            << "; Actual edge length: " << calMeshRegionAvgEdgeLen(mesh, cur_hole) 
             << std::endl;
 
     } // for each hole
+
+    for (MeshRegion& hole : vHoles) hole.determineBoundaryHalfEdges(mesh);
+
+    mesh.clearNonEssentialAttributes();
+    gatherMeshStatistics(mesh);
+    mesh.addAttr<vector<MeshRegion>>(vHoles, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
+}
+
+void refineMeshHoles2(CMesh &mesh, double lambda /*= 0.7*/)
+{
+    vector<MeshRegion> vHoles = getMeshBoundaryLoops(mesh);
+    if (vHoles.empty()) return;
+
+    /* Perform Delaunay-like refinement */
+    for (int holeIdx = 0; holeIdx < (int)vHoles.size(); ++holeIdx)
+    {
+        MeshRegion& cur_hole = vHoles[holeIdx];
+        const double preferred_edge_length = ZGeom::estimateHoleEdgeLength(mesh, cur_hole, 3);
+
+        set<CVertex*> verts_in_hole;
+        set<CFace*> faces_in_hole;
+        for (int fi : cur_hole.face_inside) faces_in_hole.insert(mesh.getFace(fi));
+        set<CHalfEdge*> boundary_he;
+        for (CFace* f : faces_in_hole) {
+            for (CHalfEdge* he : f->getAllHalfEdges()) {
+                if (he->twinHalfEdge() == nullptr || !setHas(faces_in_hole, he->twinHalfEdge()->getAttachedFace()))
+                    boundary_he.insert(he);
+            }
+        }
+
+        while (true)
+        {
+            // 1. for each triangle inside hole, check if any face is splittable
+            bool new_vert_added(false);
+            CVertex* new_vert = nullptr;
+            CFace* face_to_split = nullptr;
+            for (CFace* face : faces_in_hole)
+            {
+                bool splitTest = true;
+                Vec3d vc = face->calBarycenter();
+                for (int m = 0; m < 3; ++m)
+                {
+                    if ((face->vert(m)->pos() - vc).length() <= lambda * preferred_edge_length)
+                    {
+                        splitTest = false;
+                        break;
+                    }
+                }
+                if (splitTest)
+                {
+                    face_to_split = face;
+                    break;
+                }
+            }
+
+            if (face_to_split != nullptr)
+            {
+                vector<CHalfEdge*> fe = face_to_split->getAllHalfEdges();
+                new_vert = mesh.faceSplit3(face_to_split);
+                
+                // relax edges opposite to the new added centroid
+                for (int k = 0; k < 3; ++k) {
+                    if (!setHas(boundary_he, fe[k]))
+                        mesh.relaxEdge(fe[k]);
+                }
+
+                verts_in_hole.insert(new_vert);
+                for (CFace* newF : new_vert->getAdjacentFaces())
+                    faces_in_hole.insert(newF);
+
+                if (verts_in_hole.size() % 10 == 0)
+                    std::cout << "#verts_in_hole: " << verts_in_hole.size() << '\n';
+            }
+            // 2. If no new points were inserted in step 1, hole filling process completes
+            else break;
+
+            // 3. relax all edges in patch mesh
+            vector<CHalfEdge*> inside_he;
+            for (CVertex* pv : verts_in_hole) {
+                for (CHalfEdge* he : pv->getHalfEdges())
+                    inside_he.push_back(he);
+            }
+
+            int swapIterCount = 0;
+            while (true) {
+                bool noEdgeSwap = true;
+                for (int i = 0; i < (int)inside_he.size(); ++i) {
+                    if (mesh.relaxEdge(inside_he[i])) {
+                        noEdgeSwap = false;
+                    }
+                }
+                if (noEdgeSwap) break;
+                if (swapIterCount++ >= 100) break;
+            }
+            if (swapIterCount >= 100) cout << "!!Maximum swap reached!\n";
+
+            // 4. go to step 1
+        }
+
+        cur_hole.face_inside.clear();
+        cur_hole.vert_inside.clear();
+        for (CFace* pf : faces_in_hole) cur_hole.face_inside.push_back(pf->getFaceIndex());
+        for (CVertex* pv : verts_in_hole) cur_hole.vert_inside.push_back(pv->getIndex());
+
+        std::cout << "[Hole #" << holeIdx
+            << "] #vert: " << cur_hole.vert_inside.size()
+            << "; Est. edge length: " << cur_hole.adjacent_edge_length
+            << "; Actual edge length: " << calMeshRegionAvgEdgeLen(mesh, cur_hole)
+            << std::endl;
+
+    } // for each hole
+
+    for (MeshRegion& hole : vHoles) hole.determineBoundaryHalfEdges(mesh);
 
     mesh.clearNonEssentialAttributes();
     gatherMeshStatistics(mesh);
@@ -1416,24 +1530,29 @@ std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<i
 
 double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring /*= 1*/)
 {
-    vector<int> surroudning_verts = meshRegionSurroundingVerts(mesh, hole, ring);
-    set<int> vNeighborHalfEdges;
-    for (int vi : surroudning_verts) {
-        for (CHalfEdge* he : mesh.vert(vi)->getHalfEdges())
-            vNeighborHalfEdges.insert(he->getIndex());
+    set<int> inside_he;
+    for (int fi : hole.face_inside) {
+        for (CHalfEdge* he : mesh.getFace(fi)->getAllHalfEdges()) {
+            inside_he.insert(he->getIndex());
+        }
     }
 
-    set<int> hole_verts(hole.vert_inside.begin(), hole.vert_inside.end());
-    for (int vi : hole.vert_on_boundary) hole_verts.insert(vi);
+    vector<int> surroudning_verts = meshRegionSurroundingVerts(mesh, hole, ring);
+    set<int> neighboring_he;
+    for (int vi : surroudning_verts) {
+        for (CHalfEdge* he : mesh.vert(vi)->getHalfEdges()) {
+            int he_idx = he->getIndex();
+            if (!setHas(inside_he, he_idx)) neighboring_he.insert(he_idx);
+        }
+            
+    }
+
     double lengthSum(0);
     int count(0);
-    for (int eIdx : vNeighborHalfEdges) {
+    for (int eIdx : neighboring_he) {
         CHalfEdge *he = mesh.getHalfEdge(eIdx);
-        if (hole_verts.find(he->getVertIndex(1)) == hole_verts.end()) 
-        {
-            lengthSum += he->length();
-            count++;
-        }        
+        lengthSum += he->length();
+        count++;       
     }
  
     double estimated_avg_len = lengthSum / (double)count;
@@ -1441,7 +1560,7 @@ double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring /*= 1*/)
     return estimated_avg_len;
 }
 
-double calAvgHoleEdgeLength(CMesh& mesh, MeshRegion& hole)
+double calMeshRegionAvgEdgeLen(CMesh& mesh, MeshRegion& hole)
 {
     if (hole.face_inside.empty()) return 0;
     double result(0);
@@ -1496,6 +1615,7 @@ ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ri
     result.face_inside = vector<int>(face_inside.begin(), face_inside.end());
     result.vert_inside = vert_inside;
     result.vert_on_boundary = vert_on_boundary;
+    result.determineBoundaryHalfEdges(mesh);
     return result;
 }
 
@@ -1633,6 +1753,7 @@ MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& s
     result.face_inside = vector < int > {inside_faces.begin(), inside_faces.end()};
     result.vert_inside = vector < int > {inside_verts.begin(), inside_verts.end()};
     result.vert_on_boundary = vector < int > {boundary_verts.begin(), boundary_verts.end()};
+    result.determineBoundaryHalfEdges(mesh);
     return result;
 }
 

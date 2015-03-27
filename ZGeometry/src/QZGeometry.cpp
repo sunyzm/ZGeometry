@@ -234,6 +234,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionShowSignature, SIGNAL(triggered(bool)), this, SLOT(toggleShowSignature(bool)));
 	QObject::connect(ui.actionShowWireframeOverlay, SIGNAL(triggered(bool)), this, SLOT(toggleShowWireframeOverlay(bool)));
     QObject::connect(ui.actionShowHoles, SIGNAL(triggered(bool)), this, SLOT(toggleShowHoles(bool)));
+    QObject::connect(ui.actionShowHoleBoundary, SIGNAL(triggered(bool)), this, SLOT(toggleShowHoleBoundary(bool)));
     QObject::connect(ui.actionShowSurrounding, SIGNAL(triggered(bool)), this, SLOT(toggleShowSurrounding(bool)));
     QObject::connect(ui.actionShowHoleErrors, SIGNAL(triggered(bool)), this, SLOT(toggleShowHoleErrors(bool)));
     QObject::connect(ui.actionShowBbox, SIGNAL(triggered(bool)), this, SLOT(toggleShowBoundingBox(bool)));
@@ -547,6 +548,7 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     newMesh->scaleToUnitBox();
     ZGeom::gatherMeshStatistics(*newMesh);
     Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
+    //Colorf meshColor(ZGeom::ColorSlateGray);
     newMesh->setDefaultColor(meshColor);
     newMesh->initNamedCoordinates();
 
@@ -908,14 +910,13 @@ void QZGeometryWindow::toggleShowHoles(bool show /*= false*/)
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::toggleShowSurrounding(bool show /* = false */)
+void QZGeometryWindow::toggleShowHoleBoundary(bool show)
 {
-    bool bToShow = !ui.glMeshWidget->m_bShowSurrounding;
-    ui.glMeshWidget->m_bShowSurrounding = bToShow;
-    ui.actionShowSurrounding->setChecked(bToShow);
+    bool bToShow = !ui.glMeshWidget->m_bShowHoleBoundary;
+    ui.glMeshWidget->m_bShowHoleBoundary = bToShow;
+    ui.actionShowHoles->setChecked(bToShow);
 
     ui.glMeshWidget->update();
-
 }
 
 void QZGeometryWindow::toggleShowHoleErrors(bool show /*= false*/)
@@ -923,6 +924,15 @@ void QZGeometryWindow::toggleShowHoleErrors(bool show /*= false*/)
     bool bToShow = !ui.glMeshWidget->m_bShowHoleError;
     ui.glMeshWidget->m_bShowHoleError = bToShow;
     ui.actionShowHoleErrors->setChecked(bToShow);
+
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::toggleShowSurrounding(bool show /* = false */)
+{
+    bool bToShow = !ui.glMeshWidget->m_bShowSurrounding;
+    ui.glMeshWidget->m_bShowSurrounding = bToShow;
+    ui.actionShowSurrounding->setChecked(bToShow);
 
     ui.glMeshWidget->update();
 }
@@ -2499,14 +2509,14 @@ void QZGeometryWindow::refineHoles()
         }
 
         std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
-        double lambda = 0.8;
+        double lambda = 0.7;
         bool ok;
         double r = QInputDialog::getDouble(this, tr("Input refine coefficient"),
             tr("lambda:"), lambda, 0.1, 2, 2, &ok);
         if (ok) lambda = r;
         else return;
 
-        ZGeom::refineMeshHoles(*newMesh, lambda);
+        ZGeom::refineMeshHoles2(*newMesh, lambda);
         mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
         std::cout << "Mesh hole refined!" << std::endl;
 
@@ -2558,19 +2568,6 @@ vector<double> calHoleVertDistToHoleFace(const CMesh& mesh1, const ZGeom::MeshRe
     return result;
 }
 
-
-//TO DELETE
-void setColorSigExceptHole(ZGeom::ColorSignature& vSig, ZGeom::Colorf col, const ZGeom::MeshRegion& hole)
-{
-    std::set<int> hole_verts;
-    for (int vi : hole.vert_on_boundary) hole_verts.insert(vi);
-    for (int vi : hole.vert_inside) hole_verts.insert(vi);
-
-    for (int vi = 0; vi < vSig.size(); ++vi) {
-        if (!setHas(hole_verts, vi))
-            vSig[vi] = col;
-    }
-}
 
 void QZGeometryWindow::evaluateCurrentInpainting()
 {
