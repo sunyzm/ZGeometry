@@ -35,6 +35,13 @@ void glColorGreen() { glColor4f(0.0, 1.0, 0.0, 1.0); }
 void glColorBlue() { glColor4f(0.0, 0.0, 1.0, 1.0); }
 void glColorf(ZGeom::Colorf c) { glColor4f(c[0], c[1], c[2], c[3]);  }
 
+ZGeom::Colorf convertQColor(QColor col)
+{
+    qreal r, g, b;
+    col.getRgbF(&r, &g, &b);
+    return ZGeom::Colorf(r, g, b);
+}
+
 void glColorCoded(float v, float pf)
 {
 	int ic = v;
@@ -85,10 +92,14 @@ void GLMeshWidget::reset()
     m_bShowSurrounding = true;
     m_bShowHoleError = true;
     m_bShowHoleBoundary = false;
-	
+    m_bShowHoleHollow = false;
+
     m_nShadeMode = 0;   // flat shading
 
-/*    setAutoFillBackground(false);*/
+    m_wireframeColor = Qt::red;
+    m_holeColor = Qt::yellow;
+    m_boundaryColor = Qt::blue;
+    m_neighborColor.setRgbF(ZGeom::ColorPink[0], ZGeom::ColorPink[1], ZGeom::ColorPink[2]);
 }
 
 void GLMeshWidget::initializeGL()
@@ -449,6 +460,8 @@ void GLMeshWidget::drawGL()
 
 void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS ) const
 {
+    static Colorf color_black = Colorf(ZGeom::ColorBlack);
+
     using ZGeom::MeshRegion;
     if (pMP->getMesh() == nullptr) return;
 	CMesh* tmesh = pMP->getMesh();
@@ -470,19 +483,35 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     if (m_nShadeMode == 0) glShadeModel(GL_FLAT);
     else glShadeModel(GL_SMOOTH);
 
+    vector<MeshRegion*> vHoles = ZGeom::getMeshHoleRegions(*tmesh);
+    std::unordered_set<int> hole_faces;
+    if (!vHoles.empty()) {
+        for (MeshRegion* mr : vHoles) {
+            for (int fi : mr->face_inside) hole_faces.insert(fi);
+        }
+    }
+
     /* draw mesh with color signature */
     {
         glPolygonOffset(1.0, 1.0);
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
             int fIdx = face->getFaceIndex();
+            bool inHole = false;
+
+            if (m_nShadeMode == 0) {
+                const ZGeom::Vec3d& norm = vFaceNormals[fIdx];
+                glNormal3f(norm.x, norm.y, norm.z);
+            }
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
-                const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
                 const Vec3d& vt = vVertPos[pi];
                 const Colorf& vc = vVertColors[pi];
-                glNormal3f(norm.x, norm.y, norm.z);
-                glColor4f(vc[0], vc[1], vc[2], 1.0);
+                if (m_nShadeMode != 0) {
+                    const ZGeom::Vec3d& norm = vVertNormals[pi];
+                    glNormal3f(norm.x, norm.y, norm.z);
+                }
+                glColor3f(vc[0], vc[1], vc[2]);
                 glVertex3f(vt.x, vt.y, vt.z);
             }
         }
@@ -493,53 +522,35 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     glPolygonOffset(0.5, 1.0);
     if (m_bShowHoles)
     {
-        if (tmesh->hasAttr(StrAttrManualHoles))
+        Colorf hole_color = (m_bShowHoleHollow ? ZGeom::ColorBlack : convertQColor(m_holeColor));
+        
+        if (m_bShowHoleHollow) glDisable(GL_LIGHTING);
+
+        for (MeshRegion* pmr : vHoles) 
         {
-            vector<MeshRegion>& vManualHoles = tmesh->getAttrValue<vector<MeshRegion>>(StrAttrManualHoles);            
-            for (MeshRegion& mr : vManualHoles) {
-                const vector<int> &holeFaceIdx = mr.face_inside;                
-                
-                auto& vc = ZGeom::ColorYellow;
-                glBegin(GL_TRIANGLES);                
-                for (int fIdx : holeFaceIdx) {
-                    CFace* face = tmesh->m_vFaces[fIdx];
-                    for (int j = 0; j < 3; j++) {
-                        int pi = face->vertIdx(j);
-                        const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
-                        const Vec3d& vt = vVertPos[pi];
-                        glNormal3f(norm.x, norm.y, norm.z);
-                        glColor4f(vc[0], vc[1], vc[2], 1.0f);
-                        glVertex3f(vt.x, vt.y, vt.z);
-                    }
-                }
-                glEnd();
-            }   
-        }
-        else {
-            vector<MeshRegion>& vHoles = tmesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
-            for (MeshRegion& mr : vHoles) {
-                const vector<int> &holeFaceIdx = mr.face_inside;
+            MeshRegion& mr = *pmr;
+            const vector<int> &holeFaceIdx = mr.face_inside;
+            const vector<Colorf>* inpaint_error_colors = nullptr;
+            if (m_bShowHoleError && tmesh->hasAttr(StrAttrColorInpaintError))
+                inpaint_error_colors = &tmesh->getVertColors(StrAttrColorInpaintError);
 
-                const vector<Colorf>* inpaint_error_colors = nullptr;
-                if (m_bShowHoleError && tmesh->hasAttr(StrAttrColorInpaintError))
-                    inpaint_error_colors = &tmesh->getVertColors(StrAttrColorInpaintError);
-
-                glBegin(GL_TRIANGLES);                
-                for (int fIdx : holeFaceIdx) {
-                    CFace* face = tmesh->m_vFaces[fIdx];
-                    for (int j = 0; j < 3; j++) {
-                        int pi = face->vertIdx(j);
-                        const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
-                        Colorf vc = (inpaint_error_colors ? inpaint_error_colors->at(pi) : Colorf(ZGeom::ColorYellow));
-                        const Vec3d& vt = vVertPos[pi];
-                        glNormal3f(norm.x, norm.y, norm.z);                        
-                        glColor4f(vc[0], vc[1], vc[2], 1.0f);
-                        glVertex3f(vt.x, vt.y, vt.z);
-                    }
+            glBegin(GL_TRIANGLES);
+            for (int fIdx : holeFaceIdx) {
+                CFace* face = tmesh->m_vFaces[fIdx];
+                for (int j = 0; j < 3; j++) {
+                    int pi = face->vertIdx(j);
+                    const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
+                    Colorf vc = (inpaint_error_colors ? inpaint_error_colors->at(pi) : hole_color);
+                    const Vec3d& vt = vVertPos[pi];
+                    glNormal3f(norm.x, norm.y, norm.z);
+                    glColor4f(vc[0], vc[1], vc[2], 1.0f);
+                    glVertex3f(vt.x, vt.y, vt.z);
                 }
-                glEnd();
             }
+            glEnd();
         }        
+
+        glEnable(GL_LIGHTING);
     }
 
     /* draw mesh surrounding faces */
@@ -567,6 +578,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     /* END of drawing mesh */
     //////////////////////////////////////////////////////////////////////////
 
+
     //////////////////////////////////////////////////////////////////////////
     /* START of drawing illustrative lines */
 	glDisable(GL_LIGHTING); // disable lighting for overlaying lines
@@ -576,11 +588,20 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     /* draw wireframe overlay */
     if (m_bShowWireframeOverlay)
     {
-        auto color_overlay = ZGeom::ColorRed;
-        glColor3f(color_overlay[0], color_overlay[1], color_overlay[2]);
+        Colorf overlay_color = convertQColor(m_wireframeColor);
+        glColor3f(overlay_color[0], overlay_color[1], overlay_color[2]);
         glPolygonOffset(1.0, 1.0);
+
+        if (m_bShowHoleHollow) {
+            glLineStipple(8, 0xAAAA);
+            glEnable(GL_LINE_STIPPLE);
+        }
+
         glBegin(GL_TRIANGLES);
         for (CFace* face : tmesh->m_vFaces) {
+            int fIdx = face->getFaceIndex();
+            if (m_bShowHoleHollow && hole_faces.find(fIdx) == hole_faces.end()) 
+                continue;
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = vVertNormals[pi];
@@ -590,16 +611,18 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             }
         }
         glEnd();
+        glDisable(GL_LINE_STIPPLE);
     }
 
     /* highlight boundary edges */
     if (m_bShowHoleBoundary && tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions))
     {
+        Colorf boundary_color = convertQColor(m_boundaryColor);
         vector<MeshRegion>& vHoles = tmesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
         for (MeshRegion &hole : vHoles)
         {
             glBegin(GL_LINES);
-            glColor4f(0, 0, 1, 1);
+            glColor3f(boundary_color[0], boundary_color[1], boundary_color[2]);
             glLineWidth(2.0);
             for (int he_idx : hole.he_on_boundary) {
                 const CHalfEdge* hf = tmesh->getHalfEdge(he_idx);                
@@ -610,8 +633,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             glEnd();
         }
     }
-
-
+    
 	/* draw vectors on mesh */
     if (m_bShowLines) 
     {
@@ -678,6 +700,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
     /* END of drawing illustrative lines */
     //////////////////////////////////////////////////////////////////////////
+
 
     //////////////////////////////////////////////////////////////////////////
     /* START of drawing illustrative points */

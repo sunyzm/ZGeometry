@@ -83,7 +83,6 @@ const std::string StrAttrFeatureMultiHKS     = "mesh_feature_multi_hks";
 const std::string StrAttrFeatureSparseSGW    = "mesh_feature_sparse_sgw";
 const std::string StrAttrFeatureSparseSGW2   = "mesh_feature_sparse_sgw2";
 const std::string StrAttrFeatureMCA          = "mesh_feature_mca";
-const std::string StrAttrManualHoles         = "mesh_manually_generated_holes";
 const std::string StrAttrLineFaceNormal      = "mesh_vector_face_normals";
 const std::string StrAttrLineVertNormal		 = "mesh_vector_vert_normals";
 

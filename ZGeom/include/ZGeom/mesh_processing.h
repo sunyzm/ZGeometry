@@ -20,6 +20,8 @@ const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string StrAttrMeshHoleRegions = "mesh_hole_regions";
+const std::string StrAttrManualHoleRegions = "mesh_manually_generated_hole_regions";
+
 
 
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
@@ -92,6 +94,7 @@ struct MeshRegion
     }
 };
 
+std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
 ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring);

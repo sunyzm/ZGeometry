@@ -51,6 +51,55 @@ MeshCoordinates least_square_inpainting(CMesh& mesh, const std::vector<int>& anc
     return result;
 }
 
+MeshCoordinates thin_plate_energy_fairing(CMesh& mesh, int free_vert_count)
+{
+    const int totalVertCount = mesh.vertCount();
+
+    const MeshCoordinates coordOld = mesh.getVertCoordinates();
+    vector<VecNd> vOriginalCoords = coordOld.to3Vec();
+    MeshLaplacian mesh_laplacian;
+    mesh_laplacian.constructCotFormula(&mesh);
+    SparseMatrixd matL = mesh_laplacian.getSparseMatrix();
+    SparseMatrixd matL2;
+    mulMatMat(matL, matL, matL2);
+
+    vector<int> rowIdxL2, colIdxL2;
+    vector<double> valsL2;
+    matL2.convertToCOO(rowIdxL2, colIdxL2, valsL2, ZGeom::MAT_FULL);
+
+    vector<int> rowIdxA, colIdxA; vector<double> valsA;
+    for (int i = 0; i < (int)rowIdxL2.size(); ++i) {
+        if (rowIdxL2[i] < free_vert_count && colIdxL2[i] < free_vert_count) {
+            rowIdxA.push_back(rowIdxL2[i]);
+            colIdxA.push_back(colIdxL2[i]);
+            valsA.push_back(valsL2[i]);
+        }
+    }
+    SparseMatrixd matA;
+    matA.convertFromCOO(free_vert_count, free_vert_count, rowIdxA, colIdxA, valsA);
+
+    DenseMatrixd matB(free_vert_count, 3);
+    for (int m = 0; m < 3; ++m) {
+        for (int i = 0; i < free_vert_count; ++i) {
+            for (int j = free_vert_count; j < totalVertCount; ++j)
+                matB(i, m) -= matL2(i, j) * vOriginalCoords[m][j];
+        }
+    }
+
+    g_engineWrapper.addSparseMat(matA, "matA");
+    g_engineWrapper.addDenseMat(matB, "matB");
+    g_engineWrapper.eval("matX=matA\\matB;");
+    DenseMatrixd matX = g_engineWrapper.getDenseMat("matX");
+
+    vector<VecNd> vNewCoord = vOriginalCoords;
+    for (int m = 0; m < 3; ++m)
+        for (int i = 0; i < free_vert_count; ++i)
+            vNewCoord[m][i] = matX(i, m);
+    
+    MeshCoordinates result(totalVertCount, vNewCoord);
+    return result;
+}
+
 MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, int anchor_ring, double anchor_weight)
 {
     ZGeom::logic_assert(anchor_ring >= 1 && anchor_weight >= 0, "Illegal parameter!");
@@ -82,6 +131,34 @@ MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegio
     return result;
 }
 
+MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, int nIter, double eps)
+{
+    const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole_region, 2);
+    vector<int> submesh_verts;
+    int inside_vert_count = (int)hole_region.vert_inside.size();
+    int anchor_vert_count = (int)anchor_verts.size();
+
+    vector<int> newVert2oldVert(inside_vert_count);
+    for (int i = 0; i < inside_vert_count; ++i) {
+        int vi = hole_region.vert_inside[i];
+        submesh_verts.push_back(vi);
+        newVert2oldVert[i] = vi;
+    }
+    for (int vi : anchor_verts) submesh_verts.push_back(vi);
+
+    CMesh submesh;
+    mesh.getSubMesh(submesh_verts, "hole_mesh", submesh);
+
+    MeshCoordinates faired_sub_coord = thin_plate_energy_fairing(submesh, inside_vert_count);
+
+    MeshCoordinates result(mesh.getVertCoordinates());
+    for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
+        result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+    }
+    return result;
+}
+
+
 ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, double lambda, double tol)
 {
     g_engineWrapper.addDenseMat(matCoord, "coord");
@@ -99,7 +176,7 @@ ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const Dense
     return result;
 }
 
-MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, ParaL1LsInpainting& para)
+MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& missing_idx, ParaL1LsInpainting& para)
 {
     const int totalVertCount = mesh.vertCount();
     MeshLaplacian graphLaplacian;
@@ -112,9 +189,8 @@ MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, P
 
     ZGeom::DenseMatrixd matCoordOld = mesh.getVertCoordinates().toDenseMatrix();
     ZGeom::DenseMatrixd matDict = dictMHB.toDenseMatrix();
-    const vector<int>& selected_verts = anchors;
 
-    ZGeom::DenseMatrixd matCoordInpainted = matlab_inpaintL1LS(matCoordOld, matDict, selected_verts, para.lambda, para.tol);
+    ZGeom::DenseMatrixd matCoordInpainted = matlab_inpaintL1LS(matCoordOld, matDict, missing_idx, para.lambda, para.tol);
     
     MeshCoordinates coordInpainted;
     coordInpainted.fromDenseMatrix(matCoordInpainted);
@@ -123,25 +199,32 @@ MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, P
 
 MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, ParaL1LsInpainting& para)
 {
+    if (para.fitting_ring <= 0) {
+        MeshCoordinates faired_coord = l1_ls_inpainting(mesh, hole_region.vert_inside, para);
+        MeshCoordinates result(mesh.getVertCoordinates());
+        for (int vi : hole_region.vert_inside)
+            result.setVertCoordinate(vi, faired_coord[vi]);
+        return result;
+    }
+
     const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole_region, para.fitting_ring);
     vector<int> submesh_verts;
     int inside_vert_count = (int)hole_region.vert_inside.size();
     int anchor_vert_count = (int)anchor_verts.size();
     vector<int> newVert2oldVert(inside_vert_count);
+    vector<int> missing_verts;
     int newVertIdx(0);
     for (int vi : hole_region.vert_inside) {
         submesh_verts.push_back(vi);
+        missing_verts.push_back(newVertIdx);
         newVert2oldVert[newVertIdx++] = vi;
     }
     for (int vi : anchor_verts) submesh_verts.push_back(vi);
 
     CMesh submesh;
     mesh.getSubMesh(submesh_verts, "hole_mesh", submesh);
-    vector<int> control_verts;
-    for (int i = inside_vert_count; i < (int)submesh_verts.size(); ++i)
-        control_verts.push_back(i);
 
-    MeshCoordinates faired_sub_coord = l1_ls_inpainting(submesh, control_verts, para);
+    MeshCoordinates faired_sub_coord = l1_ls_inpainting(submesh, missing_verts, para);
 
     MeshCoordinates result(mesh.getVertCoordinates());
     for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {

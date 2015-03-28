@@ -714,7 +714,9 @@
     <addaction name="actionRefineHoles"/>
     <addaction name="actionCopyMeshWithHoles"/>
     <addaction name="actionEvaluateInpainting"/>
+    <addaction name="actionEvaluateInpaintingVert"/>
     <addaction name="actionHoleFairingLeastSquares"/>
+    <addaction name="actionHoleFairingThinPlate"/>
     <addaction name="actionHoleFairingL1LS"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
@@ -759,6 +761,7 @@
     <addaction name="menuDisplayMode"/>
     <addaction name="actionChangeShadeMode"/>
     <addaction name="actionCurveSignature"/>
+    <addaction name="actionSetColor"/>
     <addaction name="separator"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
@@ -766,6 +769,7 @@
     <addaction name="actionShowSignature"/>
     <addaction name="actionShowHoles"/>
     <addaction name="actionShowHoleErrors"/>
+    <addaction name="actionShowHoleHollow"/>
     <addaction name="actionShowHoleBoundary"/>
     <addaction name="actionShowSurrounding"/>
     <addaction name="actionShowWireframeOverlay"/>
@@ -1660,6 +1664,29 @@
    </property>
    <property name="text">
     <string>Show Hole Boundary</string>
+   </property>
+  </action>
+  <action name="actionEvaluateInpaintingVert">
+   <property name="text">
+    <string>Evaluate Inpainting Vert</string>
+   </property>
+  </action>
+  <action name="actionShowHoleHollow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Holes Hollow</string>
+   </property>
+  </action>
+  <action name="actionHoleFairingThinPlate">
+   <property name="text">
+    <string>Hole Fairing Thin Plate</string>
+   </property>
+  </action>
+  <action name="actionSetColor">
+   <property name="text">
+    <string>Set Color</string>
    </property>
   </action>
  </widget>

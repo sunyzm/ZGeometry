@@ -898,7 +898,7 @@ void gatherMeshStatistics(CMesh& mesh)
     // 7. individual vertex curvature value
     // 8. vertex voronoi area
 
-    mesh.calAttrFaceNormals();
+    //mesh.calAttrFaceNormals();
     //calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
     mesh.calAttrVertNormals();
 
@@ -1069,7 +1069,7 @@ std::unique_ptr<CMesh> cutMeshTo(CMesh &oldMesh, const std::vector<int>& cutFace
     return newMesh;
 }
 
-
+/* "Filling holes in meshes" (SGP 2003) */
 void triangulateMeshHoles(CMesh &mesh)
 { 
     vector<MeshRegion> vHoles = getMeshBoundaryLoops(mesh);
@@ -1235,13 +1235,11 @@ void refineMeshHoles(CMesh &mesh, double lambda /*= 0.5*/)
         set<CVertex*> verts_in_hole;
         set<CFace*> faces_in_hole;
         for (int fi : cur_hole.face_inside) faces_in_hole.insert(mesh.getFace(fi));
+        cur_hole.determineBoundaryHalfEdges(mesh);
+        
         set<CHalfEdge*> boundary_he;
-        for (CFace* f : faces_in_hole) {
-            for (CHalfEdge* he : f->getAllHalfEdges()) {
-                if (he->twinHalfEdge() != nullptr && !setHas(faces_in_hole, he->twinHalfEdge()->getAttachedFace()))
-                    boundary_he.insert(he);
-            }
-        }
+        for (int he_idx : cur_hole.he_on_boundary)
+            boundary_he.insert(mesh.getHalfEdge(he_idx));
 
         while (true)
         {
@@ -1410,22 +1408,26 @@ void refineMeshHoles2(CMesh &mesh, double lambda /*= 0.7*/)
             bool new_vert_added(false);
             CVertex* new_vert = nullptr;
             CFace* face_to_split = nullptr;
+            double max_len(0);
             for (CFace* face : faces_in_hole)
             {
                 bool splitTest = true;
+                double center_len(0);
                 Vec3d vc = face->calBarycenter();
-                for (int m = 0; m < 3; ++m)
-                {
-                    if ((face->vert(m)->pos() - vc).length() <= lambda * preferred_edge_length)
-                    {
+                for (int m = 0; m < 3; ++m) {
+                    double dist = (face->vert(m)->pos() - vc).length();
+                    if (dist <= lambda * preferred_edge_length) {
                         splitTest = false;
                         break;
                     }
+                    center_len += dist;
                 }
-                if (splitTest)
-                {
-                    face_to_split = face;
-                    break;
+
+                if (splitTest) {
+                    if (center_len > max_len) {
+                        max_len = center_len;
+                        face_to_split = face;
+                    }
                 }
             }
 
@@ -1443,9 +1445,6 @@ void refineMeshHoles2(CMesh &mesh, double lambda /*= 0.7*/)
                 verts_in_hole.insert(new_vert);
                 for (CFace* newF : new_vert->getAdjacentFaces())
                     faces_in_hole.insert(newF);
-
-                if (verts_in_hole.size() % 10 == 0)
-                    std::cout << "#verts_in_hole: " << verts_in_hole.size() << '\n';
             }
             // 2. If no new points were inserted in step 1, hole filling process completes
             else break;
@@ -1692,7 +1691,7 @@ MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& s
             inside_faces.insert(f->getFaceIndex());
             for (int k = 0; k < 3; ++k) {
                 int faceVertIdx = f->vertIdx(k);
-                if (inside_verts.find(faceVertIdx) == inside_verts.end())
+                if (!setHas(inside_verts, faceVertIdx))
                     boundary_verts.insert(faceVertIdx);
             }
         }
@@ -1805,6 +1804,24 @@ std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<
         }
     }
     return vector<int>(face_idx.begin(), face_idx.end());
+}
+
+std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh)
+{
+    vector<MeshRegion*> result;
+
+    if (mesh.hasAttr(StrAttrMeshHoleRegions)) {
+        auto& vHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrMeshHoleRegions);
+        for (MeshRegion& mr : vHoles)
+            result.push_back(&mr);
+    }
+    if (mesh.hasAttr(StrAttrManualHoleRegions)) {
+        auto& vManualHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrManualHoleRegions);
+        for (MeshRegion& mr : vManualHoles)
+            result.push_back(&mr);
+    }
+
+    return result;
 }
 
 }   // end of namespace

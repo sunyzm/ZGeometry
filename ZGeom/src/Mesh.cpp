@@ -571,6 +571,7 @@ void CMesh::calAttrFaceNormals()
 void CMesh::calAttrVertNormals()
 {
     int vertCount = this->vertCount(), faceCount = this->faceCount();
+    calAttrFaceNormals();
     const vector<Vec3d>& faceNormals = getFaceNormals();
     vector<Vec3d> vertNormals(vertCount);
 

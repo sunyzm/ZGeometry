@@ -33,6 +33,9 @@ public:
     bool m_bShowHoleError;
     bool m_bShowSurrounding;
     bool m_bShowHoleBoundary;
+    bool m_bShowHoleHollow;
+    
+    QColor m_wireframeColor, m_holeColor, m_boundaryColor, m_neighborColor;
 
     int  m_nShadeMode;
 	int	 m_nMeshLevel;
@@ -96,5 +99,7 @@ private:
     QOpenGLShaderProgram *m_program;
     QOpenGLShader *m_shader;
     QOpenGLTexture *m_texture;
+
+
 };
 

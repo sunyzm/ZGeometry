@@ -162,15 +162,10 @@ void mulMatMat( const SparseMatrix<double>& mat1, const SparseMatrix<double>& ma
 		
 	mkl_dcsrmultcsr(&trans, &request, &sort, &m, &n, &k, &a[0], &ja[0], &ia[0],
 					&b[0], &jb[0], &ib[0], c, jc, ic, &nzmax, &info);
-	if (info != 0) {
-		std::cout << "mkl_dcsrmultcsr error code: " << info;
-		delete []c;
-		delete []jc;
-		delete []ic;
-		return;
-	}
+	
+    if (info != 0) std::cout << "mkl_dcsrmultcsr error code: " << info;	
+    else mat3.convertFromCSR(m, k, c, jc, ic);		
 
-	mat3.convertFromCSR(m, k, c, jc, ic);		
 	delete []c;
 	delete []jc;
 	delete []ic;

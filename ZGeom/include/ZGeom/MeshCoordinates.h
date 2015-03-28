@@ -32,7 +32,7 @@ public:
 
     MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
     {
-        assert(vCoords.size() >= 3 && meshSize == vCoords[0].size());
+        assert(vCoords.size() == 3 && meshSize == vCoords[0].size());
         mSize = meshSize;
         mCoordX = vCoords[0];
         mCoordY = vCoords[1];

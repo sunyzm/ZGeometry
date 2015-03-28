@@ -112,8 +112,11 @@ private slots:
 	void toggleDrawRegistration(bool show = false);
     void toggleShowHoles(bool show = false);
     void toggleShowHoleBoundary(bool show = false);
+    void toggleShowHoleHollow(bool show = false);
     void toggleShowHoleErrors(bool show = false);
     void toggleShowSurrounding(bool show = false);
+
+    void setColor();
 	
 	void clone();
 	void revertCoord();
@@ -143,6 +146,7 @@ private slots:
     void copyMeshWithHoles();
     void evaluateCurrentInpainting();    
     void fairHoleLeastSquares();
+    void fairHoleThinPlateEnergy();
     void fairHoleL1LS();
 
     void curveSignature();

@@ -14,8 +14,10 @@ struct ParaL1LsInpainting
     int eigen_count;
 
     ParaL1LsInpainting() : 
-        fitting_ring(-1), lambda(1e-3), tol(1e-3), eigen_count(-1) {}
+        fitting_ring(0), lambda(1e-3), tol(1e-3), eigen_count(-1) {}
 };
 
 MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, ParaL1LsInpainting& para);
 MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, ParaL1LsInpainting& para);
+MeshCoordinates thin_plate_energy_fairing(CMesh& mesh, int free_vert_count);
+MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, int nIter, double eps);
