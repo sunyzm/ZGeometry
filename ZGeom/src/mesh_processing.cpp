@@ -1824,4 +1824,24 @@ std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh)
     return result;
 }
 
+std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions)
+{
+    set<int> verts;
+    for (auto& mr : vRegions)
+        for (int vi : mr.vert_inside)
+            verts.insert(vi);
+
+    return vector < int > {verts.begin(), verts.end()};
+}
+
+std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions)
+{
+    set<int> verts;
+    for (auto& mr : vRegions)
+        for (int vi : mr.vert_on_boundary)
+            verts.insert(vi);
+
+    return vector < int > {verts.begin(), verts.end()};
+}
+
 }   // end of namespace

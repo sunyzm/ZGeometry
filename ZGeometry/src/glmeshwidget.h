@@ -29,6 +29,7 @@ public:
 	bool m_bShowCorrespondenceLine;
 	bool m_bShowWireframeOverlay;
 	bool m_bShowBoundingBox;
+    bool m_bShowAxis;
     bool m_bShowHoles;
     bool m_bShowHoleError;
     bool m_bShowSurrounding;

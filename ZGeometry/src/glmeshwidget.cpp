@@ -697,6 +697,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         drawQuad(0, 1, 5, 4);
     }
 
+    /* draw axis */
+
+
     glPolygonMode(GL_FRONT_AND_BACK, pRS->glPolygonMode);
     /* END of drawing illustrative lines */
     //////////////////////////////////////////////////////////////////////////

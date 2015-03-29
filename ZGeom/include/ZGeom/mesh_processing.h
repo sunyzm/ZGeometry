@@ -94,6 +94,9 @@ struct MeshRegion
     }
 };
 
+std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions);
+std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions);
+
 std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);

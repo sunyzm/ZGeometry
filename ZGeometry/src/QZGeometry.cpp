@@ -1,6 +1,8 @@
 #include "QZGeometry.h"
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <string>
 #include <iostream>
@@ -221,6 +223,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
     QObject::connect(ui.actionCopyMeshWithHoles, SIGNAL(triggered()), this, SLOT(copyMeshWithHoles()));
     QObject::connect(ui.actionEvaluateInpainting, SIGNAL(triggered()), this, SLOT(evaluateCurrentInpainting()));
+    QObject::connect(ui.actionEvaluateInpaintingVert, SIGNAL(triggered()), this, SLOT(evaluateInpainting2()));
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
     QObject::connect(ui.actionHoleFairingThinPlate, SIGNAL(triggered()), this, SLOT(fairHoleThinPlateEnergy()));
     QObject::connect(ui.actionHoleFairingL1LS, SIGNAL(triggered()), this, SLOT(fairHoleL1LS()));
@@ -2376,31 +2379,42 @@ void QZGeometryWindow::autoGenerateHoles()
 {
     bool ok;
     int N = getMesh(0)->vertCount();
+    int hole_count = 1;
 
     double missing_ratio = 0.2;
     missing_ratio = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
         tr("missing_ratio:"), missing_ratio, 0.01, 0.75, 2, &ok);
     if (!ok) return;
+    int holeVertCount = std::round(missing_ratio * N);
 
-    int holeVertCount = std::round(missing_ratio * (double)getMesh(0)->vertCount());
-    int hole_count = 1;
-    int i = QInputDialog::getInt(this, tr("Input number of holes"),
-        tr("Hole size:"), 1, 0, 100, 1, &ok);
-    if (ok) hole_count = i;
-    if (hole_count == 0) hole_count = holeVertCount;
+    vector<int> seedVerts;
 
+    auto &handles = mMeshHelper[0].getHandles();
+    if (!handles.empty()) {
+        for (auto& elem : handles) seedVerts.push_back(elem.first);
+        hole_count = handles.size();
+    }
+    else {
+        hole_count = QInputDialog::getInt(this, tr("Input number of holes"),
+            tr("#Holes"), hole_count, 0, holeVertCount, 1, &ok);
+        if (!ok) return;
+        if (hole_count <= 0) hole_count = holeVertCount;
 
-    std::vector<int> seedVerts(N);
-    for (int i = 0; i < N; ++i) seedVerts[i] = i;
-    std::random_shuffle(seedVerts.begin(), seedVerts.end());
-    seedVerts = vector<int>{seedVerts.begin(), seedVerts.begin() + hole_count};
+        std::vector<int> all_verts(N);
+        for (int i = 0; i < N; ++i) all_verts[i] = i;
+        std::srand(std::time(0));
+        random_unique<vector<int>::iterator>(all_verts.begin(), all_verts.end(), hole_count);
+        seedVerts = vector < int > {all_verts.begin(), all_verts.begin() + hole_count};
+    }
 
-    MeshRegion generated_holes = ZGeom::generateRandomMeshRegion(*getMesh(0), seedVerts, holeVertCount);
-    getMesh(0)->addAttr<vector<MeshRegion>>(vector<MeshRegion>{generated_holes}, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
+    vector<MeshRegion> generated_holes;
+    for (int vi : seedVerts)
+        generated_holes.push_back(ZGeom::generateRandomMeshRegion(*getMesh(0), vector<int>{vi}, holeVertCount / hole_count));
+
+    getMesh(0)->addAttr<vector<MeshRegion>>(generated_holes, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
     
-    MeshRegion &hole = generated_holes;
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "hole_boundary_verts");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsInsideVerts(generated_holes), ZGeom::ColorGreen), "hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsBoundaryVerts(generated_holes), ZGeom::ColorRed), "hole_boundary_verts");
     updateMenuDisplayFeatures();
 
     ui.glMeshWidget->update();
@@ -2610,6 +2624,29 @@ void QZGeometryWindow::evaluateCurrentInpainting()
     }
 }
 
+void QZGeometryWindow::evaluateInpainting2()
+{
+    using namespace ZGeom;
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+    CMesh* cur_mesh = mMeshHelper[0].getMesh();
+    
+    if (!cur_mesh->hasAttr(StrAttrMeshHoleRegions)) return;
+    if (original_mesh->vertCount() != cur_mesh->vertCount()) return;
+
+    vector<MeshRegion>& refinedHoles = cur_mesh->getAttrValue<vector<MeshRegion>>(StrAttrMeshHoleRegions);
+    vector<int> inside_verts = getMeshRegionsInsideVerts(refinedHoles);
+    
+    vector<double> vErrors(cur_mesh->vertCount(), 0);
+    double errorSum(0);
+    for (int vi : inside_verts) {
+        vErrors[vi] = (cur_mesh->vertPos(vi) - original_mesh->vertPos(vi)).length();
+        errorSum += vErrors[vi];        
+    }
+
+    cur_mesh->addColorSigAttr(StrAttrColorInpaintError, ZGeom::ColorSignature(vErrors, ZGeom::CM_JET, true));
+    std::cout << "Mean vert error: " << errorSum / (double)inside_verts.size() << "\n";
+}
+
 void QZGeometryWindow::curveSignature()
 {
     CMesh* cur_mesh = getMesh(0);
@@ -2692,16 +2729,15 @@ bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
     ring_input->setMaximum(100);
     
     unique_ptr<QSpinBox> eigen_input = make_unique<QSpinBox>(&dialog);
+    eigen_input->setRange(-1, 10000);
     eigen_input->setValue(para.eigen_count);
-    eigen_input->setMinimum(-1);
-    eigen_input->setMaximum(10000);
-    
+
     unique_ptr<QDoubleSpinBox> tol_input = make_unique<QDoubleSpinBox>(&dialog);
     tol_input->setDecimals(4);
-    tol_input->setValue(para.tol);
     tol_input->setMinimum(1e-4);
     tol_input->setMaximum(1e-2);
     tol_input->setSingleStep(1e-4);
+    tol_input->setValue(para.tol);
 
     unique_ptr<QDoubleSpinBox> lambda_input = make_unique<QDoubleSpinBox>(&dialog);
     lambda_input->setDecimals(4);
@@ -2756,11 +2792,12 @@ void QZGeometryWindow::fairHoleL1LS()
     para.tol = 1e-4;
     para.lambda = 1e-3;
 
-    if (!getfairHoleL1LsParameters(this, para)) 
-        return;
+    if (!getfairHoleL1LsParameters(this, para)) return;
 
     MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, hole_region, para);
     mesh.addNamedCoordinate(coord_ls, "l1ls_hole_inpainting");
+
+    evaluateInpainting2();
 
     //evaluateCurrentInpainting();
     ui.glMeshWidget->update();

@@ -145,6 +145,7 @@ private slots:
     void refineHoles();
     void copyMeshWithHoles();
     void evaluateCurrentInpainting();    
+    void evaluateInpainting2();
     void fairHoleLeastSquares();
     void fairHoleThinPlateEnergy();
     void fairHoleL1LS();

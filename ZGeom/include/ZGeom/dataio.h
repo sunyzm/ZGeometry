@@ -75,4 +75,18 @@ std::set<T> setCombine(const std::set<T>& s1, const std::set<T>& s2)
     return result;
 }
 
+template<class fwditer>
+fwditer random_unique(fwditer begin, fwditer end, size_t num_random) 
+{
+    size_t left = std::distance(begin, end);
+    while (num_random--) {
+        fwditer r = begin;
+        std::advance(r, rand() % left);
+        std::swap(*begin, *r);
+        ++begin;
+        --left;
+    }
+    return begin;
+}
+
 #endif
