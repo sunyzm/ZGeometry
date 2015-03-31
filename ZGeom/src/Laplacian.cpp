@@ -14,6 +14,7 @@ using ZGeom::Vec3d;
 void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, bool generalized /*= true*/ ) const
 {
 	runtime_assert(ep->isOpened(), "Matlab engine not opened!");
+    
     CStopWatch timer;
     timer.startTimer();
 
@@ -26,7 +27,7 @@ void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSy
 		eigenCompute.solveStdSym(mLS, nEig, eigSys);
 	}
 
-    timer.stopTimer("Decomposition time: ", "s", std::cout);
+    timer.stopTimer("-- Decomposition time: ", "s", std::cout);
 }
 
 void Laplacian::decomposeGeneralized(int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSys, const SparseMatrix<double>& matB) const

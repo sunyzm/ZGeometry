@@ -32,6 +32,8 @@ public:
 	void save(const std::string& file) const;
 	void load(const std::string& file);
 
+    void resize(int m);
+
 public:
 	std::vector<double> mEigVals;
 	std::vector<VecNd> mEigVecs;

@@ -2260,16 +2260,6 @@ ZGeom::DenseMatrixd inpaintLARS(const DenseMatrixd& matCoord, const DenseMatrixd
     return result;
 }
 
-double inpaintError(const MeshCoordinates& coord1, const MeshCoordinates& coord2, const std::vector<int>& selctedVerts)
-{
-    double errorSum = 0;
-    for (int vIdx : selctedVerts) {
-        errorSum += (coord1.getVertCoordinate(vIdx) - coord2.getVertCoordinate(vIdx)).length2();
-    }
-    return errorSum / selctedVerts.size();
-}
-
-
 ZGeom::DenseMatrixd inpaintL1LS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, double lambda, double tol)
 {
     g_engineWrapper.addDenseMat(matCoord, "coord");
@@ -2497,7 +2487,7 @@ void ShapeEditor::inpaintHolesLARS(const std::vector<int>& inpaintVert, double e
 
     addCoordinate(coordInpainted, "hole_inpainted_LARS");
     std::cout << "LARS hole inpainting finished!" << std::endl;
-    std::cout << "LARS inpainting error: " << inpaintError(coordOld, coordInpainted, inpaintVert) << std::endl;
+    std::cout << "LARS inpainting error: " << ZGeom::compareCoordRMSE(coordOld, coordInpainted, inpaintVert) << std::endl;
 
     changeCoordinates("hole_inpainted_LARS");
 }
@@ -2524,7 +2514,7 @@ void ShapeEditor::inpaintHolesL1LS(const std::vector<int>& selctedVerts, double 
 
     addCoordinate(coordInpainted, "hole_inpainted_L1LS");
     std::cout << "L1LS hole inpainting finished!" << std::endl;
-    std::cout << "L1LS inpainting error: " << inpaintError(coordOld, coordInpainted, selctedVerts) << std::endl;
+    std::cout << "L1LS inpainting error: " << ZGeom::compareCoordRMSE(coordOld, coordInpainted, selctedVerts) << std::endl;
 
     changeCoordinates("hole_inpainted_L1LS");
 }
@@ -2589,7 +2579,7 @@ void ShapeEditor::testSurfaceInpainting()
 
                 MeshCoordinates coordInpainted(N);
                 coordInpainted.fromDenseMatrix(matCoordInpainted);
-                double mse = inpaintError(coordOld, coordInpainted, hole.vert_inside);
+                double mse = ZGeom::compareCoordRMSE(coordOld, coordInpainted, hole.vert_inside);
 
                 testResults.push_back(make_pair(mse, inpaintTime));
 

@@ -40,8 +40,6 @@ using ZGeom::MatlabEngineWrapper;
 using ZGeom::ColorSignature;
 using ZGeom::MeshRegion;
 
-double QZGeometryWindow::inpainting_error_curving_max = 0.05;
-
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
 	mMeshCount				= 0;
@@ -227,6 +225,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
     QObject::connect(ui.actionHoleFairingThinPlate, SIGNAL(triggered()), this, SLOT(fairHoleThinPlateEnergy()));
     QObject::connect(ui.actionHoleFairingL1LS, SIGNAL(triggered()), this, SLOT(fairHoleL1LS()));
+    QObject::connect(ui.actionHoleSmoothingDLRS, SIGNAL(triggered()), this, SLOT(smoothingHoleDLRS()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -1099,7 +1098,7 @@ void QZGeometryWindow::computeHoleNeighbors()
         tr("Ring:"), ring, 1, 50, 1, &ok);
     if (!ok) return;
 
-    vector<int> surrounding_verts = ZGeom::meshRegionSurroundingVerts(mesh, *hole, ring);
+    vector<int> surrounding_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole->vert_inside, ring);
     mesh.addAttrMeshFeatures(MeshFeatureList(surrounding_verts, ZGeom::ColorMagenta), "hole_ring_neighbor_verts");
     updateMenuDisplayFeatures();
 
@@ -1953,15 +1952,6 @@ void QZGeometryWindow::diffusionFlow()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::addNoise()
-{
-	double phi = 0.01;
-    MeshCoordinates noisyCoord = mShapeEditor.getNoisyCoord(phi);
-    mMeshHelper[0].getMesh()->addNamedCoordinate(noisyCoord, "noisy");
-	std::cout << "Add Gauss noise with phi=" << phi << std::endl;
-	ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
@@ -2145,6 +2135,31 @@ void QZGeometryWindow::captureGLAs()
 
 	if (img.save(filename))
 	 	qout.output("Screenshot saved to " +  filename + "\n", OUT_CONSOLE);
+}
+
+void QZGeometryWindow::setColor()
+{
+    vector<QString> property_names = { "hole", "wireframe", "boundary", "neighbor" };
+    QStringList items;
+    for (auto& str : property_names)
+        items << str;
+
+    bool ok;
+    QString item = QInputDialog::getItem(this, tr("Select element"),
+        tr("Element:"), items, 0, false, &ok);
+    if (!ok) return;
+
+    QColor *default_color(nullptr);
+    if (item == "hole") default_color = &ui.glMeshWidget->m_holeColor;
+    else if (item == "wireframe") default_color = &ui.glMeshWidget->m_wireframeColor;
+    else if (item == "boundary") default_color = &ui.glMeshWidget->m_boundaryColor;
+    else return;
+
+    QColor new_color = QColorDialog::getColor(*default_color, this, "select new color");
+    if (!new_color.isValid()) return;
+    *default_color = new_color;
+
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::openOutputLocation()
@@ -2411,30 +2426,14 @@ void QZGeometryWindow::autoGenerateHoles()
     for (int vi : seedVerts)
         generated_holes.push_back(ZGeom::generateRandomMeshRegion(*getMesh(0), vector<int>{vi}, holeVertCount / hole_count));
 
+    if (hole_count < holeVertCount)
+        mergeMeshRegions(*getMesh(0), generated_holes);
     getMesh(0)->addAttr<vector<MeshRegion>>(generated_holes, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
     
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsInsideVerts(generated_holes), ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsBoundaryVerts(generated_holes), ZGeom::ColorRed), "hole_boundary_verts");
     updateMenuDisplayFeatures();
 
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::degradeHoles()
-{
-    double sigma = 0.02;
-    bool ok;
-    double s = QInputDialog::getDouble(this, tr("Input noise sigma"),
-        tr("Noise Signal:"), 0.02, 0, 0.1, 3, &ok);
-    if (ok) sigma = s;
-
-    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
-    auto attrHoles = original_mesh->getAttr<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-    if (attrHoles == nullptr) {
-        std::cout << "No holes selected to degrade" << std::endl;
-    }
-    vector<MeshRegion>& generated_holes = attrHoles->attrValue();
-    mShapeEditor.generateNoise(generated_holes[0].vert_inside, sigma);
     ui.glMeshWidget->update();
 }
 
@@ -2640,11 +2639,17 @@ void QZGeometryWindow::evaluateInpainting2()
     double errorSum(0);
     for (int vi : inside_verts) {
         vErrors[vi] = (cur_mesh->vertPos(vi) - original_mesh->vertPos(vi)).length();
-        errorSum += vErrors[vi];        
+        errorSum += ZGeom::sqr(vErrors[vi]);        
     }
 
-    cur_mesh->addColorSigAttr(StrAttrColorInpaintError, ZGeom::ColorSignature(vErrors, ZGeom::CM_JET, true));
-    std::cout << "Mean vert error: " << errorSum / (double)inside_verts.size() << "\n";
+    cur_mesh->addColorSigAttr(StrAttrColorInpaintError, ZGeom::ColorSignature(vErrors, ZGeom::CM_PARULA, true));
+    cur_mesh->getColorSignature(StrAttrColorInpaintError).curve(0, inpainting_error_curving_max);
+
+    updateMenuDisplaySignature();
+    ui.glMeshWidget->update();
+
+    double rmse = std::sqrt(errorSum / (double)inside_verts.size());
+    std::cout << "-- Vert RMSE: " << rmse << "\n";
 }
 
 void QZGeometryWindow::curveSignature()
@@ -2655,7 +2660,7 @@ void QZGeometryWindow::curveSignature()
     double upper_bound = inpainting_error_curving_max;
     bool ok;
     upper_bound = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
-        tr("missing_ratio:"), upper_bound, 0, 1, 3, &ok);
+        tr("max error"), upper_bound, 0, 1, 3, &ok);
     if (!ok) return;
     inpainting_error_curving_max = upper_bound;
 
@@ -2665,32 +2670,30 @@ void QZGeometryWindow::curveSignature()
 
 void QZGeometryWindow::fairHoleLeastSquares()
 {
-    /* hole fairing LS */
     CMesh& mesh = *mMeshHelper[0].getMesh();
     vector<MeshRegion> &vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
     if (vHoles.empty()) {
         std::cout << "No holes found!" << std::endl;
         return;
     }
-    const ZGeom::MeshRegion& hole_region = vHoles[0];
 
+    /* input parameters */
     int anchor_ring = 3;
     double anchor_weight = 1.0;
-    /* input parameters */
     bool ok;
-    int r = QInputDialog::getInt(this, tr("Input surrounding ring"),
-        tr("Ring:"), anchor_ring, 1, 50, 1, &ok);
-    if (ok) anchor_ring = r;
-    else return;
-    double w = QInputDialog::getDouble(this, tr("Input anchor weight"),
-        tr("Weight:"), anchor_weight, 0.1, 10000, 2, &ok);
-    if (ok) anchor_weight = w;
-    else return;
 
-    MeshCoordinates coord_ls = least_square_hole_inpainting(mesh, hole_region, anchor_ring, anchor_weight);
+    anchor_ring = QInputDialog::getInt(this, tr("Input surrounding ring"),
+        tr("Ring:"), anchor_ring, 0, 50, 1, &ok);
+    if (!ok) return;  
+    anchor_weight = QInputDialog::getDouble(this, tr("Input anchor weight"),
+        tr("Weight:"), anchor_weight, 0.1, 10000, 2, &ok);
+    if (!ok) return;
+
+    MeshCoordinates coord_ls = least_square_hole_inpainting(mesh, vHoles, anchor_ring, anchor_weight);
     mesh.addNamedCoordinate(coord_ls, "ls_hole_fairing");
     
-    evaluateCurrentInpainting();
+    //evaluateCurrentInpainting();
+    evaluateInpainting2();
     ui.glMeshWidget->update();
 }
 
@@ -2724,9 +2727,8 @@ bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
     QFormLayout form(&dialog);
 
     unique_ptr<QSpinBox> ring_input = make_unique<QSpinBox>(&dialog);
+    ring_input->setRange(0, 100);
     ring_input->setValue(para.fitting_ring);
-    ring_input->setMinimum(0);
-    ring_input->setMaximum(100);
     
     unique_ptr<QSpinBox> eigen_input = make_unique<QSpinBox>(&dialog);
     eigen_input->setRange(-1, 10000);
@@ -2734,17 +2736,15 @@ bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
 
     unique_ptr<QDoubleSpinBox> tol_input = make_unique<QDoubleSpinBox>(&dialog);
     tol_input->setDecimals(4);
-    tol_input->setMinimum(1e-4);
-    tol_input->setMaximum(1e-2);
+    tol_input->setRange(1e-4, 1e-2);
     tol_input->setSingleStep(1e-4);
     tol_input->setValue(para.tol);
 
     unique_ptr<QDoubleSpinBox> lambda_input = make_unique<QDoubleSpinBox>(&dialog);
     lambda_input->setDecimals(4);
-    lambda_input->setValue(para.lambda);
-    lambda_input->setMinimum(1e-4);
-    lambda_input->setMaximum(0.9999);
+    lambda_input->setRange(1e-4, 0.9999);
     lambda_input->setSingleStep(1e-3);
+    lambda_input->setValue(para.lambda);
 
     form.addRow("Surrounding ring", ring_input.get());
     form.addRow("#Eigenfunctions", eigen_input.get());
@@ -2778,23 +2778,17 @@ void QZGeometryWindow::fairHoleL1LS()
         std::cout << "No holes found!" << std::endl;
         return;
     }
-    const ZGeom::MeshRegion& hole_region = vHoles[0];
-
-    int anchor_ring = 5;
-    double lambda = 1e-2;
-    double tol = 1e-4;
-    double eigen_count = -1;
 
     /* input parameters */
     ParaL1LsInpainting para;
-    para.fitting_ring = 5;
+    para.fitting_ring = 0;
     para.eigen_count = -1;
-    para.tol = 1e-4;
+    para.tol = 1e-3;
     para.lambda = 1e-3;
 
     if (!getfairHoleL1LsParameters(this, para)) return;
 
-    MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, hole_region, para);
+    MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, vHoles, para);
     mesh.addNamedCoordinate(coord_ls, "l1ls_hole_inpainting");
 
     evaluateInpainting2();
@@ -2803,27 +2797,58 @@ void QZGeometryWindow::fairHoleL1LS()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setColor()
+void QZGeometryWindow::addNoise()
 {
-    vector<QString> property_names = { "hole", "wireframe", "boundary", "neighbor" };
-    QStringList items;
-    for (auto& str : property_names)
-        items << str;
 
+}
+
+void QZGeometryWindow::degradeHoles()
+{
+    CMesh& mesh = *getMesh(0);
+    if (!mesh.hasAttr(ZGeom::StrAttrMeshHoleRegions)) return;
+    vector<MeshRegion> &vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    if (vHoles.empty()) {
+        std::cout << "No holes found!" << std::endl;
+        return;
+    }
+    vector<int> selectedVerts = getMeshRegionsInsideVerts(vHoles);
+
+    double phi = 0.02;
     bool ok;
-    QString item = QInputDialog::getItem(this, tr("Select element"),
-        tr("Element:"), items, 0, false, &ok);
+    phi = QInputDialog::getDouble(this, tr("Add Gauss noise to mesh"),
+        tr("phi"), phi, 0.001, 1, 3, &ok);
     if (!ok) return;
 
-    QColor *default_color(nullptr);
-    if (item == "hole") default_color = &ui.glMeshWidget->m_holeColor;
-    else if (item == "wireframe") default_color = &ui.glMeshWidget->m_wireframeColor;
-    else if (item == "boundary") default_color = &ui.glMeshWidget->m_boundaryColor;
-    else return;
 
-    QColor new_color = QColorDialog::getColor(*default_color, this, "select new color");
-    if (!new_color.isValid()) return;
-    *default_color = new_color;
+    MeshCoordinates noisyCoord = ZGeom::addMeshNoise(mesh, phi, selectedVerts);
+    mesh.addNamedCoordinate(noisyCoord, "hole_noisy_coord");
+    std::cout << "Add Gauss noise with phi=" << phi << std::endl;
+    ui.glMeshWidget->update();
+}
 
+void QZGeometryWindow::smoothingHoleDLRS()
+{
+    CMesh& mesh = *getMesh(0);
+    if (!mesh.hasAttr(ZGeom::StrAttrMeshHoleRegions)) return;
+    vector<MeshRegion> &vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    if (vHoles.empty()) {
+        std::cout << "No holes found!" << std::endl;
+        return;
+    }
+    vector<int> selectedVerts = getMeshRegionsInsideVerts(vHoles);
+
+    double lambda = 0.8;
+    int anchor_ring = 5;
+    bool ok;
+    anchor_ring = QInputDialog::getInt(this, tr("Input surrounding ring"),
+        tr("Ring:"), anchor_ring, 0, 50, 1, &ok);
+    if (!ok) return;
+    lambda = QInputDialog::getDouble(this, tr("DLRS denoising coefficient"),
+        tr("lambda"), lambda, 0, 100, 3, &ok);
+    if (!ok) return;
+    
+    MeshCoordinates denoisedCoord = meshHoleDLRS(mesh, vHoles, lambda, anchor_ring);
+    mesh.addNamedCoordinate(denoisedCoord, "hole_denoised");
+    std::cout << "Denoising with DLRS; lambda = " << lambda << std::endl;
     ui.glMeshWidget->update();
 }

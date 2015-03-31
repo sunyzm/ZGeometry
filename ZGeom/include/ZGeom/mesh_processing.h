@@ -49,6 +49,8 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 enum MeshDistMeasure {MEAN_ERROR, SYM_MEAN_ERROR, RMSE, SYM_RMSE, HAUSDORFF, SYM_HAUSDORFF};
 double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure = RMSE);
 
+MeshCoordinates addMeshNoise(CMesh& mesh, double phi, std::vector<int>& selectedVerts);
+
 struct MeshRegion
 {
     std::vector<int> vert_on_boundary;
@@ -94,14 +96,16 @@ struct MeshRegion
     }
 };
 
+ZGeom::MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts);
 std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions);
+void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions);
 
 std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
 ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring);
-std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const ZGeom::MeshRegion& mesh_region, int ring);
+std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const std::vector<int>& vert_inside, int ring);
 std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts);
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
@@ -208,6 +212,8 @@ std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed = -
 std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::vector<int>& seeds);
 
 void gatherMeshStatistics(CMesh& mesh);
+
+double compareCoordRMSE(const MeshCoordinates& coord1, const MeshCoordinates& coord2, const std::vector<int>& selctedVerts);
 
 }   // end of namespace
 

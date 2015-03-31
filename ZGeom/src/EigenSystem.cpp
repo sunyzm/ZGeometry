@@ -75,5 +75,12 @@ ZGeom::DenseMatrixd EigenSystem::toDenseMatrix() const
     return matEigVec;
 }
 
+void EigenSystem::resize(int m)
+{
+    if (m >= mEigVals.size() || m < 0) return;
+    mEigVals.erase(mEigVals.begin() + m, mEigVals.end());
+    mEigVecs.erase(mEigVecs.begin() + m, mEigVecs.end());
+}
+
 
 }	// end of namespace 

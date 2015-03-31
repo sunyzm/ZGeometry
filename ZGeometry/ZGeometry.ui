@@ -718,6 +718,7 @@
     <addaction name="actionHoleFairingLeastSquares"/>
     <addaction name="actionHoleFairingThinPlate"/>
     <addaction name="actionHoleFairingL1LS"/>
+    <addaction name="actionHoleSmoothingDLRS"/>
    </widget>
    <widget class="QMenu" name="menuDisplay">
     <property name="title">
@@ -1687,6 +1688,11 @@
   <action name="actionSetColor">
    <property name="text">
     <string>Set Color</string>
+   </property>
+  </action>
+  <action name="actionHoleSmoothingDLRS">
+   <property name="text">
+    <string>Hole Smoothing DLRS</string>
    </property>
   </action>
  </widget>

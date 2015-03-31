@@ -75,6 +75,14 @@ std::set<T> setCombine(const std::set<T>& s1, const std::set<T>& s2)
     return result;
 }
 
+template<typename T>
+bool setOverlap(const std::set<T>& s1, const std::set<T>& s2)
+{
+    for (const T& elem : s1)
+        if (setHas<T>(s2, elem)) return true;
+    return false;
+}
+
 template<class fwditer>
 fwditer random_unique(fwditer begin, fwditer end, size_t num_random) 
 {

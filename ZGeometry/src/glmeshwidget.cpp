@@ -96,7 +96,7 @@ void GLMeshWidget::reset()
 
     m_nShadeMode = 0;   // flat shading
 
-    m_wireframeColor = Qt::red;
+    m_wireframeColor = Qt::black;
     m_holeColor = Qt::yellow;
     m_boundaryColor = Qt::blue;
     m_neighborColor.setRgbF(ZGeom::ColorPink[0], ZGeom::ColorPink[1], ZGeom::ColorPink[2]);
@@ -776,7 +776,8 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 {
 	painter->setRenderHint(QPainter::Antialiasing);
 	int xBegin = width() / 2 - 128;
-    auto color_map = ZGeom::ColorMap::jet;
+    //auto color_map = ZGeom::ColorMap::jet;
+    auto color_map = ZGeom::ColorMap::parula;
 
 	for (int i = 0; i <= 255; i++)
 	{
@@ -784,9 +785,11 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 		painter->setPen(QPen(col, 1, Qt::SolidLine));
 		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
 	}
-//	painter->setPen(QPen(Qt::black, Qt::SolidLine));
-//	painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(mRenderSettings->at(0)->sigMin));
-//	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(mRenderSettings->at(0)->sigMax));
+
+    double sigMin = 0, sigMax = inpainting_error_curving_max;
+    painter->setPen(QPen(Qt::black, Qt::SolidLine));
+    painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(sigMin));
+	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(sigMax));
 }
 
 bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)

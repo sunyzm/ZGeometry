@@ -6,6 +6,9 @@ GeometryTask g_task = TASK_REGISTRATION;
 ZGeom::MatlabEngineWrapper g_engineWrapper(256);	
 GlobalSettings gSettings;
 
+
+double inpainting_error_curving_max = 0.03;
+
 GlobalSettings::GlobalSettings()
 {
 	DEFAULT_EIGEN_SIZE      = -1;

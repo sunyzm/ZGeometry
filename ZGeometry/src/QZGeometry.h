@@ -57,6 +57,8 @@ private slots:
 	void computeBiharmonic();
 	void computeGeodesics();
 	void computeHeatTransfer();
+    void addNoise();
+
 
 	/* interact with shapeEditor */
 	void continuousApprox1(int level);
@@ -123,7 +125,6 @@ private slots:
 	void switchToNextCoordinate();
     void switchToPrevCoordinate();
     void deleteCurrentCoordinate();
-    void addNoise();
 	void reconstructMHB();
 	void deformSimple();
 	void deformLaplace();
@@ -149,6 +150,7 @@ private slots:
     void fairHoleLeastSquares();
     void fairHoleThinPlateEnergy();
     void fairHoleL1LS();
+    void smoothingHoleDLRS();
 
     void curveSignature();
 
@@ -229,6 +231,4 @@ private:
 		None
 	} mLastOperation;
 
-
-    static double inpainting_error_curving_max;
 };

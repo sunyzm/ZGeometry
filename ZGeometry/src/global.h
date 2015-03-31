@@ -11,6 +11,8 @@ extern OutputHelper qout;
 enum GeometryTask {TASK_VIEWING = 0, TASK_REGISTRATION = 1, TASK_EDITING = 2};
 extern GeometryTask g_task;
 
+extern double inpainting_error_curving_max;
+
 enum DeformType {
 	DEFORM_Simple, DEFORM_Gradient, DEFORM_Laplace, 
 	DEFORM_BiLaplace, DEFORM_Shell, DEFORM_SGW,
