@@ -137,13 +137,17 @@ private slots:
     /* hole filling related */
     void generateHoles();
     void generateRingHoles();
+    void generateBandHole();
     void autoGenerateHoles();
+    void ignoreOuterBoundary();
     void degradeHoles();
     void cutHoles();
     void cutToSelected();
     void detectHoles();
     void triangulateHoles();
     void refineHoles();
+    void refineHoles2();
+    void refineHolesByVertNum();
     void copyMeshWithHoles();
     void evaluateCurrentInpainting();    
     void evaluateInpainting2();
@@ -191,7 +195,6 @@ private:
 	void computeFunctionMaps(int num);
 	double parameterFromSlider(double sDefault, double sMin, double sMax, bool verbose = false);
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
-
 	/* fields */
 	Ui::ZGeometryClass	  ui;
 	QSignalMapper*		  m_laplacianSignalMapper;	

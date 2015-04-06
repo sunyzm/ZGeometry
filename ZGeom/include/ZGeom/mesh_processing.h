@@ -49,6 +49,8 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 enum MeshDistMeasure {MEAN_ERROR, SYM_MEAN_ERROR, RMSE, SYM_RMSE, HAUSDORFF, SYM_HAUSDORFF};
 double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure = RMSE);
 
+
+
 MeshCoordinates addMeshNoise(CMesh& mesh, double phi, std::vector<int>& selectedVerts);
 
 struct MeshRegion
@@ -79,9 +81,7 @@ struct MeshRegion
 
     void determineBoundaryHalfEdges(const CMesh& mesh)
     {
-        std::set<int> faces_in_hole;
-        for (int fi : face_inside) 
-            faces_in_hole.insert(fi);
+        std::set<int> faces_in_hole{ face_inside.begin(), face_inside.end() };
 
         std::set<int> boundary_he;
         for (int fi : faces_in_hole) {
@@ -99,13 +99,14 @@ struct MeshRegion
 ZGeom::MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts);
 std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions);
+std::vector<int> getMeshRegionsFaces(const std::vector<MeshRegion>& vRegions);
 void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions);
 
 std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
 ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring);
-std::vector<int> meshRegionSurroundingVerts(const CMesh& mesh, const std::vector<int>& vert_inside, int ring);
+std::vector<int> vertSurroundingVerts(const CMesh& mesh, const std::vector<int>& vert_inside, int ring);
 std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts);
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
@@ -138,8 +139,12 @@ struct WeightSet
     }
 };
 void triangulateMeshHoles(CMesh &oldMesh);
-void refineMeshHoles(CMesh &oldMesh, double lambda = 0.8);  // lambda: density control factor
+
+void refineMeshHoles(CMesh &oldMesh, double lambda = 0.7);  // lambda: density control factor
 void refineMeshHoles2(CMesh &oldMesh, double lambda = 0.7);
+void refineMeshHoles3(CMesh &oldMesh, double lambda = 0.7);
+bool refineMeshHoleByNum(CMesh &oldMesh, MeshRegion& hole, int nNewVerts);
+
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen);

@@ -32,9 +32,10 @@ int main(int argc, char *argv[])
     CStopWatch timer;
     timer.startTimer();
     g_engineWrapper.open();
+    timer.stopTimer("-- Matlab Initialization time: ", " --");
+
     if (!w.initialize(mesh_list_name)) std::exit(-1);
-    timer.stopTimer("-- Initialization time: ", " --");
-    
+
     w.show();
 	return a.exec();
 }

@@ -213,17 +213,20 @@ void QZGeometryWindow::makeConnections()
     /* inpainting related */
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
     QObject::connect(ui.actionGenerateRingHoles, SIGNAL(triggered()), this, SLOT(generateRingHoles()));
+    QObject::connect(ui.actionGenerateBandHole, SIGNAL(triggered()), this, SLOT(generateBandHole()));
     QObject::connect(ui.actionAutoGenHoles, SIGNAL(triggered()), this, SLOT(autoGenerateHoles()));
+    QObject::connect(ui.actionIgnoreBoundary, SIGNAL(triggered()), this, SLOT(ignoreOuterBoundary()));
     QObject::connect(ui.actionDegradeHoles, SIGNAL(triggered()), this, SLOT(degradeHoles()));
     QObject::connect(ui.actionCutHoles, SIGNAL(triggered()), this, SLOT(cutHoles()));
     QObject::connect(ui.actionCutToSelected, SIGNAL(triggered()), this, SLOT(cutToSelected()));
     QObject::connect(ui.actionTriangulateHoles, SIGNAL(triggered()), this, SLOT(triangulateHoles()));
     QObject::connect(ui.actionRefineHoles, SIGNAL(triggered()), this, SLOT(refineHoles()));
+    QObject::connect(ui.actionRefineHoles2, SIGNAL(triggered()), this, SLOT(refineHoles2()));
+    QObject::connect(ui.actionRefineHoleByVertNum, SIGNAL(triggered()), this, SLOT(refineHolesByVertNum()));
     QObject::connect(ui.actionCopyMeshWithHoles, SIGNAL(triggered()), this, SLOT(copyMeshWithHoles()));
     QObject::connect(ui.actionEvaluateInpainting, SIGNAL(triggered()), this, SLOT(evaluateCurrentInpainting()));
     QObject::connect(ui.actionEvaluateInpaintingVert, SIGNAL(triggered()), this, SLOT(evaluateInpainting2()));
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
-    QObject::connect(ui.actionHoleFairingThinPlate, SIGNAL(triggered()), this, SLOT(fairHoleThinPlateEnergy()));
     QObject::connect(ui.actionHoleFairingL1LS, SIGNAL(triggered()), this, SLOT(fairHoleL1LS()));
     QObject::connect(ui.actionHoleSmoothingDLRS, SIGNAL(triggered()), this, SLOT(smoothingHoleDLRS()));
 
@@ -1098,7 +1101,11 @@ void QZGeometryWindow::computeHoleNeighbors()
         tr("Ring:"), ring, 1, 50, 1, &ok);
     if (!ok) return;
 
-    vector<int> surrounding_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole->vert_inside, ring);
+    vector<int> hole_verts(hole->vert_inside);
+    for (int vi : hole->vert_on_boundary) hole_verts.push_back(vi);
+    vector<int> surrounding_verts = ZGeom::vertSurroundingVerts(mesh, hole_verts, ring-1);
+    for (int vi : hole->vert_on_boundary) surrounding_verts.push_back(vi);
+
     mesh.addAttrMeshFeatures(MeshFeatureList(surrounding_verts, ZGeom::ColorMagenta), "hole_ring_neighbor_verts");
     updateMenuDisplayFeatures();
 
@@ -2344,29 +2351,6 @@ void QZGeometryWindow::holeEstimateNormals()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::generateRingHoles()
-{
-    int refIdx = mMeshHelper[0].getRefPointIndex();
-    int ring = 5;
-
-    bool ok;
-    int i = QInputDialog::getInt(this, tr("Input hole rings"),
-        tr("ring:"), ring, 1, 100, 1, &ok);
-    if (ok) ring = i;
-    else return;
-
-    MeshRegion generated_holes = ZGeom::generateRingMeshRegion(*getMesh(0), refIdx, ring);
-    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
-    std::cout << "#inside_vert: " << generated_holes.vert_inside.size() << std::endl;
-
-    MeshRegion &hole = generated_holes;
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
-    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
-    updateMenuDisplayFeatures();
-
-    ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::generateHoles()
 {
     int refIdx = mMeshHelper[0].getRefPointIndex();
@@ -2380,7 +2364,7 @@ void QZGeometryWindow::generateHoles()
     
     MeshRegion generated_holes = ZGeom::generateRandomMeshRegion(*getMesh(0), vector<int>{refIdx}, holeVertCount);
     getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);    
-    std::cout << "#inside_vert: " << generated_holes.vert_inside.size() << std::endl;
+    std::cout << "-- #inside_vert: " << generated_holes.vert_inside.size() << std::endl;
 
     MeshRegion &hole = generated_holes;
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
@@ -2398,7 +2382,7 @@ void QZGeometryWindow::autoGenerateHoles()
 
     double missing_ratio = 0.2;
     missing_ratio = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
-        tr("missing_ratio:"), missing_ratio, 0.01, 0.75, 2, &ok);
+        tr("missing_ratio:"), missing_ratio, 0.001, 0.75, 3, &ok);
     if (!ok) return;
     int holeVertCount = std::round(missing_ratio * N);
 
@@ -2432,6 +2416,68 @@ void QZGeometryWindow::autoGenerateHoles()
     
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsInsideVerts(generated_holes), ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsBoundaryVerts(generated_holes), ZGeom::ColorRed), "hole_boundary_verts");
+    updateMenuDisplayFeatures();
+
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::generateRingHoles()
+{
+    int refIdx = mMeshHelper[0].getRefPointIndex();
+    int ring = 5;
+
+    bool ok;
+    int i = QInputDialog::getInt(this, tr("Input hole rings"),
+        tr("ring:"), ring, 1, 100, 1, &ok);
+    if (ok) ring = i;
+    else return;
+
+    MeshRegion generated_holes = ZGeom::generateRingMeshRegion(*getMesh(0), refIdx, ring);
+    getMesh(0)->addAttr<vector<MeshRegion>>(vector < MeshRegion > {generated_holes}, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
+    std::cout << "#inside_vert: " << generated_holes.vert_inside.size() << std::endl;
+
+    MeshRegion &hole = generated_holes;
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
+    updateMenuDisplayFeatures();
+
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::generateBandHole()
+{
+    CMesh& mesh = *getMesh(0);
+    int refIdx = mMeshHelper[0].getRefPointIndex();
+    int inner_ring = 0;    
+
+    bool ok;
+    inner_ring = QInputDialog::getInt(this, tr("Input inner hole rings"),
+        tr("inner ring"), inner_ring, 0, 100, 1, &ok);
+    if (!ok) return;
+
+    int outer_ring = inner_ring + 1;
+    outer_ring = QInputDialog::getInt(this, tr("Input outer hole rings"),
+        tr("outer ring"), outer_ring, inner_ring + 1, 100, 1, &ok);
+    if (!ok) return;
+
+    std::set<int> inner_verts{ refIdx }, outer_verts;
+
+    if (inner_ring >= 1) {
+        vector<int> ring_verts = ZGeom::vertSurroundingVerts(mesh, vector < int > {refIdx}, inner_ring);
+        for (int vi : ring_verts) inner_verts.insert(vi);
+    }
+
+    vector<int> band_verts = ZGeom::vertSurroundingVerts(mesh, vector < int > {inner_verts.begin(), inner_verts.end()}, outer_ring - inner_ring);
+    
+
+    vector<MeshRegion> generated_holes{ ZGeom::meshRegionFromVerts(mesh, band_verts) };
+
+    getMesh(0)->addAttr<vector<MeshRegion>>(generated_holes, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
+    std::cout << "#inside_vert: " << generated_holes[0].vert_inside.size() << std::endl;
+
+    MeshRegion &hole = generated_holes[0];
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_inside, ZGeom::ColorGreen), "mesh_hole_vertex");
+    getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
     updateMenuDisplayFeatures();
 
     ui.glMeshWidget->update();
@@ -2479,7 +2525,9 @@ void QZGeometryWindow::cutHoles()
         return;
     }
     vector<MeshRegion>& generated_holes = original_mesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutFromMesh(*mMeshHelper[0].getMesh(), generated_holes[0].getInsideFaceIdx()));   
+    vector<int> all_inside_faces = ZGeom::getMeshRegionsFaces(generated_holes);
+
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutFromMesh(*original_mesh, all_inside_faces));
         
     newMesh->initNamedCoordinates();
     mMeshHelper[0].addMesh(std::move(newMesh), "selected_partial_mesh");
@@ -2496,7 +2544,9 @@ void QZGeometryWindow::cutToSelected()
         return;
     }
     vector<MeshRegion>& generated_holes = original_mesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMeshTo(*mMeshHelper[0].getMesh(), generated_holes[0].getInsideFaceIdx()));    
+    vector<int> all_inside_faces = ZGeom::getMeshRegionsFaces(generated_holes);
+
+    std::unique_ptr<CMesh> newMesh = std::move(ZGeom::cutMeshTo(*mMeshHelper[0].getMesh(), all_inside_faces));
     
     newMesh->initNamedCoordinates();
     mMeshHelper[0].addMesh(std::move(newMesh), "hole_cut_mesh");
@@ -2536,15 +2586,14 @@ void QZGeometryWindow::refineHoles()
             return;
         }
 
-        std::unique_ptr<CMesh> newMesh(new CMesh(*oldMesh));
+        std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>(*oldMesh);
         double lambda = 0.7;
         bool ok;
-        double r = QInputDialog::getDouble(this, tr("Input refine coefficient"),
+        lambda = QInputDialog::getDouble(this, tr("Input refine coefficient"),
             tr("lambda:"), lambda, 0.1, 2, 2, &ok);
-        if (ok) lambda = r;
-        else return;
+        if (!ok) return;
 
-        ZGeom::refineMeshHoles2(*newMesh, lambda);
+        ZGeom::refineMeshHoles3(*newMesh.get(), lambda);
         mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
         std::cout << "Mesh hole refined!" << std::endl;
 
@@ -2552,6 +2601,73 @@ void QZGeometryWindow::refineHoles()
         ui.glMeshWidget->update();
     }
     else std::cout << "No holes found! Do nothing." << std::endl;
+}
+
+void QZGeometryWindow::refineHoles2()
+{
+    CMesh* oldMesh = mMeshHelper[0].getMesh();
+    const auto& vHoles = ZGeom::getMeshBoundaryLoops(*oldMesh);
+    if (!vHoles.empty())
+    {
+        if (vHoles[0].face_inside.empty()) {
+            std::cout << "Hole need triangulation first!" << std::endl;
+            return;
+        }
+
+        std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>(*oldMesh);
+        double lambda = 0.7;
+        bool ok;
+        lambda = QInputDialog::getDouble(this, tr("Input refine coefficient"),
+            tr("lambda:"), lambda, 0.1, 2, 2, &ok);
+        if (!ok) return;
+
+        ZGeom::refineMeshHoles2(*newMesh.get(), lambda);
+        mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
+        std::cout << "Mesh hole refined!" << std::endl;
+
+        evaluateCurrentInpainting();
+        ui.glMeshWidget->update();
+    }
+    else std::cout << "No holes found! Do nothing." << std::endl;
+}
+
+void QZGeometryWindow::refineHolesByVertNum()
+{
+    CMesh* oldMesh = mMeshHelper[0].getMesh();
+    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
+
+    vector<MeshRegion> vHoles = ZGeom::getMeshBoundaryLoops(*oldMesh);
+    if (vHoles.empty()) {
+        std::cout << "No holes found! Do nothing." << std::endl;
+        return;
+    }
+
+    if (vHoles[0].face_inside.empty()) {
+        std::cout << "Hole need triangulation first!" << std::endl;
+        return;
+    }
+
+    if (!original_mesh->hasAttr(ZGeom::StrAttrManualHoleRegions)) return;
+    int original_inside_vert_count = original_mesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions)[0].vert_inside.size();
+
+    int new_vert_count = original_inside_vert_count;
+    bool ok(false);
+    new_vert_count = QInputDialog::getInt(this, tr("Input number of new vertices to add"),
+        tr("#New Vertices"), new_vert_count, 0, 10000, 1, &ok);
+    if (!ok) return;
+
+    std::unique_ptr<CMesh> newMesh = std::make_unique<CMesh>(*oldMesh);
+    
+    if (!ZGeom::refineMeshHoleByNum(*newMesh.get(), vHoles[0], new_vert_count)) {
+        std::cout << "Fail to refine mesh hole!" << std::endl;
+        return;
+    }
+    
+    mMeshHelper[0].addMesh(std::move(newMesh), "hole_refined_mesh");
+    std::cout << "Mesh hole refined!" << std::endl;
+
+    evaluateCurrentInpainting();
+    ui.glMeshWidget->update();
 }
 
 void QZGeometryWindow::copyMeshWithHoles()
@@ -2596,31 +2712,75 @@ vector<double> calHoleVertDistToHoleFace(const CMesh& mesh1, const ZGeom::MeshRe
     return result;
 }
 
+double rmseVerts(const std::vector<int>& verts, const std::vector<double>& all_vert_areas, const std::vector<double>& all_vert_error)
+{
+    double area_sum(0);
+    double s2_error_sum(0);
+    for (int vi : verts) {
+        s2_error_sum += all_vert_areas[vi] * all_vert_error[vi] * all_vert_error[vi];
+        area_sum += all_vert_areas[vi];
+    }
+
+    return std::sqrt(s2_error_sum / area_sum);
+}
+
 void QZGeometryWindow::evaluateCurrentInpainting()
 {
+    using ZGeom::Vec3d;
+
     /* compare inpainting result with the original generated mesh */
     CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
     CMesh* cur_mesh = mMeshHelper[0].getMesh();
-    if (original_mesh->hasAttr(ZGeom::StrAttrManualHoleRegions) && cur_mesh->hasAttr(ZGeom::StrAttrMeshHoleRegions)) 
+    if (!original_mesh->hasAttr(ZGeom::StrAttrManualHoleRegions) || !cur_mesh->hasAttr(ZGeom::StrAttrMeshHoleRegions)) return;
+    
+    vector<MeshRegion>& manualHoles = original_mesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
+    vector<MeshRegion>& refinedHoles = cur_mesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    if (refinedHoles.size() == manualHoles.size() && refinedHoles.size() > 0) 
     {
-        vector<MeshRegion>& refinedHoles = mMeshHelper[0].getMesh()->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
-        vector<MeshRegion>& manualHoles = mMeshHelper[0].getOriginalMesh()->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-        if (refinedHoles.size() == 1 && manualHoles.size() == 1) 
-        {
-            double rmse = distSubMesh(*cur_mesh, refinedHoles[0].getInsideFaceIdx(), *original_mesh, manualHoles[0].getInsideFaceIdx(), ZGeom::RMSE);
-            std::cout << "Inpainting Error: " << rmse << std::endl;
+        vector<double> vertArea1 = ZGeom::getMeshVertMixedAreas(*original_mesh);
+        vector<double> vertArea2 = ZGeom::computeMeshVertArea(*cur_mesh);
 
-            vector<double> vertError = calHoleVertDistToHoleFace(*cur_mesh, refinedHoles[0], *original_mesh, manualHoles[0]);
-            vector<double> allVertError(cur_mesh->vertCount(), 0);
-            for (int k = 0; k < (int)refinedHoles[0].vert_inside.size(); ++k)
-                allVertError[refinedHoles[0].vert_inside[k]] = vertError[k];
-            cur_mesh->addColorSigAttr(StrAttrColorInpaintError, ZGeom::ColorSignature(allVertError, ZGeom::CM_JET, true));
-            cur_mesh->getColorSignature(StrAttrColorInpaintError).curve(0, inpainting_error_curving_max);
+        vector<int> vFaces1 = getMeshRegionsFaces(manualHoles);
+        vector<int> vVerts1 = getMeshRegionsInsideVerts(manualHoles); 
+        vector<int> vFaces2 = getMeshRegionsFaces(refinedHoles);
+        vector<int> vVerts2 = getMeshRegionsInsideVerts(refinedHoles);
 
-            updateMenuDisplaySignature();
-            ui.glMeshWidget->update();
-        }
-    }
+        vector<vector<Vec3d>> meshTri1(vFaces1.size()), meshTri2(vFaces2.size());
+        for (int i = 0; i < (int)vFaces1.size(); ++i)
+            meshTri1[i] = original_mesh->getFace(vFaces1[i])->getAllVertPos();
+        for (int i = 0; i < (int)vFaces2.size(); ++i)
+            meshTri2[i] = cur_mesh->getFace(vFaces2[i])->getAllVertPos();
+
+        vector<double> vertDist1(original_mesh->vertCount(), 0);
+        vector<double> vertDist2(cur_mesh->vertCount(), 0);
+
+        concurrency::parallel_for_each(vVerts1.begin(), vVerts1.end(), [&](int vi) {
+            const ZGeom::Vec3d &vPos = original_mesh->vertPos(vi);
+            double minDistVi = 1e15;
+            for (const vector<Vec3d>& tri : meshTri2)
+                minDistVi = std::min(minDistVi, distPointTriangle(vPos, tri).distance);
+            vertDist1[vi] = minDistVi;
+        });
+
+        concurrency::parallel_for_each(vVerts2.begin(), vVerts2.end(), [&](int vi) {
+            const Vec3d &vPos = cur_mesh->vertPos(vi);
+            double minDistVi = 1e15;
+            for (const vector<Vec3d>& tri : meshTri1)
+                minDistVi = std::min(minDistVi, distPointTriangle(vPos, tri).distance);
+            vertDist2[vi] = minDistVi;
+        });
+
+        double rmse1 = rmseVerts(vVerts1, vertArea1, vertDist1);
+        double rmse2 = rmseVerts(vVerts2, vertArea2, vertDist2);
+        std::cout << "-- Inpainting Error new to original: " << rmse2 << "\n";
+        std::cout << "-- Inpainting Error original to new: " << rmse1 << std::endl;
+
+        cur_mesh->addColorSigAttr(StrAttrColorInpaintError, ZGeom::ColorSignature(vertDist2, ZGeom::CM_PARULA, true));
+        cur_mesh->getColorSignature(StrAttrColorInpaintError).curve(0, inpainting_error_curving_max);
+
+        updateMenuDisplaySignature();
+        ui.glMeshWidget->update();
+    }    
 }
 
 void QZGeometryWindow::evaluateInpainting2()
@@ -2692,8 +2852,8 @@ void QZGeometryWindow::fairHoleLeastSquares()
     MeshCoordinates coord_ls = least_square_hole_inpainting(mesh, vHoles, anchor_ring, anchor_weight);
     mesh.addNamedCoordinate(coord_ls, "ls_hole_fairing");
     
-    //evaluateCurrentInpainting();
-    evaluateInpainting2();
+    evaluateCurrentInpainting();
+    //evaluateInpainting2();
     ui.glMeshWidget->update();
 }
 
@@ -2791,7 +2951,7 @@ void QZGeometryWindow::fairHoleL1LS()
     MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, vHoles, para);
     mesh.addNamedCoordinate(coord_ls, "l1ls_hole_inpainting");
 
-    evaluateInpainting2();
+    //evaluateInpainting2();
 
     //evaluateCurrentInpainting();
     ui.glMeshWidget->update();
@@ -2850,5 +3010,19 @@ void QZGeometryWindow::smoothingHoleDLRS()
     MeshCoordinates denoisedCoord = meshHoleDLRS(mesh, vHoles, lambda, anchor_ring);
     mesh.addNamedCoordinate(denoisedCoord, "hole_denoised");
     std::cout << "Denoising with DLRS; lambda = " << lambda << std::endl;
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::ignoreOuterBoundary()
+{
+    CMesh& mesh = *getMesh(0);
+    vector<MeshRegion>& vHoles = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    auto iter = std::max_element(vHoles.begin(), vHoles.end(), [](const MeshRegion& mr1, const MeshRegion& mr2) {
+        return mr1.he_on_boundary.size() < mr2.he_on_boundary.size();
+    });
+
+    std::cout << "Max boundary length: " << iter->he_on_boundary.size() << std::endl;
+    vHoles.erase(iter);
+
     ui.glMeshWidget->update();
 }

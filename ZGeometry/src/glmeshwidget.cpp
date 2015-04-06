@@ -615,16 +615,15 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     }
 
     /* highlight boundary edges */
-    if (m_bShowHoleBoundary && tmesh->hasAttr(ZGeom::StrAttrMeshHoleRegions))
+    if (m_bShowHoleBoundary)
     {
         Colorf boundary_color = convertQColor(m_boundaryColor);
-        vector<MeshRegion>& vHoles = tmesh->getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
-        for (MeshRegion &hole : vHoles)
+        for (MeshRegion *hole : vHoles)
         {
             glBegin(GL_LINES);
             glColor3f(boundary_color[0], boundary_color[1], boundary_color[2]);
             glLineWidth(2.0);
-            for (int he_idx : hole.he_on_boundary) {
+            for (int he_idx : hole->he_on_boundary) {
                 const CHalfEdge* hf = tmesh->getHalfEdge(he_idx);                
                 const Vec3d &v1 = hf->vert0()->pos(), &v2 = hf->vert1()->pos();
                 glVertex3d(v1.x, v1.y, v1.z);

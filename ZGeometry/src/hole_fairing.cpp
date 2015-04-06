@@ -122,7 +122,7 @@ MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const std::vector<ZGeo
     }
 
     for (const MeshRegion& mr : hole_regions) {
-        const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, mr.vert_inside, anchor_ring);
+        const vector<int> anchor_verts = ZGeom::vertSurroundingVerts(mesh, mr.vert_inside, anchor_ring);
         vector<int> submesh_verts;
         int inside_vert_count = (int)mr.vert_inside.size();
         int anchor_vert_count = (int)anchor_verts.size();
@@ -151,7 +151,7 @@ MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const std::vector<ZGeo
 
 MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, int nIter, double eps)
 {
-    const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, hole_region.vert_inside, 2);
+    const vector<int> anchor_verts = ZGeom::vertSurroundingVerts(mesh, hole_region.vert_inside, 2);
     vector<int> submesh_verts;
     int inside_vert_count = (int)hole_region.vert_inside.size();
     int anchor_vert_count = (int)anchor_verts.size();
@@ -196,16 +196,16 @@ ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const Dense
 
 ZGeom::EigenSystem g_es;
 
-
 MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& missing_idx, ParaL1LsInpainting& para)
 {
     const int totalVertCount = mesh.vertCount();
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(&mesh);
     int eigenCount = para.eigen_count;    // -1 means full decomposition
-    
+    if (eigenCount == -1) eigenCount = totalVertCount - 1;
+
     ZGeom::EigenSystem es;
-#if 1
+#if 0
     if (g_es.eigVecSize() == totalVertCount && g_es.eigVecCount() >= eigenCount) {
         es = g_es;
         es.resize(eigenCount);
@@ -249,7 +249,7 @@ MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const std::vector<ZGeom::Mesh
 
     for (const ZGeom::MeshRegion& mr : hole_regions) 
     {
-        const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, mr.vert_inside, para.fitting_ring);
+        const vector<int> anchor_verts = ZGeom::vertSurroundingVerts(mesh, mr.vert_inside, para.fitting_ring);
         vector<int> submesh_verts;
         int inside_vert_count = (int)mr.vert_inside.size();
         int anchor_vert_count = (int)anchor_verts.size();
@@ -321,7 +321,7 @@ MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<MeshRegion>& hole_re
 
     for (const MeshRegion& mr : hole_regions) 
     {
-        const vector<int> anchor_verts = ZGeom::meshRegionSurroundingVerts(mesh, mr.vert_inside, anchor_ring);
+        const vector<int> anchor_verts = ZGeom::vertSurroundingVerts(mesh, mr.vert_inside, anchor_ring);
         vector<int> submesh_verts;
         int inside_vert_count = (int)mr.vert_inside.size();
         vector<int> newVert2oldVert(inside_vert_count);

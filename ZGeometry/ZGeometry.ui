@@ -705,18 +705,21 @@
     <addaction name="actionRunTests"/>
     <addaction name="separator"/>
     <addaction name="actionGenerateHoles"/>
+    <addaction name="actionGenerateBandHole"/>
     <addaction name="actionGenerateRingHoles"/>
     <addaction name="actionAutoGenHoles"/>
+    <addaction name="actionIgnoreBoundary"/>
     <addaction name="actionDegradeHoles"/>
     <addaction name="actionCutHoles"/>
     <addaction name="actionCutToSelected"/>
     <addaction name="actionTriangulateHoles"/>
     <addaction name="actionRefineHoles"/>
+    <addaction name="actionRefineHoles2"/>
+    <addaction name="actionRefineHoleByVertNum"/>
     <addaction name="actionCopyMeshWithHoles"/>
     <addaction name="actionEvaluateInpainting"/>
     <addaction name="actionEvaluateInpaintingVert"/>
     <addaction name="actionHoleFairingLeastSquares"/>
-    <addaction name="actionHoleFairingThinPlate"/>
     <addaction name="actionHoleFairingL1LS"/>
     <addaction name="actionHoleSmoothingDLRS"/>
    </widget>
@@ -1693,6 +1696,26 @@
   <action name="actionHoleSmoothingDLRS">
    <property name="text">
     <string>Hole Smoothing DLRS</string>
+   </property>
+  </action>
+  <action name="actionGenerateBandHole">
+   <property name="text">
+    <string>GenerateBandHole</string>
+   </property>
+  </action>
+  <action name="actionRefineHoles2">
+   <property name="text">
+    <string>Refine Holes 2</string>
+   </property>
+  </action>
+  <action name="actionRefineHoleByVertNum">
+   <property name="text">
+    <string>Refine Hole by Vert Num</string>
+   </property>
+  </action>
+  <action name="actionIgnoreBoundary">
+   <property name="text">
+    <string>Ignore Boundary</string>
    </property>
   </action>
  </widget>
