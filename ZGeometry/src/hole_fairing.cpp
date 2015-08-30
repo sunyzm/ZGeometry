@@ -12,7 +12,6 @@ using ZGeom::DenseMatrixd;
 using ZGeom::VecNd;
 using ZGeom::MeshRegion;
 
-
 MeshCoordinates least_square_inpainting(CMesh& mesh, const std::vector<int>& anchor_verts, double anchor_weight)
 {
     const int totalVertCount = mesh.vertCount();
@@ -343,5 +342,4 @@ MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<MeshRegion>& hole_re
     }
 
     return result;
-
 }

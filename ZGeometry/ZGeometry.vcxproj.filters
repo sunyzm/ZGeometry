@@ -89,15 +89,6 @@
     <ClCompile Include="src\GeometryApproximation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\qsingleinputdialog.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Debug\moc_qsingleinputdialog.cpp">
-      <Filter>Generated Files\Debug</Filter>
-    </ClCompile>
-    <ClCompile Include="GeneratedFiles\Release\moc_qsingleinputdialog.cpp">
-      <Filter>Generated Files\Release</Filter>
-    </ClCompile>
     <ClCompile Include="differntial_geometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -167,9 +158,6 @@
       <Filter>Resource Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\ShapeEditor.h">
-      <Filter>Header Files</Filter>
-    </CustomBuild>
-    <CustomBuild Include="src\qsingleinputdialog.h">
       <Filter>Header Files</Filter>
     </CustomBuild>
     <CustomBuild Include="src\qsingleinputdialog.ui">

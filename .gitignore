@@ -6,13 +6,11 @@
 
 # Compiled Dynamic libraries
 *.so
-#*.dll
 
 # Compiled Static libraries
 *.lai
 *.la
 *.a
-#*.lib
 
 # visual studio related
 *.opensdf
@@ -33,11 +31,10 @@
 *.mat
 
 # project specific
+intermediate/
 bin/
 data/
-lib/
-thirdparty/
-intermediate/
+thirdparty/matlab/
 matlab/workspace/
 ZGeom/lib/
 ZGeometry/GeneratedFiles/
