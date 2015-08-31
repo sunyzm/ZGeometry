@@ -5,18 +5,18 @@ Prerequisite:
 1. Visual Studio 2013
 2. Qt 5.5 (64-bit)
 3. Qt Visual Studio Add-on 1.2.4
-4. Matlab 64-bitston
+4. Matlab 64-bit
 5. Intel MKL
-6. Glew 64-bit
-7. Boost 1.54
-8. Metis
+6. Boost 1.54
 
 -------------------------------------------------------------------------------
 Development environment settings:
 1. Add $(QT_DIR)\bin to system path.
-2. Ensure $(MatlabDir)runtime\win64;$(MatlabDir)bin;$(MatlabDir)bin\win64 in system path.
-3. Add glew32.dll in the same directory of ZGeometry.exe.
-4. In Matlab, run $(SolutionDir)\thirdparty\matlab\tensor\install.m to compile mex files.
-5. In Matlab, add $(SolutionDir)\thirdparty\matlab\tensor to search path; copy mexw64 files to the same path.
-6. Place the 'Data' folder in the same level with the 'ZGeometry' solution folder.
+2. Ensure $(MatlabDir)bin;$(MatlabDir)bin\win64 in system path.
+3. Add glew32.dll to the same directory of ZGeometry.exe.
+4. Add $(SolutionDir)\matlab to Matlab path.
+5. Place the 'Data' folder in the same level with the 'ZGeometry' solution folder. 
+6. In Matlab, run $(SolutionDir)\thirdparty\matlab\tensor\install.m to compile mex files.
+7. In Matlab, add $(SolutionDir)\thirdparty\matlab\tensor to search path; copy mexw64 files to the same path.
+
 

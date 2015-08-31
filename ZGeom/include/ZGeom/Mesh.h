@@ -194,10 +194,10 @@ public:
 	void	            save(std::string sFileName);			// save to file
     void                construct(const std::vector<ZGeom::Vec3d>& pVertex, const std::vector<std::vector<int>>& faceVertIdx, int nType = 3);	// construct connectivity
     void	            loadFromOBJ(std::string sFileName);	// load mesh from .obj file
+    void	            loadFromOFF(std::string sFileName);
     void	            loadFromM(std::string sFileName);	// load mesh from .m file
     void	            loadFromVERT(std::string sFileName); // load mesh from .vert + .tri files
     void	            loadFromPLY(std::string sFileName);	// load mesh from .ply files
-    void	            loadFromOFF(std::string sFileName);
     void	            saveToOBJ(std::string sFileName);	// save mesh to .obj file
     void	            saveToM(const std::string& sFileName);    // save mesh to .m file
     void                getSubMesh(const std::vector<int>& vSubIdx, std::string subMeshName, CMesh& submesh);

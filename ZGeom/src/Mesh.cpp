@@ -424,8 +424,8 @@ void CMesh::load( const std::string& sFileName )
 //         loadFromPLY(sFileName);
 //     else if (ext == ".vert" || ext == ".VERT")
 //         loadFromVERT(sFileName);
-//     else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
-//         loadFromOFF(sFileName);
+     else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
+         loadFromOFF(sFileName);
 	else throw runtime_error("Unrecognizable file extension!");
     
     setMeshName(mesh_name);
@@ -452,15 +452,13 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
     m_vFaces.reserve(nFace);
     m_vHalfEdges.reserve(nHalfEdges);
 
-    for (int i = 0; i < nVertex; ++i) 
-    {
+    for (int i = 0; i < nVertex; ++i) {
         CVertex* newVertex = new CVertex(vertCoords[i]);
 		this->m_vVertices.push_back(newVertex);
 	} // for each vert
 
     int half_edge_idx = 0;
-	for (int i = 0; i < nFace; ++i)
-	{
+	for (int i = 0; i < nFace; ++i)	{
         CFace* newFace = new CFace(nType);
         this->m_vFaces.push_back(newFace);
 
@@ -484,8 +482,7 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
 
     // associate twin half-edges
     vector<bool> visited_he(halfEdgeCount(), false);
-    for (CHalfEdge *he : m_vHalfEdges)
-    {         
+    for (CHalfEdge *he : m_vHalfEdges) {         
         if (visited_he[he->getIndex()]) continue;
         visited_he[he->getIndex()] = true;
         for (CHalfEdge* he2 : he->vert1()->getHalfEdges()) {
@@ -498,8 +495,7 @@ void CMesh::construct(const std::vector<ZGeom::Vec3d>& vertCoords, const std::ve
     }
     
     // check and erase isolated vertices
-    for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)		
-	{
+    for (vector<CVertex*>::iterator iter = m_vVertices.begin(); iter != m_vVertices.end();)	{
 		CVertex* pV = *iter;
 		if (pV->outValence() == 0) {
 			delete pV;
@@ -1637,13 +1633,12 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	fopen_s(&f, sFileName.c_str(), "r");
 	assert(f != nullptr);
 
-	std::list<ZGeom::Vec3d> VertexList;	//temporary vertex list
-	std::list<int> FaceList;			//temporary face list
+	list<Vec3d> VertexList;	// temporary vertex list
+	list<int> FaceList;		// temporary face list
 
 	ZGeom::Vec3d vec;
     char ch = 0;
 	int l[3];
-	short j;
 
 	ch = fgetc(f);
 	while(ch > 0)	//save temporary information of vertex and face in list
@@ -1662,7 +1657,7 @@ void CMesh::loadFromOBJ(std::string sFileName)
 			if((ch!=' ') && (ch!='\t'))
 				break;
 			fscanf_s(f, "%ld%ld%ld\n", &l[0], &l[1], &l[2]);
-			for(j = 0; j < 3; j++)
+			for(int j = 0; j < 3; j++)
 				FaceList.push_back(l[j] - 1);		// 0-based, vid - 1
 			break;
 		
@@ -1686,7 +1681,7 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	}    
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
-        for (j = 0; j < 3; ++j)
+        for (int j = 0; j < 3; ++j)
             faceVerts[i][j] = *iFace++;
     }
 
@@ -1706,8 +1701,7 @@ void CMesh::saveToOBJ( std::string sFileName )
 	fprintf(f, "\r\n");
 	
 	// vertices
-	for (int i = 0; i < vertCount(); i++)
-	{
+	for (int i = 0; i < vertCount(); i++) {
         ZGeom::Vec3d vt = m_vVertices[i]->pos();
 		fprintf(f, "v %lf %lf %lf\r\n", vt.x, vt.y, vt.z);
 	}
@@ -1721,6 +1715,61 @@ void CMesh::saveToOBJ( std::string sFileName )
     }
 
 	fclose(f);
+}
+
+void CMesh::loadFromOFF(std::string sFileName)
+{
+    /* -----  format: off -----
+    *      OFF
+    *      #v, #f, #e
+    * vertex:
+    *      x y z
+    * face(triangle):
+    *      3 v1 v2 v3  (the vertex index is 0-based)
+    * ----------------------------------- */
+
+    FILE *f;
+    fopen_s(&f, sFileName.c_str(), "r");
+
+    char line[100];
+    fscanf_s(f, "%s", line, _countof(line));
+    if (string(line) != "OFF" && string(line) != "off") {
+        throw runtime_error("Invalid OFF file!");
+    }
+
+    int vNum, fNum, eNum;
+    fscanf_s(f, "%ld%ld%ld", &vNum, &fNum, &eNum);
+    cout << "#vertices" << vNum << "    #faces" << fNum << endl;
+
+    list<Vec3d> VertexList;	// temporary vertex list
+    list<int> FaceList;		// temporary face list
+
+    Vec3d vec;
+    int l[4];
+    for (int i = 0; i < vNum; ++i) {
+        fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
+        VertexList.push_back(vec);
+    }
+    for (int i = 0; i < fNum; ++i) {
+        fscanf_s(f, "%d%d%d%d", l, l + 1, l + 2, l+3);
+        if (l[0] != 3) {
+            throw runtime_error("Invalid face in OFF file!");
+        }
+        for (int j = 1; j <= 3; ++j) {
+            FaceList.push_back(l[j]);
+        }
+    }
+
+    int nVertex = (int)VertexList.size();
+    int nFace = (int)FaceList.size() / 3;
+    vector<Vec3d> vertCoord(VertexList.begin(), VertexList.end());
+    vector<vector<int>> faceVerts(nFace);
+    list<int>::iterator iFace = FaceList.begin();
+    for (int i = 0; i < nFace; i++) {
+        faceVerts[i].resize(3);
+        for (int j = 0; j < 3; ++j) faceVerts[i][j] = *iFace++;
+    }
+    construct(vertCoord, faceVerts);
 }
 
 void CMesh::initAttributes(std::string mesh_name, ZGeom::Colorf default_color)
@@ -1872,75 +1921,6 @@ void CMesh::loadFromPLY( std::string sFileName )
 
 	}
 	construct(TODO, TODO);
-}
-
-void CMesh::loadFromOFF( std::string sFileName )
-{
-    // -----  format: off
-    //                #v, #f, #v+#f
-    //vertex:
-    //      x y z,
-    //face(triangle):
-    //      v1 v2 v3  (the vertex index is 1-based)
-
-    //open the file
-    FILE *f;
-    fopen_s(&f, sFileName.c_str(), "r");
-
-    char *line[100];
-    fscanf_s(f, "%s", line);
-    int vNum, fNum, vfNum;
-    fscanf_s(f, "%ld%ld%ld", &vNum, &fNum, &vfNum);
-    assert(vNum + fNum == vfNum);
-
-    cout << "#vertices" << vNum << "    #faces" << fNum << endl;
-
-    list<Vector3D> VertexList;	//temporary vertex list
-    list<int> FaceList;			//temporary face list
-
-    Vector3D vec;
-
-    int l[3];
-
-    for (int i = 0; i < vNum; ++i)
-    {
-        fscanf_s(f, "%lf%lf%lf", &vec.x, &vec.y, &vec.z);
-        VertexList.push_back(vec);
-    }
-    for (int i = 0; i < fNum; ++i)
-    {
-        fscanf_s(f, "%ld%ld%ld", l, l+1, l+2);
-        for (int j = 0; j < 3; ++j)
-            FaceList.push_back(l[j]-1);
-    }
-
-    m_nVertex = (int)VertexList.size();
-    m_nFace = (int)FaceList.size() / 3;
-    m_nHalfEdge = 3 * m_nFace;		//number of half-edges
-
-    //read vertices and faces
-    m_pVertex = new CVertex[m_nVertex];
-    m_pFace = new CFace[m_nFace];
-
-    list<Vector3D>::iterator iVertex = VertexList.begin();
-    list<int>::iterator iFace = FaceList.begin();
-
-    for(int i = 0; i < m_nVertex; i++)
-    {
-        m_pVertex[i].m_vPosition = *iVertex++;  
-        m_pVertex[i].m_vIndex = m_pVertex[i].m_vid = i;
-    }
-
-    for(int i = 0; i < m_nFace; i++)
-    {
-        m_pFace[i].create(3);
-        for(int j = 0; j < 3; j++)
-            m_pFace[i].m_piVertex[j] = *iFace++;
-    }
-
-    VertexList.clear();
-    FaceList.clear();
-    construct(TODO, TODO);
 }
 
 void CMesh::loadFromVERT( std::string sFileName )
