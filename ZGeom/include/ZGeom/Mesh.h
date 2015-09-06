@@ -42,7 +42,6 @@ public:
     const std::vector<CHalfEdge*>& getHalfEdges() const  { return m_HalfEdges;  }
 	const ZGeom::Vec3d&	    pos() const                 { return m_vPosition; } 
 	int					    outValence() const          { return (int)m_HalfEdges.size(); }
-	bool				    isValid() const             { return m_bIsValid; }
     void                    addHalfEdge(CHalfEdge* he)  { m_HalfEdges.push_back(he); }
     void                    removeHalfEdge(CHalfEdge *he);
 	void                    init();
@@ -56,10 +55,8 @@ public:
 
 public:
 	std::vector<CHalfEdge*> m_HalfEdges;		// all half-edges from the vertex
-
     int						m_vIndex;           // index of the vertex 0-based
     ZGeom::Vec3d			m_vPosition;		// vertex coordinates
-    bool					m_bIsValid;
 };
 
 //////////////////////////////////////////////////////
@@ -97,9 +94,7 @@ public:
     CHalfEdge*	        m_eNext;		// next half-edge (counterclockwise)
     CHalfEdge*	        m_eTwin;		// reverse half-edge; null if boundary half edge
 	CFace*		        m_Face;			// attached face
-
     int			        m_eIndex;		// half-edge id
-    bool		        m_bIsValid;
 };
 
 //////////////////////////////////////////////////////
@@ -138,9 +133,7 @@ public:
 
 public:	
     std::vector<CHalfEdge*> m_HalfEdges;	//all half-edges
-
     int						m_fIndex;
-	bool					m_bIsValid;
 	int						m_nType;		// number of polygon face edges
 };
 
@@ -231,7 +224,6 @@ public:
     double                          calAvgEdgeLength();
 	double				            calSurfaceArea() const;
 	double				            calVolume() const;
-//    std::vector<double>          calPrincipalCurvature(int k);  // k = 0 or 1 or 2
 
     void                addVertex(CVertex *v);
     void                addHalfEdge(CHalfEdge *e);

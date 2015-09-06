@@ -69,16 +69,13 @@ void CVertex::init()
 {
     m_vPosition = ZGeom::Vec3d(0, 0, 0);
     m_vIndex = -1;
-	m_bIsValid = true;
 }
 
 void CVertex::clone(const CVertex& v)
 {
 	if (this == &v) return;
-	m_vIndex			= v.m_vIndex;
-	m_vPosition			= v.m_vPosition;
-	m_bIsValid			= v.m_bIsValid;
-
+	m_vIndex = v.m_vIndex;
+	m_vPosition = v.m_vPosition;
     m_HalfEdges.clear();
 }
 
@@ -132,7 +129,6 @@ CHalfEdge::CHalfEdge()
     m_vert = nullptr;
 	m_eTwin= m_eNext = nullptr;
 	m_Face = nullptr;
-	m_bIsValid = true;
 }
 
 CHalfEdge::CHalfEdge( const CHalfEdge& e )
@@ -153,9 +149,7 @@ CHalfEdge::~CHalfEdge()
 void CHalfEdge::clone(const CHalfEdge& e)
 {
 	if (this == &e) return;
-	m_eIndex = e.m_eIndex;
-    m_bIsValid = e.m_bIsValid;
-    	
+	m_eIndex = e.m_eIndex;    	
     m_vert = nullptr;
 	m_eTwin = m_eNext = nullptr;
 	m_Face = nullptr;	
@@ -193,13 +187,9 @@ CHalfEdge* CHalfEdge::prevHalfEdge() const
 //						CFace						//
 //////////////////////////////////////////////////////
 
-CFace::CFace() : m_nType(0), m_bIsValid(true)
-{	
-}
+CFace::CFace() : m_nType(0) {}
 
-CFace::CFace(int s) : m_nType(s), m_bIsValid(true)
-{	
-}
+CFace::CFace(int s) : m_nType(s) {}
 
 CFace::CFace( const CFace& f )
 {
@@ -219,9 +209,8 @@ CFace::~CFace()
 void CFace::clone( const CFace& f )
 {
 	if (this == &f) return;
-	m_fIndex	= f.m_fIndex;
-	m_nType		= f.m_nType;
-    m_bIsValid = f.m_bIsValid;
+	m_fIndex = f.m_fIndex;
+	m_nType	= f.m_nType;
 }
 
 void CFace::create(int s)
@@ -527,8 +516,7 @@ int CMesh::calEdgeCount()
     int halfedgeCount = this->halfEdgeCount();
 	int twinEdgeCount = 0;
 	for (CHalfEdge* he : m_vHalfEdges) {
-		if (he->m_eTwin && he->m_eTwin->m_bIsValid)
-            twinEdgeCount++;
+		if (he->m_eTwin) twinEdgeCount++;
 	}
 
 	if(twinEdgeCount % 2 != 0)
@@ -676,7 +664,7 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 
 	CVertex* vOppo1 = halfEdge->m_eNext->vert1();
 	CVertex* vOppo2(nullptr);
-	if (halfEdge->m_eTwin && halfEdge->m_eTwin->m_bIsValid)	{
+	if (halfEdge->m_eTwin)	{
 		vOppo2 = halfEdge->m_eTwin->m_eNext->vert1();
 	}
 
@@ -1670,15 +1658,11 @@ void CMesh::loadFromOBJ(std::string sFileName)
 	}
 	fclose(f);
 	
-    int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
-    vector<ZGeom::Vec3d> vertCoord(nVertex);
+    vector<Vec3d> vertCoord{VertexList.begin(), VertexList.end()};
     vector<vector<int>> faceVerts(nFace);
-	list<ZGeom::Vec3d>::iterator iVertex = VertexList.begin();
-	list<int>::iterator iFace = FaceList.begin();
-    for (int i = 0; i < nVertex; i++) {
-		vertCoord[i] = *iVertex++;  
-	}    
+	list<Vec3d>::iterator iVertex = VertexList.begin();
+	list<int>::iterator iFace = FaceList.begin();  
     for (int i = 0; i < nFace; i++) {
         faceVerts[i].resize(3);
         for (int j = 0; j < 3; ++j)
@@ -1759,14 +1743,13 @@ void CMesh::loadFromOFF(std::string sFileName)
             FaceList.push_back(l[j]);
         }
     }
+    fclose(f);
 
-    int nVertex = (int)VertexList.size();
     int nFace = (int)FaceList.size() / 3;
     vector<Vec3d> vertCoord(VertexList.begin(), VertexList.end());
-    vector<vector<int>> faceVerts(nFace);
+    vector<vector<int>> faceVerts(nFace, vector<int>(3));
     list<int>::iterator iFace = FaceList.begin();
     for (int i = 0; i < nFace; i++) {
-        faceVerts[i].resize(3);
         for (int j = 0; j < 3; ++j) faceVerts[i][j] = *iFace++;
     }
     construct(vertCoord, faceVerts);
@@ -1787,25 +1770,6 @@ void CMesh::clearNonEssentialAttributes()
     clearAttributes();
     initAttributes(mesh_name, default_color);
 }
-
-
-
-// std::vector<double> CMesh::calPrincipalCurvature( int k )
-// {
-// //    assert(k >= 0 && k < = 2); // k == 0 means total curvature; k_total = k1^2 + k2^2 = 4(kh^2 - kg)
-//     int N = vertCount();
-//     auto curvMean = getMeanCurvature(), curvGauss = getGaussCurvature();
-//     std::vector<double> result(N);
-//     for (int i = 0; i < N; ++i) {
-//         double delta = std::max(0., curvMean[i]*curvMean[i] - curvGauss[i]);        
-//         switch (k) {
-//         case 0: result[i] = std::max(0., 4.*curvMean[i]*curvMean[i] - 2.*curvGauss[i]); break;
-//         case 1: result[i] = curvMean[i] + sqrt(delta); break;
-//         case 2: result[i] = curvMean[i] - sqrt(delta); break;
-//         }        
-//     }
-//     return result;
-// }
 
 #if 0
 void CMesh::loadFromPLY( std::string sFileName )

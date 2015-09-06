@@ -16,7 +16,6 @@ namespace ZGeom
 		char trans = 'N';
 		double alpha = 1.0, beta = 0.0;
 		int incx = 1, incy = 1;
-		//dgemv(&trans, &mRow, &mCol, &alpha, mMat, &mRow, in, &incx, &beta, out, &incy);
 		cblas_dgemv(CBLAS_ORDER::CblasRowMajor, CBLAS_TRANSPOSE::CblasNoTrans, mRow, mCol, alpha, mMat, mCol, in, incx, beta, out, incy);
 	}
 

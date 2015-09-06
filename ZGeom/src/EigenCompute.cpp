@@ -13,8 +13,7 @@ void EigenCompute::solveGenSym( const SparseMatrix<double>& mLs, const SparseMat
     int numEig = std::min(nEig, nOrder - 2);    
 
     double order = (double)nOrder;
-    double numv = numEig;
-    
+    double numv = numEig;    
 
 	m_ep->addArray(&vII[0], nnz, 1, false, "II");
 	m_ep->addArray(&vJJ[0], nnz, 1, false, "JJ");
