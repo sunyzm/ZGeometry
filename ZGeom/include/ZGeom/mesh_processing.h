@@ -22,8 +22,6 @@ const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2"
 const std::string StrAttrMeshHoleRegions = "mesh_hole_regions";
 const std::string StrAttrManualHoleRegions = "mesh_manually_generated_hole_regions";
 
-
-
 struct ResultDistPointTriangle { Vec3d closestPoint; double distance; };
 ResultDistPointTriangle distPointTriangle(Vec3d point, const std::vector<Vec3d>& triangle);
 ResultDistPointTriangle distPointTriangle2(Vec3d point, const std::vector<Vec3d>& triangle);

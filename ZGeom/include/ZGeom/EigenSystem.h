@@ -5,7 +5,6 @@
 #include "VecN.h"
 #include "DenseMatrix.h"
 
-
 namespace ZGeom {
 
 class EigenSystem

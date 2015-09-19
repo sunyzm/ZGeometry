@@ -1,3 +1,4 @@
+#define GLEW_STATIC
 #include <GL/glew.h>		// must include glew.h first
 #include "glmeshwidget.h"
 #include <cstdlib>
@@ -364,10 +365,7 @@ void GLMeshWidget::fieldView( const ZGeom::Vec3d &center, const ZGeom::Vec3d &bb
 	g_myFar = 100.0 * (float)bbox.y;
 	g_myNear = 0.01 * g_myFar;
 
-	float len = bbox.x;
-	if (bbox.y > len) len = bbox.y;
-	if (bbox.z > len) len = bbox.z;
-
+	float len = std::max({bbox.x, bbox.y, bbox.z});
 	g_myAngle = 2.0 * atan2(len, g_EyeZ);
 	g_myAngle = (g_myAngle * 180.0) / ZGeom::PI + 2.0;
 }

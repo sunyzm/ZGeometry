@@ -100,7 +100,5 @@ private:
     QOpenGLShaderProgram *m_program;
     QOpenGLShader *m_shader;
     QOpenGLTexture *m_texture;
-
-
 };
 

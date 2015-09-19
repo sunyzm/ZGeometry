@@ -266,7 +266,6 @@ public:
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
 
-
 	/************************************************************************/
 	/* MeshAttr methods                                                     */
 	/************************************************************************/
@@ -336,8 +335,7 @@ public:
     void setDefaultColor(ZGeom::Colorf color);
     ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName);
 	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName);
-	std::vector<AttrVertColors*> getColorAttrList();
-        
+	std::vector<AttrVertColors*> getColorAttrList();        
 
 	/************************************************************************/
 	/* Mesh feature attributes methods                                      */
@@ -349,7 +347,6 @@ public:
 	std::vector<AttrMeshFeatures*> getMeshFeatureList();
     void addAttrLines(const MeshLineList& vVecs, const std::string& name);
     std::vector<AttrMeshLines*> getMeshLineList();
-
 
 	/* Vertex scalar attributes methods                                     */
 	AttrVertScalars& addAttrVertScalars(const std::string& name);
@@ -366,6 +363,7 @@ public:
     const std::string& switchPrevCoordinate();
     const std::string& revertCoordinate();
     const std::string& deleteCoordinate();
+
     /************************************************************************/
     /* mesh string attributes methods */
     /************************************************************************/

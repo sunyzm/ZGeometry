@@ -933,7 +933,7 @@ bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3
     for (int i = 0; i < 3; ++i)
         for (int j = 0; j < 3; ++j)
             triverts[i][j] = (float)triangle[i][j];
-    return ((1 == triBoxOverlap(boxcenter, boxhalfsize, triverts)) ? true : false);
+    return 1 == triBoxOverlap(boxcenter, boxhalfsize, triverts);
 }
 
 int triObtuseEdge(const std::vector<Vec3d>& triVerts)
