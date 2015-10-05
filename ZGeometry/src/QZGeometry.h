@@ -59,8 +59,7 @@ private slots:
 	void computeHeatTransfer();
     void addNoise();
 
-
-	/* interact with shapeEditor */
+    /* interact with shapeEditor */
 	void continuousApprox1(int level);
 	void continuousApprox2(int level);
 	void continuousApprox3(int level);
@@ -143,7 +142,6 @@ private slots:
     void degradeHoles();
     void cutHoles();
     void cutToSelected();
-    void detectHoles();
     void triangulateHoles();
     void refineHoles();
     void refineHoles2();
@@ -174,6 +172,9 @@ private slots:
 	void openOutputLocation();
 	void openSreenshotLocation();
 	void resizeApproxSlider(int slider, int newSize);
+
+    /* experiments */
+    void doExperiment1();
 
 private:	
 	/* methods */

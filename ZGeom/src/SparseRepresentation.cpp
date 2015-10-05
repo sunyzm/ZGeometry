@@ -85,11 +85,13 @@ double Dictionary::mutualCoherence(const Dictionary& dict2) const
     return *std::max_element(vMaxCohere.begin(), vMaxCohere.end());
 }
 
-ZGeom::DenseMatrixd Dictionary::toDenseMatrix() const
+ZGeom::DenseMatrixd Dictionary::toDenseMatrix(int selected_atom_count /*= 0*/) const
 {
-    DenseMatrixd mat(atomDim(), atomCount());
+    if (selected_atom_count <= 0 || selected_atom_count > atomCount()) 
+        selected_atom_count = atomCount();
+    DenseMatrixd mat(atomDim(), selected_atom_count);
     for (int i = 0; i < atomDim(); ++i)
-        for (int j = 0; j < atomCount(); ++j)
+        for (int j = 0; j < selected_atom_count; ++j)
             mat(i, j) = mAtoms[j][i];
     return mat;
 }

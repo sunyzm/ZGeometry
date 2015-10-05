@@ -52,7 +52,7 @@ public:
 		mAtoms.resize(N);
 	}
 
-    DenseMatrixd toDenseMatrix() const;
+    DenseMatrixd toDenseMatrix(int selected_atom_count = 0) const;
 
 	void mergeDict(const Dictionary& d2);
 	friend void combineDictionary(const Dictionary& d1, const Dictionary& v2, Dictionary& v3);

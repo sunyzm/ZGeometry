@@ -869,10 +869,17 @@
     </property>
     <addaction name="actionAboutQt"/>
    </widget>
+   <widget class="QMenu" name="menuExperiment">
+    <property name="title">
+     <string>Experiment</string>
+    </property>
+    <addaction name="actionExperiment1"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCompute"/>
    <addaction name="menuDisplay"/>
+   <addaction name="menuExperiment"/>
    <addaction name="menuTask"/>
    <addaction name="menuRegister"/>
    <addaction name="menuTools"/>
@@ -1716,6 +1723,11 @@
   <action name="actionIgnoreBoundary">
    <property name="text">
     <string>Ignore Boundary</string>
+   </property>
+  </action>
+  <action name="actionExperiment1">
+   <property name="text">
+    <string>Experiment 1</string>
    </property>
   </action>
  </widget>

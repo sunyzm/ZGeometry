@@ -176,13 +176,16 @@ MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::Mesh
 }
 
 
-ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, double lambda, double tol)
+ZGeom::DenseMatrixd matlab_inpaintL1LS(const DenseMatrixd& matCoord, const DenseMatrixd& matDict, 
+        const std::vector<int>& vMissingIdx, double lambda, double tol)
 {
     g_engineWrapper.addDenseMat(matCoord, "coord");
     g_engineWrapper.addDenseMat(matDict, "dict");
 
     ZGeom::VecNd vecMissing(vMissingIdx.size());
-    for (int i = 0; i < vecMissing.size(); ++i) vecMissing[i] = double(vMissingIdx[i] + 1);
+    for (int i = 0; i < vecMissing.size(); ++i) {
+        vecMissing[i] = double(vMissingIdx[i] + 1);
+    }
     g_engineWrapper.addColVec(vecMissing, "missing_idx");
     g_engineWrapper.addDoubleScalar(lambda, "lambda");
     g_engineWrapper.addDoubleScalar(tol, "tol");
@@ -204,18 +207,7 @@ MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& missing_id
     if (eigenCount == -1) eigenCount = totalVertCount - 1;
 
     ZGeom::EigenSystem es;
-#if 0
-    if (g_es.eigVecSize() == totalVertCount && g_es.eigVecCount() >= eigenCount) {
-        es = g_es;
-        es.resize(eigenCount);
-    }
-    else{
-        graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
-        g_es = es;
-    }
-#else
     graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
-#endif
 
     ZGeom::Dictionary dictMHB;
     computeDictionary(DT_Fourier, es, dictMHB);

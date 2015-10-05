@@ -19,8 +19,14 @@ struct ParaL1LsInpainting
 
 
 MeshCoordinates l1_ls_inpainting(CMesh& mesh, const std::vector<int>& anchors, ParaL1LsInpainting& para);
-MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const std::vector<ZGeom::MeshRegion>& hole_region, ParaL1LsInpainting& para);
+MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const std::vector<ZGeom::MeshRegion>& hole_region, 
+        ParaL1LsInpainting& para);
+ZGeom::DenseMatrixd matlab_inpaintL1LS(const ZGeom::DenseMatrixd& matCoord, 
+        const ZGeom::DenseMatrixd& matDict, const std::vector<int>& vMissingIdx, 
+        double lambda, double tol);
 MeshCoordinates thin_plate_energy_fairing(CMesh& mesh, int free_vert_count);
-MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::MeshRegion& hole_region, int nIter, double eps);
+MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, 
+        const ZGeom::MeshRegion& hole_region, int nIter, double eps);
 MeshCoordinates meshDLRS(CMesh& mesh, double lambda, const std::vector<int>& selected_verts, int ring);
-MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<ZGeom::MeshRegion>& hole_regions, double lambda, int ring);
+MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<ZGeom::MeshRegion>& hole_regions, 
+        double lambda, int ring);

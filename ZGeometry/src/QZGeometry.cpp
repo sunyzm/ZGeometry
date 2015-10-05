@@ -31,7 +31,6 @@
 #include "heat_diffusion.h"
 #include "hole_fairing.h"
 
-
 using std::vector;
 using ZGeom::Colorf;
 using ZGeom::logic_assert;
@@ -229,6 +228,9 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
     QObject::connect(ui.actionHoleFairingL1LS, SIGNAL(triggered()), this, SLOT(fairHoleL1LS()));
     QObject::connect(ui.actionHoleSmoothingDLRS, SIGNAL(triggered()), this, SLOT(smoothingHoleDLRS()));
+
+    //// Experiment ////
+    QObject::connect(ui.actionExperiment1, SIGNAL(triggered()), this, SLOT(doExperiment1()));
 
 	////  Display  ////
 	QObject::connect(ui.actionDisplayMesh, SIGNAL(triggered()), this, SLOT(setDisplayMesh()));
@@ -481,15 +483,6 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
     std::vector<MeshHelper*> vpHelper;
     for (MeshHelper& mh : mMeshHelper) vpHelper.push_back(&mh);
     ui.glMeshWidget->setup(vpHelper, mRenderManagers, &mShapeMatcher);
-
-    /* compute and decompose mesh Laplacians */
-    //computeLaplacian(Umbrella);
-    //computeLaplacian(NormalizedUmbrella);	
-    //computeLaplacian(CotFormula);
-    //computeLaplacian(SymCot);
-    //computeLaplacian(Anisotropic1); 	
-    //computeLaplacian(Anisotropic2);
-    //setLaplacianType("Anisotropic1");
 
 	if (g_task == TASK_REGISTRATION) {
 		registerPreprocess();
@@ -2407,13 +2400,15 @@ void QZGeometryWindow::autoGenerateHoles()
     }
 
     vector<MeshRegion> generated_holes;
-    for (int vi : seedVerts)
+    for (int vi : seedVerts) {
         generated_holes.push_back(ZGeom::generateRandomMeshRegion(*getMesh(0), vector<int>{vi}, holeVertCount / hole_count));
+    }
 
-    if (hole_count < holeVertCount)
+    if (hole_count < holeVertCount) {
         mergeMeshRegions(*getMesh(0), generated_holes);
+    }
+
     getMesh(0)->addAttr<vector<MeshRegion>>(generated_holes, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
-    
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsInsideVerts(generated_holes), ZGeom::ColorGreen), "hole_vertex");
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(getMeshRegionsBoundaryVerts(generated_holes), ZGeom::ColorRed), "hole_boundary_verts");
     updateMenuDisplayFeatures();
@@ -2554,11 +2549,6 @@ void QZGeometryWindow::cutToSelected()
     mShapeEditor.init(mMeshHelper[0]);
     ui.glMeshWidget->update();
 }
-
-void QZGeometryWindow::detectHoles()
-{
-}
-
 
 void QZGeometryWindow::triangulateHoles()
 {
@@ -2929,7 +2919,6 @@ bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
     else return false;
 }
 
-
 void QZGeometryWindow::fairHoleL1LS()
 {
     CMesh& mesh = *mMeshHelper[0].getMesh();
@@ -2950,11 +2939,63 @@ void QZGeometryWindow::fairHoleL1LS()
 
     MeshCoordinates coord_ls = l1_ls_hole_inpainting(mesh, vHoles, para);
     mesh.addNamedCoordinate(coord_ls, "l1ls_hole_inpainting");
-
-    //evaluateInpainting2();
-
-    //evaluateCurrentInpainting();
+    
     ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::doExperiment1()
+{
+    std::cout << "Experiment 1 - Random vertex recovery with different eigendecomposition" << std::endl;
+
+    CMesh& mesh = *mMeshHelper[0].getMesh();
+    const int total_vert_count = mesh.vertCount();
+    vector<MeshRegion> &hole_regions = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
+    vector<int> hole_verts = getMeshRegionsInsideVerts(hole_regions);
+    if (hole_verts.empty()) {
+        std::cerr << "No missing vertices! Did you forgot to copy the mesh with holes?" << std::endl;
+    }
+
+    MeshLaplacian graphLaplacian;
+    graphLaplacian.constructUmbrella(&mesh);
+    int eigenCount = total_vert_count - 1;
+    ZGeom::EigenSystem es;
+    graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
+    
+    ZGeom::Dictionary dictMHB;
+    computeDictionary(DT_Fourier, es, dictMHB);
+
+    MeshCoordinates coord_old = mesh.getVertCoordinates();
+    ZGeom::DenseMatrixd mat_coord_old = mesh.getVertCoordinates().toDenseMatrix();
+    
+    double tol = 1e-3;
+    double lambda = 1e-3;
+
+    CStopWatch timer;
+    for (int i = 1; i <= 10; ++i) {
+        int dict_size = int(eigenCount * (double(i) / 10.0));
+        ZGeom::DenseMatrixd mat_dict = dictMHB.toDenseMatrix(dict_size);
+        std::cout << "- " << i <<  ": #eigen = " << dict_size << std::endl;
+
+        timer.startTimer();
+        ZGeom::DenseMatrixd mat_coord_inpainted = matlab_inpaintL1LS(mat_coord_old, mat_dict, hole_verts, lambda, tol);
+        timer.stopTimer("-- L1_Ls inpainting time: ");
+
+        MeshCoordinates coord_inpainted;
+        coord_inpainted.fromDenseMatrix(mat_coord_inpainted);
+        double errorSum(0);
+        for (int vi : hole_verts) {
+            double error = (coord_inpainted[vi] - coord_old[vi]).length();
+            errorSum += error * error;
+        }
+
+        double rmse = std::sqrt(errorSum / (double)hole_verts.size());
+        std::cout << "-- RMSE: " << rmse << std::endl;
+
+        MeshCoordinates result(coord_old);
+        for (int vi : hole_verts)
+            result.setVertCoordinate(vi, coord_inpainted[vi]);
+        mesh.addNamedCoordinate(result, "l1ls_hole_inpainting_" + Int2String(i));
+    }
 }
 
 void QZGeometryWindow::addNoise()

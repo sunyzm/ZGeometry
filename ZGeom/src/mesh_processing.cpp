@@ -1840,7 +1840,7 @@ std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegio
         for (int vi : mr.vert_inside)
             verts.insert(vi);
 
-    return vector < int > {verts.begin(), verts.end()};
+    return vector<int>{verts.begin(), verts.end()};
 }
 
 std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions)
