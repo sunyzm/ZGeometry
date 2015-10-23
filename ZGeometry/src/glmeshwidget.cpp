@@ -101,6 +101,9 @@ void GLMeshWidget::reset()
     m_holeColor = Qt::yellow;
     m_boundaryColor = Qt::blue;
     m_neighborColor.setRgbF(ZGeom::ColorPink[0], ZGeom::ColorPink[1], ZGeom::ColorPink[2]);
+
+    m_colorBarHeight = 30;
+    m_colorBarWidth = 300;
 }
 
 void GLMeshWidget::initializeGL()
@@ -771,22 +774,32 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 
 void GLMeshWidget::drawLegend(QPainter* painter)
 {
+    qreal bar_width = m_colorBarWidth;
+    qreal bar_height = m_colorBarHeight;
+    int bar_bottom = height() - 20;
+    int bar_top = bar_bottom - bar_height;  
+    int text_height = bar_height * 0.7;
+    int text_pos = bar_top - text_height - 5;
+    qreal pen_width = static_cast<qreal>(bar_width) / 256.;
+
 	painter->setRenderHint(QPainter::Antialiasing);
-	int xBegin = width() / 2 - 128;
+    qreal xBegin = width() / 2 - bar_width / 2;
     //auto color_map = ZGeom::ColorMap::jet;
     auto color_map = ZGeom::ColorMap::parula;
 
-	for (int i = 0; i <= 255; i++)
-	{
+	for (int i = 0; i <= 255; i++) {
         QColor col = QColor(255. * color_map[3 * i], 255. * color_map[3 * i + 1], 255. * color_map[3 * i + 2]);
-		painter->setPen(QPen(col, 1, Qt::SolidLine));
-		painter->drawLine(QPointF(xBegin+i, height()-50), QPointF(xBegin+i, height()-25));
+		painter->setPen(QPen(col, pen_width, Qt::SolidLine));
+		painter->drawLine(QPointF(xBegin+i*pen_width, bar_top), QPointF(xBegin+i*pen_width, bar_bottom));
 	}
 
     double sigMin = 0, sigMax = inpainting_error_curving_max;
     painter->setPen(QPen(Qt::black, Qt::SolidLine));
-    painter->drawText(xBegin, height() - 70, 128, 12, Qt::AlignLeft, QString::number(sigMin));
-	painter->drawText(xBegin + 128, height()-70, 128, 12, Qt::AlignRight, QString::number(sigMax));
+    QFont font;
+    font.setPixelSize(text_height);
+    painter->setFont(font);
+    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignLeft | Qt::AlignBottom, QString::number(sigMin));
+    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignRight | Qt::AlignBottom, QString::number(sigMax));
 }
 
 bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)

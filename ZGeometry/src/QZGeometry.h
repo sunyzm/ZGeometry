@@ -118,6 +118,7 @@ private slots:
     void toggleShowSurrounding(bool show = false);
 
     void setColor();
+    void setLegend();
 	
 	void clone();
 	void revertCoord();

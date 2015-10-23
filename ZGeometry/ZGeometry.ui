@@ -766,6 +766,7 @@
     <addaction name="actionChangeShadeMode"/>
     <addaction name="actionCurveSignature"/>
     <addaction name="actionSetColor"/>
+    <addaction name="actionSetLegend"/>
     <addaction name="separator"/>
     <addaction name="actionShowRefPoint"/>
     <addaction name="actionShowFeatures"/>
@@ -1728,6 +1729,11 @@
   <action name="actionExperiment1">
    <property name="text">
     <string>Experiment 1</string>
+   </property>
+  </action>
+  <action name="actionSetLegend">
+   <property name="text">
+    <string>Set Legend</string>
    </property>
   </action>
  </widget>

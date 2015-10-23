@@ -237,6 +237,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionChangeShadeMode, SIGNAL(triggered()), ui.glMeshWidget, SLOT(changeShadeMode()));
     QObject::connect(ui.actionCurveSignature, SIGNAL(triggered()), this, SLOT(curveSignature()));
     QObject::connect(ui.actionSetColor, SIGNAL(triggered()), this, SLOT(setColor()));
+    QObject::connect(ui.actionSetLegend, SIGNAL(triggered()), this, SLOT(setLegend()));
 
 	QObject::connect(ui.actionDisplayWireframe, SIGNAL(triggered()), this, SLOT(setDisplayWireframe()));
 	QObject::connect(ui.actionDisplayPointCloud, SIGNAL(triggered()), this, SLOT(setDisplayPointCloud()));
@@ -2162,6 +2163,28 @@ void QZGeometryWindow::setColor()
     ui.glMeshWidget->update();
 }
 
+void QZGeometryWindow::setLegend()
+{
+    vector<QString> property_names = { "width", "height" };
+    QStringList items;
+    for (auto& str : property_names)
+        items << str;
+
+    bool ok;
+    QString item = QInputDialog::getItem(this, tr("Select element"),
+        tr("Element:"), items, 0, false, &ok);
+    if (!ok) return;
+
+    int *dimension = nullptr;
+    if (item == "width") dimension = &ui.glMeshWidget->m_colorBarWidth;
+    else dimension = &ui.glMeshWidget->m_colorBarHeight;
+
+    int newDim = QInputDialog::getInt(this, "Set color bar size", "size", *dimension, 1);
+    *dimension = newDim;
+
+    ui.glMeshWidget->update();
+}
+
 void QZGeometryWindow::openOutputLocation()
 {
 	ShellExecute(NULL, L"explore", L".\\output", NULL, NULL, SW_RESTORE);
@@ -2952,12 +2975,17 @@ void QZGeometryWindow::doExperiment1()
     vector<MeshRegion> &hole_regions = mesh.getAttrValue<vector<MeshRegion>>(ZGeom::StrAttrMeshHoleRegions);
     vector<int> hole_verts = getMeshRegionsInsideVerts(hole_regions);
     if (hole_verts.empty()) {
-        std::cerr << "No missing vertices! Did you forgot to copy the mesh with holes?" << std::endl;
+        std::cerr << "Missing vertices not specified!\nDid you forgot to copy the mesh with holes?" << std::endl;
+        return;
     }
 
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(&mesh);
     int eigenCount = total_vert_count - 1;
+
+    // uncomment the following line if half decomposition is needed
+    //eigenCount /= 2;    
+
     ZGeom::EigenSystem es;
     graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);
     
@@ -2971,7 +2999,7 @@ void QZGeometryWindow::doExperiment1()
     double lambda = 1e-3;
 
     CStopWatch timer;
-    for (int i = 1; i <= 10; ++i) {
+    for (int i = 1; i <= 10; i+=1) {
         int dict_size = int(eigenCount * (double(i) / 10.0));
         ZGeom::DenseMatrixd mat_dict = dictMHB.toDenseMatrix(dict_size);
         std::cout << "- " << i <<  ": #eigen = " << dict_size << std::endl;
@@ -2991,9 +3019,14 @@ void QZGeometryWindow::doExperiment1()
         double rmse = std::sqrt(errorSum / (double)hole_verts.size());
         std::cout << "-- RMSE: " << rmse << std::endl;
 
+        // use the following 4 lines if only partial assignment
         MeshCoordinates result(coord_old);
-        for (int vi : hole_verts)
+        for (int vi : hole_verts) {
             result.setVertCoordinate(vi, coord_inpainted[vi]);
+        }
+
+        // use the following line if full assignment
+        //MeshCoordinates& result = coord_inpainted;
         mesh.addNamedCoordinate(result, "l1ls_hole_inpainting_" + Int2String(i));
     }
 }

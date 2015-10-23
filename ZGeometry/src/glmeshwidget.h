@@ -37,6 +37,7 @@ public:
     bool m_bShowHoleHollow;
     
     QColor m_wireframeColor, m_holeColor, m_boundaryColor, m_neighborColor;
+    int m_colorBarWidth, m_colorBarHeight;
 
     int  m_nShadeMode;
 	int	 m_nMeshLevel;
