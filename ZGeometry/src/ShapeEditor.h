@@ -70,8 +70,6 @@ private:
 	void testSparseDecomposition();  // test shape decomposition via sparse coding
 	void testSparseDecomposition2(); // test shape decomposition and separation
 	void testArtificialShapeMCA();	// MHB signal + SGW noise / MHB & SGW dictionary
-	void testArtificailShapeMCA2();	// original signal + SGW noise / MHB & SGW dictionary
-	void testArtificialShapeMCA3(); // original signal + (unrestricted) artificial noise
 	void testDictionaryForDecomposition();
 	void testSparseFeatureFinding();  // test feature finding and correspondence using cot formula basis
 	void testSparseInpainting();

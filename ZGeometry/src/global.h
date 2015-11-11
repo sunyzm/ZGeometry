@@ -2,6 +2,7 @@
 #include <string>
 #include <ZGeom/SimpleConfigLoader.h>
 #include <ZGeom/MatlabEngineWrapper.h>
+#include <ZGeom/ColorMap.h>
 #include "OutputHelper.h"
 
 extern SimpleConfigLoader g_configMgr;
@@ -38,13 +39,14 @@ enum LaplacianType {
 	LaplacianTypeCount
 };
 
-const std::string StrLaplacianTypes[] = {
-	"Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"
+const std::vector<std::string> StrLaplacianTypes {
+	    "Umbrella", "CotFormula", "Anisotropic1", "Anisotropic2"
 };
 
 struct GlobalSettings {
 	GlobalSettings();
 	
+    ZGeom::ColorMapType ACTIVE_COLOR_MAP_TYPE;
 	int DEFAULT_EIGEN_SIZE;
 	int DEFAULT_DEFORM_RING; 
 	int LOAD_MHB_CACHE;

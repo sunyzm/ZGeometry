@@ -17,6 +17,7 @@
 using std::vector;
 using ZGeom::Vec3d;
 using ZGeom::Colorf;
+using ZGeom::ColorMap;
 
 extern OutputHelper qout;
 extern GeometryTask g_task;
@@ -789,15 +790,13 @@ void GLMeshWidget::drawLegend(QPainter* painter)
     int text_height = bar_height * 0.7;
     int text_pos = bar_top - text_height - 5;
     qreal pen_width = static_cast<qreal>(bar_width) / 256.;
-
 	painter->setRenderHint(QPainter::Antialiasing);
     qreal xBegin = width() / 2 - bar_width / 2;
-    //auto color_map = ZGeom::ColorMap::jet;
-    auto color_map = ZGeom::ColorMap::parula;
 
 	for (int i = 0; i <= 255; i++) {
-        QColor col = QColor(255. * color_map[3 * i], 255. * color_map[3 * i + 1], 255. * color_map[3 * i + 2]);
-		painter->setPen(QPen(col, pen_width, Qt::SolidLine));
+        Colorf col = ColorMap::falseColor(float(i)/255.f, 1.0f, gSettings.ACTIVE_COLOR_MAP_TYPE);
+        QColor qcol = QColor(255. * col[0], 255. * col[1], 255. * col[2]);
+		painter->setPen(QPen(qcol, pen_width, Qt::SolidLine));
 		painter->drawLine(QPointF(xBegin+i*pen_width, bar_top), QPointF(xBegin+i*pen_width, bar_bottom));
 	}
 

@@ -35,7 +35,7 @@ void ColorSignature::changeColorMap(ColorMapType cmt)
     if (mNormalizedValues.empty()) return;
     mColors.resize(mNormalizedValues.size());
     for (size_t i = 0; i < mNormalizedValues.size(); ++i) 
-        mColors[i].falseColor((float)mNormalizedValues[i], 1.f, cmt);
+        mColors[i] = ZGeom::ColorMap::falseColor((float)mNormalizedValues[i], 1.f, cmt);
 }
 
 std::vector<double> ColorSignature::vec_normalize(const std::vector<double>& vec)

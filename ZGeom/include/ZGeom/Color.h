@@ -1,7 +1,6 @@
 #ifndef ZGEOM_COLOR_H
 #define ZGEOM_COLOR_H
 #include <vector>
-#include "ColorMap.h"
 
 namespace ZGeom {
 
@@ -42,11 +41,18 @@ public:
 	float b() const { return mVal[2]; }
 	float a() const { return mVal[3]; }
 	float toGrayscale() const { return 0.2989f * r() + 0.5870f * g() + 0.1140f * b(); }
-	void falseColor(float gray, float alpha = 1.f, ColorMapType cmt = CM_JET);
 	void posNegColor(float val, const float* colorPos = ColorOrange, const float* colorNeg = ColorAzure);
 	void setAs(const float *c);
     float& operator[] (int i) { return mVal[i]; }    
     float operator[] (int i) const { return mVal[i]; }
+
+    static void interpolateColor(const float *color1, const float *color2, float coeff1, Colorf &color3)
+    {
+        float coeff2 = 1 - coeff1;
+        for (int i = 0; i < 3; ++i) {
+            color3[i] = color1[i] * coeff2 + color2[i] * coeff1;
+        }
+    }
 
 private:
     std::vector<float> mVal;

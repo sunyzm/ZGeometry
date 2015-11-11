@@ -50,7 +50,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mDeformType				= DEFORM_Simple;
     mSignatureMode          = ZGeom::SM_Normalized;
 	mActiveLalacian			= Umbrella;
-	mColorMapType			= ZGeom::CM_JET;
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
@@ -65,8 +64,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 
 	// comboBoxLaplacian
 	ui.comboBoxLaplacian->clear();
-	for (int i = 0; i < 4; ++i)
-		ui.comboBoxLaplacian->addItem(StrLaplacianTypes[i].c_str());
+    for (const std::string& lap_type_str : StrLaplacianTypes) {
+        ui.comboBoxLaplacian->addItem(lap_type_str.c_str());
+    }
 	ui.comboBoxLaplacian->setCurrentIndex(ui.comboBoxLaplacian->findText("CotFormula"));
 
 	// toolbar
@@ -299,7 +299,7 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 		break;
 
 	case Qt::Key_C:
-		mColorMapType = ZGeom::ColorMapType(int(mColorMapType + 1) % (int)ZGeom::CM_COUNT);
+		gSettings.ACTIVE_COLOR_MAP_TYPE = ZGeom::ColorMapType((gSettings.ACTIVE_COLOR_MAP_TYPE + 1) % ZGeom::COLOR_MAP_COUNT);
 		break;
 
 	case Qt::Key_D:
@@ -969,10 +969,10 @@ void QZGeometryWindow::computeCurvatures()
 //         vector<double> vCP1 = getMesh(obj)->calPrincipalCurvature(1);
 //         vector<double> vCP2 = getMesh(obj)->calPrincipalCurvature(2);
 
-        ColorSignature colorCM(vCM, mColorMapType);
-        ColorSignature colorCG(vCG, mColorMapType);
-//         ColorSignature colorCP1(vCP1, mColorMapType);
-//         ColorSignature colorCP2(vCP2, mColorMapType);
+        ColorSignature colorCM(vCM, gSettings.ACTIVE_COLOR_MAP_TYPE);
+        ColorSignature colorCG(vCG, gSettings.ACTIVE_COLOR_MAP_TYPE);
+//         ColorSignature colorCP1(vCP1, gSettings.ACTIVE_COLOR_MAP_TYPE);
+//         ColorSignature colorCP2(vCP2, gSettings.ACTIVE_COLOR_MAP_TYPE);
 
         getMesh(obj)->addColorSigAttr("color_mean_curvature", colorCM);
         getMesh(obj)->addColorSigAttr("color_gauss_curvature", colorCG);
@@ -1092,19 +1092,23 @@ void QZGeometryWindow::computeHoleNeighbors()
 
 void QZGeometryWindow::computeEigenfunction()
 {
-	LaplacianType lapType = mActiveLalacian;
-	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
-	int select_eig = (mCommonParameter >= sliderCenter) ? (mCommonParameter - sliderCenter + 1) : 1;
-	
-	for (int i = 0; i < mMeshCount; ++i) {
-		MeshHelper& mp = mMeshHelper[i];
-		vector<double> eigVec = mp.getMHB(lapType).getEigVec(select_eig).toStdVector();
-        getMesh(i)->addColorSigAttr(StrAttrColorEigenFunction, ColorSignature(eigVec, mColorMapType));
+	LaplacianType lap_type = mActiveLalacian;
+    ZGeom::EigenSystem& es = mMeshHelper[0].getMHB(lap_type);
+    bool ok;
+    int selected_eig = QInputDialog::getInt(this, "Select eigenfunction",
+        "i-th eigenfunction", 1, 1, es.eigVecSize() - 1, 1, &ok);
+    if (!ok) return;
+
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+		MeshHelper& mp = mMeshHelper[obj];
+		vector<double> vec_eigfunc = mp.getMHB(lap_type).getEigVec(selected_eig).toStdVector();
+        getMesh(obj)->addColorSigAttr(StrAttrColorEigenFunction, 
+            ColorSignature(vec_eigfunc, gSettings.ACTIVE_COLOR_MAP_TYPE));
 	}
 
 	displaySignature(StrAttrColorEigenFunction.c_str());
 	mLastOperation = Compute_Eig_Func;
-	qout.output("Show eigenfunction" + Int2String(select_eig), OUT_CONSOLE);
+    qout.output("Show eigenfunction #" + Int2String(selected_eig), OUT_CONSOLE);
 	updateMenuDisplaySignature();
 }
 
@@ -1168,7 +1172,7 @@ void QZGeometryWindow::computeBiharmonic()
         ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
         vector<double> vVals = calAllBiharmonicDist(es, refPoint);
 
-        cur_mesh->addColorSigAttr(StrAttrColorBiharmonic, ZGeom::ColorSignature(vVals, ZGeom::CM_PARULA, true));
+        cur_mesh->addColorSigAttr(StrAttrColorBiharmonic, ZGeom::ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE, true));
 	}
 
 	displaySignature(StrAttrColorBiharmonic.c_str());
@@ -1607,27 +1611,29 @@ void QZGeometryWindow::computeGeoLaplacian()
     computeLaplacian(CotFormula);
 }
 
-void QZGeometryWindow::computeLaplacian(LaplacianType laplacianType)
+void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
 {
 	parallel_for(0, mMeshCount, [&](int obj) {
-		mMeshHelper[obj].constructLaplacian(laplacianType);
+		mMeshHelper[obj].constructLaplacian(lap_type);
 	});
 
 	int totalToDecompose = 0;
 	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
 	
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		if (!mMeshHelper[obj].hasLaplacian(laplacianType))
+		if (!mMeshHelper[obj].hasLaplacian(lap_type))
 			throw std::logic_error("Laplacian type not valid!");
         int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 1) : nEigVec;
-		if (laplacianRequireDecompose(obj, nEigen, laplacianType)) ++totalToDecompose;
+		if (laplacianRequireDecompose(obj, nEigen, lap_type)) ++totalToDecompose;
 	}
 	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 
 	for(int obj = 0; obj < mMeshCount; ++obj) {
         int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 2) : nEigVec;
-		decomposeSingleLaplacian(obj, nEigen, laplacianType);
+		decomposeSingleLaplacian(obj, nEigen, lap_type);
 	}
+
+    mActiveLalacian = lap_type;
 }
 
 void QZGeometryWindow::saveMatchingResult()
@@ -1759,7 +1765,7 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
     std::vector<double>& vSig = getMesh(obj)->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
 	vSig = vVals;
 
-    getMesh(obj)->addColorSigAttr(sigName, ColorSignature(vVals, mColorMapType));
+    getMesh(obj)->addColorSigAttr(sigName, ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE));
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -1829,8 +1835,9 @@ void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		const std::string& currentSig = mRenderManagers[obj].mActiveColorSignatureName;
         if (!getMesh(obj)->hasAttr(currentSig)) continue;
-        ColorSignature colors = getMesh(obj)->getColorSignature(currentSig);
-        colors.changeColorMap(mColorMapType);
+        ColorSignature& colors = getMesh(obj)->getColorSignature(currentSig);
+        if (!colors.hasOriginalValues()) continue;
+        colors.changeColorMap(gSettings.ACTIVE_COLOR_MAP_TYPE);
         colors.changeSignatureMode(smode);
 	}
 

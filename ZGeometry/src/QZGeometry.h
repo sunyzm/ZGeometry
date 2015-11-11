@@ -206,7 +206,6 @@ private:
 	DeformType			    mDeformType;
 	LaplacianType           mActiveLalacian;
 	ZGeom::SignatureMode	mSignatureMode;
-	ZGeom::ColorMapType     mColorMapType;
 
 	int					mMeshCount;
 	int					mObjInFocus;	

@@ -11,6 +11,7 @@ double inpainting_error_curving_max = 0.03;
 
 GlobalSettings::GlobalSettings()
 {
+    ACTIVE_COLOR_MAP_TYPE   = ZGeom::CM_PSEUDO;
 	DEFAULT_EIGEN_SIZE      = -1;
 	DEFAULT_DEFORM_RING     = 5;
 	LOAD_MHB_CACHE          = 0;

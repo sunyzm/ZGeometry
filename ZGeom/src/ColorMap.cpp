@@ -1,6 +1,57 @@
 #include "ColorMap.h"
+#include <stdexcept>
 
 namespace ZGeom {
+
+ZGeom::Colorf ColorMap::falseColor(float gray, float alpha, ColorMapType cmt /*= CM_PSEUDO*/)
+{
+    if (gray < 0) gray = 0;
+    else if (gray > 1) gray = 1.;
+    Colorf col;
+
+    if (cmt == CM_PSEUDO) {
+        if (gray < 0.25) Colorf::interpolateColor(ColorBlue, ColorCyan, gray / 0.25f, col);
+        else if (gray < 0.5) Colorf::interpolateColor(ColorCyan, ColorGreen, (gray - 0.25f) / 0.25f, col);
+        else if (gray < 0.75) Colorf::interpolateColor(ColorGreen, ColorYellow, (gray - 0.5f) / 0.25f, col);
+        else Colorf::interpolateColor(ColorYellow, ColorRed, (gray - 0.75f) / 0.25f, col);
+    }
+    else if (cmt == CM_JET) {
+        int idx = std::lround(gray * 255.);
+        col[0] = (float)jet[idx * 3];
+        col[1] = (float)jet[idx * 3 + 1];
+        col[2] = (float)jet[idx * 3 + 2];
+    }
+    else if (cmt == CM_PARULA) {
+        int idx = std::lround(gray * 255.);
+        col[0] = (float)parula[idx * 3];
+        col[1] = (float)parula[idx * 3 + 1];
+        col[2] = (float)parula[idx * 3 + 2];
+    }
+    else if (cmt == CM_COOL) {
+        Colorf::interpolateColor(ColorCyan, ColorMagenta, gray, col);
+    }
+    else if (cmt == CM_HOT) {
+        if (gray < 0.375)
+            Colorf::interpolateColor(ColorBlack, ColorRed, gray / 0.375f, col);
+        else if (gray < 0.75)
+            Colorf::interpolateColor(ColorRed, ColorYellow, (gray - 0.375f) / 0.375f, col);
+        else
+            Colorf::interpolateColor(ColorYellow, ColorWhite, (gray - 0.75f) / 0.25f, col);
+    }
+
+    col[3] = alpha;
+    return col;
+}
+
+double* ColorMap::getColorMap(ColorMapType map_type)
+{
+    switch (map_type) {
+    case CM_PARULA: return parula;
+    case CM_JET: return jet;
+    default:
+        throw std::runtime_error("Unsupported color map type!");
+    }
+}
 
 double ColorMap::parula[] = {
       0.2081, 0.1663, 0.5292

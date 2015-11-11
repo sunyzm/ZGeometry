@@ -3,14 +3,6 @@
 #include <algorithm>
 
 namespace ZGeom {
-	
-inline void interpolateColor(const float *color1, const float *color2, float coeff1, Colorf &color3)
-{
-	float coeff2 = 1 - coeff1;
-	for (int i = 0; i < 3; ++i) {
-		color3[i] = color1[i] * coeff2 + color2[i] * coeff1;
-	}		
-}
 
 Colorf::Colorf() : mVal(4, 0)
 {
@@ -38,38 +30,6 @@ void Colorf::setAs( const float *c )
 	assert( 0 <= c[0] && c[0] <= 1 && 0 <= c[1] && c[1] <= 1 &&
 		0 <= c[2] && c[2] <= 1 &&	0 <= c[3] && c[3] <= 1 );
 	std::copy_n(c, 4, mVal.begin());
-}
-
-void Colorf::falseColor( float gray, float alpha, ColorMapType cmt)
-{
-	//assert(0 <= gray && gray <= 1.f);
-	if (gray < 0) gray = 0;
-	else if (gray > 1) gray = 1.f;
-    int idx = int(gray * 255.999999);
-
-	if (cmt == CM_JET) {
-        mVal[0] = (float)ColorMap::jet[idx * 3];
-        mVal[1] = (float)ColorMap::jet[idx * 3 + 1];
-        mVal[2] = (float)ColorMap::jet[idx * 3 + 2];
-	} 
-    else if (cmt == CM_PARULA) {
-        mVal[0] = (float)ColorMap::parula[idx * 3];
-        mVal[1] = (float)ColorMap::parula[idx * 3 + 1];
-        mVal[2] = (float)ColorMap::parula[idx * 3 + 2];
-    }
-	else if (cmt == CM_COOL) {
-		interpolateColor(ColorCyan, ColorMagenta, gray, *this);			
-	} 
-	else if (cmt == CM_HOT) {
-		if (gray < 0.375)
-			interpolateColor(ColorBlack, ColorRed, gray / 0.375f, *this);
-		else if(gray < 0.75)
-			interpolateColor(ColorRed, ColorYellow, (gray - 0.375f)/0.375f, *this);
-		else 
-			interpolateColor(ColorYellow, ColorWhite, (gray - 0.75f)/0.25f, *this);
-	}
-
-	mVal[3] = alpha;
 }
 
 void Colorf::posNegColor( float val, const float* colorPos /*= ColorOrange*/, const float* colorNeg /*= ColorBlue*/ )
