@@ -10,27 +10,32 @@ ColorSignature::ColorSignature(const std::vector<Colorf>& vCol)
     for (size_t i = 0; i < mColors.size(); ++i)
         mOriginalValues[i] = mColors[i].toGrayscale();
     
-    mValues = mOriginalValues;
+    mNormalizedValues = mOriginalValues;
     mCurrentColorMap = CM_JET;
 }
 
 ColorSignature::ColorSignature(const std::vector<double>& vVals, ColorMapType cmt /*= CM_PARULA*/, bool requireNormalize /*= true*/)
 {
-    mValues = mOriginalValues = vVals;
-    if (requireNormalize)
-        mValues = vec_normalize(mOriginalValues);
-    else curve(0, 1.);
-    changeColorMap(cmt);
+    mNormalizedValues = mOriginalValues = vVals;    
+    if (requireNormalize) {
+        auto iResult = std::minmax_element(mOriginalValues.begin(), mOriginalValues.end());
+        mCurveMin = *(iResult.first);
+        mCurveMax = *(iResult.second);        
+    } else {
+        mCurveMin = 0.;
+        mCurveMax = 1.;
+    }
+    mCurrentColorMap = cmt;
+    curve(mCurveMin, mCurveMax);
 }
 
 void ColorSignature::changeColorMap(ColorMapType cmt)
 {
     mCurrentColorMap = cmt;
-
-    if (mValues.empty()) return;
-    mColors.resize(mValues.size());
-    for (size_t i = 0; i < mValues.size(); ++i) 
-        mColors[i].falseColor((float)mValues[i], 1.f, cmt);
+    if (mNormalizedValues.empty()) return;
+    mColors.resize(mNormalizedValues.size());
+    for (size_t i = 0; i < mNormalizedValues.size(); ++i) 
+        mColors[i].falseColor((float)mNormalizedValues[i], 1.f, cmt);
 }
 
 std::vector<double> ColorSignature::vec_normalize(const std::vector<double>& vec)
@@ -53,38 +58,44 @@ std::vector<double> ColorSignature::vec_normalize(const std::vector<double>& vec
 
 void ColorSignature::curve(double sMin, double sMax)
 {
-    const double maxDiff = sMax - sMin;
-    mValues.resize(mOriginalValues.size());
-    for (int i = 0; i < (int)mOriginalValues.size(); ++i) {
-        if (mOriginalValues[i] <= sMin) mValues[i] = 0;
-        else if (mOriginalValues[i] >= sMax) mValues[i] = 1.;
-        else mValues[i] = (mOriginalValues[i] - sMin) / maxDiff;
+    if (sMax <= sMin) {
+        throw std::runtime_error("Color signature range error!");
     }
+
+    const double maxDiff = sMax - sMin;
+    mNormalizedValues.resize(mOriginalValues.size());
+    for (int i = 0; i < (int)mOriginalValues.size(); ++i) {
+        if (mOriginalValues[i] <= sMin) mNormalizedValues[i] = 0;
+        else if (mOriginalValues[i] >= sMax) mNormalizedValues[i] = 1.;
+        else mNormalizedValues[i] = (mOriginalValues[i] - sMin) / maxDiff;
+    }
+    mCurveMin = sMin;
+    mCurveMax = sMax;
     changeColorMap(mCurrentColorMap);
 }
 
 void ColorSignature::changeSignatureMode(SignatureMode smode)
 {
-    if (mValues.empty()) return;
-    size_t vSize = mValues.size();
-    std::vector<double> tmpSig = mValues;
+    if (mNormalizedValues.empty()) return;
+    size_t vSize = mNormalizedValues.size();
+    std::vector<double> tmpSig = mNormalizedValues;
 
     if (smode == ZGeom::SM_AbsNormalized)
-        for (double& v : mValues) v = std::fabs(v);
+        for (double& v : mNormalizedValues) v = std::fabs(v);
 
     if (smode == ZGeom::SM_LogNormalized) {
-        double sMin = *(std::minmax_element(mValues.begin(), mValues.end()).first);
+        double sMin = *(std::minmax_element(mNormalizedValues.begin(), mNormalizedValues.end()).first);
         if (sMin <= 0) return;
-        for (double& v : mValues) v = std::log(v);
+        for (double& v : mNormalizedValues) v = std::log(v);
     }
 
     if (smode == ZGeom::SM_PosNegPlot)
     {
-        auto mmp = std::minmax_element(mValues.begin(), mValues.end());
+        auto mmp = std::minmax_element(mNormalizedValues.begin(), mNormalizedValues.end());
         double sMin = *mmp.first, smax = *mmp.second;
         double absMax = std::max(std::fabs(sMin), std::fabs(smax));
         for (int i = 0; i < vSize; ++i)
-            mColors[i].posNegColor(float(mValues[i] / absMax), ZGeom::ColorOrange, ZGeom::ColorAzure);
+            mColors[i].posNegColor(float(mNormalizedValues[i] / absMax), ZGeom::ColorOrange, ZGeom::ColorAzure);
     }
     else if (smode == ZGeom::SM_Normalized || smode == ZGeom::SM_AbsNormalized || smode == ZGeom::SM_BandCurved ||
             smode == ZGeom::SM_LogNormalized || smode == ZGeom::SM_MarkNegNormalized)
@@ -94,11 +105,11 @@ void ColorSignature::changeSignatureMode(SignatureMode smode)
 
     if (smode == ZGeom::SM_MarkNegNormalized) {
         for (int i = 0; i < vSize; ++i) {
-            if (mValues[i] < 0) mColors[i].setAs(ZGeom::ColorBlack);
+            if (mNormalizedValues[i] < 0) mColors[i].setAs(ZGeom::ColorBlack);
         }
     }
 
-    mValues = tmpSig;
+    mNormalizedValues = tmpSig;
 }
 
 }   // end of namespace

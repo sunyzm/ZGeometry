@@ -68,10 +68,11 @@ void EigenSystem::load(const std::string& file)
 ZGeom::DenseMatrixd EigenSystem::toDenseMatrix() const
 {
     DenseMatrixd matEigVec;
+    // eigenvectors arranged row by row
 	matEigVec.resize(eigVecCount(), eigVecSize());
-	for (int i = 0; i < (int)eigVecCount(); ++i)
-		matEigVec.setRow(i, mEigVecs[i]);
-
+    for (int i = 0; i < (int)eigVecCount(); ++i) {
+        matEigVec.setRow(i, mEigVecs[i]);
+    }
     return matEigVec;
 }
 
@@ -82,5 +83,10 @@ void EigenSystem::resize(int m)
     mEigVecs.erase(mEigVecs.begin() + m, mEigVecs.end());
 }
 
+const ZGeom::DenseMatrixd& EigenSystem::getEigenMat()
+{
+    if (mEigenMat.empty()) mEigenMat = toDenseMatrix();
+    return mEigenMat;
+}
 
 }	// end of namespace 

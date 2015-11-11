@@ -31,6 +31,8 @@
 #include "heat_diffusion.h"
 #include "hole_fairing.h"
 
+using namespace concurrency;
+
 using std::vector;
 using ZGeom::Colorf;
 using ZGeom::logic_assert;
@@ -89,11 +91,9 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 QZGeometryWindow::~QZGeometryWindow()
 {
 	for (QAction* a : m_actionDisplaySignatures) delete a;
-	for (QAction* a : m_actionComputeLaplacians) delete a;
 	for (QAction* a : m_actionDisplayFeatures) delete a;
     for (QAction* a : m_actionDisplayLines) delete a;
 
-	delete m_laplacianSignalMapper;
 	delete m_signatureSignalMapper;
 	delete m_featureSignalMapper;
     delete m_linesSignalMapper;
@@ -102,18 +102,6 @@ QZGeometryWindow::~QZGeometryWindow()
 void QZGeometryWindow::makeConnections()
 {
 	QObject::connect(ui.actionAboutQt, SIGNAL(triggered()), this, SIGNAL(displayQtVersion()));
-
-	/*  actionComputeLaplacians  */
-	int laplacianTypeCount = LaplacianTypeCount;
-	m_actionComputeLaplacians.resize(laplacianTypeCount);
-	m_laplacianSignalMapper = new QSignalMapper(this);
-	for (int t = 0; t < laplacianTypeCount; ++t) {
-		m_actionComputeLaplacians[t] = new QAction(QString("Laplacian type ") + QString::number(t), this);
-		ui.menuComputeLaplacian->addAction(m_actionComputeLaplacians[t]);
-		m_laplacianSignalMapper->setMapping(m_actionComputeLaplacians[t], t);
-		QObject::connect(m_actionComputeLaplacians[t], SIGNAL(triggered()), m_laplacianSignalMapper, SLOT(map()));
-	}
-	QObject::connect(m_laplacianSignalMapper, SIGNAL(mapped(int)), this, SLOT(computeLaplacian(int)));
 
 	/*  actionDisplaySignatures  */
 	m_signatureSignalMapper = new QSignalMapper(this);
@@ -177,13 +165,15 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionDeleteCurrentCoordinate, SIGNAL(triggered()), this, SLOT(deleteCurrentCoordinate()));
 
 	////  Compute  ////
+    QObject::connect(ui.actionComputeGraphLaplacian, SIGNAL(triggered()), this, SLOT(computeGraphLaplacian()));
+    QObject::connect(ui.actionComputeGeoLaplacian, SIGNAL(triggered()), this, SLOT(computeGeoLaplacian()));
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
 	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
     QObject::connect(ui.actionComputeCurvatures, SIGNAL(triggered()), this, SLOT(computeCurvatures()));
-	QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
+    QObject::connect(ui.actionComputeBiharmonicDistance, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+    QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
-	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));
-	QObject::connect(ui.actionComputeBiharmonic, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));	
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
@@ -193,7 +183,6 @@ void QZGeometryWindow::makeConnections()
 	////  Edit  ////
 	QObject::connect(ui.actionClearHandles, SIGNAL(triggered()), this, SLOT(clearHandles()));
 	QObject::connect(ui.actionClone, SIGNAL(triggered()), this, SLOT(clone()));
-	QObject::connect(ui.actionAddNoise, SIGNAL(triggered()), this, SLOT(addNoise()));
 	QObject::connect(ui.actionReconstructMHB, SIGNAL(triggered()), this, SLOT(reconstructMHB()));
 	QObject::connect(ui.actionDeformSimple, SIGNAL(triggered()), this, SLOT(deformSimple()));
 	QObject::connect(ui.actionDeformLaplace, SIGNAL(triggered()), this, SLOT(deformLaplace()));
@@ -201,13 +190,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionDeformBiLaplace, SIGNAL(triggered()), this, SLOT(deformBiLaplace()));
 	QObject::connect(ui.actionDeformMixedLaplace, SIGNAL(triggered()), this, SLOT(deformMixedLaplace()));
 	QObject::connect(ui.actionDiffusionFlow, SIGNAL(triggered()), this, SLOT(diffusionFlow()));
-	QObject::connect(ui.actionRunTests, SIGNAL(triggered()), this, SLOT(runTests()));
     QObject::connect(ui.actionFillHoles, SIGNAL(triggered()), this, SLOT(fillHoles()));
-    QObject::connect(ui.actionFairFilledHoles, SIGNAL(triggered()), this, SLOT(holeFairingAll()));
-    QObject::connect(ui.actionHoleFairingLS, SIGNAL(triggered()), this, SLOT(holeFairingLS()));
-    QObject::connect(ui.actionHoleFairingFourierOMP, SIGNAL(triggered()), this, SLOT(holeFairingFourierOMP()));
-    QObject::connect(ui.actionFourierLARS, SIGNAL(triggered()), this, SLOT(holeFairingLARS()));
-    QObject::connect(ui.actionHoleEstimateCurvature, SIGNAL(triggered()), this, SLOT(holeEstimateCurvature()));
 
     /* inpainting related */
     QObject::connect(ui.actionGenerateHoles, SIGNAL(triggered()), this, SLOT(generateHoles()));
@@ -463,20 +446,19 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 	qout.outputDateTime(OUT_CONSOLE);
 	qout.output('*', 24, OUT_CONSOLE);
 
-	switch (g_task)
-	{
-	case TASK_VIEWING:
-		g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
-		if (mMeshCount <= 0) return true;
-		break;
-	case TASK_REGISTRATION:
-		mMeshCount = 2;
-		break;
-	case TASK_EDITING:
-		mMeshCount = 1;
-		break;
-	default:
-		break;
+	switch (g_task) {
+	    case TASK_VIEWING:
+		    g_configMgr.getConfigValueInt("NUM_PRELOAD_MESHES", mMeshCount);
+		    if (mMeshCount <= 0) return true;
+		    break;
+	    case TASK_REGISTRATION:
+		    mMeshCount = 2;
+		    break;
+	    case TASK_EDITING:
+		    mMeshCount = 1;
+		    break;
+	    default:
+		    break;
 	}
 
 	loadInitialMeshes(mesh_list_name); 
@@ -520,7 +502,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		throw std::runtime_error("Not enough meshes in mesh list!");
 
 	allocateStorage(mMeshCount);
-	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+	parallel_for(0, mMeshCount, [&](int obj) {
         loadMesh(vMeshFiles[obj], obj); 
 	});	
 
@@ -1032,7 +1014,6 @@ void QZGeometryWindow::registerPreprocess()
 
 	mShapeMatcher.setRegistrationLevels(1);
 	registerTest();
-//	evalDistance();
 }
 
 void QZGeometryWindow::reconstructMHB()
@@ -1176,19 +1157,18 @@ void QZGeometryWindow::computeHKS()
 
 void QZGeometryWindow::computeBiharmonic()
 {
-	for (int obj = 0; obj < mMeshCount; ++obj)
-	{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+        CMesh* cur_mesh = getMesh(obj);
 		MeshHelper& mp = mMeshHelper[obj];
 		const int vertCount = getMesh(obj)->vertCount();
-		const int refPoint = mp.getRefPointIndex();
-        const ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
+		const int refPoint = mp.getRefPointIndex();    
+        if (!mp.isLaplacianDecomposed(CotFormula)) {
+            decomposeSingleLaplacian(obj, -1, CotFormula);
+        }
+        ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
+        vector<double> vVals = calAllBiharmonicDist(es, refPoint);
 
-		std::vector<double> vVals(vertCount);
-		for (int vIdx = 0; vIdx < vertCount; ++vIdx) {
-			vVals[vIdx] = ZGeom::calBiharmonicDist(es, refPoint, vIdx);
-		}
-
-		addColorSignature(obj, vVals, StrAttrColorBiharmonic);
+        cur_mesh->addColorSigAttr(StrAttrColorBiharmonic, ZGeom::ColorSignature(vVals, ZGeom::CM_PARULA, true));
 	}
 
 	displaySignature(StrAttrColorBiharmonic.c_str());
@@ -1424,75 +1404,6 @@ void QZGeometryWindow::detectFeatures()
 	std::cout << "Mesh1 features #: " << mShapeMatcher.getSparseFeatures(0).size() 
 			  << "; Mesh 2 features #: " << mShapeMatcher.getSparseFeatures(1).size() << std::endl;
 
-#if 0	
-	if (mShapeMatcher.hasGroundTruth()) 
-	{
-		vector<HKSFeature>& vf1 = mShapeMatcher.getSparseFeatures(0), &vf2 = mShapeMatcher.getSparseFeatures(1);
-		std::map<int, int> feature_count;
-		int count_strict = 0; 
-		int count_one_neighbor = 0;
-
-		int count_possible2 = 0;
-
-		double sim1(0.);
-
-		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ) {
-			bool candFound = false;
-			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
-// 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
-// 				if (sim < 0.20) {candFound = true; break;}
-
-				if (getMesh(1)->isInNeighborRing(iter2->m_index, iter1->m_index, 2)) {
-					candFound = true; break;
-				}
-			}
-			if (!candFound) {
-				iter1 = vf1.erase(iter1);
-				continue;
-			}
-			else ++iter1;
-		}
-
-		for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ) {
-			bool candFound = false;
-			for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
-// 				double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
-// 				if (sim < 0.20) {candFound = true; break;}
-				if (getMesh(0)->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
-					candFound = true; break;
-				}
-			}
-			if (!candFound) {
-				iter2 = vf2.erase(iter2);
-				continue;
-			}
-			else ++iter2;
-		}
-
-		for (auto iter1 = vf1.begin(); iter1 != vf1.end(); ++iter1) {
-			for (auto iter2 = vf2.begin(); iter2 != vf2.end(); ++iter2) {
-				if (getMesh(1)->isInNeighborRing(iter1->m_index, iter2->m_index, 2)) {
-					count_one_neighbor++;
-					if (feature_count.find(iter1->m_index) == feature_count.end())
-						feature_count.insert(make_pair(iter1->m_index, 1));
-					else feature_count[iter1->m_index] += 1;
-
-					if (iter1->m_index == iter2->m_index) {
-						count_strict++;
-					}
-
-// 					double sim = shapeMatcher.calPointHksDissimilarity(&vMP[0], &vMP[1], iter1->m_index, iter2->m_index, vTimes, 1);
-// 					cout << "corresponded sim: " << sim << endl;
-// 					sim1 += sim;
-				}
-			}
-		}
-		cout << "v1: " << vf1.size() << "  v2: " << vf2.size() << endl;
-		cout << "-- Potential matches: " << count_strict << "/" << count_one_neighbor << endl;
-//		cout << "Average similarity of matched: " << sim1 / double(count_possible1) << endl;
-	}
-#endif	
-
 	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 	ui.glMeshWidget->update();
 }
@@ -1504,51 +1415,6 @@ void QZGeometryWindow::matchFeatures()
 	int force_matching = g_configMgr.getConfigValueInt("FORCE_MATCHING");
 	string string_override = "";
 	bool alreadyMached = false;
-
-#if 0	
-	if (force_matching == 1)
-	{
-		if (getMesh(0)->getMeshName() == "horse0")
-		{
-			string_override = g_configMgr.getConfigValue("HORSE0_FEATURE_OVERRIDE");
-		}
-		else if (getMesh(0)->getMeshName() == "eight")
-		{
-			string_override = g_configMgr.getConfigValue("EIGHT_FEATURE_OVERRIDE");
-		}
-		if (string_override != "")
-		{
-			vector<int> idx_override = splitStringToInt(string_override);
-			if (!idx_override.empty())
-			{
-				vector<MatchPair> vmp;
-				for (auto iter = begin(idx_override); iter != end(idx_override); ++iter)
-				{
-					vmp.push_back(MatchPair(*iter, *iter));
-				}
-				mShapeMatcher.forceInitialAnchors(vmp);
-				qout.output("!!Matched anchors manually assigned!!");
-				alreadyMached = true;
-			}
-		}
-	}
-	else if (force_matching == 2)
-	{
-		if (getMesh(0)->getMeshName() == "horse0")
-		{
-			string_override = g_configMgr.getConfigValue("MATCHING_HORSE_FILE");
-		}
-		else if (getMesh(0)->getMeshName() == "eight")
-		{
-			string_override = g_configMgr.getConfigValue("MATCHING_EIGHT_FILE");
-		}
-		if (string_override != "" && mShapeMatcher.loadInitialFeaturePairs(string_override))
-		{
-			qout.output("!!Matched anchors manually assigned!!");
-			alreadyMached = true;
-		}
-	}
-#endif
 	
 	int matching_method = g_configMgr.getConfigValueInt("FEATURE_MATCHING_METHOD");
 	std::string log_filename = g_configMgr.getConfigValue("MATCH_OUTPUT_FILE");
@@ -1692,7 +1558,7 @@ void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, Laplacian
 	MeshHelper& mp = mMeshHelper[obj];
 	const CMesh& mesh = *getMesh(obj);
 	const int vertCount = mesh.vertCount();
-	if (nEigVec >= vertCount) nEigVec = vertCount - 1;
+	if (nEigVec >= vertCount || nEigVec <= 0) nEigVec = vertCount - 1;
 
 	if (!mp.getMHB(laplacianType).empty()) return;
 	std::string s_idx = "0";
@@ -1731,10 +1597,19 @@ void QZGeometryWindow::saveSignature()
 	vector2file<double>(fileName.toStdString(), vSig);
 }
 
-void QZGeometryWindow::computeLaplacian( int lapType )
+void QZGeometryWindow::computeGraphLaplacian()
 {
-	LaplacianType laplacianType = (LaplacianType)lapType;
-	Concurrency::parallel_for(0, mMeshCount, [&](int obj) {
+    computeLaplacian(Umbrella);
+}
+
+void QZGeometryWindow::computeGeoLaplacian()
+{
+    computeLaplacian(CotFormula);
+}
+
+void QZGeometryWindow::computeLaplacian(LaplacianType laplacianType)
+{
+	parallel_for(0, mMeshCount, [&](int obj) {
 		mMeshHelper[obj].constructLaplacian(laplacianType);
 	});
 
@@ -1750,13 +1625,9 @@ void QZGeometryWindow::computeLaplacian( int lapType )
 	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
 
 	for(int obj = 0; obj < mMeshCount; ++obj) {
-        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 1) : nEigVec;
+        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 2) : nEigVec;
 		decomposeSingleLaplacian(obj, nEigen, laplacianType);
 	}
-
-	for (int l = 0; l < LaplacianTypeCount; ++l)
-		m_actionComputeLaplacians[l]->setChecked(false);
-	m_actionComputeLaplacians[laplacianType]->setChecked(true);
 }
 
 void QZGeometryWindow::saveMatchingResult()
@@ -1811,7 +1682,7 @@ void QZGeometryWindow::registerTest()
 
 bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, LaplacianType laplacianType )
 {
-	const MeshHelper& mp = mMeshHelper[obj];
+	MeshHelper& mp = mMeshHelper[obj];
     CMesh& mesh = *getMesh(obj);
 	
 	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
@@ -1988,11 +1859,6 @@ void QZGeometryWindow::clearHandles()
 void QZGeometryWindow::deformLaplace2()
 {
 	mShapeEditor.deformLaplacian_v2();
-	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::runTests()
-{
 	ui.glMeshWidget->update();
 }
 
@@ -2330,43 +2196,6 @@ void QZGeometryWindow::fillHoles()
     ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::holeFairingAll()
-{
-    mShapeEditor.holeFairingFourierOMP();
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::holeFairingLS()
-{
-    mShapeEditor.holeFairingLeastSquare();
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::holeFairingFourierOMP()
-{
-    mShapeEditor.holeFairingFourierOMP();
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::holeFairingLARS()
-{
-    mShapeEditor.holeFairingFourierLARS();
-    ui.glMeshWidget->update();
-}
-
-
-void QZGeometryWindow::holeEstimateCurvature()
-{
-    mShapeEditor.holeEstimateCurvature();
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::holeEstimateNormals()
-{
-    mShapeEditor.holeEstimateNormals();
-    ui.glMeshWidget->update();
-}
-
 void QZGeometryWindow::generateHoles()
 {
     int refIdx = mMeshHelper[0].getRefPointIndex();
@@ -2498,40 +2327,6 @@ void QZGeometryWindow::generateBandHole()
     getMesh(0)->addAttrMeshFeatures(MeshFeatureList(hole.vert_on_boundary, ZGeom::ColorRed), "mesh_hole_boundary_verts");
     updateMenuDisplayFeatures();
 
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::inpaintHoles1()
-{
-    double eps = 1e-4;
-    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
-    auto attrHoles = original_mesh->getAttr<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-    if (attrHoles == nullptr) {
-        std::cout << "No holes selected to inpaint" << std::endl;
-    }
-    vector<MeshRegion>& generated_holes = attrHoles->attrValue();
-
-    mShapeEditor.inpaintHolesLARS(generated_holes[0].vert_inside, eps);
-    ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::inpaintHoles2()
-{
-    double lambda = 1e-3;
-    double tol = 1e-3;
-    bool ok;
-    double s = QInputDialog::getDouble(this, tr("Input lambda"),
-        tr("lambda:"), 1e-3, 0, 0.5, 4, &ok);
-    if (ok) lambda = s;
-
-    CMesh* original_mesh = mMeshHelper[0].getOriginalMesh();
-    auto attrHoles = original_mesh->getAttr<vector<MeshRegion>>(ZGeom::StrAttrManualHoleRegions);
-    if (attrHoles == nullptr) {
-        std::cout << "No holes selected to inpaint" << std::endl;
-    }
-    vector<MeshRegion>& generated_holes = attrHoles->attrValue();
-
-    mShapeEditor.inpaintHolesL1LS(generated_holes[0].vert_inside, lambda, tol);
     ui.glMeshWidget->update();
 }
 
@@ -2828,16 +2623,25 @@ void QZGeometryWindow::evaluateInpainting2()
 void QZGeometryWindow::curveSignature()
 {
     CMesh* cur_mesh = getMesh(0);
-    if (!cur_mesh->hasAttr(StrAttrColorInpaintError)) return;
+    std::string cur_sig_name = mRenderManagers[0].mActiveColorSignatureName;
+    if (cur_sig_name.empty() || !cur_mesh->hasAttr(cur_sig_name)) return;
+    ColorSignature& cur_sig = cur_mesh->getColorSignature(mRenderManagers[0].mActiveColorSignatureName);
+    if (!cur_sig.hasOriginalValues()) return;
 
-    double upper_bound = inpainting_error_curving_max;
+    double lower_bound = cur_sig.getCurveMin();
+    double upper_bound = cur_sig.getCurveMax();
+
     bool ok;
-    upper_bound = QInputDialog::getDouble(this, tr("Missing vertex ratio"),
-        tr("max error"), upper_bound, 0, 1, 3, &ok);
+    lower_bound = QInputDialog::getDouble(this, tr("Curve min"), 
+            tr("Curve min"), lower_bound, 
+            (double)INT_MIN, (double)INT_MAX, 4, &ok);
     if (!ok) return;
-    inpainting_error_curving_max = upper_bound;
+    upper_bound = QInputDialog::getDouble(this, tr("Curve max"),
+            tr("Curve max"), upper_bound, 
+            lower_bound, (double)INT_MAX, 4, &ok);
+    if (!ok) return;
 
-    cur_mesh->getColorSignature(StrAttrColorInpaintError).curve(0, inpainting_error_curving_max); 
+    cur_sig.curve(lower_bound, upper_bound);
     ui.glMeshWidget->update();
 }
 
@@ -3029,11 +2833,6 @@ void QZGeometryWindow::doExperiment1()
         //MeshCoordinates& result = coord_inpainted;
         mesh.addNamedCoordinate(result, "l1ls_hole_inpainting_" + Int2String(i));
     }
-}
-
-void QZGeometryWindow::addNoise()
-{
-
 }
 
 void QZGeometryWindow::degradeHoles()

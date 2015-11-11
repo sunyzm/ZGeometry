@@ -767,13 +767,21 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
     /* END of drawing illustrative points */
     //////////////////////////////////////////////////////////////////////////
 
-
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
 
 void GLMeshWidget::drawLegend(QPainter* painter)
 {
+    std::string sig_name = mRenderSettings[0]->mActiveColorSignatureName;
+    CMesh* cur_mesh = mMeshHelpers[0]->getMesh();
+    if (sig_name.empty()) return;
+    if (!cur_mesh->hasAttr(sig_name)) return;
+    const ZGeom::ColorSignature& cur_sig = cur_mesh->getColorSignature(sig_name);
+    if (!cur_sig.hasOriginalValues()) return;
+
+    double sig_min = cur_sig.getCurveMin(), sig_max = cur_sig.getCurveMax();
+
     qreal bar_width = m_colorBarWidth;
     qreal bar_height = m_colorBarHeight;
     int bar_bottom = height() - 20;
@@ -793,13 +801,12 @@ void GLMeshWidget::drawLegend(QPainter* painter)
 		painter->drawLine(QPointF(xBegin+i*pen_width, bar_top), QPointF(xBegin+i*pen_width, bar_bottom));
 	}
 
-    double sigMin = 0, sigMax = inpainting_error_curving_max;
     painter->setPen(QPen(Qt::black, Qt::SolidLine));
     QFont font;
     font.setPixelSize(text_height);
     painter->setFont(font);
-    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignLeft | Qt::AlignBottom, QString::number(sigMin));
-    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignRight | Qt::AlignBottom, QString::number(sigMax));
+    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignLeft | Qt::AlignBottom, QString::number(sig_min));
+    painter->drawText(xBegin, text_pos, bar_width, text_height, Qt::AlignRight | Qt::AlignBottom, QString::number(sig_max));
 }
 
 bool GLMeshWidget::glPick(int x, int y, ZGeom::Vec3d& _p, int obj /*= 0*/)

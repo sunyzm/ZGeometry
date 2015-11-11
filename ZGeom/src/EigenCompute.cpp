@@ -9,12 +9,13 @@ void EigenCompute::solveGenSym( const SparseMatrix<double>& mLs, const SparseMat
 	mLs.convertToCOO(vII, vJJ, vSS, ZGeom::MAT_FULL);
 	vWeights = mW.getDiagonal();
 	int nOrder = mLs.rowCount();
-	int nnz = (int) vII.size();	    
-    int numEig = std::min(nEig, nOrder - 2);    
+	int nnz = (int) vII.size();	   
+    if (nEig <= 0 || nEig >= nOrder - 1) {
+        throw std::runtime_error("Invalid requested number of eigenvalues!");
+    }
 
     double order = (double)nOrder;
-    double numv = numEig;    
-
+    double numv = nEig;    
 	m_ep->addArray(&vII[0], nnz, 1, false, "II");
 	m_ep->addArray(&vJJ[0], nnz, 1, false, "JJ");
 	m_ep->addArray(&vSS[0], nnz, 1, false, "SS");

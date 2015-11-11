@@ -98,7 +98,6 @@ public:
 	void	detectFeatures(int obj, int ring = 2, int scale = 1, double tvalue = DEFAULT_FEATURE_TIMESCALE, double talpha = DEFAULT_T_MULTIPLIER, double thresh = DEFAULT_EXTREAMA_THRESH);
 	void	matchFeatures(std::ostream& flog, double matchThresh = DEFAULT_MATCH_THRESH);
 	void    matchFeatureSimple();
-	void	matchFeaturesTensor_deprecate(std::ostream& flog, double timescale, double thresh);
 	void	evaluateRegistration();
 	
 	/* testing functions */
@@ -178,24 +177,24 @@ private:
 
 public:
 	/* helper functions */
-	static void calVertexSignature(const MeshHelper* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig);
-	static void SimplePointMatching(const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& machedResult, bool verbose = false);
-	static void PairGraphMatching(Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose = false);
+    static void calVertexSignature(MeshHelper* pOriginalProcessor, const HKSFeature& hf, ZGeom::VecNd& sig);
+	static void SimplePointMatching(MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& machedResult, bool verbose = false);
+    static void PairGraphMatching(Engine *ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& vMatchedPair, double para_thresh, bool verbose = false);
 	
-	static void HKSMatchingExt(const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
-	static double PairMatchingExt(Engine* ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
-	static double TensorMatchingExt(Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose = false);
-	static void HKCMatching(const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh);
+	static void HKSMatchingExt(MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
+	static double PairMatchingExt(Engine* ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose = false);
+	static double TensorMatchingExt(Engine *ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPairs, int highOrderFeatureType, double vPara[], std::ostream& logout, bool verbose = false);
+	static void HKCMatching(MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, const std::vector<MatchPair>& vAnchorPair, double t, double thresh);
 
-	static double TensorGraphMatching6(Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
-	static double TensorGraphMatching6(Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
-	static double TensorGraphMatching3(Engine *ep, const MeshHelper* pmp1, const MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double t, double thresh);
-	static void ComputeTensorFeature12( const MeshHelper* pmp, int i, int j, int k, double t1, double t2, double* sang );
-	static void ComputeTensorFeature6( const MeshHelper* pmp, int i, int j, int k, double t, double* sang, bool sweep = false);
-	static void ComputeTensorFeature3( const MeshHelper* pmp, int i, int j, int k, double t, double* sang);
-	static void ComputeTensorFeatureAnchor(const MeshHelper* pmp, int i, int j, int k, int origin, double t, double* sang);
+	static double TensorGraphMatching6(Engine *ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
+	static double TensorGraphMatching6(Engine *ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<HKSFeature>& vFeatures1, const std::vector<HKSFeature>& vFeatures2, std::vector<MatchPair>& matched, double para_t, double para_thresh, bool verbose = false);
+	static double TensorGraphMatching3(Engine *ep,  MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& matched, double t, double thresh);
+	static void ComputeTensorFeature12(MeshHelper* pmp, int i, int j, int k, double t1, double t2, double* sang );
+	static void ComputeTensorFeature6(MeshHelper* pmp, int i, int j, int k, double t, double* sang, bool sweep = false);
+    static void ComputeTensorFeature3(MeshHelper* pmp, int i, int j, int k, double t, double* sang);
+	static void ComputeTensorFeatureAnchor(MeshHelper* pmp, int i, int j, int k, int origin, double t, double* sang);
 	void    prepareHeatRegistration( double regTime );
 	double computeMatchScore(int idx1, int idx2, double sigma = 0.02) const;
-	static double  calPointHksDissimilarity(const MeshHelper* pmp1, const MeshHelper* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode = 0);
+    static double calPointHksDissimilarity(MeshHelper* pmp1, MeshHelper* pmp2, int i1, int i2, const std::vector<double>& vTimes, int mode = 0);
 	void autoGroundTruth();
 };

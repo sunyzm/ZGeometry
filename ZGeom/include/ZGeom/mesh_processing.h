@@ -151,7 +151,7 @@ DenseMatrixd calHeatKernelMatrix(const EigenSystem& es, double t);
 std::vector<double> calHeatKernelSignature(const EigenSystem& es, double t);
 double calHeatTrace(const EigenSystem& es, double t);
 double calBiharmonicDist(const EigenSystem& es, int v1, int v2);
-
+std::vector<double> calAllBiharmonicDist(EigenSystem& es, int vi, int eig_num = -1);
 
 /* differential geometry */
 enum MeshMatrixType

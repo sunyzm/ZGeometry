@@ -47,21 +47,20 @@ void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*
 	if (hasLaplacian(laplacianType)) return;
 	
 	MeshLaplacian& laplacian = mMeshLaplacians[laplacianType];
-	switch(laplacianType)
-	{
-	case Tutte:
-	case Umbrella:
-	case NormalizedUmbrella:
-	case CotFormula:
-	case SymCot:
-	case Anisotropic1:
-	case Anisotropic2:
-        (laplacian.*(laplacian.getConstructFunc(laplacianType)))(getMesh());
-		break;
-	default: throw std::logic_error("Unrecognized Laplacian type");
+	switch(laplacianType) {
+	    case Tutte:
+	    case Umbrella:
+	    case NormalizedUmbrella:
+	    case CotFormula:
+	    case SymCot:
+	    case Anisotropic1:
+	    case Anisotropic2:
+            (laplacian.*(laplacian.getConstructFunc(laplacianType)))(getMesh());
+		    break;
+	    default: 
+            throw std::logic_error("Unrecognized Laplacian type");
 	}       
 }
-
 
 void MeshHelper::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
 {
@@ -109,9 +108,9 @@ void MeshHelper::addNewHandle( int hIdx )
     else mHandles.insert(std::make_pair(hIdx, getMesh()->vert(hIdx)->pos()));
 }
 
-double MeshHelper::calHK( int v1, int v2, double timescale ) const
+double MeshHelper::calHK(int v1, int v2, double timescale)
 {
-	const ZGeom::EigenSystem& mhb = getMHB(CotFormula);
+	ZGeom::EigenSystem& mhb = getMHB(CotFormula);
 	double sum = 0;
 	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
 		double lambda = mhb.getEigVal(k);

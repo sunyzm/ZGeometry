@@ -43,14 +43,14 @@ public:
 	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
 	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
 	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
+    const ZGeom::EigenSystem& prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount);
 	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
 	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
 	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	const ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) const { return mMHBs[laplacianType]; }
+	ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) { return mMHBs[laplacianType]; }
 	bool isMHBCacheValid(const std::string& pathMHB, int eigenCount);
 	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
-	const ZGeom::EigenSystem& prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount);
-	double	calHK(int v1, int v2, double timescale) const;
+    double calHK(int v1, int v2, double timescale);
 
 private:
     MeshHelper(const MeshHelper&);

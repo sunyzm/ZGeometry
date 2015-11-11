@@ -12,6 +12,7 @@
 #include "triBoxOverlap.h"
 
 using namespace std;
+using namespace concurrency;
 
 namespace ZGeom {
 
@@ -234,12 +235,31 @@ std::vector<Vec3d> computeMeshFaceNormals(const CMesh& mesh)
 
 double calBiharmonicDist(const EigenSystem& es, int v1, int v2)
 {
-    // sqrt(sum_{k=1}^{K}(phi_k(i)-phi_k(j))/lambda_k)^2 )
+    // BhDist(i,j) = sqrt(sum_{k=1}^{K}(phi_k(i)-phi_k(j))/lambda_k)^2 )
     double sum = 0;
     for (int k = 1; k < es.eigVecCount(); ++k) {
         sum += pow((es.getEigVec(k)[v1] - es.getEigVec(k)[v2]) / es.getEigVal(k), 2);
     }
     return std::sqrt(sum);
+}
+
+vector<double> calAllBiharmonicDist(EigenSystem& es, int vo, int eig_num)
+{
+    int vert_count = es.eigVecSize(), eig_count = es.eigVecCount();
+    if (eig_num > 0 && eig_num < eig_count) eig_count = eig_num;
+    const DenseMatrixd& mat_eig_vec = es.getEigenMat();
+    const vector<double>& vec_eig_vals = es.getAllEigVals();
+
+    vector<double> result(vert_count, 0);
+    parallel_for(0, vert_count, [&](int vi) {
+        double sum(0);
+        for (int k = 1; k < eig_count; ++k) {
+            sum += ZGeom::sqr(mat_eig_vec(k, vo) - mat_eig_vec(k, vi)) / vec_eig_vals[k];
+        }
+        result[vi] = std::sqrt(sum);
+    });
+
+    return result;
 }
 
 void getMeshGraphCSR(const CMesh& mesh, std::vector<int>& xadj, std::vector<int>& adjncy)

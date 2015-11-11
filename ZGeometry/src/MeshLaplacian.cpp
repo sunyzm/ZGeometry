@@ -294,9 +294,13 @@ void MeshLaplacian::constructAnisotropic4(CMesh* tmesh, int nRing, double hPara1
 void MeshLaplacian::meshEigenDecompose(int nEig, ZGeom::MatlabEngineWrapper* eng, ZGeom::EigenSystem& es) const
 {
 	int nActualEigen = nEig;
-	if (nEig <= 0 || nEig >= mOrder) nActualEigen = mOrder - 1;
-	if (mSymmetric) this->decompose(nActualEigen, eng, es, false);
-	else this->decompose(nActualEigen, eng, es, true);
+    if (mSymmetric) {
+        if (nEig <= 0 || nEig >= mOrder) nActualEigen = mOrder - 1;
+        this->decompose(nActualEigen, eng, es, false);
+    } else {
+        if (nEig <= 0 || nEig >= mOrder - 1) nActualEigen = mOrder - 2;
+        this->decompose(nActualEigen, eng, es, true);
+    }
 }
 
 void MeshLaplacian::constructUmbrella(CMesh* tmesh)

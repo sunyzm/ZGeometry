@@ -21,17 +21,21 @@ public:
     
     const std::vector<Colorf>& getColorSig() const { return mColors; }
     std::vector<Colorf>& getColors() { return mColors; }
-    std::vector<double>& getVals() { return mValues; }
+    std::vector<double>& getVals() { return mNormalizedValues; }
     int size() const { return (int)mColors.size(); }
+    double getCurveMax() const { return mCurveMax; }
+    double getCurveMin() const { return mCurveMin; }
 
     void changeColorMap(ColorMapType cmt);
     void curve(double sMin, double sMax);
     void changeSignatureMode(SignatureMode sigMode);
     Colorf& operator [] (int i) { return mColors[i]; }
+    bool hasOriginalValues() const { return !mOriginalValues.empty(); }
 
 private:
     std::vector<double> mOriginalValues;
-    std::vector<double> mValues;
+    double mCurveMin, mCurveMax;
+    std::vector<double> mNormalizedValues;
     std::vector<Colorf> mColors;
     ColorMapType mCurrentColorMap;
 

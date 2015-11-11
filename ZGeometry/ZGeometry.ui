@@ -679,30 +679,15 @@
      </property>
      <addaction name="actionDiffusionFlow"/>
     </widget>
-    <widget class="QMenu" name="menuHole_Fairing">
-     <property name="title">
-      <string>Hole Fairing</string>
-     </property>
-     <addaction name="actionHoleFairingLS"/>
-     <addaction name="actionFourierLARS"/>
-     <addaction name="actionHoleFairingFourierOMP"/>
-     <addaction name="actionHoleEstimateCurvature"/>
-     <addaction name="actionEstimateNormals"/>
-    </widget>
     <addaction name="menuEdit_Mode"/>
     <addaction name="separator"/>
     <addaction name="actionClearHandles"/>
     <addaction name="separator"/>
     <addaction name="actionClone"/>
-    <addaction name="actionAddNoise"/>
     <addaction name="menuReconstruct"/>
     <addaction name="menuFilter"/>
     <addaction name="menuDeform"/>
     <addaction name="actionFillHoles"/>
-    <addaction name="actionFairFilledHoles"/>
-    <addaction name="menuHole_Fairing"/>
-    <addaction name="separator"/>
-    <addaction name="actionRunTests"/>
     <addaction name="separator"/>
     <addaction name="actionGenerateHoles"/>
     <addaction name="actionGenerateBandHole"/>
@@ -800,8 +785,10 @@
      <property name="title">
       <string>Laplacian</string>
      </property>
+     <addaction name="actionComputeGraphLaplacian"/>
+     <addaction name="actionComputeGeoLaplacian"/>
     </widget>
-    <widget class="QMenu" name="menuKernel_Signature">
+    <widget class="QMenu" name="menuKernelSignature">
      <property name="title">
       <string>Kernel Signature</string>
      </property>
@@ -810,7 +797,6 @@
      <addaction name="actionComputeMHW"/>
      <addaction name="actionComputeSGW"/>
      <addaction name="actionComputeSGWS"/>
-     <addaction name="actionComputeBiharmonic"/>
     </widget>
     <widget class="QMenu" name="menuComputeFeatures">
      <property name="title">
@@ -819,11 +805,11 @@
      <addaction name="actionComputeHKSFeatures"/>
     </widget>
     <addaction name="menuComputeLaplacian"/>
-    <addaction name="separator"/>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionComputeCurvatures"/>
-    <addaction name="menuKernel_Signature"/>
+    <addaction name="menuKernelSignature"/>
     <addaction name="menuComputeFeatures"/>
+    <addaction name="actionComputeBiharmonicDistance"/>
     <addaction name="actionDisplayNeighbors"/>
     <addaction name="actionComputeHoleNeighbors"/>
     <addaction name="actionComputeHeatTransfer"/>
@@ -1734,6 +1720,21 @@
   <action name="actionSetLegend">
    <property name="text">
     <string>Set Legend</string>
+   </property>
+  </action>
+  <action name="actionComputeBiharmonicDistance">
+   <property name="text">
+    <string>Biharmonic Distance</string>
+   </property>
+  </action>
+  <action name="actionComputeGeoLaplacian">
+   <property name="text">
+    <string>Geometric Laplacian</string>
+   </property>
+  </action>
+  <action name="actionComputeGraphLaplacian">
+   <property name="text">
+    <string>Graph Laplacian</string>
    </property>
   </action>
  </widget>

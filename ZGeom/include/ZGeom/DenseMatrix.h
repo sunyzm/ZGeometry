@@ -13,7 +13,7 @@ template<typename T>
 class DenseMatrix
 {
 public:
-	DenseMatrix() : mRow(0), mCol(0), mData(NULL) {}
+	DenseMatrix() : mRow(0), mCol(0), mData(nullptr) {}
 	DenseMatrix(uint row, uint col) : mRow(row), mCol(col) { 
 		mData = new T[row*col]; 
 		for (uint i = 0; i < row*col; ++i) mData[i] = 0;
@@ -28,7 +28,8 @@ public:
 	T& operator () (uint i, uint j) { return mData[i * mCol + j]; }	     // 0-based subscript access to matrix elements
 	T operator () (uint i, uint j) const { return mData[i * mCol + j]; } // 0-based subscript access to matrix elements
 		
-	bool empty() const { return mData == NULL; }
+	bool empty() const { return mData == nullptr; }
+    void clear() { mRow = 0; mCol = 0; delete mData; mData = nullptr; }
 	uint rowCount() const { return mRow; }
 	uint colCount() const { return mCol; }
 	bool symmetric() const { return mRow == mCol; }		

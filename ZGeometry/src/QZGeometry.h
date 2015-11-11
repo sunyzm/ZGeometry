@@ -45,7 +45,9 @@ private slots:
 	void listMeshAttributes();
 
 	/* computation */
-	void computeLaplacian(int laplacianType);
+    void computeGraphLaplacian();
+    void computeGeoLaplacian();
+    void computeLaplacian(LaplacianType laplacianType);
 	void computeEigenfunction();
 	void computeCurvatures();
 	void computeVertNormals();
@@ -57,7 +59,6 @@ private slots:
 	void computeBiharmonic();
 	void computeGeodesics();
 	void computeHeatTransfer();
-    void addNoise();
 
     /* interact with shapeEditor */
 	void continuousApprox1(int level);
@@ -65,16 +66,6 @@ private slots:
 	void continuousApprox3(int level);
 	void continuousApprox4(int level);
 	void visualizeCompression(int selctedApprox, int coordIdx);
-    void fillHoles();
-    void holeFairingAll();
-    void holeFairingLS();
-    void holeFairingLARS();
-    void holeFairingFourierOMP();
-    void holeEstimateCurvature();
-    void holeEstimateNormals();
-    void inpaintHoles1();
-    void inpaintHoles2();
-
 	void displaySignature(QString sigName);
 	void displayFeature(QString featureName);
     void displayLine(QString lineName);
@@ -132,7 +123,7 @@ private slots:
 	void deformBiLaplace();
 	void deformMixedLaplace();
 	void diffusionFlow();
-	void runTests();
+    void fillHoles();
 
     /* hole filling related */
     void generateHoles();
@@ -199,11 +190,9 @@ private:
 	void addColorSignature(int obj, const std::vector<double>& vVals, const std::string& sigName); 
 	/* fields */
 	Ui::ZGeometryClass	  ui;
-	QSignalMapper*		  m_laplacianSignalMapper;	
 	QSignalMapper*		  m_signatureSignalMapper;
 	QSignalMapper*        m_featureSignalMapper;
     QSignalMapper*        m_linesSignalMapper;
-	std::vector<QAction*> m_actionComputeLaplacians;
 	std::vector<QAction*> m_actionDisplaySignatures;
 	std::vector<QAction*> m_actionDisplayFeatures;
     std::vector<QAction*> m_actionDisplayLines;
