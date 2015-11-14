@@ -28,7 +28,6 @@ public:
     void constructTutte(CMesh* tmesh);				// negative asymmetric graph Laplacian; random walk. L = D^(-1) * (A-D) = D^(-1)*A - I
     void constructCotFormula(CMesh* tmesh);			// negative cotangent formula
     void constructSymCot(CMesh* tmesh);				// negative symmetric cotangent formula
-
     void constructAniso(CMesh *tmesh);
 
 public:

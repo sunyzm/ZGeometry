@@ -24,7 +24,10 @@ using ZGeom::VecNd;
 using ZGeom::calGeodesic;
 using ZGeom::EigenSystem;
 using ZGeom::calHeatTrace;
-using ZGeom::calHK;
+
+double calHK(MeshHelper* helper, int v1, int v2, double t) {
+    return ZGeom::calHeatKernel(helper->getEigenSystem(CotFormula), v1, v2, t);
+}
 
 class MyNote
 {
@@ -91,7 +94,7 @@ void ParamManager::computeHKParam( const std::vector<int>& anchors, double t /*=
 		PointParam& hkp = vCoord[v];
 		hkp.resize(pn);
 		for (int i = 0; i < pn; ++i)
-			hkp[i] = pMP->calHK(v, anchors[i], t);
+			hkp[i] = calHK(pMP, v, anchors[i], t);
  
 		hkp.m_votes = hkp.norm2();
 	}
@@ -108,7 +111,7 @@ void ParamManager::para_computeHKC( const std::vector<int>& anchors, double t /*
 		PointParam& hkp = vCoord[v];
 		hkp.resize(pn);
 		for (int i = 0; i < pn; ++i)
-			hkp[i] = pMP->calHK(v, anchors[i], t);
+			hkp[i] = calHK(pMP, v, anchors[i], t);
 		hkp.m_votes = hkp.norm2();
 	});
 }
@@ -123,7 +126,7 @@ void ParamManager::para_computeHKS( const std::vector<double>& times )
 	Concurrency::parallel_for(0, fineSize, [&](int v){
 		vSignature[v].resize(sn);
 		for (int i = 0; i < sn; ++i)
-			vSignature[v][i] = pMP->calHK(v, v, times[sn]);
+			vSignature[v][i] = calHK(pMP, v, v, times[sn]);
 	});
 }
 
@@ -131,13 +134,13 @@ double distHKS2(MeshHelper* pmp1, MeshHelper* pmp2, int i1, int i2, double tl, i
 {
 // 	if (tu < tl) return 1.0;
 // 	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	//only consider the overlapping times
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
     VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-        v1[i] = pmp1->calHK(i1, i1, t) / ZGeom::calHeatTrace(es1, t);
-        v2[i] = pmp2->calHK(i2, i2, t) / ZGeom::calHeatTrace(es2, t);
+        v1[i] = calHK(pmp1, i1, i1, t) / ZGeom::calHeatTrace(es1, t);
+        v2[i] = calHK(pmp2, i2, i2, t) / ZGeom::calHeatTrace(es2, t);
 		t *= 2.0;
 	}
 
@@ -146,7 +149,7 @@ double distHKS2(MeshHelper* pmp1, MeshHelper* pmp2, int i1, int i2, double tl, i
 
 double distHKPair2(MeshHelper* pmp1, MeshHelper* pmp2, const MatchPair& mp1, const MatchPair& mp2, double tl, double tu)
 {
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
 	if (tu < tl) return 1.0;
 	int tn = int(std::log(tu/tl)/std::log(2.0)) + 1;	
@@ -159,8 +162,8 @@ double distHKPair2(MeshHelper* pmp1, MeshHelper* pmp2, const MatchPair& mp1, con
 	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-        v1[i] = pmp1->calHK(x1, y1, t) / ZGeom::calHeatTrace(es1, t);
-        v2[i] = pmp2->calHK(x2, y2, t) / ZGeom::calHeatTrace(es2, t);
+        v1[i] = calHK(pmp1, x1, y1, t) / ZGeom::calHeatTrace(es1, t);
+        v2[i] = calHK(pmp2, x2, y2, t) / ZGeom::calHeatTrace(es2, t);
 		t *= 2.0;
 	}
 
@@ -170,7 +173,7 @@ double distHKPair2(MeshHelper* pmp1, MeshHelper* pmp2, const MatchPair& mp1, con
 
 double distHksFeature2(MeshHelper* pmp1, MeshHelper* pmp2, const HKSFeature& hf1, const HKSFeature& hf2, double& tl, int& tn)
 {
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
 	tl = max(hf1.m_tl, hf2.m_tl);	// now both are 10.0
 	double tu = min(hf1.m_tu, hf2.m_tu);
@@ -180,8 +183,8 @@ double distHksFeature2(MeshHelper* pmp1, MeshHelper* pmp2, const HKSFeature& hf1
 	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-        v1[i] = pmp1->calHK(hf1.m_index, hf1.m_index, t) / ZGeom::calHeatTrace(es1, t);
-        v2[i] = pmp2->calHK(hf2.m_index, hf2.m_index, t) / ZGeom::calHeatTrace(es2, t);
+        v1[i] = calHK(pmp1, hf1.m_index, hf1.m_index, t) / ZGeom::calHeatTrace(es1, t);
+        v2[i] = calHK(pmp2, hf2.m_index, hf2.m_index, t) / ZGeom::calHeatTrace(es2, t);
 		t *= 2.0;
 	}
 
@@ -191,7 +194,7 @@ double distHksFeature2(MeshHelper* pmp1, MeshHelper* pmp2, const HKSFeature& hf1
 
 double distHksFeaturePair2(MeshHelper* pmp1, MeshHelper* pmp2, const MatchPair& mp1, const MatchPair& mp2)
 {
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
 	double tl = max(mp1.m_tl, mp2.m_tl);	// now both are 10.0
 	double tu = min(mp1.m_tu, mp2.m_tu);
@@ -206,8 +209,8 @@ double distHksFeaturePair2(MeshHelper* pmp1, MeshHelper* pmp2, const MatchPair& 
 	VecNd v1(tn), v2(tn);
 	double t = tl;
 	for(int i = 0; i < tn; i++) {
-        v1[i] = pmp1->calHK(x1, y1, t) / ZGeom::calHeatTrace(es1, t);
-        v2[i] = pmp2->calHK(x2, y2, t) / ZGeom::calHeatTrace(es2, t);
+        v1[i] = calHK(pmp1, x1, y1, t) / ZGeom::calHeatTrace(es1, t);
+        v2[i] = calHK(pmp2, x2, y2, t) / ZGeom::calHeatTrace(es2, t);
 		t *= 2.0;
 	}
 
@@ -284,7 +287,7 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 	for (int s = nScales-1; s >= 0; --s) {
 		
 		cout << "=== Detection timescale: " << vScaleValues[s] << " ===" << endl;
-        vector<double> hksv = ZGeom::calHeatKernelSignature(pMP->getMHB(SymCot), vScaleValues[s]);
+        vector<double> hksv = ZGeom::calHeatKernelSignature(pMP->getEigenSystem(SymCot), vScaleValues[s]);
 		double sref = 4.0 * PI * vScaleValues[s];
 		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
 
@@ -660,8 +663,7 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 		vnd.resize(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd[i] = pOriginalProcessor[0]->calHK(restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
-//			vnd.m_vec[i] = mesh1->CalGeodesic(restFeat1[j], matchedPairsCoarse[i].m_idx1);
+			vnd[i] = calHK(pOriginalProcessor[0], restFeat1[j], matchedPairsCoarse[i].m_idx1, 80);
 		}
 	}
 
@@ -671,8 +673,7 @@ void ShapeMatcher::matchFeatures( std::ostream& flog, double matchThresh /*= DEF
 		vnd.resize(coarseMatchSize);
 		for (int i = 0; i < coarseMatchSize; ++i)
 		{
-			vnd[i] = pOriginalProcessor[1]->calHK(restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
-//			vnd.m_vec[i] = mesh2->CalGeodesic(restFeat2[j], matchedPairsCoarse[i].m_idx2);
+			vnd[i] = calHK(pOriginalProcessor[1], restFeat2[j], matchedPairsCoarse[i].m_idx2, 80);
 		}
 	}
 
@@ -794,7 +795,7 @@ void ShapeMatcher::calVertexSignature(MeshHelper* pOriginalProcessor, const HKSF
 	for(int i = 0; i < hf.m_tn; i++)
 	{
 		double eref = 4.0*PI*t;
-		sig[i] = std::log(pOriginalProcessor->calHK(hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
+		sig[i] = std::log(calHK(pOriginalProcessor, hf.m_index, hf.m_index, t) * eref);	//normalization to balance HKS at different t
 		t *= 2.0;
 	}
 }
@@ -845,9 +846,9 @@ void ShapeMatcher::ComputeTensorFeature3(MeshHelper* pmp, int i, int j, int k, d
 		return;
 	}
 
-	double d1 = pmp->calHK(i,j,t);
-	double d2 = pmp->calHK(j,k,t);
-	double d3 = pmp->calHK(k,i,t);
+	double d1 = calHK(pmp, i, j, t);
+	double d2 = calHK(pmp, j, k, t);
+	double d3 = calHK(pmp, k, i, t);
 	if(d1<0.0) d1 = 1e-15;
 	if(d2<0.0) d2 = 1e-15;
 	if(d3<0.0) d3 = 1e-15;
@@ -868,7 +869,6 @@ void ShapeMatcher::ComputeTensorFeature3(MeshHelper* pmp, int i, int j, int k, d
 //	sang[0] = a/(2*d1*d2);
 //	sang[1] = a/(2*d2*d3);
 //	sang[2] = a/(2*d3*d1);
-
 }
 
 void ShapeMatcher::ComputeTensorFeature6(MeshHelper* pmp, int i, int j, int k, double t, double* sang, bool sweep /*= false*/ )
@@ -878,27 +878,17 @@ void ShapeMatcher::ComputeTensorFeature6(MeshHelper* pmp, int i, int j, int k, d
 //  		sang[0] = -100.0;
 //  		sang[1] = -100.0;
 //  		sang[2] = -100.0;
-// 		sang[3] = sang[4] = sang[5] = -100.;
+// 		    sang[3] = sang[4] = sang[5] = -100.;
 //  		return;
 //  	}
 	
-	double d1 = pmp->calHK(i, j, t);
-	double d2 = pmp->calHK(j, k, t);
-	double d3 = pmp->calHK(k, i, t);
+    double d1 = calHK(pmp, i, j, t);
+    double d2 = calHK(pmp, j, k, t);
+    double d3 = calHK(pmp, k, i, t);
 
-// 	if (sweep == true)
-// 	{
-// 		const double thresh = 1e-5;
-// 		if (d1 < thresh && d2 < thresh && d3 < thresh)
-// 		{
-// 			sang[0] = sang[1] = sang[2] = sang[3] = sang[4] = sang[5] = -100.;
-// 		}
-// 		return;
-// 	}
-
-	double s1 = pmp->calHK(i, i, t);
-	double s2 = pmp->calHK(j, j, t);
-	double s3 = pmp->calHK(k, k, t);
+    double s1 = calHK(pmp, i, i, t);
+    double s2 = calHK(pmp, j, j, t);
+    double s3 = calHK(pmp, k, k, t);
 	
 	sang[0] = d1;
 	sang[1] = d2;
@@ -1016,7 +1006,7 @@ double ShapeMatcher::TensorGraphMatching6( Engine *ep,
         std::vector<MatchPair>& matched, double para_t, 
         double para_thresh, bool verbose/* = false */)
 {
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
 	matched.clear();
 	const int vsize1 = (int)vFeatures1.size();	// input feature size 1
@@ -1038,11 +1028,11 @@ double ShapeMatcher::TensorGraphMatching6( Engine *ep,
 	{
 		for (int j = i+1; j < vsize1; j++)
 		{
-			double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], para_t);
+			double c1 = calHK(pmp1, vFeatures1[i], vFeatures1[j], para_t);
 			for (int k = j+1; k < vsize1; k++)
 			{
-				double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], para_t),
-					   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], para_t);
+				double c2 = calHK(pmp1, vFeatures1[j], vFeatures1[k], para_t),
+					   c3 = calHK(pmp1, vFeatures1[i], vFeatures1[k], para_t);
 				int count_valid = 0;
 				if (c1 >= 1e-5) count_valid++;
 				if (c2 >= 1e-5) count_valid++;
@@ -1546,7 +1536,7 @@ void ShapeMatcher::dataTesting1()
 				ofs << "Vertex" << obj+1 << "_" << *iter1 << '-' << *iter2;
 				for (auto itert = vt.begin(); itert != vt.end(); ++itert)
 				{
-					double hk = pOriginalProcessor[obj]->calHK(*iter1, *iter2, *itert);
+					double hk = calHK(pOriginalProcessor[obj], *iter1, *iter2, *itert);
 					//hk = std::log(4.*PI*hk);
 					//hk /= pOriginalProcessor[obj]->calHeatTrace(*iter2);
 					ofs << ", " << hk;
@@ -1565,8 +1555,8 @@ double ShapeMatcher::calPointHksDissimilarity(MeshHelper* pmp1, MeshHelper* pmp2
 	double maxError(0);
 	for (auto iter = vTimes.begin(); iter != vTimes.end(); ++iter)
 	{
-		double hks1 = std::log(4*PI*(*iter) * pmp1->calHK(i1, i1, *iter));
-		double hks2 = std::log(4*PI*(*iter) * pmp2->calHK(i2, i2, *iter));
+		double hks1 = std::log(4*PI*(*iter) * calHK(pmp1, i1, i1, *iter));
+		double hks2 = std::log(4*PI*(*iter) * calHK(pmp2, i2, i2, *iter));
 		double error = abs(hks1-hks2);
 		errorSum += error*error;
 		maxError = max(maxError, error);
@@ -1579,7 +1569,7 @@ double ShapeMatcher::calPointHksDissimilarity(MeshHelper* pmp1, MeshHelper* pmp2
 
 void ShapeMatcher::SimplePointMatching(MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, const std::vector<double>& vTimes, std::vector<MatchPair>& matchedResult, bool verbose /*= false*/ )
 {
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 	matchedResult.clear();
 
 	int vsize1 = vFeatures1.size(), vsize2 = vFeatures2.size();
@@ -1597,13 +1587,13 @@ void ShapeMatcher::SimplePointMatching(MeshHelper* pmp1, MeshHelper* pmp2, const
 	{
 		vSig1[i].resize(tsize);
 		for (int j = 0; j < tsize; ++j)
-			vSig1[i][j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+			vSig1[i][j] = calHK(pmp1, vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
 	}
 	for (int i = 0; i < vsize2; ++i) 
 	{
 		vSig2[i].resize(tsize);
 		for (int j = 0; j < tsize; ++j)
-			vSig2[i][j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+			vSig2[i][j] = calHK(pmp2, vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
 	}
 	
 	double *hksSim = new double[vsize1 * vsize2];
@@ -1682,7 +1672,7 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, MeshHelper* pmp1, MeshHelper
 	** vPara[2]: timescale 2
 
 	******************************/
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 
 	vMatchedPairs.clear();
 	const int vsize1 = (int)vFeatures1.size();	// input feature size 1
@@ -1766,11 +1756,11 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, MeshHelper* pmp1, MeshHelper
 		{
 			for (int j = i+1; j < vsize1; j++)
 			{
-				double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t);
+				double c1 = calHK(pmp1, vFeatures1[i], vFeatures1[j], t);
 				for (int k = j+1; k < vsize1; k++)
 				{
-					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t),
-						   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t);
+					double c2 = calHK(pmp1, vFeatures1[j], vFeatures1[k], t),
+						   c3 = calHK(pmp1, vFeatures1[i], vFeatures1[k], t);
 					int count_valid = 0;
 					if (c1 >= 1e-5) count_valid++;
 					if (c2 >= 1e-5) count_valid++;
@@ -1792,14 +1782,14 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, MeshHelper* pmp1, MeshHelper
 		{
 			for (int j = i+1; j < vsize1; j++)
 			{
-				double c1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t1);
-				double d1 = pmp1->calHK(vFeatures1[i], vFeatures1[j], t2);
+				double c1 = calHK(pmp1, vFeatures1[i], vFeatures1[j], t1);
+				double d1 = calHK(pmp1, vFeatures1[i], vFeatures1[j], t2);
 				for (int k = j+1; k < vsize1; k++)
 				{
-					double c2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t1),
-						   c3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t1);
-					double d2 = pmp1->calHK(vFeatures1[j], vFeatures1[k], t2),
-						   d3 = pmp1->calHK(vFeatures1[i], vFeatures1[k], t2);
+					double c2 = calHK(pmp1, vFeatures1[j], vFeatures1[k], t1),
+						   c3 = calHK(pmp1, vFeatures1[i], vFeatures1[k], t1);
+					double d2 = calHK(pmp1, vFeatures1[j], vFeatures1[k], t2),
+						   d3 = calHK(pmp1, vFeatures1[i], vFeatures1[k], t2);
 					int count_valid1 = 0;
 					if (c1 >= 1e-5) count_valid1++;
 					if (c2 >= 1e-5) count_valid1++;
@@ -2071,23 +2061,12 @@ double ShapeMatcher::TensorMatchingExt( Engine *ep, MeshHelper* pmp1, MeshHelper
 
 void ShapeMatcher::ComputeTensorFeatureAnchor(MeshHelper* pmp, int i, int j, int k, int origin, double t, double* sang )
 {
-	double d1 = pmp->calHK(i, j, t);
-	double d2 = pmp->calHK(j, k, t);
-	double d3 = pmp->calHK(k, i, t);
-
-	// 	if (sweep == true)
-	// 	{
-	// 		const double thresh = 1e-5;
-	// 		if (d1 < thresh && d2 < thresh && d3 < thresh)
-	// 		{
-	// 			sang[0] = sang[1] = sang[2] = sang[3] = sang[4] = sang[5] = -100.;
-	// 		}
-	// 		return;
-	// 	}
-
-	double s1 = pmp->calHK(origin, i, t);
-	double s2 = pmp->calHK(origin, j, t);
-	double s3 = pmp->calHK(origin, k, t);
+	double d1 = calHK(pmp, i, j, t);
+	double d2 = calHK(pmp, j, k, t);
+	double d3 = calHK(pmp, k, i, t);
+	double s1 = calHK(pmp, origin, i, t);
+	double s2 = calHK(pmp, origin, j, t);
+	double s3 = calHK(pmp, origin, k, t);
 
 	sang[0] = d1;
 	sang[1] = d2;
@@ -2099,18 +2078,18 @@ void ShapeMatcher::ComputeTensorFeatureAnchor(MeshHelper* pmp, int i, int j, int
 
 void ShapeMatcher::ComputeTensorFeature12(MeshHelper* pmp, int i, int j, int k, double t1, double t2, double* sang )
 {
-	sang[0] = pmp->calHK(i, j, t1);
-	sang[1] = pmp->calHK(j, k, t1);
-	sang[2] = pmp->calHK(k, i, t1);
-	sang[3] = pmp->calHK(i, i, t1);
-	sang[4] = pmp->calHK(j, j, t1);
-	sang[5] = pmp->calHK(k, k, t1);
-	sang[6] = pmp->calHK(i, j, t2);
-	sang[7] = pmp->calHK(j, k, t2);
-	sang[8] = pmp->calHK(k, i, t2);
-	sang[9] = pmp->calHK(i, i, t2);
-	sang[10] = pmp->calHK(j, j, t2);
-	sang[11] = pmp->calHK(k, k, t2);
+    sang[0] = calHK(pmp, i, j, t1);
+    sang[1] = calHK(pmp, j, k, t1);
+    sang[2] = calHK(pmp, k, i, t1);
+    sang[3] = calHK(pmp, i, i, t1);
+    sang[4] = calHK(pmp, j, j, t1);
+    sang[5] = calHK(pmp, k, k, t1);
+    sang[6] = calHK(pmp, i, j, t2);
+	sang[7] = calHK(pmp, j, k, t2);
+	sang[8] = calHK(pmp, k, i, t2);
+	sang[9] = calHK(pmp, i, i, t2);
+	sang[10] = calHK(pmp, j, j, t2);
+	sang[11] = calHK(pmp, k, k, t2);
 }
 
 double ShapeMatcher::PairMatchingExt(Engine* ep, MeshHelper* pmp1, MeshHelper* pmp2, const std::vector<int>& vFeatures1, const std::vector<int>& vFeatures2, std::vector<MatchPair>& vMatchedPair, int method, double vPara[], std::ostream& logout, bool verbose /*= false*/ )
@@ -2120,7 +2099,7 @@ double ShapeMatcher::PairMatchingExt(Engine* ep, MeshHelper* pmp1, MeshHelper* p
 	 ** vPara[1] = thresh2
 	 ** vPara[2] = thresh3
 	*/
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 	vMatchedPair.clear();
 	int size1 = (int)vFeatures1.size();
 	int size2 = (int)vFeatures2.size();
@@ -2152,8 +2131,8 @@ double ShapeMatcher::PairMatchingExt(Engine* ep, MeshHelper* pmp1, MeshHelper* p
 			VecNd v1(tn), v2(tn);
 			for(int k = 0; k < tn; k++)
 			{
-				v1[k] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[k]) / vHT1[k];
-				v2[k] = pmp2->calHK(vFeatures2[j], vFeatures2[j], vTimes[k]) / vHT2[k];
+				v1[k] = calHK(pmp1, vFeatures1[i], vFeatures1[i], vTimes[k]) / vHT1[k];
+				v2[k] = calHK(pmp2, vFeatures2[j], vFeatures2[j], vTimes[k]) / vHT2[k];
 			}
 			double dist = (v1 - v2).norm2();
 			double d = dist * dist / tn;
@@ -2201,8 +2180,8 @@ double ShapeMatcher::PairMatchingExt(Engine* ep, MeshHelper* pmp1, MeshHelper* p
 			double t = tl;
 			for(int k = 0; k < tn; k++)
 			{
-				v1[k] = pmp1->calHK(x1, y1, vTimes[k]) / vHT1[k];
-				v2[k] = pmp2->calHK(x2, y2, vTimes[k]) / vHT2[k];
+				v1[k] = calHK(pmp1, x1, y1, vTimes[k]) / vHT1[k];
+				v2[k] = calHK(pmp2, x2, y2, vTimes[k]) / vHT2[k];
 			}
 			double dist = (v1 - v2).norm2();
 			double ds = dist * dist / tn;
@@ -2284,7 +2263,7 @@ void ShapeMatcher::HKSMatchingExt(MeshHelper* pmp1, MeshHelper* pmp2, const std:
 	** vPara[3] = anchor1
 	** vPara[4] = anchor2 (may not be necessary)
 	*********************************/
-    EigenSystem &es1 = pmp1->getMHB(CotFormula), &es2 = pmp2->getMHB(CotFormula);
+    EigenSystem &es1 = pmp1->getEigenSystem(CotFormula), &es2 = pmp2->getEigenSystem(CotFormula);
 	double tl = vPara[0];
 	double tu = vPara[1];
 	double thresh = vPara[2];	//0.1
@@ -2316,13 +2295,13 @@ void ShapeMatcher::HKSMatchingExt(MeshHelper* pmp1, MeshHelper* pmp2, const std:
 		{
 			vSig1[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig1[i][j] = pmp1->calHK(vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
+				vSig1[i][j] = calHK(pmp1, vFeatures1[i], vFeatures1[i], vTimes[j]) / vTrace1[j];
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
 			vSig2[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig2[i][j] = pmp2->calHK(vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
+				vSig2[i][j] = calHK(pmp2, vFeatures2[i], vFeatures2[i], vTimes[j]) / vTrace2[j];
 		}
 	}
 	else if (method == 1)
@@ -2333,13 +2312,13 @@ void ShapeMatcher::HKSMatchingExt(MeshHelper* pmp1, MeshHelper* pmp2, const std:
 		{
 			vSig1[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig1[i][j] = pmp1->calHK(anchor1, vFeatures1[i], vTimes[j]) /*/ vTrace1[j]*/;
+				vSig1[i][j] = calHK(pmp1, anchor1, vFeatures1[i], vTimes[j]) /*/ vTrace1[j]*/;
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
 			vSig2[i].resize(tsize);
 			for (int j = 0; j < tsize; ++j)
-				vSig2[i][j] = pmp2->calHK(anchor2, vFeatures2[i], vTimes[j]) /*/ vTrace2[j]*/;
+				vSig2[i][j] = calHK(pmp2, anchor2, vFeatures2[i], vTimes[j]) /*/ vTrace2[j]*/;
 		}
 	}
 
@@ -2793,13 +2772,13 @@ void ShapeMatcher::HKCMatching(MeshHelper* pmp1, MeshHelper* pmp2, const std::ve
 		{
 			vSig1[i].resize(anchorSize);
 			for (int j = 0; j < anchorSize; ++j)
-				vSig1[i][j] = pmp1->calHK(vAnchorPair[j].m_idx1, vFeatures1[i], t) /*/ vTrace1[j]*/;
+				vSig1[i][j] = calHK(pmp1, vAnchorPair[j].m_idx1, vFeatures1[i], t) /*/ vTrace1[j]*/;
 		}
 		for (int i = 0; i < vsize2; ++i) 
 		{
 			vSig2[i].resize(anchorSize);
 			for (int j = 0; j < anchorSize; ++j)
-				vSig2[i][j] = pmp2->calHK(vAnchorPair[j].m_idx2, vFeatures2[i], t) /*/ vTrace2[j]*/;
+				vSig2[i][j] = calHK(pmp2, vAnchorPair[j].m_idx2, vFeatures2[i], t) /*/ vTrace2[j]*/;
 		}
 	}
 

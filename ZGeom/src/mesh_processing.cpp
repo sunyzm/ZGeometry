@@ -124,7 +124,7 @@ std::vector<double> calHeatKernelSignature(const EigenSystem& hb, double t)
     return calSpectralKernelSignature(hb, t, heatGen);
 }
 
-double calHK(const EigenSystem& es, int i, int j, double t)
+double calHeatKernel(const EigenSystem& es, int i, int j, double t)
 {
     double sum = 0;
     for (int k = 0; k < es.eigVecCount(); ++k) {
@@ -1054,6 +1054,8 @@ int calMeshGenus(CMesh &mesh)
 
 std::vector<bool> getMeshVertsOnHoles(CMesh &mesh)
 {
+
+    const int MAX_HOLE_SIZE = 200;
     const vector<vector<int>>& boundariesVert = getMeshBoundaryLoopVerts(mesh);
     vector<bool> result(mesh.vertCount(), false);
     for (int i = 0; i < boundariesVert.size(); ++i) {

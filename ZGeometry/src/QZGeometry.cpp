@@ -1020,7 +1020,7 @@ void QZGeometryWindow::reconstructMHB()
 {
 	int sliderCenter = ui.horizontalSliderParamter->maximum() / 2;
 	double ratio = std::min((double)mCommonParameter/sliderCenter, 1.0);
-	int nEig = mMeshHelper[0].getMHB(CotFormula).eigVecCount() * ratio;
+	int nEig = mMeshHelper[0].getEigenSystem(CotFormula).eigVecCount() * ratio;
 	double avgLen = getMesh(0)->getAvgEdgeLength();
 
 	mShapeEditor.fourierReconstruct(nEig);
@@ -1093,7 +1093,7 @@ void QZGeometryWindow::computeHoleNeighbors()
 void QZGeometryWindow::computeEigenfunction()
 {
 	LaplacianType lap_type = mActiveLalacian;
-    ZGeom::EigenSystem& es = mMeshHelper[0].getMHB(lap_type);
+    ZGeom::EigenSystem& es = mMeshHelper[0].getEigenSystem(lap_type);
     bool ok;
     int selected_eig = QInputDialog::getInt(this, "Select eigenfunction",
         "i-th eigenfunction", 1, 1, es.eigVecSize() - 1, 1, &ok);
@@ -1101,7 +1101,7 @@ void QZGeometryWindow::computeEigenfunction()
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		MeshHelper& mp = mMeshHelper[obj];
-		vector<double> vec_eigfunc = mp.getMHB(lap_type).getEigVec(selected_eig).toStdVector();
+		vector<double> vec_eigfunc = mp.getEigenSystem(lap_type).getEigVec(selected_eig).toStdVector();
         getMesh(obj)->addColorSigAttr(StrAttrColorEigenFunction, 
             ColorSignature(vec_eigfunc, gSettings.ACTIVE_COLOR_MAP_TYPE));
 	}
@@ -1120,11 +1120,11 @@ void QZGeometryWindow::computeHK()
 		MeshHelper& mp = mMeshHelper[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ZGeom::EigenSystem &mhb = mp.getMHB(mActiveLalacian);
+		const ZGeom::EigenSystem &mhb = mp.getEigenSystem(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-            values[vIdx] = ZGeom::calHK(mhb, refPoint, vIdx, time_scale);
+            values[vIdx] = ZGeom::calHeatKernel(mhb, refPoint, vIdx, time_scale);
 		});
 
 		addColorSignature(obj, values, StrAttrColorHK);
@@ -1143,11 +1143,11 @@ void QZGeometryWindow::computeHKS()
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ZGeom::EigenSystem& mhb = mp.getMHB(mActiveLalacian);
+		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(mActiveLalacian);
 
 		std::vector<double> values(meshSize);
 		Concurrency::parallel_for (0, meshSize, [&](int k) {
-            values[k] = ZGeom::calHK(mhb, k, k, time_scale);
+            values[k] = ZGeom::calHeatKernel(mhb, k, k, time_scale);
 		});
 
 		addColorSignature(i, values, StrAttrColorHKS);
@@ -1166,10 +1166,7 @@ void QZGeometryWindow::computeBiharmonic()
 		MeshHelper& mp = mMeshHelper[obj];
 		const int vertCount = getMesh(obj)->vertCount();
 		const int refPoint = mp.getRefPointIndex();    
-        if (!mp.isLaplacianDecomposed(CotFormula)) {
-            decomposeSingleLaplacian(obj, -1, CotFormula);
-        }
-        ZGeom::EigenSystem& es = mp.getMHB(CotFormula);
+        ZGeom::EigenSystem& es = mp.getEigenSystem(CotFormula);
         vector<double> vVals = calAllBiharmonicDist(es, refPoint);
 
         cur_mesh->addColorSigAttr(StrAttrColorBiharmonic, ZGeom::ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE, true));
@@ -1557,35 +1554,6 @@ void QZGeometryWindow::showCoarser()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::decomposeSingleLaplacian( int obj, int nEigVec, LaplacianType laplacianType /*= CotFormula*/ )
-{
-	MeshHelper& mp = mMeshHelper[obj];
-	const CMesh& mesh = *getMesh(obj);
-	const int vertCount = mesh.vertCount();
-	if (nEigVec >= vertCount || nEigVec <= 0) nEigVec = vertCount - 1;
-
-	if (!mp.getMHB(laplacianType).empty()) return;
-	std::string s_idx = "0";
-	s_idx[0] += (int)laplacianType;
-	std::string pathMHB = "cache/" + mp.getMesh()->getMeshName() + ".mhb." + s_idx;
-	
-	if (gSettings.LOAD_MHB_CACHE && fileExist(pathMHB))	// MHB cache available for the current mesh
-	{
-		std::ifstream ifs(pathMHB.c_str());
-		mp.loadMHB(pathMHB, laplacianType);
-		ifs.close();
-	}
-	else // need to compute Laplacian and to cache
-	{
-		mp.decomposeLaplacian(nEigVec, laplacianType);
-		mp.saveMHB(pathMHB, laplacianType);
-		qout.output("MHB saved to " + pathMHB, OUT_CONSOLE);
-	}
-
-	std::cout << "Min EigVal: " << mp.getMHB(laplacianType).getAllEigVals().front() 
-			  << "; Max EigVal: " << mp.getMHB(laplacianType).getAllEigVals().back() << std::endl;
-}
-
 void QZGeometryWindow::saveSignature()
 {
 	if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) {
@@ -1614,24 +1582,19 @@ void QZGeometryWindow::computeGeoLaplacian()
 void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
 {
 	parallel_for(0, mMeshCount, [&](int obj) {
-		mMeshHelper[obj].constructLaplacian(lap_type);
+        if (!mMeshHelper[obj].hasLaplacian(lap_type))
+		    mMeshHelper[obj].constructLaplacian(lap_type);
 	});
 
-	int totalToDecompose = 0;
-	int nEigVec = gSettings.DEFAULT_EIGEN_SIZE;
-	
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		if (!mMeshHelper[obj].hasLaplacian(lap_type))
-			throw std::logic_error("Laplacian type not valid!");
-        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 1) : nEigVec;
-		if (laplacianRequireDecompose(obj, nEigen, lap_type)) ++totalToDecompose;
-	}
-	std::cout << totalToDecompose << " mesh Laplacians require explicit decomposition" << std::endl;
-
-	for(int obj = 0; obj < mMeshCount; ++obj) {
-        int nEigen = (nEigVec == -1) ? (getMesh(obj)->vertCount() - 2) : nEigVec;
-		decomposeSingleLaplacian(obj, nEigen, lap_type);
-	}
+        int num_eig = getMesh(obj)->vertCount() - 2;
+        MeshHelper& mp = mMeshHelper[obj];
+        mp.computeLaplacian(num_eig, lap_type);
+        auto& all_eigvals = mp.getEigenSystem(lap_type).getAllEigVals();
+        std::cout << "Min EigVal: " << all_eigvals.front()
+                  << "; Max EigVal: " << all_eigvals.back() 
+                  << std::endl;
+    }
 
     mActiveLalacian = lap_type;
 }
@@ -1691,7 +1654,7 @@ bool QZGeometryWindow::laplacianRequireDecompose( int obj, int nEigVec, Laplacia
 	MeshHelper& mp = mMeshHelper[obj];
     CMesh& mesh = *getMesh(obj);
 	
-	if (!mp.getMHB(laplacianType).empty()) return false; // already decomposed     
+	if (!mp.getEigenSystem(laplacianType).empty()) return false; // already decomposed     
 	if (!gSettings.LOAD_MHB_CACHE) return true;    
 
 	std::string s_idx = "0";
@@ -1726,8 +1689,8 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 	ZGeom::DenseMatrixd funcMap1(num, num), funcMap2(num, num);
 	const MeshLaplacian &lap1 = mMeshHelper[0].getMeshLaplacian(CotFormula);
 	const MeshLaplacian &lap2 = mMeshHelper[1].getMeshLaplacian(CotFormula);
-	const ZGeom::EigenSystem& mhb1 = mMeshHelper[0].getMHB(CotFormula);
-	const ZGeom::EigenSystem& mhb2 = mMeshHelper[1].getMHB(CotFormula);
+	const ZGeom::EigenSystem& mhb1 = mMeshHelper[0].getEigenSystem(CotFormula);
+	const ZGeom::EigenSystem& mhb2 = mMeshHelper[1].getEigenSystem(CotFormula);
 	ZGeom::SparseMatrixCSR<double, int> csrMat1, csrMat2;
 	lap1.getW().convertToCSR(csrMat1, ZGeom::MAT_FULL);
 	lap2.getW().convertToCSR(csrMat2, ZGeom::MAT_FULL);

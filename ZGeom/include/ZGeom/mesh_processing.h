@@ -12,8 +12,6 @@
 
 namespace ZGeom {
 
-const int MAX_HOLE_SIZE = 200;
-
 const std::string StrAttrVertMixedArea = "vert_scalar_mixed_area";
 const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
@@ -146,7 +144,7 @@ bool refineMeshHoleByNum(CMesh &oldMesh, MeshRegion& hole, int nNewVerts);
 /* spectral geometry*/
 DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen);
-double calHK(const EigenSystem& es, int i, int j, double t);
+double calHeatKernel(const EigenSystem& es, int i, int j, double t);
 DenseMatrixd calHeatKernelMatrix(const EigenSystem& es, double t);
 std::vector<double> calHeatKernelSignature(const EigenSystem& es, double t);
 double calHeatTrace(const EigenSystem& es, double t);

@@ -14,10 +14,7 @@ class DenseMatrix
 {
 public:
 	DenseMatrix() : mRow(0), mCol(0), mData(nullptr) {}
-	DenseMatrix(uint row, uint col) : mRow(row), mCol(col) { 
-		mData = new T[row*col]; 
-		for (uint i = 0; i < row*col; ++i) mData[i] = 0;
-	}
+    DenseMatrix(uint row, uint col);
     DenseMatrix(const DenseMatrix<T>& m2);
     DenseMatrix(DenseMatrix<T>&& m2);	
 	DenseMatrix<T>& operator = (const DenseMatrix<T>& m2);
@@ -60,26 +57,24 @@ typedef DenseMatrix<double> DenseMatrixd;
 typedef DenseMatrix<float>  DenseMatrixs;
 
 template<typename T>
-inline void DenseMatrix<T>::print( const std::string& filepath ) const
+inline DenseMatrix<T>::DenseMatrix(uint row, uint col) : mRow(row), mCol(col) 
 {
-	std::ofstream ofs(filepath.c_str());
-	for (uint i = 0; i < mRow; ++i) {
-		for (uint j = 0; j < mCol; ++j) {
-			ofs << mData[i*mCol + j] << ' ';
-		}
-		ofs << '\n';
-	}
-	ofs.close();
+    mData = (row * col > 0 ? new T[row*col] : nullptr);
+    for (uint i = 0; i < row*col; ++i) mData[i] = 0;
 }
 
 template<typename T>
 inline DenseMatrix<T>& DenseMatrix<T>::operator=( const DenseMatrix<T>& m2 )
 {
-	delete []mData;
+    delete []mData;
 	mRow = m2.mRow;
 	mCol = m2.mCol;
-	mData = new T[mRow*mCol];
-	std::copy_n(m2.mData, mRow*mCol, mData);
+    if (mRow * mCol > 0) {
+        mData = new T[mRow*mCol];
+        std::copy_n(m2.mData, mRow*mCol, mData);
+    } else {
+        mData = nullptr;
+    }
 	return *this;
 }
 
@@ -96,8 +91,8 @@ inline DenseMatrix<T>& DenseMatrix<T>::operator=(DenseMatrix<T>&& m2)
 }
 
 template<typename T>
-inline DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& m2) 
-{
+inline DenseMatrix<T>::DenseMatrix(const DenseMatrix<T>& m2) : DenseMatrix()
+{    
     *this = m2;
 }
 
@@ -129,6 +124,19 @@ inline DenseMatrix<T>& DenseMatrix<T>::transpose()
     mData = newData;
     std::swap(mRow, mCol);
     return *this;
+}
+
+template<typename T>
+inline void DenseMatrix<T>::print( const std::string& filepath ) const
+{
+	std::ofstream ofs(filepath.c_str());
+	for (uint i = 0; i < mRow; ++i) {
+		for (uint j = 0; j < mCol; ++j) {
+			ofs << mData[i*mCol + j] << ' ';
+		}
+		ofs << '\n';
+	}
+	ofs.close();
 }
 
 template<typename T>

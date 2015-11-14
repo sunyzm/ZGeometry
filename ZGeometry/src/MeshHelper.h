@@ -2,70 +2,76 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <cmath>
-#include <memory>
 #include <ZGeom/ZGeom.h>
-#include <ZGeom/SparseSymMatVecSolver.h>
 #include "MeshLaplacian.h"
 #include "global.h"
 
-class MeshHelper
-{
+class MeshHelper {
+public:
+    struct ExtraInfo {
+        int ref_vert_idx;
+        ZGeom::Vec3d ref_vert_pos;
+        std::map<int, ZGeom::Vec3d> handles;
+        int active_handle_idx;
+        std::map<LaplacianType, MeshLaplacian> laplacians;
+        std::map<LaplacianType, ZGeom::EigenSystem> eigensys;
+    };
+
 public:
 	MeshHelper();
     MeshHelper(MeshHelper && mh);
 
 	void init(CMesh* tm);
+    CMesh* getMeshByName(const std::string mesh_descript);    
     void addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description = "");
     void nextMesh();
     void prevMesh();
     void revertOriginal();
     void removeCurrentMesh();
-    CMesh* getMesh() const { return mMeshHistory[currentMeshIdx].get(); }
-    CMesh* getMeshByName(const std::string mesh_descript);
-    CMesh* getOriginalMesh() const { return mMeshHistory[0].get(); }
+    CMesh* getOriginalMesh() const;
+    CMesh* getMesh() const;
+    ExtraInfo& getMeshExtraInfo();
+    const ExtraInfo& getMeshExtraInfo() const;
     
-    void clearMeshRelated();
+    /* Laplacian and MHB related */
+    bool hasLaplacian(LaplacianType lap_type);
+    const MeshLaplacian& getMeshLaplacian(LaplacianType lap_type);
+    void constructLaplacian(LaplacianType lap_type = CotFormula);
 
+    bool hasEigenSystem(LaplacianType lap_type);
+    ZGeom::EigenSystem& getEigenSystem(LaplacianType lap_type);
+    void computeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
+    ZGeom::EigenSystem& prepareEigenSystem(LaplacianType lap_type = CotFormula, int num_eig = -1);
+    
     /* editing */
     void addNewHandle(int hIdx);
-    int getActiveHandle() const { return mActiveHandle; }
-    void setActiveHandle(int h) { mActiveHandle = h; }
-    std::map<int, ZGeom::Vec3d>& getHandles() { return mHandles; }
-    const std::map<int, ZGeom::Vec3d>& getHandles() const { return mHandles; }
-    void clearAllHandles() { mHandles.clear(); }
-    int  getRefPointIndex() const { return mRefVert; }
-    void setRefPointIndex(int i) { mRefVert = i; }
-    void setRefPointPosition(int x, int y, int z) { mRefPos = ZGeom::Vec3d(x, y, z); }
-
-	/* Laplacian and MHB related */
-	void constructLaplacian(LaplacianType laplacianType = CotFormula);
-	void decomposeLaplacian(int nEigFunc, LaplacianType laplacianType = CotFormula);
-	const MeshLaplacian& getMeshLaplacian(LaplacianType laplacianType) const { return mMeshLaplacians[laplacianType]; }
-	bool hasLaplacian(LaplacianType laplacianType) { return mMeshLaplacians[laplacianType].isLaplacianConstructed(); }
-    const ZGeom::EigenSystem& prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount);
-	bool isLaplacianDecomposed(LaplacianType laplacianType) { return !mMHBs[laplacianType].empty(); }
-	void loadMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	void saveMHB(const std::string& path, LaplacianType laplacianType = CotFormula);
-	ZGeom::EigenSystem& getMHB(LaplacianType laplacianType) { return mMHBs[laplacianType]; }
-	bool isMHBCacheValid(const std::string& pathMHB, int eigenCount);
-	std::string generateMHBPath(const std::string& prefix, LaplacianType laplacianType);
-    double calHK(int v1, int v2, double timescale);
+    int getActiveHandle() const;
+    void setActiveHandle(int h);
+    std::map<int, ZGeom::Vec3d>& getHandles();
+    const std::map<int, ZGeom::Vec3d>& getHandles() const;
+    void clearAllHandles();
+    int  getRefPointIndex() const;
+    void setRefPointIndex(int i);
+    const ZGeom::Vec3d& getRefPointPosition() const;
+    void setRefPointPosition(int x, int y, int z);
 
 private:
     MeshHelper(const MeshHelper&);
     MeshHelper& operator = (const MeshHelper&);
 
+    bool isMHBCacheValid(const std::string& pathMHB, int eig_num);
+    std::string generateMHBPath(const std::string& prefix, LaplacianType lap_type);
+
 public:
-    std::vector<std::unique_ptr<CMesh>> mMeshHistory;
-    int currentMeshIdx;
+    std::vector<std::unique_ptr<CMesh>> mesh_history_;
+    std::vector<std::unique_ptr<ExtraInfo>> mesh_extra_infos_;
+    int cur_mesh_idx_;
 
-	int mRefVert;
-	ZGeom::Vec3d mRefPos;
-	std::map<int, ZGeom::Vec3d> mHandles;
-	int mActiveHandle;
-
-	MeshLaplacian mMeshLaplacians[LaplacianTypeCount];
-	ZGeom::EigenSystem mMHBs[LaplacianTypeCount];
+private:
+    std::map<LaplacianType, MeshLaplacian>& getAllLaplacians() {
+        return getMeshExtraInfo().laplacians;
+    }
+    std::map<LaplacianType, ZGeom::EigenSystem>& getAllEigensys() {
+        return getMeshExtraInfo().eigensys;
+    }
 };
-

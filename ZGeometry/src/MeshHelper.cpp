@@ -13,69 +13,160 @@
 
 using namespace std;
 using ZGeom::MatlabEngineWrapper;
-using ZGeom::VectorPointwiseProduct;
+using ZGeom::EigenSystem;
 
 MeshHelper::MeshHelper()
 {
-	mRefVert = 0;
-	mActiveHandle = -1;	
-    currentMeshIdx = -1;
+    cur_mesh_idx_ = -1;
 }
 
  MeshHelper::MeshHelper(MeshHelper && mh)
  {
-     mMeshHistory = std::move(mMeshHistory);
-     mRefVert = mh.mRefVert;
-     mRefPos = mh.mRefPos;
-     mHandles = std::move(mh.mHandles);
-     mActiveHandle = std::move(mh.mActiveHandle);
+     mesh_history_ = std::move(mh.mesh_history_);
+     mesh_extra_infos_ = std::move(mh.mesh_extra_infos_);
  }
 
 void MeshHelper::init(CMesh* tm)
 {
     assert(tm != nullptr);
-    mMeshHistory.resize(1);
-    mMeshHistory[0].reset(tm);
+    mesh_history_.clear();
+    mesh_history_.resize(1);
+    mesh_history_[0].reset(tm);
+
+    mesh_extra_infos_.clear();
+    mesh_extra_infos_.emplace_back(new ExtraInfo());
+    mesh_extra_infos_.back()->ref_vert_idx = 0;
+    mesh_extra_infos_.back()->ref_vert_pos = tm->vertPos(0);
+
+    cur_mesh_idx_ = 0;
     tm->addAttr<std::string>("original_mesh", CMesh::StrAttrMeshDescription, AR_UNIFORM, AT_STRING);
-    currentMeshIdx = 0;
-	mRefVert = g_configMgr.getConfigValueInt("INITIAL_REF_POINT");
-	mRefPos = getMesh()->vert(mRefVert)->pos();
 }
 
-void MeshHelper::constructLaplacian( LaplacianType laplacianType /*= CotFormula*/ )
+CMesh* MeshHelper::getMesh() const
 {
-	if (hasLaplacian(laplacianType)) return;
-	
-	MeshLaplacian& laplacian = mMeshLaplacians[laplacianType];
-	switch(laplacianType) {
-	    case Tutte:
-	    case Umbrella:
-	    case NormalizedUmbrella:
-	    case CotFormula:
-	    case SymCot:
-	    case Anisotropic1:
-	    case Anisotropic2:
-            (laplacian.*(laplacian.getConstructFunc(laplacianType)))(getMesh());
-		    break;
-	    default: 
-            throw std::logic_error("Unrecognized Laplacian type");
-	}       
+    return mesh_history_[cur_mesh_idx_].get();
 }
 
-void MeshHelper::decomposeLaplacian( int nEigFunc, LaplacianType laplacianType /*= CotFormula*/ )
+CMesh* MeshHelper::getMeshByName(const std::string mesh_descript)
 {
-	ZGeom::logic_assert(hasLaplacian(laplacianType), "laplacian is not available for decomposition");	
-	mMeshLaplacians[laplacianType].meshEigenDecompose(nEigFunc, &g_engineWrapper, mMHBs[laplacianType]);
+    for (int k = 0; k < mesh_history_.size(); ++k) {
+        if (mesh_history_[k]->getMeshDescription() == mesh_descript)
+            return mesh_history_[k].get();
+    }
+
+    return nullptr; 
 }
 
-void MeshHelper::loadMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
+CMesh* MeshHelper::getOriginalMesh() const
 {
-	mMHBs[laplacianType].load(path);
+    return mesh_history_[0].get();
 }
 
-void MeshHelper::saveMHB( const std::string& path, LaplacianType laplacianType /*= CotFormula*/ )
+void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description)
 {
-	mMHBs[laplacianType].save(path);	
+    mesh_history_.push_back(std::move(newMesh));
+    CMesh &mesh = *mesh_history_.back();
+    mesh.setMeshDescription(description);
+
+    mesh_extra_infos_.emplace_back(new ExtraInfo());
+    mesh_extra_infos_.back()->ref_vert_idx = 0;
+    mesh_extra_infos_.back()->ref_vert_pos = mesh.vertPos(0);
+
+    cur_mesh_idx_ = (int)mesh_history_.size() - 1;
+}
+
+void MeshHelper::removeCurrentMesh()
+{
+    if (cur_mesh_idx_ == 0) {
+        cout << "Original mesh cannot be removed!" << std::endl;
+        return;
+    }
+
+    mesh_history_.erase(mesh_history_.begin() + cur_mesh_idx_);
+    mesh_extra_infos_.erase(mesh_extra_infos_.begin() + cur_mesh_idx_);
+
+    cur_mesh_idx_ = cur_mesh_idx_ % mesh_history_.size();
+    std::cout << "Switch to: " << mesh_history_[cur_mesh_idx_]->getMeshDescription() << std::endl;
+}
+
+void MeshHelper::nextMesh()
+{
+    if (mesh_history_.size() <= 1) return;
+    cur_mesh_idx_ = (cur_mesh_idx_ + 1) % mesh_history_.size();    
+}
+
+void MeshHelper::prevMesh()
+{
+    if (mesh_history_.size() <= 1) return;
+    cur_mesh_idx_ = (cur_mesh_idx_ + mesh_history_.size() - 1) % mesh_history_.size();
+}
+
+void MeshHelper::revertOriginal()
+{
+    cur_mesh_idx_ = 0;
+}
+
+MeshHelper::ExtraInfo& MeshHelper::getMeshExtraInfo()
+{
+    return *mesh_extra_infos_[cur_mesh_idx_];
+}
+
+const MeshHelper::ExtraInfo& MeshHelper::getMeshExtraInfo() const
+{
+    return *mesh_extra_infos_[cur_mesh_idx_];
+}
+
+bool MeshHelper::hasLaplacian(LaplacianType lap_type)
+{
+    auto& all_laplacians = getMeshExtraInfo().laplacians;
+    return all_laplacians.find(lap_type) != all_laplacians.end();
+}
+
+const MeshLaplacian& MeshHelper::getMeshLaplacian(LaplacianType lap_type)
+{
+    if (!hasLaplacian(lap_type)) constructLaplacian(lap_type);
+    return getMeshExtraInfo().laplacians[lap_type];
+}
+
+void MeshHelper::constructLaplacian( LaplacianType lap_type /*= CotFormula*/ )
+{
+	if (hasLaplacian(lap_type)) return;
+    getAllLaplacians().insert(make_pair(lap_type, MeshLaplacian()));
+    MeshLaplacian& laplacian = getAllLaplacians()[lap_type];
+    (laplacian.*(laplacian.getConstructFunc(lap_type)))(getMesh());      
+}
+
+bool MeshHelper::hasEigenSystem(LaplacianType lap_type)
+{
+    auto& all_eigensys = getMeshExtraInfo().eigensys;
+    return all_eigensys.find(lap_type) != all_eigensys.end();
+}
+
+ZGeom::EigenSystem& MeshHelper::getEigenSystem(LaplacianType lap_type)
+{
+    ZGeom::runtime_assert(hasEigenSystem(lap_type), "Requested MHB doesn't exist!");
+    return getMeshExtraInfo().eigensys[lap_type];
+}
+
+void MeshHelper::computeLaplacian( int num_eig, LaplacianType lap_type /*= CotFormula*/ )
+{
+    ZGeom::logic_assert(hasLaplacian(lap_type), "laplacian hasn't been constructed");
+    int vert_count = getMesh()->vertCount();
+    ZGeom::logic_assert(num_eig < vert_count - 1, "Invalid num_eig!");
+    if (num_eig <= 0) num_eig = vert_count - 2;
+
+    std::string path_eigensys = generateMHBPath("cache/", lap_type);
+    int using_cache = gSettings.LOAD_MHB_CACHE;
+    getAllEigensys().insert(make_pair(lap_type, EigenSystem()));
+    EigenSystem& new_eigensys = getEigenSystem(lap_type);
+    if (using_cache > 0 && isMHBCacheValid(path_eigensys, num_eig)) {
+        new_eigensys.load(path_eigensys);
+    }
+    else {
+        std::cout << "==== Compute eigen-decomposition ====\n";
+        getMeshLaplacian(lap_type).meshEigenDecompose(num_eig, &g_engineWrapper, new_eigensys);
+        new_eigensys.save(path_eigensys);
+    }
 }
 
 std::string MeshHelper::generateMHBPath( const std::string& prefix, LaplacianType laplacianType )
@@ -86,124 +177,88 @@ std::string MeshHelper::generateMHBPath( const std::string& prefix, LaplacianTyp
 	return pathMHB;
 }
 
-bool MeshHelper::isMHBCacheValid( const std::string& pathMHB, int eigenCount )
+bool MeshHelper::isMHBCacheValid( const std::string& path_mhb, int eigen_num )
 {
-	if (!fileExist(pathMHB)) return false;
+	if (!fileExist(path_mhb)) return false;
 
 	int nEig, nSize;
-	ifstream ifs(pathMHB.c_str(), ios::binary);
+	ifstream ifs(path_mhb.c_str(), ios::binary);
 	ifs.read((char*)&nEig, sizeof(int));
 	ifs.read((char*)&nSize, sizeof(int));
 	ifs.close();
 
-    if (nEig != eigenCount || nSize != getMesh()->vertCount()) return false;
+    if (nEig != eigen_num || nSize != getMesh()->vertCount()) return false;
 
 	return true;
 }
 
+ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(LaplacianType lap_type /*= CotFormula*/, int num_eig /*= -1*/)
+{
+    int vert_count = getMesh()->vertCount();
+    if (num_eig >= vert_count - 1) {
+        throw std::runtime_error("Invalid num_eig requested!");
+    }
+    if (num_eig <= 0) num_eig = vert_count - 2;
+    
+    if (!hasLaplacian(lap_type)) {
+        constructLaplacian(lap_type);
+    }
+    if (!hasEigenSystem(lap_type) || getEigenSystem(lap_type).eigVecCount() < num_eig) {
+        computeLaplacian(num_eig, lap_type);
+    }
+         
+    return getEigenSystem(lap_type);
+}
+
 void MeshHelper::addNewHandle( int hIdx )
 {
-	auto iter = mHandles.find(hIdx);
-	if (iter != mHandles.end()) mHandles.erase(iter);
-    else mHandles.insert(std::make_pair(hIdx, getMesh()->vert(hIdx)->pos()));
+    auto& handles = getMeshExtraInfo().handles;
+    auto iter = handles.find(hIdx);
+    if (iter != handles.end()) handles.erase(iter);
+    else handles.insert(std::make_pair(hIdx, getMesh()->vert(hIdx)->pos()));
 }
 
-double MeshHelper::calHK(int v1, int v2, double timescale)
+int MeshHelper::getActiveHandle() const
 {
-	ZGeom::EigenSystem& mhb = getMHB(CotFormula);
-	double sum = 0;
-	for (int k = 0; k < mhb.eigVecCount(); ++k)	{
-		double lambda = mhb.getEigVal(k);
-		const ZGeom::VecNd& phi = mhb.getEigVec(k);
-		sum += std::exp(-lambda * timescale) * phi[v1] * phi[v2];
-	}
-	return sum;
+    return getMeshExtraInfo().active_handle_idx;
 }
 
-const ZGeom::EigenSystem& MeshHelper::prepareEigenSystem(const MeshLaplacian& laplaceMat, int eigenCount)
+void MeshHelper::clearAllHandles()
 {
-	LaplacianType laplaceType = laplaceMat.laplacianType();
-    if (!mMHBs[laplaceType].empty()) return mMHBs[laplaceType];
-
-	std::string pathMHB = generateMHBPath("cache/", laplaceType);
-    if (eigenCount == -1) eigenCount = getMesh()->vertCount() - 1;
-
-	int useCache = gSettings.LOAD_MHB_CACHE;
-	if (useCache != 0 && isMHBCacheValid(pathMHB, eigenCount)) {
-		mMHBs[laplaceType].load(pathMHB);
-	}
-	else {
-        std::cout << "==== Do Eigendecomposition ====\n";
-
-		laplaceMat.meshEigenDecompose(eigenCount, &g_engineWrapper, mMHBs[laplaceType]);
-		mMHBs[laplaceType].save(pathMHB);
-	}
-	
-	return mMHBs[laplaceType];
+    getMeshExtraInfo().handles.clear();
 }
 
-void MeshHelper::revertOriginal()
+void MeshHelper::setActiveHandle(int h)
 {
-    currentMeshIdx = 0;
-    clearMeshRelated();
+    getMeshExtraInfo().active_handle_idx = h;
 }
 
-void MeshHelper::addMesh(std::unique_ptr<CMesh> && newMesh, const std::string description)
+std::map<int, ZGeom::Vec3d>& MeshHelper::getHandles()
 {
-    mMeshHistory.push_back(std::move(newMesh));
-    CMesh *mesh = mMeshHistory.back().get();
-    mesh->setMeshDescription(description);
-    currentMeshIdx = (int)mMeshHistory.size() - 1;
-    clearMeshRelated();
+    return getMeshExtraInfo().handles;
 }
 
-void MeshHelper::nextMesh()
+const std::map<int, ZGeom::Vec3d>& MeshHelper::getHandles() const
 {
-    if (mMeshHistory.size() <= 1) return;
-    currentMeshIdx = (currentMeshIdx + 1) % mMeshHistory.size();    
-
-    clearMeshRelated();
+    return getMeshExtraInfo().handles;
 }
 
-void MeshHelper::prevMesh()
+int MeshHelper::getRefPointIndex() const
 {
-    if (mMeshHistory.size() <= 1) return;
-    currentMeshIdx = (currentMeshIdx + mMeshHistory.size() - 1) % mMeshHistory.size();
-
-    clearMeshRelated();
+    return getMeshExtraInfo().ref_vert_idx;
 }
 
-void MeshHelper::clearMeshRelated()
+void MeshHelper::setRefPointIndex(int i)
 {
-    mRefVert = 0;
-    mRefPos = getMesh()->vertPos(mRefVert);
-    mHandles.clear();
-    mActiveHandle = -1;
-    for (MeshLaplacian& lm : mMeshLaplacians) lm.clear();
-    for (ZGeom::EigenSystem & es : mMHBs) es.clear();
+    getMeshExtraInfo().ref_vert_idx = i;
 }
 
-CMesh* MeshHelper::getMeshByName(const std::string mesh_descript)
+const ZGeom::Vec3d& MeshHelper::getRefPointPosition() const
 {
-    for (int k = 0; k < mMeshHistory.size(); ++k) {
-        if (mMeshHistory[k]->getMeshDescription() == mesh_descript)
-            return mMeshHistory[k].get();
-    }
-
-    return nullptr; 
+    return getMeshExtraInfo().ref_vert_pos;
 }
 
-void MeshHelper::removeCurrentMesh()
+void MeshHelper::setRefPointPosition(int x, int y, int z)
 {
-    if (currentMeshIdx == 0) {
-        cout << "Original mesh cannot be removed!" << std::endl;
-        return;
-    }
-
-    mMeshHistory.erase(mMeshHistory.begin() + currentMeshIdx);
-
-    currentMeshIdx = currentMeshIdx % mMeshHistory.size();
-    std::cout << "Switch to: " << mMeshHistory[currentMeshIdx]->getMeshDescription() << std::endl;
-    clearMeshRelated();
+    getMeshExtraInfo().ref_vert_pos = ZGeom::Vec3d(x, y, z);
 }
-

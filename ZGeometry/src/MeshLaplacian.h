@@ -27,8 +27,8 @@ public:
 	virtual ~MeshLaplacian() {}
     void clear() { mLS.clear(); mW.clear(); mOrder = 0; mSymmetric = true; }
 
-    void constructUmbrella(CMesh* tmesh);				// negative symmetric graph Laplacian. L = A - D
-    void constructGeometricUmbrella(CMesh *tmesh);    // negative symmetric graph Laplacian. w_ij is weighted by the inverse of length between i and j
+    void constructUmbrella(CMesh* tmesh);			// negative symmetric graph Laplacian. L = A - D
+    void constructGeometricUmbrella(CMesh *tmesh);  // negative symmetric graph Laplacian. w_ij is weighted by the inverse of length between i and j
     void constructNormalizedUmbrella(CMesh* tmesh);	// negative symmetric, normalized graph Laplacian; L = D^(-1/2) * (A-D) * D^(-1/2) = D^(-1/2) * A * D^(-1/2) - I
     void constructTutte(CMesh* tmesh);				// negative asymmetric graph Laplacian; random walk. L = D^(-1) * (A-D) = D^(-1)*A - I
     void constructCotFormula(CMesh* tmesh);			// negative cotangent formula

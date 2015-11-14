@@ -493,22 +493,10 @@ void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integratedAppro
 	}
 }
 
-void SubMeshApprox::prepareEigenSystem( LaplacianType laplacianType, int eigenCount )
+void SubMeshApprox::prepareEigenSystem( LaplacianType lap_type, int eigen_num )
 {
     MeshHelper& mMeshProcessor = *mMeshHelper;
-    mMeshProcessor.constructLaplacian(laplacianType);
-	std::string pathMHB = mMeshProcessor.generateMHBPath("cache/", laplacianType);
-	if (eigenCount == -1 || eigenCount >= mSubMesh.vertCount()) 
-		eigenCount = mSubMesh.vertCount() - 1;
-
-	int useCache = gSettings.LOAD_MHB_CACHE;
-	if (useCache != 0 && mMeshProcessor.isMHBCacheValid(pathMHB, eigenCount)) {
-		mMeshProcessor.loadMHB(pathMHB, laplacianType);
-	} else {
-		mMeshProcessor.decomposeLaplacian(eigenCount, laplacianType);
-		mMeshProcessor.saveMHB(pathMHB, laplacianType);
-	}
-	mEigenSystem = mMeshProcessor.getMHB(laplacianType);
+    mEigenSystem = mMeshHelper->prepareEigenSystem(lap_type, eigen_num);
 }
 
 void SubMeshApprox::constructDict( DictionaryType dictType )
