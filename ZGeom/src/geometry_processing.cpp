@@ -830,9 +830,14 @@ void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WE
     mesh.addAttr<std::vector<ZGeom::Vec3d>>(vertNormals, CMesh::StrAttrVertNormals, AR_VERTEX, AT_VEC_VEC3);
 }
 
-std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
+const std::vector<Vec3d>& getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
 {
     if (!mesh.hasAttr(CMesh::StrAttrVertNormals)) calMeshAttrVertNormals(mesh, vnc);
+    return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormals);
+}
+
+const std::vector<Vec3d>& getMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
+{
     return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormals);
 }
 
@@ -868,13 +873,18 @@ ZGeom::VertCurvature calVertCurvature(const CMesh& mesh, int v_idx, bool compute
 
     kh /= 2.0 * amix;
     result.mean_curv = kh.length() / 2.0;	            // half magnitude of kh
-    result.gauss_curv = (2.0 * ZGeom::PI - angleSum) / amix; // >0, convex; <0, concave
-
+    result.gauss_curv = (2.0 * ZGeom::PI - angleSum) / amix; // >0: ellipse; <0: parabolic; =0: hyperbolic or plane
+    
+    // determine convex or concave
+    const std::vector<Vec3d>& vert_normal = getMeshVertNormals(mesh);
+    if (kh.dot(vert_normal[v_idx]) > 0) result.convexity = 1.;
+    else result.convexity = -1.;
+    
     if (compute_principal) {
         double delta = std::max<double>(0., sqr(result.mean_curv) - result.gauss_curv);
         delta = sqrt(delta);
-        result.principal_curv_1 = result.mean_curv + delta;
-        result.principal_curv_2 = result.mean_curv - delta;
+        result.principal_curv_1 = result.convexity * result.mean_curv + delta;
+        result.principal_curv_2 = result.convexity * result.mean_curv - delta;
     }
 
     return result;
@@ -907,6 +917,27 @@ void computeMeshCurvatures(CMesh& mesh, bool compute_principal)
     }
 
     mesh.addAttr<vector<VertCurvature>>(all_curvatures, StrAttrVertAllCurvatures, AR_VERTEX, AT_UNKNOWN);
+}
+
+void computeShapeIndex(CMesh& mesh)
+{
+    int vert_count = mesh.vertCount();
+    vector<double> result(vert_count, 0);
+    if (!mesh.hasAttr(StrAttrVertAllCurvatures)) computeMeshCurvatures(mesh, true);
+    const auto& curvatures = mesh.getAttrValue<vector<ZGeom::VertCurvature>>(StrAttrVertAllCurvatures);
+    for (int i = 0; i < vert_count; ++i) {
+        const VertCurvature& elem = curvatures[i];
+        double k1 = elem.principal_curv_1, k2 = elem.principal_curv_2;
+        if (fabs(elem.mean_curv) < 1e-5) result[i] = 0;
+        else if (fabs(k1 - k2) < 1e-5) {
+            result[i] = (k1 >= 0 ? 1 : -1);
+        }
+        else {
+            result[i] = 2 / ZGeom::PI * atan((k1 + k2)/(k1 - k2));
+        }
+    }
+
+    mesh.addAttr<vector<double>>(result, StrAttrVertShapeIndex, AR_VERTEX, AT_VEC_DBL);
 }
 
 void gatherMeshStatistics(CMesh& mesh)

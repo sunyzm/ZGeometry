@@ -807,6 +807,7 @@
     <addaction name="menuComputeLaplacian"/>
     <addaction name="actionEigenfunction"/>
     <addaction name="actionComputeCurvatures"/>
+    <addaction name="actionComputeShapeIndex"/>
     <addaction name="menuKernelSignature"/>
     <addaction name="menuComputeFeatures"/>
     <addaction name="actionComputeBiharmonicDistance"/>
@@ -1735,6 +1736,11 @@
   <action name="actionComputeGraphLaplacian">
    <property name="text">
     <string>Graph Laplacian</string>
+   </property>
+  </action>
+  <action name="actionComputeShapeIndex">
+   <property name="text">
+    <string>Shape Index</string>
    </property>
   </action>
  </widget>

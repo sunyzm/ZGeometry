@@ -1,5 +1,6 @@
 #ifndef ZGEOM_COMMON_H
 #define ZGEOM_COMMON_H
+#include <cmath>
 
 namespace ZGeom {
 

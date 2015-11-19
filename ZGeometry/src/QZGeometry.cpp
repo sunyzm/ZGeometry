@@ -171,6 +171,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
 	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
     QObject::connect(ui.actionComputeCurvatures, SIGNAL(triggered()), this, SLOT(computeCurvatures()));
+    QObject::connect(ui.actionComputeShapeIndex, SIGNAL(triggered()), this, SLOT(computeShapeIndex()));
     QObject::connect(ui.actionComputeBiharmonicDistance, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
     QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
@@ -965,7 +966,10 @@ void QZGeometryWindow::computeCurvatures()
 {
     using ZGeom::VertCurvature;
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-        ZGeom::computeMeshCurvatures(*getMesh(obj), true);
+        CMesh& mesh = *getMesh(obj);
+        if (!mesh.hasAttr(ZGeom::StrAttrVertAllCurvatures)) {
+            ZGeom::computeMeshCurvatures(mesh, true);
+        }
         const vector<double>& vCM = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::MEAN);
         const vector<double>& vCG = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::GAUSS);
         const vector<double>& vCP1 = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::PRINCIPAL_1);
@@ -989,7 +993,24 @@ void QZGeometryWindow::computeCurvatures()
 
 	updateMenuDisplaySignature();
     displaySignature("color_mean_curvature");
-	qout.output("Visualize mean curvature");	
+    toggleShowColorLegend(true);
+	qout.output("Mean curvature visualized");	
+}
+
+
+void QZGeometryWindow::computeShapeIndex()
+{
+    for (int obj = 0; obj < mMeshCount; ++obj) {
+        CMesh& mesh = *getMesh(obj);
+        ZGeom::computeShapeIndex(mesh);
+        const vector<double>& vec_shape_index = mesh.getAttrValue<vector<double>>(ZGeom::StrAttrVertShapeIndex);
+        ColorSignature colorSI(vec_shape_index, gSettings.ACTIVE_COLOR_MAP_TYPE);
+        mesh.addColorSigAttr("color_shape_index", colorSI);
+    }
+
+    updateMenuDisplaySignature();
+    displaySignature("color_shape_index");
+    toggleShowColorLegend(true);
 }
 
 void QZGeometryWindow::updateReferenceMove( int obj )
@@ -2871,3 +2892,4 @@ void QZGeometryWindow::ignoreOuterBoundary()
 
     ui.glMeshWidget->update();
 }
+

@@ -19,6 +19,7 @@ const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
 const std::string StrAttrVertAllCurvatures = "vert_all_curvatures";
+const std::string StrAttrVertShapeIndex = "vert_shape_index";
 const std::string StrAttrMeshHoleRegions = "mesh_hole_regions";
 const std::string StrAttrManualHoleRegions = "mesh_manually_generated_hole_regions";
 
@@ -168,7 +169,8 @@ std::vector<Vec3d> computeMeshFaceNormals(const CMesh& mesh);
 enum VertNormalCalcMethod {VN_UNIFORM_WEIGHT, VN_AREA_WEIGHT, VN_CENTER_DIST_WEIGHT};
 std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
 void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
-std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
+const std::vector<Vec3d>& getMeshVertNormals(const CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
+const std::vector<Vec3d>& getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc = VN_AREA_WEIGHT);
 
 enum MeshVertAreaScheme {VA_UNIFORM, VA_MIXED_VORONOI};
 std::vector<double> computeMeshVertArea(const CMesh& mesh, MeshVertAreaScheme scheme = VA_MIXED_VORONOI);
@@ -192,6 +194,7 @@ struct ResultMeshMeanGaussCurvatures
 ZGeom::VertCurvature calVertCurvature(const CMesh& mesh, int v_idx, bool compute_principal = true);
 void computeMeshCurvatures(CMesh& mesh, bool compute_principal = true);
 const std::vector<double>& getMeshCurvatures(CMesh& mesh, VertCurvature::CurvatureType curvature_type);
+void computeShapeIndex(CMesh& mesh);
 
 std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed = -1);
 std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::vector<int>& seeds);

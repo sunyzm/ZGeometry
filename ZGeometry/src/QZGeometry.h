@@ -50,7 +50,8 @@ private slots:
     void computeLaplacian(LaplacianType laplacianType);
 	void computeEigenfunction();
 	void computeCurvatures();
-	void computeVertNormals();
+    void computeShapeIndex();
+    void computeVertNormals();
 	void computeFaceNormals();
 	void computeEditBasis();
 	void computeHK();
