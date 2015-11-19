@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
     }
 
     calMeshAttrMixedVertAreas(mesh);
-    ZGeom::calMeshAttrMeanGaussCurvatures(mesh);
+    ZGeom::computeMeshCurvatures(mesh, true);
     Laplacian anisoLap;
     anisoLap.constructAniso(&mesh);
 

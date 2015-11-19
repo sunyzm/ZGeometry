@@ -216,6 +216,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\ZGeom\curvature.h" />
     <ClInclude Include="include\ZGeom\sparse_approximation.h" />
     <ClInclude Include="include\ZGeom\arcball.h" />
     <ClInclude Include="include\ZGeom\arithmetic.h" />
@@ -240,7 +241,7 @@
     <ClInclude Include="include\ZGeom\MCA.h" />
     <ClInclude Include="include\ZGeom\Mesh.h" />
     <ClInclude Include="include\ZGeom\MeshAttr.h" />
-    <ClInclude Include="include\ZGeom\mesh_processing.h" />
+    <ClInclude Include="include\ZGeom\geometry_processing.h" />
     <ClInclude Include="include\ZGeom\Quadric.h" />
     <ClInclude Include="include\ZGeom\Quat.h" />
     <ClInclude Include="include\ZGeom\SimpleConfigLoader.h" />
@@ -283,7 +284,7 @@
     <ClCompile Include="src\MatVecArithmetic.cpp" />
     <ClCompile Include="src\MCA.cpp" />
     <ClCompile Include="src\Mesh.cpp" />
-    <ClCompile Include="src\mesh_processing.cpp" />
+    <ClCompile Include="src\geometry_processing.cpp" />
     <ClCompile Include="src\Quadric.cpp" />
     <ClCompile Include="src\Quat.cpp" />
     <ClCompile Include="src\SimpleConfigLoader.cpp" />

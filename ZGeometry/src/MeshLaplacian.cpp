@@ -13,13 +13,14 @@
 using namespace std;
 using ZGeom::PI;
 using ZGeom::uint;
+using ZGeom::VertCurvature;
 
 void MeshLaplacian::constructAnisotropic1(CMesh* tmesh)
 {
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
     const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
-    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshCurvatures(*tmesh, VertCurvature::MEAN);
     const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;
 
@@ -85,7 +86,7 @@ void MeshLaplacian::constructAnisotropic2(CMesh* tmesh)
 	using namespace std;
 	const int vertCount = mOrder = tmesh->vertCount();
     const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
-    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshCurvatures(*tmesh, VertCurvature::MEAN);
     const std::vector<double> vMixedAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);
 	vector<std::tuple<int,int,double> > vSparseElements;	
 	double avgMeanCurv(0);
@@ -152,7 +153,7 @@ void MeshLaplacian::constructAnisotropic3(CMesh* tmesh, int nRing, double hPara1
 	hPara2 = std::pow(tmesh->getAvgEdgeLength(), 2);
 
     const std::vector<ZGeom::Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
-    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshMeanCurvatures(*tmesh);
+    const std::vector<double>& vMeanCurvatures = ZGeom::getMeshCurvatures(*tmesh, VertCurvature::MEAN);
 
 	vector<std::tuple<int,int,double> > vSparseElements;
 

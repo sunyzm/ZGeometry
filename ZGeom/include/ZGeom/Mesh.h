@@ -317,7 +317,7 @@ public:
 		auto iter = mAttributes.find(name);
 		if (iter != mAttributes.end()) 
 			return dynamic_cast<MeshAttr<T>*>(iter->second)->attrValue();
-		else throw std::runtime_error("Requested mesh attribute " + name + " does not exist!");
+		else throw std::runtime_error("Requested mesh attribute " + name + " doesn't exist!");
 	}
     	
     AttrType getAttrType(const std::string& name) const {

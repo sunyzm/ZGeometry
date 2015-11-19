@@ -9,6 +9,7 @@
 #include "Plane.h"
 #include "EigenSystem.h"
 #include "Mesh.h"
+#include "curvature.h"
 
 namespace ZGeom {
 
@@ -17,6 +18,7 @@ const std::string StrAttrVertGaussCurvatures = "vert_gauss_curvature";
 const std::string StrAttrVertMeanCurvatures = "vert_mean_curvature";
 const std::string StrAttrVertPrincipalCurvatures1 = "vert_principal_curvature_1";
 const std::string StrAttrVertPrincipalCurvatures2 = "vert_principal_curvature_2";
+const std::string StrAttrVertAllCurvatures = "vert_all_curvatures";
 const std::string StrAttrMeshHoleRegions = "mesh_hole_regions";
 const std::string StrAttrManualHoleRegions = "mesh_manually_generated_hole_regions";
 
@@ -173,6 +175,8 @@ std::vector<double> computeMeshVertArea(const CMesh& mesh, MeshVertAreaScheme sc
 void calMeshAttrMixedVertAreas(CMesh& mesh);
 const std::vector<double>& getMeshVertMixedAreas(CMesh& mesh);
 
+// curvatures
+
 struct ResultMeshMeanGaussCurvatures 
 { 
     std::vector<double> mean_curvatures, gauss_curvatures; 
@@ -184,30 +188,10 @@ struct ResultMeshMeanGaussCurvatures
         gauss_curvatures = std::move(c2.gauss_curvatures); 
     }
 };
-ResultMeshMeanGaussCurvatures computeMeshMeanGaussCurvatures(CMesh &mesh);
-void calMeshAttrMeanGaussCurvatures(CMesh &mesh);
-const std::vector<double>& getMeshMeanCurvatures(CMesh &mesh);
-const std::vector<double>& getMeshGaussCurvatures(CMesh &mesh);
 
-struct VertPrincipalCurvatures
-{
-public:
-    double curvatures[2];
-    Vec3d directions[2];
-
-    VertPrincipalCurvatures(const VertPrincipalCurvatures& vc2) { *this = vc2; }
-
-    const VertPrincipalCurvatures& operator=(const VertPrincipalCurvatures& vc2)
-    {
-        for (int k = 0; k < 2; ++k) {
-            this->curvatures[k] = vc2.curvatures[k];
-            this->directions[k] = vc2.directions[k];
-        }
-        return *this;
-    }
-};
-
-std::vector<VertPrincipalCurvatures> estimateMeshPrincipalCurvatures(const CMesh& mesh);
+ZGeom::VertCurvature calVertCurvature(const CMesh& mesh, int v_idx, bool compute_principal = true);
+void computeMeshCurvatures(CMesh& mesh, bool compute_principal = true);
+const std::vector<double>& getMeshCurvatures(CMesh& mesh, VertCurvature::CurvatureType curvature_type);
 
 std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed = -1);
 std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::vector<int>& seeds);

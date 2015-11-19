@@ -2143,8 +2143,8 @@ void ShapeEditor::holeEstimateCurvature()
     }
 
     /* inpaint mean curvature values */
-    ZGeom::calMeshAttrMeanGaussCurvatures(*mMesh);
-    VecNd oldCurvature = VecNd(ZGeom::getMeshMeanCurvatures(*mMesh));
+    ZGeom::computeMeshCurvatures(*mMesh);
+    VecNd oldCurvature = VecNd(ZGeom::getMeshCurvatures(*mMesh, ZGeom::VertCurvature::MEAN));
     VecNd newCurvature = singleChannelSparseInpaint(oldCurvature, vMask, dictMHB, vCodingInpaint[0]);
     for (int vi = 0; vi < totalVertCount; ++vi) {
         if (vMask[vi]) newCurvature[vi] = oldCurvature[vi];

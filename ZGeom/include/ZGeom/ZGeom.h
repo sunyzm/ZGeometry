@@ -14,7 +14,7 @@
 #include "PointCloud.h"
 #include "MeshCoordinates.h"
 #include "Mesh.h"
-#include "mesh_processing.h"
+#include "geometry_processing.h"
 #include "SparseRepresentation.h"
 #include "Geodesic.h"
 

@@ -1,4 +1,4 @@
-#include "mesh_processing.h"
+#include "geometry_processing.h"
 #include <cstdlib>
 #include <random>
 #include <map>
@@ -824,8 +824,6 @@ std::vector<Vec3d> computeMeshVertNormals(const CMesh& mesh, VertNormalCalcMetho
     return vertNormals;
 }
 
-
-
 void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
 {
     vector<Vec3d> vertNormals = computeMeshVertNormals(mesh, vnc);
@@ -835,75 +833,80 @@ void calMeshAttrVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WE
 std::vector<Vec3d> getMeshVertNormals(CMesh& mesh, VertNormalCalcMethod vnc /*= VN_AREA_WEIGHT*/)
 {
     if (!mesh.hasAttr(CMesh::StrAttrVertNormals)) calMeshAttrVertNormals(mesh, vnc);
-
     return mesh.getAttrValue<vector<Vec3d>>(CMesh::StrAttrVertNormals);
 }
 
-ZGeom::ResultMeshMeanGaussCurvatures computeMeshMeanGaussCurvatures(CMesh &mesh)
-{
-    const double pi = ZGeom::PI;
-    const int vertNum = mesh.vertCount();
+ZGeom::VertCurvature calVertCurvature(const CMesh& mesh, int v_idx, bool compute_principal) {
+    VertCurvature result;
+    assert(v_idx >= 0 && v_idx < mesh.vertCount());
 
-    ResultMeshMeanGaussCurvatures result;
-    result.mean_curvatures.resize(vertNum, 0);
-    result.gauss_curvatures.resize(vertNum, 0);
+    // boundary vertex default to zero curvature   
+    if (mesh.vert(v_idx)->judgeOnBoundary()) return result;
 
-    mesh.calAttrBoundaryVert();
-    const vector<bool>& vertOnBoundary = mesh.getVertsOnBoundary();
+    const CVertex* vi = mesh.vert(v_idx);
+    double angleSum = 0.0;		// sum of attaching corner's angle
+    double amix = 0.0;
+    ZGeom::Vec3d kh;
 
-    for (int vIndex = 0; vIndex < vertNum; ++vIndex)
-    {
-        const CVertex* vi = mesh.vert(vIndex);
-        double angleSum = 0.0;		// sum of attaching corner's angle
-        double amix = 0.0;
-        ZGeom::Vec3d kh;
+    for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
+        CHalfEdge* e0 = *he;
+        CHalfEdge* e1 = e0->m_eNext;
+        CHalfEdge* e2 = e1->m_eNext;
+        double len0 = e0->length();
+        double len1 = e1->length();
+        double len2 = e2->length();
 
-        // boundary vertex default to zero curvature     
-        if (vertOnBoundary[vIndex]) continue;
+        // compute corner angle by cosine law 
+        double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
+        angleSum += corner;
+        double cota, cotc;
+        amix += ZGeom::calMixedTriArea(len0, len1, len2, cota, cotc);
 
-        for (auto he = vi->m_HalfEdges.begin(); he != vi->m_HalfEdges.end(); ++he) {
-            CHalfEdge* e0 = *he;
-            CHalfEdge* e1 = e0->m_eNext;
-            CHalfEdge* e2 = e1->m_eNext;
-            double len0 = e0->length();
-            double len1 = e1->length();
-            double len2 = e2->length();
+        const CVertex *pt1 = e1->vert(0), *pt2 = e1->vert(1);
+        kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
+    }
 
-            // compute corner angle by cosine law 
-            double corner = std::acos((len0*len0 + len2*len2 - len1*len1) / (2.0*len0*len2));
-            angleSum += corner;
-            double cota, cotc;
-            amix += ZGeom::calMixedTriArea(len0, len1, len2, cota, cotc);
+    kh /= 2.0 * amix;
+    result.mean_curv = kh.length() / 2.0;	            // half magnitude of kh
+    result.gauss_curv = (2.0 * ZGeom::PI - angleSum) / amix; // >0, convex; <0, concave
 
-            const CVertex *pt1 = e1->vert(0), *pt2 = e1->vert(1);
-            kh += (vi->pos() - pt1->pos()) * cota + (vi->pos() - pt2->pos()) * cotc;
-        }
-
-        kh /= 2.0 * amix;
-        result.mean_curvatures[vIndex] = kh.length() / 2.0;	// half magnitude of kh
-        result.gauss_curvatures[vIndex] = (2.0 * pi - angleSum) / amix;		// >0: convex; <0: concave
+    if (compute_principal) {
+        double delta = std::max<double>(0., sqr(result.mean_curv) - result.gauss_curv);
+        delta = sqrt(delta);
+        result.principal_curv_1 = result.mean_curv + delta;
+        result.principal_curv_2 = result.mean_curv - delta;
     }
 
     return result;
 }
 
-void calMeshAttrMeanGaussCurvatures(CMesh &mesh)
+void computeMeshCurvatures(CMesh& mesh, bool compute_principal)
 {
-    auto result = computeMeshMeanGaussCurvatures(mesh);
-    mesh.addAttr<vector<double>>(result.mean_curvatures, StrAttrVertMeanCurvatures, AR_VERTEX, AT_VEC_DBL);
-    mesh.addAttr<vector<double>>(result.gauss_curvatures, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
-}
+    int vert_count = mesh.vertCount();
+    vector<VertCurvature> all_curvatures(vert_count);
+    parallel_for(0, vert_count, [&](int vi) {
+        all_curvatures[vi] = calVertCurvature(mesh, vi, compute_principal);
+    });
 
-const std::vector<double>& getMeshMeanCurvatures(CMesh &mesh)
-{
-    if (!mesh.hasAttr(StrAttrVertMeanCurvatures)) calMeshAttrMeanGaussCurvatures(mesh);
-    return mesh.getAttrValue<vector<double>>(StrAttrVertMeanCurvatures);
-}
+    vector<double> mean_curvs(vert_count), gauss_curvs(vert_count);
+    for (int i = 0; i < vert_count; ++i) {
+        mean_curvs[i] = all_curvatures[i].mean_curv;
+        gauss_curvs[i] = all_curvatures[i].gauss_curv;
+    }
+    mesh.addAttr<vector<double>>(mean_curvs, StrAttrVertMeanCurvatures, AR_VERTEX, AT_VEC_DBL);
+    mesh.addAttr<vector<double>>(gauss_curvs, StrAttrVertGaussCurvatures, AR_VERTEX, AT_VEC_DBL);
 
-const std::vector<double>& getMeshGaussCurvatures(CMesh &mesh)
-{
-    if (!mesh.hasAttr(StrAttrVertGaussCurvatures)) calMeshAttrMeanGaussCurvatures(mesh);
-    return mesh.getAttrValue<vector<double>>(StrAttrVertGaussCurvatures);
+    if (compute_principal) {
+        vector<double>  pri_curvs_1(vert_count), pri_curvs_2(vert_count);
+        for (int i = 0; i < vert_count; ++i) {
+            pri_curvs_1[i] = all_curvatures[i].principal_curv_1;
+            pri_curvs_2[i] = all_curvatures[i].principal_curv_2;
+        }
+        mesh.addAttr<vector<double>>(pri_curvs_1, StrAttrVertPrincipalCurvatures1, AR_VERTEX, AT_VEC_DBL);
+        mesh.addAttr<vector<double>>(pri_curvs_2, StrAttrVertPrincipalCurvatures2, AR_VERTEX, AT_VEC_DBL);
+    }
+
+    mesh.addAttr<vector<VertCurvature>>(all_curvatures, StrAttrVertAllCurvatures, AR_VERTEX, AT_UNKNOWN);
 }
 
 void gatherMeshStatistics(CMesh& mesh)
@@ -915,11 +918,9 @@ void gatherMeshStatistics(CMesh& mesh)
     // 4. mesh center
     // 5. bounding box
     // 6. average edge length
-    // 7. individual vertex curvature value
+    // 7. individual vertex curvatures
     // 8. vertex voronoi area
 
-    //mesh.calAttrFaceNormals();
-    //calMeshAttrVertNormals(mesh, ZGeom::VN_AREA_WEIGHT);
     mesh.calAttrVertNormals();
 
     mesh.calAttrBoundaryVert();
@@ -937,7 +938,7 @@ void gatherMeshStatistics(CMesh& mesh)
     mesh.addAttr<Vec3d>(center, CMesh::StrAttrMeshCenter, AR_UNIFORM, AT_VEC3);
     mesh.addAttr<Vec3d>(boundBox, CMesh::StrAttrMeshBBox, AR_UNIFORM, AT_VEC3);
 
-    calMeshAttrMeanGaussCurvatures(mesh);
+    computeMeshCurvatures(mesh, true);  // mean, gauss, principals
     calMeshAttrMixedVertAreas(mesh);
 }
 
@@ -2237,6 +2238,33 @@ bool refineMeshHoleByNum(CMesh &mesh, MeshRegion& hole, int new_vert_count)
     mesh.addAttr<vector<MeshRegion>>(vector < MeshRegion > {hole}, StrAttrMeshHoleRegions, AR_UNIFORM, AT_UNKNOWN);
     
     return true;
+}
+
+const std::vector<double>& getMeshCurvatures(CMesh& mesh, VertCurvature::CurvatureType curvature_type)
+{
+    string curv_type_name;
+    switch (curvature_type)
+    {
+    case ZGeom::VertCurvature::MEAN:
+        curv_type_name = StrAttrVertMeanCurvatures;
+        break;
+    case ZGeom::VertCurvature::GAUSS:
+        curv_type_name = StrAttrVertGaussCurvatures;
+        break;
+    case ZGeom::VertCurvature::PRINCIPAL_1:
+        curv_type_name = StrAttrVertPrincipalCurvatures1;
+        break;
+    case ZGeom::VertCurvature::PRINCIPAL_2:
+        curv_type_name = StrAttrVertPrincipalCurvatures2;
+        break;
+    default:
+        throw runtime_error("Unrecognized curvature type!");
+        break;
+    }
+
+    if (!mesh.hasAttr(curv_type_name)) computeMeshCurvatures(mesh, true);
+    
+    return mesh.getAttrValue<vector<double>>(curv_type_name);
 }
 
 }   // end of namespace

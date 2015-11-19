@@ -24,6 +24,7 @@
 #include <QFormLayout>
 #include <QTime>
 #include <QImage>
+#include <ZGeom/geometry_processing.h>
 #include <ZGeom/util.h>
 #include <ZGeom/SparseSymMatVecSolver.h>
 #include <ZGeom/MatVecArithmetic.h>
@@ -962,27 +963,27 @@ void QZGeometryWindow::toggleDrawRegistration( bool show /*= false*/ )
 
 void QZGeometryWindow::computeCurvatures()
 {
+    using ZGeom::VertCurvature;
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-        ZGeom::calMeshAttrMeanGaussCurvatures(*getMesh(obj));
-        vector<double> vCM = ZGeom::getMeshMeanCurvatures(*getMesh(obj));
-        vector<double> vCG = ZGeom::getMeshGaussCurvatures(*getMesh(obj));
-//         vector<double> vCP1 = getMesh(obj)->calPrincipalCurvature(1);
-//         vector<double> vCP2 = getMesh(obj)->calPrincipalCurvature(2);
+        ZGeom::computeMeshCurvatures(*getMesh(obj), true);
+        const vector<double>& vCM = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::MEAN);
+        const vector<double>& vCG = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::GAUSS);
+        const vector<double>& vCP1 = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::PRINCIPAL_1);
+        const vector<double>& vCP2 = ZGeom::getMeshCurvatures(*getMesh(obj), VertCurvature::PRINCIPAL_2);
 
         ColorSignature colorCM(vCM, gSettings.ACTIVE_COLOR_MAP_TYPE);
         ColorSignature colorCG(vCG, gSettings.ACTIVE_COLOR_MAP_TYPE);
-//         ColorSignature colorCP1(vCP1, gSettings.ACTIVE_COLOR_MAP_TYPE);
-//         ColorSignature colorCP2(vCP2, gSettings.ACTIVE_COLOR_MAP_TYPE);
+        ColorSignature colorCP1(vCP1, gSettings.ACTIVE_COLOR_MAP_TYPE);
+        ColorSignature colorCP2(vCP2, gSettings.ACTIVE_COLOR_MAP_TYPE);
 
         getMesh(obj)->addColorSigAttr("color_mean_curvature", colorCM);
         getMesh(obj)->addColorSigAttr("color_gauss_curvature", colorCG);
-//         getMesh(obj)->addColorAttr("color_principal_curvature_1", colorCP1);
-//         getMesh(obj)->addColorAttr("color_principal_curvature_2", colorCP2);
-
+        getMesh(obj)->addColorSigAttr("color_principal_curvature_1", colorCP1);
+        getMesh(obj)->addColorSigAttr("color_principal_curvature_2", colorCP2);
 
         auto mm1 = std::minmax_element(vCM.begin(), vCM.end());
         auto mm2 = std::minmax_element(vCG.begin(), vCG.end());
-        qout.output(QString("- mean curvature -  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
+        qout.output(QString("- Mean curvature -  min: %1, max: %2").arg(*mm1.first).arg(*mm1.second), OUT_TERMINAL);
         qout.output(QString("- Gauss curvature -  min: %1, max: %2").arg(QString::number(*mm2.first), QString::number(*mm2.second)), OUT_TERMINAL);
 	}
 
@@ -1588,6 +1589,10 @@ void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
         int num_eig = getMesh(obj)->vertCount() - 2;
+        num_eig = QInputDialog::getInt(this, "Select eig_num",
+            QString().sprintf("Num of eigen (max: %d)", num_eig),
+            num_eig, 1, num_eig, 1);
+
         MeshHelper& mp = mMeshHelper[obj];
         mp.computeLaplacian(num_eig, lap_type);
         auto& all_eigvals = mp.getEigenSystem(lap_type).getAllEigVals();
@@ -2756,9 +2761,6 @@ void QZGeometryWindow::doExperiment1()
     MeshLaplacian graphLaplacian;
     graphLaplacian.constructUmbrella(&mesh);
     int eigenCount = total_vert_count - 1;
-
-    // uncomment the following line if half decomposition is needed
-    //eigenCount /= 2;    
 
     ZGeom::EigenSystem es;
     graphLaplacian.meshEigenDecompose(eigenCount, &g_engineWrapper, es);

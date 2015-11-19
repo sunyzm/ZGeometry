@@ -1,6 +1,6 @@
 #include "Geodesic.h"
 #include <vector>
-#include "mesh_processing.h"
+#include "geometry_processing.h"
 using namespace std;
 
 class GeoNote

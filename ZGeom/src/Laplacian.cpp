@@ -1,7 +1,7 @@
 #include "Laplacian.h"
 #include <map>
 #include "EigenCompute.h"
-#include "mesh_processing.h"
+#include "geometry_processing.h"
 #include "arithmetic.h"
 #include "timer.h"
 #include "zassert.h"
@@ -189,7 +189,7 @@ void Laplacian::constructSymCot(CMesh* tmesh)
 
 void Laplacian::constructAniso(CMesh *tmesh)
 {
-    vector<double> vMeanCurv = ZGeom::getMeshMeanCurvatures(*tmesh);
+    vector<double> vMeanCurv = ZGeom::getMeshCurvatures(*tmesh, VertCurvature::MEAN);
     vector<double> vVertAreas = computeMeshVertArea(*tmesh, ZGeom::VA_MIXED_VORONOI);    
     vector<Vec3d> vNormals = ZGeom::getMeshVertNormals(*tmesh);
     const int vertCount = tmesh->vertCount();

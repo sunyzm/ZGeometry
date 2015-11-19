@@ -134,13 +134,16 @@
     <ClInclude Include="include\ZGeom\Plane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="include\ZGeom\mesh_processing.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="include\ZGeom\sparse_approximation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\triBoxOverlap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\geometry_processing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="include\ZGeom\curvature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -226,13 +229,13 @@
     <ClCompile Include="src\Vec3.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\mesh_processing.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\sparse_approximation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\triBoxOverlap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\geometry_processing.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

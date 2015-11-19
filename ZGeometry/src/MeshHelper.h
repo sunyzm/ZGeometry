@@ -59,19 +59,18 @@ private:
     MeshHelper(const MeshHelper&);
     MeshHelper& operator = (const MeshHelper&);
 
-    bool isMHBCacheValid(const std::string& pathMHB, int eig_num);
-    std::string generateMHBPath(const std::string& prefix, LaplacianType lap_type);
-
-public:
-    std::vector<std::unique_ptr<CMesh>> mesh_history_;
-    std::vector<std::unique_ptr<ExtraInfo>> mesh_extra_infos_;
-    int cur_mesh_idx_;
-
-private:
     std::map<LaplacianType, MeshLaplacian>& getAllLaplacians() {
         return getMeshExtraInfo().laplacians;
     }
     std::map<LaplacianType, ZGeom::EigenSystem>& getAllEigensys() {
         return getMeshExtraInfo().eigensys;
     }
+
+    bool isMHBCacheValid(const std::string& pathMHB, int eig_num);
+    std::string generateMHBPath(const std::string& prefix, LaplacianType lap_type);
+
+private:
+    std::vector<std::unique_ptr<CMesh>> mesh_history_;
+    std::vector<std::unique_ptr<ExtraInfo>> mesh_extra_infos_;
+    int cur_mesh_idx_;
 };
