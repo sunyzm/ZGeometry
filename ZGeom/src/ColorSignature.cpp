@@ -112,4 +112,13 @@ void ColorSignature::changeSignatureMode(SignatureMode smode)
     mNormalizedValues = tmpSig;
 }
 
+void ColorSignature::setColorBuffer(float* dst) const
+{
+    for (size_t i = 0; i < mColors.size(); ++i) {
+        for (int c = 0; c < 4; ++c) {
+            dst[4 * i + c] = mColors[i][c];
+        }
+    }
+}
+
 }   // end of namespace

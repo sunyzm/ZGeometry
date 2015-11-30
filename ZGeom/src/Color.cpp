@@ -28,7 +28,7 @@ Colorf::Colorf(const float *c) : mVal(4, 0)
 void Colorf::setAs( const float *c )
 {
 	assert( 0 <= c[0] && c[0] <= 1 && 0 <= c[1] && c[1] <= 1 &&
-		0 <= c[2] && c[2] <= 1 &&	0 <= c[3] && c[3] <= 1 );
+		0 <= c[2] && c[2] <= 1 && 0 <= c[3] && c[3] <= 1 );
 	std::copy_n(c, 4, mVal.begin());
 }
 

@@ -31,6 +31,7 @@ public:
     void changeSignatureMode(SignatureMode sigMode);
     Colorf& operator [] (int i) { return mColors[i]; }
     bool hasOriginalValues() const { return !mOriginalValues.empty(); }
+    void setColorBuffer(float* dst) const;
 
 private:
     std::vector<double> mOriginalValues;

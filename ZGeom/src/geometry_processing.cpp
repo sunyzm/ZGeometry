@@ -16,7 +16,7 @@ using namespace concurrency;
 
 namespace ZGeom {
 
-std::function<double(double, double)> heatGen = [](double lambda, double tau){
+std::function<double(double, double)> heat_gen_func = [](double lambda, double tau){
     return std::exp(-lambda*tau);
 };
 
@@ -98,30 +98,34 @@ DenseMatrixd calSpectralKernelMatrix(const EigenSystem& es, double t, std::funct
 
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> genfunc)
 {
-    const int vertCount = es.eigVecSize();
-    const int eigCount = es.eigVecCount();
-    std::vector<double> vDiag(eigCount);
-    for (int k = 0; k < eigCount; ++k) vDiag[k] = genfunc(es.getEigVal(k), t);
+    const int vert_count = es.eigVecSize();
+    const int eigen_num = es.eigVecCount();
 
-    vector<double> result(vertCount, 0);
-    for (int i = 0; i < vertCount; ++i) {
-        for (int k = 0; k < eigCount; ++k) {
-            const VecNd& phi = es.getEigVec(k);
-            result[i] += vDiag[k] * phi[i] * phi[i];
-        }
+    std::vector<double> vDiag(eigen_num);
+    for (int k = 0; k < eigen_num; ++k) {
+        vDiag[k] = genfunc(es.getEigVal(k), t);
     }
 
+    vector<double> result(vert_count, 0);
+    parallel_for(0, vert_count, [&](int i) {
+        double sum(0);
+        for (int k = 0; k < eigen_num; ++k) {
+            const VecNd& phi = es.getEigVec(k);
+            sum += vDiag[k] * phi[i] * phi[i];
+        }
+        result[i] = sum;
+    });
     return result;
 }
 
 DenseMatrixd calHeatKernelMatrix(const EigenSystem& hb, double t)
 {
-    return calSpectralKernelMatrix(hb, t, heatGen);
+    return calSpectralKernelMatrix(hb, t, heat_gen_func);
 }
 
 std::vector<double> calHeatKernelSignature(const EigenSystem& hb, double t)
 {
-    return calSpectralKernelSignature(hb, t, heatGen);
+    return calSpectralKernelSignature(hb, t, heat_gen_func);
 }
 
 double calHeatKernel(const EigenSystem& es, int i, int j, double t)

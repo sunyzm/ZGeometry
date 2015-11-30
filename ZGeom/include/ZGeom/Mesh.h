@@ -166,20 +166,22 @@ public:
 	std::vector<CFace*>		m_vFaces;
     std::unordered_map<std::string, MeshAttrBase*> mAttributes;
 
+    float *color_buffer;
+    double *coord_buffer;
+    
 ////////////////    methods    ////////////////
 public:
 	/* constructors */
 	CMesh();
 	CMesh(const CMesh & oldMesh);
     CMesh& operator = (CMesh && oldMesh);
-    CMesh(CMesh && oldMesh) { *this = std::move(oldMesh); }
+    CMesh(CMesh && oldMesh);
 	~CMesh();	
 
     /* mesh basics */
     void	            clearMesh();
     void                clearAttributes();
     void                clearNonEssentialAttributes();
-    void                initAttributes(std::string mesh_name, ZGeom::Colorf default_color);
     void                cloneFrom(const CMesh& oldMesh, const std::string nameSuffix = ".clone");
 
 	/* Mesh IO and processing */
@@ -208,9 +210,8 @@ public:
 	const CHalfEdge*	getHalfEdge(int i) const { return m_vHalfEdges[i]; }
     void	            assignElementsIndex();
 
-    /* basic geometry query, analysis and processing */
+    /* geometric query, analysis and processing */
 	const ZGeom::Vec3d&		        vertPos(int iVert) const { return m_vVertices[iVert]->pos(); }
-    std::vector<ZGeom::Vec3d>       allVertPos() const;
 	const ZGeom::Vec3d&			    getBoundingBox() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshBBox); }
 	const ZGeom::Vec3d&		        getCenter() const { return getAttrValue<ZGeom::Vec3d>(StrAttrMeshCenter); }
     double                          getAvgEdgeLength();
@@ -250,11 +251,6 @@ public:
 	std::vector<int>	getVertNeighborVerts(int v, int ring, bool inclusive = false) const;
 	std::vector<int>    getVertIsoNeighborVerts(int v, int ring) const;	// get vertices at the distances w.r.t. the given vertex
 	std::vector<int>	getVertAdjacentFaceIdx(int vIdx, int ring = 1) const;
-
-	MeshCoordinates     getVertCoordinates() const;
-	void				setVertCoordinates(const MeshCoordinates& coords);
-	void                setVertCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
-	void		        setPartialVertCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
 
 	int					calEulerNum();			// get Euler number of mesh: Euler# = v - e + f
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
@@ -334,8 +330,11 @@ public:
 	void addColorSigAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors);
     void setDefaultColor(ZGeom::Colorf color);
     ZGeom::ColorSignature& getColorSignature(const std::string& colorAttrName);
-	std::vector<ZGeom::Colorf>& getVertColors(const std::string& colorAttrName);
-	std::vector<AttrVertColors*> getColorAttrList();        
+	std::vector<ZGeom::Colorf>& getVertColor(const std::string& colorAttrName);
+	std::vector<AttrVertColors*> getColorAttrList();     
+
+    void                colorize(const std::string& signature_name);
+    const float*        getColorData();
 
 	/************************************************************************/
 	/* Mesh feature attributes methods                                      */
@@ -357,12 +356,16 @@ public:
     /* mesh coordinates attributes methods                                  */
     /************************************************************************/
     void initNamedCoordinates();
-    bool hasNamedCoordinates();
     void addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name = "unnamed");
     const std::string& switchNextCoordinate();
     const std::string& switchPrevCoordinate();
     const std::string& revertCoordinate();
     const std::string& deleteCoordinate();
+    MeshCoordinates     getVertCoordinates() const;
+    void				setVertCoordinates(const MeshCoordinates& coords);
+    void                setVertCoordinates(const std::vector<double>& vxCoord, const std::vector<double>& vyCoord, const std::vector<double>& vzCoord);
+    void		        setPartialVertCoordinates(const std::vector<int>& vDeformedIdx, const std::vector<ZGeom::Vec3d>& vNewPos);
+    const double*       getCoordData();
 
     /************************************************************************/
     /* mesh string attributes methods */

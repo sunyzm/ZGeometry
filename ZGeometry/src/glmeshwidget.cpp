@@ -469,8 +469,8 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	CMesh* tmesh = pMP->getMesh();
     const vector<Vec3d>& vVertNormals = ZGeom::getMeshVertNormals(*tmesh);
     const vector<Vec3d>& vFaceNormals = tmesh->getFaceNormals();
-    const vector<Vec3d> vVertPos = tmesh->allVertPos();
-    const vector<Colorf>& vVertColors = tmesh->getVertColors(m_bShowSignature ? pRS->mActiveColorSignatureName : CMesh::StrAttrColorSigDefault);
+    const float *vert_colors = tmesh->getColorData();
+    const double *vert_coords = tmesh->getCoordData();
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
@@ -507,14 +507,14 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             }
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
-                const Vec3d& vt = vVertPos[pi];
-                const Colorf& vc = vVertColors[pi];
+                const double* vt = vert_coords + 3 * pi;
+                const float* vc = vert_colors + pi * 4;
                 if (m_nShadeMode != 0) {
                     const ZGeom::Vec3d& norm = vVertNormals[pi];
                     glNormal3f(norm.x, norm.y, norm.z);
                 }
                 glColor3f(vc[0], vc[1], vc[2]);
-                glVertex3f(vt.x, vt.y, vt.z);
+                glVertex3f(vt[0], vt[1], vt[2]);
             }
         }
         glEnd();
@@ -534,7 +534,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             const vector<int> &holeFaceIdx = mr.face_inside;
             const vector<Colorf>* inpaint_error_colors = nullptr;
             if (m_bShowHoleError && tmesh->hasAttr(StrAttrColorInpaintError))
-                inpaint_error_colors = &tmesh->getVertColors(StrAttrColorInpaintError);
+                inpaint_error_colors = &tmesh->getVertColor(StrAttrColorInpaintError);
 
             glBegin(GL_TRIANGLES);
             for (int fIdx : holeFaceIdx) {
@@ -543,10 +543,10 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
                     int pi = face->vertIdx(j);
                     const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
                     Colorf vc = (inpaint_error_colors ? inpaint_error_colors->at(pi) : hole_color);
-                    const Vec3d& vt = vVertPos[pi];
+                    const double* vt = vert_coords + 3 * pi;
                     glNormal3f(norm.x, norm.y, norm.z);
                     glColor4f(vc[0], vc[1], vc[2], 1.0f);
-                    glVertex3f(vt.x, vt.y, vt.z);
+                    glVertex3f(vt[0], vt[1], vt[2]);
                 }
             }
             glEnd();
@@ -568,9 +568,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = (m_nShadeMode == 0 ? vFaceNormals[fIdx] : vVertNormals[pi]);
-                const Vec3d& vt = vVertPos[pi];                
+                const double* vt = vert_coords + 3 * pi;
                 glNormal3f(norm.x, norm.y, norm.z);
-                glVertex3f(vt.x, vt.y, vt.z);
+                glVertex3f(vt[0], vt[1], vt[2]);
             }
         }
         glEnd();
@@ -607,9 +607,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             for (int j = 0; j < 3; j++) {
                 int pi = face->vertIdx(j);
                 const ZGeom::Vec3d& norm = vVertNormals[pi];
-                const Vec3d& vt = vVertPos[pi];
+                const double* vt = vert_coords + 3 * pi;
                 glNormal3f(norm.x, norm.y, norm.z);
-                glVertex3f(vt.x, vt.y, vt.z);
+                glVertex3f(vt[0], vt[1], vt[2]);
             }
         }
         glEnd();
@@ -716,7 +716,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
 	/* draw reference point */
 	if ( m_bShowRefPoint ) 
     {
-        Vec3d vt = vVertPos[pMP->getRefPointIndex()];
+        Vec3d vt = tmesh->vertPos(pMP->getRefPointIndex());
 		glColor4f(1.0f, 0.5f, 0.0f, 1.0f);
 		GLUquadric* quadric = gluNewQuadric();
 		gluQuadricDrawStyle(quadric, GLU_FILL);
@@ -737,7 +737,7 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             const float *feature_color2 = ZGeom::ColorMagenta;
             GLUquadric* quadric = gluNewQuadric();
             for (MeshFeature* feature : feature_list.getFeatureVector()) {
-                const Vec3d& vt = vVertPos[feature->m_index];
+                const Vec3d& vt = tmesh->vertPos(feature->m_index);
                 glColor4f(feature->m_color[0], feature->m_color[1], feature->m_color[2], 1.0);                
                 gluQuadricDrawStyle(quadric, GLU_FILL);
                 glPushMatrix();

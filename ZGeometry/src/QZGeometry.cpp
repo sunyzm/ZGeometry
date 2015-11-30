@@ -537,7 +537,6 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
     newMesh->scaleToUnitBox();
     ZGeom::gatherMeshStatistics(*newMesh);
     Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
-    //Colorf meshColor(ZGeom::ColorSlateGray);
     newMesh->setDefaultColor(meshColor);
     newMesh->initNamedCoordinates();
 
@@ -860,6 +859,15 @@ void QZGeometryWindow::toggleShowSignature( bool show /*= false*/ )
 	ui.glMeshWidget->m_bShowSignature = bToShow;
 	ui.actionShowSignature->setChecked(bToShow);
 	
+    for (int obj = 0; obj < mMeshCount; ++obj) {
+        if (!bToShow) {
+            getMesh(obj)->colorize(CMesh::StrAttrColorSigDefault);
+        }
+        else {
+            getMesh(obj)->colorize(mRenderManagers[obj].mActiveColorSignatureName);
+        }
+    }
+
 	ui.glMeshWidget->update();
 }
 
@@ -996,7 +1004,6 @@ void QZGeometryWindow::computeCurvatures()
     toggleShowColorLegend(true);
 	qout.output("Mean curvature visualized");	
 }
-
 
 void QZGeometryWindow::computeShapeIndex()
 {
@@ -1165,13 +1172,8 @@ void QZGeometryWindow::computeHKS()
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(mActiveLalacian);
-
-		std::vector<double> values(meshSize);
-		Concurrency::parallel_for (0, meshSize, [&](int k) {
-            values[k] = ZGeom::calHeatKernel(mhb, k, k, time_scale);
-		});
-
+		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(CotFormula);
+        std::vector<double> values = ZGeom::calHeatKernelSignature(mhb, time_scale);
 		addColorSignature(i, values, StrAttrColorHKS);
 	}
 	
@@ -1255,6 +1257,7 @@ void QZGeometryWindow::displaySignature(QString sigName )
 	for (int i = 0; i < mMeshCount; ++i) {
         if (getMesh(i)->hasAttr(sigName.toStdString())) {
             mRenderManagers[i].mActiveColorSignatureName = sigName.toStdString();            
+            getMesh(i)->colorize(sigName.toStdString());
         }        
 	}
     
@@ -1263,7 +1266,9 @@ void QZGeometryWindow::displaySignature(QString sigName )
         else qa->setChecked(false);        
     }
 
-	if (ui.glMeshWidget->m_bShowSignature == false) toggleShowSignature(true);	
+    if (ui.glMeshWidget->m_bShowSignature == false) {
+        toggleShowSignature(true);
+    }
 	ui.glMeshWidget->update();
 }
 
@@ -1822,12 +1827,14 @@ void QZGeometryWindow::diffusionFlow()
 void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		const std::string& currentSig = mRenderManagers[obj].mActiveColorSignatureName;
-        if (!getMesh(obj)->hasAttr(currentSig)) continue;
-        ColorSignature& colors = getMesh(obj)->getColorSignature(currentSig);
-        if (!colors.hasOriginalValues()) continue;
-        colors.changeColorMap(gSettings.ACTIVE_COLOR_MAP_TYPE);
-        colors.changeSignatureMode(smode);
+		const std::string& current_sig_name = mRenderManagers[obj].mActiveColorSignatureName;
+        if (!getMesh(obj)->hasAttr(current_sig_name)) continue;
+        ColorSignature& colors = getMesh(obj)->getColorSignature(current_sig_name);
+        if (colors.hasOriginalValues()) {
+            colors.changeColorMap(gSettings.ACTIVE_COLOR_MAP_TYPE);
+            colors.changeSignatureMode(smode);
+        }
+        getMesh(obj)->colorize(current_sig_name);
 	}
 
 	ui.glMeshWidget->update();
@@ -2621,7 +2628,7 @@ void QZGeometryWindow::curveSignature()
     CMesh* cur_mesh = getMesh(0);
     std::string cur_sig_name = mRenderManagers[0].mActiveColorSignatureName;
     if (cur_sig_name.empty() || !cur_mesh->hasAttr(cur_sig_name)) return;
-    ColorSignature& cur_sig = cur_mesh->getColorSignature(mRenderManagers[0].mActiveColorSignatureName);
+    ColorSignature& cur_sig = cur_mesh->getColorSignature(cur_sig_name);
     if (!cur_sig.hasOriginalValues()) return;
 
     double lower_bound = cur_sig.getCurveMin();
@@ -2638,6 +2645,7 @@ void QZGeometryWindow::curveSignature()
     if (!ok) return;
 
     cur_sig.curve(lower_bound, upper_bound);
+    cur_mesh->colorize(cur_sig_name);
     ui.glMeshWidget->update();
 }
 
