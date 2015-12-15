@@ -258,7 +258,7 @@ vector<double> calAllBiharmonicDist(EigenSystem& es, int vo, int eig_num)
     parallel_for(0, vert_count, [&](int vi) {
         double sum(0);
         for (int k = 1; k < eig_count; ++k) {
-            sum += ZGeom::sqr(mat_eig_vec(k, vo) - mat_eig_vec(k, vi)) / vec_eig_vals[k];
+            sum += ZGeom::sqr((mat_eig_vec(k, vo) - mat_eig_vec(k, vi)) / vec_eig_vals[k]);
         }
         result[vi] = std::sqrt(sum);
     });

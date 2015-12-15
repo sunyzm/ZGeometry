@@ -567,8 +567,9 @@ void QZGeometryWindow::clone()
 
 void QZGeometryWindow::addMesh()
 {
-	QStringList filenames =  QFileDialog::getOpenFileNames(this, "Select one or more mesh files to open",
-														   "../../Data/", "Meshes (*.obj *.off *.ply)");
+	QStringList filenames =  QFileDialog::getOpenFileNames(this, 
+            "Select one or more mesh files to open", 
+            "../../Data/", "Meshes (*.obj *.off *.ply)");
 	int cur_obj = mMeshCount;
 	allocateStorage(++mMeshCount);
 
@@ -1122,6 +1123,11 @@ void QZGeometryWindow::computeHoleNeighbors()
 void QZGeometryWindow::computeEigenfunction()
 {
 	LaplacianType lap_type = mActiveLalacian;
+    if (!mMeshHelper[0].hasEigenSystem(lap_type)) {
+        QMessageBox::warning(this, "No Laplacian", "Compute Laplacian first!");
+        return;
+    }
+
     ZGeom::EigenSystem& es = mMeshHelper[0].getEigenSystem(lap_type);
     bool ok;
     int selected_eig = QInputDialog::getInt(this, "Select eigenfunction",

@@ -1567,8 +1567,9 @@ AttrVertColors& CMesh::addColorSigAttr(const std::string& colorAttrName)
 
 void CMesh::addColorSigAttr(const std::string& colorAttrName, const ZGeom::ColorSignature& vColors)
 {
-    if (hasAttr(colorAttrName)) getColorAttr(colorAttrName).attrValue() = vColors;
-    else {
+    if (hasAttr(colorAttrName)) {
+        getColorAttr(colorAttrName).attrValue() = vColors;
+    } else {
         ZGeom::ColorSignature& vNewColor = addColorSigAttr(colorAttrName).attrValue();
         vNewColor = vColors;
     }
