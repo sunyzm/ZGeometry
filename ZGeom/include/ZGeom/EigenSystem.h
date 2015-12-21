@@ -4,6 +4,7 @@
 #include <functional>
 #include "VecN.h"
 #include "DenseMatrix.h"
+#include "SparseMatrix.h"
 
 namespace ZGeom {
 
@@ -12,7 +13,7 @@ class EigenSystem
 public:
 	friend class EigenCompute;
 
-    void clear() { mEigVals.clear(); mEigVecs.clear(); mEigenMat.clear(); }
+    void clear();
 	void setSize(int order, int nev);
 	bool empty() const { return mEigVecs.empty(); }
     int eigVecCount() const { return (int)mEigVecs.size(); }
@@ -29,15 +30,20 @@ public:
 	void save(const std::string& file) const;
 	void load(const std::string& file);
     void resize(int m);
+    bool hasInducingMat() const { return !mInducingMat.empty(); }
+    const ZGeom::SparseMatrixd getInducingMat() const { return mInducingMat; }
     bool hasEigenMat() const { return !mEigenMat.empty(); }
-    void computeEigenMat() { mEigenMat.clear(); mEigenMat = toDenseMatrix(); }
+    void computeEigenMat();
     const ZGeom::DenseMatrixd& getEigenMat();
+
+    void validate();
 
 public:
 	std::vector<double> mEigVals;
 	std::vector<VecNd> mEigVecs;
 
 private:    
+    ZGeom::SparseMatrixd mInducingMat;
     ZGeom::DenseMatrixd mEigenMat;
 };
 

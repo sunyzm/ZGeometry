@@ -1,5 +1,5 @@
 #include "differential_geometry.h"
-#include <ZGeom/spectral_geometry.h>
+#include <ZGeom/spectral_analysis.h>
 #include <ZGeom/zassert.h>
 #define USE_AMP
 

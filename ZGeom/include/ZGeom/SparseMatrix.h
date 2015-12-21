@@ -101,10 +101,6 @@ public:
 
     std::vector<T> getDiagonal() const;
 
-    /* conversion between formats */
-	template<typename F>
-	void getDiagonal(std::vector<F>& diag) const;
-
     template<typename F>
 	void convertFromDiagonal(const std::vector<F>& diag);    
 
@@ -407,22 +403,13 @@ inline void SparseMatrix<T>::computeSubMatrix(const std::vector<int>& vSelected,
 template<typename T>
 std::vector<T> SparseMatrix<T>::getDiagonal() const
 {
-    std::vector<T> vDiag;
-    getDiagonal(vDiag);
-    return vDiag;
-}
-
-
-template<typename T>
-template<typename F>
-void SparseMatrix<T>::getDiagonal(std::vector<F>& diag) const
-{
     assert(mRowCount == mColCount);
-    diag.resize(mRowCount, 0);
+    std::vector<T> diag(mRowCount, (T)0);
     for (auto iter = mElements.begin(); iter != mElements.end(); ++iter) {
         if (iter->row() == iter->col())
             diag[iter->row() - 1] = iter->val();
     }
+    return diag;
 }
 
 template<typename T>

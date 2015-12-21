@@ -32,6 +32,7 @@ void EigenCompute::solveGenSym( const SparseMatrix<double>& mLs, const SparseMat
 		eigSys.mEigVals[i] = std::fabs(eval[i]);
 		std::copy_n(evec + i*nOrder, nOrder, eigSys.getEigVec(i).c_ptr());
 	}
+    eigSys.mInducingMat = mW;
 
 	m_ep->removeVariable("AA");
 	m_ep->removeVariable("II");

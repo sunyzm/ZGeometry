@@ -10,7 +10,7 @@
 #include "EigenSystem.h"
 #include "Mesh.h"
 #include "curvature.h"
-#include "spectral_geometry.h"
+#include "spectral_analysis.h"
 
 namespace ZGeom {
 

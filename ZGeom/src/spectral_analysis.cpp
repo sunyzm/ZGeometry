@@ -1,12 +1,13 @@
-#include "spectral_geometry.h"
+#include "spectral_analysis.h"
 #include <cmath>
 #include <functional>
 #include <vector>
 #include <ppl.h>
 #include "arithmetic.h"
+#include "MatVecArithmetic.h"
 
 using namespace std;
-using namespace concurrency;
+using concurrency::parallel_for;
 
 std::function<double(double, double)> heat_gen_func = [](double lambda, double tau){
     return std::exp(-lambda*tau);
@@ -54,6 +55,31 @@ std::vector<double> bivariateKernelDiagonal(const ZGeom::EigenSystem& es, const 
 
 namespace ZGeom 
 {
+
+std::vector<double> calSpectralCoeff(const EigenSystem& es, const std::vector<double>& vert_func)
+{
+    assert(es.eigVecSize() == vert_func.size());
+
+    int vert_num = es.eigVecSize();
+    int eigen_num = es.eigVecCount();
+    vector<double> inducing_diag;
+    if (es.hasInducingMat()) {
+        inducing_diag = es.getInducingMat().getDiagonal();
+    }
+
+    vector<double> result(eigen_num);
+    parallel_for(0, eigen_num, [&](int k) {
+        vector<double> eigen_vec_k = es.getEigVec(k).toStdVector();
+        if (inducing_diag.empty()) {
+            result[k] = innerProduct(eigen_vec_k, vert_func);
+        }
+        else {
+            result[k] = inducedInnerProduct(eigen_vec_k, vert_func, inducing_diag);
+        }
+    });
+
+    return result;
+}
 
 std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen_func)
 {
@@ -159,20 +185,6 @@ double calHeatTrace(const EigenSystem& es, double t)
     return sum;
 }
 
-std::vector<double> calAllSgwWavelet(const EigenSystem& es, double t, int vi)
-{
-    int vert_num = es.eigVecSize();
-    int eigen_num = es.eigVecCount();
-
-    vector<double> diag(eigen_num);
-    for (int k = 0; k < eigen_num; ++k) {
-        diag[k] = wavelet_gen_1(t * es.getEigVal(k));
-    }
-
-    vector<double> result = bivariateKernelRow(es, diag, vi);
-    return result;
-}
-
 std::vector<double> computeSgwScales(const EigenSystem& es, int num_scales)
 {
     if (num_scales <= 1) throw runtime_error("Number of scales must greater than 1!");
@@ -193,6 +205,41 @@ std::vector<double> computeSgwScales(const EigenSystem& es, int num_scales)
     return result;
 }
 
+std::vector<double> calAllSgwWavelet(const EigenSystem& es, double timescale, int vi)
+{
+    int vert_num = es.eigVecSize();
+    int eigen_num = es.eigVecCount();
+
+    vector<double> diag(eigen_num);
+    for (int k = 0; k < eigen_num; ++k) {
+        diag[k] = wavelet_gen_1(timescale * es.getEigVal(k));
+    }
+
+    vector<double> result = bivariateKernelRow(es, diag, vi);
+    return result;
+}
+
+std::vector<double> calSgwCoeff(const EigenSystem& es, double timescale, const std::vector<double>& mesh_func)
+{
+    int vert_num = es.eigVecSize();
+    int eigen_num = es.eigVecCount();
+
+    vector<double> kernel_coeff(eigen_num);
+    for (int k = 0; k < eigen_num; ++k) {
+        kernel_coeff[k] = wavelet_gen_1(timescale * es.getEigVal(k));
+    }
+    vector<double> fourier_coeff = calSpectralCoeff(es, mesh_func);
+
+    vector<double> result(vert_num);
+    parallel_for(0, vert_num, [&](int vi) {
+        double sum(0);        
+        for (int k = 0; k < eigen_num; ++k) {
+            const auto& phi_k = es.getEigVec(k);
+            sum += kernel_coeff[k] * fourier_coeff[k] * phi_k[vi];
+        }
+        result[vi] = sum;
+    });
+    return result;
+}
+
 } // end of namespace
-
-

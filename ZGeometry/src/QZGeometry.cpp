@@ -1736,6 +1736,8 @@ void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
         std::cout << "Min EigVal: " << all_eigvals.front()
                   << "; Max EigVal: " << all_eigvals.back() 
                   << std::endl;
+
+        mp.getEigenSystem(lap_type).validate();
     }
 
     active_lap_type = lap_type;

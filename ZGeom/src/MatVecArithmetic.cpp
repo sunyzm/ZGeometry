@@ -59,10 +59,10 @@ VecN<float> mulMatVec(const SparseMatrix<float>& mat, const VecN<float>& vec, bo
 	return rv;
 }
 
-double innerProductStd( const std::vector<double>& v1, const std::vector<double>& v2 )
+double innerProduct( const std::vector<double>& v1, const std::vector<double>& v2 )
 {
 	assert(v1.size() == v2.size());
-	return cblas_ddot((int)v1.size(), &v1[0], 1, &v2[0], 1);
+	return cblas_ddot((int)v1.size(), v1.data(), 1, v2.data(), 1);
 }
 
 double innerProductSym(const std::vector<double>& v1, SparseMatVecMultiplier* mulA, const std::vector<double>& v2)
@@ -116,7 +116,7 @@ double innerProductSym( const VecNd& v1, const SparseMatrixCSR<double, int>& A, 
 	MKL_INT xinc = 1, yinc = 1;
 	double *pv2 = v2.c_ptr();
 
-	return ddot(&m, &vy[0], &xinc, pv2, &yinc);
+	return ddot(&m, vy.data(), &xinc, pv2, &yinc);
 }
 
 double RegularProductFunc(const VecN<double>& v1, const VecN<double>& v2)
@@ -218,6 +218,17 @@ void addMatMat( const SparseMatrix<double>& mat1, const SparseMatrix<double>& ma
 	delete []c;
 	delete []jc;
 	delete []ic;
+}
+
+double inducedInnerProduct(const std::vector<double>& v1, const std::vector<double>& v2, const std::vector<double>& v3)
+{
+    assert(v1.size() == v2.size() && v2.size() == v3.size());
+    int N = (int)v1.size();
+    double result(0);
+    for (int i = 0; i < N; ++i) {
+        result += v1[i] * v2[i] * v3[i];
+    }
+    return result;
 }
 
 } // end of namespace

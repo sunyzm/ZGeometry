@@ -8,6 +8,8 @@
 namespace ZGeom
 {
 
+std::vector<double>     calSpectralCoeff(const EigenSystem& es, const std::vector<double>& vert_func);
+
 double                  calBiharmonicDist(const EigenSystem& es, int v1, int v2);
 std::vector<double>     calAllBiharmonicDist(EigenSystem& es, int vi, int eig_num = -1);
 
@@ -22,6 +24,7 @@ std::vector<double>     calHeatKernelSignature(const EigenSystem& es, double t);
 
 std::vector<double>     computeSgwScales(const EigenSystem& es, int num_scales);
 std::vector<double>     calAllSgwWavelet(const EigenSystem& es, double t, int vi);
+std::vector<double>     calSgwCoeff(const EigenSystem& es, double t, const std::vector<double>& mesh_func);
 
 }
 #endif

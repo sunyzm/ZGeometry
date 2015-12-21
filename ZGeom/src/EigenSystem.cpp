@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include "MatVecArithmetic.h"
 
 namespace ZGeom {
 
@@ -87,6 +88,34 @@ const ZGeom::DenseMatrixd& EigenSystem::getEigenMat()
 {
     if (mEigenMat.empty()) mEigenMat = toDenseMatrix();
     return mEigenMat;
+}
+
+void EigenSystem::clear()
+{
+    mEigVals.clear(); mEigVecs.clear(); mEigenMat.clear();
+}
+
+void EigenSystem::computeEigenMat()
+{
+    mEigenMat.clear(); 
+    mEigenMat = toDenseMatrix();
+}
+
+void EigenSystem::validate()
+{
+    std::vector<double> v0 = getEigVec(1).toStdVector(), v1 = getEigVec(10).toStdVector();
+    
+    if (hasInducingMat()) {
+        std::vector<double> diag = getInducingMat().getDiagonal();
+        std::cout << "<v0,v1> = " << inducedInnerProduct(v0, v1, diag) << std::endl;
+        std::cout << "<v0,v0> = " << inducedInnerProduct(v0, v0, diag) << std::endl;
+        std::cout << "<v1,v1> = " << inducedInnerProduct(v1, v1, diag) << std::endl;
+    }
+    else {
+        std::cout << "<v0,v1> = " << innerProduct(v0, v1) << std::endl;
+        std::cout << "<v0,v0> = " << innerProduct(v0, v0) << std::endl;
+        std::cout << "<v1,v1> = " << innerProduct(v1, v1) << std::endl;
+    }
 }
 
 }	// end of namespace 
