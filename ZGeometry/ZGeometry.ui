@@ -186,7 +186,7 @@
          </size>
         </property>
         <property name="currentIndex">
-         <number>1</number>
+         <number>2</number>
         </property>
         <property name="movable">
          <bool>true</bool>
@@ -516,27 +516,6 @@
             </layout>
            </item>
            <item>
-            <layout class="QHBoxLayout" name="layoutSigModeSelect">
-             <item>
-              <widget class="QLabel" name="labelSigMode">
-               <property name="text">
-                <string>Sig. Mode</string>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QComboBox" name="comboBoxSigMode">
-               <property name="sizePolicy">
-                <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-                 <horstretch>0</horstretch>
-                 <verstretch>0</verstretch>
-                </sizepolicy>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </item>
-           <item>
             <layout class="QHBoxLayout" name="horizontalLayout">
              <item>
               <layout class="QVBoxLayout" name="verticalLayout">
@@ -736,17 +715,6 @@
       <string>Lines</string>
      </property>
     </widget>
-    <widget class="QMenu" name="menuSignatureMode">
-     <property name="title">
-      <string>SignatureMode</string>
-     </property>
-     <addaction name="actionSigNormalized"/>
-     <addaction name="actionSigMarkNegativeNormalized"/>
-     <addaction name="actionSigAbsNormalized"/>
-     <addaction name="actionSigLogNormalized"/>
-     <addaction name="actionSigPosNegPlot"/>
-     <addaction name="actionSigBandCurve01"/>
-    </widget>
     <addaction name="menuDisplayMode"/>
     <addaction name="actionChangeShadeMode"/>
     <addaction name="actionCurveSignature"/>
@@ -772,7 +740,6 @@
     <addaction name="menuDisplaySignatures"/>
     <addaction name="menuDisplayFeatures"/>
     <addaction name="menuDisplayLines"/>
-    <addaction name="menuSignatureMode"/>
     <addaction name="separator"/>
     <addaction name="actionCapture"/>
     <addaction name="actionCaptureAs"/>
@@ -863,9 +830,16 @@
     </property>
     <addaction name="actionExperiment1"/>
    </widget>
+   <widget class="QMenu" name="menuRetrieval">
+    <property name="title">
+     <string>Retrieval</string>
+    </property>
+    <addaction name="actionRegionByDistField"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuCompute"/>
+   <addaction name="menuRetrieval"/>
    <addaction name="menuDisplay"/>
    <addaction name="menuExperiment"/>
    <addaction name="menuTask"/>
@@ -1741,6 +1715,11 @@
   <action name="actionComputeShapeIndex">
    <property name="text">
     <string>Shape Index</string>
+   </property>
+  </action>
+  <action name="actionRegionByDistField">
+   <property name="text">
+    <string>Region by Dist Field</string>
    </property>
   </action>
  </widget>

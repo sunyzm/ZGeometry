@@ -136,7 +136,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mCommonParameter		= gSettings.PARAMETER_SLIDER_CENTER;
 	mLastOperation			= None;
 	mDeformType				= DEFORM_Simple;
-    mSignatureMode          = ZGeom::SM_Normalized;
 	active_lap_type			= Umbrella;
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
@@ -145,11 +144,6 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	ui.setupUi(this);
 	this->makeConnections();
 	
-	// comboBoxSigMode
-	ui.comboBoxSigMode->clear();
-    for (int i = 0; i < ZGeom::SM_CountSigModes; ++i)
-		ui.comboBoxSigMode->addItem(QString(StrSignatureModeNames[i].c_str()));
-
 	// comboBoxLaplacian
 	ui.comboBoxLaplacian->clear();
     for (const std::string& lap_type_str : StrLaplacianTypes) {
@@ -232,7 +226,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
 	QObject::connect(ui.sliderApprox4, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox4(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
-	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
 	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
 	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
 	QObject::connect(ui.comboBoxLaplacian, SIGNAL(activated(const QString&)), this, SLOT(setLaplacianType(const QString&)));
@@ -257,7 +250,7 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
     QObject::connect(ui.actionComputeCurvatures, SIGNAL(triggered()), this, SLOT(computeCurvatures()));
     QObject::connect(ui.actionComputeShapeIndex, SIGNAL(triggered()), this, SLOT(computeShapeIndex()));
-    QObject::connect(ui.actionComputeBiharmonicDistance, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+    QObject::connect(ui.actionComputeBiharmonicDistance, SIGNAL(triggered()), this, SLOT(computeBiharmonicDistField()));
     QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
     QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
@@ -299,6 +292,9 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionHoleFairingLeastSquares, SIGNAL(triggered()), this, SLOT(fairHoleLeastSquares()));
     QObject::connect(ui.actionHoleFairingL1LS, SIGNAL(triggered()), this, SLOT(fairHoleL1LS()));
     QObject::connect(ui.actionHoleSmoothingDLRS, SIGNAL(triggered()), this, SLOT(smoothingHoleDLRS()));
+
+    /* retrieval related */
+    QObject::connect(ui.actionRegionByDistField, SIGNAL(triggered()), this, SLOT(regionByDistanceField()));
 
     //// Experiment ////
     QObject::connect(ui.actionExperiment1, SIGNAL(triggered()), this, SLOT(doExperiment1()));
@@ -388,6 +384,7 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 
 	case Qt::Key_C:
 		gSettings.ACTIVE_COLOR_MAP_TYPE = ZGeom::ColorMapType((gSettings.ACTIVE_COLOR_MAP_TYPE + 1) % ZGeom::COLOR_MAP_COUNT);
+        updateSignature();
 		break;
 
 	case Qt::Key_D:
@@ -479,21 +476,12 @@ void QZGeometryWindow::keyPressEvent( QKeyEvent *event )
 	}	
 	
 	case Qt::Key_X:
-		if (event->modifiers() & Qt::ShiftModifier)
-			;
-		else ;
 		break;
 
 	case Qt::Key_Y:
-		if (event->modifiers() & Qt::ShiftModifier)
-			;
-		else ;
 		break;
 
 	case Qt::Key_Z:
-		if (event->modifiers() & Qt::ShiftModifier)
-			;
-		else;
 		break;
 
 	case Qt::Key_BracketLeft:
@@ -1239,7 +1227,7 @@ void QZGeometryWindow::computeEigenfunction()
 	updateMenuDisplaySignature();
 }
 
-void QZGeometryWindow::computeBiharmonic()
+void QZGeometryWindow::computeBiharmonicDistField()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
         CMesh* cur_mesh = getMesh(obj);
@@ -1340,7 +1328,7 @@ void QZGeometryWindow::repeatOperation()
 		computeHK(); break;
 
 	case Compute_Biharmonic:
-		computeBiharmonic(); break;
+		computeBiharmonicDistField(); break;
 
 	case Compute_Heat:
 		computeHeatTransfer(); break;
@@ -1736,8 +1724,6 @@ void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
         std::cout << "Min EigVal: " << all_eigvals.front()
                   << "; Max EigVal: " << all_eigvals.back() 
                   << std::endl;
-
-        mp.getEigenSystem(lap_type).validate();
     }
 
     active_lap_type = lap_type;
@@ -1936,17 +1922,15 @@ void QZGeometryWindow::diffusionFlow()
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
+void QZGeometryWindow::updateSignature()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) {
-		const std::string& current_sig_name = mRenderManagers[obj].mActiveColorSignatureName;
-        if (!getMesh(obj)->hasAttr(current_sig_name)) continue;
-        ColorSignature& colors = getMesh(obj)->getColorSignature(current_sig_name);
-        if (colors.hasOriginalValues()) {
-            colors.changeColorMap(gSettings.ACTIVE_COLOR_MAP_TYPE);
-            colors.changeSignatureMode(smode);
-        }
-        getMesh(obj)->colorize(current_sig_name);
+        CMesh& cur_mesh = *getMesh(obj);
+        std::string cur_sig_name = mRenderManagers[0].mActiveColorSignatureName;
+        if (cur_sig_name.empty() || !cur_mesh.hasAttr(cur_sig_name)) continue;
+        ColorSignature& cur_sig = cur_mesh.getColorSignature(cur_sig_name);
+        cur_sig.changeColorMap(gSettings.ACTIVE_COLOR_MAP_TYPE);
+        cur_mesh.colorize(cur_sig_name);
 	}
 
 	ui.glMeshWidget->update();
@@ -2000,28 +1984,8 @@ void QZGeometryWindow::continuousApprox4( int level )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
-{
-    for (int i = 0; i < ZGeom::SM_CountSigModes; ++i)
-        if (sigModeName == StrSignatureModeNames[i].c_str()) mSignatureMode = (ZGeom::SignatureMode)i;
-	
-    if (mSignatureMode == ZGeom::SM_BandCurved) {
-		ui.sliderSigMin->setEnabled(true);
-		ui.sliderSigMax->setEnabled(true);
-		ui.sliderSigMin->setValue(ui.sliderSigMin->minimum());
-		ui.sliderSigMax->setValue(ui.sliderSigMax->maximum());
-		updateSignatureMin(ui.sliderSigMin->minimum());
-	} else {
-		ui.sliderSigMin->setEnabled(false);
-		ui.sliderSigMax->setEnabled(false);
-	}
-
-	updateSignature(mSignatureMode);
-}
-
 void QZGeometryWindow::updateSignatureMin( int sMin )
 {
-    if (mSignatureMode != ZGeom::SM_BandCurved) return;
     if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMin >= ui.sliderSigMax->value()) return;
 
@@ -2032,12 +1996,11 @@ void QZGeometryWindow::updateSignatureMin( int sMin )
 	double newVal = (double)sMin / (double)ui.sliderSigMin->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMin->setText("Min: " + QString::number(newVal));
 	
-    updateSignature(ZGeom::SM_BandCurved);
+    updateSignature();
 }
 
 void QZGeometryWindow::updateSignatureMax( int sMax )
 {
-    if (mSignatureMode != ZGeom::SM_BandCurved) return;
     if (!getMesh(0)->hasAttr(StrAttrOriginalSignature)) return;
 	if (sMax <= ui.sliderSigMin->value()) return;
 
@@ -2048,7 +2011,7 @@ void QZGeometryWindow::updateSignatureMax( int sMax )
 	double newVal = (double)sMax / (double)ui.sliderSigMax->maximum() * (vMax - vMin) + vMin;
 	ui.labelSigMax->setText("Max: " + QString::number(newVal));
 
-    updateSignature(ZGeom::SM_BandCurved);
+    updateSignature();
 }
 
 void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
@@ -2096,7 +2059,7 @@ void QZGeometryWindow::setColor()
     if (!ok) return;
 
     QColor *default_color(nullptr);
-    if (item == "hole") default_color = &ui.glMeshWidget->m_holeColor;
+    if (item == "hole") default_color = &ui.glMeshWidget->m_regionColor;
     else if (item == "wireframe") default_color = &ui.glMeshWidget->m_wireframeColor;
     else if (item == "boundary") default_color = &ui.glMeshWidget->m_boundaryColor;
     else return;
@@ -2887,5 +2850,26 @@ void QZGeometryWindow::ignoreOuterBoundary()
     std::cout << "Max boundary length: " << iter->he_on_boundary.size() << std::endl;
     vHoles.erase(iter);
 
+    ui.glMeshWidget->update();
+}
+
+void QZGeometryWindow::regionByDistanceField()
+{
+    CMesh& mesh = *getMesh(0);
+    computeBiharmonicDistField();
+    const vector<double>& biharm_dist = getMesh(0)->getAttrValue<ColorSignature>(StrAttrColorBiharmonicField).getOriginalVals();
+
+    double dist_max = *std::max_element(biharm_dist.begin(), biharm_dist.end());
+    double threshold = 0.25 * dist_max;
+    bool ok;
+    threshold = QInputDialog::getDouble(this, tr("Contour distance threshold"),
+        tr("Threshold:"), threshold, 0, dist_max, 3, &ok);
+    if (!ok) return;
+
+    int source_point = mMeshHelper[0].getRefPointIndex();
+    MeshRegion distRegion = ZGeom::meshRegionFromDistField(mesh, biharm_dist, 
+        source_point, [=](double val) { return val <= threshold; });
+
+    mesh.addAttr<vector<MeshRegion>>(vector<MeshRegion>{distRegion}, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
     ui.glMeshWidget->update();
 }

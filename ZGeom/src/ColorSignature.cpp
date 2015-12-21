@@ -74,44 +74,6 @@ void ColorSignature::curve(double sMin, double sMax)
     changeColorMap(mCurrentColorMap);
 }
 
-void ColorSignature::changeSignatureMode(SignatureMode smode)
-{
-    if (mNormalizedValues.empty()) return;
-    size_t vSize = mNormalizedValues.size();
-    std::vector<double> tmpSig = mNormalizedValues;
-
-    if (smode == ZGeom::SM_AbsNormalized)
-        for (double& v : mNormalizedValues) v = std::fabs(v);
-
-    if (smode == ZGeom::SM_LogNormalized) {
-        double sMin = *(std::minmax_element(mNormalizedValues.begin(), mNormalizedValues.end()).first);
-        if (sMin <= 0) return;
-        for (double& v : mNormalizedValues) v = std::log(v);
-    }
-
-    if (smode == ZGeom::SM_PosNegPlot)
-    {
-        auto mmp = std::minmax_element(mNormalizedValues.begin(), mNormalizedValues.end());
-        double sMin = *mmp.first, smax = *mmp.second;
-        double absMax = std::max(std::fabs(sMin), std::fabs(smax));
-        for (int i = 0; i < vSize; ++i)
-            mColors[i].posNegColor(float(mNormalizedValues[i] / absMax), ZGeom::ColorOrange, ZGeom::ColorAzure);
-    }
-    else if (smode == ZGeom::SM_Normalized || smode == ZGeom::SM_AbsNormalized || smode == ZGeom::SM_BandCurved ||
-            smode == ZGeom::SM_LogNormalized || smode == ZGeom::SM_MarkNegNormalized)
-    {
-        changeColorMap(mCurrentColorMap);
-    }
-
-    if (smode == ZGeom::SM_MarkNegNormalized) {
-        for (int i = 0; i < vSize; ++i) {
-            if (mNormalizedValues[i] < 0) mColors[i].setAs(ZGeom::ColorBlack);
-        }
-    }
-
-    mNormalizedValues = tmpSig;
-}
-
 void ColorSignature::setColorBuffer(float* dst) const
 {
     for (size_t i = 0; i < mColors.size(); ++i) {

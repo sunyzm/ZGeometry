@@ -99,9 +99,8 @@ void GLMeshWidget::reset()
     m_nShadeMode = 0;   // flat shading
 
     m_wireframeColor = Qt::black;
-    m_holeColor = Qt::yellow;
+    m_regionColor.setRgbF(ZGeom::ColorPink[0], ZGeom::ColorPink[1], ZGeom::ColorPink[2]);
     m_boundaryColor = Qt::blue;
-    m_neighborColor.setRgbF(ZGeom::ColorPink[0], ZGeom::ColorPink[1], ZGeom::ColorPink[2]);
 
     m_colorBarHeight = 30;
     m_colorBarWidth = 300;
@@ -520,16 +519,13 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         glEnd();
     }
 
-    /* draw hole regions in yellow */
+    /* draw hole regions */
     glPolygonOffset(0.5, 1.0);
     if (m_bShowHoles)
     {
-        Colorf hole_color = (m_bShowHoleHollow ? ZGeom::ColorBlack : convertQColor(m_holeColor));
-        
+        Colorf hole_color = (m_bShowHoleHollow ? ZGeom::ColorBlack : convertQColor(m_regionColor));        
         if (m_bShowHoleHollow) glDisable(GL_LIGHTING);
-
-        for (MeshRegion* pmr : vHoles) 
-        {
+        for (MeshRegion* pmr : vHoles) {
             MeshRegion& mr = *pmr;
             const vector<int> &holeFaceIdx = mr.face_inside;
             const vector<Colorf>* inpaint_error_colors = nullptr;

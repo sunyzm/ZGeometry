@@ -96,11 +96,13 @@ struct MeshRegion
     }
 };
 
-ZGeom::MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts);
+MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts);
 std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsFaces(const std::vector<MeshRegion>& vRegions);
 void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions);
+
+MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region);
 
 std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
@@ -195,6 +197,8 @@ std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::
 void gatherMeshStatistics(CMesh& mesh);
 
 double compareCoordRMSE(const MeshCoordinates& coord1, const MeshCoordinates& coord2, const std::vector<int>& selctedVerts);
+
+
 
 }   // end of namespace
 

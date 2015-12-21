@@ -53,7 +53,7 @@ private slots:
     void computeGeoLaplacian();
     void computeLaplacian(LaplacianType laplacianType);
 	void computeEigenfunction();
-    void computeBiharmonic();
+    void computeBiharmonicDistField();
     void computeSGW();
 	void computeHK();
 	void computeHKS();	
@@ -61,6 +61,8 @@ private slots:
 	
 	void computeGeodesics();
 	void computeHeatTransfer();
+
+    void regionByDistanceField();
 
     /* interact with shapeEditor */
 	void continuousApprox1(int level);
@@ -75,7 +77,6 @@ private slots:
 	void updateMenuDisplayFeatures();
     void updateMenuDisplayLines();
     void updateUI();
-	void setSignatureMode(const QString& sigModeName);
 	void updateSignatureMin(int sMin);
 	void updateSignatureMax(int sMax);
 	void displayNeighborVertices();
@@ -181,7 +182,7 @@ private:
 	bool laplacianRequireDecompose(int obj, int nEigVec, LaplacianType laplacianType);
 	void decomposeSingleLaplacian(int obj, int nEigVec, LaplacianType laplacianType = CotFormula);
 	void allocateStorage(int newMeshCount);
-	void updateSignature(ZGeom::SignatureMode smode);
+    void updateSignature();
 
 	/* helper functions */
     CMesh* getMesh(int i) { return mMeshHelper[i].getMesh(); }
@@ -206,7 +207,6 @@ private:
 
 	DeformType			    mDeformType;
 	LaplacianType           active_lap_type;
-	ZGeom::SignatureMode	mSignatureMode;
 
 	int					mMeshCount;
 	int					mObjInFocus;	

@@ -1575,6 +1575,169 @@ double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, c
     return result;
 }
 
+std::vector<int> vertSurroundingVerts(const CMesh& mesh, const vector<int>& vert_inside, int ring)
+{    
+    if (ring <= 0) {    // return all remaining vertices 
+        set<int> inside_verts(vert_inside.begin(), vert_inside.end());
+        vector<int> result;
+        for (int i = 0; i < mesh.vertCount(); ++i) {
+            if (!setHas(inside_verts, i)) result.push_back(i);
+        }
+        return result;
+    }
+
+    set<int> result;
+    set<int> considered_vert(vert_inside.begin(), vert_inside.end());
+    set<int> cur_ring = considered_vert;
+
+    for (int level = 1; level <= ring; ++level) 
+    {
+        set<int> new_ring;
+        for (int cur_vi : cur_ring) {
+            vector<int> cur_neighbor_vert = mesh.getVertNeighborVerts(cur_vi, 1, false);
+            for (int vj : cur_neighbor_vert) {
+                if (!setHas(considered_vert, vj)) {
+                    new_ring.insert(vj);
+                    considered_vert.insert(vj);
+                }
+            }
+        }
+        for (int new_vi : new_ring) {
+            result.insert(new_vi);
+        }        
+        cur_ring = new_ring;
+    }
+
+    return vector<int>(result.begin(), result.end());
+}
+
+std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts)
+{
+    set<int> face_idx;
+    set<int> all_verts(verts.begin(), verts.end());
+    for (int vi : verts) {
+        for (CFace* fi : mesh.vert(vi)->getAdjacentFaces()) {
+            if (setHas(face_idx, fi->getFaceIndex())) continue;
+            if (setHasAll(all_verts, fi->getAllVertIdx()))
+                face_idx.insert(fi->getFaceIndex());
+        }
+    }
+    return vector<int>(face_idx.begin(), face_idx.end());
+}
+
+std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh)
+{
+    vector<MeshRegion*> result;
+
+    if (mesh.hasAttr(StrAttrMeshHoleRegions)) {
+        auto& vHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrMeshHoleRegions);
+        for (MeshRegion& mr : vHoles)
+            result.push_back(&mr);
+    }
+    if (mesh.hasAttr(StrAttrManualHoleRegions)) {
+        auto& vManualHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrManualHoleRegions);
+        for (MeshRegion& mr : vManualHoles)
+            result.push_back(&mr);
+    }
+
+    return result;
+}
+
+std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions)
+{
+    set<int> verts;
+    for (auto& mr : vRegions)
+        for (int vi : mr.vert_inside)
+            verts.insert(vi);
+
+    return vector<int>{verts.begin(), verts.end()};
+}
+
+std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions)
+{
+    set<int> verts;
+    for (auto& mr : vRegions)
+        for (int vi : mr.vert_on_boundary)
+            verts.insert(vi);
+
+    return vector < int > {verts.begin(), verts.end()};
+}
+
+void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions)
+{
+    vector<set<int>> inside_verts;
+    for (MeshRegion& mr : vRegions) 
+        inside_verts.push_back(set<int>(mr.vert_inside.begin(), mr.vert_inside.end()));
+    
+    while(true) 
+    {
+        int r1(-1), r2(-1);
+        for (int i = 0; i < (int)inside_verts.size() - 1; ++i) {            
+            set<int> s1 = inside_verts[i];
+            vector<int> ring_verts = vertSurroundingVerts(mesh, vector < int > {s1.begin(), s1.end()}, 1);
+            s1 = setCombine(s1, set < int > {ring_verts.begin(), ring_verts.end()});
+            for (int j = i+1; j < (int)inside_verts.size(); ++j) {
+                const set<int> &s2 = inside_verts[j];
+                if (setOverlap(s1, s2)) {
+                    r1 = i; r2 = j; break;
+                }
+            }
+            if (r1 != -1) break;
+        }
+
+        if (r1 != -1) {
+            inside_verts[r1] = setCombine(inside_verts[r1], inside_verts[r2]);
+            inside_verts.erase(inside_verts.begin() + r2);
+        }
+        else break;
+    } 
+    
+    vRegions.clear();
+    for (set<int>& region_vert : inside_verts) {
+        vRegions.push_back(meshRegionFromVerts(mesh, vector<int>(region_vert.begin(), region_vert.end())));
+    }
+}
+
+MeshRegion meshRegionFromVerts(CMesh& mesh, const vector<int>& inside_verts)
+{
+    MeshRegion result;
+    result.vert_inside = inside_verts;
+    for (int vi : inside_verts) {
+        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
+            result.face_inside.push_back(f->getFaceIndex());
+    }
+
+    result.vert_on_boundary = vertSurroundingVerts(mesh, result.vert_inside, 1);
+    result.determineBoundaryHalfEdges(mesh);
+
+    return result;
+}
+
+ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region)
+{
+    assert(mesh.vertCount() == dist_field.size());
+
+    set<int> candidate_vert{ seed };
+    set<int> vert_visited;
+    set<int> vert_inside;    
+    while (!candidate_vert.empty()) {
+        int vi = *candidate_vert.begin();
+        candidate_vert.erase(vi);
+        vert_visited.insert(vi);
+        if (judge_in_region(dist_field[vi])) {
+            vert_inside.insert(vi);
+            vector<int> neighbors = mesh.getVertNeighborVerts(vi, 1);
+            for (int vj : neighbors) {
+                if (vert_visited.find(vj) == vert_visited.end()) {
+                    candidate_vert.insert(vj);
+                }
+            }
+        }
+    }
+    MeshRegion result = meshRegionFromVerts(mesh, vector<int>{vert_inside.begin(), vert_inside.end()});
+    return result;
+}
+
 ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring)
 {
     vector<int> vert_inside = mesh.getVertNeighborVerts(seedVert, ring - 1, true);
@@ -1728,144 +1891,6 @@ MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& s
     result.vert_inside = vector < int > {inside_verts.begin(), inside_verts.end()};
     result.vert_on_boundary = vector < int > {boundary_verts.begin(), boundary_verts.end()};
     result.determineBoundaryHalfEdges(mesh);
-    return result;
-}
-
-std::vector<int> vertSurroundingVerts(const CMesh& mesh, const vector<int>& vert_inside, int ring)
-{    
-    if (ring <= 0) {    // return all remaining vertices 
-        set<int> inside_verts(vert_inside.begin(), vert_inside.end());
-        vector<int> result;
-        for (int i = 0; i < mesh.vertCount(); ++i) {
-            if (!setHas(inside_verts, i)) result.push_back(i);
-        }
-        return result;
-    }
-
-    set<int> result;
-    set<int> considered_vert(vert_inside.begin(), vert_inside.end());
-    set<int> cur_ring = considered_vert;
-
-    for (int level = 1; level <= ring; ++level) 
-    {
-        set<int> new_ring;
-        for (int cur_vi : cur_ring) {
-            vector<int> cur_neighbor_vert = mesh.getVertNeighborVerts(cur_vi, 1, false);
-            for (int vj : cur_neighbor_vert) {
-                if (!setHas(considered_vert, vj)) {
-                    new_ring.insert(vj);
-                    considered_vert.insert(vj);
-                }
-            }
-        }
-        for (int new_vi : new_ring) {
-            result.insert(new_vi);
-        }        
-        cur_ring = new_ring;
-    }
-
-    return vector<int>(result.begin(), result.end());
-}
-
-std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts)
-{
-    set<int> face_idx;
-    set<int> all_verts(verts.begin(), verts.end());
-    for (int vi : verts) {
-        for (CFace* fi : mesh.vert(vi)->getAdjacentFaces()) {
-            if (setHas(face_idx, fi->getFaceIndex())) continue;
-            if (setHasAll(all_verts, fi->getAllVertIdx()))
-                face_idx.insert(fi->getFaceIndex());
-        }
-    }
-    return vector<int>(face_idx.begin(), face_idx.end());
-}
-
-std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh)
-{
-    vector<MeshRegion*> result;
-
-    if (mesh.hasAttr(StrAttrMeshHoleRegions)) {
-        auto& vHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrMeshHoleRegions);
-        for (MeshRegion& mr : vHoles)
-            result.push_back(&mr);
-    }
-    if (mesh.hasAttr(StrAttrManualHoleRegions)) {
-        auto& vManualHoles = mesh.getAttrValue<vector<MeshRegion>>(StrAttrManualHoleRegions);
-        for (MeshRegion& mr : vManualHoles)
-            result.push_back(&mr);
-    }
-
-    return result;
-}
-
-std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions)
-{
-    set<int> verts;
-    for (auto& mr : vRegions)
-        for (int vi : mr.vert_inside)
-            verts.insert(vi);
-
-    return vector<int>{verts.begin(), verts.end()};
-}
-
-std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions)
-{
-    set<int> verts;
-    for (auto& mr : vRegions)
-        for (int vi : mr.vert_on_boundary)
-            verts.insert(vi);
-
-    return vector < int > {verts.begin(), verts.end()};
-}
-
-void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions)
-{
-    vector<set<int>> inside_verts;
-    for (MeshRegion& mr : vRegions) 
-        inside_verts.push_back(set<int>(mr.vert_inside.begin(), mr.vert_inside.end()));
-    
-    while(true) 
-    {
-        int r1(-1), r2(-1);
-        for (int i = 0; i < (int)inside_verts.size() - 1; ++i) {            
-            set<int> s1 = inside_verts[i];
-            vector<int> ring_verts = vertSurroundingVerts(mesh, vector < int > {s1.begin(), s1.end()}, 1);
-            s1 = setCombine(s1, set < int > {ring_verts.begin(), ring_verts.end()});
-            for (int j = i+1; j < (int)inside_verts.size(); ++j) {
-                const set<int> &s2 = inside_verts[j];
-                if (setOverlap(s1, s2)) {
-                    r1 = i; r2 = j; break;
-                }
-            }
-            if (r1 != -1) break;
-        }
-
-        if (r1 != -1) {
-            inside_verts[r1] = setCombine(inside_verts[r1], inside_verts[r2]);
-            inside_verts.erase(inside_verts.begin() + r2);
-        }
-        else break;
-    } 
-    
-    vRegions.clear();
-    for (set<int>& region_vert : inside_verts) {
-        vRegions.push_back(meshRegionFromVerts(mesh, vector<int>(region_vert.begin(), region_vert.end())));
-    }
-}
-
-ZGeom::MeshRegion meshRegionFromVerts(CMesh& mesh, const vector<int>& inside_verts)
-{
-    MeshRegion result;
-    result.vert_inside = inside_verts;
-    for (int vi : inside_verts) {
-        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
-            result.face_inside.push_back(f->getFaceIndex());
-    }
-
-    result.vert_on_boundary = vertSurroundingVerts(mesh, result.vert_inside, 1);
-    result.determineBoundaryHalfEdges(mesh);
-
     return result;
 }
 

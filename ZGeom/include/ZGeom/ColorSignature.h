@@ -6,12 +6,6 @@
 
 namespace ZGeom {
 
-enum SignatureMode {
-    SM_Normalized = 0, SM_LogNormalized, SM_MarkNegNormalized,
-    SM_AbsNormalized, SM_BandCurved, SM_PosNegPlot,
-    SM_CountSigModes
-};
-
 class ColorSignature
 {
 public:
@@ -21,6 +15,7 @@ public:
     
     const std::vector<Colorf>& getColorSig() const { return mColors; }
     std::vector<Colorf>& getColors() { return mColors; }
+    const std::vector<double>& getOriginalVals() const { return mOriginalValues; }
     std::vector<double>& getVals() { return mNormalizedValues; }
     int size() const { return (int)mColors.size(); }
     double getCurveMax() const { return mCurveMax; }
@@ -28,7 +23,6 @@ public:
 
     void changeColorMap(ColorMapType cmt);
     void curve(double sMin, double sMax);
-    void changeSignatureMode(SignatureMode sigMode);
     Colorf& operator [] (int i) { return mColors[i]; }
     bool hasOriginalValues() const { return !mOriginalValues.empty(); }
     void setColorBuffer(float* dst) const;
