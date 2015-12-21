@@ -701,6 +701,28 @@ bool CMesh::isHalfEdgeMergeable( const CHalfEdge* halfEdge )
 	return true;
 }
 
+void CMesh::scaleAndTranslate( ZGeom::Vec3d center, double scale )
+{
+    for (CVertex* v : m_vVertices)	{
+        v->translateAndScale(center, scale);
+    }
+}
+
+void CMesh::move(ZGeom::Vec3d translation)
+{
+    scaleAndTranslate(translation, 1.0);
+}
+
+void CMesh::scale(double s)
+{
+    scaleAndTranslate(ZGeom::Vec3d::ZERO, s);
+}
+
+void CMesh::moveToOrigin()
+{
+    move(-calMeshCenter());
+}
+
 void CMesh::scaleAreaToVertexNum()
 {
 	ZGeom::Vec3d center = calMeshCenter();
@@ -711,18 +733,18 @@ void CMesh::scaleAreaToVertexNum()
 
 void CMesh::scaleToUnitBox()
 {
-    move(-calMeshCenter());
+    moveToOrigin();
     double maxCoord = 0;
     for (int i = 0; i < vertCount(); ++i) {
         for (int j = 0; j < 3; ++j)
             maxCoord = max(maxCoord, fabs(vertPos(i)[j]));
     }
-    scaleAndTranslate(ZGeom::Vec3d(0, 0, 0), 1. / maxCoord);
+    scale(1.0/maxCoord);
 }
 
 void CMesh::scaleEdgeLenToUnit()
 {
-    ZGeom::Vec3d center = calMeshCenter();
+    moveToOrigin();
 	double length = 0.;
 	int edgeNum = 0;
     vector<bool> heVisited(halfEdgeCount(), false);
@@ -735,13 +757,7 @@ void CMesh::scaleEdgeLenToUnit()
 	}
 	
 	length /= edgeNum;
-	double scale = 1.0 / length;	
-    scaleAndTranslate(-center, scale);
-}
-
-void CMesh::scaleAndTranslate( ZGeom::Vec3d center, double scale )
-{
-	for (CVertex* v : m_vVertices)	v->translateAndScale(center, scale);	
+    scale(1.0 / length);
 }
 
 std::set<int> CMesh::getVertNeighborVertSet(int vIndex, int ring, bool inclusive /* = false */) const
@@ -1028,9 +1044,9 @@ ZGeom::Vec3d CMesh::calBoundingBox( const ZGeom::Vec3d& center ) const
 {
 	ZGeom::Vec3d boundBox(0.0, 0.0, 0.0);
 	for (int i = 0; i < vertCount(); ++i) {
-        boundBox.x = (abs(m_vVertices[i]->pos().x)>abs(boundBox.x)) ? m_vVertices[i]->pos().x : boundBox.x;
-        boundBox.y = (abs(m_vVertices[i]->pos().y)>abs(boundBox.y)) ? m_vVertices[i]->pos().y : boundBox.y;
-        boundBox.z = (abs(m_vVertices[i]->pos().z)>abs(boundBox.z)) ? m_vVertices[i]->pos().z : boundBox.z;
+        boundBox.x = fabs(m_vVertices[i]->pos().x) > fabs(boundBox.x) ? m_vVertices[i]->pos().x : boundBox.x;
+        boundBox.y = fabs(m_vVertices[i]->pos().y) > fabs(boundBox.y) ? m_vVertices[i]->pos().y : boundBox.y;
+        boundBox.z = fabs(m_vVertices[i]->pos().z) > fabs(boundBox.z) ? m_vVertices[i]->pos().z : boundBox.z;
 	}
 	boundBox.x = abs(boundBox.x - center.x);
 	boundBox.y = abs(boundBox.y - center.y);
@@ -1370,9 +1386,11 @@ void CMesh::initNamedCoordinates()
 
     delete[]coord_buffer;
     coord_buffer = new double[vertCount() * 3];
-    for (int i = 0; i < vertCount(); ++i)
-        for (int j = 0; j < 3; ++j)
+    for (int i = 0; i < vertCount(); ++i) {
+        for (int j = 0; j < 3; ++j) {
             coord_buffer[i * 3 + j] = init_coord[i][j];
+        }
+    }
 }
 
 void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name /*= "unnamed"*/)

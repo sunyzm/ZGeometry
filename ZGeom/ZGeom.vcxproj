@@ -252,6 +252,7 @@
     <ClInclude Include="include\ZGeom\SparseSymMatVecSolver.h" />
     <ClInclude Include="include\ZGeom\SparseSymSolver.h" />
     <ClInclude Include="include\ZGeom\common.h" />
+    <ClInclude Include="include\ZGeom\spectral_geometry.h" />
     <ClInclude Include="include\ZGeom\timer.h" />
     <ClInclude Include="include\ZGeom\util.h" />
     <ClInclude Include="include\ZGeom\Vec2.h" />
@@ -275,6 +276,7 @@
     <ClCompile Include="src\fibheap.cpp" />
     <ClCompile Include="src\Geodesic.cpp" />
     <ClCompile Include="src\PointCloud.cpp" />
+    <ClCompile Include="src\spectral_geometry.cpp" />
     <ClCompile Include="src\triBoxOverlap.cpp" />
     <ClCompile Include="src\Vec3.cpp" />
     <ClCompile Include="src\VecN.cpp" />

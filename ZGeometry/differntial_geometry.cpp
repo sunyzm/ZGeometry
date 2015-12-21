@@ -1,4 +1,5 @@
 #include "differential_geometry.h"
+#include <ZGeom/spectral_geometry.h>
 #include <ZGeom/zassert.h>
 #define USE_AMP
 
@@ -10,7 +11,7 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
     const int vertCount = mhb.eigVecSize();
     const int eigCount = mhb.eigVecCount();
     const int nWaveletScales = waveletScaleNum;
-    const double *pEigVals = &(mhb.getAllEigVals()[0]);
+    const double *pEigVals = mhb.getAllEigValsPtr();
     ZGeom::DenseMatrixd matEigVecs = mhb.toDenseMatrix();
     double *pEigVec = matEigVecs.raw_ptr();
 
@@ -30,7 +31,6 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
         double minEigVal = maxEigVal / K;
         double minT = 2. / maxEigVal, maxT = 2. / minEigVal;
         const double tMultiplier = std::pow(maxT / minT, 1.0 / double(nWaveletScales - 1));
-        const double gamma = 1.3849;
         std::vector<double> vWaveletScales(nWaveletScales);
         for (int s = 0; s < nWaveletScales; ++s)
             vWaveletScales[s] = minT * std::pow(tMultiplier, s);
@@ -53,6 +53,7 @@ void computeSGWMat(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::De
                 vertCount, eigCount, pEigVec, &vDiag[0], pResult);
         }
         //// compute scaling functions 	
+        const double gamma = 1.3849;
         std::function<double(double)> genH = [=](double x) {
             return gamma * std::exp(-std::pow(x / (0.6*minEigVal), 4));
         };
@@ -155,24 +156,4 @@ void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinate
         vavg /= weightSum;
         lCoord[i] = vi - vavg;
     }
-}
-
-void computeKernelSignatureFeatures(CMesh& mesh, const ZGeom::EigenSystem& es, const std::vector<double>& timescales, std::function<double(double, double)> genfunc, std::string featureStr)
-{
-    MeshFeatureList mfl;
-    int nScales = timescales.size();
-
-    for (int s = 0; s < nScales; ++s) {
-        vector<double> vSig;
-        vector<int> vFeatures;
-        vSig = ZGeom::calSpectralKernelSignature(es, timescales[s], genfunc);
-
-        mesh.extractExtrema(vSig, 2, 1e-5, vFeatures);
-
-        for (vector<int>::iterator iter = vFeatures.begin(); iter != vFeatures.end(); ++iter) {
-            mfl.addFeature(new MeshFeature(*iter, s));
-        }
-    }
-
-    mesh.addAttrMeshFeatures(mfl, featureStr);
 }

@@ -146,6 +146,9 @@
     <ClInclude Include="include\ZGeom\curvature.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="include\ZGeom\spectral_geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\arithmetic.cpp">
@@ -236,6 +239,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\geometry_processing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\spectral_geometry.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

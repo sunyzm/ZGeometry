@@ -12,6 +12,9 @@ template<typename T>
 class Vec3
 {
 public:
+    static Vec3<T> ZERO;
+
+public:
 	Vec3() : x(0.), y(0.), z(0.) {}
 	Vec3(T x1, T y1, T z1) : x(x1), y(y1), z(z1) {}
 	Vec3(const Vec3<T>& v2) : x(v2.x), y(v2.y), z(v2.z) {}	
@@ -46,6 +49,9 @@ public:
 
 typedef Vec3<float>  Vec3s;
 typedef Vec3<double> Vec3d;
+
+template<typename T>
+Vec3<T> Vec3<T>::ZERO = Vec3<T>(0, 0, 0);
 
 template<typename T>
 const Vec3<T>& Vec3<T>::operator = (const Vec3<T>& v2) 

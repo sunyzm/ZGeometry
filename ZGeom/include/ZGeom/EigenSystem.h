@@ -18,6 +18,7 @@ public:
     int eigVecCount() const { return (int)mEigVecs.size(); }
     int eigVecSize() const { return empty() ? 0 : (int)mEigVecs[0].size(); }
 	const std::vector<double>& getAllEigVals() const { return mEigVals; }
+    const double* getAllEigValsPtr() const { return mEigVals.data(); }
     const std::vector<VecNd>& getAllEigVecs() const { return mEigVecs; }
 	double getEigVal(int index) const { return mEigVals[index]; }
 	const VecNd& getEigVec(int index) const { return mEigVecs[index]; }

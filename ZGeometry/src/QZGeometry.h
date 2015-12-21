@@ -45,19 +45,20 @@ private slots:
 	void listMeshAttributes();
 
 	/* computation */
+    void computeVertNormals();
+    void computeFaceNormals();
+    void computeCurvatures();
+    void computeShapeIndex();
     void computeGraphLaplacian();
     void computeGeoLaplacian();
     void computeLaplacian(LaplacianType laplacianType);
 	void computeEigenfunction();
-	void computeCurvatures();
-    void computeShapeIndex();
-    void computeVertNormals();
-	void computeFaceNormals();
-	void computeEditBasis();
+    void computeBiharmonic();
+    void computeSGW();
 	void computeHK();
 	void computeHKS();	
 	void computeHKSFeatures();
-	void computeBiharmonic();
+	
 	void computeGeodesics();
 	void computeHeatTransfer();
 
@@ -80,7 +81,6 @@ private slots:
 	void displayNeighborVertices();
     void computeHoleNeighbors();
 	void displayDiffPosition();
-	void displayBasis(int idx);
 	
 	void setDisplayPointCloud();
 	void setDisplayWireframe();
@@ -173,7 +173,7 @@ private:
 	/* methods */
 	void makeConnections();
 	void loadInitialMeshes(const std::string& initial_mesh_list);
-    void loadMesh(std::string mesh_filename, int obj);
+    void loadMesh(std::string mesh_filename, int obj, bool scale_to_unit = false);
 	void registerPreprocess();
 	void keyPressEvent(QKeyEvent *event);
 	void repeatOperation();	// repeat previous operation
@@ -205,7 +205,7 @@ private:
 	ShapeEditor	                        mShapeEditor;
 
 	DeformType			    mDeformType;
-	LaplacianType           mActiveLalacian;
+	LaplacianType           active_lap_type;
 	ZGeom::SignatureMode	mSignatureMode;
 
 	int					mMeshCount;
@@ -220,7 +220,7 @@ private:
 		Compute_MHWS, Compute_MHW, 
 		Compute_SGWS, Compute_SGW,
 		Compute_Eig_Func, Compute_Biharmonic, 
-		Compute_Edit_Basis, Compute_Dict_Atom,
+		Compute_Dict_Atom,
 		Compute_Geodesics, Compute_Heat,
 		None
 	} mLastOperation;

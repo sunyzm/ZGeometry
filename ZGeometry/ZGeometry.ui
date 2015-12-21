@@ -790,7 +790,7 @@
     </widget>
     <widget class="QMenu" name="menuKernelSignature">
      <property name="title">
-      <string>Kernel Signature</string>
+      <string>Spectral</string>
      </property>
      <addaction name="actionComputeHK"/>
      <addaction name="actionComputeHKS"/>

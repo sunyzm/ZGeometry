@@ -11,6 +11,7 @@
 #include "arithmetic.h"
 #include "triBoxOverlap.h"
 
+
 using namespace std;
 using namespace concurrency;
 
@@ -80,70 +81,6 @@ SparseMatrix<double> constructMeshMatrix(const CMesh& mesh, MeshMatrixType mmt)
     }
 
     return meshMat;
-}
-
-DenseMatrixd calSpectralKernelMatrix(const EigenSystem& es, double t, std::function<double(double, double)> genfunc)
-{    
-    const int vertCount = es.eigVecSize();
-    const int eigCount = es.eigVecCount();
-    std::vector<double> vDiag(eigCount);
-    for (int k = 0; k < eigCount; ++k) vDiag[k] = genfunc(es.getEigVal(k), t);
-    DenseMatrixd matEigVecs = es.toDenseMatrix();
-
-    DenseMatrixd hk(vertCount, vertCount);
-    quadricFormAMP(vertCount, eigCount, matEigVecs.raw_ptr(), vDiag.data(), hk.raw_ptr());
-
-    return hk;
-}
-
-std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> genfunc)
-{
-    const int vert_count = es.eigVecSize();
-    const int eigen_num = es.eigVecCount();
-
-    std::vector<double> vDiag(eigen_num);
-    for (int k = 0; k < eigen_num; ++k) {
-        vDiag[k] = genfunc(es.getEigVal(k), t);
-    }
-
-    vector<double> result(vert_count, 0);
-    parallel_for(0, vert_count, [&](int i) {
-        double sum(0);
-        for (int k = 0; k < eigen_num; ++k) {
-            const VecNd& phi = es.getEigVec(k);
-            sum += vDiag[k] * phi[i] * phi[i];
-        }
-        result[i] = sum;
-    });
-    return result;
-}
-
-DenseMatrixd calHeatKernelMatrix(const EigenSystem& hb, double t)
-{
-    return calSpectralKernelMatrix(hb, t, heat_gen_func);
-}
-
-std::vector<double> calHeatKernelSignature(const EigenSystem& hb, double t)
-{
-    return calSpectralKernelSignature(hb, t, heat_gen_func);
-}
-
-double calHeatKernel(const EigenSystem& es, int i, int j, double t)
-{
-    double sum = 0;
-    for (int k = 0; k < es.eigVecCount(); ++k) {
-        auto phi = es.getEigVec(k);
-        sum += std::exp(-es.getEigVal(k) * t) * phi[i] * phi[j];
-    }
-    return sum;
-}
-
-double calHeatTrace(const EigenSystem& es, double t)
-{
-    double sum(0);
-    for (int k = 0; k < es.eigVecCount(); ++k)
-        sum += std::exp(-es.getEigVal(k) * t);
-    return sum;
 }
 
 std::vector<int> randomHoleVertex(const CMesh& mesh, int hole_size, int seed /*= -1*/)
@@ -235,35 +172,6 @@ std::vector<Vec3d> computeMeshFaceNormals(const CMesh& mesh)
     });
 
     return vecNormals;
-}
-
-double calBiharmonicDist(const EigenSystem& es, int v1, int v2)
-{
-    // BhDist(i,j) = sqrt(sum_{k=1}^{K}(phi_k(i)-phi_k(j))/lambda_k)^2 )
-    double sum = 0;
-    for (int k = 1; k < es.eigVecCount(); ++k) {
-        sum += pow((es.getEigVec(k)[v1] - es.getEigVec(k)[v2]) / es.getEigVal(k), 2);
-    }
-    return std::sqrt(sum);
-}
-
-vector<double> calAllBiharmonicDist(EigenSystem& es, int vo, int eig_num)
-{
-    int vert_count = es.eigVecSize(), eig_count = es.eigVecCount();
-    if (eig_num > 0 && eig_num < eig_count) eig_count = eig_num;
-    const DenseMatrixd& mat_eig_vec = es.getEigenMat();
-    const vector<double>& vec_eig_vals = es.getAllEigVals();
-
-    vector<double> result(vert_count, 0);
-    parallel_for(0, vert_count, [&](int vi) {
-        double sum(0);
-        for (int k = 1; k < eig_count; ++k) {
-            sum += ZGeom::sqr((mat_eig_vec(k, vo) - mat_eig_vec(k, vi)) / vec_eig_vals[k]);
-        }
-        result[vi] = std::sqrt(sum);
-    });
-
-    return result;
 }
 
 void getMeshGraphCSR(const CMesh& mesh, std::vector<int>& xadj, std::vector<int>& adjncy)

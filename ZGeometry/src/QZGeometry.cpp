@@ -42,6 +42,93 @@ using ZGeom::MatlabEngineWrapper;
 using ZGeom::ColorSignature;
 using ZGeom::MeshRegion;
 
+vector<double> calHoleVertDistToHoleFace(const CMesh& mesh1, const ZGeom::MeshRegion& hole1, const CMesh& mesh2, const ZGeom::MeshRegion& hole2)
+{
+    using namespace ZGeom;
+    int nVert1 = (int)hole1.vert_inside.size();
+    int nFace2 = (int)hole2.face_inside.size();
+
+    vector<vector<Vec3d>> holeFace2Tri(nFace2);
+    for (int k = 0; k < nFace2; ++k)
+        holeFace2Tri[k] = mesh2.getFace(hole2.face_inside[k])->getAllVertPos();
+
+    vector<double> result(nVert1);
+    concurrency::parallel_for(0, nVert1, [&](int k)
+    {
+        const Vec3d &vPos = mesh1.vertPos(hole1.vert_inside[k]);
+        double minDistVi = 1e15;
+        for (const auto& tri : holeFace2Tri)
+            minDistVi = std::min(minDistVi, distPointTriangle(vPos, tri).distance);
+        result[k] = minDistVi;
+    });
+
+    return result;
+}
+
+double rmseVerts(const std::vector<int>& verts, const std::vector<double>& all_vert_areas, const std::vector<double>& all_vert_error)
+{
+    double area_sum(0);
+    double s2_error_sum(0);
+    for (int vi : verts) {
+        s2_error_sum += all_vert_areas[vi] * all_vert_error[vi] * all_vert_error[vi];
+        area_sum += all_vert_areas[vi];
+    }
+
+    return std::sqrt(s2_error_sum / area_sum);
+}
+
+bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
+{
+    using namespace std;
+
+    QDialog dialog(parent);
+
+    // Use a layout allowing to have a label next to each field
+    QFormLayout form(&dialog);
+
+    unique_ptr<QSpinBox> ring_input = make_unique<QSpinBox>(&dialog);
+    ring_input->setRange(0, 100);
+    ring_input->setValue(para.fitting_ring);
+    
+    unique_ptr<QSpinBox> eigen_input = make_unique<QSpinBox>(&dialog);
+    eigen_input->setRange(-1, 10000);
+    eigen_input->setValue(para.eigen_count);
+
+    unique_ptr<QDoubleSpinBox> tol_input = make_unique<QDoubleSpinBox>(&dialog);
+    tol_input->setDecimals(4);
+    tol_input->setRange(1e-4, 1e-2);
+    tol_input->setSingleStep(1e-4);
+    tol_input->setValue(para.tol);
+
+    unique_ptr<QDoubleSpinBox> lambda_input = make_unique<QDoubleSpinBox>(&dialog);
+    lambda_input->setDecimals(4);
+    lambda_input->setRange(1e-4, 0.9999);
+    lambda_input->setSingleStep(1e-3);
+    lambda_input->setValue(para.lambda);
+
+    form.addRow("Surrounding ring", ring_input.get());
+    form.addRow("#Eigenfunctions", eigen_input.get());
+    form.addRow("tol", tol_input.get());
+    form.addRow("lambda", lambda_input.get());
+
+    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
+    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
+        Qt::Horizontal, &dialog);
+    form.addRow(&buttonBox);
+    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
+    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
+
+    // Show the dialog as modal
+    if (dialog.exec() == QDialog::Accepted) {
+        para.fitting_ring = ring_input->value();
+        para.eigen_count = eigen_input->value();
+        para.tol = tol_input->value();
+        para.lambda = lambda_input->value();
+        return true;
+    }
+    else return false;
+}
+
 QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QMainWindow(parent, flags)
 {
 	mMeshCount				= 0;
@@ -50,7 +137,7 @@ QZGeometryWindow::QZGeometryWindow(QWidget *parent,  Qt::WindowFlags flags) : QM
 	mLastOperation			= None;
 	mDeformType				= DEFORM_Simple;
     mSignatureMode          = ZGeom::SM_Normalized;
-	mActiveLalacian			= Umbrella;
+	active_lap_type			= Umbrella;
 	mDiffMax				= 2.0;
 	mCurrentBasisScale		= 0;
 
@@ -145,7 +232,6 @@ void QZGeometryWindow::makeConnections()
 	QObject::connect(ui.sliderApprox3, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox3(int)));
 	QObject::connect(ui.sliderApprox4, SIGNAL(valueChanged(int)), this, SLOT(continuousApprox4(int)));
 	QObject::connect(ui.sliderPointSize, SIGNAL(valueChanged(int)), this, SLOT(setFeaturePointSize(int)));
-	QObject::connect(ui.sliderEditBasis, SIGNAL(valueChanged(int)), this, SLOT(displayBasis(int)));
 	QObject::connect(ui.comboBoxSigMode, SIGNAL(activated(const QString&)), this, SLOT(setSignatureMode(const QString&)));
 	QObject::connect(ui.sliderSigMin, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMin(int)));
 	QObject::connect(ui.sliderSigMax, SIGNAL(valueChanged(int)), this, SLOT(updateSignatureMax(int)));
@@ -169,10 +255,10 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionComputeGraphLaplacian, SIGNAL(triggered()), this, SLOT(computeGraphLaplacian()));
     QObject::connect(ui.actionComputeGeoLaplacian, SIGNAL(triggered()), this, SLOT(computeGeoLaplacian()));
 	QObject::connect(ui.actionEigenfunction, SIGNAL(triggered()), this, SLOT(computeEigenfunction()));
-	QObject::connect(ui.actionComputeBasis, SIGNAL(triggered()), this, SLOT(computeEditBasis()));
     QObject::connect(ui.actionComputeCurvatures, SIGNAL(triggered()), this, SLOT(computeCurvatures()));
     QObject::connect(ui.actionComputeShapeIndex, SIGNAL(triggered()), this, SLOT(computeShapeIndex()));
     QObject::connect(ui.actionComputeBiharmonicDistance, SIGNAL(triggered()), this, SLOT(computeBiharmonic()));
+    QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
     QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
 	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));	
@@ -500,12 +586,15 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 		vMeshFiles.push_back(meshFileName);
 	}
 	meshfiles.close();
-	if (vMeshFiles.size() < mMeshCount)
-		throw std::runtime_error("Not enough meshes in mesh list!");
+    if (vMeshFiles.size() < mMeshCount) {
+        throw std::runtime_error("Not enough meshes in mesh list!");
+    }
+
+    bool scale_to_unit = gSettings.INPUT_SCALE_TO_UNIT == 1 ? true : false;
 
 	allocateStorage(mMeshCount);
 	parallel_for(0, mMeshCount, [&](int obj) {
-        loadMesh(vMeshFiles[obj], obj); 
+        loadMesh(vMeshFiles[obj], obj, scale_to_unit); 
 	});	
 
 	/* ---- update mesh-dependent ui ---- */
@@ -529,12 +618,15 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 	mObjInFocus = 0;
 }
 
-void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj)
+void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj, bool scale_to_unit /*= false*/)
 {
     assert(obj < mMeshCount);
     CMesh *newMesh = new CMesh();
     newMesh->load(mesh_filename);
-    newMesh->scaleToUnitBox();
+    newMesh->moveToOrigin();
+    if (scale_to_unit) {
+        newMesh->scaleToUnitBox();
+    }    
     ZGeom::gatherMeshStatistics(*newMesh);
     Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
     newMesh->setDefaultColor(meshColor);
@@ -1122,7 +1214,7 @@ void QZGeometryWindow::computeHoleNeighbors()
 
 void QZGeometryWindow::computeEigenfunction()
 {
-	LaplacianType lap_type = mActiveLalacian;
+	LaplacianType lap_type = active_lap_type;
     if (!mMeshHelper[0].hasEigenSystem(lap_type)) {
         QMessageBox::warning(this, "No Laplacian", "Compute Laplacian first!");
         return;
@@ -1147,6 +1239,24 @@ void QZGeometryWindow::computeEigenfunction()
 	updateMenuDisplaySignature();
 }
 
+void QZGeometryWindow::computeBiharmonic()
+{
+	for (int obj = 0; obj < mMeshCount; ++obj) {
+        CMesh* cur_mesh = getMesh(obj);
+		MeshHelper& mp = mMeshHelper[obj];
+		const int vertCount = getMesh(obj)->vertCount();
+		const int refPoint = mp.getRefPointIndex();    
+        ZGeom::EigenSystem& es = mp.getEigenSystem(CotFormula);
+        vector<double> vVals = calAllBiharmonicDist(es, refPoint);
+
+        addColorSignature(obj, vVals, StrAttrColorBiharmonicField);
+	}
+
+	displaySignature(StrAttrColorBiharmonicField.c_str());
+	updateMenuDisplaySignature();
+	mLastOperation = Compute_Biharmonic;
+}
+
 void QZGeometryWindow::computeHK()
 {
 	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
@@ -1155,13 +1265,8 @@ void QZGeometryWindow::computeHK()
 		MeshHelper& mp = mMeshHelper[obj];
 		const int meshSize = mp.getMesh()->vertCount();
 		const int refPoint = mp.getRefPointIndex();
-		const ZGeom::EigenSystem &mhb = mp.getEigenSystem(mActiveLalacian);
-
-		std::vector<double> values(meshSize);
-		Concurrency::parallel_for (0, meshSize, [&](int vIdx) {
-            values[vIdx] = ZGeom::calHeatKernel(mhb, refPoint, vIdx, time_scale);
-		});
-
+		const ZGeom::EigenSystem &mhb = mp.getEigenSystem(active_lap_type);
+        std::vector<double> values = ZGeom::calAllHeatKernel(mhb, refPoint, time_scale);
 		addColorSignature(obj, values, StrAttrColorHK);
 	}
 
@@ -1178,7 +1283,7 @@ void QZGeometryWindow::computeHKS()
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
 		const int meshSize = mp.getMesh()->vertCount();
-		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(CotFormula);
+		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(active_lap_type);
         std::vector<double> values = ZGeom::calHeatKernelSignature(mhb, time_scale);
 		addColorSignature(i, values, StrAttrColorHKS);
 	}
@@ -1189,23 +1294,26 @@ void QZGeometryWindow::computeHKS()
 	mLastOperation = Compute_HKS;
 }
 
-void QZGeometryWindow::computeBiharmonic()
+void QZGeometryWindow::computeSGW()
 {
-	for (int obj = 0; obj < mMeshCount; ++obj) {
+    for (int obj = 0; obj < mMeshCount; ++obj) {
         CMesh* cur_mesh = getMesh(obj);
-		MeshHelper& mp = mMeshHelper[obj];
-		const int vertCount = getMesh(obj)->vertCount();
-		const int refPoint = mp.getRefPointIndex();    
+        MeshHelper& mp = mMeshHelper[obj];
+        const int vertCount = getMesh(obj)->vertCount();
+        const int source_point = mp.getRefPointIndex();
         ZGeom::EigenSystem& es = mp.getEigenSystem(CotFormula);
-        vector<double> vVals = calAllBiharmonicDist(es, refPoint);
 
-        cur_mesh->addColorSigAttr(StrAttrColorBiharmonic, ZGeom::ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE, true));
-	}
+        vector<double> timescales = computeSgwScales(es, 3);
+        for (size_t s = 0; s < timescales.size(); ++s) {
+            vector<double> vals = calAllSgwWavelet(es, timescales[s], source_point);
+            cur_mesh->addColorSigAttr(StrAttrColorSGW[s], ZGeom::ColorSignature(vals, gSettings.ACTIVE_COLOR_MAP_TYPE, true));
+        }
+    }
 
-	displaySignature(StrAttrColorBiharmonic.c_str());
-	updateMenuDisplaySignature();
-	mLastOperation = Compute_Biharmonic;
+    displaySignature(StrAttrColorSGW[0].c_str());
+    updateMenuDisplaySignature();
 }
+
 
 void QZGeometryWindow::computeHKSFeatures()
 {
@@ -1224,9 +1332,6 @@ void QZGeometryWindow::repeatOperation()
 	{
 	case Compute_Eig_Func:
 		computeEigenfunction(); break;
-
-	case Compute_Edit_Basis:
-		computeEditBasis(); break;
 	
 	case Compute_HKS:
 		computeHKS(); break;
@@ -1633,7 +1738,7 @@ void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
                   << std::endl;
     }
 
-    mActiveLalacian = lap_type;
+    active_lap_type = lap_type;
 }
 
 void QZGeometryWindow::saveMatchingResult()
@@ -1760,12 +1865,11 @@ void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vV
 	auto iResult = minmax_element(vVals.begin(), vVals.end());
 	double sMin = *(iResult.first); 
 	double sMax = *(iResult.second);
-	std::cout << "-- Signature Min = " << sMin << ", Signature Max = " << sMax << std::endl;
+	std::cout << "-- Signature Min: " << sMin << ", Signature Max: " << sMax << std::endl;
 
     std::vector<double>& vSig = getMesh(obj)->addAttrVertScalars(StrAttrOriginalSignature).attrValue();
 	vSig = vVals;
-
-    getMesh(obj)->addColorSigAttr(sigName, ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE));
+    getMesh(obj)->addColorSigAttr(sigName, ColorSignature(vVals, gSettings.ACTIVE_COLOR_MAP_TYPE, true));
 }
 
 double QZGeometryWindow::parameterFromSlider( double sDefault, double sMin, double sMax, bool verbose /*= false*/ )
@@ -1846,18 +1950,6 @@ void QZGeometryWindow::updateSignature( ZGeom::SignatureMode smode )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::computeEditBasis()
-{
-	if (mShapeEditor.mEditBasis.empty()) {
-		std::cout << "Edit basis unavailable!" << std::endl;
-		return;
-	}
-
-	ui.sliderEditBasis->setMaximum(mShapeEditor.mEditBasis.size()-1);
-	ui.sliderEditBasis->setValue(0);
-	displayBasis(0);
-}
-
 void QZGeometryWindow::clearHandles()
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) 
@@ -1904,30 +1996,6 @@ void QZGeometryWindow::continuousApprox4( int level )
 	qout.output("#Reconstruct Basis: " + boost::lexical_cast<std::string>(level), OUT_STATUS);
 	mShapeEditor.continuousReconstruct(3, level-1);
 	ui.glMeshWidget->update();
-}
-
-void QZGeometryWindow::displayBasis( int idx )
-{
-	if (mShapeEditor.mEditBasis.empty()) return;
-	int select_basis = idx;
-
-	for (int i = 0; i < 1; ++i) {
-		MeshHelper& mp = mMeshHelper[i];
-		std::vector<double> eigVec = mShapeEditor.mEditBasis[idx].toStdVector();
-		addColorSignature(i, eigVec, StrAttrColorWaveletBasis);
-	}
-
-	displaySignature(StrAttrColorWaveletBasis.c_str());
-	mLastOperation = Compute_Edit_Basis;
-	qout.output("Show basis #" + Int2String(select_basis), OUT_STATUS);
-	updateMenuDisplaySignature();
-
-	if (mSignatureMode == ZGeom::SM_BandCurved) {
-		ui.sliderSigMin->triggerAction(QAbstractSlider::SliderToMinimum);
-		ui.sliderSigMax->triggerAction(QAbstractSlider::SliderToMaximum);
-		updateSignatureMin(ui.sliderSigMin->minimum());
-		updateSignatureMax(ui.sliderSigMax->maximum());
-	}
 }
 
 void QZGeometryWindow::setSignatureMode( const QString& sigModeName )
@@ -1985,10 +2053,10 @@ void QZGeometryWindow::setLaplacianType( const QString& laplacianTypeName )
 {
 	qout.output("Select " + laplacianTypeName, OUT_STATUS);
 
-	if (laplacianTypeName == "Umbrella") mActiveLalacian = Umbrella;
-	else if (laplacianTypeName == "CotFormula") mActiveLalacian = CotFormula;
-	else if (laplacianTypeName == "Anisotropic1") mActiveLalacian = Anisotropic1;
-	else if (laplacianTypeName == "Anisotropic2") mActiveLalacian = Anisotropic2;
+	if (laplacianTypeName == "Umbrella") active_lap_type = Umbrella;
+	else if (laplacianTypeName == "CotFormula") active_lap_type = CotFormula;
+	else if (laplacianTypeName == "Anisotropic1") active_lap_type = Anisotropic1;
+	else if (laplacianTypeName == "Anisotropic2") active_lap_type = Anisotropic2;
 	else qout.output("Invalid Laplacian type selected!", OUT_MSGBOX);
 }
 
@@ -2506,41 +2574,6 @@ void QZGeometryWindow::copyMeshWithHoles()
     else std::cout << "No manual hole found in the current mesh" << std::endl;
 }
 
-vector<double> calHoleVertDistToHoleFace(const CMesh& mesh1, const ZGeom::MeshRegion& hole1, const CMesh& mesh2, const ZGeom::MeshRegion& hole2)
-{
-    using namespace ZGeom;
-    int nVert1 = (int)hole1.vert_inside.size();
-    int nFace2 = (int)hole2.face_inside.size();
-
-    vector<vector<Vec3d>> holeFace2Tri(nFace2);
-    for (int k = 0; k < nFace2; ++k)
-        holeFace2Tri[k] = mesh2.getFace(hole2.face_inside[k])->getAllVertPos();
-
-    vector<double> result(nVert1);
-    concurrency::parallel_for(0, nVert1, [&](int k)
-    {
-        const Vec3d &vPos = mesh1.vertPos(hole1.vert_inside[k]);
-        double minDistVi = 1e15;
-        for (const auto& tri : holeFace2Tri)
-            minDistVi = std::min(minDistVi, distPointTriangle(vPos, tri).distance);
-        result[k] = minDistVi;
-    });
-
-    return result;
-}
-
-double rmseVerts(const std::vector<int>& verts, const std::vector<double>& all_vert_areas, const std::vector<double>& all_vert_error)
-{
-    double area_sum(0);
-    double s2_error_sum(0);
-    for (int vi : verts) {
-        s2_error_sum += all_vert_areas[vi] * all_vert_error[vi] * all_vert_error[vi];
-        area_sum += all_vert_areas[vi];
-    }
-
-    return std::sqrt(s2_error_sum / area_sum);
-}
-
 void QZGeometryWindow::evaluateCurrentInpainting()
 {
     using ZGeom::Vec3d;
@@ -2704,58 +2737,6 @@ void QZGeometryWindow::fairHoleThinPlateEnergy()
     ui.glMeshWidget->update();
 }
 
-bool getfairHoleL1LsParameters(QWidget* parent, ParaL1LsInpainting& para)
-{
-    using namespace std;
-
-    QDialog dialog(parent);
-
-    // Use a layout allowing to have a label next to each field
-    QFormLayout form(&dialog);
-
-    unique_ptr<QSpinBox> ring_input = make_unique<QSpinBox>(&dialog);
-    ring_input->setRange(0, 100);
-    ring_input->setValue(para.fitting_ring);
-    
-    unique_ptr<QSpinBox> eigen_input = make_unique<QSpinBox>(&dialog);
-    eigen_input->setRange(-1, 10000);
-    eigen_input->setValue(para.eigen_count);
-
-    unique_ptr<QDoubleSpinBox> tol_input = make_unique<QDoubleSpinBox>(&dialog);
-    tol_input->setDecimals(4);
-    tol_input->setRange(1e-4, 1e-2);
-    tol_input->setSingleStep(1e-4);
-    tol_input->setValue(para.tol);
-
-    unique_ptr<QDoubleSpinBox> lambda_input = make_unique<QDoubleSpinBox>(&dialog);
-    lambda_input->setDecimals(4);
-    lambda_input->setRange(1e-4, 0.9999);
-    lambda_input->setSingleStep(1e-3);
-    lambda_input->setValue(para.lambda);
-
-    form.addRow("Surrounding ring", ring_input.get());
-    form.addRow("#Eigenfunctions", eigen_input.get());
-    form.addRow("tol", tol_input.get());
-    form.addRow("lambda", lambda_input.get());
-
-    // Add some standard buttons (Cancel/Ok) at the bottom of the dialog
-    QDialogButtonBox buttonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel,
-        Qt::Horizontal, &dialog);
-    form.addRow(&buttonBox);
-    QObject::connect(&buttonBox, SIGNAL(accepted()), &dialog, SLOT(accept()));
-    QObject::connect(&buttonBox, SIGNAL(rejected()), &dialog, SLOT(reject()));
-
-    // Show the dialog as modal
-    if (dialog.exec() == QDialog::Accepted) {
-        para.fitting_ring = ring_input->value();
-        para.eigen_count = eigen_input->value();
-        para.tol = tol_input->value();
-        para.lambda = lambda_input->value();
-        return true;
-    }
-    else return false;
-}
-
 void QZGeometryWindow::fairHoleL1LS()
 {
     CMesh& mesh = *mMeshHelper[0].getMesh();
@@ -2906,4 +2887,3 @@ void QZGeometryWindow::ignoreOuterBoundary()
 
     ui.glMeshWidget->update();
 }
-

@@ -240,7 +240,9 @@ public:
     static void         assoicateVertEdges(CVertex *v1, CVertex *v2, CHalfEdge *e12, CHalfEdge *e21);
 
     void		        scaleAndTranslate(ZGeom::Vec3d translation, double scale);
-    void                move(ZGeom::Vec3d translation) { scaleAndTranslate(translation, 1.0); }
+    void                move(ZGeom::Vec3d translation);
+    void                scale(double s);
+    void                moveToOrigin();    
     void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
     void                scaleToUnitBox();                       // move to origin and scale the mesh to inside the unit box
     void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1

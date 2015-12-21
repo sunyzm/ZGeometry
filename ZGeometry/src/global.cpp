@@ -16,6 +16,8 @@ GlobalSettings::GlobalSettings()
 	DEFAULT_DEFORM_RING     = 5;
 	LOAD_MHB_CACHE          = 0;
 	MIN_HK_TIMESCALE        = 1;
+    INPUT_SCALE_TO_UNIT     = 0;
+
 	DEFUALT_HK_TIMESCALE    = 40.0;
 	MAX_HK_TIMESCALE        = 2000.0;
 	PARAMETER_SLIDER_CENTER = 50;

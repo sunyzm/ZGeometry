@@ -10,6 +10,7 @@
 #include "EigenSystem.h"
 #include "Mesh.h"
 #include "curvature.h"
+#include "spectral_geometry.h"
 
 namespace ZGeom {
 
@@ -144,17 +145,9 @@ void refineMeshHoles2(CMesh &oldMesh, double lambda = 0.7);
 void refineMeshHoles3(CMesh &oldMesh, double lambda = 0.7);
 bool refineMeshHoleByNum(CMesh &oldMesh, MeshRegion& hole, int nNewVerts);
 
-/* spectral geometry*/
-DenseMatrixd calSpectralKernelMatrix(const EigenSystem& hb, double t, std::function<double(double, double)> gen);
-std::vector<double> calSpectralKernelSignature(const EigenSystem& es, double t, std::function<double(double, double)> gen);
-double calHeatKernel(const EigenSystem& es, int i, int j, double t);
-DenseMatrixd calHeatKernelMatrix(const EigenSystem& es, double t);
-std::vector<double> calHeatKernelSignature(const EigenSystem& es, double t);
-double calHeatTrace(const EigenSystem& es, double t);
-double calBiharmonicDist(const EigenSystem& es, int v1, int v2);
-std::vector<double> calAllBiharmonicDist(EigenSystem& es, int vi, int eig_num = -1);
 
 /* differential geometry */
+//
 enum MeshMatrixType
 {
     MM_ADJACENCY, MM_DEGREE, MM_INV_DEGREE, MM_WALK,
@@ -177,8 +170,8 @@ std::vector<double> computeMeshVertArea(const CMesh& mesh, MeshVertAreaScheme sc
 void calMeshAttrMixedVertAreas(CMesh& mesh);
 const std::vector<double>& getMeshVertMixedAreas(CMesh& mesh);
 
-// curvatures
-
+//* curvatures *//
+//
 struct ResultMeshMeanGaussCurvatures 
 { 
     std::vector<double> mean_curvatures, gauss_curvatures; 
