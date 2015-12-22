@@ -19,7 +19,7 @@ GROUND_TRUTH_AVAILABLE = 0
 MESH_LIST_NAME = meshfiles.cfg
 MESH_LIST_NAME_DEBUG = meshfiles_debug.cfg
 RAND_DATA_FILE = random_num.dat
-SCALE_TO_UNIT = 0
+SCALE_TO_UNIT = 1
 
 [output]
 HIERARCHY_OUTPUT_FILE = output/build_pyramid.log

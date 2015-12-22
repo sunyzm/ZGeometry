@@ -11,6 +11,7 @@
 #include "Mesh.h"
 #include "curvature.h"
 #include "spectral_analysis.h"
+#include "mesh_primitives.h"
 
 namespace ZGeom {
 
@@ -35,8 +36,6 @@ bool testTriBoxOverlap(const std::vector<Vec3d>& triangle, Vec3d boxCenter, Vec3
 
 int triObtuseEdge(const std::vector<Vec3d>& triVerts);
 
-std::set<int> meshMultiVertsAdjacentVerts(const CMesh& mesh, const std::vector<int>& vert, int ring, bool inclusive = true);
-
 double distPointMesh(Vec3d p, CMesh& mesh);
 std::vector<double> computeVertMeshDist(CMesh &mesh1, CMesh &mesh2);
 double computeMeshMeanError(CMesh &mesh1, CMesh &mesh2);
@@ -49,67 +48,17 @@ double computeSymHausdorffDistance(CMesh &mesh1, CMesh &mesh2);
 enum MeshDistMeasure {MEAN_ERROR, SYM_MEAN_ERROR, RMSE, SYM_RMSE, HAUSDORFF, SYM_HAUSDORFF};
 double distSubMesh(CMesh &mesh1, const std::vector<int>& faces1, CMesh &mesh2, const std::vector<int>& faces2, MeshDistMeasure measure = RMSE);
 
-
-
 MeshCoordinates addMeshNoise(CMesh& mesh, double phi, std::vector<int>& selectedVerts);
 
-struct MeshRegion
-{
-    std::vector<int> vert_on_boundary;
-    std::vector<int> he_on_boundary;
-    std::vector<int> vert_inside;
-    std::vector<int> face_inside;  
-
-    bool is_outer_boundary;
-    double adjacent_edge_length;
-
-    // constructors
-    MeshRegion() : is_outer_boundary(false), adjacent_edge_length(-1) { }
-    MeshRegion(const MeshRegion&) = default;
-    MeshRegion& operator = (MeshRegion&& hb) 
-    {
-        vert_on_boundary = std::move(hb.vert_on_boundary);
-        he_on_boundary = std::move(hb.he_on_boundary);
-        vert_inside = std::move(hb.vert_inside);
-        face_inside = std::move(hb.face_inside);
-        is_outer_boundary = hb.is_outer_boundary;
-        adjacent_edge_length = hb.is_outer_boundary;
-        return *this;
-    }
-    MeshRegion(MeshRegion&& hb) { *this = std::move(hb); }
-    const std::vector<int>& getInsideFaceIdx() const { return face_inside; }
-
-    void determineBoundaryHalfEdges(const CMesh& mesh)
-    {
-        std::set<int> faces_in_hole{ face_inside.begin(), face_inside.end() };
-
-        std::set<int> boundary_he;
-        for (int fi : faces_in_hole) {
-            const CFace* f = mesh.getFace(fi);
-            for (CHalfEdge* he : f->getAllHalfEdges()) {
-                if (he->twinHalfEdge() == nullptr || !setHas(faces_in_hole, he->twinHalfEdge()->getAttachedFace()->getFaceIndex()))
-                    boundary_he.insert(he->getIndex());
-            }
-        }
-
-        he_on_boundary = std::vector<int>(boundary_he.begin(), boundary_he.end());
-    }
-};
-
-MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts);
 std::vector<int> getMeshRegionsInsideVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsBoundaryVerts(const std::vector<MeshRegion>& vRegions);
 std::vector<int> getMeshRegionsFaces(const std::vector<MeshRegion>& vRegions);
 void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions);
 
-MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region);
-
 std::vector<MeshRegion*> getMeshHoleRegions(CMesh& mesh);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, int seedVert, int holeSize);
 ZGeom::MeshRegion generateRandomMeshRegion(const CMesh& mesh, const std::vector<int>& seedVerts, int totalSize);
 ZGeom::MeshRegion generateRingMeshRegion(const CMesh& mesh, int seedVert, int ring);
-std::vector<int> vertSurroundingVerts(const CMesh& mesh, const std::vector<int>& vert_inside, int ring);
-std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<int>& verts);
 
 std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh); // compute number of (connective) boundaries
 double estimateHoleEdgeLength(CMesh& mesh, MeshRegion& hole, int ring = 1);
@@ -197,8 +146,6 @@ std::vector<int> randomHoleVertex(const CMesh& mesh, int total_size, const std::
 void gatherMeshStatistics(CMesh& mesh);
 
 double compareCoordRMSE(const MeshCoordinates& coord1, const MeshCoordinates& coord2, const std::vector<int>& selctedVerts);
-
-
 
 }   // end of namespace
 

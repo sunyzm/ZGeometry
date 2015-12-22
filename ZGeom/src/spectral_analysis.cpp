@@ -56,7 +56,21 @@ std::vector<double> bivariateKernelDiagonal(const ZGeom::EigenSystem& es, const 
 namespace ZGeom 
 {
 
-std::vector<double> calSpectralCoeff(const EigenSystem& es, const std::vector<double>& vert_func)
+double calSpectralFourierCoeff(const EigenSystem& es, const std::vector<double>& vert_func, int k) 
+{
+    assert(es.eigVecSize() == vert_func.size() && k >= 0 && k < es.eigVecCount());
+    int vert_num = es.eigVecSize();
+    int eigen_num = es.eigVecCount();
+    vector<double> inducing_diag;
+    if (es.hasInducingMat()) {
+        inducing_diag = es.getInducingMat().getDiagonal();
+    }
+    vector<double> eigen_vec_k = es.getEigVec(k).toStdVector();
+
+    return inducedInnerProduct(eigen_vec_k, vert_func, inducing_diag);
+}
+
+std::vector<double> calSpectralFourierTransform(const EigenSystem& es, const std::vector<double>& vert_func)
 {
     assert(es.eigVecSize() == vert_func.size());
 
@@ -228,7 +242,7 @@ std::vector<double> calSgwCoeff(const EigenSystem& es, double timescale, const s
     for (int k = 0; k < eigen_num; ++k) {
         kernel_coeff[k] = wavelet_gen_1(timescale * es.getEigVal(k));
     }
-    vector<double> fourier_coeff = calSpectralCoeff(es, mesh_func);
+    vector<double> fourier_coeff = calSpectralFourierTransform(es, mesh_func);
 
     vector<double> result(vert_num);
     parallel_for(0, vert_num, [&](int vi) {

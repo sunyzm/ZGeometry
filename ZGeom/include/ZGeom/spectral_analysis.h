@@ -8,7 +8,8 @@
 namespace ZGeom
 {
 
-std::vector<double>     calSpectralCoeff(const EigenSystem& es, const std::vector<double>& vert_func);
+double                  calSpectralFourierCoeff(const ZGeom::EigenSystem& es, const std::vector<double>& vert_func, int k);
+std::vector<double>     calSpectralFourierTransform(const EigenSystem& es, const std::vector<double>& vert_func);
 
 double                  calBiharmonicDist(const EigenSystem& es, int v1, int v2);
 std::vector<double>     calAllBiharmonicDist(EigenSystem& es, int vi, int eig_num = -1);
