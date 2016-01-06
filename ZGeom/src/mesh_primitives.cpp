@@ -134,7 +134,7 @@ MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts
 }
 
 
-ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region)
+ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> func_in_region_test)
 {
     assert(mesh.vertCount() == dist_field.size());
 
@@ -145,7 +145,7 @@ ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>
         int vi = *candidate_vert.begin();
         candidate_vert.erase(vi);
         vert_visited.insert(vi);
-        if (judge_in_region(dist_field[vi])) {
+        if (func_in_region_test(dist_field[vi])) {
             vert_inside.insert(vi);
             vector<int> neighbors = mesh.getVertNeighborVerts(vi, 1);
             for (int vj : neighbors) {
@@ -158,6 +158,36 @@ ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>
 
     MeshRegion result = meshRegionFromVerts(mesh, vector<int>{vert_inside.begin(), vert_inside.end()});
     return result;
+}
+
+ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
+        const std::vector<double>& dist_field, const std::vector<double>& thresholds)
+{
+    int ring_num = (int)thresholds.size();
+    
+    // check validity of thresholds
+    runtime_assert(thresholds[0] > 0);
+    for (int k = 1; k < ring_num; ++k) {
+        runtime_assert(thresholds[k] > thresholds[k - 1]);
+    }
+
+    BandedMeshRegions result;   
+    result.resize(ring_num);
+    
+    //TODO
+    
+    return result;
+}
+
+ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
+        const std::vector<double>& dist_field, double max_threshold, int band_num)
+{
+    assert(band_num >= 1 && max_threshold > 0);
+    vector<double> band_thresholds(band_num);
+    for (int k = 1; k <= band_num; ++k) {
+        band_thresholds[k - 1] = max_threshold * double(k) / double(band_num);
+    }
+    return meshRegionBandsFromDistField(mesh, seed_vert, dist_field, band_thresholds);
 }
 
 }

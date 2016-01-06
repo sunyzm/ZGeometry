@@ -12,7 +12,9 @@ void EigenSystem::setSize(int order, int nev)
 {
 	mEigVals.resize(nev);
 	mEigVecs.resize(nev);
-    for (auto& vk : mEigVecs) vk.resize(order);
+    for (auto& vk : mEigVecs) {
+        vk.resize(order);
+    }
 }
 
 void EigenSystem::print(const std::string& file1, const std::string& file2) const
@@ -68,13 +70,13 @@ void EigenSystem::load(const std::string& file)
 
 ZGeom::DenseMatrixd EigenSystem::toDenseMatrix() const
 {
-    DenseMatrixd matEigVec;
+    DenseMatrixd mat_eig_vec;
     // eigenvectors arranged row by row
-	matEigVec.resize(eigVecCount(), eigVecSize());
+	mat_eig_vec.resize(eigVecCount(), eigVecSize());
     for (int i = 0; i < (int)eigVecCount(); ++i) {
-        matEigVec.setRow(i, mEigVecs[i]);
+        mat_eig_vec.setRow(i, mEigVecs[i]);
     }
-    return matEigVec;
+    return mat_eig_vec;
 }
 
 void EigenSystem::resize(int m)
