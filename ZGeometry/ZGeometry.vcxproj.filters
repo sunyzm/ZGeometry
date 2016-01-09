@@ -86,12 +86,6 @@
     <ClCompile Include="GeneratedFiles\Release\moc_ShapeEditor.cpp">
       <Filter>Generated Files\Release</Filter>
     </ClCompile>
-    <ClCompile Include="src\GeometryApproximation.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="differntial_geometry.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\MeshHelper.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -102,6 +96,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\hole_fairing.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\differntial_geometry.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\geometry_approximation.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -177,19 +177,19 @@
     <ClInclude Include="src\Palette.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\GeometryApproximation.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GeneratedFiles\ui_qsingleinputdialog.h">
       <Filter>Generated Files</Filter>
-    </ClInclude>
-    <ClInclude Include="differential_geometry.h">
-      <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\heat_diffusion.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\hole_fairing.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\differential_geometry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\geometry_approximation.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

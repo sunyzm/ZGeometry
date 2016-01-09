@@ -1,4 +1,4 @@
-#include "GeometryApproximation.h"
+#include "geometry_approximation.h"
 #include <ppl.h>
 #include <metis.h>
 #include "differential_geometry.h"

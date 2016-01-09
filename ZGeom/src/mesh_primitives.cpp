@@ -171,11 +171,33 @@ ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert
         runtime_assert(thresholds[k] > thresholds[k - 1]);
     }
 
-    BandedMeshRegions result;   
+    set<int> candidate_vert{ seed_vert };
+    set<int> vert_visited;
+    vector<set<int>> vert_in_ring(ring_num);
+    while (!candidate_vert.empty()) {
+        int vi = *candidate_vert.begin();
+        candidate_vert.erase(vi);
+        vert_visited.insert(vi);
+
+        for (int r = 0; r < ring_num; ++r) {
+            if (dist_field[vi] <= thresholds[r]) {
+                vert_in_ring[r].insert(vi);
+                for (int vj : mesh.getVertNeighborVerts(vi, 1)) {
+                    if (vert_visited.find(vj) == vert_visited.end()) {
+                        candidate_vert.insert(vj);
+                    }
+                }
+                break;
+            }
+        }
+    }
+    
+    BandedMeshRegions result;
     result.resize(ring_num);
-    
-    //TODO
-    
+    for (int r = 0; r < ring_num; ++r) {
+        result.band_thresholds = thresholds;
+        result.band_verts[r] = vector<int>(vert_in_ring[r].begin(), vert_in_ring[r].end());
+    }
     return result;
 }
 

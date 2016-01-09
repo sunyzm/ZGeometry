@@ -183,7 +183,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="differntial_geometry.cpp" />
     <ClCompile Include="GeneratedFiles\Debug\moc_glmeshwidget.cpp">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
@@ -218,7 +217,8 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="src\GeometryApproximation.cpp" />
+    <ClCompile Include="src\differntial_geometry.cpp" />
+    <ClCompile Include="src\geometry_approximation.cpp" />
     <ClCompile Include="src\glmeshwidget.cpp" />
     <ClCompile Include="src\global.cpp" />
     <ClCompile Include="src\heat_diffusion.cpp" />
@@ -735,9 +735,9 @@
     </CustomBuild>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="differential_geometry.h" />
     <ClInclude Include="GeneratedFiles\ui_qsingleinputdialog.h" />
-    <ClInclude Include="src\GeometryApproximation.h" />
+    <ClInclude Include="src\differential_geometry.h" />
+    <ClInclude Include="src\geometry_approximation.h" />
     <ClInclude Include="src\heat_diffusion.h" />
     <ClInclude Include="src\hole_fairing.h" />
     <ClInclude Include="src\matching.h" />

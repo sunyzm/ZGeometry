@@ -4,7 +4,7 @@
 #include <map>
 #include "global.h"
 #include "MeshLaplacian.h"
-#include "GeometryApproximation.h"
+#include "geometry_approximation.h"
 
 using namespace std;
 using ZGeom::SparseMatrixd;

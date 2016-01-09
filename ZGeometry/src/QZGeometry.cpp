@@ -1401,29 +1401,29 @@ void QZGeometryWindow::displayFeature( QString pointFeatureName )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayLine(QString lineFeatureName)
+void QZGeometryWindow::displayLine(QString line_feature_name)
 {
     for (int obj = 0; obj < mMeshCount; ++obj) {
         if (!isMeshSelected(obj)) continue;
-        auto &activeLineFeatures = mRenderManagers[obj].mActiveLineNames;
-        std::string newLineFeature = lineFeatureName.toStdString();
-        QAction *activeAction = nullptr;
+        auto &active_line_features = mRenderManagers[obj].mActiveLineNames;
+        std::string new_line_feature = line_feature_name.toStdString();
+        QAction *active_action = nullptr;
         for (QAction *qa : m_actionDisplayLines) {
-            if (qa->text() == lineFeatureName) {
-                activeAction = qa;
+            if (qa->text() == line_feature_name) {
+                active_action = qa;
                 break;
             }
         }
-        logic_assert(activeAction != nullptr, "Should have an active action");
+        logic_assert(active_action != nullptr, "Should have an active action");
 
-        if (!setHas(activeLineFeatures, newLineFeature)) {
-            activeLineFeatures.insert(newLineFeature);
-            activeAction->setChecked(true);
+        if (!setHas(active_line_features, new_line_feature)) {
+            active_line_features.insert(new_line_feature);
+            active_action->setChecked(true);
             if (!ui.glMeshWidget->m_bShowLines) toggleShowLines(true);
         }
         else {
-            activeLineFeatures.erase(newLineFeature);
-            activeAction->setChecked(false);
+            active_line_features.erase(new_line_feature);
+            active_action->setChecked(false);
         }
     }
 

@@ -529,8 +529,9 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
             MeshRegion& mr = *pmr;
             const vector<int> &holeFaceIdx = mr.face_inside;
             const vector<Colorf>* inpaint_error_colors = nullptr;
-            if (m_bShowHoleError && tmesh->hasAttr(StrAttrColorInpaintError))
+            if (m_bShowHoleError && tmesh->hasAttr(StrAttrColorInpaintError)) {
                 inpaint_error_colors = &tmesh->getVertColor(StrAttrColorInpaintError);
+            }
 
             glBegin(GL_TRIANGLES);
             for (int fIdx : holeFaceIdx) {

@@ -4,7 +4,7 @@
 #include <ZGeom/MatlabEngineWrapper.h>
 #include <ZGeom/Mesh.h>
 #include "MeshHelper.h"
-#include "GeometryApproximation.h"
+#include "geometry_approximation.h"
 #include "Palette.h"
 #include "global.h"
 
