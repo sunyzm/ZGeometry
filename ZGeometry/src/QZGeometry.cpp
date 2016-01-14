@@ -2359,7 +2359,7 @@ void QZGeometryWindow::generateBandHole()
     vector<int> band_verts = ZGeom::vertSurroundingVerts(mesh, vector < int > {inner_verts.begin(), inner_verts.end()}, outer_ring - inner_ring);
     
 
-    vector<MeshRegion> generated_holes{ ZGeom::meshRegionFromVerts(mesh, band_verts) };
+    vector<MeshRegion> generated_holes{ ZGeom::meshRegionFromInsideVerts(mesh, band_verts) };
 
     getMesh(0)->addAttr<vector<MeshRegion>>(generated_holes, ZGeom::StrAttrManualHoleRegions, AR_UNIFORM);
     std::cout << "#inside_vert: " << generated_holes[0].vert_inside.size() << std::endl;

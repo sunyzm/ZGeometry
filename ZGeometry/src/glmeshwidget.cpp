@@ -592,7 +592,8 @@ void GLMeshWidget::drawMeshExt( const MeshHelper* pMP, const RenderSettings* pRS
         glPolygonOffset(1.0, 1.0);
 
         if (m_bShowHoleHollow) {
-            glLineStipple(8, 0xAAAA);
+            GLushort line_pattern = 0xAAAA;
+            glLineStipple(8, line_pattern);
             glEnable(GL_LINE_STIPPLE);
         }
 

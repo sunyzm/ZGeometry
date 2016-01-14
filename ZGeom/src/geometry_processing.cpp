@@ -1609,7 +1609,7 @@ void mergeMeshRegions(CMesh& mesh, std::vector<MeshRegion>& vRegions)
     
     vRegions.clear();
     for (set<int>& region_vert : inside_verts) {
-        vRegions.push_back(meshRegionFromVerts(mesh, vector<int>(region_vert.begin(), region_vert.end())));
+        vRegions.push_back(meshRegionFromInsideVerts(mesh, vector<int>(region_vert.begin(), region_vert.end())));
     }
 }
 

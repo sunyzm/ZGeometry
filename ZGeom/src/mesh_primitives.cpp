@@ -26,8 +26,8 @@ MeshRegion& MeshRegion::operator=(MeshRegion&& hb)
     he_on_boundary = std::move(hb.he_on_boundary);
     vert_inside = std::move(hb.vert_inside);
     face_inside = std::move(hb.face_inside);
-    is_outer_boundary = hb.is_outer_boundary;
-    adjacent_edge_length = hb.is_outer_boundary;
+    adjacent_edge_length = hb.adjacent_edge_length;
+
     return *this;
 }
 
@@ -118,14 +118,17 @@ std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<
     return vector<int>(face_idx.begin(), face_idx.end());
 }
 
-MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts)
+ZGeom::MeshRegion meshRegionFromInsideVerts(const CMesh& mesh, const std::vector<int>& inside_verts)
 {
     MeshRegion result;
     result.vert_inside = inside_verts;
+
+    set<int> region_face_set;
     for (int vi : inside_verts) {
         for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
-            result.face_inside.push_back(f->getFaceIndex());
+            region_face_set.insert(f->getFaceIndex());
     }
+    result.face_inside = vector<int>(region_face_set.begin(), region_face_set.end());
 
     result.vert_on_boundary = vertSurroundingVerts(mesh, result.vert_inside, 1);
     result.determineBoundaryHalfEdges(mesh);
@@ -133,8 +136,41 @@ MeshRegion meshRegionFromVerts(CMesh& mesh, const std::vector<int>& inside_verts
     return result;
 }
 
+ZGeom::MeshRegion meshRegionFromVerts(const CMesh& mesh, const std::vector<int>& region_verts)
+{
+    MeshRegion result;
+    result.vert_inside = region_verts;
 
-ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> func_in_region_test)
+    set<int> region_vert_set(region_verts.begin(), region_verts.end());
+    set<int> internal_vert_set;
+    set<int> boundary_vert_set;
+    for (int vi : region_verts) {
+        bool all_neighbor_in_region = true;
+        set<int> vi_neighbors = mesh.getVertNeighborVertSet(vi, 1);
+        for (int vj : vi_neighbors) {
+            if (region_vert_set.find(vj) == region_vert_set.end()) {
+                all_neighbor_in_region = false;
+                break;
+            }
+        }
+        if (all_neighbor_in_region) internal_vert_set.insert(vi);
+        else boundary_vert_set.insert(vi);
+    }
+
+    set<int> region_face_set;
+    for (int vi : internal_vert_set) {
+        for (CFace* f : mesh.vert(vi)->getAdjacentFaces())
+            region_face_set.insert(f->getFaceIndex());
+    }
+    result.face_inside = vector<int>(region_face_set.begin(), region_face_set.end());
+
+    result.vert_on_boundary = vector<int>(boundary_vert_set.begin(), boundary_vert_set.end());
+    result.determineBoundaryHalfEdges(mesh);
+
+    return result;
+}
+
+MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> func_in_region_test)
 {
     assert(mesh.vertCount() == dist_field.size());
 
@@ -156,11 +192,11 @@ ZGeom::MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>
         }
     }
 
-    MeshRegion result = meshRegionFromVerts(mesh, vector<int>{vert_inside.begin(), vert_inside.end()});
+    MeshRegion result = meshRegionFromInsideVerts(mesh, vector<int>{vert_inside.begin(), vert_inside.end()});
     return result;
 }
 
-ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
+BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
         const std::vector<double>& dist_field, const std::vector<double>& thresholds)
 {
     int ring_num = (int)thresholds.size();
@@ -212,4 +248,4 @@ ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert
     return meshRegionBandsFromDistField(mesh, seed_vert, dist_field, band_thresholds);
 }
 
-}
+} // end of namespace

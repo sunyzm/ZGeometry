@@ -806,7 +806,7 @@ bool CMesh::isInNeighborRing( int ref, int query, int ring ) const
 
 std::vector<int> CMesh::getVertNeighborVerts( int v, int ring, bool inclusive ) const
 {
-	if (ring < 0) throw runtime_error("Error: getNeighboringVertex with ring < 0");
+	ZGeom::runtime_assert(ring >= 0, "Error: getNeighboringVertex with ring < 0");
 
 	std::set<int> vn = getVertNeighborVertSet(v, ring, inclusive);
 	return std::vector<int>(vn.begin(), vn.end());
