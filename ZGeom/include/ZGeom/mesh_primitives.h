@@ -28,14 +28,14 @@ struct BandedMeshRegions {
     void resize(int num)
     {
         band_verts.resize(num);
-        band_boundary_verts.resize(num);
+        concentric_regions.resize(num);
         band_thresholds.resize(num);
     }
 
-    int numOfRegions() const { return (int)band_thresholds.size(); }
-
+    int numOfRegions() const { return (int)band_verts.size(); }
+    
     std::vector<std::vector<int>> band_verts;
-    std::vector<std::vector<int>> band_boundary_verts;
+    std::vector<MeshRegion> concentric_regions;
     std::vector<double> band_thresholds;    //optional thresholds for each band
 };
 
@@ -46,12 +46,10 @@ std::vector<int> getFaceEncompassedByVerts(const CMesh& mesh, const std::vector<
 MeshRegion meshRegionFromInsideVerts(const CMesh& mesh, const std::vector<int>& inside_verts);
 MeshRegion meshRegionFromVerts(const CMesh& mesh, const std::vector<int>& region_verts);
 
-MeshRegion meshRegionFromDistField(CMesh& mesh, 
-        const std::vector<double>& dist_field, int seed, 
-        std::function<bool(double)> judge_in_region);
+MeshRegion meshRegionFromDistField(const CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region);
 
-BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, const std::vector<double>& thresholds);
-BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, double max_threshold, int band_num);
+BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, const std::vector<double>& thresholds);
+BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, double max_threshold, int band_num);
 
 } // end of namespace
 

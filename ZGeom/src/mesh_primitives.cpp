@@ -1,6 +1,9 @@
 #include "mesh_primitives.h"
+#include <unordered_set>
+#include <ppl.h>
 
 using namespace std;
+using namespace Concurrency;
 
 namespace ZGeom {
     
@@ -170,19 +173,19 @@ ZGeom::MeshRegion meshRegionFromVerts(const CMesh& mesh, const std::vector<int>&
     return result;
 }
 
-MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> func_in_region_test)
+ZGeom::MeshRegion meshRegionFromDistField(const CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region)
 {
     assert(mesh.vertCount() == dist_field.size());
 
     set<int> candidate_vert{ seed };
     set<int> vert_visited;
-    set<int> vert_inside;
+    set<int> vert_in_region;
     while (!candidate_vert.empty()) {
         int vi = *candidate_vert.begin();
         candidate_vert.erase(vi);
         vert_visited.insert(vi);
-        if (func_in_region_test(dist_field[vi])) {
-            vert_inside.insert(vi);
+        if (judge_in_region(dist_field[vi])) {
+            vert_in_region.insert(vi);
             vector<int> neighbors = mesh.getVertNeighborVerts(vi, 1);
             for (int vj : neighbors) {
                 if (vert_visited.find(vj) == vert_visited.end()) {
@@ -192,11 +195,22 @@ MeshRegion meshRegionFromDistField(CMesh& mesh, const std::vector<double>& dist_
         }
     }
 
-    MeshRegion result = meshRegionFromInsideVerts(mesh, vector<int>{vert_inside.begin(), vert_inside.end()});
+    MeshRegion result = meshRegionFromVerts(mesh, vector<int>{vert_in_region.begin(), vert_in_region.end()});
     return result;
 }
 
-BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
+ZGeom::BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
+    const std::vector<double>& dist_field, double max_threshold, int band_num)
+{
+    assert(band_num >= 1 && max_threshold > 0);
+    vector<double> band_thresholds(band_num);
+    for (int k = 1; k <= band_num; ++k) {
+        band_thresholds[k - 1] = max_threshold * double(k) / double(band_num);
+    }
+    return meshRegionBandsFromDistField(mesh, seed_vert, dist_field, band_thresholds);
+}
+
+BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
         const std::vector<double>& dist_field, const std::vector<double>& thresholds)
 {
     int ring_num = (int)thresholds.size();
@@ -207,20 +221,19 @@ BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
         runtime_assert(thresholds[k] > thresholds[k - 1]);
     }
 
-    set<int> candidate_vert{ seed_vert };
-    set<int> vert_visited;
+    set<int> candidate_verts{ seed_vert };
+    unordered_set<int> vert_visited;
     vector<set<int>> vert_in_ring(ring_num);
-    while (!candidate_vert.empty()) {
-        int vi = *candidate_vert.begin();
-        candidate_vert.erase(vi);
+    while (!candidate_verts.empty()) {
+        int vi = *candidate_verts.begin();
+        candidate_verts.erase(vi);
         vert_visited.insert(vi);
-
         for (int r = 0; r < ring_num; ++r) {
             if (dist_field[vi] <= thresholds[r]) {
                 vert_in_ring[r].insert(vi);
-                for (int vj : mesh.getVertNeighborVerts(vi, 1)) {
+                for (int vj : mesh.getVertNeighborVertSet(vi, 1)) {
                     if (vert_visited.find(vj) == vert_visited.end()) {
-                        candidate_vert.insert(vj);
+                        candidate_verts.insert(vj);
                     }
                 }
                 break;
@@ -230,22 +243,18 @@ BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
     
     BandedMeshRegions result;
     result.resize(ring_num);
-    for (int r = 0; r < ring_num; ++r) {
-        result.band_thresholds = thresholds;
+    result.band_thresholds = thresholds;
+    vector<vector<int>> concentric_region_verts;
+    for (int r = 0; r < ring_num; ++r) {        
         result.band_verts[r] = vector<int>(vert_in_ring[r].begin(), vert_in_ring[r].end());
+        if (r > 0) concentric_region_verts[r] = concentric_region_verts[r - 1];
+        concentric_region_verts[r].insert(concentric_region_verts[r].end(), vert_in_ring[r].begin(), vert_in_ring[r].end());
     }
-    return result;
-}
+    parallel_for(0, ring_num, [&](int r) {
+        result.concentric_regions[r] = meshRegionFromVerts(mesh, concentric_region_verts[r]);
+    });
 
-ZGeom::BandedMeshRegions meshRegionBandsFromDistField(CMesh& mesh, int seed_vert,
-        const std::vector<double>& dist_field, double max_threshold, int band_num)
-{
-    assert(band_num >= 1 && max_threshold > 0);
-    vector<double> band_thresholds(band_num);
-    for (int k = 1; k <= band_num; ++k) {
-        band_thresholds[k - 1] = max_threshold * double(k) / double(band_num);
-    }
-    return meshRegionBandsFromDistField(mesh, seed_vert, dist_field, band_thresholds);
+    return result;
 }
 
 } // end of namespace
