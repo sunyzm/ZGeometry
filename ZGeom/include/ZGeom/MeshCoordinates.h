@@ -10,209 +10,52 @@
 class MeshCoordinates
 {
 public:
-    MeshCoordinates() : mSize(0) {}
+    MeshCoordinates() {}
     MeshCoordinates(int meshSize) { resize(meshSize); }
+    MeshCoordinates(int mesh_size, double *cx, double *cy, double *cz);
+    MeshCoordinates(int mesh_size, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3);
+    MeshCoordinates(int mesh_size, const std::vector<ZGeom::VecNd>& vCoords);
+    MeshCoordinates(const MeshCoordinates& mc) = default;
+    MeshCoordinates(MeshCoordinates&& mc);
+    MeshCoordinates& operator = (const MeshCoordinates& mc) = default;
+    MeshCoordinates& operator = (MeshCoordinates&& mc);
 
-    MeshCoordinates(int meshSize, double *cx, double *cy, double *cz)
-    {
-        resize(meshSize);
-        std::copy_n(cx, meshSize, mCoordX.c_ptr());
-        std::copy_n(cy, meshSize, mCoordY.c_ptr());
-        std::copy_n(cz, meshSize, mCoordZ.c_ptr());
-    }
+    bool empty() const { return coord_data.empty(); }
+    int size() const { return (int)coord_data.size()/3; }
+    void resize(int n) { coord_data.resize(n * 3, 0); }
+    double* data() { return coord_data.data(); }
+    const double* data() const { return coord_data.data(); }
+    const ZGeom::VecNd getCoordVec(int c) const;
+    const ZGeom::VecNd getXCoord() const { return getCoordVec(0); }
+    const ZGeom::VecNd getYCoord() const { return getCoordVec(1); }
+    const ZGeom::VecNd getZCoord() const { return getCoordVec(2); }
+    double* getCoordData(int c) { return data() + size() * c; }
+    double* xCoordData() { return data(); }
+    double* yCoordData() { return data() + size(); }
+    double* zCoordData() { return data() + size() * 2; }
+    void setCoord(int c, const ZGeom::VecNd vec);
 
-    MeshCoordinates(int meshSize, const ZGeom::VecNd& v1, const ZGeom::VecNd& v2, const ZGeom::VecNd& v3)
-    {
-        assert(meshSize == v1.size() && v1.size() == v2.size() && v2.size() == v3.size());
-        mSize = meshSize;
-        mCoordX = v1;
-        mCoordY = v2;
-        mCoordZ = v3;
-    }
+    void addWith(double *cx, double *cy, double *cz);
+    void addWith(int c, double* raw);
+    void addWith(int c, const ZGeom::VecNd& vec_coord) { addWith(c, vec_coord.c_ptr()); }
+    MeshCoordinates add(const MeshCoordinates& mc2) const;
+    MeshCoordinates substract(const MeshCoordinates& mc2) const;
 
-    MeshCoordinates(int meshSize, const std::vector<ZGeom::VecNd>& vCoords)
-    {
-        assert(vCoords.size() == 3 && meshSize == vCoords[0].size());
-        mSize = meshSize;
-        mCoordX = vCoords[0];
-        mCoordY = vCoords[1];
-        mCoordZ = vCoords[2];
-    }
+    ZGeom::Vec3d getVertCoord(int v) const;
+    void setVertCoord(int vIdx, ZGeom::Vec3d vec);
+    ZGeom::Vec3d operator [] (int v) const { return getVertCoord(v); }
+    double& operator() (int idx, int c);
 
-    MeshCoordinates(const MeshCoordinates& mc)
-    {
-        this->mSize = mc.mSize;
-        this->mCoordX = mc.mCoordX;
-        this->mCoordY = mc.mCoordY;
-        this->mCoordZ = mc.mCoordZ;
-    }
+    double difference(const MeshCoordinates& mc2) const;
+    ZGeom::VecNd vertDifference(const MeshCoordinates& mc2) const;
+    std::vector<ZGeom::VecNd> to3Vec() const;
 
-    MeshCoordinates(MeshCoordinates&& mc)
-    {
-        this->mSize = mc.mSize;
-        mc.mSize = 0;
-        this->mCoordX = std::move(mc.mCoordX);
-        this->mCoordY = std::move(mc.mCoordY);
-        this->mCoordZ = std::move(mc.mCoordZ);
-    }
-
-    MeshCoordinates& operator = (const MeshCoordinates& mc)
-    {
-        this->mSize = mc.mSize;
-        this->mCoordX = mc.mCoordX;
-        this->mCoordY = mc.mCoordY;
-        this->mCoordZ = mc.mCoordZ;
-        return *this;
-    }
-
-    MeshCoordinates& operator = (MeshCoordinates&& mc)
-    {
-        this->mSize = mc.mSize;
-        mc.mSize = 0;
-        this->mCoordX = std::move(mc.mCoordX);
-        this->mCoordY = std::move(mc.mCoordY);
-        this->mCoordZ = std::move(mc.mCoordZ);
-        return *this;
-    }
-
-    bool empty() const { return mSize == 0; }
-    int size() const { return mSize; }
-
-    void resize(int n)
-    {
-        mSize = n;
-        mCoordX.resize(mSize, 0);
-        mCoordY.resize(mSize, 0);
-        mCoordZ.resize(mSize, 0);
-    }
-
-    void add(double *cx, double *cy, double *cz)
-    {
-        mCoordX.add(cx);
-        mCoordY.add(cy);
-        mCoordZ.add(cz);
-    }
-
-    MeshCoordinates add(const MeshCoordinates& mc2) const
-    {
-        assert(this->mSize == mc2.mSize);
-        MeshCoordinates mc3(this->mSize);
-        mc3.mCoordX = this->mCoordX + mc2.mCoordX;
-        mc3.mCoordY = this->mCoordY + mc2.mCoordY;
-        mc3.mCoordZ = this->mCoordZ + mc2.mCoordZ;
-        return mc3;
-    }
-
-    MeshCoordinates substract(const MeshCoordinates& mc2) const
-    {
-        assert(this->mSize == mc2.mSize);
-        MeshCoordinates mc3(this->mSize);
-        mc3.mCoordX = this->mCoordX - mc2.mCoordX;
-        mc3.mCoordY = this->mCoordY - mc2.mCoordY;
-        mc3.mCoordZ = this->mCoordZ - mc2.mCoordZ;
-        return mc3;
-    }
-
-    const ZGeom::VecNd& getCoordFunc(int i) const
-    {
-        switch (i)
-        {
-        case 0: return mCoordX;
-        case 1: return mCoordY;
-        case 2: return mCoordZ;
-        default: throw std::logic_error("Invalid mesh coordinate");
-        }
-    }
-
-    ZGeom::VecNd& getCoordFunc(int i)
-    {
-        switch (i)
-        {
-        case 0: return mCoordX;
-        case 1: return mCoordY;
-        case 2: return mCoordZ;
-        default: throw std::logic_error("Invalid mesh coordinate");
-        }
-    }
-
-    ZGeom::VecNd& getXCoord() { return mCoordX; }
-    ZGeom::VecNd& getYCoord() { return mCoordY; }
-    ZGeom::VecNd& getZCoord() { return mCoordZ; }
-    const ZGeom::VecNd& getXCoord() const { return mCoordX; }
-    const ZGeom::VecNd& getYCoord() const { return mCoordY; }
-    const ZGeom::VecNd& getZCoord() const { return mCoordZ; }
-
-    ZGeom::Vec3d getVertCoordinate(int v) const
-    {
-        assert(v >= 0 && v < mSize);
-        return ZGeom::Vec3d(mCoordX[v], mCoordY[v], mCoordZ[v]);
-    }
-
-    void setVertCoordinate(int vIdx, ZGeom::Vec3d vec)
-    {
-        assert(vIdx >= 0 && vIdx < mSize);
-        mCoordX[vIdx] = vec[0];
-        mCoordY[vIdx] = vec[1];
-        mCoordZ[vIdx] = vec[2];
-    }
-
-    ZGeom::Vec3d operator [] (int v) const { return getVertCoordinate(v); }
-    double& operator() (int idx, int c) {
-        if (c == 0) return mCoordX[idx];
-        else if (c == 1) return mCoordY[idx];
-        else if (c == 2) return mCoordZ[idx];
-        else throw std::logic_error("Invalid coordinate inquiry");
-    }
-
-    double difference(const MeshCoordinates& mc2) const
-    {
-        assert(this->mSize == mc2.mSize);
-
-        double errorSum(0);
-        for (int i = 0; i < mSize; ++i) {
-            errorSum += std::pow((this->getVertCoordinate(i) - mc2.getVertCoordinate(i)).length(), 2);
-        }
-        errorSum = std::sqrt(errorSum);
-        return errorSum;
-    }
-
-    ZGeom::VecNd vertDifference(const MeshCoordinates& mc2) const
-    {
-        assert(mSize == mc2.size());
-        ZGeom::VecNd vDiff(mSize);
-        for (int i = 0; i < mSize; ++i)
-            vDiff[i] = (getVertCoordinate(i) - mc2.getVertCoordinate(i)).length();
-        return vDiff;
-    }
-
-    std::vector<ZGeom::VecNd> to3Vec() const { return std::vector<ZGeom::VecNd> {mCoordX, mCoordY, mCoordZ}; }
-    
-    ZGeom::DenseMatrixd toDenseMatrix() const 
-    {
-        ZGeom::VecNd coords[3] = { mCoordX, mCoordY, mCoordZ };
-        ZGeom::DenseMatrixd mat(mSize, 3);
-        for (int i = 0; i < mSize; ++i) {
-            mat(i, 0) = mCoordX[i];
-            mat(i, 1) = mCoordY[i];
-            mat(i, 2) = mCoordZ[i];
-        }
-        return mat;
-    }
-
-    void fromDenseMatrix(const ZGeom::DenseMatrixd& mat)
-    {
-        ZGeom::logic_assert(mat.colCount() == 3);
-        resize(mat.rowCount());
-        for (int i = 0; i < mSize; ++i) {
-            mCoordX[i] = mat(i, 0);
-            mCoordY[i] = mat(i, 1);
-            mCoordZ[i] = mat(i, 2);
-        }
-    }
+    // convert from/to N*3 matrix
+    ZGeom::DenseMatrixd toDenseMatrix() const;
+    void fromDenseMatrix(const ZGeom::DenseMatrixd& mat);
 
 private:
-    int mSize;
-    ZGeom::VecNd mCoordX, mCoordY, mCoordZ;
+    std::vector<double> coord_data;
 };
 
 #endif

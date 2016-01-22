@@ -3,11 +3,10 @@
 
 namespace ZGeom {
 
-RegionDescriptor computeCoeffStatRegionDescriptor(const BandedMeshRegions& banded_region, const std::vector<std::vector<double>>& signal_coeff)
+void computeRegionDescriptorCoeffStat(RegionDescriptor& descriptor, const BandedMeshRegion& banded_region, const std::vector<std::vector<double>>& signal_coeff)
 {
-    RegionDescriptor descriptor;
     const int num_of_contours = banded_region.numOfRegions();
-    const int num_of_scales = (int)signal_coeff.size();;
+    const int num_of_scales = (int)signal_coeff.size();
     descriptor.num_contours = num_of_contours;
     descriptor.num_scales = num_of_scales;
     descriptor.coeff_stat.resize(num_of_contours * num_of_scales);
@@ -21,7 +20,7 @@ RegionDescriptor computeCoeffStatRegionDescriptor(const BandedMeshRegions& bande
             descriptor.coeff_stat[num_of_contours * s + c] = sum;
         }
     }
-    return descriptor;
 }
+
 
 } // end of namespace

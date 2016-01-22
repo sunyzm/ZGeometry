@@ -474,20 +474,19 @@ void ShapeApprox::doSparseReconstructionStepping( int totalSteps, std::vector<Me
 	}
 }
 
-void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord)
+void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integrated_approx_coord)
 {
 	/* integrate approximation results of all sub-meshes */
-	const int vertCount = mOriginalMesh->vertCount();
-	integratedApproxCoord.resize(vertCount);
+	const int vert_count = mOriginalMesh->vertCount();
+	integrated_approx_coord.resize(vert_count);
 
 	for (auto& m : mSubMeshApprox) {
 		const std::vector<int>& vMappedIdx = m.mappedIdx();
-		int subMeshSize = m.subMeshSize();
+		int sub_mesh_size = m.subMeshSize();
 		for (int c = 0; c < 3; ++c) {
-			VecNd& jointApproxCoord = integratedApproxCoord.getCoordFunc(c);
-			const VecNd& subApproxCoord = m.mReconstructedCoord.getCoordFunc(c);
-			for (int i = 0; i < subMeshSize; ++i) {
-				jointApproxCoord[vMappedIdx[i]] = subApproxCoord[i];
+			auto sub_approx_coord = m.mReconstructedCoord.getCoordData(c);
+			for (int i = 0; i < sub_mesh_size; ++i) {
+                integrated_approx_coord(vMappedIdx[i], c) = sub_approx_coord[i];
 			}
 		}		
 	}
@@ -512,9 +511,9 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 
     MeshCoordinates vertCoords = mSubMesh.getVertCoordinates();
 	std::vector<ZGeom::VecNd> vSignals;
-	vSignals.push_back(vertCoords.getXCoord()); 
-	vSignals.push_back(vertCoords.getYCoord());
-	vSignals.push_back(vertCoords.getZCoord());
+	vSignals.push_back(vertCoords.getCoordVec(0)); 
+    vSignals.push_back(vertCoords.getCoordVec(1));
+	vSignals.push_back(vertCoords.getCoordVec(2));
 
 	ZGeom::SparseCoding vApproxX, vApproxY, vApproxZ;
 	std::vector<ZGeom::SparseCoding*> vApproxCoeff;
@@ -561,7 +560,7 @@ void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
 	for (int i = 0; i < reconstructAtomCount; ++i) {
 		for (int c = 0; c < 3; ++c) {
 			const ZGeom::SparseCodingItem& sc = mCoding[c][i];
-			mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
+			mReconstructedCoord.addWith(c, sc.coeff() * mDict[sc.index()]);
 		}
 	}
 }
@@ -576,7 +575,7 @@ void SubMeshApprox::sparseReconstructStep( int step )
 
 	for (int c = 0; c < 3; ++c) {
 		const ZGeom::SparseCodingItem& sc = mCoding[c][step];
-		mReconstructedCoord.getCoordFunc(c) += sc.coeff() * mDict[sc.index()];
+		mReconstructedCoord.addWith(c, sc.coeff() * mDict[sc.index()]);
 	}
 }
 

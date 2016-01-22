@@ -143,12 +143,12 @@ void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinate
     lCoord.resize(vertCount);
 
     for (int i = 0; i < vertCount; ++i)	{
-        Vec3d vi = eCoord.getVertCoordinate(i);
+        Vec3d vi = eCoord.getVertCoord(i);
         std::vector<int> neighbors = mesh.getVertNeighborVerts(i, 1, false);
         Vec3d vavg(0, 0, 0);
         double weightSum(0);
         for (int j : neighbors) {
-            Vec3d vj = eCoord.getVertCoordinate(j);
+            Vec3d vj = eCoord.getVertCoord(j);
             double weight = 1.0 / (vi - vj).length();
             vavg += vj * weight;
             weightSum += weight;

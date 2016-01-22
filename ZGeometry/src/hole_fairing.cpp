@@ -116,7 +116,7 @@ MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const std::vector<ZGeo
         
         MeshCoordinates faired_coord = least_square_inpainting(mesh, vector<int>(anchor_verts.begin(),anchor_verts.end()), anchor_weight);
         for (int vi : hole_verts)
-            result.setVertCoordinate(vi, faired_coord[vi]);
+            result.setVertCoord(vi, faired_coord[vi]);
         return result;
     }
 
@@ -141,7 +141,7 @@ MeshCoordinates least_square_hole_inpainting(CMesh& mesh, const std::vector<ZGeo
 
         MeshCoordinates faired_sub_coord = least_square_inpainting(submesh, control_verts, anchor_weight);
         for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
-            result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+            result.setVertCoord(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
         }
     }
 
@@ -170,7 +170,7 @@ MeshCoordinates thin_plate_energy_hole_inpainting(CMesh& mesh, const ZGeom::Mesh
 
     MeshCoordinates result(mesh.getVertCoordinates());
     for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
-        result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+        result.setVertCoord(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
     }
     return result;
 }
@@ -234,7 +234,7 @@ MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const std::vector<ZGeom::Mesh
         vector<int> hole_verts = getMeshRegionsInsideVerts(hole_regions);
         MeshCoordinates faired_coord = l1_ls_inpainting(mesh, hole_verts, para);
         for (int vi : hole_verts)
-            result.setVertCoordinate(vi, faired_coord[vi]);
+            result.setVertCoord(vi, faired_coord[vi]);
         return result;
     }
 
@@ -259,7 +259,7 @@ MeshCoordinates l1_ls_hole_inpainting(CMesh& mesh, const std::vector<ZGeom::Mesh
         MeshCoordinates faired_sub_coord = l1_ls_inpainting(submesh, missing_verts, para);
 
         for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
-            result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+            result.setVertCoord(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
         }
     }
     
@@ -306,7 +306,7 @@ MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<MeshRegion>& hole_re
         vector<int> hole_verts = getMeshRegionsInsideVerts(hole_regions);
         MeshCoordinates faired_coord = meshDLRS(mesh, lambda);
         for (int vi : hole_verts)
-            result.setVertCoordinate(vi, faired_coord[vi]);
+            result.setVertCoord(vi, faired_coord[vi]);
         return result;
     }
 
@@ -329,7 +329,7 @@ MeshCoordinates meshHoleDLRS(CMesh& mesh, const std::vector<MeshRegion>& hole_re
         MeshCoordinates faired_sub_coord = meshDLRS(submesh, lambda);
 
         for (int sub_vIdx = 0; sub_vIdx < inside_vert_count; ++sub_vIdx) {
-            result.setVertCoordinate(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
+            result.setVertCoord(newVert2oldVert[sub_vIdx], faired_sub_coord[sub_vIdx]);
         }
     }
 

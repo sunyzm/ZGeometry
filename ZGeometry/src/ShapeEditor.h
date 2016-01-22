@@ -75,7 +75,6 @@ private:
 	void testSparseInpainting();
     void testDenoisingDLRS();
     void testDictionaryCoherence();
-    void testWaveletAnalysis();
     void testWaveletComputation();
     void testSurfaceInpainting();
 

@@ -88,15 +88,15 @@ double innerProductSym(const std::vector<double>& v1, const SparseMatrixCSR<doub
 	MKL_INT *ia = A.rowPtr();
 	double *a = A.nzVal();
 	char *uplo = "U";
-	double *pv1 = const_cast<double*>(&v1[0]);
+	double *pv1 = const_cast<double*>(v1.data());
 	std::vector<double> vy(m);
 
-	mkl_dcsrsymv(uplo, &m, a, ia, ja, pv1, &vy[0]);
+	mkl_dcsrsymv(uplo, &m, a, ia, ja, pv1, vy.data());
 
 	MKL_INT xinc = 1, yinc = 1;
-	double *pv2 = const_cast<double*>(&v2[0]);
+	double *pv2 = const_cast<double*>(v2.data());
 
-	return ddot(&m, &vy[0], &xinc, pv2, &yinc);
+	return ddot(&m, vy.data(), &xinc, pv2, &yinc);
 }
 
 double innerProductSym( const VecNd& v1, const SparseMatrixCSR<double, int>& A, const VecNd& v2 )
@@ -111,7 +111,7 @@ double innerProductSym( const VecNd& v1, const SparseMatrixCSR<double, int>& A, 
 	double *pv1 = v1.c_ptr();
 	std::vector<double> vy(m);
 
-	mkl_dcsrsymv(uplo, &m, a, ia, ja, pv1, &vy[0]);
+	mkl_dcsrsymv(uplo, &m, a, ia, ja, pv1, vy.data());
 
 	MKL_INT xinc = 1, yinc = 1;
 	double *pv2 = v2.c_ptr();

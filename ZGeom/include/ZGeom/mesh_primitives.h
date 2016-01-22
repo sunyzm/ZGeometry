@@ -24,7 +24,7 @@ struct MeshRegion
     void determineBoundaryHalfEdges(const CMesh& mesh);
 };
 
-struct BandedMeshRegions {
+struct BandedMeshRegion {
     void resize(int num)
     {
         band_verts.resize(num);
@@ -48,8 +48,8 @@ MeshRegion meshRegionFromVerts(const CMesh& mesh, const std::vector<int>& region
 
 MeshRegion meshRegionFromDistField(const CMesh& mesh, const std::vector<double>& dist_field, int seed, std::function<bool(double)> judge_in_region);
 
-BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, const std::vector<double>& thresholds);
-BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, double max_threshold, int band_num);
+BandedMeshRegion meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, const std::vector<double>& thresholds);
+BandedMeshRegion meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert, const std::vector<double>& dist_field, double max_threshold, int band_num);
 
 } // end of namespace
 

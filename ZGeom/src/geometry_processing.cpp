@@ -1773,7 +1773,7 @@ double compareCoordRMSE(const MeshCoordinates& coord1, const MeshCoordinates& co
 {
     double errorSum = 0;
     for (int vIdx : selctedVerts) {
-        errorSum += (coord1.getVertCoordinate(vIdx) - coord2.getVertCoordinate(vIdx)).length2();
+        errorSum += (coord1.getVertCoord(vIdx) - coord2.getVertCoord(vIdx)).length2();
     }
     return std::sqrt(errorSum / selctedVerts.size());
 }
@@ -1792,7 +1792,7 @@ MeshCoordinates addMeshNoise(CMesh& mesh, double phi, std::vector<int>& selected
     for (int vIdx : selectedVerts) {
         for (int a = 0; a < 3; ++a) {
             double noise = bbDiag * distribution(generator);
-            newCoord.getCoordFunc(a)[vIdx] += noise;
+            newCoord(vIdx, a) += noise;
         }
     }
 

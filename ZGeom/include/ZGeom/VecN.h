@@ -28,7 +28,7 @@ public:
 	VecN(VecN<T>&& v2);
 	VecN(uint n) : mVec(NULL), mDim(0) { resize(n, 0); }
 	VecN(uint n, T val) : mVec(NULL), mDim(0) { resize(n, val); }
-	VecN(T* vec, uint n);
+	VecN(const T* vec, uint n);
 	VecN(const std::vector<T>& vec);
 	~VecN() { delete []mVec; }
 	const VecN<T>& operator = (const VecN<T>& v2);
@@ -182,7 +182,7 @@ inline VecN<T>::VecN(VecN<T>&& v2) : mDim(0), mVec(nullptr)
 }
 
 template<typename T>
-inline VecN<T>::VecN(T* vec, uint n) : mDim(n)
+inline VecN<T>::VecN(const T* vec, uint n) : mDim(n)
 {
 	mVec = new T[mDim];
 	std::copy_n(vec, n, mVec);

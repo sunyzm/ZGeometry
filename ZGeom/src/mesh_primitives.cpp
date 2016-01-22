@@ -199,7 +199,7 @@ ZGeom::MeshRegion meshRegionFromDistField(const CMesh& mesh, const std::vector<d
     return result;
 }
 
-ZGeom::BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
+ZGeom::BandedMeshRegion meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
     const std::vector<double>& dist_field, double max_threshold, int band_num)
 {
     assert(band_num >= 1 && max_threshold > 0);
@@ -210,7 +210,7 @@ ZGeom::BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int see
     return meshRegionBandsFromDistField(mesh, seed_vert, dist_field, band_thresholds);
 }
 
-BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
+BandedMeshRegion meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
         const std::vector<double>& dist_field, const std::vector<double>& thresholds)
 {
     int ring_num = (int)thresholds.size();
@@ -241,7 +241,7 @@ BandedMeshRegions meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
         }
     }
     
-    BandedMeshRegions result;
+    BandedMeshRegion result;
     result.resize(ring_num);
     result.band_thresholds = thresholds;
     vector<vector<int>> concentric_region_verts;

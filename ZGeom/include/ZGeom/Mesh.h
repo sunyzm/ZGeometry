@@ -241,7 +241,7 @@ public:
     void                scale(double s);
     void                moveToOrigin();    
     void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
-    void                scaleToUnitBox();                       // move to origin and scale the mesh to inside the unit box
+    void scaleToUnitBox(double unit = 1.0);                       // move to origin and scale the mesh to inside the unit box
     void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
     void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
     

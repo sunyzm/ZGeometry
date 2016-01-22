@@ -578,7 +578,7 @@ void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
         throw std::runtime_error("Not enough meshes in mesh list!");
     }
 
-    bool scale_to_unit = gSettings.INPUT_SCALE_TO_UNIT == 1 ? true : false;
+    bool scale_to_unit = (gSettings.INPUT_SCALE_TO_UNIT == 1 ? true : false);
 
 	allocateStorage(mMeshCount);
 	parallel_for(0, mMeshCount, [&](int obj) {
@@ -2779,7 +2779,7 @@ void QZGeometryWindow::doExperiment1()
         // use the following 4 lines if only partial assignment
         MeshCoordinates result(coord_old);
         for (int vi : hole_verts) {
-            result.setVertCoordinate(vi, coord_inpainted[vi]);
+            result.setVertCoord(vi, coord_inpainted[vi]);
         }
 
         // use the following line if full assignment

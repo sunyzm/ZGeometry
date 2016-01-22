@@ -299,7 +299,7 @@ std::vector<double> CFace::getAllEdgeLengths() const
 //////////////////////////////////////////////////////
 //						CMesh						//
 //////////////////////////////////////////////////////
-typedef vector<pair<string, MeshCoordinates>> VecMeshCoords;
+typedef vector<pair<string, MeshCoordinates>> VecNamedCoords;
 
 CMesh::CMesh() : color_buffer(nullptr), coord_buffer(nullptr)
 {
@@ -731,7 +731,7 @@ void CMesh::scaleAreaToVertexNum()
     scaleAndTranslate(-center, scale);
 }
 
-void CMesh::scaleToUnitBox()
+void CMesh::scaleToUnitBox(double unit /*= 1.0*/)
 {
     moveToOrigin();
     double maxCoord = 0;
@@ -739,7 +739,7 @@ void CMesh::scaleToUnitBox()
         for (int j = 0; j < 3; ++j)
             maxCoord = max(maxCoord, fabs(vertPos(i)[j]));
     }
-    scale(1.0/maxCoord);
+    scale(unit/maxCoord);
 }
 
 void CMesh::scaleEdgeLenToUnit()
@@ -936,33 +936,33 @@ bool CMesh::hasBoundary()
 MeshCoordinates CMesh::getVertCoordinates() const
 {
     MeshCoordinates coords(vertCount());
-    ZGeom::VecNd& vx = coords.getCoordFunc(0);
-    ZGeom::VecNd& vy = coords.getCoordFunc(1);
-    ZGeom::VecNd& vz = coords.getCoordFunc(2);
+    auto vx = coords.xCoordData();
+    auto vy = coords.yCoordData();
+    auto vz = coords.zCoordData();
     for (int i = 0; i < vertCount(); ++i) {
         auto vCoord = m_vVertices[i]->pos();
         vx[i] = vCoord.x;
         vy[i] = vCoord.y;
         vz[i] = vCoord.z;
     }
-
     return coords;
 }
 
 ZGeom::PointCloud3d CMesh::toPointCloud() const
 {
     vector<Vec3d> vPoints;
-    for (int i = 0; i < vertCount(); ++i) 
-        vPoints.push_back(m_vVertices[i]->pos());    
+    for (int i = 0; i < vertCount(); ++i) {
+        vPoints.push_back(m_vVertices[i]->pos());
+    }
     return ZGeom::PointCloud3d(vPoints);
 }
 
 void CMesh::setVertCoordinates( const MeshCoordinates& coords )
 {
 	ZGeom::logic_assert(coords.size() == vertCount(), "Size of coordinates and mesh not compatible!");
-	std::vector<double> vx = coords.getCoordFunc(0).toStdVector(),
-	                    vy = coords.getCoordFunc(1).toStdVector(),
-	                    vz = coords.getCoordFunc(2).toStdVector();
+	std::vector<double> vx = coords.getCoordVec(0).toStdVector(),
+	                    vy = coords.getCoordVec(1).toStdVector(),
+	                    vz = coords.getCoordVec(2).toStdVector();
 	
 	setVertCoordinates(vx, vy, vz);
 }
@@ -1379,23 +1379,23 @@ double CMesh::calAvgEdgeLength()
 void CMesh::initNamedCoordinates()
 {
     MeshCoordinates init_coord = getVertCoordinates();
-    VecMeshCoords mesh_coords;
+    VecNamedCoords mesh_coords;
     mesh_coords.push_back(make_pair("original_coord", init_coord));
-    addAttr<VecMeshCoords>(mesh_coords, StrAttrNamedCoordinates, AR_UNIFORM, AT_UNKNOWN);
+    addAttr<VecNamedCoords>(mesh_coords, StrAttrNamedCoordinates, AR_UNIFORM, AT_UNKNOWN);
     addAttr<int>(0, StrAttrCurrentCoordIdx, AR_UNIFORM, AT_INT);
 
     delete[]coord_buffer;
     coord_buffer = new double[vertCount() * 3];
-    for (int i = 0; i < vertCount(); ++i) {
-        for (int j = 0; j < 3; ++j) {
-            coord_buffer[i * 3 + j] = init_coord[i][j];
+    for (int vi = 0; vi < vertCount(); ++vi) {
+        for (int c = 0; c < 3; ++c) {
+            coord_buffer[vi * 3 + c] = init_coord(vi, c);
         }
     }
 }
 
 void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::string& coordinate_name /*= "unnamed"*/)
 {
-    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    VecNamedCoords& mesh_coords = getAttrValue<VecNamedCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     mesh_coords.push_back(make_pair(coordinate_name, newCoord));
     cur = (int)mesh_coords.size() - 2;
@@ -1405,7 +1405,7 @@ void CMesh::addNamedCoordinate(const MeshCoordinates& newCoord, const std::strin
 const std::string& CMesh::switchNextCoordinate()
 {
     using namespace std;
-    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    VecNamedCoords& mesh_coords = getAttrValue<VecNamedCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     cur = (cur + 1) % (int)mesh_coords.size();
 
@@ -1417,7 +1417,7 @@ const std::string& CMesh::switchNextCoordinate()
 
 const std::string& CMesh::switchPrevCoordinate()
 {
-    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    VecNamedCoords& mesh_coords = getAttrValue<VecNamedCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
 
     cur = (cur + mesh_coords.size() - 1) % (int)mesh_coords.size();
@@ -1428,7 +1428,7 @@ const std::string& CMesh::switchPrevCoordinate()
 
 const std::string& CMesh::revertCoordinate()
 {
-    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    VecNamedCoords& mesh_coords = getAttrValue<VecNamedCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
 
     cur = 0;
@@ -1439,7 +1439,7 @@ const std::string& CMesh::revertCoordinate()
 
 const std::string& CMesh::deleteCoordinate()
 {
-    VecMeshCoords& mesh_coords = getAttrValue<VecMeshCoords>(StrAttrNamedCoordinates);
+    VecNamedCoords& mesh_coords = getAttrValue<VecNamedCoords>(StrAttrNamedCoordinates);
     int & cur = getAttrValue<int>(StrAttrCurrentCoordIdx);
     if (cur == 0) {
         std::cout << "Original coordinate cannot be deleted!" << std::endl;
