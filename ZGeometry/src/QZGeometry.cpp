@@ -254,7 +254,7 @@ void QZGeometryWindow::makeConnections()
     QObject::connect(ui.actionComputeSGW, SIGNAL(triggered()), this, SLOT(computeSGW()));
     QObject::connect(ui.actionComputeHK, SIGNAL(triggered()), this, SLOT(computeHK()));
 	QObject::connect(ui.actionComputeHKS, SIGNAL(triggered()), this, SLOT(computeHKS()));
-	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHKSFeatures()));	
+	QObject::connect(ui.actionComputeHKSFeatures, SIGNAL(triggered()), this, SLOT(computeHksFeatures()));	
 	QObject::connect(ui.actionComputeGeodesics, SIGNAL(triggered()), this, SLOT(computeGeodesics()));
 	QObject::connect(ui.actionComputeHeatTransfer, SIGNAL(triggered()), this, SLOT(computeHeatTransfer()));
 	QObject::connect(ui.actionComputeVertNormals, SIGNAL(triggered()), this, SLOT(computeVertNormals()));
@@ -824,8 +824,9 @@ void QZGeometryWindow::setCommonParameter( int p )
 	int sliderCenter = ui.horizontalSliderParamter->maximum()/2;
 
 	if (mLastOperation == Compute_HKS || mLastOperation == Compute_HK 
-		|| mLastOperation == Compute_MHWS || mLastOperation == Compute_MHW
-		|| mLastOperation == Compute_SGWS || mLastOperation == Compute_SGW)
+            || mLastOperation == Compute_HKS_Feature
+		    || mLastOperation == Compute_MHWS || mLastOperation == Compute_MHW
+		    || mLastOperation == Compute_SGWS || mLastOperation == Compute_SGW)
 	{
 		double time_scale;
 		if (mCommonParameter <= sliderCenter) 
@@ -1267,7 +1268,7 @@ void QZGeometryWindow::computeHK()
 
 void QZGeometryWindow::computeHKS()
 {
-    mLastOperation = Compute_HKS;
+    mLastOperation = Compute_HKS_Feature;
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
@@ -1287,6 +1288,32 @@ void QZGeometryWindow::computeHKS()
 
     displaySignature(StrAttrColorHKS.c_str());
 	updateMenuDisplaySignature();
+}
+
+void QZGeometryWindow::computeHksFeatures()
+{
+	for (int i = 0; i < mMeshCount; ++i) {
+        CMesh& mesh = *getMesh(i);
+        MeshHelper& mp = mMeshHelper[i];
+        const int meshSize = mp.getMesh()->vertCount();
+        const ZGeom::EigenSystem& mhb = mp.getEigenSystem(active_lap_type);
+
+        double t_min = 4 * std::log(10.0) / mhb.getAllEigVals().back(), t_max = 4 * std::log(10.0) / mhb.getEigVal(1);
+        gSettings.MIN_HK_TIMESCALE = t_min;
+        gSettings.MAX_HK_TIMESCALE = t_max;
+        gSettings.DEFAULT_HK_TIMESCALE = std::sqrt(t_min * t_max);
+        double time_scale = parameterFromSlider(gSettings.DEFAULT_HK_TIMESCALE, t_min, t_max);
+        
+        std::vector<double> values = ZGeom::calHeatKernelSignature(mhb, time_scale);
+        vector<int> features = ZGeom::extractMeshExtrema(mesh, values, 2);
+        mesh.addAttrMeshFeatures(features, "HKS features");
+        updateMenuDisplayFeatures();
+        
+        if (mRenderManagers[i].mActivePointFeatures.find("HKS features") == mRenderManagers[i].mActivePointFeatures.end())
+            displayFeature("HKS features");
+	}
+	
+	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
 }
 
 void QZGeometryWindow::computeSGW()
@@ -1309,17 +1336,6 @@ void QZGeometryWindow::computeSGW()
     updateMenuDisplaySignature();
 }
 
-
-void QZGeometryWindow::computeHKSFeatures()
-{
-    std::vector<double> vTimes{ 10, 30, 90, 270 };
-
-	for (int i = 0; i < mMeshCount; ++i) {
-
-	}
-	
-	if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures();
-}
 
 void QZGeometryWindow::repeatOperation()
 {
@@ -1378,30 +1394,32 @@ void QZGeometryWindow::displaySignature(QString sigName )
 	ui.glMeshWidget->update();
 }
 
-void QZGeometryWindow::displayFeature( QString pointFeatureName )
+void QZGeometryWindow::displayFeature(QString selected_feature_name)
 {
 	for (int obj = 0; obj < mMeshCount; ++obj) 
     {
 		if (!isMeshSelected(obj)) continue;
-        auto &activePointFeatures = mRenderManagers[obj].mActivePointFeatures;
-        std::string newPointFeature = pointFeatureName.toStdString();
-        QAction *activeAction = nullptr;
+        CMesh& mesh = *getMesh(obj);
+
+        std::string new_feature_name = selected_feature_name.toStdString();
+        auto &active_feature_names = mRenderManagers[obj].mActivePointFeatures;
+        QAction *active_action = nullptr;
         for (QAction *qa : m_actionDisplayFeatures) {
-            if (qa->text() == pointFeatureName) {
-                activeAction = qa;
+            if (qa->text() == selected_feature_name) {
+                active_action = qa;
                 break;
             }
         }
-        logic_assert(activeAction != nullptr, "Should have an active action");
+        logic_assert(active_action != nullptr);
 
-        if (!setHas(activePointFeatures, newPointFeature)) {
-            activePointFeatures.insert(newPointFeature);
-            activeAction->setChecked(true);
+        if (!setHas(active_feature_names, new_feature_name)) {
+            active_feature_names.insert(new_feature_name);
+            active_action->setChecked(true);
             if (!ui.glMeshWidget->m_bShowFeatures) toggleShowFeatures(true);
         }
         else {
-            activePointFeatures.erase(newPointFeature);
-            activeAction->setChecked(false);            
+            active_feature_names.erase(new_feature_name);
+            active_action->setChecked(false);            
         }
 	}
 
@@ -1421,7 +1439,7 @@ void QZGeometryWindow::displayLine(QString line_feature_name)
                 break;
             }
         }
-        logic_assert(active_action != nullptr, "Should have an active action");
+        logic_assert(active_action != nullptr);
 
         if (!setHas(active_line_features, new_line_feature)) {
             active_line_features.insert(new_line_feature);
@@ -1467,7 +1485,7 @@ void QZGeometryWindow::updateMenuDisplayFeatures()
 		delete qa;		
 	}
     m_actionDisplayFeatures.clear();
-
+   
 	for (AttrMeshFeatures* attr : vFeatureAttr) {
         QString action_name = attr->attrName().c_str();
         QAction* newDisplayAction = new QAction(action_name, this);

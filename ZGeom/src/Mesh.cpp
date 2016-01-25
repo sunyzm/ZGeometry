@@ -824,110 +824,6 @@ std::vector<int> CMesh::getVertIsoNeighborVerts( int v, int ring ) const
     return std::vector<int>(v3.begin(), v3.end());
 }
 
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, vector<int>& vFeatures )
-{
-    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
-
-	const int STATE_IDLE = 0;
-	const int STATE_MIN	= -1;
-	const int STATE_MAX	=  1;
-
-	assert(vSigVal.size() == vertCount());
-	vFeatures.clear();
-	
-	int state = STATE_IDLE;
-	int state_c = STATE_IDLE;
-	vector<int> nb;
-
-	double pz = 1e-5;		//1e-5
-	double nz = -1e-5;
-
-	for(int j = 0; j < vertCount(); j++)		//m_size: size of the mesh
-	{
-		state = STATE_IDLE;
-		if (vertOnBoundary[j]) 
-			continue;  // ignore boundary vertex
-
-		if (vSigVal[j] < lowThresh)				//too small signature discarded
-			continue;
-
-        nb = getVertNeighborVerts(j, ring, false);
-		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
-		
-			int ev = nb[k];
-			state_c = STATE_IDLE;
-			if( vSigVal[j] - vSigVal[ev] < 0)		// low bound
-				state_c = STATE_MIN;
-			else if( vSigVal[j] - vSigVal[ev] > 0)	// high bound
-				state_c = STATE_MAX;
-
-			if(state == STATE_IDLE)				    // two-step change
-				state = state_c;
-			else if( state * state_c <= 0 ) {
-				state = STATE_IDLE;
-				break;
-			}
-		}
-		if(state == STATE_IDLE) continue;
-
-		vFeatures.push_back(j);
-	}
-}
-
-void CMesh::extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary/* = 1*/ )
-{
-    const vector<bool>& vertOnBoundary = getVertsOnBoundary();
-    const int STATE_IDLE = 0;
-	const int STATE_MIN	= -1;
-	const int STATE_MAX	=  1;
-
-	assert(vSigVal.size() == vertCount());
-	vFeatures.clear();
-
-	int state = STATE_IDLE;
-	int state_c = STATE_IDLE;
-	vector<int> nb;
-
-	double pz = 0;		//1e-5
-	double nz = -0;
-
-	vector<double> sigDetected;
-
-	for(int j = 0; j < vertCount(); j++)		//m_size: size of the mesh
-	{
-        if (vertOnBoundary[j]) continue;  // ignore boundary vertex
-		if (fabs(vSigVal[j]) < lowThresh)				//too small hks discarded
-			continue;
-        nb = std::move(getVertNeighborVerts(j, ring, false));
-		
-		state = STATE_IDLE;
-		for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
-			int ev = nb[k];
-			state_c = STATE_IDLE;
-			if( vSigVal[j] - vSigVal[ev] < nz)		// low bound
-				state_c = STATE_MIN;
-			else if( vSigVal[j] - vSigVal[ev] > pz)	// high bound
-				state_c = STATE_MAX;
-
-			if(state == STATE_IDLE)				    // two-step change
-				state = state_c;
-			else if( state != state_c ) {
-				state = STATE_IDLE;
-				break;
-			}
-		}
-		if(state == STATE_IDLE) continue;
-
-		vFeatures.push_back(make_pair(j, state_c));	//max: 1, min: -1
-		sigDetected.push_back(vSigVal[j]);
-	}
-
-	sort(sigDetected.begin(), sigDetected.end(), std::greater<double>());
-	std::cout << "Max Signature: ";
-	for (int i = 0; i < std::min(10, (int)sigDetected.size()); ++i) std::cout << sigDetected[i] << ' ';
-	std::cout << std::endl;
-}
-
 bool CMesh::hasBoundary()
 {
     return calAttrBoundaryVert() > 0;
@@ -1015,8 +911,13 @@ const std::vector<ZGeom::Vec3d>& CMesh::getFaceNormals()
 const std::vector<bool>& CMesh::getVertsOnBoundary()
 {
 	if (!hasAttr(StrAttrVertOnBoundary)) calAttrBoundaryVert();
-
 	return getAttrValue<std::vector<bool>>(StrAttrVertOnBoundary);
+}
+
+const std::vector<bool>& CMesh::getVertsOnBoundary() const
+{
+    assert(hasAttr(StrAttrVertOnBoundary));
+    return getAttrValue<std::vector<bool>>(StrAttrVertOnBoundary);
 }
 
 bool CMesh::isVertOnBoundary(int vi)
@@ -1548,13 +1449,13 @@ const MeshFeatureList& CMesh::getMeshFeatures(const std::string& name) const
 
 std::vector<AttrMeshFeatures*> CMesh::getMeshFeatureList()
 {
-    std::vector<AttrMeshFeatures*> vMeshFeatures;
+    std::vector<AttrMeshFeatures*> mesh_features;
     for (auto ap : mAttributes) {
         if (ap.second->attrType() == AttrType::AT_FEATURES && ap.second->attrRate() == AttrRate::AR_UNIFORM) {
-            vMeshFeatures.push_back(dynamic_cast<AttrMeshFeatures*>(ap.second));
+            mesh_features.push_back(dynamic_cast<AttrMeshFeatures*>(ap.second));
         }
     }
-    return vMeshFeatures;
+    return mesh_features;
 }
 
 void CMesh::addAttrLines(const MeshLineList& vVecs, const std::string& name)

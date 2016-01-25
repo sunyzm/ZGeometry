@@ -289,10 +289,10 @@ void ShapeMatcher::detectFeatures( int obj, int ring /*= 2*/, int nScales /*= 1*
 		cout << "=== Detection timescale: " << vScaleValues[s] << " ===" << endl;
         vector<double> hksv = ZGeom::calHeatKernelSignature(pMP->getEigenSystem(SymCot), vScaleValues[s]);
 		double sref = 4.0 * PI * vScaleValues[s];
-		transform( hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
-
-		vector<pair<int, int> > vFeatureIdx;	// <index, minOrMax>
-		fineMesh->extractExtrema(hksv, ring, vFeatureIdx, thresh);
+		transform(hksv.begin(), hksv.end(), hksv.begin(), [=](double v){ return std::log(v * sref);} );		
+                
+        // <index, minOrMax>
+        vector<pair<int, int>> vFeatureIdx = ZGeom::extractSignedMeshExtrema(*fineMesh, hksv, ring, thresh);
 
 		for (auto iter = vFeatureIdx.begin(); iter != vFeatureIdx.end(); ++iter) {
 			if ( vF.end() == find_if(vF.begin(), vF.end(), 

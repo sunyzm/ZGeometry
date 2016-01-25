@@ -257,4 +257,100 @@ BandedMeshRegion meshRegionBandsFromDistField(const CMesh& mesh, int seed_vert,
     return result;
 }
 
+std::vector<int> extractMeshExtrema(const CMesh& mesh, const std::vector<double>& vals, int ring, double thresh /*= 1e-3*/, double eps /*= 1e-5*/, bool avoid_boundary /*= true*/)
+{
+    assert(vals.size() == mesh.vertCount());
+    int N = mesh.vertCount();
+
+    const vector<bool>& vertOnBoundary = mesh.getVertsOnBoundary();
+    const int STATE_IDLE = 0;
+    const int STATE_MIN = -1;
+    const int STATE_MAX = 1;
+           
+    int state = STATE_IDLE;
+    int state_c = STATE_IDLE;
+
+    double pz = eps;
+    double nz = -eps;
+
+    vector<int> vExtrema;
+    for (int j = 0; j < N; j++)		//m_size: size of the mesh
+    {
+        if (avoid_boundary && vertOnBoundary[j]) continue;  // ignore boundary vertex
+        if (fabs(vals[j]) < thresh)				//too small-valued point discarded
+            continue;
+        vector<int> nb = mesh.getVertNeighborVerts(j, ring, false);
+
+        state = STATE_IDLE;
+        for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
+            int ev = nb[k];
+            state_c = STATE_IDLE;
+            if (vals[j] - vals[ev] < nz)		// low bound
+                state_c = STATE_MIN;
+            else if (vals[j] - vals[ev] > pz)	// high bound
+                state_c = STATE_MAX;
+
+            if (state == STATE_IDLE)	        // two-step change
+                state = state_c;
+            else if (state != state_c) {
+                state = STATE_IDLE;
+                break;
+            }
+        }
+        if (state == STATE_IDLE) continue;
+                
+        vExtrema.push_back(j);
+    }
+
+    return vExtrema;
+}
+
+std::vector<std::pair<int, int>> extractSignedMeshExtrema(const CMesh& mesh, const std::vector<double>& vals, int ring, double thresh /*= 1e-3*/, double eps /*= 1e-5*/, bool avoid_boundary /*= true*/)
+{
+    assert(vals.size() == mesh.vertCount());
+    int N = mesh.vertCount();
+
+    const vector<bool>& vertOnBoundary = mesh.getVertsOnBoundary();
+    const int STATE_IDLE = 0;
+    const int STATE_MIN = -1;
+    const int STATE_MAX = 1;
+
+    int state = STATE_IDLE;
+    int state_c = STATE_IDLE;
+
+    double pz = eps;
+    double nz = -eps;
+
+    vector<pair<int,int>> vExtrema;
+    for (int j = 0; j < N; j++)		//m_size: size of the mesh
+    {
+        if (avoid_boundary && vertOnBoundary[j]) continue;  // ignore boundary vertex
+        if (fabs(vals[j]) < thresh)				//too small-valued point discarded
+            continue;
+        vector<int> nb = mesh.getVertNeighborVerts(j, ring, false);
+
+        state = STATE_IDLE;
+        for (size_t k = 0; k < nb.size(); k++) {	//for each neighbor 
+            int ev = nb[k];
+            state_c = STATE_IDLE;
+            if (vals[j] - vals[ev] < nz)		// low bound
+                state_c = STATE_MIN;
+            else if (vals[j] - vals[ev] > pz)	// high bound
+                state_c = STATE_MAX;
+
+            if (state == STATE_IDLE)	        // two-step change
+                state = state_c;
+            else if (state != state_c) {
+                state = STATE_IDLE;
+                break;
+            }
+        }
+        if (state == STATE_IDLE) continue;
+
+        vExtrema.push_back(make_pair(j, state));
+    }
+
+    return vExtrema;
+}
+
 } // end of namespace

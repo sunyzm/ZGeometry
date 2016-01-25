@@ -57,7 +57,7 @@ private slots:
     void computeSGW();
 	void computeHK();
 	void computeHKS();	
-	void computeHKSFeatures();
+	void computeHksFeatures();
 	
 	void computeGeodesics();
 	void computeHeatTransfer();
@@ -216,7 +216,7 @@ private:
 	double              mDiffMax;
 
 	enum { 
-		Compute_HKS, Compute_HK, 
+		Compute_HKS, Compute_HK, Compute_HKS_Feature,
 		Compute_MHWS, Compute_MHW, 
 		Compute_SGWS, Compute_SGW,
 		Compute_Eig_Func, Compute_Biharmonic, 

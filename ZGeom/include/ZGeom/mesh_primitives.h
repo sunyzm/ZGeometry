@@ -5,6 +5,9 @@
 
 namespace ZGeom {
 
+std::vector<int> extractMeshExtrema(const CMesh& mesh, const std::vector<double>& vals, int ring, double thresh = 1e-3, double eps = 1e-5, bool avoid_boundary = true);
+std::vector<std::pair<int,int>> extractSignedMeshExtrema(const CMesh& mesh, const std::vector<double>& vals, int ring, double thresh = 1e-3, double eps = 1e-5, bool avoid_boundary = true);
+
 struct MeshRegion
 {
     std::vector<int> vert_inside;

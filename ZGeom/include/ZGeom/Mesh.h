@@ -216,6 +216,7 @@ public:
     bool				            hasBoundary();
     int					            calAttrBoundaryVert();	    // get number of boundary vertices; set BoundaryVertCount and VertIsOnBoundary attributes
 	const std::vector<bool>&	    getVertsOnBoundary();
+    const std::vector<bool>&	    getVertsOnBoundary() const;
     bool                            isVertOnBoundary(int vi);
 	ZGeom::Vec3d			        calMeshCenter() const;
 	ZGeom::Vec3d			        calBoundingBox(const ZGeom::Vec3d& center) const;
@@ -241,7 +242,7 @@ public:
     void                scale(double s);
     void                moveToOrigin();    
     void	            scaleAreaToVertexNum();					// move to origin and scale the mesh so that the surface area equals number of vertices
-    void scaleToUnitBox(double unit = 1.0);                       // move to origin and scale the mesh to inside the unit box
+    void                scaleToUnitBox(double unit = 1.0);                       // move to origin and scale the mesh to inside the unit box
     void                scaleEdgeLenToUnit();					// move to origin and scale the mesh so that the average edge length is 1
     void		        saveToMetis(const std::string& sFileName) const; // save mesh to .mtm Metis-compatible mesh file
     
@@ -255,8 +256,6 @@ public:
 	int					calEdgeCount();		    // get number of edges ( not half-edge! )
     void	            calAttrFaceNormals();	// compute face normals
     void                calAttrVertNormals();   // compute vert normals
-	void				extractExtrema( const std::vector<double>& vSigVal, int ring, double lowThresh, std::vector<int>& vFeatures );
-	void				extractExtrema( const std::vector<double>& vSigVal, int ring, std::vector<std::pair<int, int> >& vFeatures, double lowThresh, int avoidBoundary = 1);
     bool	            isHalfEdgeMergeable(const CHalfEdge* halfEdge);
     ZGeom::PointCloud3d toPointCloud() const;
 	void                partitionToSubMeshes(const std::vector<std::vector<int>*>& vSubMappedIdx, std::vector<CMesh*>& vSubMeshes) const;
