@@ -613,7 +613,8 @@ void QZGeometryWindow::loadMesh(std::string mesh_filename, int obj, bool scale_t
     newMesh->load(mesh_filename);
     newMesh->moveToOrigin();
     if (scale_to_unit) {
-        newMesh->scaleToUnitBox();
+        double unit = 1.0;
+        newMesh->scaleToUnitBox(unit);
     }    
     ZGeom::gatherMeshStatistics(*newMesh);
     Colorf meshColor(ZGeom::MeshPresetColors[obj % 3]);
@@ -828,9 +829,9 @@ void QZGeometryWindow::setCommonParameter( int p )
 	{
 		double time_scale;
 		if (mCommonParameter <= sliderCenter) 
-			time_scale = std::exp(std::log(gSettings.DEFUALT_HK_TIMESCALE / gSettings.MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)sliderCenter) + std::log(gSettings.MIN_HK_TIMESCALE));
+			time_scale = std::exp(std::log(gSettings.DEFAULT_HK_TIMESCALE / gSettings.MIN_HK_TIMESCALE) * ((double)mCommonParameter / (double)sliderCenter) + std::log(gSettings.MIN_HK_TIMESCALE));
 		else 
-			time_scale = std::exp(std::log(gSettings.MAX_HK_TIMESCALE / gSettings.DEFUALT_HK_TIMESCALE) * (double(mCommonParameter - sliderCenter) / sliderCenter) + std::log(gSettings.DEFUALT_HK_TIMESCALE)); 
+			time_scale = std::exp(std::log(gSettings.MAX_HK_TIMESCALE / gSettings.DEFAULT_HK_TIMESCALE) * (double(mCommonParameter - sliderCenter) / sliderCenter) + std::log(gSettings.DEFAULT_HK_TIMESCALE)); 
 		qout.output(QString().sprintf("HKS timescale %f", time_scale), OUT_STATUS);
 	}
 }
@@ -1247,7 +1248,7 @@ void QZGeometryWindow::computeBiharmonicDistField()
 
 void QZGeometryWindow::computeHK()
 {
-	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
+	double time_scale = parameterFromSlider(gSettings.DEFAULT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
 
 	for (int obj = 0; obj < mMeshCount; ++obj) {
 		MeshHelper& mp = mMeshHelper[obj];
@@ -1266,20 +1267,26 @@ void QZGeometryWindow::computeHK()
 
 void QZGeometryWindow::computeHKS()
 {
-	double time_scale = parameterFromSlider(gSettings.DEFUALT_HK_TIMESCALE, gSettings.MIN_HK_TIMESCALE, gSettings.MAX_HK_TIMESCALE);
+    mLastOperation = Compute_HKS;
 
 	for (int i = 0; i < mMeshCount; ++i) {
 		MeshHelper& mp = mMeshHelper[i];
 		const int meshSize = mp.getMesh()->vertCount();
 		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(active_lap_type);
+
+        double t_min = 4 * std::log(10.0) / mhb.getEigVal(299), t_max = 4 * std::log(10.0) / mhb.getEigVal(1);
+        gSettings.MIN_HK_TIMESCALE = t_min; 
+        gSettings.MAX_HK_TIMESCALE = t_max;
+        gSettings.DEFAULT_HK_TIMESCALE = std::sqrt(t_min * t_max);
+        double time_scale = parameterFromSlider(gSettings.DEFAULT_HK_TIMESCALE, t_min, t_max);
+        
         std::vector<double> values = ZGeom::calHeatKernelSignature(mhb, time_scale);
 		addColorSignature(i, values, StrAttrColorHKS);
+        qout.output(QString().sprintf("HKS with time-scale: %f", time_scale));
 	}
-	
-	displaySignature(StrAttrColorHKS.c_str());
-	qout.output(QString().sprintf("HKS with timescale: %f", time_scale));
+
+    displaySignature(StrAttrColorHKS.c_str());
 	updateMenuDisplaySignature();
-	mLastOperation = Compute_HKS;
 }
 
 void QZGeometryWindow::computeSGW()

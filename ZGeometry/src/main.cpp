@@ -16,7 +16,7 @@ void loadConfig()
     g_configMgr.getConfigValueInt("GEOMETRY_TASK", (int&)g_task);
     g_configMgr.getConfigValueInt("LOAD_MHB_CACHE", gSettings.LOAD_MHB_CACHE);
     g_configMgr.getConfigValueDouble("PARAMETER_SLIDER_CENTER", gSettings.PARAMETER_SLIDER_CENTER);
-    g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", gSettings.DEFUALT_HK_TIMESCALE);
+    g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", gSettings.DEFAULT_HK_TIMESCALE);
     g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", gSettings.DEFAULT_EIGEN_SIZE);
     g_configMgr.getConfigValueInt("SCALE_TO_UNIT", gSettings.INPUT_SCALE_TO_UNIT);
 }
