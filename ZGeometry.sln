@@ -30,6 +30,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh_operator", "zmesh_ope
 		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
 	EndProjectSection
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zmesh", "zmesh\zmesh.vcxproj", "{47E10572-149A-4BCD-B30E-021554563264}"
+	ProjectSection(ProjectDependencies) = postProject
+		{3F4A8B8B-AD33-42A5-B23D-B3341D71C49C} = {3F4A8B8B-AD33-42A5-B23D-B3341D71C49C}
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -60,6 +65,10 @@ Global
 		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Debug|x64.Build.0 = Debug|x64
 		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|x64.ActiveCfg = Release|x64
 		{5546A265-51A9-47D8-AA45-BCEF153B1D16}.Release|x64.Build.0 = Release|x64
+		{47E10572-149A-4BCD-B30E-021554563264}.Debug|x64.ActiveCfg = Debug|x64
+		{47E10572-149A-4BCD-B30E-021554563264}.Debug|x64.Build.0 = Debug|x64
+		{47E10572-149A-4BCD-B30E-021554563264}.Release|x64.ActiveCfg = Release|x64
+		{47E10572-149A-4BCD-B30E-021554563264}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

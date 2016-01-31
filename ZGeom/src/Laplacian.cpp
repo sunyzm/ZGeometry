@@ -20,10 +20,14 @@ void Laplacian::decompose( int nEig, MatlabEngineWrapper* ep, EigenSystem& eigSy
 
 	EigenCompute eigenCompute(ep);
 	if (generalized) {
+#ifdef _DEBUG
 		std::cout << "Do generalized eigendecomposition!\n";
+#endif
 		eigenCompute.solveGenSym(mLS, mW, nEig, eigSys);
 	} else {
+#ifdef _DEBUG
 		std::cout << "Do standard eigendecomposition!\n";
+#endif
 		eigenCompute.solveStdSym(mLS, nEig, eigSys);
 	}
 

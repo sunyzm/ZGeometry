@@ -989,5 +989,6 @@ void GLMeshWidget::setup(const std::vector<MeshHelper*>& processors, std::vector
     mRenderSettings.clear();
     for (RenderSettings& rs : vrs) mRenderSettings.push_back(&rs);
     mMatcher = matcher;
-    setBasePointSize(mMeshHelpers[0]->getMesh()->getAvgEdgeLength() / 4.);
+    //setBasePointSize(mMeshHelpers[0]->getMesh()->getAvgEdgeLength() / 4.);
+    setBasePointSize(0.02);
 }

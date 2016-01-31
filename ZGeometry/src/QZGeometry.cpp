@@ -558,28 +558,12 @@ bool QZGeometryWindow::initialize(const std::string& mesh_list_name)
 
 void QZGeometryWindow::loadInitialMeshes(const std::string& mesh_list_name)
 {
-	runtime_assert (fileExist(mesh_list_name),  "Cannot open file mesh list file!");
-	std::ifstream meshfiles(mesh_list_name);	
-	vector<std::string> vMeshFiles;
-	while (!meshfiles.eof()) {
-		std::string meshFileName;
-		getline(meshfiles, meshFileName);
-		for (auto iter = meshFileName.begin(); iter != meshFileName.end(); ) {
-			if (*iter == ' ' || *iter == '\t') iter = meshFileName.erase(iter);
-			else ++iter;
-		}
-		if (meshFileName == "") continue;
-		if (meshFileName[0] == '#') continue;
-        runtime_assert(fileExist(meshFileName), "Cannot open file " + meshFileName);
-		vMeshFiles.push_back(meshFileName);
-	}
-	meshfiles.close();
+    vector<std::string> vMeshFiles = readFileList(mesh_list_name);
     if (vMeshFiles.size() < mMeshCount) {
         throw std::runtime_error("Not enough meshes in mesh list!");
     }
 
     bool scale_to_unit = (gSettings.INPUT_SCALE_TO_UNIT == 1 ? true : false);
-
 	allocateStorage(mMeshCount);
 	parallel_for(0, mMeshCount, [&](int obj) {
         loadMesh(vMeshFiles[obj], obj, scale_to_unit); 
@@ -1275,7 +1259,7 @@ void QZGeometryWindow::computeHKS()
 		const int meshSize = mp.getMesh()->vertCount();
 		const ZGeom::EigenSystem& mhb = mp.getEigenSystem(active_lap_type);
 
-        double t_min = 4 * std::log(10.0) / mhb.getEigVal(299), t_max = 4 * std::log(10.0) / mhb.getEigVal(1);
+        double t_min = 4 * std::log(10.0) / mhb.getAllEigVals().back(), t_max = 4 * std::log(10.0) / mhb.getEigVal(1);
         gSettings.MIN_HK_TIMESCALE = t_min; 
         gSettings.MAX_HK_TIMESCALE = t_max;
         gSettings.DEFAULT_HK_TIMESCALE = std::sqrt(t_min * t_max);
@@ -1746,9 +1730,10 @@ void QZGeometryWindow::computeLaplacian(LaplacianType lap_type)
         MeshHelper& mp = mMeshHelper[obj];
         mp.computeLaplacian(num_eig, lap_type);
         auto& all_eigvals = mp.getEigenSystem(lap_type).getAllEigVals();
-        std::cout << "Min EigVal: " << all_eigvals.front()
-                  << "; Max EigVal: " << all_eigvals.back() 
-                  << std::endl;
+        std::cout << "0th EigVal: " << all_eigvals[0]
+            << "; 1st EigVal: " << all_eigvals[1]
+            << "; Max EigVal: " << all_eigvals.back() 
+            << std::endl;
     }
 
     active_lap_type = lap_type;

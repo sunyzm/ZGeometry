@@ -938,10 +938,14 @@ std::vector<MeshRegion> identifyMeshBoundaries(CMesh& mesh)
         do {
             vertVisited[currentIndex] = true;
             int edgeIndex = -1;
-            for (CHalfEdge* he : mesh.m_vVertices[currentIndex]->m_HalfEdges) {
+            for (CHalfEdge* he : mesh.vert(currentIndex)->getHalfEdges()) {
                 if (he->isBoundaryEdge()) {
                     edgeIndex = he->getIndex(); break;
                 }
+            }
+            if (edgeIndex == -1) {
+                cerr << "Boundary ended without loop!";
+                break;
             }
             currentIndex = mesh.m_vHalfEdges[edgeIndex]->getVertIndex(1);
             edgeLoop.push_back(edgeIndex);

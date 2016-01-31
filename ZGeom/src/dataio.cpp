@@ -47,3 +47,35 @@ bool fileExist(const std::string& filename)
     std::tr2::sys::path myfile(filename);
     return std::tr2::sys::exists(myfile);
 }
+
+
+
+std::vector<std::string> readFileList(const std::string &filename)
+{
+    if (!fileExist(filename)) {
+        throw runtime_error("Cannot open list file!");
+    }
+
+    vector<string> result;
+    ifstream list_file(filename);
+    while (!list_file.eof()) {
+        string line_content;
+        getline(list_file, line_content);
+        for (auto iter = line_content.begin(); iter != line_content.end();) {
+            if (*iter == ' ' || *iter == '\t') iter = line_content.erase(iter);
+            else ++iter;
+        }
+        if (line_content == "") continue;
+        if (line_content[0] == '#') continue;
+        result.push_back(line_content);
+    }
+    return result;
+}
+
+std::pair<std::string, std::string> splitFileName(const std::string& file_name)
+{
+    size_t dot_pos = file_name.rfind('.'), slashPos = file_name.rfind('/');
+    std::string name = file_name.substr(slashPos + 1, dot_pos - slashPos - 1);
+    std::string ext = file_name.substr(dot_pos, file_name.size() - dot_pos);
+    return make_pair(name, ext);
+}

@@ -75,7 +75,7 @@ public:
     CVertex*    	    vert(int i) const           { return (i == 0) ? vert0() : vert1(); }
     CVertex*            vert0() const               { return m_vert; }
     CVertex*            vert1() const               { return nextHalfEdge()->vert0(); }
-	bool		        isBoundaryEdge() const      { return m_eTwin == NULL; }
+	bool		        isBoundaryEdge() const      { return m_eTwin == nullptr; }
     int			        getVertIndex(int i) const   { return vert(i)->getIndex(); }
 	double		        length() const;
 	int                 getIndex() const            { return m_eIndex; }	

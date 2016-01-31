@@ -42,6 +42,10 @@ inline void vector2file(const std::string& filepath, const std::vector<T>& data,
 
 bool fileExist(const std::string& filename);
 
+std::pair<std::string, std::string> splitFileName(const std::string& file_name);
+
+std::vector<std::string> readFileList(const std::string &filename);
+
 template<typename T>
 bool setHas(const std::set<T>& s, const T& query)
 {

@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <iostream>
 #include <numeric>
+#include <regex>
 #include <ppl.h>
 #include "zassert.h"
 #include "arithmetic.h"
@@ -335,9 +336,7 @@ CMesh& CMesh::operator = (CMesh&& oldMesh)
 
 CMesh::~CMesh()
 {
-	if (true) std::cout << "Destroying Mesh '" + getMeshName() << "'... ";
 	clearMesh();	
-	if (true) std::cout << "Finished!" << std::endl;
 }
 
 void CMesh::cloneFrom( const CMesh& oldMesh, const std::string nameSuffix /*=".clone"*/)
@@ -422,23 +421,27 @@ void CMesh::clearAttributes()
     mAttributes.clear();
 }
 
-void CMesh::load( const std::string& sFileName )
+void CMesh::load( const std::string& file_name )
 {
 	clearMesh();	
-	size_t dotPos = sFileName.rfind('.'), slashPos = sFileName.rfind('/');
-	std::string mesh_name = sFileName.substr(slashPos+1, dotPos-slashPos-1);
-	std::string ext = sFileName.substr(dotPos, sFileName.size() - dotPos);
+    auto name_pair = splitFileName(file_name);
+    string mesh_name = name_pair.first, ext = name_pair.second;	
 
-	if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") loadFromOBJ(sFileName);
+    if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
+        loadFromOBJ(file_name);
+    }
 // 	else if (ext == ".m" || ext == ".M") 
 //         loadFromM(sFileName);
 // 	else if (ext == ".ply" || ext == ".PLY" || ext == ".Ply") 
 //         loadFromPLY(sFileName);
 //     else if (ext == ".vert" || ext == ".VERT")
 //         loadFromVERT(sFileName);
-     else if (ext == ".off" || ext == ".OFF" || ext == ".Off")
-         loadFromOFF(sFileName);
-	else throw runtime_error("Unrecognizable file extension!");
+    else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
+        loadFromOFF(file_name);
+    }
+    else {
+        throw runtime_error("Unrecognizable file extension!");
+    }
     
     setMeshName(mesh_name);
 }
@@ -1556,16 +1559,62 @@ void CMesh::loadFromOBJ(std::string sFileName)
 /* -----  format: smf, obj, dat -----
  * vertex:
  *      v x y z,
+ * normal: 
+ *      vn x y z
  * face(triangle):
  *      f v1 v2 v3  (the vertex index is 1-based)
+ *      f v1/t1/n1 v2/t2/n2 v3/t2/n3
  * ----------------------------------- */
 	//open the file
+    if (!fileExist(sFileName)) {
+        throw runtime_error("Obj file not exist!");
+    }       
+
+    list<Vec3d> VertexList;	// temporary vertex list
+    list<int> FaceList;		// temporary face list
+
+    vector<string> lines;
+    ifstream list_file(sFileName);
+    while (!list_file.eof()) {
+        string new_line;
+        getline(list_file, new_line);
+        if (new_line == "") continue;
+        if (new_line[0] == '#') continue;
+        lines.push_back(new_line);
+    }
+
+    std::regex simple_face_regex("f\\s+(\\d+)\\s+(\\d+)\\s+(\\d+)");
+    std::regex multi_face_regex("f\\s+(\\d+)//\\d+\\s+(\\d+)//\\d+\\s+(\\d+)//\\d+");
+    std::smatch base_match;
+
+    char control;
+    ZGeom::Vec3d pos;
+    int l[3];
+    for (string new_line : lines) {    
+        istringstream iss(new_line);
+        if (new_line.substr(0, 2) == "vn") continue;
+        else if (new_line[0] == 'v') {            
+            iss >> control >> pos.x >> pos.y >> pos.z;
+            VertexList.push_back(pos);
+        } 
+        else if (new_line[0] == 'f') {
+            if (regex_match(new_line, base_match, simple_face_regex)) {                
+                iss >> control >> l[0] >> l[1] >> l[2];
+            }
+            else if (regex_match(new_line, base_match, multi_face_regex)) {
+                for (int c = 0; c < 3; ++c)
+                    l[c] = atoi(base_match[c + 1].str().c_str());
+            }
+            else continue;
+            for (int j = 0; j < 3; j++)
+                FaceList.push_back(l[j] - 1);		// 0-based, vid - 1
+        }
+    }
+
+#ifdef OLD_OBJ
 	FILE *f;
 	fopen_s(&f, sFileName.c_str(), "r");
 	assert(f != nullptr);
-
-	list<Vec3d> VertexList;	// temporary vertex list
-	list<int> FaceList;		// temporary face list
 
 	ZGeom::Vec3d vec;
     char ch = 0;
@@ -1600,14 +1649,14 @@ void CMesh::loadFromOBJ(std::string sFileName)
 		ch = fgetc(f);
 	}
 	fclose(f);
-	
+#endif
+
     int nFace = (int)FaceList.size() / 3;
     vector<Vec3d> vertCoord{VertexList.begin(), VertexList.end()};
-    vector<vector<int>> faceVerts(nFace);
+    vector<vector<int>> faceVerts(nFace, vector<int>(3));
 	list<Vec3d>::iterator iVertex = VertexList.begin();
 	list<int>::iterator iFace = FaceList.begin();  
     for (int i = 0; i < nFace; i++) {
-        faceVerts[i].resize(3);
         for (int j = 0; j < 3; ++j)
             faceVerts[i][j] = *iFace++;
     }

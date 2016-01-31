@@ -41,15 +41,15 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013b\extern\include;D:\dev\boost\boost_1_55_0;D:\dev\include;D:\dev\glew\glew-1.10.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZGeom\lib;C:\MATLAB\R2013b\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013a\extern\include;D:\dev\boost\boost_1_55_0;D:\dev\include;D:\dev\glew\glew-1.10.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZGeom\lib;C:\MATLAB\R2013a\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013b\extern\include;D:\dev\boost\boost_1_55_0;D:\dev\include;D:\dev\glew\glew-1.10.0\include;$(IncludePath)</IncludePath>
-    <LibraryPath>$(SolutionDir)ZGeom\lib;C:\MATLAB\R2013b\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(SolutionDir)ZGeom\include;C:\MATLAB\R2013a\extern\include;D:\dev\boost\boost_1_55_0;D:\dev\include;D:\dev\glew\glew-1.10.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)ZGeom\lib;C:\MATLAB\R2013a\extern\lib\win64\microsoft;D:\dev\lib;D:\dev\glew\glew-1.10.0\lib\Release\x64;$(LibraryPath)</LibraryPath>
     <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)intermediate\$(ProjectName)\$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -65,7 +65,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>ZGeom64d.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ZGeom64d.lib;libeng.lib;libmx.lib;libmat.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -84,11 +84,11 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalDependencies>ZGeom64.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ZGeom64.lib;libeng.lib;libmx.lib;libmat.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="zmesh_operator.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
