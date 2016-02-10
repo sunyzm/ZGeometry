@@ -1,42 +1,5 @@
 #include "MeshCoordinates.h"
 
-void MeshCoordinates::addWith(double *cx, double *cy, double *cz)
-{
-    for (int i = 0; i < size(); ++i) {
-        this->coord_data[i] += cx[i];
-        this->coord_data[size() + i] = cy[i];
-        this->coord_data[size() * 2 + i] = cz[i];
-    }
-}
-
-void MeshCoordinates::addWith(int c, double* raw)
-{
-    assert(c >= 0 && c < 3);
-    for (int i = 0; i < size(); ++i) {
-        this->coord_data[i + size() * c] = raw[i];
-    }
-}
-
-MeshCoordinates MeshCoordinates::add(const MeshCoordinates& mc2) const
-{
-    assert(size() == mc2.size());
-    MeshCoordinates mc3(size());
-    for (size_t i = 0; i < coord_data.size(); ++i) {
-        mc3.coord_data[i] = this->coord_data[i] + mc2.coord_data[i];
-    }
-    return mc3;
-}
-
-MeshCoordinates MeshCoordinates::substract(const MeshCoordinates& mc2) const
-{
-    assert(size() == mc2.size());
-    MeshCoordinates mc3(size());
-    for (size_t i = 0; i < coord_data.size(); ++i) {
-        mc3.coord_data[i] = this->coord_data[i] - mc2.coord_data[i];
-    }
-    return mc3;
-}
-
 MeshCoordinates::MeshCoordinates(int mesh_size, double *cx, double *cy, double *cz)
 {
     resize(mesh_size);
@@ -74,6 +37,62 @@ MeshCoordinates& MeshCoordinates::operator=(MeshCoordinates&& mc)
     return *this;
 }
 
+double& MeshCoordinates::operator() (int idx, int c)
+{
+    assert(c >= 0 && c <= 2);
+    return coord_data[size() * c + idx];
+}
+
+double& MeshCoordinates::elem(int idx, int c)
+{
+    assert(c >= 0 && c <= 2);
+    return coord_data[size() * c + idx];
+}
+
+void MeshCoordinates::addWith(double *cx, double *cy, double *cz)
+{
+    for (int i = 0; i < size(); ++i) {
+        this->coord_data[i] += cx[i];
+        this->coord_data[size() + i] = cy[i];
+        this->coord_data[size() * 2 + i] = cz[i];
+    }
+}
+
+void MeshCoordinates::addWith(int c, double* raw)
+{
+    assert(c >= 0 && c < 3);
+    for (int i = 0; i < size(); ++i) {
+        this->coord_data[i + size() * c] = raw[i];
+    }
+}
+
+void MeshCoordinates::addWith(int c, const ZGeom::VecNd& vec_coord)
+{
+    for (int i = 0; i < size(); ++i) {
+        this->coord_data[i + size() * c] = vec_coord[i];
+    }
+}
+
+MeshCoordinates MeshCoordinates::add(const MeshCoordinates& mc2) const
+{
+    assert(size() == mc2.size());
+    MeshCoordinates mc3(size());
+    for (size_t i = 0; i < coord_data.size(); ++i) {
+        mc3.coord_data[i] = this->coord_data[i] + mc2.coord_data[i];
+    }
+    return mc3;
+}
+
+MeshCoordinates MeshCoordinates::substract(const MeshCoordinates& mc2) const
+{
+    assert(size() == mc2.size());
+    MeshCoordinates mc3(size());
+    for (size_t i = 0; i < coord_data.size(); ++i) {
+        mc3.coord_data[i] = this->coord_data[i] - mc2.coord_data[i];
+    }
+    return mc3;
+}
+
 const ZGeom::VecNd MeshCoordinates::getCoordVec(int c) const
 {
     assert(c >= 0 && c < 3);
@@ -90,12 +109,6 @@ void MeshCoordinates::setVertCoord(int vi, ZGeom::Vec3d vec)
     coord_data[vi] = vec[0];
     coord_data[vi + size()] = vec[1];
     coord_data[vi + size() * 2] = vec[2];
-}
-
-double& MeshCoordinates::operator()(int idx, int c)
-{
-    assert(c >= 0 && c <= 2);
-    return coord_data[size() * c + idx];    
 }
 
 std::vector<ZGeom::VecNd> MeshCoordinates::to3Vec() const
@@ -149,4 +162,24 @@ void MeshCoordinates::setCoord(int c, const ZGeom::VecNd vec)
 {
     assert(vec.size() == this->size() && c >= 0 && c < 2);
     std::copy_n(vec.c_ptr(), size(), data() + c * size());
+}
+
+void MeshCoordinates::scaleToUnitbox()
+{
+    ZGeom::Vec3d center(0, 0, 0);
+    for (int c = 0; c < 3; ++c) {
+        for (int i = 0; i < size(); ++i)
+            center[c] += elem(i, c);
+    }
+    center /= size();
+    for (int c = 0; c < 3; ++c) {
+        for (int i = 0; i < size(); ++i)
+            elem(i, c) -= center[c];
+    }
+
+    double max_reach(0);
+    for (int i = 0; i < size() * 3; ++i)
+        max_reach = std::max(max_reach, fabs(coord_data[i]));
+    for (int i = 0; i < size() * 3; ++i)
+        coord_data[i] /= max_reach;
 }

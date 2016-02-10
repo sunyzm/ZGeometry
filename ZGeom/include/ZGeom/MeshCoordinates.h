@@ -37,7 +37,7 @@ public:
 
     void addWith(double *cx, double *cy, double *cz);
     void addWith(int c, double* raw);
-    void addWith(int c, const ZGeom::VecNd& vec_coord) { addWith(c, vec_coord.c_ptr()); }
+    void addWith(int c, const ZGeom::VecNd& vec_coord);
     MeshCoordinates add(const MeshCoordinates& mc2) const;
     MeshCoordinates substract(const MeshCoordinates& mc2) const;
 
@@ -45,14 +45,18 @@ public:
     void setVertCoord(int vIdx, ZGeom::Vec3d vec);
     ZGeom::Vec3d operator [] (int v) const { return getVertCoord(v); }
     double& operator() (int idx, int c);
+    double& elem(int idx, int c);
 
     double difference(const MeshCoordinates& mc2) const;
+    
     ZGeom::VecNd vertDifference(const MeshCoordinates& mc2) const;
     std::vector<ZGeom::VecNd> to3Vec() const;
 
     // convert from/to N*3 matrix
     ZGeom::DenseMatrixd toDenseMatrix() const;
     void fromDenseMatrix(const ZGeom::DenseMatrixd& mat);
+
+    void scaleToUnitbox();
 
 private:
     std::vector<double> coord_data;

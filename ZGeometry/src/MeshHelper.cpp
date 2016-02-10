@@ -24,6 +24,7 @@ MeshHelper::MeshHelper()
  {
      mesh_history_ = std::move(mh.mesh_history_);
      mesh_extra_infos_ = std::move(mh.mesh_extra_infos_);
+     cur_mesh_idx_ = mh.cur_mesh_idx_;
  }
 
 void MeshHelper::init(CMesh* tm)

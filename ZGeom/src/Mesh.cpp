@@ -421,14 +421,14 @@ void CMesh::clearAttributes()
     mAttributes.clear();
 }
 
-void CMesh::load( const std::string& file_name )
+void CMesh::load( const std::string& file_path )
 {
 	clearMesh();	
-    auto name_pair = splitFileName(file_name);
+    auto name_pair = extractFileName(file_path);
     string mesh_name = name_pair.first, ext = name_pair.second;	
 
     if (ext == ".obj" || ext == ".OBJ" || ext == ".Obj") {
-        loadFromOBJ(file_name);
+        loadFromOBJ(file_path);
     }
 // 	else if (ext == ".m" || ext == ".M") 
 //         loadFromM(sFileName);
@@ -437,7 +437,7 @@ void CMesh::load( const std::string& file_name )
 //     else if (ext == ".vert" || ext == ".VERT")
 //         loadFromVERT(sFileName);
     else if (ext == ".off" || ext == ".OFF" || ext == ".Off") {
-        loadFromOFF(file_name);
+        loadFromOFF(file_path);
     }
     else {
         throw runtime_error("Unrecognizable file extension!");

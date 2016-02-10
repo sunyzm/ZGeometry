@@ -26,6 +26,8 @@ HIERARCHY_OUTPUT_FILE = output/build_pyramid.log
 MATCH_OUTPUT_FILE = output/FeatureMatch.log
 REGISTER_OUTPUT_FILE = output/Registration.log
 
+[output]
+PARITION_SIZE = 1000
 
 [laplacian]
 # -1 means no Laplacian computed at initialization

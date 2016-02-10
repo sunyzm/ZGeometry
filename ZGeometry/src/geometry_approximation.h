@@ -33,10 +33,9 @@ class SubMeshApprox
 {
 public:
 	friend class ShapeApprox;
-    SubMeshApprox() : mMeshHelper(nullptr) {}
-    ~SubMeshApprox() { if (mMeshHelper) delete mMeshHelper; }
 
-    void init() { mMeshHelper = new MeshHelper; mMeshHelper->init(&mSubMesh); }
+    SubMeshApprox(){}
+    void init() { mMeshHelper.init(&mSubMesh); }
 	int subMeshSize() const { return mSubMesh.vertCount(); }
 	const std::vector<int>& mappedIdx() const { return mMappedIdx; }
 	void prepareEigenSystem(LaplacianType laplacianType, int mEigenCount);
@@ -52,8 +51,11 @@ public:
 	const std::vector<ZGeom::SparseCodingItem>& getSparseCoding(int c) const { return mCoding[c]; }
 
 private:
+    SubMeshApprox(const SubMeshApprox&);
+
+private:
 	CMesh mSubMesh;
-	MeshHelper *mMeshHelper;
+	MeshHelper mMeshHelper;
 	std::vector<int> mMappedIdx;
 	ZGeom::EigenSystem mEigenSystem;
 	ZGeom::Dictionary mDict;
@@ -65,7 +67,8 @@ class ShapeApprox
 {
 public:
 	friend class ShapeEditor;	
-	ShapeApprox() : mOriginalMesh(NULL) {}
+
+	ShapeApprox() : mOriginalMesh(nullptr) {}
 	void init(CMesh* mesh);
 	void doSegmentation(int maxSize);
 	void doEigenDecomposition(LaplacianType lapType, int eigenCount);
@@ -81,14 +84,15 @@ public:
 	void doSparseReconstructionStepping(int totalSteps, std::vector<MeshCoordinates>& contCoords);
 	void integrateSubmeshApproximation(MeshCoordinates& integratedApproxCoord);
 	int  partitionCount() const { return mSubMeshApprox.size(); }
-	ZGeom::Dictionary getSubDictionary(int idx) { return mSubMeshApprox[idx].mDict; }
-	const ZGeom::EigenSystem& getSubEigenSystem(int idx) { return mSubMeshApprox[idx].mEigenSystem; }
+	ZGeom::Dictionary getSubDictionary(int idx) { return mSubMeshApprox[idx]->mDict; }
+	const ZGeom::EigenSystem& getSubEigenSystem(int idx) { return mSubMeshApprox[idx]->mEigenSystem; }
 
 private:
-    ShapeApprox(const ShapeApprox &) = delete;
+    void clear();
+    ShapeApprox(const ShapeApprox&);
 
 private:
 	CMesh* mOriginalMesh;	
-	std::vector<SubMeshApprox> mSubMeshApprox;
+	std::vector<SubMeshApprox*> mSubMeshApprox;
 	std::vector<int> mPartIdx;
 };

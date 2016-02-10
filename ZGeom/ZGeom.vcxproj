@@ -52,7 +52,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)d</TargetName>
-    <IncludePath>$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)thirdparty\metis\include;$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)thirdparty\metis\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <OutDir>$(Projectdir)lib\</OutDir>
@@ -62,7 +63,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <TargetName>$(ProjectName)$(PlatformArchitecture)</TargetName>
-    <IncludePath>$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <IncludePath>$(SolutionDir)thirdparty\metis\include;$(ProjectDir)include\ZGeom;$(MKLIncludeDir);$(IncludePath)</IncludePath>
+    <LibraryPath>$(SolutionDir)thirdparty\metis\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -116,6 +118,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="include\ZGeom\curvature.h" />
+    <ClInclude Include="include\ZGeom\mesh_partition.h" />
     <ClInclude Include="include\ZGeom\mesh_primitives.h" />
     <ClInclude Include="include\ZGeom\shape_description.h" />
     <ClInclude Include="include\ZGeom\sparse_approximation.h" />
@@ -177,6 +180,7 @@
     <ClCompile Include="src\fibheap.cpp" />
     <ClCompile Include="src\Geodesic.cpp" />
     <ClCompile Include="src\MeshCoordinates.cpp" />
+    <ClCompile Include="src\mesh_partition.cpp" />
     <ClCompile Include="src\mesh_primitives.cpp" />
     <ClCompile Include="src\PointCloud.cpp" />
     <ClCompile Include="src\shape_description.cpp" />

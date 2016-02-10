@@ -5,6 +5,7 @@
 #include "VecN.h"
 #include "DenseMatrix.h"
 #include "SparseMatrix.h"
+#include "MatlabEngineWrapper.h"
 
 namespace ZGeom {
 
@@ -26,15 +27,21 @@ public:
 	VecNd& getEigVec(int index) { return mEigVecs[index]; }
     ZGeom::DenseMatrixd toDenseMatrix() const;
 	void print(const std::string& file1, const std::string& file2) const;
-	void printEigVals(const std::string& file1) const;
-	void save(const std::string& file) const;
-	void load(const std::string& file);
+	void printEigVals(const std::string& file1) const;	
     void resize(int m);
     bool hasInducingMat() const { return !mInducingMat.empty(); }
     const ZGeom::SparseMatrixd getInducingMat() const { return mInducingMat; }
     bool hasEigenMat() const { return !mEigenMat.empty(); }
     void computeEigenMat();
+    const ZGeom::DenseMatrixd& getEigenMat_const() const {
+        return mEigenMat;
+    }
     const ZGeom::DenseMatrixd& getEigenMat();
+
+    void save(const std::string& file) const;
+    void load(const std::string& file);
+    void saveToMat(MatlabEngineWrapper* eng, const std::string& filepath) const;
+    void loadFromMat(MatlabEngineWrapper* eng, const std::string& file);
 
     void validate();
 

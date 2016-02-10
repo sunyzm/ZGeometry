@@ -66,7 +66,7 @@ signals:
 private:
 	void addColorSignature(const std::string& colorSigName, const std::vector<ZGeom::Colorf>& vColors);
 	void prepareAnchors(int& anchorCount, std::vector<int>& anchorIndex, std::vector<ZGeom::Vec3d>& anchorPos) const;
-	void testSparseCompression();	// test compression performance using graph Laplacian basis
+    void testSparseCompression(int max_patch_size = 1000);	// test compression performance using graph Laplacian basis
 	void testSparseDecomposition();  // test shape decomposition via sparse coding
 	void testSparseDecomposition2(); // test shape decomposition and separation
 	void testArtificialShapeMCA();	// MHB signal + SGW noise / MHB & SGW dictionary

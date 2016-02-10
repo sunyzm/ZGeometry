@@ -20,6 +20,7 @@ public:
 public:
 	MeshHelper();
     MeshHelper(MeshHelper && mh);
+    ~MeshHelper() {}
 
 	void init(CMesh* tm);
     CMesh* getMeshByName(const std::string mesh_descript);    
@@ -57,7 +58,6 @@ public:
 
 private:
     MeshHelper(const MeshHelper&);
-    MeshHelper& operator = (const MeshHelper&);
 
     std::map<LaplacianType, MeshLaplacian>& getAllLaplacians() {
         return getMeshExtraInfo().laplacians;
@@ -69,7 +69,7 @@ private:
     bool isMHBCacheValid(const std::string& pathMHB, int eig_num);
     std::string generateMHBPath(const std::string& prefix, LaplacianType lap_type);
 
-private:
+public:
     std::vector<std::unique_ptr<CMesh>> mesh_history_;
     std::vector<std::unique_ptr<ExtraInfo>> mesh_extra_infos_;
     int cur_mesh_idx_;

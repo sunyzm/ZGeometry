@@ -6,6 +6,7 @@
 #include <array>
 #include <queue>
 #include <ppl.h>
+#include <QDateTime>
 #include <boost/lexical_cast.hpp>
 #include <ZGeom/ZGeom.h>
 #include <ZGeom/util.h>
@@ -657,8 +658,15 @@ void ShapeEditor::evaluateApproximation( const MeshCoordinates& newCoord, const 
 
 void ShapeEditor::runTests()
 {
-    //testSurfaceArea();
-	//testSparseCompression();		
+    int patch_size = gSettings.MESH_PARTITION_SIZE;
+
+    vector<int> patch_sizes{500, 750, 1000, 1250, 1500, 2000 };
+    //vector<int> patch_sizes{500};
+
+    for (int psize : patch_sizes)
+        testSparseCompression(psize);
+
+    //testSurfaceArea();	
 	//testArtificialShapeMCA();
 	//testArtificailShapeMCA2();
 	//testArtificialShapeMCA3();
@@ -682,38 +690,40 @@ void ShapeEditor::runTests()
 
 //// Test partitioned approximation with graph Laplacian ////
 //
-void ShapeEditor::testSparseCompression()
+void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
 {
-	revertCoordinates();
-	mStoredCoordinates.resize(5);
+    mShapeApprox.clear();
 	
-	std::cout << "\n======== Starting Sparse Compression test) ========\n";	
+	std::cout << "\n======== Starting Sparse Compression test ========\n";	
 
 	const int totalVertCount = mMesh->vertCount();
 	int eigenCount = -1;		// -1 means vertCount-1	
-	int maxPatchSize = 1000;	// -1 means no segmentation
-	const MeshCoordinates& oldMeshCoord = getOldMeshCoord();
-	setStoredCoordinates(oldMeshCoord, 0);
+    int maxPatchSize = max_patch_size;	// -1 means no segmentation
+    mMesh->revertCoordinate();
+	const MeshCoordinates& oldMeshCoord = mMesh->getVertCoordinates();
+	//setStoredCoordinates(oldMeshCoord, 0);
 	MeshCoordinates oldGeoCoord;
 	computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
 
 	mShapeApprox.init(mMesh);
+    if (totalVertCount < maxPatchSize) return;
+
 	mShapeApprox.doSegmentation(maxPatchSize);
-	mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
-	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-    emit meshSignatureAdded();
+	//mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
+	//std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
+	//colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+    //emit meshSignatureAdded();
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
 	const double maxCodingRatio = 1.0;
-	double ratioToTest[] = {0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5/*, 0.65, 0.8*/};
-	std::vector<double> vCompressRatio(std::begin(ratioToTest), std::end(ratioToTest));
+	std::vector<double> compress_ratios{/*0.05, 0.1, 0.15, 0.2, */0.25/*, 0.3, 0.4, 0.5/*, 0.65, 0.8*/ };
 
-	std::vector<MeshCoordinates> vProgressiveCoords(vCompressRatio.size());
-	std::ofstream ofs("output/approx_errors.txt");	
-	for (int i = 0; i < vCompressRatio.size(); ++i) 
-		ofs << vCompressRatio[i] << ((i < vCompressRatio.size()-1) ? '\t' : '\n');
+	std::vector<MeshCoordinates> compressed_coords(compress_ratios.size());
+	std::ofstream ofs("output/approx_errors.txt", std::ios::app);	
+    ofs << "\n\nTime stamp: "<< QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss").toStdString() << std::endl;
+	for (int i = 0; i < compress_ratios.size(); ++i) 
+		ofs << compress_ratios[i] << ((i < compress_ratios.size()-1) ? '\t' : '\n');
 
 	std::function<void(double,SparseApproxMethod,bool)> compressAndEvaluate = [&](double maxRatio, SparseApproxMethod method, bool useCompressionRatio) 
 	{
@@ -723,37 +733,42 @@ void ShapeEditor::testSparseCompression()
 			mShapeApprox.findSparseRepresentationByBasisRatio(method, maxRatio);
 		}
 
-		int ratiosCount = vCompressRatio.size();
+		int ratiosCount = compress_ratios.size();
 		for (int i = 0; i < ratiosCount; ++i) {
-			const double ratio = vCompressRatio[i];
+			const double ratio = compress_ratios[i];
 			assert(ratio <= maxRatio);
 			if (useCompressionRatio) {
-				mShapeApprox.doSparseReconstructionByCompressionRatio(ratio, vProgressiveCoords[i]);
+				mShapeApprox.doSparseReconstructionByCompressionRatio(ratio, compressed_coords[i]);
 			} else {
-				mShapeApprox.doSparseReconstructionByBasisRatio(ratio, vProgressiveCoords[i]);
+				mShapeApprox.doSparseReconstructionByBasisRatio(ratio, compressed_coords[i]);
 			}
 		}
 
+        compressed_coords.back().toDenseMatrix().print("integrated_reconstruction.txt");
+
 		MeshCoordinates newGeoCoord;
 		for (int i = 0; i < ratiosCount; ++i) {			
-			computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
-			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			computeGeometricLaplacianCoordinate(*mMesh, compressed_coords[i], newGeoCoord);
+			double meshError = oldMeshCoord.difference(compressed_coords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
 			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
 		}
 	};
 
-	std::function<void(SparseApproxMethod)> pursuitAndEvaluate = [&](SparseApproxMethod method) 
+    std::function<void(SparseApproxMethod, vector<MeshCoordinates>&)> pursuitAndEvaluate = [&](SparseApproxMethod method, std::vector<MeshCoordinates>& progressive_coords)
 	{
-		int ratiosCount = vCompressRatio.size();
-		MeshCoordinates newGeoCoord;
+		int ratiosCount = compress_ratios.size();
 
 		for (int i = 0; i < ratiosCount; ++i) {
-			mShapeApprox.findSparseRepresentationByCompressionRatio(method, vCompressRatio[i]);			
-			mShapeApprox.doSparseReconstructionBySize(-1, vProgressiveCoords[i]);
-			computeGeometricLaplacianCoordinate(*mMesh, vProgressiveCoords[i], newGeoCoord);
-			double meshError = oldMeshCoord.difference(vProgressiveCoords[i]);
+			mShapeApprox.findSparseRepresentationByCompressionRatio(method, compress_ratios[i]);			
+            mShapeApprox.doSparseReconstructionBySize(-1, progressive_coords[i]);
+            
+            progressive_coords[i].scaleToUnitbox();
+
+            MeshCoordinates newGeoCoord;
+            computeGeometricLaplacianCoordinate(*mMesh, progressive_coords[i], newGeoCoord);
+            double meshError = oldMeshCoord.difference(progressive_coords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
 			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
@@ -761,15 +776,14 @@ void ShapeEditor::testSparseCompression()
 	};
 
 	// 1. low-pass approximate, MHB
-#if 1
+#if 0
 	printBeginSeparator("Low-pass Approx, MHB", '-');
 	mShapeApprox.constructDictionaries(DT_Fourier);
+
 	compressAndEvaluate(maxCodingRatio, ZGeom::SA_Truncation, false);
 
-	evaluateApproximation(vProgressiveCoords.back(), "1");
-	setStoredCoordinates(vProgressiveCoords.back(), 1);
-	mContReconstructCoords[0] = vProgressiveCoords;
-	emit approxStepsChanged(0, vProgressiveCoords.size());
+	evaluateApproximation(compressed_coords.back(), "1");
+    mMesh->addNamedCoordinate(compressed_coords.back(), "Truncated");
 	printEndSeparator('-', 40);
 #endif
 
@@ -813,19 +827,18 @@ void ShapeEditor::testSparseCompression()
 #if 1
 	printBeginSeparator("SOMP, SGW-MHB", '-');
 	mShapeApprox.constructDictionaries(DT_SGW4MHB);
-	pursuitAndEvaluate(ZGeom::SA_SOMP);
-	
-	evaluateApproximation(vProgressiveCoords.back(), "4");
-	setStoredCoordinates(vProgressiveCoords.back(), 4);
-	mContReconstructCoords[3] = vProgressiveCoords;
-	emit approxStepsChanged(3, vProgressiveCoords.size());
+
+	pursuitAndEvaluate(ZGeom::SA_SOMP, compressed_coords);	
+
+    evaluateApproximation(compressed_coords.back(), "4");
+    mMesh->addNamedCoordinate(compressed_coords.back(), "Compressed");
 	printEndSeparator('-', 40);
 #endif
 
 	ofs.close();
 	std::cout << '\n';
-	changeCoordinates(2);
-	printEndSeparator('=', 40);
+	//changeCoordinates(2);
+	printEndSeparator('=', 40);    
 }
 
 //// Test shape decomposition via signal separation
@@ -875,11 +888,11 @@ void ShapeEditor::testSparseDecomposition()
 	setStoredCoordinates(reconstructedMeshCoord, 1);
 	
 
-	const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0].getDict();
+	const ZGeom::Dictionary& dict = mShapeApprox.mSubMeshApprox[0]->getDict();
 	const std::vector<ZGeom::SparseCodingItem>* vCoeff[3] = {
-		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(0), 
-		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(1), 
-		&mShapeApprox.mSubMeshApprox[0].getSparseCoding(2)
+		&mShapeApprox.mSubMeshApprox[0]->getSparseCoding(0), 
+		&mShapeApprox.mSubMeshApprox[0]->getSparseCoding(1), 
+		&mShapeApprox.mSubMeshApprox[0]->getSparseCoding(2)
 	};
 	int dictSize = dict.size();
 	int actualCodingSize = int(vCoeff[0]->size());

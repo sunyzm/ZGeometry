@@ -154,6 +154,6 @@ void computeGeometricLaplacianCoordinate(const CMesh& mesh, const MeshCoordinate
             weightSum += weight;
         }
         vavg /= weightSum;
-        lCoord[i] = vi - vavg;
+        lCoord.setVertCoord(i, vi - vavg);
     }
 }

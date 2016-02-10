@@ -51,6 +51,7 @@ struct GlobalSettings {
 	int DEFAULT_DEFORM_RING; 
 	int LOAD_MHB_CACHE;
     int INPUT_SCALE_TO_UNIT;
+    int MESH_PARTITION_SIZE;
 	double MIN_HK_TIMESCALE;
 	double DEFAULT_HK_TIMESCALE;
 	double MAX_HK_TIMESCALE;

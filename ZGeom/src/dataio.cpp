@@ -48,8 +48,6 @@ bool fileExist(const std::string& filename)
     return std::tr2::sys::exists(myfile);
 }
 
-
-
 std::vector<std::string> readFileList(const std::string &filename)
 {
     if (!fileExist(filename)) {
@@ -72,10 +70,11 @@ std::vector<std::string> readFileList(const std::string &filename)
     return result;
 }
 
-std::pair<std::string, std::string> splitFileName(const std::string& file_name)
+std::pair<std::string, std::string> extractFileName(const std::string& file_name)
 {
-    size_t dot_pos = file_name.rfind('.'), slashPos = file_name.rfind('/');
-    std::string name = file_name.substr(slashPos + 1, dot_pos - slashPos - 1);
-    std::string ext = file_name.substr(dot_pos, file_name.size() - dot_pos);
+    size_t dot_pos = file_name.find_last_of('.'), slash_pos = file_name.find_last_of('/');
+    if (slash_pos == string::npos) slash_pos = -1;
+    std::string name = file_name.substr(slash_pos + 1, dot_pos - slash_pos - 1);
+    std::string ext = (dot_pos == string::npos) ? "" : file_name.substr(dot_pos, file_name.size() - dot_pos);
     return make_pair(name, ext);
 }

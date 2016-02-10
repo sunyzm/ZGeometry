@@ -4,7 +4,12 @@
 #include <fstream>
 #include <iostream>
 #include <algorithm>
+#include <filesystem>
+#include "dataio.h"
+#include "MatlabEngineWrapper.h"
 #include "MatVecArithmetic.h"
+
+using namespace std::tr2::sys;
 
 namespace ZGeom {
 
@@ -118,6 +123,40 @@ void EigenSystem::validate()
         std::cout << "<v0,v0> = " << innerProduct(v0, v0) << std::endl;
         std::cout << "<v1,v1> = " << innerProduct(v1, v1) << std::endl;
     }
+}
+
+void EigenSystem::saveToMat(MatlabEngineWrapper* eng, const std::string& eigen_file_path) const
+{
+    eng->addDoubleScalar(eigVecCount(), "eigen_num");
+    eng->addDoubleScalar(eigVecSize(), "mesh_size");
+    eng->addColVec(VecNd(getAllEigVals()), "eigenvals");
+    eng->addDenseMat(hasEigenMat() ? getEigenMat_const() : toDenseMatrix(), "eigenvecs", true);
+    eng->addSparseMat(getInducingMat(), "inducing_mat");
+    eng->eval("save " + eigen_file_path + " eigen_num mesh_size eigenvals eigenvecs inducing_mat");
+}
+
+void EigenSystem::loadFromMat(MatlabEngineWrapper* eng, const std::string& file)
+{
+    if (!fileExist(file)) throw std::runtime_error("Eigen mat file not exist!");
+    clear();    
+
+    auto pwd = initial_path<path>();
+    eng->eval("cd " + pwd.string());
+
+    eng->eval("load " + file);
+    int eigen_num = int(*eng->getDblVariablePtr("eigen_num"));
+    int mesh_size = int(*eng->getDblVariablePtr("mesh_size"));
+    setSize(mesh_size, eigen_num);
+
+    double* eig_vals_ptr = eng->getDblVariablePtr("eigenvals");
+    for (int k = 0; k < eigen_num; ++k) this->mEigVals[k] = eig_vals_ptr[k];
+
+    this->mEigenMat = eng->getDenseMat("eigenvecs", true);
+    for (int k = 0; k < eigen_num; ++k) {
+        mEigVecs[k] = mEigenMat.getRowVec(k);
+    }
+    
+    eng->getSparseMat("inducing_mat", this->mInducingMat);
 }
 
 }	// end of namespace 

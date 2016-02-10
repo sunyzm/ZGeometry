@@ -181,7 +181,7 @@ VecN<T> DenseMatrix<T>::getRowVec(uint row) const
 {
 	assert(row < mRow);
 	VecN<T> vec(mCol);
-	for (int j = 0; j < mCol; ++j) vec[j] = mData[row*mCol + j];
+	for (uint j = 0; j < mCol; ++j) vec[j] = mData[row*mCol + j];
 	return vec;
 }
 

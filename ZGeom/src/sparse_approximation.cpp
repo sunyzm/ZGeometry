@@ -40,7 +40,6 @@ void MatchingPursuit( const VecNd& vSignal, const std::vector<VecNd>& vBasis, in
 	GeneralizedMP(vSignal, vBasis, nSelected, vPursuit, RegularProductFunc);
 }
 
-
 void GeneralizedMP( const VecNd& vSignal, const std::vector<VecNd>& vAtoms, int nSelected, SparseCoding& vPursuit, const InnerProdcutFunc& innerProdFunc)
 {
 	using Concurrency::concurrent_vector;

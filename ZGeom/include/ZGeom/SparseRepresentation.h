@@ -25,6 +25,7 @@ public:
 	const VecNd& operator [] (int i) const { return mAtoms[i]; }
 	VecNd& operator[] (int i) { return mAtoms[i]; }
 
+    const VecNd& getAtom(int i) const { return mAtoms[i]; }
     const std::vector<VecNd>& getAtoms() const { return mAtoms; }
     const std::vector<VecNd>& operator() () const { return mAtoms; }
     

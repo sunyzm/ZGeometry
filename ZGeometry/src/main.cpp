@@ -19,6 +19,8 @@ void loadConfig()
     g_configMgr.getConfigValueDouble("DEFUALT_HK_TIMESCALE", gSettings.DEFAULT_HK_TIMESCALE);
     g_configMgr.getConfigValueInt("DEFAULT_EIGEN_SIZE", gSettings.DEFAULT_EIGEN_SIZE);
     g_configMgr.getConfigValueInt("SCALE_TO_UNIT", gSettings.INPUT_SCALE_TO_UNIT);
+    g_configMgr.getConfigValueInt("PARITION_SIZE", gSettings.MESH_PARTITION_SIZE);
+
 }
 
 int main(int argc, char *argv[])

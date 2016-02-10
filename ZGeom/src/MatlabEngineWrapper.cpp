@@ -130,12 +130,6 @@ double* ZGeom::MatlabEngineWrapper::getDblVariablePtr( const std::string& name )
 	return mxGetPr(arr);
 }
 
-int* ZGeom::MatlabEngineWrapper::getIntVariablePtr( const std::string& name )
-{
-	mxArray *arr = getVariable(name.c_str());
-	return (int*)mxGetData(arr);
-}
-
 void ZGeom::MatlabEngineWrapper::addDoubleScalar( double value, const std::string& name )
 {
 	addArray(&value, 1, 1, false, name);
@@ -164,7 +158,7 @@ void ZGeom::MatlabEngineWrapper::getSparseMat( const std::string& name, SparseMa
 	mat.convertFromCOO(m, n, vRow, vCol, vVal);
 }
 
-void ZGeom::MatlabEngineWrapper::addDenseMat(const DenseMatrix<double>& mat, const std::string& varName, bool addAsTranspose)
+void ZGeom::MatlabEngineWrapper::addDenseMat(const DenseMatrixd& mat, const std::string& varName, bool addAsTranspose)
 {
     // if addAsTranspose, add as col-major; if not addAsTranspose, add as row-major
     if (addAsTranspose)

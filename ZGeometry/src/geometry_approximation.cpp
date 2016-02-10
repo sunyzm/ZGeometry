@@ -13,24 +13,7 @@ using ZGeom::SparseApproxMethod;
 using ZGeom::Dictionary;
 using ZGeom::SparseCoding;
 
-
-std::vector<int> MetisMeshPartition(const CMesh* mesh, int nPart)
-{
-	int vertCount = mesh->vertCount();
-	std::vector<int> vPart(vertCount);
-	int ncon = 1;
-	std::vector<int> xadj, adjncy;
-    ZGeom::getMeshGraphCSR(*mesh, xadj, adjncy);
-	int objval;
-	int options[METIS_NOPTIONS];
-	METIS_SetDefaultOptions(options);
-	options[METIS_OPTION_CONTIG] = 1;
-	options[METIS_OPTION_NUMBERING] = 0;
-
-	METIS_PartGraphKway(&vertCount, &ncon, &xadj[0], &adjncy[0], NULL, NULL, NULL, &nPart, NULL, NULL, NULL, &objval, &vPart[0]);	
-	
-	return vPart;
-}
+using ZGeom::MetisMeshPartition;
 
 void calSGWDict(const ZGeom::EigenSystem& mhb, int waveletScaleNum, ZGeom::Dictionary& dict)
 {
@@ -239,17 +222,19 @@ void ShapeApprox::doSegmentation( int maxSize )
 {
 	logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
 	const int originalVertCount = mOriginalMesh->vertCount();
-	int nPart = (maxSize > 0) ? (originalVertCount / maxSize + 1) : 1;
+	int nPart = (maxSize > 0) ? std::round(originalVertCount / maxSize) : 1;
+    if (nPart < 1) nPart = 1;
 
 	if (nPart == 1)	// no segmentation performed; just copy the original mesh
 	{
 		mPartIdx.resize(originalVertCount, 0);		
 		mSubMeshApprox.resize(1);
-		mSubMeshApprox[0].mSubMesh.cloneFrom(*mOriginalMesh, ".sub0");
-		mSubMeshApprox[0].mMappedIdx.resize(originalVertCount);
+        mSubMeshApprox[0] = new SubMeshApprox;
+		mSubMeshApprox[0]->mSubMesh.cloneFrom(*mOriginalMesh, ".sub0");
+		mSubMeshApprox[0]->mMappedIdx.resize(originalVertCount);
 		for (int i = 0; i < originalVertCount; ++i) 
-			mSubMeshApprox[0].mMappedIdx[i] = i;
-		mSubMeshApprox[0].init();
+			mSubMeshApprox[0]->mMappedIdx[i] = i;
+		mSubMeshApprox[0]->init();
 	}
 	else 
 	{
@@ -258,8 +243,9 @@ void ShapeApprox::doSegmentation( int maxSize )
 		std::vector<CMesh*> vSubMeshes;
 		std::vector<std::vector<int>*> vMappedIdx;
 		for (int partIdx = 0; partIdx < nPart; ++partIdx) {
-			vSubMeshes.push_back(&mSubMeshApprox[partIdx].mSubMesh);
-			vMappedIdx.push_back(&mSubMeshApprox[partIdx].mMappedIdx);
+            mSubMeshApprox[partIdx] = new SubMeshApprox;
+			vSubMeshes.push_back(&mSubMeshApprox[partIdx]->mSubMesh);
+			vMappedIdx.push_back(&mSubMeshApprox[partIdx]->mMappedIdx);
 			vMappedIdx.back()->clear();
 		}
 		for (int vIdx = 0; vIdx < originalVertCount; ++vIdx) {
@@ -272,7 +258,7 @@ void ShapeApprox::doSegmentation( int maxSize )
 			QString subMeshName;
 			subMeshName.sprintf("%s.sub%d", mOriginalMesh->getMeshName().c_str(), s+1);
 			vSubMeshes[s]->setMeshName(subMeshName.toStdString());
-			mSubMeshApprox[s].init();
+			mSubMeshApprox[s]->init();
 		}
 
 		std::cout << "-- number of partitions: " << nPart << '\n';
@@ -288,7 +274,7 @@ void ShapeApprox::doEigenDecomposition( LaplacianType lapType, int eigenCount )
 {
 	double decomposeTime = time_call_sec([&](){
 		for (auto& m : mSubMeshApprox) {
-			m.prepareEigenSystem(lapType, eigenCount);
+			m->prepareEigenSystem(lapType, eigenCount);
 		}
 	});
 
@@ -299,7 +285,7 @@ void ShapeApprox::constructDictionaries( DictionaryType dictType )
 {
 	double dictConstructTime = time_call_sec([=](){
 		for (auto& m : mSubMeshApprox)
-			m.constructDict(dictType);
+			m->constructDict(dictType);
 	});
 	std::cout << "** Dictionary constructed!  Time: " << dictConstructTime << "s\n";
 }
@@ -309,7 +295,7 @@ void ShapeApprox::findSparseRepresentationBySize(SparseApproxMethod codingMethod
 	ZGeom::logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not segmented!");
 
 	for (auto& m : mSubMeshApprox) {
-		m.doSparseCoding(codingMethod, codingSize);
+		m->doSparseCoding(codingMethod, codingSize);
 	}
 	std::cout << "** Sparse Coding finished!\n";
 }
@@ -325,19 +311,19 @@ void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMeth
 	int totalCodingSize(0);
 
 	for (auto& m : mSubMeshApprox) {
-		int codingSize = int(m.subMeshSize() * basisRatio);
+		int codingSize = int(m->subMeshSize() * basisRatio);
 
 		if (encodeIndices) {
-			int subDictSize = m.dictSize();
+			int subDictSize = m->dictSize();
 			int indexBits = std::ceil(std::log((double)subDictSize)/std::log(2.));
 			if (codingSize * indexBits < subDictSize) {
 				codingSize += (subDictSize - codingSize*indexBits) / (96 + indexBits);
 			}
 		}
 
-		if (codingSize > m.dictSize()) codingSize = m.dictSize();
+		if (codingSize > m->dictSize()) codingSize = m->dictSize();
 		totalCodingSize += codingSize;
-		m.doSparseCoding(codingMethod, codingSize);
+		m->doSparseCoding(codingMethod, codingSize);
 	}
 
 	timer.stopTimer("-- Encoding time: ");
@@ -345,7 +331,7 @@ void ShapeApprox::findSparseRepresentationByRatio( SparseApproxMethod codingMeth
 	std::cout << "** Sparse Coding finished!\n";
 }
 
-void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod codingMethod, double basisRatio )
+void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod coding_method, double basisRatio )
 {
 	using ZGeom::logic_assert;
 	logic_assert(!mSubMeshApprox.empty(), "!! Error: Mesh is not partitioned!");
@@ -355,10 +341,10 @@ void ShapeApprox::findSparseRepresentationByBasisRatio( SparseApproxMethod codin
 	timer.startTimer();
 	
 	for (auto& m : mSubMeshApprox) {
-		int codingSize = int(m.subMeshSize() * basisRatio);
-		if (codingSize > m.dictSize()) codingSize = m.dictSize();
-		totalCodingSize += codingSize;
-		m.doSparseCoding(codingMethod, codingSize);
+		int coding_size = int(m->subMeshSize() * basisRatio);
+		if (coding_size > m->dictSize()) coding_size = m->dictSize();
+		totalCodingSize += coding_size;
+		m->doSparseCoding(coding_method, coding_size);
 	}
 
 	timer.stopTimer("-- Encoding time: ");
@@ -378,15 +364,15 @@ void ShapeApprox::findSparseRepresentationByCompressionRatio( SparseApproxMethod
 	timer.startTimer();
 
 	for (auto& m : mSubMeshApprox) {
-		int subDictSize = m.dictSize();
-		int subMeshSize = m.subMeshSize();
+		int subDictSize = m->dictSize();
+		int subMeshSize = m->subMeshSize();
 		int k1 = 32, k2 = 32;	//bit size of float
-		int codingSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
-		runtime_assert(codingSize >= 1, "Number of participating basis must be positive!"); 
+		int coding_size = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
+		runtime_assert(coding_size >= 1, "Number of participating basis must be positive!"); 
 
-		if (codingSize > m.dictSize()) codingSize = m.dictSize();
-		totalCodingSize += codingSize;
-		m.doSparseCoding(codingMethod, codingSize);
+		if (coding_size > m->dictSize()) coding_size = m->dictSize();
+		totalCodingSize += coding_size;
+		m->doSparseCoding(codingMethod, coding_size);
 	}
 
 	timer.stopTimer("-- Encoding time: ");
@@ -397,7 +383,7 @@ void ShapeApprox::findSparseRepresentationByCompressionRatio( SparseApproxMethod
 void ShapeApprox::doSparseReconstructionBySize( int reconstructSize, MeshCoordinates& approxCoord )
 {
 	for (auto& m : mSubMeshApprox) {
-		m.sparseReconstruct(reconstructSize);
+		m->sparseReconstruct(reconstructSize);
 	}
 	integrateSubmeshApproximation(approxCoord);
 }
@@ -410,19 +396,19 @@ void ShapeApprox::doSparseReconstructionByRatio( double basisRatio, MeshCoordina
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
-		int reconstructSize = m.subMeshSize() * basisRatio;
+		int reconstructSize = m->subMeshSize() * basisRatio;
 
 		if (exploitSparsity) {
-			int subDictSize = m.dictSize();
+			int subDictSize = m->dictSize();
 			int indexBits = int(std::log((double)subDictSize)/std::log(2.)) + 1;
 			if (reconstructSize * indexBits < subDictSize) {
 				reconstructSize += (subDictSize - reconstructSize*indexBits) / (96 + indexBits);
 			}
 		}
 
-		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		if (reconstructSize > m->codingSize()) reconstructSize = m->codingSize();
 		totalReconstructSize += reconstructSize;
-		m.sparseReconstruct(reconstructSize);
+		m->sparseReconstruct(reconstructSize);
 	}
 	integrateSubmeshApproximation(approxCoord);
 	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';
@@ -434,11 +420,10 @@ void ShapeApprox::doSparseReconstructionByBasisRatio( double basisRatio, MeshCoo
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
-		int reconstructSize = m.subMeshSize() * basisRatio;
-
-		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
-		totalReconstructSize += reconstructSize;
-		m.sparseReconstruct(reconstructSize);
+		int reconstruct_basis_num = m->subMeshSize() * basisRatio;
+		if (reconstruct_basis_num > m->codingSize()) reconstruct_basis_num = m->codingSize();
+		totalReconstructSize += reconstruct_basis_num;
+		m->sparseReconstruct(reconstruct_basis_num);
 	}
 	integrateSubmeshApproximation(approxCoord);
 	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';
@@ -450,15 +435,15 @@ void ShapeApprox::doSparseReconstructionByCompressionRatio( double compressionRa
 	int totalReconstructSize(0);
 
 	for (auto& m : mSubMeshApprox) {
-		int subDictSize = m.dictSize();
-		int subMeshSize = m.subMeshSize();
+		int subDictSize = m->dictSize();
+		int subMeshSize = m->subMeshSize();
 		int k1 = 32, k2 = 32;	//bit size of float
 		int reconstructSize = computePursuitCompressionBasisNum(subMeshSize, subDictSize, k1, k2, compressionRatio);
 		runtime_assert(reconstructSize >= 1, "Number of participating basis must be positive!"); 
 
-		if (reconstructSize > m.codingSize()) reconstructSize = m.codingSize();
+		if (reconstructSize > m->codingSize()) reconstructSize = m->codingSize();
 		totalReconstructSize += reconstructSize;
-		m.sparseReconstruct(reconstructSize);
+		m->sparseReconstruct(reconstructSize);
 	}
 	integrateSubmeshApproximation(approxCoord);
 	std::cout << "-- Total reconstruct size: " << totalReconstructSize << '\n';;
@@ -469,7 +454,7 @@ void ShapeApprox::doSparseReconstructionStepping( int totalSteps, std::vector<Me
 	contCoords.resize(totalSteps);
 
 	for (int step = 0; step < totalSteps; ++step) {
-		for (auto& m : mSubMeshApprox) m.sparseReconstructStep(step);
+		for (auto& m : mSubMeshApprox) m->sparseReconstructStep(step);
 		integrateSubmeshApproximation(contCoords[step]);		 
 	}
 }
@@ -481,21 +466,37 @@ void ShapeApprox::integrateSubmeshApproximation(MeshCoordinates& integrated_appr
 	integrated_approx_coord.resize(vert_count);
 
 	for (auto& m : mSubMeshApprox) {
-		const std::vector<int>& vMappedIdx = m.mappedIdx();
-		int sub_mesh_size = m.subMeshSize();
-		for (int c = 0; c < 3; ++c) {
-			auto sub_approx_coord = m.mReconstructedCoord.getCoordData(c);
-			for (int i = 0; i < sub_mesh_size; ++i) {
-                integrated_approx_coord(vMappedIdx[i], c) = sub_approx_coord[i];
-			}
-		}		
+		const std::vector<int>& vMappedIdx = m->mappedIdx();
+		int sub_mesh_size = m->subMeshSize();
+
+        for (int si = 0; si < sub_mesh_size; ++si) {
+            int oi = vMappedIdx[si];
+            for (int c = 0; c < 3; ++c)
+                integrated_approx_coord(oi, c) = m->mReconstructedCoord(si, c);
+        }
+        
+		//for (int c = 0; c < 3; ++c) {
+		//	double* sub_approx_coord = m->mReconstructedCoord.getCoordData(c);
+		//	for (int i = 0; i < sub_mesh_size; ++i) {
+        //       integrated_approx_coord(vMappedIdx[i], c) = sub_approx_coord[i];
+		//	}
+		//}		
 	}
+}
+
+void ShapeApprox::clear()
+{
+    mOriginalMesh = nullptr;
+    mPartIdx.clear();
+    //TODO: fix the following line
+    //for (auto& sma : mSubMeshApprox) delete sma;
+    mSubMeshApprox.clear();
 }
 
 void SubMeshApprox::prepareEigenSystem( LaplacianType lap_type, int eigen_num )
 {
-    MeshHelper& mMeshProcessor = *mMeshHelper;
-    mEigenSystem = mMeshHelper->prepareEigenSystem(lap_type, eigen_num);
+    MeshHelper& mMeshProcessor = mMeshHelper;
+    mEigenSystem = mMeshHelper.prepareEigenSystem(lap_type, eigen_num);
 }
 
 void SubMeshApprox::constructDict( DictionaryType dictType )
@@ -503,30 +504,25 @@ void SubMeshApprox::constructDict( DictionaryType dictType )
 	computeDictionary(dictType, mEigenSystem, mDict);
 }
 
-void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selectedAtomCount )
+void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selected_atom_count )
 {
 	const int vertCount = mSubMesh.vertCount();
 	const int atomCount = mDict.atomCount();
-	runtime_assert(atomCount >= selectedAtomCount);
+	runtime_assert(atomCount >= selected_atom_count);
 
     MeshCoordinates vertCoords = mSubMesh.getVertCoordinates();
-	std::vector<ZGeom::VecNd> vSignals;
-	vSignals.push_back(vertCoords.getCoordVec(0)); 
-    vSignals.push_back(vertCoords.getCoordVec(1));
-	vSignals.push_back(vertCoords.getCoordVec(2));
 
+    std::vector<ZGeom::VecNd> vSignals{ vertCoords.getXCoord(), vertCoords.getYCoord(), vertCoords.getZCoord() };
 	ZGeom::SparseCoding vApproxX, vApproxY, vApproxZ;
-	std::vector<ZGeom::SparseCoding*> vApproxCoeff;
-	vApproxCoeff.push_back(&vApproxX); 
-	vApproxCoeff.push_back(&vApproxY); 
-	vApproxCoeff.push_back(&vApproxZ);
-
-	for (int c = 0; c < 3; ++c) mCoding[c].resize(selectedAtomCount);
+    std::vector<ZGeom::SparseCoding*> vApproxCoeff{ &vApproxX, &vApproxY, &vApproxZ };
+	
+	for (int c = 0; c < 3; ++c) 
+        mCoding[c].resize(selected_atom_count);
 
 	if (approxMethod == ZGeom::SA_Truncation)
 	{
 		double innerProd[3];
-		for (int i = 0; i < selectedAtomCount; ++i) {
+		for (int i = 0; i < selected_atom_count; ++i) {
 			for (int c = 0; c < 3; ++c)
 				innerProd[c] = mDict[i].dot(vSignals[c]);
 			for (int c = 0; c < 3; ++c)
@@ -536,13 +532,13 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 	else if (approxMethod == ZGeom::SA_SMP || approxMethod == ZGeom::SA_SOMP)
 	{
 		if (approxMethod == ZGeom::SA_SMP) {
-			ZGeom::SimultaneousMP(vSignals, mDict.getAtoms(), selectedAtomCount, vApproxCoeff);
+			ZGeom::SimultaneousMP(vSignals, mDict.getAtoms(), selected_atom_count, vApproxCoeff);
 		} else {
-			ZGeom::SimultaneousOMP(vSignals, mDict.getAtoms(), selectedAtomCount, vApproxCoeff);
+			ZGeom::SimultaneousOMP(vSignals, mDict.getAtoms(), selected_atom_count, vApproxCoeff);
 		}
 
 		for (int c = 0; c < 3; ++c) {
-			for (int i = 0; i < selectedAtomCount; ++i) {
+			for (int i = 0; i < selected_atom_count; ++i) {
 				const ZGeom::SparseCodingItem& item = (*vApproxCoeff[c])[i];
 				mCoding[c][i] = ZGeom::SparseCodingItem(item.index(), item.coeff());
 			}
@@ -550,17 +546,24 @@ void SubMeshApprox::doSparseCoding( SparseApproxMethod approxMethod, int selecte
 	}	
 }
 
-void SubMeshApprox::sparseReconstruct( int reconstructAtomCount )
+void SubMeshApprox::sparseReconstruct( int reconstruct_atom_num )
 {
-	int vertCount = mSubMesh.vertCount();
-	if (reconstructAtomCount > this->codingSize()) reconstructAtomCount = this->codingSize();
-	if (reconstructAtomCount <= 0) reconstructAtomCount = this->codingSize();
+	int sub_vert_count = mSubMesh.vertCount();
+	if (reconstruct_atom_num > this->codingSize()) reconstruct_atom_num = this->codingSize();
+	if (reconstruct_atom_num <= 0) reconstruct_atom_num = this->codingSize();
 
-	mReconstructedCoord.resize(vertCount);
-	for (int i = 0; i < reconstructAtomCount; ++i) {
+	mReconstructedCoord.resize(sub_vert_count);
+	for (int i = 0; i < reconstruct_atom_num; ++i) {
 		for (int c = 0; c < 3; ++c) {
 			const ZGeom::SparseCodingItem& sc = mCoding[c][i];
-			mReconstructedCoord.addWith(c, sc.coeff() * mDict[sc.index()]);
+            const VecNd& selected_atom = mDict.getAtom(sc.index());
+            for (int vi = 0; vi < sub_vert_count; ++vi)
+                mReconstructedCoord(vi, c) += selected_atom[vi] * sc.coeff();
+            
+            // TODO: investigate the following lines
+            //VecNd component_to_add = mDict.getAtom(sc.index());
+            //component_to_add *= sc.coeff();            
+            //mReconstructedCoord.addWith(c, component_to_add);
 		}
 	}
 }
