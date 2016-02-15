@@ -1854,16 +1854,6 @@ void QZGeometryWindow::computeFunctionMaps( int num )
 		}
 	}
 	
-// 	funcMap1.print("output/funcmap1.txt");
-// 	funcMap2.print("output/funcmap2.txt");
-// 
-// 	lap1.getLS().print("output/Ls1.txt");
-// 	lap1.getW().print("output/W1.txt");
-// 	lap2.getLS().print("output/Ls2.txt");
-// 	lap2.getW().print("output/W2.txt");
-// 
-// 	mhb1.printEigVals("output/eigvals1.txt");
-// 	mhb2.printEigVals("output/eigvals2.txt");
 }
 
 void QZGeometryWindow::addColorSignature( int obj, const std::vector<double>& vVals, const std::string& sigName )

@@ -1,6 +1,7 @@
 #include "geometry_approximation.h"
 #include <ppl.h>
 #include <metis.h>
+#include <ZGeom/util.h>
 #include "differential_geometry.h"
 #include "global.h"
 #define USE_SPAMS
@@ -222,7 +223,7 @@ void ShapeApprox::doSegmentation( int maxSize )
 {
 	logic_assert(mOriginalMesh != NULL, "Error: Mesh is empty!");
 	const int originalVertCount = mOriginalMesh->vertCount();
-	int nPart = (maxSize > 0) ? std::round(originalVertCount / maxSize) : 1;
+	int nPart = (maxSize > 0) ? std::lround((double)originalVertCount/(double)maxSize) : 1;
     if (nPart < 1) nPart = 1;
 
 	if (nPart == 1)	// no segmentation performed; just copy the original mesh
@@ -238,7 +239,9 @@ void ShapeApprox::doSegmentation( int maxSize )
 	}
 	else 
 	{
-		mPartIdx = MetisMeshPartition(mOriginalMesh, nPart);		
+		mPartIdx = MetisMeshPartition(mOriginalMesh, nPart);
+        //mPartIdx = ZGeom::FiedlerMeshPartition(mOriginalMesh, nPart);
+
 		mSubMeshApprox.resize(nPart);
 		std::vector<CMesh*> vSubMeshes;
 		std::vector<std::vector<int>*> vMappedIdx;

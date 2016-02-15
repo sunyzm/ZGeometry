@@ -660,8 +660,8 @@ void ShapeEditor::runTests()
 {
     int patch_size = gSettings.MESH_PARTITION_SIZE;
 
-    vector<int> patch_sizes{500, 750, 1000, 1250, 1500, 2000 };
-    //vector<int> patch_sizes{500};
+    //vector<int> patch_sizes{250, 500, 750, 1000, 1250, 1500, 2000 };
+    vector<int> patch_sizes{1000};
 
     for (int psize : patch_sizes)
         testSparseCompression(psize);
@@ -701,7 +701,6 @@ void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
     int maxPatchSize = max_patch_size;	// -1 means no segmentation
     mMesh->revertCoordinate();
 	const MeshCoordinates& oldMeshCoord = mMesh->getVertCoordinates();
-	//setStoredCoordinates(oldMeshCoord, 0);
 	MeshCoordinates oldGeoCoord;
 	computeGeometricLaplacianCoordinate(*mMesh, oldMeshCoord, oldGeoCoord);
 
@@ -709,21 +708,20 @@ void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
     if (totalVertCount < maxPatchSize) return;
 
 	mShapeApprox.doSegmentation(maxPatchSize);
-	//mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
-	//std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
-	//colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
-    //emit meshSignatureAdded();
+	
+    // visualize segmentation
+    mSegmentPalette.generatePalette(mShapeApprox.partitionCount());	
+	std::vector<ZGeom::Colorf>& vColors = mMesh->addColorSigAttr(StrAttrColorPartitions).attrValue().getColors();
+	colorPartitions(mShapeApprox.mPartIdx, mSegmentPalette, vColors);
+    emit meshSignatureAdded();
+
 	mShapeApprox.doEigenDecomposition(Umbrella, eigenCount);	
 	
 	/* setup vectors of compress ratios and initialize vProgressiveCoords */
 	const double maxCodingRatio = 1.0;
-	std::vector<double> compress_ratios{/*0.05, 0.1, 0.15, 0.2, */0.25/*, 0.3, 0.4, 0.5/*, 0.65, 0.8*/ };
+	std::vector<double> compress_ratios{/*0.05, 0.1, 0.15, 0.2, */0.15/*, 0.3, 0.4, 0.5/*, 0.65, 0.8*/ };
 
 	std::vector<MeshCoordinates> compressed_coords(compress_ratios.size());
-	std::ofstream ofs("output/approx_errors.txt", std::ios::app);	
-    ofs << "\n\nTime stamp: "<< QDateTime::currentDateTime().toString("MM-dd-yyyy_hh.mm.ss").toStdString() << std::endl;
-	for (int i = 0; i < compress_ratios.size(); ++i) 
-		ofs << compress_ratios[i] << ((i < compress_ratios.size()-1) ? '\t' : '\n');
 
 	std::function<void(double,SparseApproxMethod,bool)> compressAndEvaluate = [&](double maxRatio, SparseApproxMethod method, bool useCompressionRatio) 
 	{
@@ -744,15 +742,12 @@ void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
 			}
 		}
 
-        compressed_coords.back().toDenseMatrix().print("integrated_reconstruction.txt");
-
-		MeshCoordinates newGeoCoord;
+        MeshCoordinates newGeoCoord;
 		for (int i = 0; i < ratiosCount; ++i) {			
 			computeGeometricLaplacianCoordinate(*mMesh, compressed_coords[i], newGeoCoord);
 			double meshError = oldMeshCoord.difference(compressed_coords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
-			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
 		}
 	};
 
@@ -771,7 +766,6 @@ void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
             double meshError = oldMeshCoord.difference(progressive_coords[i]);
 			double geoError = oldGeoCoord.difference(newGeoCoord);
 			double mixedError = (meshError + geoError) / (2*totalVertCount);
-			ofs << mixedError << ((i < ratiosCount-1) ? '\t' : '\n');
 		}
 	};
 
@@ -835,7 +829,6 @@ void ShapeEditor::testSparseCompression(int max_patch_size /*= 1000*/)
 	printEndSeparator('-', 40);
 #endif
 
-	ofs.close();
 	std::cout << '\n';
 	//changeCoordinates(2);
 	printEndSeparator('=', 40);    
